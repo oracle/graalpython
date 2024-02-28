@@ -52,6 +52,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.util.List;
 
@@ -448,18 +449,18 @@ public final class SuperBuiltins extends PythonBuiltins {
              * We want __class__ to return the class of the super object (i.e. super, or a
              * subclass), not the class of su->obj.
              */
-            TruffleString stringAttr = null;
+            TruffleString stringAttr;
             if (attr instanceof PString) {
                 stringAttr = ((PString) attr).getValueUncached();
             } else if (isJavaString(attr)) {
                 stringAttr = toTruffleStringUncached((String) attr);
             } else if (attr instanceof TruffleString) {
                 stringAttr = (TruffleString) attr;
+            } else {
+                throw shouldNotReachHere();
             }
-            if (stringAttr != null) {
-                if (equalNode.execute(stringAttr, T___CLASS__, TS_ENCODING)) {
-                    return genericGetAttr(frame, self, T___CLASS__);
-                }
+            if (equalNode.execute(stringAttr, T___CLASS__, TS_ENCODING)) {
+                return genericGetAttr(frame, self, T___CLASS__);
             }
 
             // acts as a branch profile
@@ -479,12 +480,12 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
             i++; /* skip su->type (if any) */
             if (i >= n) {
-                return genericGetAttr(frame, self, attr);
+                return genericGetAttr(frame, self, stringAttr);
             }
 
             for (; i < n; i++) {
                 PythonAbstractClass tmp = mro[i];
-                Object res = readFromDict.execute(tmp, attr);
+                Object res = readFromDict.execute(tmp, stringAttr);
                 if (res != PNone.NO_VALUE) {
                     Object get = readGet.execute(res);
                     if (get != PNone.NO_VALUE) {
@@ -503,7 +504,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 }
             }
 
-            return genericGetAttr(frame, self, attr);
+            return genericGetAttr(frame, self, stringAttr);
         }
 
         private boolean isSameType(Object execute, Object abstractPythonClass) {

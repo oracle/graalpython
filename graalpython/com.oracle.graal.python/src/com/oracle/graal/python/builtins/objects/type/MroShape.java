@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_NO_VALUE_PROPERTIES;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SLOTNAMES__;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
+import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreter;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -49,6 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -145,11 +148,17 @@ public final class MroShape {
             return new MroShapeLookupResult(NOT_FOUND_INDEX);
         }
 
-        public Object getFromMro(MroSequenceStorage mro, Object key) {
+        public Object getFromMro(MroSequenceStorage mro, TruffleString key) {
             if (mroIndex == NOT_FOUND_INDEX) {
                 return PNone.NO_VALUE;
             } else {
-                Object result = readNode.execute(mro.getItemNormalized(mroIndex), key);
+                Object item = mro.getItemNormalized(mroIndex);
+                if (!(item instanceof PythonObject)) {
+                    // MroShape should only contain PythonManagedClass
+                    transferToInterpreter();
+                    throw shouldNotReachHere("Unexpected object in getFromMro: " + item.getClass());
+                }
+                Object result = readNode.execute((PythonObject) item, key);
                 // We must not get NO_VALUE because that would mean the MROShape contains a class
                 // with NO_VALUE properties and cannot be used to lookup properties only by shapes
                 assert result != PNone.NO_VALUE : mro.getClassName() + "." + key;

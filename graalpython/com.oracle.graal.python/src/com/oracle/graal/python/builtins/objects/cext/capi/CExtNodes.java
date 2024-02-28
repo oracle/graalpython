@@ -921,7 +921,7 @@ public abstract class CExtNodes {
                 if (managedMemberName instanceof HiddenAttr ha) {
                     attr = HiddenAttr.ReadNode.executeUncached((PythonAbstractObject) mroCls, ha, NO_VALUE);
                 } else {
-                    attr = ReadAttributeFromObjectNode.getUncachedForceType().execute(mroCls, managedMemberName);
+                    attr = ReadAttributeFromObjectNode.getUncachedForceType().execute(mroCls, CompilerDirectives.castExact(managedMemberName, TruffleString.class));
                 }
                 if (attr != NO_VALUE) {
                     return PyNumberAsSizeNode.executeExactUncached(attr);
@@ -1859,7 +1859,7 @@ public abstract class CExtNodes {
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed
             // writing to builtin types.
-            writeAttributeToDynamicObjectNode.execute(function.getStorage(), SpecialAttributeNames.T___DOC__, methodDoc);
+            writeAttributeToDynamicObjectNode.execute(function, SpecialAttributeNames.T___DOC__, methodDoc);
 
             return function;
         }

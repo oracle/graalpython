@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,39 +42,10 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeCost;
-import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.object.Location;
-import com.oracle.truffle.api.object.Property;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 public abstract class ObjectAttributeNode extends PNodeWithContext {
-    protected static TruffleString attrKey(Node inliningTarget, Object key, CastToTruffleStringNode castNode) {
-        try {
-            return castNode.execute(inliningTarget, key);
-        } catch (CannotCastException e) {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
 
-    protected static Location getLocationOrNull(Property prop) {
-        return prop == null ? null : prop.getLocation();
-    }
-
-    protected static boolean isHiddenKey(Object key) {
-        return key instanceof HiddenKey;
-    }
-
-    @Override
-    public NodeCost getCost() {
-        // really just a few guards and delegation
-        return NodeCost.NONE;
-    }
 }

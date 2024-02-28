@@ -1010,7 +1010,7 @@ public final class PythonCextBuiltins {
         @Specialization(guards = {"!isPythonBuiltinClass(object)"})
         static void doObject(PythonObject object, TruffleString key, Object value,
                         @Exclusive @Cached(inline = false) WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode) {
-            writeAttrToDynamicObjectNode.execute(object.getStorage(), key, value);
+            writeAttrToDynamicObjectNode.execute(object, key, value);
         }
     }
 

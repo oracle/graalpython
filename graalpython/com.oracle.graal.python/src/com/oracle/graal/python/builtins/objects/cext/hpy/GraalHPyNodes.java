@@ -531,7 +531,7 @@ public abstract class GraalHPyNodes {
                         break;
                     }
                     PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
-                    writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.T___MODULE__, mName);
+                    writeAttrToMethodNode.execute(method, SpecialAttributeNames.T___MODULE__, mName);
                     writeAttrNode.execute(module, fun.getName(), method);
                 }
             }
@@ -698,7 +698,7 @@ public abstract class GraalHPyNodes {
 
             // write doc string; we need to directly write to the storage otherwise it is
             // disallowed writing to builtin types.
-            writeAttributeToDynamicObjectNode.execute(function.getStorage(), SpecialAttributeNames.T___DOC__, methodDoc);
+            writeAttributeToDynamicObjectNode.execute(function, SpecialAttributeNames.T___DOC__, methodDoc);
 
             return function;
         }
@@ -801,12 +801,13 @@ public abstract class GraalHPyNodes {
         final HPyProperty next;
 
         HPyProperty(Object key, Object value, HPyProperty next) {
+            assert key instanceof TruffleString || key instanceof HiddenAttr;
             this.key = key;
             this.value = value;
             this.next = next;
         }
 
-        HPyProperty(Object key, Object value) {
+        HPyProperty(TruffleString key, Object value) {
             this(key, value, null);
         }
 
@@ -850,8 +851,8 @@ public abstract class GraalHPyNodes {
             return readNode.execute(inliningTarget, receiver, key, PNone.NO_VALUE);
         }
 
-        @Fallback
-        static Object doOther(Object receiver, Object key,
+        @Specialization
+        static Object doOther(Object receiver, TruffleString key,
                         @Cached(inline = false) ReadAttributeFromObjectNode readAttributeFromObjectNode) {
             return readAttributeFromObjectNode.execute(receiver, key);
         }
@@ -861,6 +862,7 @@ public abstract class GraalHPyNodes {
     @GenerateCached(false)
     @GenerateUncached
     abstract static class WritePropertyNode extends Node {
+        // key comes from HPyProperty#key which is either TruffleString or HiddenAttr
         abstract void execute(Node inliningTarget, Object receiver, Object key, Object value);
 
         @Specialization
@@ -869,8 +871,8 @@ public abstract class GraalHPyNodes {
             writeNode.execute(inliningTarget, receiver, key, value);
         }
 
-        @Fallback
-        static void doOther(Object receiver, Object key, Object value,
+        @Specialization
+        static void doString(Object receiver, TruffleString key, Object value,
                         @Cached(inline = false) WriteAttributeToObjectNode writeAttributeToObjectNode) {
             writeAttributeToObjectNode.execute(receiver, key, value);
         }

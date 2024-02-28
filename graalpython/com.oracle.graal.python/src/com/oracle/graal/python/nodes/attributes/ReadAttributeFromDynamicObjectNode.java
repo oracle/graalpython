@@ -42,12 +42,11 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -57,10 +56,10 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Location;
+import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -77,9 +76,11 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         return ReadAttributeFromDynamicObjectNodeGen.getUncached();
     }
 
-    public abstract Object execute(Object object, Object key);
+    public abstract Object execute(PythonObject object, TruffleString key);
 
-    public abstract Object execute(Object object, TruffleString key);
+    // used only by DynamicObjectStorage, which will be removed during the transition from
+    // DynamicObject to ObjectHashMap
+    public abstract Object execute(DynamicObject object, TruffleString key);
 
     protected static Object getAttribute(DynamicObject object, TruffleString key) {
         return DynamicObjectLibrary.getUncached().getOrDefault(object, key, PNone.NO_VALUE);
@@ -98,6 +99,10 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
     @NonIdempotent
     protected static boolean locationIsAssumedFinal(Location loc) {
         return loc != null && loc.isAssumedFinal();
+    }
+
+    protected static Location getLocationOrNull(Property prop) {
+        return prop == null ? null : prop.getLocation();
     }
 
     @SuppressWarnings("unused")
@@ -148,14 +153,5 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
     protected static Object readDirect(DynamicObject dynamicObject, TruffleString key,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
         return dylib.getOrDefault(dynamicObject, key, PNone.NO_VALUE);
-    }
-
-    @Specialization(replaces = {"readDirect", "readFinalAttr"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected static Object read(DynamicObject dynamicObject, Object key,
-                    @Bind("this") Node inliningTarget,
-                    @Cached CastToTruffleStringNode castNode,
-                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        assert !isHiddenKey(key);
-        return dylib.getOrDefault(dynamicObject, attrKey(inliningTarget, key, castNode), PNone.NO_VALUE);
     }
 }

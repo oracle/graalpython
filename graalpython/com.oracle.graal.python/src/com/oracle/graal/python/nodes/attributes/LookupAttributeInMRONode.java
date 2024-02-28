@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -88,7 +88,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 36 -> 17
     public abstract static class Dynamic extends PNodeWithContext {
-        public abstract Object execute(Object klass, Object key);
+        public abstract Object execute(Object klass, TruffleString key);
 
         @Specialization(guards = "stringEquals(key, cachedKey, equalNode)", limit = "2")
         protected static Object lookupConstantMRO(Object klass, @SuppressWarnings("unused") TruffleString key,
@@ -100,14 +100,14 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
 
         @Specialization(replaces = "lookupConstantMRO")
         @InliningCutoff
-        protected Object lookupInBuiltinType(PythonBuiltinClassType klass, Object key,
+        protected Object lookupInBuiltinType(PythonBuiltinClassType klass, TruffleString key,
                         @Cached ReadAttributeFromDynamicObjectNode readAttrNode) {
             return findAttr(PythonContext.get(this), klass, key, readAttrNode);
         }
 
         @Specialization(replaces = "lookupConstantMRO")
         @InliningCutoff
-        protected static Object lookupGeneric(Object klass, Object key,
+        protected static Object lookupGeneric(Object klass, TruffleString key,
                         @Bind("this") Node inliningTarget,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached(value = "createForceType()", uncached = "getUncachedForceType()") ReadAttributeFromObjectNode readAttrNode) {
@@ -148,11 +148,11 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return LookupAttributeInMRONodeGen.create(key, true);
     }
 
-    protected static Object findAttr(Python3Core core, PythonBuiltinClassType klass, Object key) {
+    protected static Object findAttr(Python3Core core, PythonBuiltinClassType klass, TruffleString key) {
         return findAttr(core, klass, key, ReadAttributeFromDynamicObjectNode.getUncached());
     }
 
-    public static Object findAttr(Python3Core core, PythonBuiltinClassType klass, Object key, ReadAttributeFromDynamicObjectNode readAttrNode) {
+    public static Object findAttr(Python3Core core, PythonBuiltinClassType klass, TruffleString key, ReadAttributeFromDynamicObjectNode readAttrNode) {
         PythonBuiltinClassType current = klass;
         Object value = PNone.NO_VALUE;
         while (current != null) {
@@ -188,7 +188,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return cachedValue;
     }
 
-    public static PythonBuiltinClassType findOwnerInMro(Python3Core core, PythonBuiltinClassType klass, Object key) {
+    public static PythonBuiltinClassType findOwnerInMro(Python3Core core, PythonBuiltinClassType klass, TruffleString key) {
         PythonBuiltinClassType current = klass;
         ReadAttributeFromDynamicObjectNode readNode = ReadAttributeFromDynamicObjectNode.getUncached();
         while (current != null) {
@@ -382,11 +382,11 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     }
 
     @TruffleBoundary
-    public static Object lookupSlowPath(Object klass, Object key) {
+    public static Object lookupSlowPath(Object klass, TruffleString key) {
         return lookup(key, GetMroStorageNode.executeUncached(klass), ReadAttributeFromObjectNode.getUncachedForceType(), false, DynamicObjectLibrary.getUncached());
     }
 
-    public static Object lookup(Object key, MroSequenceStorage mro, ReadAttributeFromObjectNode readAttrNode, boolean skipNonStaticBases, DynamicObjectLibrary dylib) {
+    public static Object lookup(TruffleString key, MroSequenceStorage mro, ReadAttributeFromObjectNode readAttrNode, boolean skipNonStaticBases, DynamicObjectLibrary dylib) {
         for (int i = 0; i < mro.length(); i++) {
             Object kls = mro.getItemNormalized(i);
             if (skipNonStaticBase(kls, skipNonStaticBases, dylib)) {

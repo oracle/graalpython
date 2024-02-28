@@ -74,7 +74,7 @@ public final class PythonClass extends PythonManagedClass {
     public HPyTypeExtra hPyTypeExtra;
 
     private final AtomicReference<Assumption> slotsFinalAssumption = new AtomicReference<>();
-    private MroShape mroShape;
+    private MroShape mroShape;  // only set if there's no inheritance from native types
     /**
      * Array of all classes that contain this class in their MRO and that have non-null mroShape,
      * i.e., classes whose mro shape depends on this class. Including this class itself as long as
@@ -175,8 +175,8 @@ public final class PythonClass extends PythonManagedClass {
      */
     protected static SourceSection findSourceSection(PythonManagedClass self) {
         for (Object key : self.getShape().getKeys()) {
-            if (key instanceof TruffleString) {
-                Object value = ReadAttributeFromDynamicObjectNode.getUncached().execute(self, key);
+            if (key instanceof TruffleString ts) {
+                Object value = ReadAttributeFromDynamicObjectNode.getUncached().execute(self, ts);
                 InteropLibrary uncached = InteropLibrary.getFactory().getUncached();
                 if (uncached.hasSourceLocation(value)) {
                     try {
