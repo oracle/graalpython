@@ -42,12 +42,12 @@ index 1dfaaca..6eeb618 100644
  # Adding new modules should also be reflected in the
 diff --git a/pyproject.toml b/pyproject.toml
 new file mode 100644
-index 0000000..de2b7ad
+index 0000000..d69f0ac
 --- /dev/null
 +++ b/pyproject.toml
 @@ -0,0 +1,4 @@
 +[build-system]
-+requires = ["setuptools >= 40.6.0", "wheel", "pip", "psutil", "setproctitle", "colorama"]
++requires = ["setuptools >= 40.6.0", "wheel", "pip", "psutil", "setproctitle==1.2.2", "colorama", "aiohttp"]
 +build-backend = "ray_build_backend"
 +backend-path = ["."]
 diff --git a/python/ray/_private/services.py b/python/ray/_private/services.py
@@ -80,22 +80,134 @@ index 9c67ec6..12fda5a 100644
  
  
  def _extract_class_dict(cls):
+diff --git a/python/setup.py b/python/setup.py
+index a34a39c..6ac7ac5 100644
+--- a/python/setup.py
++++ b/python/setup.py
+@@ -535,19 +535,19 @@ def build(build_python, build_java, build_cpp):
+             env=dict(os.environ, CC="gcc"),
+         )
+ 
+-    # runtime env agent dependenceis
+-    runtime_env_agent_pip_packages = ["aiohttp"]
+-    subprocess.check_call(
+-        [
+-            sys.executable,
+-            "-m",
+-            "pip",
+-            "install",
+-            "-q",
+-            "--target=" + os.path.join(ROOT_DIR, RUNTIME_ENV_AGENT_THIRDPARTY_SUBDIR),
+-        ]
+-        + runtime_env_agent_pip_packages
+-    )
++        # runtime env agent dependenceis
++        runtime_env_agent_pip_packages = ["aiohttp"]
++        subprocess.check_call(
++            [
++                sys.executable,
++                "-m",
++                "pip",
++                "install",
++                "-q",
++                "--target=" + os.path.join(ROOT_DIR, RUNTIME_ENV_AGENT_THIRDPARTY_SUBDIR),
++            ]
++            + runtime_env_agent_pip_packages
++        )
+ 
+     bazel_flags = ["--verbose_failures"]
+     if BAZEL_ARGS:
 diff --git a/ray_build_backend.py b/ray_build_backend.py
 new file mode 100644
-index 0000000..e9d325f
+index 0000000..9e7f3fd
 --- /dev/null
 +++ b/ray_build_backend.py
-@@ -0,0 +1,41 @@
+@@ -0,0 +1,117 @@
 +# We need a whole custom build backend just because the setup.py is in a subdir
 +import os
 +import re
 +import sys
 +import tarfile
 +import subprocess
-+import tempfile
 +import shutil
 +from pathlib import Path
++import venv
 +
++SUB_VENV_PATH = Path(os.path.dirname(__file__)) / ('bazel-venv-' + sys.implementation.name)
++SUB_VENV_BIN = SUB_VENV_PATH / 'bin'
++SUB_VENV_PYTHON = SUB_VENV_BIN / 'python3'
++
++BAZEL = "bazel"
++
++def install_thirdparty_pkgs():
++    # During the installation process `pip` isn't available to use,
++    # So, we create a new environment to have access for fresh `pip` during bazel build.
++    if not os.path.isdir(SUB_VENV_PATH):
++        venv.create(SUB_VENV_PATH, with_pip=True)
++    print('Using virtual env in:\n\t' + str(SUB_VENV_PATH))
++    env = dict(os.environ)
++    env['PATH'] = os.pathsep.join([str(SUB_VENV_BIN), *os.environ.get("PATH", "").split(os.pathsep)])
++    env['VIRTUAL_ENV'] = str(SUB_VENV_PATH)
++    del_keys = [
++        'PIP_BUILD_TRACKER',
++        'PEP517_BUILD_BACKEND',
++        'PEP517_BACKEND_PATH',
++        'PYTHONPATH',
++        'PYTHONNOUSERSITE',
++    ]
++    for k in del_keys:
++        if k in env:
++            del env[k]
++
++    assert os.path.isdir(str(SUB_VENV_BIN))
++
++    THIRDPARTY_SUBDIR = os.path.join("ray", "thirdparty_files")
++    RUNTIME_ENV_AGENT_THIRDPARTY_SUBDIR = os.path.join(
++        "ray", "_private", "runtime_env", "agent", "thirdparty_files"
++    )
++
++    CLEANABLE_SUBDIRS = [
++        THIRDPARTY_SUBDIR,
++        RUNTIME_ENV_AGENT_THIRDPARTY_SUBDIR,
++        os.path.join("ray", "_raylet.so"),
++        os.path.join("ray", "cpp"),
++        "build",
++    ]
++
++    ROOT_DIR = os.path.join(os.path.dirname(__file__), 'python')
++    for subdir in CLEANABLE_SUBDIRS:
++        try:
++            shutil.rmtree(os.path.join(ROOT_DIR, subdir))
++        except:
++            pass
++
++    # copied from python/setup.py:523
++    pip_packages = ["psutil", "setproctitle==1.2.2", "colorama"]
++    subprocess.check_call(
++        [
++            str(SUB_VENV_PYTHON),
++            "-m",
++            "pip",
++            "install",
++            "-q",
++            "--target=" + os.path.join(ROOT_DIR, THIRDPARTY_SUBDIR),
++        ]
++        + pip_packages,
++        env=dict(os.environ, CC="gcc"),
++    )
++
++    runtime_env_agent_pip_packages = ["aiohttp"]
++    subprocess.check_call(
++        [
++            str(SUB_VENV_PYTHON),
++            "-m",
++            "pip",
++            "install",
++            "-q",
++            "--target=" + os.path.join(ROOT_DIR, RUNTIME_ENV_AGENT_THIRDPARTY_SUBDIR),
++        ]
++        + runtime_env_agent_pip_packages
++    )
 +
 +def build_sdist(sdist_directory, config_settings=None):
 +    nv = 'ray-2.9.1'
@@ -114,6 +226,7 @@ index 0000000..e9d325f
 +
 +
 +def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
++    install_thirdparty_pkgs()
 +    wheel_directory = Path(wheel_directory).absolute()
 +    os.chdir('python')
 +    env = os.environ.copy()
