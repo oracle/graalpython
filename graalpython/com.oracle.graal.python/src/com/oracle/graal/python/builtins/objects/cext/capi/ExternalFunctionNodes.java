@@ -648,6 +648,7 @@ public abstract class ExternalFunctionNodes {
                 flags = 0;
             }
             int numDefaults = -1;
+            PKeyword[] kwDefaults;
             RootCallTarget callTarget;
             if (callable instanceof RootCallTarget) {
                 callTarget = (RootCallTarget) callable;
@@ -667,6 +668,7 @@ public abstract class ExternalFunctionNodes {
                 if (callTarget.getRootNode() instanceof BuiltinFunctionRootNode builtinFunctionRootNode) {
                     numDefaults = PythonBuiltins.numDefaults(builtinFunctionRootNode.getBuiltin());
                 }
+                kwDefaults = PKeyword.EMPTY_KEYWORDS;
             } else if (callable instanceof BuiltinMethodDescriptor builtinMethodDescriptor) {
                 /*
                  * If we see a built-in method descriptor here, it was originally retrieved by a
@@ -676,19 +678,23 @@ public abstract class ExternalFunctionNodes {
                 callTarget = language.getDescriptorCallTarget(builtinMethodDescriptor);
                 // again: special case for built-in functions
                 numDefaults = PythonBuiltins.numDefaults(builtinMethodDescriptor.getBuiltinAnnotation());
+                kwDefaults = PKeyword.EMPTY_KEYWORDS;
             } else {
                 callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion, CExtContext.isMethStatic(flags));
                 if (callTarget == null) {
                     return null;
                 }
+
+                // ensure that 'callable' is executable via InteropLibrary
+                Object boundCallable = NativeCExtSymbol.ensureExecutable(callable, sig);
+                kwDefaults = ExternalFunctionNodes.createKwDefaults(boundCallable);
             }
+
+            // generate default values for positional args (if necessary)
             if (numDefaults == -1) {
                 numDefaults = sig == DELITEM ? 1 : 0;
             }
             Object[] defaults = PBuiltinFunction.generateDefaults(numDefaults);
-
-            // ensure that 'callable' is executable via InteropLibrary
-            Object boundCallable = NativeCExtSymbol.ensureExecutable(callable, sig);
 
             Object type = (enclosingType == PNone.NO_VALUE || SpecialMethodNames.T___NEW__.equalsUncached(name, TS_ENCODING)) ? null : enclosingType;
             // TODO(fa): this should eventually go away
@@ -700,9 +706,9 @@ public abstract class ExternalFunctionNodes {
                 case FASTCALL:
                 case FASTCALL_WITH_KEYWORDS:
                 case METHOD:
-                    return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(boundCallable), flags, callTarget);
+                    return factory.createBuiltinFunction(name, type, defaults, kwDefaults, flags, callTarget);
             }
-            return factory.createWrapperDescriptor(name, type, defaults, ExternalFunctionNodes.createKwDefaults(boundCallable), flags, callTarget);
+            return factory.createWrapperDescriptor(name, type, defaults, kwDefaults, flags, callTarget);
         }
 
         private static boolean isClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
