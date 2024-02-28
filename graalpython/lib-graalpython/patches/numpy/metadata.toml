@@ -34,19 +34,9 @@ patch = 'numpy-1.22.4.patch'
 dist-type = 'sdist'
 
 [[rules]]
-version = '== 1.23.4'
-patch = 'numpy-1.23.4.patch'
-dist-type = 'sdist'
-
-[[rules]]
-version = '== 1.23.1'
-patch = 'numpy-1.23.1.patch'
-dist-type = 'sdist'
-
-[[rules]]
 # Currently used by oldest-supported-numpy
-version = '== 1.23.2'
-patch = 'numpy-1.23.2.patch'
+version = '>= 1.23.1, < 1.23.5'
+patch = 'numpy-1.23.1.patch'
 dist-type = 'sdist'
 
 [[rules]]
