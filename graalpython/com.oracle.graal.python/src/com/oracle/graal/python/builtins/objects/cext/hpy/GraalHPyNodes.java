@@ -72,9 +72,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadGenericNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadHPyNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
@@ -766,14 +766,14 @@ public abstract class GraalHPyNodes {
             PythonLanguage lang = PythonLanguage.get(raiseNode);
             PBuiltinFunction getterObject = null;
             if (!isNullNode.execute(context, getterFunPtr)) {
-                Object getterFunInteropPtr = NativeCExtSymbol.ensureExecutable(context.nativeToInteropPointer(getterFunPtr), PExternalFunctionWrapper.GETTER);
+                Object getterFunInteropPtr = CExtContext.ensureExecutable(context.nativeToInteropPointer(getterFunPtr), PExternalFunctionWrapper.GETTER);
                 getterObject = HPyLegacyGetSetDescriptorGetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, getterFunInteropPtr, closurePtr);
             }
 
             PBuiltinFunction setterObject = null;
             boolean hasSetter = !isNullNode.execute(context, setterFunPtr);
             if (hasSetter) {
-                Object setterFunInteropPtr = NativeCExtSymbol.ensureExecutable(context.nativeToInteropPointer(setterFunPtr), PExternalFunctionWrapper.SETTER);
+                Object setterFunInteropPtr = CExtContext.ensureExecutable(context.nativeToInteropPointer(setterFunPtr), PExternalFunctionWrapper.SETTER);
                 setterObject = HPyLegacyGetSetDescriptorSetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, setterFunInteropPtr, closurePtr);
             }
 

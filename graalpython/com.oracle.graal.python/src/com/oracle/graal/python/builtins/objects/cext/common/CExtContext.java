@@ -94,6 +94,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public abstract class CExtContext {
 
@@ -410,5 +411,61 @@ public abstract class CExtContext {
         PBaseException excObject = PythonObjectFactory.getUncached().createBaseException(SystemError, message != null ? message : toTruffleStringUncached(e.toString()),
                         PythonUtils.EMPTY_OBJECT_ARRAY);
         return ExceptionUtils.wrapJavaException(e, raisingNode, excObject);
+    }
+
+    /**
+     * Ensures that the given {@code callable} is an executable interop value.
+     *
+     * <p>
+     * <b>NOTE:</b> This method will fail if {@link PythonContext#isNativeAccessAllowed() native
+     * access} is not allowed and if {@code callable} is yet not
+     * {@link InteropLibrary#isExecutable(Object) executable}.
+     * </p>
+     * <p>
+     * If the {@code callable} is not {@link InteropLibrary#isExecutable(Object) executable}, the
+     * provided {@link NativeCExtSymbol signature} will be used to bind the object an executable
+     * {@code NFI} pointer.
+     * </p>
+     *
+     * @param callable The callable to ensure that it is executable (
+     * @param sig The signature to bind to if the object is not executable.
+     * @return An interop object that is {@link InteropLibrary#isExecutable(Object) executable}.
+     */
+    @TruffleBoundary
+    public static Object ensureExecutable(final Object callable, NativeCExtSymbol sig) {
+        InteropLibrary lib = InteropLibrary.getUncached(callable);
+        if (!lib.isExecutable(callable)) {
+            PythonContext pythonContext = PythonContext.get(null);
+            if (!pythonContext.isNativeAccessAllowed()) {
+                getLogger().severe(String.format("Attempting to bind %s to an NFI signature but native access is not allowed", callable));
+            }
+            Env env = pythonContext.getEnv();
+
+            boolean panama = PythonOptions.UsePanama.getValue(env.getOptions());
+
+            assert sig.getSignature() != null && !sig.getSignature().isEmpty();
+            Object nfiSignature = env.parseInternal(Source.newBuilder("nfi", (panama ? "with panama " : "") + sig.getSignature(), sig.getName()).build()).call();
+
+            /*
+             * Since we mix native and LLVM execution, it happens that 'callable' is an LLVM pointer
+             * (that is still not executable). To avoid unnecessary indirections, we test
+             * 'isPointer(callable)' and if so, we retrieve the bare long value using
+             * 'asPointer(callable)' and wrap it in our own NativePointer.
+             */
+            Object funPtr;
+            if (lib.isPointer(callable)) {
+                try {
+                    funPtr = new NativePointer(lib.asPointer(callable));
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            } else {
+                funPtr = callable;
+            }
+            getLogger().finer(() -> String.format("Binding %s (signature: %s) to NFI signature %s", callable, sig.getName(), sig.getSignature()));
+            return SignatureLibrary.getUncached().bind(nfiSignature, funPtr);
+        }
+        // nothing to do
+        return callable;
     }
 }

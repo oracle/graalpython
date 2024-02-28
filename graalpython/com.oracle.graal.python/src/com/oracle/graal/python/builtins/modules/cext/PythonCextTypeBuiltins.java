@@ -80,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
-import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -354,7 +353,7 @@ public final class PythonCextTypeBuiltins {
             PBuiltinFunction get = null;
             if (!interopLibrary.isNull(getter)) {
                 RootCallTarget getterCT = getterCallTarget(name, PythonLanguage.get(inliningTarget));
-                getter = NativeCExtSymbol.ensureExecutable(getter, PExternalFunctionWrapper.GETTER);
+                getter = CExtContext.ensureExecutable(getter, PExternalFunctionWrapper.GETTER);
                 get = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getter, closure), 0, getterCT);
             }
 
@@ -362,7 +361,7 @@ public final class PythonCextTypeBuiltins {
             boolean hasSetter = !interopLibrary.isNull(setter);
             if (hasSetter) {
                 RootCallTarget setterCT = setterCallTarget(name, PythonLanguage.get(inliningTarget));
-                setter = NativeCExtSymbol.ensureExecutable(setter, PExternalFunctionWrapper.SETTER);
+                setter = CExtContext.ensureExecutable(setter, PExternalFunctionWrapper.SETTER);
                 set = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setter, closure), 0, setterCT);
             }
 

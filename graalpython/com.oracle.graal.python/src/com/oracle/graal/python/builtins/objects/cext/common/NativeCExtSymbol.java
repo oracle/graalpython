@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,16 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public interface NativeCExtSymbol {
     String getName();
@@ -60,36 +51,4 @@ public interface NativeCExtSymbol {
      * Returns the NFI signature.
      */
     String getSignature();
-
-    @TruffleBoundary
-    public static Object ensureExecutable(Object callable, NativeCExtSymbol sig) {
-        InteropLibrary lib = InteropLibrary.getUncached();
-        if (!lib.isExecutable(callable)) {
-            Env env = PythonContext.get(null).getEnv();
-            boolean panama = PythonOptions.UsePanama.getValue(env.getOptions());
-
-            assert sig.getSignature() != null && !sig.getSignature().isEmpty();
-            Object nfiSignature = env.parseInternal(Source.newBuilder("nfi", (panama ? "with panama " : "") + sig.getSignature(), sig.getName()).build()).call();
-
-            /*
-             * Since we mix native and LLVM execution, it happens that 'callable' is an LLVM pointer
-             * (that is still not executable). To avoid unnecessary indirections, we test
-             * 'isPointer(callable)' and if so, we retrieve the bare long value using
-             * 'asPointer(callable)' and wrap it in our own NativePointer.
-             */
-            Object funPtr;
-            if (lib.isPointer(callable)) {
-                try {
-                    funPtr = new NativePointer(lib.asPointer(callable));
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            } else {
-                funPtr = callable;
-            }
-            return SignatureLibrary.getUncached().bind(nfiSignature, funPtr);
-        }
-        // nothing to do
-        return callable;
-    }
 }

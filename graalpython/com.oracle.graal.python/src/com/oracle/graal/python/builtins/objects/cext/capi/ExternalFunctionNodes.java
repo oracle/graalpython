@@ -686,7 +686,7 @@ public abstract class ExternalFunctionNodes {
                 }
 
                 // ensure that 'callable' is executable via InteropLibrary
-                Object boundCallable = NativeCExtSymbol.ensureExecutable(callable, sig);
+                Object boundCallable = CExtContext.ensureExecutable(callable, sig);
                 kwDefaults = ExternalFunctionNodes.createKwDefaults(boundCallable);
             }
 
