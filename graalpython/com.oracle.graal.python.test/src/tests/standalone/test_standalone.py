@@ -256,9 +256,9 @@ class PolyglotAppTest(unittest.TestCase):
         if not skip_purge:
             self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
             if resolve:
-                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dinclude=org.graalvm.python:graalpy-maven-plugin", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
             else:
-                cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dinclude=org.graalvm.python:graalpy-maven-plugin", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
             run_cmd(cmd, self.env, cwd=target_dir)
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
