@@ -156,7 +156,7 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
         CStructAccess.WriteIntNode writeIntNode = CStructAccessFactory.WriteIntNodeGen.getUncached();
 
         assert name != null;
-        Object nameWrapper;
+        CStringWrapper nameWrapper;
         try {
             nameWrapper = new CStringWrapper(name);
         } catch (CannotCastException e) {
@@ -217,9 +217,18 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
             }
             LOGGER.finer(String.format("PyMethodDef(%s, %s, %d, %s) at %s freed.", name, meth, flags, doc, PythonUtils.formatPointer(pointer)));
         }
-        FreeNode.executeUncached(namePointer);
-        if (PGuards.isNullOrZero(namePointer, InteropLibrary.getUncached())) {
-            FreeNode.executeUncached(docPointer);
+        // managed case: 'const char *' is represented by CStringWrapper
+        if (namePointer instanceof CStringWrapper nameWrapper) {
+            nameWrapper.free();
+        } else {
+            FreeNode.executeUncached(namePointer);
+        }
+        if (docPointer instanceof CStringWrapper docWrapper) {
+            docWrapper.free();
+        } else {
+            if (PGuards.isNullOrZero(docPointer, InteropLibrary.getUncached())) {
+                FreeNode.executeUncached(docPointer);
+            }
         }
         FreeNode.executeUncached(pointer);
     }
