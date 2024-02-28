@@ -329,8 +329,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static int absBoolean(boolean arg) {
-            return arg ? 1 : 0;
+        static Object absInt(int arg) {
+            return PInt.abs(arg);
         }
 
         @Specialization

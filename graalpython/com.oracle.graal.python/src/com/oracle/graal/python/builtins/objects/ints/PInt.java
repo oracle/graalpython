@@ -599,6 +599,20 @@ public final class PInt extends PythonBuiltinObject {
         return val == (int) val;
     }
 
+    public static Object abs(int v) {
+        if (v == Integer.MIN_VALUE) {
+            return -(long) Integer.MIN_VALUE;
+        }
+        return Math.abs(v);
+    }
+
+    public static Object abs(Node inliningTarget, long v, PythonObjectFactory.Lazy factory) {
+        if (v == Long.MIN_VALUE) {
+            return factory.get(inliningTarget).createInt(abs(PInt.longToBigInteger(v)));
+        }
+        return Math.abs(v);
+    }
+
     public BigInteger abs() {
         if (value.signum() < 0) {
             return abs(value);

@@ -1460,57 +1460,29 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___ABS__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static int absBoolean(boolean arg) {
-            return arg ? 1 : 0;
+        static Object absInt(int arg) {
+            return PInt.abs(arg);
         }
 
-        @Specialization(rewriteOn = {ArithmeticException.class, OverflowException.class})
-        static int absInt(int arg) throws OverflowException {
-            int result = Math.abs(arg);
-            if (result < 0) {
-                throw OverflowException.INSTANCE;
-            }
-            return result;
-        }
-
-        @Specialization(replaces = "absInt")
-        static long absIntOvf(int arg) {
-            // Math.abs(Integer#MIN_VALUE) returns Integer#MIN_VALUE
-            return Math.abs((long) arg);
-        }
-
-        @Specialization(rewriteOn = {ArithmeticException.class, OverflowException.class})
-        static long absLong(long arg) throws OverflowException {
-            long result = Math.abs(arg);
-            if (result < 0) {
-                throw OverflowException.INSTANCE;
-            }
-            return result;
-        }
-
-        @Specialization(replaces = "absLong")
-        static PInt absLongOvf(long arg,
-                        @Shared @Cached PythonObjectFactory factory) {
-            long result = Math.abs(arg);
-            if (result < 0) {
-                return factory.createInt(absBigInteger(PInt.longToBigInteger(arg)));
-            } else {
-                return factory.createInt(PInt.longToBigInteger(arg));
-            }
+        @Specialization
+        static Object absLong(long arg,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory.Lazy factory) {
+            return PInt.abs(inliningTarget, arg, factory);
         }
 
         @Specialization
         static PInt absPInt(PInt arg,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createInt(absBigInteger(arg.getValue()));
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PythonObjectFactory.Lazy factory) {
+            return factory.get(inliningTarget).createInt(arg.abs());
         }
 
-        @TruffleBoundary
-        static BigInteger absBigInteger(BigInteger value) {
-            return value.abs();
+        @Specialization
+        static int absBoolean(boolean arg) {
+            return arg ? 1 : 0;
         }
     }
 
