@@ -136,7 +136,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PYMEM_ALLOC("PyMem_Calloc", Pointer, SIZE_T, SIZE_T),
     FUN_INCREF("Py_IncRef", Void, Pointer),
     FUN_DECREF("Py_DecRef", Void, Pointer),
-    FUN_ADDREF("PyTruffle_ADDREF", Py_ssize_t, Pointer, Py_ssize_t),
     FUN_SUBREF("PyTruffle_SUBREF", Py_ssize_t, Pointer, Py_ssize_t),
     FUN_BULK_DEALLOC("PyTruffle_bulk_DEALLOC", Py_ssize_t, Pointer, INT64_T),
     FUN_SHUTDOWN_BULK_DEALLOC("PyTruffle_shutdown_bulk_DEALLOC", Py_ssize_t, Pointer, INT64_T),
