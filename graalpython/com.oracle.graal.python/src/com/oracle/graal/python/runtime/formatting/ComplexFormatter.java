@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -98,10 +97,6 @@ public class ComplexFormatter extends InternalFormat.Formatter {
 
     private boolean hasNoSpecType() {
         return spec.getType('\0') == '\0';
-    }
-
-    public ComplexFormatter format(PComplex value) {
-        return format(value.getReal(), value.getImag());
     }
 
     public ComplexFormatter format(double real, double imag) {
