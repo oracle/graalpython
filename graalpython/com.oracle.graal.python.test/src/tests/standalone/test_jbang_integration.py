@@ -229,7 +229,7 @@ class TestJBangIntegration(unittest.TestCase):
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}\n")
         self.assertTrue(expected_text in out, f"Expected text:\n{expected_text}\nbut in stdout was:\n{out}")
        
-    @unittest.skipUnless(false, "disabled the test until we will resolve the problem with maven and jcoding")
+    @unittest.skipUnless(False, "disabled the test until we will resolve the problem with maven and jcoding")
 #    @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     @unittest.skipUnless('win32' not in sys.platform, "Currently the jbang native image on Win gate fails.")
     def test_graalpy_template_native(self):
