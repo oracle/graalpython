@@ -94,14 +94,7 @@ Every embedded application is different and the code pulled in by the rest of th
 
 ## Shipping Python Packages
 
-> TODO: Explain stdlib is copied next to binary by default
+Our Maven archetype by default is set up to include all needed Python files in the native binary itself, so the image is self-contained.
 
-> TODO: Explain we provide a VirtualFileSystem implementation to include resources
-
-> TODO: Explain how packages can be included as resources, that native extensions are extracted to java.io.tmpdir as needed
-
-## Profile Guided Optimization and AOT Compilation
-
-> TODO: Explain about PGO
-
-> TODO: Explain about Truffle Aux Engine Caching
+In custom embeddings, the Python standard library is copied next to the native image.
+When moving the native image, the standard library folder needs to be kept next to it.

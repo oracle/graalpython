@@ -11,8 +11,20 @@ redirect_from:
 
 ## Execution Performance
 
-> TODO: Interpreter speed is slower than CPython, JIT compilation available on
-> Graal, not on OpenJDK, C extensions run at native speeds ...
+GraalPy uses the state-of-the-art just-in-time (JIT) compiler of GraalVM.
+When JIT compiled, GraalPy runs Python code ~4x faster than CPython on the official [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/).
+![](docs/performance.svg)
+
+These benchmarks can be run simply by installing the `pyperformance` package and calling `pyperformance run` on each of CPython and GraalPy.
+To get the Jython numbers, however, the harness and benchmarks was adapted by due to missing Python 3 support in Jyton.
+The speedup was then calculated by taking the pair-wise intersection of working benchmarks and calculating the geomean.
+
+Without a JIT compiler, GraalPy currently executes pure Python code around ~4x slower than CPython.
+This means that very short running scripts or scripts running without the Graal compiler on Oracle JDK or OpenJDK are expected to be slower.
+
+Many Python packages from the machine learning or data science ecosystems contain C extension code.
+This code benefits little from GraalPy's JIT compilation and suffers from having to emulate CPython implementation details on GraalPy.
+When many C extensions are involved, performance can vary a lot depending on the specific interactions of native and Python code.
 
 ## Code Loading Performance and Footprint
 
