@@ -1,9 +1,7 @@
 [[rules]]
 version = '== 0.29.37'
 patch = 'Cython-0.29.37.patch'
-subdir = 'src'
 
 [[rules]]
 version = '== 0.29.32'
 patch = 'Cython-0.29.32.patch'
-subdir = 'src'
