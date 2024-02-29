@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,4 +72,22 @@ _Py_HashPointer(const void *p)
         x = -2;
     }
     return x;
+}
+
+/* taken from CPython */
+Py_hash_t
+_Py_HashDouble(PyObject *inst, double v)
+{
+    int e, sign;
+    double m;
+    Py_uhash_t x, y;
+
+    if (!Py_IS_FINITE(v)) {
+        if (Py_IS_INFINITY(v))
+            return v > 0 ? _PyHASH_INF : -_PyHASH_INF;
+        else
+            return _Py_HashPointer(inst);
+    }
+    // GraalPy change: different implementation
+    return Graal_PyTruffle_HashDouble(v);
 }

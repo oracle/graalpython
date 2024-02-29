@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT8_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
@@ -60,13 +59,10 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString.HashCodeNode;
 
 public final class PythonCextHashBuiltins {
@@ -102,20 +98,13 @@ public final class PythonCextHashBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Py_hash_t, args = {PyObject, ArgDescriptor.Double}, call = Direct)
-    @ImportStatic(Double.class)
-    abstract static class _Py_HashDouble extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = Py_hash_t, args = {ArgDescriptor.Double}, call = Ignored)
+    abstract static class _PyTruffle_HashDouble extends CApiUnaryBuiltinNode {
 
-        @Specialization(guards = "isFinite(value)")
-        long doFinite(@SuppressWarnings("unused") Object inst, double value) {
+        @Specialization
+        long doFinite(double value) {
+            assert !Double.isNaN(value);
             return PyObjectHashNode.hash(value);
-        }
-
-        @Specialization(guards = "!isFinite(value)")
-        long doNonFinite(Object inst, @SuppressWarnings("unused") double value,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectHashNode hashNode) {
-            return hashNode.execute(null, inliningTarget, inst);
         }
     }
 

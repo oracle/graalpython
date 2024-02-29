@@ -607,6 +607,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_Dealloc", ret = Void, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_Py_DecRef", ret = Void, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_Py_FatalErrorFunc", ret = VoidNoReturn, args = {ConstCharPtr, ConstCharPtr}, call = CImpl)
+    @CApiBuiltin(name = "_Py_HashDouble", ret = Py_hash_t, args = {PyObject, ArgDescriptor.Double}, call = CImpl)
     @CApiBuiltin(name = "_Py_HashPointer", ret = Py_hash_t, args = {CONST_VOID_PTR}, call = CImpl)
     @CApiBuiltin(name = "_Py_HashPointerRaw", ret = Py_hash_t, args = {CONST_VOID_PTR}, call = CImpl)
     @CApiBuiltin(name = "_Py_IncRef", ret = Void, args = {PyObject}, call = CImpl)
