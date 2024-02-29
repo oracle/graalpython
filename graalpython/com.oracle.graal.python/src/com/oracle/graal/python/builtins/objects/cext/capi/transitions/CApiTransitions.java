@@ -896,9 +896,10 @@ public abstract class CApiTransitions {
 
         @Specialization
         Object doNative(PythonAbstractNativeObject obj,
-                        @Cached PCallCapiFunction callAddRef) {
-            if (needsTransfer()) {
-                callAddRef.call(NativeCAPISymbol.FUN_ADDREF, obj.object, 1);
+                        @CachedLibrary(limit = "2") InteropLibrary lib) {
+            if (needsTransfer() && getContext().isNativeAccessAllowed()) {
+                long ptr = PythonUtils.coerceToLong(obj.getPtr(), lib);
+                CApiTransitions.addNativeRefCount(ptr, 1);
             }
             return obj.getPtr();
         }
@@ -938,7 +939,7 @@ public abstract class CApiTransitions {
                 return replacement;
             }
 
-            assert PythonContext.get(inliningTarget).getEnv().isNativeAccessAllowed();
+            assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
             assert obj != PNone.NO_VALUE;
             if (!lib.isPointer(wrapper)) {
                 lib.toNative(wrapper);
