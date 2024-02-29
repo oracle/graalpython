@@ -13,10 +13,10 @@ redirect_from:
 
 GraalPy uses the state-of-the-art just-in-time (JIT) compiler of GraalVM.
 When JIT compiled, GraalPy runs Python code ~4x faster than CPython on the official [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/).
-![](docs/performance.svg)
+![](performance.svg)
 
-These benchmarks can be run simply by installing the `pyperformance` package and calling `pyperformance run` on each of CPython and GraalPy.
-To get the Jython numbers, however, the harness and benchmarks was adapted by due to missing Python 3 support in Jyton.
+These benchmarks can be run by installing the `pyperformance` package and calling `pyperformance run` on each of CPython and GraalPy.
+To get the Jython numbers we adapted the harness and benchmarks because of missing Python 3 support in Jython.
 The speedup was then calculated by taking the pair-wise intersection of working benchmarks and calculating the geomean.
 
 Without a JIT compiler, GraalPy currently executes pure Python code around ~4x slower than CPython.
