@@ -896,9 +896,6 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int 
 	PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
 
-    // this will set PythonContext.nativeNull and is required to be first
-    GraalPyTruffle_Register_NULL(NULL);
-
     initialize_builtin_types_and_structs();
     // initialize global variables like '_Py_NoneStruct', etc.
     initialize_globals();

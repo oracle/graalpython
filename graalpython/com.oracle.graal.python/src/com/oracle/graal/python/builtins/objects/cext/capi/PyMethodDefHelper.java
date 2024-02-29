@@ -165,7 +165,7 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
 
         Object docWrapper;
         if (doc == null) {
-            docWrapper = PythonContext.get(null).getNativeNull().getPtr();
+            docWrapper = PythonContext.get(null).getNativeNull();
         } else {
             try {
                 docWrapper = new CStringWrapper(doc);

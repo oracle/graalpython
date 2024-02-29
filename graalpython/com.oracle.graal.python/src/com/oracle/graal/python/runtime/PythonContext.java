@@ -114,12 +114,12 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -821,7 +821,7 @@ public final class PythonContext extends Python3Core {
     private TruffleString pyPackageContext;
 
     // the actual pointer will be set when the cext is initialized
-    private final PythonNativePointer nativeNull = new PythonNativePointer(null);
+    private final NativePointer nativeNull = NativePointer.createNull();
 
     public RootCallTarget signatureContainer;
 
@@ -1214,7 +1214,7 @@ public final class PythonContext extends Python3Core {
         return REFERENCE.get(node);
     }
 
-    public PythonNativePointer getNativeNull() {
+    public NativePointer getNativeNull() {
         return nativeNull;
     }
 

@@ -154,7 +154,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull().getPtr();
+                return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -207,7 +207,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull().getPtr();
+                return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -249,7 +249,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull().getPtr();
+                return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -295,7 +295,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull().getPtr();
+                return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -489,7 +489,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     }
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                    return PythonContext.get(gil).getNativeNull().getPtr();
+                    return PythonContext.get(gil).getNativeNull();
                 } finally {
                     CApiTiming.exit(self.timing);
                     gil.release(mustRelease);
@@ -544,7 +544,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull().getPtr();
+                return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -588,7 +588,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                return PythonContext.get(toJavaNode).getNativeNull().getPtr();
+                return PythonContext.get(toJavaNode).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -731,7 +731,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     }
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                    return PythonContext.get(gil).getNativeNull().getPtr();
+                    return PythonContext.get(gil).getNativeNull();
                 } finally {
                     CApiTiming.exit(self.timing);
                     gil.release(mustRelease);

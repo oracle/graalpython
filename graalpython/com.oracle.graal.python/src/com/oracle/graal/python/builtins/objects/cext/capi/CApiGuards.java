@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 
 public abstract class CApiGuards {
 
@@ -53,7 +54,7 @@ public abstract class CApiGuards {
     }
 
     public static boolean isNativeNull(Object object) {
-        return object instanceof PythonNativePointer;
+        return object instanceof NativePointer nativePointer && nativePointer.isNull();
     }
 
     public static boolean isSpecialSingleton(Object delegate) {

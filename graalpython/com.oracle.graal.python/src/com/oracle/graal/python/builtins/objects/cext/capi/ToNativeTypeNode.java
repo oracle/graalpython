@@ -199,7 +199,7 @@ public abstract class ToNativeTypeNode {
     private static Object lookup(PythonManagedClass clazz, CFields member, HiddenAttr hiddenName) {
         Object result = lookupNativeMemberInMRO(clazz, member, hiddenName);
         if (result == PNone.NO_VALUE) {
-            return PythonContext.get(null).getNativeNull().getPtr();
+            return PythonContext.get(null).getNativeNull();
         }
         return result;
     }
@@ -227,7 +227,7 @@ public abstract class ToNativeTypeNode {
 
         PythonContext ctx = PythonContext.get(null);
         PythonObjectFactory factory = ctx.factory();
-        Object nullValue = ctx.getNativeNull().getPtr();
+        Object nullValue = ctx.getNativeNull();
 
         // make this object immortal
         writeI64Node.write(mem, PyObject__ob_refcnt, PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT);
@@ -300,7 +300,7 @@ public abstract class ToNativeTypeNode {
             docObj = new CStringWrapper(CastToTruffleStringNode.executeUncached(docObj));
         } catch (CannotCastException e) {
             // if not directly a string, give up (we don't call descriptors here)
-            docObj = ctx.getNativeNull().getPtr();
+            docObj = ctx.getNativeNull();
         }
         writePtrNode.write(mem, CFields.PyTypeObject__tp_doc, docObj);
         // TODO: return a proper traverse function, or at least a dummy

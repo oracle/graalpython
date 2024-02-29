@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
@@ -77,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Coer
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.HandleStack;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
@@ -904,22 +904,21 @@ public abstract class CApiTransitions {
         }
 
         @Specialization
-        static Object doNative(PythonNativePointer obj) {
-            return obj.getPtr();
+        static Object doNativePointer(NativePointer obj) {
+            return obj;
         }
 
-        @Specialization
-        Object doNative(@SuppressWarnings("unused") DescriptorDeleteMarker obj) {
-            return getContext().getNativeNull().getPtr();
+        @Specialization(guards = "mapsToNull(obj)")
+        Object doNoValue(@SuppressWarnings("unused") Object obj) {
+            return getContext().getNativeNull();
         }
 
-        @Specialization(guards = "isNoValue(obj)")
-        Object doNoValue(@SuppressWarnings("unused") PNone obj) {
-            return getContext().getNativeNull().getPtr();
+        static boolean mapsToNull(Object object) {
+            return PGuards.isNoValue(object) || object instanceof DescriptorDeleteMarker;
         }
 
         static boolean isOther(Object obj) {
-            return !(obj instanceof PythonAbstractNativeObject || obj instanceof PythonNativePointer || obj instanceof DescriptorDeleteMarker || obj == PNone.NO_VALUE);
+            return !(obj instanceof PythonAbstractNativeObject || obj instanceof NativePointer || mapsToNull(obj));
         }
 
         @Specialization(guards = "isOther(obj)")

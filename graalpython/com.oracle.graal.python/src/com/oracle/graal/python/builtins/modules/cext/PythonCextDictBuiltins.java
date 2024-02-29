@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -227,7 +226,7 @@ public final class PythonCextDictBuiltins {
         }
 
         @Fallback
-        public PythonNativePointer fallback(Object dict, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object defaultValue) {
+        public Object fallback(Object dict, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object defaultValue) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -258,7 +257,7 @@ public final class PythonCextDictBuiltins {
         }
 
         @Fallback
-        PythonNativePointer fallback(Object dict) {
+        Object fallback(Object dict) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -326,7 +325,7 @@ public final class PythonCextDictBuiltins {
         }
 
         @Fallback
-        PythonNativePointer fallback(Object dict, @SuppressWarnings("unused") Object key) {
+        Object fallback(Object dict, @SuppressWarnings("unused") Object key) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -442,7 +441,7 @@ public final class PythonCextDictBuiltins {
         }
 
         @Fallback
-        public PythonNativePointer fallback(Object dict) {
+        public Object fallback(Object dict) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -457,7 +456,7 @@ public final class PythonCextDictBuiltins {
         }
 
         @Fallback
-        PythonNativePointer fallback(Object dict) {
+        Object fallback(Object dict) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -472,7 +471,7 @@ public final class PythonCextDictBuiltins {
         }
 
         @Fallback
-        PythonNativePointer fallback(Object dict) {
+        Object fallback(Object dict) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }

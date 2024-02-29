@@ -90,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -2290,10 +2291,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Specialization
-        static Object doPythonNativeNull(PythonThreadState state, TruffleString name, @SuppressWarnings("unused") PythonNativePointer result,
+        static Object doNativePointer(PythonThreadState state, TruffleString name, NativePointer result,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile errOccurredProfile) {
-            checkFunctionResult(inliningTarget, name, true, true, state, errOccurredProfile);
+            checkFunctionResult(inliningTarget, name, result.isNull(), true, state, errOccurredProfile);
             return result;
         }
 

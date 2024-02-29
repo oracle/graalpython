@@ -123,7 +123,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromC
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -133,6 +132,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CConstants;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -327,11 +327,11 @@ public final class PythonCextBuiltins {
 
         public abstract Object execute(Object[] args);
 
-        protected final PythonNativePointer getNativeNull() {
+        protected final NativePointer getNativeNull() {
             return getContext().getNativeNull();
         }
 
-        protected static PythonNativePointer getNativeNull(Node inliningTarget) {
+        protected static NativePointer getNativeNull(Node inliningTarget) {
             return PythonContext.get(inliningTarget).getNativeNull();
         }
 
@@ -342,7 +342,7 @@ public final class PythonCextBuiltins {
          * that point).
          */
         protected final Object getNULL() {
-            return getContext().getNativeNull().getPtr();
+            return getContext().getNativeNull();
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -806,7 +806,6 @@ public final class PythonCextBuiltins {
                     if (retNode != null) {
                         result = retNode.execute(result);
                     }
-                    assert !(result instanceof PythonNativePointer);
                     CApiTransitions.maybeGCALot();
                     return result;
                 } catch (Throwable t) {
@@ -821,7 +820,7 @@ public final class PythonCextBuiltins {
                 if (cachedSelf.getRetDescriptor().isIntType()) {
                     return -1;
                 } else if (cachedSelf.getRetDescriptor().isPyObjectOrPointer()) {
-                    return PythonContext.get(this).getNativeNull().getPtr();
+                    return PythonContext.get(this).getNativeNull();
                 } else if (cachedSelf.getRetDescriptor().isFloatType()) {
                     return -1.0;
                 } else if (cachedSelf.getRetDescriptor().isVoid()) {
@@ -1140,7 +1139,7 @@ public final class PythonCextBuiltins {
                         @Cached CStructAccess.ReadI64Node readStridesNode,
                         @Cached CStructAccess.ReadI64Node readSuboffsetsNode,
                         @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Cached TruffleString.CodePointAtIndexNode atIndexNode,
@@ -1149,7 +1148,7 @@ public final class PythonCextBuiltins {
             int itemsize = castToIntNode.execute(inliningTarget, itemsizeObj);
             int len = castToIntNode.execute(inliningTarget, lenObj);
             boolean readonly = castToIntNode.execute(inliningTarget, readonlyObj) != 0;
-            Object owner = ownerObj instanceof PythonNativePointer ? null : ownerObj;
+            Object owner = PGuards.isNullOrZero(ownerObj, lib) ? null : ownerObj;
             int[] shape = null;
             int[] strides = null;
             int[] suboffsets = null;
@@ -1177,16 +1176,6 @@ public final class PythonCextBuiltins {
             }
             return factory.createMemoryView(PythonContext.get(inliningTarget), bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
                             BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
-        }
-    }
-
-    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
-    abstract static class PyTruffle_Register_NULL extends CApiUnaryBuiltinNode {
-        @Specialization
-        Object doIt(Object object) {
-            PythonNativePointer nn = getContext().getNativeNull();
-            nn.setPtr(object);
-            return PNone.NO_VALUE;
         }
     }
 
