@@ -17,7 +17,7 @@ GraalPy has first-class support for embedding in Java and can turn Python applic
 
 **Compatible with the Python ecosystem**
 
-* Install [packages](https://pypi.org/) like *NumPy*, *PyTorch*, or *Tensorflow*; run [Hugging Face](https://huggingface.co/) models like *Stable Diffusion* or *GPT*
+* Install [packages](docs/user/Python-Runtime.md#installing-packages) like *NumPy*, *PyTorch*, or *Tensorflow*; run [Hugging Face](https://huggingface.co/) models like *Stable Diffusion* or *GPT*
 * See if the packages you need work with our [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/)
 * Use almost any standard Python feature, the CPython tests run on every commit and pass ~85%
 ![](docs/mcd.svg)<sup>
