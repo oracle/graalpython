@@ -99,6 +99,9 @@ class TestNativeThread:
                 if (!PyObject_CallNoArgs(callable)) {
                     PyErr_WriteUnraisable(callable);
                 }
+                if (PyThreadState_Get() == NULL || PyThreadState_Get() == NULL) {
+                    PyErr_WriteUnraisable(callable);
+                }
                 PyGILState_Release(gstate);
                 return NULL;
             }
