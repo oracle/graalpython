@@ -44,26 +44,28 @@
 
 extern TruffleContext* TRUFFLE_CONTEXT;
 
-PyThreadState *
-PyThreadState_Get() {
+static inline PyThreadState *
+_get_thread_state() {
 #ifndef GRAALVM_PYTHON_LLVM_MANAGED
     PyThreadState *ts = tstate_current;
-    if (ts) {
-        return ts;
+    if (UNLIKELY(ts == NULL)) {
+         ts = GraalPyTruffleThreadState_Get(&tstate_current);
+         tstate_current = ts;
     }
+    return ts;
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+    return GraalPyTruffleThreadState_Get(NULL);
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
-    return GraalPyTruffleThreadState_Get();
+}
+
+PyThreadState *
+PyThreadState_Get() {
+    return _get_thread_state();
 }
 
 PyThreadState *
 _PyThreadState_UncheckedGet(void) {
-#ifndef GRAALVM_PYTHON_LLVM_MANAGED
-    PyThreadState *ts = tstate_current;
-    if (ts) {
-        return ts;
-    }
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
-    return GraalPyTruffleThreadState_Get();
+    return _get_thread_state();
 }
 
 void PyThreadState_Clear(PyThreadState *tstate) {
@@ -88,13 +90,7 @@ PyInterpreterState* PyInterpreterState_Main()
 }
 
 PyThreadState* PyGILState_GetThisThreadState(void) {
-#ifndef GRAALVM_PYTHON_LLVM_MANAGED
-    PyThreadState *ts = tstate_current;
-    if (ts) {
-        return ts;
-    }
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
-    return GraalPyTruffleThreadState_Get();
+    return _get_thread_state();
 }
 
 PyObject* PyState_FindModule(struct PyModuleDef* module) {
@@ -147,10 +143,10 @@ int PyState_RemoveModule(struct PyModuleDef* def) {
 PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
     int result = 0;
     if (TRUFFLE_CONTEXT) {
-		if ((*TRUFFLE_CONTEXT)->getTruffleEnv(TRUFFLE_CONTEXT) == NULL) {
-			(*TRUFFLE_CONTEXT)->attachCurrentThread(TRUFFLE_CONTEXT);
-			result |= _PYGILSTATE_ATTACHED;
-		}
+        if ((*TRUFFLE_CONTEXT)->getTruffleEnv(TRUFFLE_CONTEXT) == NULL) {
+            (*TRUFFLE_CONTEXT)->attachCurrentThread(TRUFFLE_CONTEXT);
+            result |= _PYGILSTATE_ATTACHED;
+        }
     }
     int locked = GraalPyTruffleGILState_Ensure();
     if (locked) {

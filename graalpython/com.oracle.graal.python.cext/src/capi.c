@@ -264,7 +264,7 @@ THREAD_LOCAL PyThreadState *tstate_current = NULL;
 static void initialize_globals() {
 #ifndef GRAALVM_PYTHON_LLVM_MANAGED
     // store the thread state into a thread local variable
-    tstate_current = GraalPyTruffleThreadState_Get();
+    tstate_current = GraalPyTruffleThreadState_Get(&tstate_current);
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
     _Py_NoneStructReference = GraalPyTruffle_None();
     _Py_NotImplementedStructReference = GraalPyTruffle_NotImplemented();

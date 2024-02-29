@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
@@ -64,6 +65,8 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 public final class PythonCextPyStateBuiltins {
 
@@ -97,12 +100,17 @@ public final class PythonCextPyStateBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyThreadState, args = {}, call = Ignored)
-    abstract static class PyTruffleThreadState_Get extends CApiNullaryBuiltinNode {
+    @CApiBuiltin(ret = PyThreadState, args = {Pointer}, call = Ignored)
+    abstract static class PyTruffleThreadState_Get extends CApiUnaryBuiltinNode {
 
-        @Specialization
-        Object get() {
-            return PThreadState.getThreadState(getLanguage(), getContext());
+        @Specialization(limit = "1")
+        Object get(Object tstateCurrentPtr,
+                   @CachedLibrary("tstateCurrentPtr") InteropLibrary lib) {
+            PythonThreadState pythonThreadState = getContext().getThreadState(getLanguage());
+            if (!lib.isNull(tstateCurrentPtr)) {
+                pythonThreadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
+            }
+            return PThreadState.getThreadState(pythonThreadState);
         }
     }
 
