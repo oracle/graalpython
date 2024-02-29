@@ -883,7 +883,7 @@ void initialize_hashes();
 // defined in 'floatobject.c'
 void _PyFloat_InitState(PyInterpreterState* state);
 
-TruffleContext* TRUFFLE_CONTEXT;
+Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
 
 PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int id)) {
 	clock_t t = clock();
