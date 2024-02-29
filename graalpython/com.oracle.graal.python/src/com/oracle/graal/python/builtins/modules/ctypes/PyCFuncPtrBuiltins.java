@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.T__HANDLE;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.FUNCFLAG_CDECL;
@@ -126,6 +127,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -499,6 +501,11 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
             int[] props = new int[3];
             NativeFunction pProc = handleFromPointerNode.getNativeFunction(inliningTarget, readPointerNode.execute(inliningTarget, self.b_ptr));
+            if (pProc == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // TODO this happens in numpy/core/tests/test_ufunc.py::TestLowlevelAPIAccess::test_loop_access
+                throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.CTYPES_FUNCTION_CALL_COULD_NOT_OBTAIN_FUNCTION_POINTER);
+            }
             Object[] callargs = _build_callargs(frame, inliningTarget, self, argtypes, inargs, kwds, props,
                             pyTypeCheck, getArray, castToJavaIntExactNode, castToTruffleStringNode, pyTypeStgDictNode, callNode, getNameNode, equalNode);
             int inoutmask = props[pinoutmask_idx];

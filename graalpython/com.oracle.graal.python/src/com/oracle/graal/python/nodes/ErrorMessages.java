@@ -1279,6 +1279,7 @@ public abstract class ErrorMessages {
     public static final TruffleString OTHER_ARG_MUST_BE_KEY = tsLiteral("other argument must be K instance");
     public static final TruffleString INVALID_PARTIAL_STATE = tsLiteral("invalid partial state");
     public static final TruffleString LOST_S = tsLiteral("lost %s");
+    public static final TruffleString CTYPES_FUNCTION_CALL_COULD_NOT_OBTAIN_FUNCTION_POINTER = tsLiteral("ctypes function call could not obtain function pointer");
 
     // ssl error messages
     public static final TruffleString SSL_ERR_DECODING_PEM_FILE_S = tsLiteral("Error decoding PEM-encoded file: %s");
