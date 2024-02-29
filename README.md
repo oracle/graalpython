@@ -12,8 +12,8 @@ GraalPy has first-class support for embedding in Java and can turn Python applic
 **Low-overhead integration with Java and other languages.**
 
 * Use [Python in Java](docs/user/Interoperability.md) applications on GraalVM JDK, Oracle JDK, or OpenJDK
-* Use JVM tools like [Maven](docs/user/PythonStandaloneBinaries.md#embedding-graalpy-in-a-java-application), JFR, or [GraalVM Native Image](docs/user/PythonNativeimages.md)
-* Manage Python libraries' system access thanks to GraalPy's [Java-based emulation of Python OS APIs](docs/user/OsInterface.md#java-backend)
+* Use JVM tools like [Maven](docs/user/README.md), JFR, or [GraalVM Native Image](docs/user/Native-Images-with-Python.md)
+* Manage Python libraries' system access thanks to GraalPy's [Java-based emulation of Python OS APIs](docs/user/Embedding-Permissions.md)
 
 **Compatible with the Python ecosystem**
 
@@ -76,7 +76,7 @@ You can use `pip` to install packages as usual.
 Packages with C code usually do not provide binaries for GraalPy, so they will be automatically compiled during installation.
 This means that build tools have to be available and installation will take longer.
 We provide [Github actions](scripts/wheelbuilder) to help you build binary packages with the correct dependencies.
-Thanks to our integration with GraalVM Native Image, we can deploy Python applications as [standalone binary](docs/user/PythonStandaloneBinaries.md), all dependencies included.
+Thanks to our integration with GraalVM Native Image, we can deploy Python applications as [standalone binary](docs/user/Python-Standalone-Applications.md), all dependencies included.
 
 * Linux
 
@@ -143,7 +143,7 @@ The _setup-python_ action supports GraalPy:
 
 Most existing Jython code that uses Java integration will be based on a stable Jython release&mdash;however, these are only available in Python 2.x versions.
 To migrate your code from Python 2 to Python 3, follow [the official guide from the Python community](https://docs.python.org/3/howto/pyporting.html).
-GraalPy also provides a [special mode](docs/user/Jython.md) to facilitate migration.
+GraalPy also provides a [special mode](docs/user/Python-on-JVM.md) to facilitate migration.
 To run Jython scripts, you need to use a GraalPy distribution running on the JVM so you can access Java classes from Python scripts.
 
 * Linux
