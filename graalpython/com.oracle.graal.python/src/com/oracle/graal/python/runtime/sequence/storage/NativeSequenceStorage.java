@@ -149,7 +149,7 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
 
     @Override
     public final Object getIndicativeValue() {
-        throw CompilerDirectives.shouldNotReachHere();
+        return null;
     }
 
     @Override
