@@ -221,6 +221,8 @@ public final class CApiFunction {
                     PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyComplex_AsCComplex", ret = PY_COMPLEX, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyComplex_FromCComplex", ret = PyObject, args = {PY_COMPLEX}, call = CImpl)
+    @CApiBuiltin(name = "PyComplex_ImagAsDouble", ret = ArgDescriptor.Double, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyComplex_RealAsDouble", ret = ArgDescriptor.Double, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyContextVar_Get", ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "PyDescrObject_GetName", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyDescrObject_GetType", ret = PyTypeObject, args = {PyObject}, call = CImpl)

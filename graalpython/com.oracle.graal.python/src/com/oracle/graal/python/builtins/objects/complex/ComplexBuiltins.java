@@ -533,10 +533,11 @@ public final class ComplexBuiltins extends PythonBuiltins {
     abstract static class PowerNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        static PComplex doGeneric(Object leftObj, Object rightObj, @SuppressWarnings("unused") PNone mod,
+        static Object doGeneric(Object leftObj, Object rightObj, @SuppressWarnings("unused") PNone mod,
                         @Bind("this") Node inliningTarget,
                         @Cached ToComplexValueNode toComplexLeft,
                         @Cached ToComplexValueNode toComplexRight,
+                        @Cached InlinedConditionProfile notImplementedProfile,
                         @Cached InlinedBranchProfile rightZeroProfile,
                         @Cached InlinedBranchProfile leftZeroProfile,
                         @Cached InlinedBranchProfile smallPositiveProfile,
@@ -546,6 +547,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode.Lazy raiseNode) {
             ComplexValue left = toComplexLeft.execute(inliningTarget, leftObj);
             ComplexValue right = toComplexRight.execute(inliningTarget, rightObj);
+            if (notImplementedProfile.profile(inliningTarget, left == null || right == null)) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
             PComplex result;
             if (right.getReal() == 0.0 && right.getImag() == 0.0) {
                 rightZeroProfile.enter(inliningTarget);
@@ -843,6 +847,12 @@ public final class ComplexBuiltins extends PythonBuiltins {
         static double get(PComplex self) {
             return self.getReal();
         }
+
+        @Specialization
+        static double getNative(PythonAbstractNativeObject self,
+                        @Cached CStructAccess.ReadDoubleNode read) {
+            return read.readFromObj(self, PyComplexObject__cval__real);
+        }
     }
 
     @GenerateNodeFactory
@@ -851,6 +861,12 @@ public final class ComplexBuiltins extends PythonBuiltins {
         @Specialization
         static double get(PComplex self) {
             return self.getImag();
+        }
+
+        @Specialization
+        static double getNative(PythonAbstractNativeObject self,
+                        @Cached CStructAccess.ReadDoubleNode read) {
+            return read.readFromObj(self, PyComplexObject__cval__imag);
         }
     }
 

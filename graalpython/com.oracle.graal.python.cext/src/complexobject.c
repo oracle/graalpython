@@ -221,7 +221,6 @@ _Py_c_abs(Py_complex z)
     return result;
 }
 
-#if 0 // GraalPy change
 static PyObject *
 complex_subtype_from_c_complex(PyTypeObject *type, Py_complex cval)
 {
@@ -232,7 +231,6 @@ complex_subtype_from_c_complex(PyTypeObject *type, Py_complex cval)
         ((PyComplexObject *)op)->cval = cval;
     return op;
 }
-#endif // GraalPy change
 
 PyObject *
 PyComplex_FromCComplex(Py_complex cval)
@@ -241,8 +239,7 @@ PyComplex_FromCComplex(Py_complex cval)
 	return GraalPyComplex_FromDoubles(cval.real, cval.imag);
 }
 
-#if 0 // GraalPy change
-static PyObject *
+PyObject * // GraalPy change: remove static
 complex_subtype_from_doubles(PyTypeObject *type, double real, double imag)
 {
     Py_complex c;
@@ -251,6 +248,7 @@ complex_subtype_from_doubles(PyTypeObject *type, double real, double imag)
     return complex_subtype_from_c_complex(type, c);
 }
 
+#if 0 // GraalPy change
 PyObject *
 PyComplex_FromDoubles(double real, double imag)
 {
@@ -259,29 +257,33 @@ PyComplex_FromDoubles(double real, double imag)
     c.imag = imag;
     return PyComplex_FromCComplex(c);
 }
+#endif // GraalPy change
 
 double
 PyComplex_RealAsDouble(PyObject *op)
 {
-    if (PyComplex_Check(op)) {
+    // GraalPy change: different implementation
+    if (!points_to_py_handle_space(op) && PyComplex_Check(op)) {
         return ((PyComplexObject *)op)->cval.real;
     }
     else {
-        return PyFloat_AsDouble(op);
+        return GraalPyTruffleComplex_RealAsDouble(op);
     }
 }
 
 double
 PyComplex_ImagAsDouble(PyObject *op)
 {
-    if (PyComplex_Check(op)) {
+    // GraalPy change: different implementation
+    if (!points_to_py_handle_space(op) && PyComplex_Check(op)) {
         return ((PyComplexObject *)op)->cval.imag;
     }
     else {
-        return 0.0;
+        return GraalPyTruffleComplex_ImagAsDouble(op);
     }
 }
 
+#if 0 // GraalPy change
 static PyObject *
 try_complex_special_method(PyObject *op)
 {
@@ -320,6 +322,10 @@ Py_complex
 PyComplex_AsCComplex(PyObject *op)
 {
     // GraalPy change: different implementation
+    /* If op is already of type PyComplex_Type, return its value */
+    if (!points_to_py_handle_space(op) && PyComplex_Check(op)) {
+        return ((PyComplexObject *)op)->cval;
+    }
 	PyObject* parts = GraalPyTruffleComplex_AsCComplex(op);
 	Py_complex result;
 	if(parts != NULL) {
