@@ -105,7 +105,7 @@ public final class PythonCextPyStateBuiltins {
 
         @Specialization(limit = "1")
         Object get(Object tstateCurrentPtr,
-                   @CachedLibrary("tstateCurrentPtr") InteropLibrary lib) {
+                        @CachedLibrary("tstateCurrentPtr") InteropLibrary lib) {
             PythonThreadState pythonThreadState = getContext().getThreadState(getLanguage());
             if (!lib.isNull(tstateCurrentPtr)) {
                 pythonThreadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
