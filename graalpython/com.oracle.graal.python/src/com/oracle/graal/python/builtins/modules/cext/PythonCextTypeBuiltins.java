@@ -56,8 +56,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
-import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreter;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi7BuiltinNode;
@@ -98,7 +96,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -137,12 +134,7 @@ public final class PythonCextTypeBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttributeInMRONode) {
-            TruffleString key;
-            try {
-                key = castToTruffleStringNode.execute(inliningTarget, castToTruffleStringNode);
-            } catch (CannotCastException e) {
-                throw shouldNotReachHere();
-            }
+            TruffleString key = castToTruffleStringNode.castKnownString(inliningTarget, name);
             Object result = lookupAttributeInMRONode.execute(type, key);
             if (result == PNone.NO_VALUE) {
                 return getNativeNull();
@@ -314,12 +306,8 @@ public final class PythonCextTypeBuiltins {
         @TruffleBoundary
         static int addSlot(Object clazz, PDict tpDict, TruffleString memberName, Object cfunc, int flags, int wrapper, Object memberDoc) {
             // create wrapper descriptor
-            Object wrapperDescriptor = CreateFunctionNode.executeUncached(memberName, cfunc, wrapper, clazz, flags);
-            if (!(wrapperDescriptor instanceof PythonObject)) {
-                transferToInterpreter();
-                throw shouldNotReachHere("Unexpected class of wrapperDescriptor: " + wrapperDescriptor.getClass());
-            }
-            WriteAttributeToDynamicObjectNode.getUncached().execute((PythonObject) wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
+            PythonObject wrapperDescriptor = CreateFunctionNode.executeUncached(memberName, cfunc, wrapper, clazz, flags);
+            WriteAttributeToDynamicObjectNode.getUncached().execute(wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
             // add wrapper descriptor to tp_dict
             PyDictSetDefault.executeUncached(tpDict, memberName, wrapperDescriptor);

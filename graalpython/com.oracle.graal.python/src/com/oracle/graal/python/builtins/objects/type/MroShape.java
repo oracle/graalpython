@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_NO_VALUE_PROPERTIES;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SLOTNAMES__;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
-import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreter;
+import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreterAndInvalidate;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -155,7 +155,7 @@ public final class MroShape {
                 Object item = mro.getItemNormalized(mroIndex);
                 if (!(item instanceof PythonObject)) {
                     // MroShape should only contain PythonManagedClass
-                    transferToInterpreter();
+                    transferToInterpreterAndInvalidate();
                     throw shouldNotReachHere("Unexpected object in getFromMro: " + item.getClass());
                 }
                 Object result = readNode.execute((PythonObject) item, key);

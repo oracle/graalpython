@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -62,7 +63,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
 @GenerateInline(false) // Should be reconsidered during anticipated refactoring from DOM library
-public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeNode {
+public abstract class WriteAttributeToDynamicObjectNode extends PNodeWithContext {
 
     public abstract void execute(PythonObject primary, TruffleString key, Object value);
 

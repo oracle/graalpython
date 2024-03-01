@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
@@ -66,7 +67,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic({PGuards.class, PythonOptions.class})
 @GenerateUncached
 @GenerateInline(false) // footprint reduction 44 -> 25
-public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttributeNode {
+public abstract class ReadAttributeFromDynamicObjectNode extends PNodeWithContext {
     @NeverDefault
     public static ReadAttributeFromDynamicObjectNode create() {
         return ReadAttributeFromDynamicObjectNodeGen.create();

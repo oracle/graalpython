@@ -82,7 +82,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic({PGuards.class, PythonOptions.class})
 @ReportPolymorphism
 @GenerateInline(false) // footprint reduction 64 -> 47
-public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
+public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     @NeverDefault
     public static ReadAttributeFromObjectNode create() {
         return ReadAttributeFromObjectNotTypeNodeGen.create();

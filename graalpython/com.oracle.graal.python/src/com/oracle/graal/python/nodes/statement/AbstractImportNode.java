@@ -50,7 +50,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsbCapacity;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
-import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreter;
+import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreterAndInvalidate;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -129,7 +129,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         if (module instanceof PythonModule pythonModule) {
             return pythonModule;
         }
-        transferToInterpreter();
+        transferToInterpreterAndInvalidate();
         throw shouldNotReachHere("__import__ returned " + module.getClass() + " instead of PythonModule");
     }
 

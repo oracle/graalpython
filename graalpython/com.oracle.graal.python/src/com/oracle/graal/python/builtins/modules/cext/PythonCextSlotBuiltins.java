@@ -152,6 +152,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -830,14 +831,6 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Void, args = {PyTypeObject, PyObject}, call = Ignored)
     abstract static class Py_set_PyTypeObject_tp_dict extends CApiBinaryBuiltinNode {
 
-        private static TruffleString castKey(Node inliningTarget, CastToTruffleStringNode castNode, Object value) {
-            try {
-                return castNode.execute(inliningTarget, value);
-            } catch (CannotCastException ex) {
-                throw CompilerDirectives.shouldNotReachHere(ex);
-            }
-        }
-
         @Specialization
         static Object doTpDict(PythonManagedClass object, Object value,
                         @Bind("this") Node inliningTarget,
@@ -854,7 +847,7 @@ public final class PythonCextSlotBuiltins {
                 HashingStorage storage = dict.getDictStorage();
                 HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
                 while (itNext.execute(inliningTarget, storage, it)) {
-                    writeAttrNode.execute(object, castKey(inliningTarget, castNode, itKey.execute(inliningTarget, storage, it)), itValue.execute(inliningTarget, storage, it));
+                    writeAttrNode.execute(object, castNode.castKnownString(inliningTarget, itKey.execute(inliningTarget, storage, it)), itValue.execute(inliningTarget, storage, it));
                 }
                 PDict existing = getDict.execute(object);
                 if (existing != null) {
