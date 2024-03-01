@@ -60,3 +60,15 @@ int PyFile_WriteString(const char *s, PyObject *f) {
         return -1;
     }
 }
+
+// Taken from CPython
+int
+_PyLong_FileDescriptor_Converter(PyObject *o, void *ptr)
+{
+    int fd = PyObject_AsFileDescriptor(o);
+    if (fd == -1) {
+        return 0;
+    }
+    *(int *)ptr = fd;
+    return 1;
+}
