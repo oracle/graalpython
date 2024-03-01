@@ -350,9 +350,9 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class SetAttrWrapper extends PyProcsWrapper {
+    public static final class ObjobjargWrapper extends PyProcsWrapper {
 
-        public SetAttrWrapper(Object delegate) {
+        public ObjobjargWrapper(Object delegate) {
             super(delegate);
         }
 
@@ -375,7 +375,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     callTernaryMethodNode.execute(null, getDelegate(), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]), toJavaNode.execute(arguments[2]));
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SetAttrWrapper", getDelegate());
+                    throw checkThrowableBeforeNative(t, "ObjobjargWrapper", getDelegate());
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, inliningTarget, e);

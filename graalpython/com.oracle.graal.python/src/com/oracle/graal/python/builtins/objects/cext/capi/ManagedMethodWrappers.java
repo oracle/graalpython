@@ -147,7 +147,7 @@ public abstract class ManagedMethodWrappers {
                     // execute
                     return toSulongNode.execute(callNode.execute(null, getDelegate(), pArgs, kwArgsArray));
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SetAttrWrapper", getDelegate());
+                    throw checkThrowableBeforeNative(t, "MethKeywords", getDelegate());
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(inliningTarget, e);
