@@ -602,6 +602,49 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    public static final class SsizeobjargfuncWrapper extends PyProcsWrapper {
+
+        public SsizeobjargfuncWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage
+        int execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached CallTernaryMethodNode executeNode,
+                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
+            try {
+                if (arguments.length != 3) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(3, 3, arguments.length);
+                }
+                assert arguments[1] instanceof Number;
+                try {
+                    executeNode.execute(null, getDelegate(), toJavaNode.execute(arguments[0]), arguments[1], toJavaNode.execute(arguments[2]));
+                    return 0;
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "SsizeobjargfuncWrapper", getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                return -1;
+            } finally {
+                CApiTiming.exit(timing);
+                gil.release(mustRelease);
+            }
+        }
+
+        @Override
+        protected String getSignature() {
+            return "(POINTER,SINT64,POINTER):SINT32";
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
     public static final class LenfuncWrapper extends PyProcsWrapper {
 
         public LenfuncWrapper(Object delegate) {

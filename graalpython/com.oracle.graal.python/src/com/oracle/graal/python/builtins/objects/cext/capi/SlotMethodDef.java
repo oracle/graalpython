@@ -161,6 +161,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.Lenfunc
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.RichcmpFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeargfuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeobjargfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TernaryFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -195,7 +196,7 @@ public enum SlotMethodDef {
 
     SQ_LENGTH(PySequenceMethods__sq_length, T___LEN__, LenfuncWrapper::new, MethodsFlags.SQ_LENGTH),
     SQ_ITEM(PySequenceMethods__sq_item, T___GETITEM__, SsizeargfuncWrapper::new, MethodsFlags.SQ_ITEM),
-    SQ_ASS_ITEM(PySequenceMethods__sq_ass_item, T___SETITEM__, SetAttrWrapper::new, MethodsFlags.SQ_ASS_ITEM),
+    SQ_ASS_ITEM(PySequenceMethods__sq_ass_item, T___SETITEM__, SsizeobjargfuncWrapper::new, MethodsFlags.SQ_ASS_ITEM),
     SQ_REPEAT(PySequenceMethods__sq_repeat, T___MUL__, SsizeargfuncWrapper::new, MethodsFlags.SQ_REPEAT),
     SQ_CONCAT(PySequenceMethods__sq_concat, T___ADD__, BinaryFuncWrapper::new, MethodsFlags.SQ_CONCAT),
 
