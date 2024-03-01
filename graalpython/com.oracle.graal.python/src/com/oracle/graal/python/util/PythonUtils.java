@@ -1000,7 +1000,7 @@ public final class PythonUtils {
 
     public static String formatPointer(Object pointer) {
         CompilerAsserts.neverPartOfCompilation();
-        InteropLibrary lib = InteropLibrary.getUncached();
+        InteropLibrary lib = InteropLibrary.getUncached(pointer);
         if (lib.isPointer(pointer)) {
             try {
                 return String.format("%s#0x%016x", pointer.getClass().getSimpleName(), lib.asPointer(pointer));

@@ -255,7 +255,10 @@ public abstract class PythonBuiltins {
         }
     }
 
-    private static int numDefaults(Builtin builtin) {
+    /**
+     * Determines the number of required default values for the given builtin.
+     */
+    public static int numDefaults(Builtin builtin) {
         int parameterNameCount = builtin.parameterNames().length;
         int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNameCount);
         if (builtin.maxNumOfPositionalArgs() >= 0) {

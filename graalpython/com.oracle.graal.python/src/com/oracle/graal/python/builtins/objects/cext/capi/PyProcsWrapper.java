@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,8 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -453,119 +451,6 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class VarargWrapper extends PyProcsWrapper {
-
-        public VarargWrapper(Object delegate) {
-            super(delegate);
-        }
-
-        @ExportMessage(name = "execute")
-        static class Execute {
-
-            @Specialization(guards = "arguments.length == 2")
-            static Object init(VarargWrapper self, Object[] arguments,
-                            @Bind("this") Node inliningTarget,
-                            @Cached PythonToNativeNewRefNode toNativeNode,
-                            @Cached ExecutePositionalStarargsNode posStarargsNode,
-                            @Cached CallVarargsMethodNode callNode,
-                            @Cached NativeToPythonNode toJavaNode,
-                            @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                            @Exclusive @Cached GilNode gil) {
-                boolean mustRelease = gil.acquire();
-                CApiTiming.enter();
-                try {
-                    try {
-                        // convert args
-                        Object receiver = toJavaNode.execute(arguments[0]);
-                        Object starArgs = toJavaNode.execute(arguments[1]);
-
-                        Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                        Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
-                        return toNativeNode.execute(callNode.execute(null, self.getDelegate(), pArgs, PKeyword.EMPTY_KEYWORDS));
-                    } catch (Throwable t) {
-                        throw checkThrowableBeforeNative(t, "VarargWrapper", self.getDelegate());
-                    }
-                } catch (PException e) {
-                    transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                    return PythonContext.get(gil).getNativeNull().getPtr();
-                } finally {
-                    CApiTiming.exit(self.timing);
-                    gil.release(mustRelease);
-                }
-            }
-
-            @Specialization(guards = "arguments.length != 2")
-            static int error(@SuppressWarnings("unused") VarargWrapper self, Object[] arguments) throws ArityException {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(2, 2, arguments.length);
-            }
-        }
-
-        @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER):POINTER";
-        }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    public static final class VarargKeywordWrapper extends PyProcsWrapper {
-
-        public VarargKeywordWrapper(Object delegate) {
-            super(delegate);
-        }
-
-        @ExportMessage(name = "execute")
-        static class Execute {
-
-            @Specialization(guards = "arguments.length == 3")
-            static Object init(VarargKeywordWrapper self, Object[] arguments,
-                            @Bind("this") Node inliningTarget,
-                            @Cached PythonToNativeNewRefNode toNativeNode,
-                            @Cached ExecutePositionalStarargsNode posStarargsNode,
-                            @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                            @Cached CallVarargsMethodNode callNode,
-                            @Cached NativeToPythonNode toJavaNode,
-                            @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                            @Exclusive @Cached GilNode gil) {
-                boolean mustRelease = gil.acquire();
-                CApiTiming.enter();
-                try {
-                    try {
-                        // convert args
-                        Object receiver = toJavaNode.execute(arguments[0]);
-                        Object starArgs = toJavaNode.execute(arguments[1]);
-                        Object kwArgs = toJavaNode.execute(arguments[2]);
-
-                        Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                        Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
-                        PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
-                        return toNativeNode.execute(callNode.execute(null, self.getDelegate(), pArgs, kwArgsArray));
-                    } catch (Throwable t) {
-                        throw checkThrowableBeforeNative(t, "VarargKeywordWrapper", self.getDelegate());
-                    }
-                } catch (PException e) {
-                    transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                    return PythonContext.get(gil).getNativeNull().getPtr();
-                } finally {
-                    CApiTiming.exit(self.timing);
-                    gil.release(mustRelease);
-                }
-            }
-
-            @Specialization(guards = "arguments.length != 3")
-            static int error(@SuppressWarnings("unused") VarargKeywordWrapper self, Object[] arguments) throws ArityException {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(3, 3, arguments.length);
-            }
-        }
-
-        @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,POINTER):POINTER";
-        }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
     public static final class TernaryFunctionWrapper extends PyProcsWrapper {
 
         public TernaryFunctionWrapper(Object delegate) {
@@ -864,25 +749,5 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         protected String getSignature() {
             return "(POINTER,POINTER,POINTER):POINTER";
         }
-    }
-
-    public static UnaryFuncWrapper createUnaryFuncWrapper(Object method) {
-        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
-        return new UnaryFuncWrapper(method);
-    }
-
-    public static BinaryFuncWrapper createBinaryFuncWrapper(Object method) {
-        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
-        return new BinaryFuncWrapper(method);
-    }
-
-    public static VarargWrapper createVarargWrapper(Object method) {
-        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
-        return new VarargWrapper(method);
-    }
-
-    public static VarargKeywordWrapper createVarargKeywordWrapper(Object method) {
-        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
-        return new VarargKeywordWrapper(method);
     }
 }

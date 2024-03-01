@@ -51,13 +51,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckPrimitiveFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.WrappedPointerToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.WrappedPointerToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;

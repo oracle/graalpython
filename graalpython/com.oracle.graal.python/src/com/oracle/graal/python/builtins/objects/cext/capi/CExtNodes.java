@@ -58,6 +58,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMo
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_slots;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_buffer;
+import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
@@ -104,7 +105,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Impo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
-import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -1826,12 +1826,13 @@ public abstract class CExtNodes {
         public abstract PBuiltinFunction execute(Node inliningTarget, Object legacyMethodDef, int element);
 
         @Specialization
-        static PBuiltinFunction doIt(Object methodDef, int element,
+        static PBuiltinFunction doIt(Node inliningTarget, Object methodDef, int element,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
                         @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
                         @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached(inline = false) FromCharPointerNode fromCharPointerNode,
                         @Cached(inline = false) PythonObjectFactory factory,
+                        @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @Cached(inline = false) WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
             Object methodNamePtr = readPointerNode.readStructArrayElement(methodDef, element, PyMethodDef__ml_name);
             if (resultLib.isNull(methodNamePtr) || (methodNamePtr instanceof Long && ((long) methodNamePtr) == 0)) {
@@ -1851,9 +1852,10 @@ public abstract class CExtNodes {
             // TODO(fa) support static and class methods
             PExternalFunctionWrapper sig = PExternalFunctionWrapper.fromMethodFlags(flags);
             RootCallTarget callTarget = PExternalFunctionWrapper.getOrCreateCallTarget(sig, PythonLanguage.get(factory), methodName, true, CExtContext.isMethStatic(flags));
-            mlMethObj = NativeCExtSymbol.ensureExecutable(mlMethObj, sig);
+            mlMethObj = CExtContext.ensureExecutable(mlMethObj, sig);
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
             PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
+            writeHiddenAttrNode.execute(inliningTarget, function, METHOD_DEF_PTR, methodDef);
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed
             // writing to builtin types.
@@ -1957,6 +1959,16 @@ public abstract class CExtNodes {
             return function != null ? function : managedCallable;
         }
 
+        @Specialization
+        @TruffleBoundary
+        static PBuiltinFunction doPyCFunctionWrapper(TruffleString name, PyCFunctionWrapper wrapper, int signature, Object type, int flags) {
+            Object delegate = wrapper.getDelegate();
+            assert !(delegate instanceof PythonAbstractObject);
+            PythonContext context = PythonContext.get(null);
+            PythonLanguage language = context.getLanguage();
+            return PExternalFunctionWrapper.createWrapperFunction(name, delegate, type, flags, signature, language, context.factory(), false);
+        }
+
         @Specialization(guards = {"!isNativeWrapper(callable)"})
         @TruffleBoundary
         static Object doNativeCallableWithWrapper(TruffleString name, Object callable, int signature, Object type, int flags,
@@ -1982,7 +1994,7 @@ public abstract class CExtNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction resolveClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
+        public static Object resolveClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
             if (lib.isPointer(callable)) {
                 long pointer;
                 try {
@@ -1991,9 +2003,9 @@ public abstract class CExtNodes {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
                 Object delegate = context.getCApiContext().getClosureDelegate(pointer);
-                if (delegate instanceof PBuiltinFunction function) {
-                    LOGGER.fine(() -> PythonUtils.formatJString("forwarding %d 0x%x to %s", pointer, pointer, function));
-                    return function;
+                if (delegate != null) {
+                    LOGGER.fine(() -> PythonUtils.formatJString("resolved closure pointer %d 0x%x to %s", pointer, pointer, delegate));
+                    return delegate;
                 }
             }
             return null;

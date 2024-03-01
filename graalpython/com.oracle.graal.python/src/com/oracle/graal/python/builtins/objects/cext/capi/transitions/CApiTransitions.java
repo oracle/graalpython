@@ -668,8 +668,6 @@ public abstract class CApiTransitions {
         return value;
     }
 
-    private static final InteropLibrary LIB = InteropLibrary.getUncached();
-
     /**
      * Resolves a native handle to the corresponding {@link PythonNativeWrapper}. This node assumes
      * that {@code pointer} points to handle space (i.e.
@@ -1310,10 +1308,11 @@ public abstract class CApiTransitions {
         }
     }
 
-    public static final class WrappedPointerToPythonNode extends CExtToJavaNode {
-
-        @Override
-        public Object execute(Object object) {
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class WrappedPointerToPythonNode extends CExtToJavaNode {
+        @Specialization
+        static Object doIt(Object object) {
             if (object instanceof PythonNativeWrapper) {
                 return ((PythonNativeWrapper) object).getDelegate();
             } else {

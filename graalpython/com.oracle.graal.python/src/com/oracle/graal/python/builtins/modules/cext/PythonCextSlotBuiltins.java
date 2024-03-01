@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_C_FUNCTION;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyASCIIObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcs;
@@ -109,17 +108,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodDefWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodDefHelper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -133,13 +128,13 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -153,24 +148,19 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -301,14 +291,24 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = PyMethodDef, args = {PyCFunctionObject}, call = Ignored)
     abstract static class Py_get_PyCFunctionObject_m_ml extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object get(PythonObject object,
+        static Object get(PythonBuiltinObject object,
                         @Bind("this") Node inliningTarget,
                         @Cached HiddenAttr.ReadNode readNode) {
-            Object methodDefPtr = readNode.execute(inliningTarget, object, METHOD_DEF_PTR, null);
+            PBuiltinFunction resolved;
+            if (object instanceof PBuiltinMethod builtinMethod) {
+                resolved = builtinMethod.getBuiltinFunction();
+            } else if (object instanceof PBuiltinFunction builtinFunction) {
+                resolved = builtinFunction;
+            } else {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw CompilerDirectives.shouldNotReachHere("requesting PyMethodDef for an incompatible function/method type: " + object.getClass().getSimpleName());
+            }
+            Object methodDefPtr = readNode.execute(inliningTarget, resolved, METHOD_DEF_PTR, null);
             if (methodDefPtr != null) {
                 return methodDefPtr;
             }
-            return new PyMethodDefWrapper(object);
+            CApiContext cApiContext = getCApiContext(inliningTarget);
+            return PyMethodDefHelper.create(cApiContext, resolved);
         }
     }
 
@@ -487,108 +487,22 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyMethodDef}, call = Ignored)
-    abstract static class Py_get_PyMethodDef_ml_doc extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        Object get(PythonObject object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ReadAttributeFromObjectNode getAttrNode,
-                        @Cached CastToTruffleStringNode castToStringNode) {
-            Object doc = getAttrNode.execute(object, T___DOC__);
-            if (!PGuards.isPNone(doc)) {
-                try {
-                    return new CStringWrapper(castToStringNode.execute(inliningTarget, doc));
-                } catch (CannotCastException e) {
-                    // fall through
-                }
-            }
-            return getNULL();
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyMethodDef}, call = Ignored)
-    abstract static class Py_get_PyMethodDef_ml_flags extends CApiUnaryBuiltinNode {
-        @Specialization
-        static int get(Object object) {
-            if (object instanceof PBuiltinFunction) {
-                return ((PBuiltinFunction) object).getFlags();
-            } else if (object instanceof PBuiltinMethod) {
-                return ((PBuiltinMethod) object).getBuiltinFunction().getFlags();
-            }
-            return 0;
-        }
-    }
-
-    @CApiBuiltin(ret = PY_C_FUNCTION, args = {PyMethodDef}, call = Ignored)
-    abstract static class Py_get_PyMethodDef_ml_meth extends CApiUnaryBuiltinNode {
-
-        @TruffleBoundary
-        private static Object createFunctionWrapper(Object object) {
-            int flags = Py_get_PyMethodDef_ml_flags.get(object);
-            PythonNativeWrapper wrapper;
-            if (CExtContext.isMethNoArgs(flags)) {
-                wrapper = PyProcsWrapper.createUnaryFuncWrapper(object);
-            } else if (CExtContext.isMethO(flags)) {
-                wrapper = PyProcsWrapper.createBinaryFuncWrapper(object);
-            } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
-                wrapper = PyProcsWrapper.createVarargKeywordWrapper(object);
-            } else if (CExtContext.isMethVarargs(flags)) {
-                wrapper = PyProcsWrapper.createVarargWrapper(object);
-            } else {
-                throw CompilerDirectives.shouldNotReachHere("other signature " + Integer.toHexString(flags));
-            }
-            return wrapper;
-        }
-
-        @Specialization
-        static Object getMethFromBuiltinFunction(PBuiltinFunction object) {
-            PKeyword[] kwDefaults = object.getKwDefaults();
-            for (int i = 0; i < kwDefaults.length; i++) {
-                if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
-                    return kwDefaults[i].getValue();
-                }
-            }
-            return createFunctionWrapper(object);
-        }
-
-        @Specialization
-        static Object getMethFromBuiltinMethod(PBuiltinMethod object) {
-            return getMethFromBuiltinFunction(object.getBuiltinFunction());
-        }
-
-        @Fallback
-        Object getMeth(Object object) {
-            return createFunctionWrapper(object);
-        }
-    }
-
-    @CApiBuiltin(ret = Pointer, args = {PyMethodDef}, call = Ignored)
-    abstract static class Py_get_PyMethodDef_ml_name extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        Object getName(PythonObject object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
-                        @Cached CastToTruffleStringNode castToStringNode) {
-            Object name = getAttrNode.execute(inliningTarget, object, SpecialAttributeNames.T___NAME__);
-            if (!PGuards.isPNone(name)) {
-                try {
-                    return new CStringWrapper(castToStringNode.execute(inliningTarget, name));
-                } catch (CannotCastException e) {
-                    // fall through
-                }
-            }
-            return getNULL();
-        }
-    }
-
     @CApiBuiltin(ret = PyMethodDef, args = {PyMethodDescrObject}, call = Ignored)
     abstract static class Py_get_PyMethodDescrObject_d_method extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(PythonObject object) {
-            return new PyMethodDefWrapper(object);
+        static Object get(PBuiltinFunction builtinFunction,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readNode) {
+            Object methodDefPtr = readNode.execute(inliningTarget, builtinFunction, METHOD_DEF_PTR, null);
+            if (methodDefPtr != null) {
+                return methodDefPtr;
+            }
+            /*
+             * Note: 'PBuiltinFunction' is the only Java class we use to represent a
+             * 'method_descriptor' (CPython type 'PyMethodDescr_Type').
+             */
+            return PyMethodDefHelper.create(getCApiContext(inliningTarget), builtinFunction);
         }
     }
 

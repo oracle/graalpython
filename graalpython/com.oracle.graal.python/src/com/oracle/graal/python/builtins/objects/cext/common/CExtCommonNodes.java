@@ -196,7 +196,7 @@ public abstract class CExtCommonNodes {
             String name = symbol.getName();
             try {
                 Object nativeSymbol = InteropLibrary.getUncached().readMember(llvmLibrary, name);
-                nativeSymbol = NativeCExtSymbol.ensureExecutable(nativeSymbol, symbol);
+                nativeSymbol = CExtContext.ensureExecutable(nativeSymbol, symbol);
                 dynamicObjectLib.put(symbolCache, symbol, nativeSymbol);
                 return nativeSymbol;
             } catch (UnknownIdentifierException e) {

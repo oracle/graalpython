@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -104,7 +104,14 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return kwDefaults;
     }
 
+    /**
+     * Creates the array for default values. This will reuse {@link PythonUtils#EMPTY_OBJECT_ARRAY}
+     * if {@code numDefaults} is {@code 0}.
+     */
     public static Object[] generateDefaults(int numDefaults) {
+        if (numDefaults == 0) {
+            return PythonUtils.EMPTY_OBJECT_ARRAY;
+        }
         Object[] defaults = new Object[numDefaults];
         Arrays.fill(defaults, PNone.NO_VALUE);
         return defaults;

@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -96,6 +97,7 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.graal.python.util.WeakIdentityHashMap;
@@ -104,6 +106,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -191,6 +194,13 @@ public final class CApiContext extends CExtContext {
      */
     private final HashMap<Object, ClosureInfo> callableClosureByExecutable = new HashMap<>();
     private final HashMap<Long, ClosureInfo> callableClosures = new HashMap<>();
+
+    /**
+     * Table of all requested {@code PyMethodDef} structures. We keep them in this table because in
+     * CPython, those are usually statically allocated (or at least immortal) and once hand out a
+     * pointer for a {@code PyMethodDef}, we need to ensure that it stays valid until the end.
+     */
+    private final HashMap<PyMethodDefHelper, Object> methodDefinitions = new HashMap<>(4);
 
     /**
      * This list holds a strong reference to all loaded extension libraries to keep the library
@@ -672,6 +682,11 @@ public final class CApiContext extends CExtContext {
                 // Shutdown already in progress, let it do the finalization then
             }
         }
+        pyCFunctionWrappers.clear();
+        // free all allocated PyMethodDef structures
+        for (Object pyMethodDefPointer : methodDefinitions.values()) {
+            PyMethodDefHelper.free(pyMethodDefPointer);
+        }
     }
 
     @TruffleBoundary
@@ -810,11 +825,17 @@ public final class CApiContext extends CExtContext {
         LOGGER.finer(() -> PythonUtils.formatJString("new NFI closure: (%s, %s) -> %d 0x%x", executable.getClass().getSimpleName(), delegate, pointer, pointer));
     }
 
+    private static Source buildNFISource(Object srcObj) {
+        return Source.newBuilder(J_NFI_LANGUAGE, (String) srcObj, "exec").build();
+    }
+
     public long registerClosure(String nfiSignature, Object executable, Object delegate) {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext context = getContext();
         boolean panama = PythonOptions.UsePanama.getValue(context.getEnv().getOptions());
-        Object signature = context.getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, (panama ? "with panama " : "") + nfiSignature, "exec").build()).call();
+        String srcString = (panama ? "with panama " : "") + nfiSignature;
+        Source nfiSource = context.getLanguage().getOrCreateSource(CApiContext::buildNFISource, srcString);
+        Object signature = context.getEnv().parseInternal(nfiSource).call();
         Object closure = SignatureLibrary.getUncached().createClosure(signature, executable);
         long pointer = PythonUtils.coerceToLong(closure, InteropLibrary.getUncached());
         setClosurePointer(closure, delegate, executable, pointer);
@@ -841,5 +862,35 @@ public final class CApiContext extends CExtContext {
             slotWrappers[idx] = wrapper;
         }
         return wrapper;
+    }
+
+    @TruffleBoundary
+    public Object getOrAllocateNativePyMethodDef(PyMethodDefHelper pyMethodDef) {
+        Object pyMethodDefPointer = methodDefinitions.computeIfAbsent(pyMethodDef, PyMethodDefHelper::allocate);
+        assert CApiContext.isPointerObject(pyMethodDefPointer);
+        return pyMethodDefPointer;
+    }
+
+    /**
+     * A table mapping {@link BuiltinMethodDescriptor} or {@link RootCallTarget} to the appropriate
+     * {@link PyCFunctionWrapper}. This could actually be shared between Python contexts but
+     * {@link PyCFunctionWrapper} is still a {@link TruffleObject} and so it is assumed to be
+     * context-specific although our wrapper doesn't contain any data and is just used for executing
+     * code.
+     */
+    private final ConcurrentHashMap<Object, PyCFunctionWrapper> pyCFunctionWrappers = new ConcurrentHashMap<>(4);
+
+    @TruffleBoundary
+    public PyCFunctionWrapper getOrCreatePyCFunctionWrapper(BuiltinMethodDescriptor builtinMethodDescriptor, Function<BuiltinMethodDescriptor, PyCFunctionWrapper> cons) {
+        return pyCFunctionWrappers.computeIfAbsent(builtinMethodDescriptor, k -> cons.apply((BuiltinMethodDescriptor) k));
+    }
+
+    @TruffleBoundary
+    public PyCFunctionWrapper getOrCreatePyCFunctionWrapper(RootCallTarget ct, Function<RootCallTarget, PyCFunctionWrapper> cons) {
+        return pyCFunctionWrappers.computeIfAbsent(ct, k -> cons.apply((RootCallTarget) k));
+    }
+
+    public static boolean isPointerObject(Object object) {
+        return object.getClass() == NativePointer.class || object.getClass().getSimpleName().contains("NFIPointer") || object.getClass().getSimpleName().contains("LLVMPointer");
     }
 }

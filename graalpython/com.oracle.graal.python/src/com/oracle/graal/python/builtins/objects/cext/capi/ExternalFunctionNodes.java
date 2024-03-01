@@ -61,9 +61,8 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -94,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -111,6 +111,7 @@ import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -309,19 +310,6 @@ public abstract class ExternalFunctionNodes {
         public Object execute(Object object) {
             assert (object instanceof Double && Double.isNaN((double) object)) || !(object instanceof Number || object instanceof TruffleString);
             return toNative.execute(object);
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class WrappedPointerToPythonNode extends CExtToJavaNode {
-        @Specialization
-        static Object doIt(Object object) {
-            if (object instanceof PythonNativeWrapper) {
-                return ((PythonNativeWrapper) object).getDelegate();
-            } else {
-                return object;
-            }
         }
     }
 
@@ -641,7 +629,9 @@ public abstract class ExternalFunctionNodes {
          * @param language The Python language object.
          * @param sig The wrapper/signature ID as defined in {@link PExternalFunctionWrapper}.
          * @param name The name of the method.
-         * @param callable The native function pointer.
+         * @param callable A reference denoting executable code. Currently, there are three
+         *            representations for that: (1) a native function pointer, (2) a
+         *            {@link RootCallTarget}, and (3) a {@link BuiltinMethodDescriptor}.
          * @param enclosingType The type the function belongs to (needed for checking of
          *            {@code self}).
          * @param factory Just an instance of {@link PythonObjectFactory} to create the function
@@ -657,21 +647,54 @@ public abstract class ExternalFunctionNodes {
             if (flags < 0) {
                 flags = 0;
             }
-            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion, CExtContext.isMethStatic(flags));
-            if (callTarget == null) {
-                return null;
-            }
-            Object[] defaults;
-            int numDefaults = sig == DELITEM ? 1 : 0;
-            if (numDefaults > 0) {
-                defaults = new Object[numDefaults];
-                Arrays.fill(defaults, PNone.NO_VALUE);
+            int numDefaults = -1;
+            PKeyword[] kwDefaults;
+            RootCallTarget callTarget;
+            if (callable instanceof RootCallTarget) {
+                callTarget = (RootCallTarget) callable;
+                /*
+                 * Special case for built-in functions:
+                 *
+                 * Built-in functions may appear as {@link CExtContext#METH_VARARGS} but we
+                 * implement them as nodes where the specializations have a fixed arity and then
+                 * sometimes allow optional arguments (specified with {@link
+                 * Builtin#minNumOfPositionalArgs()}, {@link Builtin#maxNumOfPositionalArgs()}, and
+                 * similar). This is usually not a problem because if the built-in function is
+                 * called via the function object, this will provide the correct number of default
+                 * values. In this case, the call target of the built-in function will be called
+                 * directly. So, we need to manually provide the number of default values (which is
+                 * {@link PNone#NO_VALUE} to indicate that the argument is missing).
+                 */
+                if (callTarget.getRootNode() instanceof BuiltinFunctionRootNode builtinFunctionRootNode) {
+                    numDefaults = PythonBuiltins.numDefaults(builtinFunctionRootNode.getBuiltin());
+                }
+                kwDefaults = PKeyword.EMPTY_KEYWORDS;
+            } else if (callable instanceof BuiltinMethodDescriptor builtinMethodDescriptor) {
+                /*
+                 * If we see a built-in method descriptor here, it was originally retrieved by a
+                 * slot lookup. This means, the slot was already properly registered and therefore
+                 * also its call target.
+                 */
+                callTarget = language.getDescriptorCallTarget(builtinMethodDescriptor);
+                // again: special case for built-in functions
+                numDefaults = PythonBuiltins.numDefaults(builtinMethodDescriptor.getBuiltinAnnotation());
+                kwDefaults = PKeyword.EMPTY_KEYWORDS;
             } else {
-                defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
+                callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion, CExtContext.isMethStatic(flags));
+                if (callTarget == null) {
+                    return null;
+                }
+
+                // ensure that 'callable' is executable via InteropLibrary
+                Object boundCallable = CExtContext.ensureExecutable(callable, sig);
+                kwDefaults = ExternalFunctionNodes.createKwDefaults(boundCallable);
             }
 
-            // ensure that 'callable' is executable via InteropLibrary
-            Object boundCallable = NativeCExtSymbol.ensureExecutable(callable, sig);
+            // generate default values for positional args (if necessary)
+            if (numDefaults == -1) {
+                numDefaults = sig == DELITEM ? 1 : 0;
+            }
+            Object[] defaults = PBuiltinFunction.generateDefaults(numDefaults);
 
             Object type = (enclosingType == PNone.NO_VALUE || SpecialMethodNames.T___NEW__.equalsUncached(name, TS_ENCODING)) ? null : enclosingType;
             // TODO(fa): this should eventually go away
@@ -683,9 +706,9 @@ public abstract class ExternalFunctionNodes {
                 case FASTCALL:
                 case FASTCALL_WITH_KEYWORDS:
                 case METHOD:
-                    return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(boundCallable), flags, callTarget);
+                    return factory.createBuiltinFunction(name, type, defaults, kwDefaults, flags, callTarget);
             }
-            return factory.createWrapperDescriptor(name, type, defaults, ExternalFunctionNodes.createKwDefaults(boundCallable), flags, callTarget);
+            return factory.createWrapperDescriptor(name, type, defaults, kwDefaults, flags, callTarget);
         }
 
         private static boolean isClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {

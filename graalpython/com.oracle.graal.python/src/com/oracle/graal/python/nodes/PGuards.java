@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -698,6 +699,8 @@ public abstract class PGuards {
     public static boolean isNullOrZero(Object value, InteropLibrary lib) {
         if (value instanceof Long) {
             return ((long) value) == 0;
+        } else if (value instanceof NativePointer nativePointer) {
+            return nativePointer.isNull();
         } else {
             return lib.isNull(value);
         }

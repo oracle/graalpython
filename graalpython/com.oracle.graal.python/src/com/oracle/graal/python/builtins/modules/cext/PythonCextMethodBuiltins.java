@@ -98,6 +98,7 @@ public final class PythonCextMethodBuiltins {
             Object f = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, PNone.NO_VALUE, flags);
             assert f instanceof PBuiltinFunction;
             PBuiltinFunction func = (PBuiltinFunction) f;
+            writeHiddenAttrNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
             dylib.put(func, T___NAME__, name);
             dylib.put(func, T___DOC__, doc);
             PBuiltinMethod method;
@@ -107,7 +108,6 @@ public final class PythonCextMethodBuiltins {
                 method = factory.createBuiltinMethod(self, func);
             }
             dylib.put(method, T___MODULE__, module);
-            writeHiddenAttrNode.execute(inliningTarget, method, METHOD_DEF_PTR, methodDefPtr);
             return method;
         }
     }

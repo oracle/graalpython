@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,13 @@
 #include "capi.h"
 
 PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
-    int flags = PyMethodDef_ml_flags(method);
+    int flags = method->ml_flags;
     return GraalPyTruffleDescr_NewClassMethod(method,
-                    PyMethodDef_ml_name(method),
-					PyMethodDef_ml_doc(method),
+                    method->ml_name,
+                    method->ml_doc,
                     flags,
                     get_method_flags_wrapper(flags),
-					PyMethodDef_ml_meth(method),
+                    method->ml_meth,
                     type);
 }
 
@@ -59,20 +59,20 @@ PyObject* PyDescr_NewGetSet(PyTypeObject *type, PyGetSetDef *getset) {
                     getter_fun,
                     setter_fun,
                     PyGetSetDef_doc(getset),
-					PyGetSetDef_closure(getset));
+                    PyGetSetDef_closure(getset));
 }
 
 
 PyMethodDef* PyMethodDescrObject_GetMethod(PyObject* descr) {
-	return PyMethodDescrObject_d_method(descr);
+    return PyMethodDescrObject_d_method(descr);
 }
 
 PyTypeObject* PyDescrObject_GetType(PyObject* descr) {
-	return PyDescrObject_d_type(descr);
+    return PyDescrObject_d_type(descr);
 }
 
 PyObject* PyDescrObject_GetName(PyObject* descr) {
-	return PyDescrObject_d_name(descr);
+    return PyDescrObject_d_name(descr);
 }
 
 int PyDescr_IsData(PyObject *ob) {
