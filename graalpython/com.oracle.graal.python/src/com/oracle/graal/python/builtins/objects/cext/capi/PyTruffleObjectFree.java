@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,9 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
@@ -123,12 +125,21 @@ public abstract class PyTruffleObjectFree extends Node {
             }
             if (HandlePointerConverter.pointsToPyHandleSpace(nativePointer)) {
                 // In this case, we are up to free a native object stub.
-                nativePointer = HandlePointerConverter.pointerToStub(nativePointer);
-                assert CApiTransitions.nativeStubLookupGet(PythonContext.get(freeNode).nativeContext, nativePointer) == null;
+                assert tableEntryRemoved(PythonContext.get(freeNode).nativeContext, nativeWrapper);
             } else {
                 CApiTransitions.nativeLookupRemove(PythonContext.get(freeNode).nativeContext, nativePointer);
             }
             freeNode.free(nativePointer);
         }
+    }
+
+    private static boolean tableEntryRemoved(HandleContext context, PythonNativeWrapper nativeWrapper) {
+        PythonObjectReference ref = nativeWrapper.ref;
+        if (ref != null) {
+            int id = ref.getId();
+            return id <= 0 || CApiTransitions.nativeStubLookupGet(context, nativeWrapper.getNativePointer(), id) == null;
+        }
+        // there cannot be a table entry if the wrapper does not have a PythonObjectReference
+        return true;
     }
 }

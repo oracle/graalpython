@@ -213,7 +213,7 @@ public final class PythonContext extends Python3Core {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
 
-    public final HandleContext nativeContext = new HandleContext();
+    public final HandleContext nativeContext = new HandleContext(DEBUG_CAPI);
     private volatile boolean finalizing;
 
     @TruffleBoundary

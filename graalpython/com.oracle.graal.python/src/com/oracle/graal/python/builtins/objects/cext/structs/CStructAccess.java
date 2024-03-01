@@ -988,6 +988,10 @@ public class CStructAccess {
     @GenerateUncached
     public abstract static class WriteIntNode extends Node implements CStructAccessNode {
 
+        public static void writeUncached(Object pointer, CFields field, int value) {
+            CStructAccessFactory.WriteIntNodeGen.getUncached().write(pointer, field, value);
+        }
+
         abstract void execute(Object pointer, long offset, int value);
 
         public final void write(Object pointer, CFields field, int value) {
