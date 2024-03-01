@@ -58,6 +58,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMo
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_slots;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_buffer;
+import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
@@ -1825,12 +1826,13 @@ public abstract class CExtNodes {
         public abstract PBuiltinFunction execute(Node inliningTarget, Object legacyMethodDef, int element);
 
         @Specialization
-        static PBuiltinFunction doIt(Object methodDef, int element,
+        static PBuiltinFunction doIt(Node inliningTarget, Object methodDef, int element,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
                         @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
                         @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached(inline = false) FromCharPointerNode fromCharPointerNode,
                         @Cached(inline = false) PythonObjectFactory factory,
+                        @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @Cached(inline = false) WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
             Object methodNamePtr = readPointerNode.readStructArrayElement(methodDef, element, PyMethodDef__ml_name);
             if (resultLib.isNull(methodNamePtr) || (methodNamePtr instanceof Long && ((long) methodNamePtr) == 0)) {
@@ -1853,6 +1855,7 @@ public abstract class CExtNodes {
             mlMethObj = CExtContext.ensureExecutable(mlMethObj, sig);
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
             PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
+            writeHiddenAttrNode.execute(inliningTarget, function, METHOD_DEF_PTR, methodDef);
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed
             // writing to builtin types.
