@@ -191,7 +191,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     static PTuple codecsInfo(PythonModule self, TruffleString encoding, PythonContext context, PythonObjectFactory factory) {
-        PythonModule codecsModule = (PythonModule) AbstractImportNode.importModule(T_CODECS);
+        PythonModule codecsModule = AbstractImportNode.importModule(T_CODECS);
         CodecsTruffleModuleBuiltins codecsTruffleBuiltins = (CodecsTruffleModuleBuiltins) self.getBuiltins();
         if (self.getAttribute(T_TRUFFLE_CODEC) instanceof PNone) {
             initCodecClasses(self, codecsModule, context, factory);

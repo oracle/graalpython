@@ -458,7 +458,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
             throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
 
-        private Object readAttribute(Object object, Object key) {
+        private Object readAttribute(Object object, TruffleString key) {
             if (attrRead == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 attrRead = insert(ReadAttributeFromObjectNode.create());

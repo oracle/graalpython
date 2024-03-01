@@ -949,7 +949,7 @@ public abstract class Python3Core {
                 LOGGER.log(Level.FINE, () -> "initializing zipimport failed");
             } else {
                 LOGGER.log(Level.FINE, () -> "# installing zipimport hook");
-                Object zipimport = null;
+                PythonModule zipimport = null;
                 try {
                     zipimport = AbstractImportNode.importModule(toTruffleStringUncached("zipimport"));
                 } catch (PException e) {

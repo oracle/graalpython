@@ -152,6 +152,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -835,6 +836,7 @@ public final class PythonCextSlotBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
+                        @Cached CastToTruffleStringNode castNode,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached HashingStorageGetIterator getIterator,
                         @Cached HashingStorageIteratorNext itNext,
@@ -845,7 +847,7 @@ public final class PythonCextSlotBuiltins {
                 HashingStorage storage = dict.getDictStorage();
                 HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
                 while (itNext.execute(inliningTarget, storage, it)) {
-                    writeAttrNode.execute(object, itKey.execute(inliningTarget, storage, it), itValue.execute(inliningTarget, storage, it));
+                    writeAttrNode.execute(object, castNode.castKnownString(inliningTarget, itKey.execute(inliningTarget, storage, it)), itValue.execute(inliningTarget, storage, it));
                 }
                 PDict existing = getDict.execute(object);
                 if (existing != null) {

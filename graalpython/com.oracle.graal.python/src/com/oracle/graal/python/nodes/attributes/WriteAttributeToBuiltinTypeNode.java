@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
@@ -68,7 +69,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @GenerateUncached
 @GenerateInline(false) // footprint reduction 36 -> 17
-public abstract class WriteAttributeToBuiltinTypeNode extends ObjectAttributeNode {
+public abstract class WriteAttributeToBuiltinTypeNode extends PNodeWithContext {
 
     public abstract void execute(Object primary, TruffleString key, Object value);
 

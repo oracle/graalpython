@@ -49,9 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE_
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
@@ -67,7 +65,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetTypeNodeGen;
@@ -438,7 +436,8 @@ public final class SuperBuiltins extends PythonBuiltins {
         Object get(VirtualFrame frame, SuperObject self, Object attr,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached GetObjectTypeNode getObjectType) {
+                        @Cached GetObjectTypeNode getObjectType,
+                        @Cached CastToTruffleStringCheckedNode castToTruffleStringNode) {
             Object startType = getObjectType.execute(inliningTarget, self);
             if (startType == null) {
                 return genericGetAttr(frame, self, attr);
@@ -448,18 +447,9 @@ public final class SuperBuiltins extends PythonBuiltins {
              * We want __class__ to return the class of the super object (i.e. super, or a
              * subclass), not the class of su->obj.
              */
-            TruffleString stringAttr = null;
-            if (attr instanceof PString) {
-                stringAttr = ((PString) attr).getValueUncached();
-            } else if (isJavaString(attr)) {
-                stringAttr = toTruffleStringUncached((String) attr);
-            } else if (attr instanceof TruffleString) {
-                stringAttr = (TruffleString) attr;
-            }
-            if (stringAttr != null) {
-                if (equalNode.execute(stringAttr, T___CLASS__, TS_ENCODING)) {
-                    return genericGetAttr(frame, self, T___CLASS__);
-                }
+            TruffleString stringAttr = castToTruffleStringNode.cast(inliningTarget, attr, ErrorMessages.ATTR_NAME_MUST_BE_STRING, attr);
+            if (equalNode.execute(stringAttr, T___CLASS__, TS_ENCODING)) {
+                return genericGetAttr(frame, self, T___CLASS__);
             }
 
             // acts as a branch profile
@@ -479,12 +469,12 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
             i++; /* skip su->type (if any) */
             if (i >= n) {
-                return genericGetAttr(frame, self, attr);
+                return genericGetAttr(frame, self, stringAttr);
             }
 
             for (; i < n; i++) {
                 PythonAbstractClass tmp = mro[i];
-                Object res = readFromDict.execute(tmp, attr);
+                Object res = readFromDict.execute(tmp, stringAttr);
                 if (res != PNone.NO_VALUE) {
                     Object get = readGet.execute(res);
                     if (get != PNone.NO_VALUE) {
@@ -503,7 +493,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 }
             }
 
-            return genericGetAttr(frame, self, attr);
+            return genericGetAttr(frame, self, stringAttr);
         }
 
         private boolean isSameType(Object execute, Object abstractPythonClass) {

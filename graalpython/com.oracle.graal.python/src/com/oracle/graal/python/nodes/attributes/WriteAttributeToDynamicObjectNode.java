@@ -40,35 +40,32 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Writes attribute directly to the underlying {@link DynamicObject} regardless of whether the
- * object has dict, also bypasses any other additional logic in
- * {@link WriteAttributeToDynamicObjectNode}. The only functionality this node provides on top of
- * {@link DynamicObjectLibrary} is casting of the key to {@code TruffleString}.
+ * object has dict, also bypasses any other additional logic in {@link WriteAttributeToObjectNode}.
+ * This node does not provide any functionality on top of {@link DynamicObjectLibrary}, its purpose
+ * is to provide an abstraction in preparation for the transition from {@link DynamicObject} to
+ * {@link com.oracle.graal.python.builtins.objects.common.ObjectHashMap}.
  */
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
 @GenerateInline(false) // Should be reconsidered during anticipated refactoring from DOM library
-public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeNode {
+public abstract class WriteAttributeToDynamicObjectNode extends PNodeWithContext {
 
-    public abstract boolean execute(Object primary, TruffleString key, Object value);
-
-    public abstract boolean execute(Object primary, Object key, Object value);
+    public abstract void execute(PythonObject primary, TruffleString key, Object value);
 
     @NeverDefault
     public static WriteAttributeToDynamicObjectNode create() {
@@ -80,19 +77,8 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     }
 
     @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()")
-    static boolean writeDirect(DynamicObject dynamicObject, TruffleString key, Object value,
+    static void write(PythonObject dynamicObject, TruffleString key, Object value,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
         dylib.put(dynamicObject, key, value);
-        return true;
-    }
-
-    @Specialization(replaces = "writeDirect", limit = "getAttributeAccessInlineCacheMaxDepth()")
-    static boolean write(DynamicObject dynamicObject, Object key, Object value,
-                    @Bind("this") Node inliningTarget,
-                    @Cached CastToTruffleStringNode castNode,
-                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        assert !isHiddenKey(key);
-        dylib.put(dynamicObject, attrKey(inliningTarget, key, castNode), value);
-        return true;
     }
 }

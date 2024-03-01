@@ -82,7 +82,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic({PGuards.class, PythonOptions.class})
 @ReportPolymorphism
 @GenerateInline(false) // footprint reduction 64 -> 47
-public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
+public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     @NeverDefault
     public static ReadAttributeFromObjectNode create() {
         return ReadAttributeFromObjectNotTypeNodeGen.create();
@@ -101,7 +101,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         return ReadAttributeFromObjectTpDictNodeGen.getUncached();
     }
 
-    public abstract Object execute(Object object, Object key);
+    public abstract Object execute(Object object, TruffleString key);
 
     public abstract Object execute(PythonModule object, TruffleString key);
 
@@ -140,16 +140,15 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     // any python object attribute read
     @Specialization
-    protected static Object readObjectAttribute(PythonObject object, Object key,
+    protected static Object readObjectAttribute(PythonObject object, TruffleString key,
                     @Bind("this") Node inliningTarget,
                     @Cached InlinedConditionProfile profileHasDict,
                     @Exclusive @Cached GetDictIfExistsNode getDict,
                     @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode,
                     @Exclusive @Cached HashingStorageGetItem getItem) {
-        assert !isHiddenKey(key);
         var dict = getDict.execute(object);
         if (profileHasDict.profile(inliningTarget, dict == null)) {
-            return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
+            return readAttributeFromDynamicObjectNode.execute(object, key);
         } else {
             // Note: we should pass the frame. In theory a subclass of a string may override
             // __hash__ or __eq__ and run some side effects in there.
@@ -165,7 +164,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // foreign object or primitive
     @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)"})
     @InliningCutoff
-    protected static Object readForeign(Object object, Object key,
+    protected static Object readForeign(Object object, TruffleString key,
                     @Bind("this") Node inliningTarget,
                     @Cached IsForeignObjectNode isForeignObjectNode,
                     @Cached ReadAttributeFromForeign read) {
@@ -186,7 +185,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @GenerateInline(false) // footprint reduction 64 -> 47
     protected abstract static class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
         @Specialization(insertBefore = "readForeign")
-        protected static Object readNativeObject(PythonAbstractNativeObject object, Object key,
+        protected static Object readNativeObject(PythonAbstractNativeObject object, TruffleString key,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached GetDictIfExistsNode getDict,
                         @Exclusive @Cached HashingStorageGetItem getItem) {
@@ -198,16 +197,15 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @GenerateInline(false) // footprint reduction 68 -> 51
     protected abstract static class ReadAttributeFromObjectTpDictNode extends ReadAttributeFromObjectNode {
         @Specialization(insertBefore = "readForeign")
-        protected static Object readNativeClass(PythonAbstractNativeObject object, Object key,
+        protected static Object readNativeClass(PythonAbstractNativeObject object, TruffleString key,
                         @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Exclusive @Cached HashingStorageGetItem getItem) {
-            assert !isHiddenKey(key);
             return readNative(inliningTarget, key, getNativeDict.readFromObj(object, PyTypeObject__tp_dict), getItem);
         }
     }
 
-    private static Object readNative(Node inliningTarget, Object key, Object dict, HashingStorageGetItem getItem) {
+    private static Object readNative(Node inliningTarget, TruffleString key, Object dict, HashingStorageGetItem getItem) {
         if (dict instanceof PHashingCollection) {
             Object result = getItem.execute(null, inliningTarget, ((PHashingCollection) dict).getDictStorage(), key);
             if (result != null) {

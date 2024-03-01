@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
@@ -366,9 +365,6 @@ public final class PythonCextCapsuleBuiltins {
                 if (object == null) {
                     // noBlock has no effect anymore since 3.3
                     object = AbstractImportNode.importModule(trace, T_IMPORT_ALL);
-                    if (object == PNone.NO_VALUE) {
-                        throw raiseNode.get(inliningTarget).raise(ImportError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, trace);
-                    }
                 } else {
                     object = getAttrNode.execute(object, trace);
                 }

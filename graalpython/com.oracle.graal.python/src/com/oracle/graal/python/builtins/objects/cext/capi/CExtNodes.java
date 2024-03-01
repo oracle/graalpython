@@ -64,6 +64,8 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
+import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreter;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -212,7 +214,7 @@ public abstract class CExtNodes {
          * tget the <code>typename_subtype_new</code> function
          */
         protected NativeCAPISymbol getFunction() {
-            throw CompilerDirectives.shouldNotReachHere();
+            throw shouldNotReachHere();
         }
 
         protected abstract Object execute(Object object, Object arg);
@@ -238,7 +240,7 @@ public abstract class CExtNodes {
                 Object result = interopLibrary.execute(importCAPISymbolNode.execute(inliningTarget, cApiContext, getFunction()), toSulongNode.execute(object), arg);
                 return toJavaNode.execute(result);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
-                throw CompilerDirectives.shouldNotReachHere("C subtype_new function failed", e);
+                throw shouldNotReachHere("C subtype_new function failed", e);
             }
         }
     }
@@ -839,7 +841,7 @@ public abstract class CExtNodes {
                 return ensureTruffleStringNode.execute(inliningTarget, interopLibrary.execute(importCExtSymbolNode.execute(inliningTarget, cApiContext, name), args));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 // consider these exceptions to be fatal internal errors
-                throw CompilerDirectives.shouldNotReachHere(e);
+                throw shouldNotReachHere(e);
             }
         }
 
@@ -921,7 +923,7 @@ public abstract class CExtNodes {
                 if (managedMemberName instanceof HiddenAttr ha) {
                     attr = HiddenAttr.ReadNode.executeUncached((PythonAbstractObject) mroCls, ha, NO_VALUE);
                 } else {
-                    attr = ReadAttributeFromObjectNode.getUncachedForceType().execute(mroCls, managedMemberName);
+                    attr = ReadAttributeFromObjectNode.getUncachedForceType().execute(mroCls, CompilerDirectives.castExact(managedMemberName, TruffleString.class));
                 }
                 if (attr != NO_VALUE) {
                     return PyNumberAsSizeNode.executeExactUncached(attr);
@@ -1126,7 +1128,7 @@ public abstract class CExtNodes {
                     long refCount = CApiTransitions.readNativeRefCount(pointer);
                     CApiTransitions.writeNativeRefCount(pointer, refCount + value);
                 } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
+                    throw shouldNotReachHere(e);
                 }
             }
             return object;
@@ -1219,7 +1221,7 @@ public abstract class CExtNodes {
                 try {
                     pointer = lib.asPointer(pointerObject);
                 } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
+                    throw shouldNotReachHere(e);
                 }
                 lookup = CApiTransitions.lookupNative(pointer);
                 if (lookup != null) {
@@ -1427,7 +1429,7 @@ public abstract class CExtNodes {
                                 // That should really not happen because we created the unicode
                                 // object with FromCharPointerNode which guarantees to return a
                                 // String/PString.
-                                throw CompilerDirectives.shouldNotReachHere();
+                                throw shouldNotReachHere();
                             }
                             vaArgIdx++;
                             valid = true;
@@ -1516,7 +1518,7 @@ public abstract class CExtNodes {
                 try {
                     return lib.asInt(value);
                 } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    throw shouldNotReachHere();
                 }
             }
             if (!lib.isPointer(value)) {
@@ -1526,7 +1528,7 @@ public abstract class CExtNodes {
                 try {
                     return (int) lib.asPointer(value);
                 } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    throw shouldNotReachHere();
                 }
             }
             throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
@@ -1541,7 +1543,7 @@ public abstract class CExtNodes {
                 try {
                     return lib.asLong(value);
                 } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    throw shouldNotReachHere();
                 }
             }
             if (!lib.isPointer(value)) {
@@ -1551,7 +1553,7 @@ public abstract class CExtNodes {
                 try {
                     return lib.asPointer(value);
                 } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    throw shouldNotReachHere();
                 }
             }
             throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
@@ -1681,7 +1683,7 @@ public abstract class CExtNodes {
                                     ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
                     module = toJavaNode.execute(result);
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
+                    throw shouldNotReachHere(e);
                 }
 
                 /*
@@ -1801,7 +1803,7 @@ public abstract class CExtNodes {
                     }
                 }
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                throw shouldNotReachHere();
             }
 
             return 0;
@@ -1859,7 +1861,7 @@ public abstract class CExtNodes {
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed
             // writing to builtin types.
-            writeAttributeToDynamicObjectNode.execute(function.getStorage(), SpecialAttributeNames.T___DOC__, methodDoc);
+            writeAttributeToDynamicObjectNode.execute(function, SpecialAttributeNames.T___DOC__, methodDoc);
 
             return function;
         }
@@ -1940,15 +1942,15 @@ public abstract class CExtNodes {
 
         private static final TruffleLogger LOGGER = CApiContext.getLogger(CreateFunctionNode.class);
 
-        public static Object executeUncached(TruffleString name, Object callable, int wrapper, Object type, Object flags) {
+        public static PythonObject executeUncached(TruffleString name, Object callable, int wrapper, Object type, Object flags) {
             return CreateFunctionNodeGen.getUncached().execute(null, name, callable, wrapper, type, flags);
         }
 
-        public abstract Object execute(Node inliningTarget, TruffleString name, Object callable, int wrapper, Object type, Object flags);
+        public abstract PythonObject execute(Node inliningTarget, TruffleString name, Object callable, int wrapper, Object type, Object flags);
 
         @Specialization(guards = "!isNoValue(type)")
         @TruffleBoundary
-        static Object doPythonCallable(TruffleString name, PythonNativeWrapper callable, int signature, Object type, int flags) {
+        static PythonObject doPythonCallable(TruffleString name, PythonNativeWrapper callable, int signature, Object type, int flags) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
             // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
             // case, we assume that the object is already callable.
@@ -1956,7 +1958,7 @@ public abstract class CExtNodes {
             PythonContext context = PythonContext.get(null);
             PythonLanguage language = context.getLanguage();
             PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags, signature, language, context.factory(), false);
-            return function != null ? function : managedCallable;
+            return function != null ? function : castToPythonObject(managedCallable);
         }
 
         @Specialization
@@ -1971,7 +1973,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isNativeWrapper(callable)"})
         @TruffleBoundary
-        static Object doNativeCallableWithWrapper(TruffleString name, Object callable, int signature, Object type, int flags,
+        static PythonObject doNativeCallableWithWrapper(TruffleString name, Object callable, int signature, Object type, int flags,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             /*
              * This can happen if a native type inherits slots from a managed type. For example, if
@@ -1990,7 +1992,15 @@ public abstract class CExtNodes {
             }
             PythonLanguage language = context.getLanguage();
             PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, resolvedCallable, type, flags, signature, language, context.factory(), doArgAndResultConversion);
-            return function != null ? function : resolvedCallable;
+            return function != null ? function : castToPythonObject(resolvedCallable);
+        }
+
+        private static PythonObject castToPythonObject(Object callable) {
+            if (callable instanceof PythonObject pythonObject) {
+                return pythonObject;
+            }
+            transferToInterpreter();
+            throw shouldNotReachHere("Unexpected class of callable: " + callable.getClass());
         }
 
         @TruffleBoundary
@@ -2000,7 +2010,7 @@ public abstract class CExtNodes {
                 try {
                     pointer = lib.asPointer(callable);
                 } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
+                    throw shouldNotReachHere(e);
                 }
                 Object delegate = context.getCApiContext().getClosureDelegate(pointer);
                 if (delegate != null) {

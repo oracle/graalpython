@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,8 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsbCapacity;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
+import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreterAndInvalidate;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -103,27 +105,32 @@ public abstract class AbstractImportNode extends PNodeWithContext {
     @CompilationFinal(dimensions = 1) public static final TruffleString[] T_IMPORT_ALL = tsArray("*");
     public static final TruffleString T__FIND_AND_LOAD = tsLiteral("_find_and_load");
 
-    public static Object importModule(TruffleString name) {
+    public static PythonModule importModule(TruffleString name) {
         return importModule(name, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
     }
 
-    public static Object importModule(TruffleString name, TruffleString[] fromList) {
+    public static PythonModule importModule(TruffleString name, TruffleString[] fromList) {
         return importModule(name, PythonObjectFactory.getUncached().createTuple(fromList), 0);
     }
 
     @TruffleBoundary
-    public static Object importModule(TruffleString name, Object[] fromList, Object level) {
+    public static PythonModule importModule(TruffleString name, Object[] fromList, Object level) {
         return importModule(name, PythonObjectFactory.getUncached().createTuple(fromList), level);
     }
 
     @TruffleBoundary
-    public static Object importModule(TruffleString name, Object fromList, Object level) {
+    public static PythonModule importModule(TruffleString name, Object fromList, Object level) {
         Object builtinImport = PyFrameGetBuiltins.executeUncached().getAttribute(T___IMPORT__);
         if (builtinImport == PNone.NO_VALUE) {
             throw PConstructAndRaiseNode.getUncached().raiseImportError(null, IMPORT_NOT_FOUND);
         }
         assert builtinImport instanceof PMethod || builtinImport instanceof PFunction;
-        return CallNode.getUncached().execute(builtinImport, name, PNone.NONE, PNone.NONE, fromList, level);
+        Object module = CallNode.getUncached().execute(builtinImport, name, PNone.NONE, PNone.NONE, fromList, level);
+        if (module instanceof PythonModule pythonModule) {
+            return pythonModule;
+        }
+        transferToInterpreterAndInvalidate();
+        throw shouldNotReachHere("__import__ returned " + module.getClass() + " instead of PythonModule");
     }
 
     @TruffleBoundary

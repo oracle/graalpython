@@ -167,7 +167,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    private void addDigestAlias(PythonModule self, Object mod, ReadAttributeFromDynamicObjectNode readNode, EconomicMapStorage storage, String digest) {
+    private void addDigestAlias(PythonModule self, PythonModule mod, ReadAttributeFromDynamicObjectNode readNode, EconomicMapStorage storage, String digest) {
         TruffleString tsDigest = toTruffleStringUncached(digest);
         Object function = readNode.execute(mod, tsDigest);
         if (function != NO_VALUE) {
@@ -182,10 +182,10 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         PythonModule self = core.lookupBuiltinModule(T_HASHLIB);
         ReadAttributeFromDynamicObjectNode readNode = ReadAttributeFromDynamicObjectNode.getUncached();
         EconomicMapStorage storage = (EconomicMapStorage) HiddenAttr.ReadNode.executeUncached(self, HiddenAttr.ORIGINAL_CONSTRUCTORS, NO_VALUE);
-        Object sha3module = AbstractImportNode.importModule(T_SHA3);
+        PythonModule sha3module = AbstractImportNode.importModule(T_SHA3);
         for (int i = 0; i < DIGEST_ALIASES.length; i += 2) {
             String module = DIGEST_ALIASES[i + 1];
-            Object mod = module.equals(J_SHA3) ? sha3module : core.lookupBuiltinModule(toTruffleStringUncached(module));
+            PythonModule mod = module.equals(J_SHA3) ? sha3module : core.lookupBuiltinModule(toTruffleStringUncached(module));
             addDigestAlias(self, mod, readNode, storage, DIGEST_ALIASES[i]);
         }
     }

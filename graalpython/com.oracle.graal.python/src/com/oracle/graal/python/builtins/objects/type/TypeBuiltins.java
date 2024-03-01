@@ -735,7 +735,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, object, key);
         }
 
-        private Object readAttribute(Object object, Object key) {
+        private Object readAttribute(Object object, TruffleString key) {
             if (lookupAsClass == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupAsClass = insert(LookupAttributeInMRONode.Dynamic.create());
