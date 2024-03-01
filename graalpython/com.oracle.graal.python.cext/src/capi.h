@@ -105,6 +105,11 @@ typedef struct {
 
 typedef struct {
     PyObject_VAR_HEAD
+    int32_t id;
+} GraalPyObject;
+
+typedef struct {
+    GraalPyObject ob_base;
     PyObject **ob_item;
 } GraalPyVarObject;
 
