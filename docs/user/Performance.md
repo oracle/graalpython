@@ -3,8 +3,7 @@ layout: docs-experimental
 toc_group: python
 link_title: Python Performance
 permalink: /reference-manual/python/Performance/
-redirect_from:
-  - /reference-manual/python/ParserDetails/
+redirect_from: /reference-manual/python/ParserDetails/
 ---
 
 # Python Performance
@@ -13,7 +12,7 @@ redirect_from:
 
 GraalPy uses the state-of-the-art just-in-time (JIT) compiler of GraalVM.
 When JIT compiled, GraalPy runs Python code ~4x faster than CPython on the official [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/).
-![](performance.svg)
+![](assets/performance.svg)
 
 These benchmarks can be run by installing the `pyperformance` package and calling `pyperformance run` on each of CPython and GraalPy.
 To get the Jython numbers we adapted the harness and benchmarks because of missing Python 3 support in Jython.

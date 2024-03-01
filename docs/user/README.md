@@ -68,8 +68,8 @@ The Java code and the _pom.xml_ file are heavily documented and the generated co
 2. Open your project configuration file, _app/build.gradle_, and modify it as follows. 
     - Include the GraalPy support and the [GraalVM SDK Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) in the `dependencies` section:
         ```kotlin
-        implementation("org.graalvm.polyglot:polyglot:23.1.1")
-        implementation("org.graalvm.polyglot:python:23.1.1")
+        implementation("org.graalvm.polyglot:polyglot:23.1.2")
+        implementation("org.graalvm.polyglot:python:23.1.2")
         ```
 
     - We recommend you use the Java modules build. Add the appropriate plugin to the `plugins` section:

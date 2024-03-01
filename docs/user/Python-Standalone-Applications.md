@@ -2,7 +2,8 @@
 layout: docs-experimental
 toc_group: python
 link_title: Python Standalone Applications
-permalink: /reference-manual/python/standalone-binaries/
+permalink: /reference-manual/python/standalone-applications/
+redirect_from: /reference-manual/python/standalone-binaries/
 ---
 
 # Python Standalone Applications

@@ -4,12 +4,12 @@
 [![](https://img.shields.io/badge/pyenv-graalpy-blue)](#start-replacing-cpython-with-graalpy) 
 </a> [![Join Slack][badge-slack]][slack] [![GraalVM on Twitter][badge-twitter]][twitter] [![License](https://img.shields.io/badge/license-UPL-green)](#license)
 
-GraalPy is a high-performance implementation of the [Python](https://www.python.org/) language for the JVM built on [GraalVM](https://www.graalvm.org/) technology.
+GraalPy is a high-performance implementation of the [Python](https://www.python.org/) language for the JVM built on [GraalVM](https://www.graalvm.org/).
 GraalPy has first-class support for embedding in Java and can turn Python applications into fast, standalone binaries.
 
 ## Why GraalPy?
 
-**Low-overhead integration with Java and other languages.**
+**Low-overhead integration with Java and other languages**
 
 * Use [Python in Java](docs/user/Interoperability.md) applications on GraalVM JDK, Oracle JDK, or OpenJDK
 * Use JVM tools like [Maven](docs/user/README.md), JFR, or [GraalVM Native Image](docs/user/Native-Images-with-Python.md)
@@ -20,7 +20,7 @@ GraalPy has first-class support for embedding in Java and can turn Python applic
 * Install [packages](docs/user/Python-Runtime.md#installing-packages) like *NumPy*, *PyTorch*, or *Tensorflow*; run [Hugging Face](https://huggingface.co/) models like *Stable Diffusion* or *GPT*
 * See if the packages you need work with our [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/)
 * Use almost any standard Python feature, the CPython tests run on every commit and pass ~85%
-![](docs/user/mcd.svg)<sup>
+![](docs/user/assets/mcd.svg)<sup>
 We run the tests of the [top PyPI packages](https://hugovk.github.io/top-pypi-packages/) on GraalPy every day.
 For more than 96% of the top PyPI packages, there is at least one recent version that installs successfully and we are currently passing over 50% of all tests those top packages.
 </sup>
@@ -28,11 +28,11 @@ For more than 96% of the top PyPI packages, there is at least one recent version
 **Runs Python code faster**
 
 * Pure Python code is often faster than on CPython after JIT compilation
-* C extension performance near CPython, but varies depending on the specific interactions of native and Python code
+* C extension performance is near CPython, but varies depending on the specific interactions of native and Python code
 * GraalPy is ~4x faster than CPython on the official [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/)
-![](docs/user/performance.svg)<sup>
+![](docs/user/assets/performance.svg)<sup>
 Benchmarks run via `pip install pyperformance && pyperformance run` on each of CPython and GraalPy.
-Harness and benchmarks adapted by hand for Jython due to missing Python 3 support.
+Harness and benchmarks were adapted by hand for Jython due to missing Python 3 support.
 Each interpreter was installed via <tt>[pyenv](https://github.com/pyenv/pyenv)</tt>.
 Geomean speedup was calculated against CPython on the intersection of benchmarks that run on all interpreters.
 </sup>
@@ -81,12 +81,12 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
 * Linux
 
   The easiest way to install GraalPy on Linux is to use [Pyenv](https://github.com/pyenv/pyenv) (the Python version manager).
-  To install version 23.1.1 using Pyenv, run the following commands:
+  To install version 23.1.2 using Pyenv, run the following commands:
   ```bash
-  pyenv install graalpy-23.1.1
+  pyenv install graalpy-23.1.2
   ```
   ```bash
-  pyenv shell graalpy-23.1.1
+  pyenv shell graalpy-23.1.2
   ```
   
   Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
@@ -97,12 +97,12 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
 * macOS
 
   The easiest way to install GraalPy on macOS is to use [Pyenv](https://github.com/pyenv/pyenv) (the Python version manager).
-  To install version 23.1.1 using Pyenv, run the following commands:
+  To install version 23.1.2 using Pyenv, run the following commands:
   ```bash
-  pyenv install graalpy-23.1.1
+  pyenv install graalpy-23.1.2
   ```
   ```bash
-  pyenv shell graalpy-23.1.1
+  pyenv shell graalpy-23.1.2
   ```
   Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
   
@@ -113,7 +113,7 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
       ```
       For example:
       ```bash
-      sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-23.1.1
+      sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-23.1.2
       ```
   3. Uncompress the file and update your `PATH` environment variable to include to the _graalpy-XX.Y.Z-macos-amd64/bin_ (or _graalpy-XX.Y.Z-macos-aarch64/bin_) directory.
 
@@ -143,7 +143,7 @@ The _setup-python_ action supports GraalPy:
 
 Most existing Jython code that uses Java integration will be based on a stable Jython release&mdash;however, these are only available in Python 2.x versions.
 To migrate your code from Python 2 to Python 3, follow [the official guide from the Python community](https://docs.python.org/3/howto/pyporting.html).
-GraalPy also provides a [special mode](docs/user/Python-on-JVM.md) to facilitate migration.
+GraalPy provides a [special mode](docs/user/Python-on-JVM.md) to facilitate migration.
 To run Jython scripts, you need to use a GraalPy distribution running on the JVM so you can access Java classes from Python scripts.
 
 * Linux
@@ -161,7 +161,7 @@ To run Jython scripts, you need to use a GraalPy distribution running on the JVM
       ```
       For example:
       ```bash
-      sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-23.1.1
+      sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-23.1.2
       ```
   3. Uncompress the file and update your `PATH` environment variable to include to the _graalpy-jvm-XX.Y.Z-macos-amd64/bin_ (or _graalpy-jvm-XX.Y.Z-macos-aarch64/bin_) directory.
   4. Run your scripts with `graalpy --python.EmulateJython`.
@@ -181,24 +181,24 @@ To run Jython scripts, you need to use a GraalPy distribution running on the JVM
 
 ## Documentation
 
-Our [Quick Reference Sheet](https://www.graalvm.org/uploads/quick-references/GraalPy_v1/quick-reference-graalpy-v1(eu_a4).pdf) should help you get started.
+[GraalPy Quick Reference Sheet](https://www.graalvm.org/uploads/quick-references/GraalPy_v1/quick-reference-graalpy-v1(eu_a4).pdf) should help you get started.
 More GraalPy-specific user documentation is available in [docs/user](docs/user).
 General documentation about [polyglot programming](https://www.graalvm.org/latest/reference-manual/polyglot-programming/) and [language embedding](https://www.graalvm.org/latest/reference-manual/embed-languages/) is available on the GraalVM website.
 
 ## Community
 
-The best way to get in touch with us is to join the `#graalpy` channel on [GraalVM Slack][slack] or write to us on [Twitter][twitter]
+The best way to get in touch with us is to join the `#graalpy` channel on [GraalVM Slack][slack] or [tweet us][twitter].
 
 ## Contributing
 
-If you're thinking about contributing something to this repository, you will need to sign the [Oracle Contributor Agreement](https://www.graalvm.org/community/contributors/) for us to able to merge your work.
-Please also take note of our [code of conduct](https://www.graalvm.org/community/conduct/) for contributors.
-
 This project welcomes contributions from the community. Before submitting a pull request, please [review our contribution guide](./CONTRIBUTING.md).
+
+If you're thinking about contributing something to this repository, you will need to sign the [Oracle Contributor Agreement](https://www.graalvm.org/community/contributors/) for us to able to merge your work.
+Also take a look at the [code of conduct](https://www.graalvm.org/community/conduct/) for contributors.
 
 ## Security
 
-Please consult the [security guide](./SECURITY.md) for our responsible security vulnerability disclosure process.
+Consult the [security guide](./SECURITY.md) for our responsible security vulnerability disclosure process.
 
 ## License
 

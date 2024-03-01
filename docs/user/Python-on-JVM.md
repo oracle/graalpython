@@ -3,8 +3,7 @@ layout: docs-experimental
 toc_group: python
 link_title: Jython Compatibility
 permalink: /reference-manual/python/Modern-Python-on-JVM/
-redirect_from:
-  - /reference-manual/python/Jython/
+redirect_from: /reference-manual/python/Jython/
 ---
 
 # Modern Python for the JVM

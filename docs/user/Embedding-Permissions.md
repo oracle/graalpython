@@ -3,8 +3,7 @@ layout: docs-experimental
 toc_group: python
 link_title: Embedding Permissions
 permalink: /reference-manual/python/Embedding-Permissions/
-redirect_from:
-  - /reference-manual/python/OSInterface/
+redirect_from: /reference-manual/python/OSInterface/
 ---
 
 # Permissions for Python Embeddings

@@ -3,7 +3,6 @@ layout: docs-experimental
 toc_group: python
 link_title: Interoperability
 permalink: /reference-manual/python/Interoperability/
-redirect_from: /reference-manual/python/Interoperability/
 ---
 # Interoperability
 
@@ -77,7 +76,7 @@ For example, if you have already configured a Maven project with GraalPy, add th
 <dependency>
     <groupId>org.graalvm.polyglot</groupId>
     <artifactId>js</artifactId>
-    <version>23.1.1</version>
+    <version>23.1.2</version>
 </dependency>
 ```
 
