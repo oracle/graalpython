@@ -89,6 +89,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private static long startupWallClockTime = -1;
     private static long startupNanoTime = -1;
 
+    private boolean verboseLauncher = false;
     private ArrayList<String> programArgs = null;
     private ArrayList<String> origArgs = null;
     private String commandString = null;
@@ -115,6 +116,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private String warnOptions = null;
     private String checkHashPycsMode = "default";
     private String execName;
+
+    public GraalPythonMain() {
+        verboseLauncher = Boolean.parseBoolean(System.getenv("VERBOSE_GRAALVM_LAUNCHERS"));
+    }
 
     protected static void setStartupTime() {
         if (GraalPythonMain.startupNanoTime == -1) {
@@ -480,10 +485,12 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             return execName;
         }
         execName = getProgramName();
+        log("initial executable name: ", execName);
         if (execName == null) {
             return null;
         }
         execName = calculateProgramFullPath(execName);
+        log("resolved executable name: ", execName);
         return execName;
     }
 
@@ -505,7 +512,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
      * @param program The program name as passed in the process' argument vector (position 0).
      * @return The absolute path to the program or {@code null}.
      */
-    private static String calculateProgramFullPath(String program) {
+    private String calculateProgramFullPath(String program) {
         Path programPath = Paths.get(program);
 
         // If this is an absolute path, we are already fine.
@@ -522,9 +529,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             // Resolve the program name with respect to the PATH variable.
             String path = getEnv("PATH");
             if (path != null) {
+                log("resolving the executable name in $PATH = ", path);
                 int last = 0;
                 for (int i = path.indexOf(File.pathSeparatorChar); i != -1; i = path.indexOf(File.pathSeparatorChar, last)) {
                     Path resolvedProgramName = Paths.get(path.substring(last, i)).resolve(programPath);
+                    log("checking if exists and is executable: ", resolvedProgramName);
                     if (Files.isExecutable(resolvedProgramName)) {
                         return resolvedProgramName.toString();
                     }
@@ -533,6 +542,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     // 'i' points to ':'
                     last = i + 1;
                 }
+            } else {
+                log("executable name looks like it is from $PATH, but $PATH is not available.");
             }
             return null;
         }
@@ -598,6 +609,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             if (launcherExecName != null) {
                 return launcherExecName;
             }
+            log("cannot determine the executable path. Using java command invocation for executable.");
             String[] executableList = getExecutableList();
             for (int i = 0; i < executableList.length; i++) {
                 if (executableList[i].matches("\\s")) {
@@ -831,22 +843,27 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         try {
             binDir = Paths.get(executable).getParent();
         } catch (InvalidPathException e) {
+            log("cannot determine the parent directory of the executable");
             return;
         }
         if (binDir == null) {
+            log("parent directory of the executable does not exist");
             return;
         }
         Path venvCfg = binDir.resolve(J_PYENVCFG);
+        log("checking: ", venvCfg);
         if (!Files.exists(venvCfg)) {
             Path binParent = binDir.getParent();
             if (binParent == null) {
                 return;
             }
             venvCfg = binParent.resolve(J_PYENVCFG);
+            log("checking: ", venvCfg);
             if (!Files.exists(venvCfg)) {
                 return;
             }
         }
+        log("found: ", venvCfg);
         try (BufferedReader reader = Files.newBufferedReader(venvCfg)) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -1438,5 +1455,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     private static boolean doEcho(@SuppressWarnings("unused") Context context) {
         return true;
+    }
+
+    private void log(String message) {
+        log(message, "");
+    }
+
+    private void log(String message1, Object message2) {
+        if (verboseLauncher) {
+            System.err.println("GraalPy launcher: " + message1 + message2);
+        }
     }
 }
