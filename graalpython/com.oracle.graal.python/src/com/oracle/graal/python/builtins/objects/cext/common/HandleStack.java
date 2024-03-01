@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,12 +42,21 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 
 import java.util.Arrays;
 
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+
 public final class HandleStack {
     private int[] handles;
     private int top = 0;
 
     public HandleStack(int initialCapacity) {
+        this(initialCapacity, false);
+    }
+
+    public HandleStack(int initialCapacity, boolean fill) {
         handles = new int[initialCapacity];
+        if (fill) {
+            pushRange(0, initialCapacity);
+        }
     }
 
     public void push(int i) {
@@ -55,6 +64,24 @@ public final class HandleStack {
             handles = Arrays.copyOf(handles, handles.length * 2);
         }
         handles[top++] = i;
+    }
+
+    /**
+     * Push a range of values to the stack.
+     *
+     * @param start The first value to push (inclusive).
+     * @param end The last value to push (exclusive).
+     */
+    @TruffleBoundary
+    public void pushRange(int start, int end) {
+        int n = end - start;
+        if (top + n > handles.length) {
+            handles = Arrays.copyOf(handles, top + n);
+        }
+        for (int i = 0; i < n; i++) {
+            handles[top + i] = end - i - 1;
+        }
+        top += n;
     }
 
     public int pop() {
