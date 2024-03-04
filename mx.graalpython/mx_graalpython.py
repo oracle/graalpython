@@ -944,11 +944,24 @@ def graalvm_jdk():
     mx.run_mx(mx_args + ["graalvm-home"], out=out)
     return out.data.splitlines()[-1].strip()
 
+def get_maven_cache():
+    buildnr = os.environ.get('BUILD_NUMBER')
+    # don't worry about maven.repo.local if not running on gate
+    return os.path.join(SUITE.get_mx_output_dir(), 'm2_cache_' + buildnr) if buildnr else None
 
 def deploy_local_maven_repo():
     if not DISABLE_REBUILD:
+        env = os.environ.copy()
+        m2_cache = get_maven_cache()
+        if m2_cache:
+            mvn_repo_local = f'-Dmaven.repo.local={m2_cache}'
+            maven_opts = env.get('MAVEN_OPTS')
+            maven_opts = maven_opts + " " + mvn_repo_local if maven_opts else mvn_repo_local
+            env['MAVEN_OPTS'] = maven_opts
+            mx.log(f'Added {mvn_repo_local} to MAVEN_OPTS={maven_opts}')
+
         # build GraalPy and all the necessary dependencies, so that we can deploy them
-        mx.run_mx(["build"])
+        mx.run_mx(["build"], env=env)
     # deploy maven artifacts
     version = GRAAL_VERSION
     path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
