@@ -314,7 +314,7 @@ public abstract class CExtContext {
     public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode)
                     throws IOException, ApiInitException, ImportException {
 
-        // we always need to load the CPython C API (even for HPy modules)
+        // we always need to load the CPython C API
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
         Object library;
         InteropLibrary interopLib;
