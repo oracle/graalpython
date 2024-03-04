@@ -503,7 +503,10 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
             NativeFunction pProc = handleFromPointerNode.getNativeFunction(inliningTarget, readPointerNode.execute(inliningTarget, self.b_ptr));
             if (pProc == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                // TODO this happens in numpy/core/tests/test_ufunc.py::TestLowlevelAPIAccess::test_loop_access
+                /*
+                 * TODO this happens in a numpy tests that use structs with function pointers:
+                 * numpy/core/tests/test_ufunc.py::TestLowlevelAPIAccess::test_loop_access
+                 */
                 throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.CTYPES_FUNCTION_CALL_COULD_NOT_OBTAIN_FUNCTION_POINTER);
             }
             Object[] callargs = _build_callargs(frame, inliningTarget, self, argtypes, inargs, kwds, props,
