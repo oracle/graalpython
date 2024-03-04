@@ -105,7 +105,7 @@ typedef struct {
 
 typedef struct {
     PyObject_VAR_HEAD
-    int32_t id;
+    int32_t handle_table_index;
 } GraalPyObject;
 
 typedef struct {

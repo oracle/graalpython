@@ -136,7 +136,7 @@ public abstract class PyTruffleObjectFree extends Node {
     private static boolean tableEntryRemoved(HandleContext context, PythonNativeWrapper nativeWrapper) {
         PythonObjectReference ref = nativeWrapper.ref;
         if (ref != null) {
-            int id = ref.getId();
+            int id = ref.getHandleTableIndex();
             return id <= 0 || CApiTransitions.nativeStubLookupGet(context, nativeWrapper.getNativePointer(), id) == null;
         }
         // there cannot be a table entry if the wrapper does not have a PythonObjectReference

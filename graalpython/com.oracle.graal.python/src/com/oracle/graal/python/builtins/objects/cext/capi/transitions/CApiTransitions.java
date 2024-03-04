@@ -197,14 +197,14 @@ public abstract class CApiTransitions {
 
         /**
          * The index in the lookup table, where this reference is stored. This duplicates the native
-         * field {@link CFields#GraalPyObject__id} in order to save reading the native field if we
-         * already have the reference object. The value may be {@code -1} in which case it means
-         * that the reference's referent is a managed object and {@link #pointer} points into the
-         * handle space.
+         * field {@link CFields#GraalPyObject__handle_table_index} in order to save reading the
+         * native field if we already have the reference object. The value may be {@code -1} in
+         * which case it means that the reference's referent is a managed object and
+         * {@link #pointer} points into the handle space.
          */
-        private final int idx;
+        private final int handleTableIndex;
 
-        private PythonObjectReference(HandleContext handleContext, PythonNativeWrapper referent, boolean strong, long pointer, int idx) {
+        private PythonObjectReference(HandleContext handleContext, PythonNativeWrapper referent, boolean strong, long pointer, int handleTableIndex) {
             super(handleContext, referent);
             this.pointer = pointer;
             this.strongReference = strong ? referent : null;
@@ -212,7 +212,7 @@ public abstract class CApiTransitions {
                 LOGGER.fine(PythonUtils.formatJString("new %s", toString()));
             }
             referent.ref = this;
-            this.idx = idx;
+            this.handleTableIndex = handleTableIndex;
         }
 
         static PythonObjectReference create(HandleContext handleContext, PythonAbstractObjectNativeWrapper referent, boolean strong, long pointer, int idx) {
@@ -232,8 +232,8 @@ public abstract class CApiTransitions {
             strongReference = wrapper;
         }
 
-        public int getId() {
-            return idx;
+        public int getHandleTableIndex() {
+            return handleTableIndex;
         }
 
         @Override
@@ -241,7 +241,7 @@ public abstract class CApiTransitions {
         public String toString() {
             String type = strongReference != null ? "strong" : "weak";
             PythonNativeWrapper referent = get();
-            return String.format("PythonObjectReference<0x%x,%s,%s,id=%d>", pointer, type, referent != null ? referent : "freed", idx);
+            return String.format("PythonObjectReference<0x%x,%s,%s,id=%d>", pointer, type, referent != null ? referent : "freed", handleTableIndex);
         }
     }
 
@@ -365,7 +365,7 @@ public abstract class CApiTransitions {
                     if (entry instanceof PythonObjectReference reference) {
                         LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
                         if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer)) {
-                            assert nativeStubLookupGet(context, reference.pointer, reference.idx) != null : Long.toHexString(reference.pointer);
+                            assert nativeStubLookupGet(context, reference.pointer, reference.handleTableIndex) != null : Long.toHexString(reference.pointer);
                             nativeStubLookupRemove(context, reference);
                             /*
                              * We may only free native object stubs if their reference count is
@@ -385,7 +385,7 @@ public abstract class CApiTransitions {
                                  * field because there may be referenced from managed in the future
                                  * and then we would incorrectly reuse the ID.
                                  */
-                                CStructAccess.WriteIntNode.writeUncached(reference.pointer, CFields.GraalPyObject__id, 0);
+                                CStructAccess.WriteIntNode.writeUncached(reference.pointer, CFields.GraalPyObject__handle_table_index, 0);
                             }
                         } else {
                             assert nativeLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
@@ -550,8 +550,8 @@ public abstract class CApiTransitions {
     }
 
     private static int nativeStubLookupPut(HandleContext context, PythonObjectReference value) {
-        assert value.idx > 0;
-        final int idx = value.idx - 1;
+        assert value.handleTableIndex > 0;
+        final int idx = value.handleTableIndex - 1;
         assert context.nativeStubLookup[idx] == null || context.nativeStubLookup[idx] == value;
         context.nativeStubLookup[idx] = value;
         if (PythonContext.DEBUG_CAPI) {
@@ -564,8 +564,8 @@ public abstract class CApiTransitions {
     }
 
     private static PythonObjectReference nativeStubLookupRemove(HandleContext context, PythonObjectReference ref) {
-        assert ref.idx > 0;
-        final int idx = ref.idx - 1;
+        assert ref.handleTableIndex > 0;
+        final int idx = ref.handleTableIndex - 1;
         PythonObjectReference result = context.nativeStubLookup[idx];
         context.nativeStubLookup[idx] = null;
         context.nativeStubLookupFreeStack.push(idx);
@@ -658,7 +658,7 @@ public abstract class CApiTransitions {
                 long stubPointer = coerceToLongNode.execute(inliningTarget, nativeObjectStub);
                 long taggedPointer = HandlePointerConverter.stubToPointer(stubPointer);
                 int idx = nativeStubLookupReserve(handleContext);
-                writeIntNode.write(stubPointer, CFields.GraalPyObject__id, idx);
+                writeIntNode.write(stubPointer, CFields.GraalPyObject__handle_table_index, idx);
                 PythonObjectReference ref = PythonObjectReference.create(handleContext, wrapper, immortal, taggedPointer, idx);
                 nativeStubLookupPut(handleContext, ref);
 
@@ -790,7 +790,7 @@ public abstract class CApiTransitions {
                         @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedExactClassProfile profile) {
             HandleContext nativeContext = PythonContext.get(inliningTarget).nativeContext;
-            int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__id);
+            int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
             PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer, idx);
             PythonNativeWrapper wrapper = profile.profile(inliningTarget, reference.get());
             assert wrapper != null : "reference was collected: " + Long.toHexString(pointer);
@@ -1065,7 +1065,7 @@ public abstract class CApiTransitions {
             }
             assert pythonContext.ownsGil();
             if (isHandleSpaceProfile.profile(inliningTarget, HandlePointerConverter.pointsToPyHandleSpace(pointer))) {
-                int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__id);
+                int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
                 PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer, idx);
                 if (reference == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1232,7 +1232,7 @@ public abstract class CApiTransitions {
             }
             assert pythonContext.ownsGil();
             if (isHandleSpaceProfile.profile(inliningTarget, HandlePointerConverter.pointsToPyHandleSpace(pointer))) {
-                int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__id);
+                int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
                 PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer, idx);
                 if (reference == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1374,7 +1374,7 @@ public abstract class CApiTransitions {
             HandleContext nativeContext = pythonContext.nativeContext;
             assert pythonContext.ownsGil();
             if (isHandleSpaceProfile.profile(inliningTarget, HandlePointerConverter.pointsToPyHandleSpace(pointer))) {
-                int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__id);
+                int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
                 PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer, idx);
                 PythonNativeWrapper wrapper;
                 if (reference == null) {
