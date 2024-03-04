@@ -1275,8 +1275,14 @@ public abstract class TypeNodes {
             return InstancesOfTypeHaveWeakrefsNodeGen.getUncached().execute(null, type);
         }
 
+        @Specialization(guards = "!isNativeObject(type)")
+        static boolean doManaged(Object type,
+                        @Cached(inline = false) ReadAttributeFromObjectNode read) {
+            return read.execute(type, T___WEAKREF__) != PNone.NO_VALUE;
+        }
+
         @Specialization
-        static boolean doGeneric(Node inliningTarget, Object type,
+        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject type,
                         @Cached GetWeakListOffsetNode getWeakListOffsetNode) {
             return getWeakListOffsetNode.execute(inliningTarget, type) != 0;
         }
