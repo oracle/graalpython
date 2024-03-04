@@ -52,6 +52,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -85,12 +86,14 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -526,7 +529,16 @@ public abstract class CApiTransitions {
         return result;
     }
 
-    private static int nativeStubLookupReserve(HandleContext context) {
+    /**
+     * Reserves a free slot in the handle table that can later be used to store a
+     * {@link PythonObjectReference} using
+     * {@link #nativeStubLookupPut(HandleContext, PythonObjectReference)}. If the handle table is
+     * currently too small, it will be enlarged.
+     *
+     * @throws OverflowException Indicates that we cannot resize the handle table anymore. This
+     *             essentially indicates a Python-level MemoryError.
+     */
+    private static int nativeStubLookupReserve(HandleContext context) throws OverflowException {
         int idx = context.nativeStubLookupFreeStack.pop();
         if (idx == -1) {
             idx = resizeNativeStubLookupTable(context);
@@ -536,10 +548,10 @@ public abstract class CApiTransitions {
     }
 
     @TruffleBoundary
-    private static int resizeNativeStubLookupTable(HandleContext context) {
+    private static int resizeNativeStubLookupTable(HandleContext context) throws OverflowException {
         int oldSize = context.nativeStubLookup.length;
         // exponentially grow until 1 MB; then linearly grow by 1 MB
-        int newSize = oldSize >= HandleContext.LINEAR_THRESHOLD ? oldSize + HandleContext.LINEAR_THRESHOLD : oldSize * 2;
+        int newSize = oldSize >= HandleContext.LINEAR_THRESHOLD ? PythonUtils.addExact(oldSize, HandleContext.LINEAR_THRESHOLD) : PythonUtils.multiplyExact(oldSize, 2);
         assert newSize != oldSize;
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine(String.format("Resizing native stub lookup table: %d -> %d", oldSize, newSize));
@@ -663,6 +675,14 @@ public abstract class CApiTransitions {
                 nativeStubLookupPut(handleContext, ref);
 
                 return logResult(taggedPointer);
+            } catch (OverflowException e) {
+                /*
+                 * The OverflowException may be thrown by 'nativeStubLookupReserve' and indicates
+                 * that we cannot resize the handle table anymore. This essentially indicates a
+                 * Python-level MemoryError.
+                 */
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.MemoryError);
             } finally {
                 gil.release(acquired);
             }
