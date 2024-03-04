@@ -2068,32 +2068,14 @@ def _python_checkpatchfiles():
             # meson-python puts the whole license text in the field. It's MIT
             'meson-python.patch',
             # scipy puts the whole license text in the field, skip it. It's new BSD
-            'scipy-1.3.1.patch',
-            'scipy-1.4.1.patch',
-            'scipy-1.7.3.patch',
-            'scipy-1.8.1.patch',
-            'scipy-1.9.1.patch',
             'scipy-1.9.3.patch',
-            'scipy-1.10.0.patch',
             'scipy-1.10.1.patch',
             # pandas puts the whole license text in the field. Its BSD-3-Clause
-            'pandas-1.4.3.patch',
             'pandas-1.5.2.patch',
             # numpy started putting the whole license text in the field. Its BSD-3-Clause
-            'numpy-1.16.4.patch',
-            'numpy-1.19.5.patch',
-            'numpy-1.21.2.patch',
-            'numpy-1.21.4.patch',
-            'numpy-1.21.6.patch',
-            'numpy-1.22.2.patch',
-            'numpy-1.22.4.patch',
-            'numpy-1.23.1.patch',
             'numpy-1.23.2.patch',
-            'numpy-1.23.4.patch',
             'numpy-1.23.5.patch',
-            # pythran started putting the while license text in the field. It's MIT
-            'pythran-0.12.0.patch',
-            'pythran-0.13.patch',
+            'numpy-1.26.4.patch',
             # libcst is MIT
             'libcst-1.0.1.patch',
             # Empty license field, skip it. It's MIT
