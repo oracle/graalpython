@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2024, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -122,6 +122,11 @@ def test_find_all_none():
 
     for i, r in enumerate(pattern(text)):
         assert result[i] == r
+
+
+def test_sub_empty():
+    result = re.sub(r'\d', lambda m: None, "f1")
+    assert result == 'f'
 
 
 class S(str):

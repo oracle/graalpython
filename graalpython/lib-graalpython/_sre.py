@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -438,7 +438,8 @@ class Pattern():
             else:
                 _srematch = Match(self, pos, -1, match_result, string, self.__indexgroup)
                 _repl = repl(_srematch)
-                result.append(_repl)
+                if _repl is not None:
+                    result.append(_repl)
             pos = end
             must_advance = start == end
         result.append(string[pos:])

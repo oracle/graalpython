@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,34 +36,75 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import struct
 
-import sys
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare
+
 __dir__ = __file__.rpartition("/")[0]
 
+int_bits = struct.calcsize('i') * 8
+max_int = 2 ** (int_bits - 1) - 1
+min_int = -2 ** (int_bits - 1)
+long_bits = struct.calcsize('l') * 8
+max_long = 2 ** (long_bits - 1) - 1
+min_long = -2 ** (long_bits - 1)
+max_ulong = 2 ** long_bits
+ssize_t_bits = struct.calcsize('n') * 8
+max_ssize_t = 2 ** (ssize_t_bits - 1) - 1
+min_ssize_t = -2 ** (ssize_t_bits - 1)
 
-def _reference_aslong(args):
-    # We cannot be sure if we are on 32-bit or 64-bit architecture. So, assume the smaller one.
-    n = int(args[0])
-    if n > 0x7fffffff:
-        raise OverflowError
+
+def _reference_as_index(n):
+    if not isinstance(n, int):
+        if hasattr(n, '__index__'):
+            n = n.__index__()
+            assert type(n) is int
+        else:
+            raise TypeError(f"{type(n)} object cannot be interpreted as an integer")
+    return n
+
+
+def _reference_as_long(args):
+    n = _reference_as_index(args[0])
+    if n > max_long or n < min_long:
+        raise OverflowError("Python int too large to convert to C long")
+    return n
+
+
+def _reference_as_int(args):
+    n = _reference_as_index(args[0])
+    if n > max_int or n < min_int:
+        raise OverflowError("Python int too large to convert to C int")
     return n
 
 
 def _reference_as_unsigned_long(args):
-    # We cannot be sure if we are on 32-bit or 64-bit architecture. So, assume the smaller one.
     n = args[0]
-    if n > 0xffffffff or n < 0:
-        raise OverflowError
-    return int(n)
+    if not isinstance(n, int):
+        raise TypeError("an integer is required")
+    if n < 0:
+        raise OverflowError("can't convert negative value to unsigned int")
+    if n > max_ulong:
+        raise OverflowError("Python int too large to convert to C unsigned long")
+    return n
 
 
-def _reference_aslong_overflow(args):
-    # We cannot be sure if we are on 32-bit or 64-bit architecture. So, assume the smaller one.
+def _reference_as_long_and_overflow(args):
+    n = _reference_as_index(args[0])
+    if n > max_long:
+        return -1, 1
+    elif n < min_long:
+        return -1, -1
+    return n, 0
+
+
+def _reference_as_ssize_t(args):
     n = args[0]
-    if n > 0x7fffffff:
-        raise OverflowError
-    return (int(n), 0)
+    if not isinstance(n, int):
+        raise TypeError("an integer is required")
+    if n > max_ssize_t or n < min_ssize_t:
+        raise OverflowError("Python int too large to convert to C ssize_t")
+    return n
 
 
 def _reference_fromvoidptr(args):
@@ -77,6 +118,7 @@ def _reference_fromlong(args):
     n = args[0]
     return n
 
+
 def _reference_sign(args):
     n = args[0]
     if n==0:
@@ -85,6 +127,7 @@ def _reference_sign(args):
         return -1
     else:
         return 1
+
 
 class DummyNonInt():
     pass
@@ -96,6 +139,28 @@ class DummyIndexable:
         return 0xBEEF
 
 
+def _int_examples():
+    return [
+        (0,),
+        (1,),
+        (-1,),
+        (-2,),
+        (True,),
+        (False,),
+        (0x7fffffff,),
+        (0xffffffff,),
+        (-0xffffffff,),
+        (0x7fffffffffffffffffffffffffffffff,),
+        (0xffffffffffffffffffffffffffffffff,),
+        (-0xffffffffffffffffffffffffffffffff,),
+        (0xffffffffffffffffffffffffffffffffff,),
+        (-0xffffffffffffffffffffffffffffffffff,),
+        (0.3,),
+        (DummyNonInt(),),
+        (DummyIndexable(),),
+    ]
+
+
 class TestPyLong(CPyExtTestCase):
 
     def compile_module(self, name):
@@ -103,44 +168,26 @@ class TestPyLong(CPyExtTestCase):
         super(TestPyLong, self).compile_module(name)
 
     test_PyLong_AsLong = CPyExtFunction(
-        lambda args: True,
-        lambda: (
-            (0, 0),
-            (-1, -1),
-            (0x7fffffff, 0x7fffffff),
-            (0xffffffffffffffffffffffffffffffff, -1),
-            (DummyNonInt(), -1),
-            (DummyIndexable(), 0xBEEF if sys.version_info >= (3, 8, 0) else 0xDEAD),
-        ),
-        code='''int wrap_PyLong_AsLong(PyObject* obj, long expected) {
-            long res = PyLong_AsLong(obj);
-            PyErr_Clear();
-            if (res == expected) {
-                return 1;
-            } else {
-                if (expected != -1 && PyErr_Occurred()) {
-                    PyErr_Print();
-                } else {
-                    fprintf(stderr, "expected: %ld\\nactual: %ld\\n", expected, res);
-                    fflush(stderr);
-                }
-                return 0;
-            }
-        }''',
+        _reference_as_long,
+        _int_examples,
         resultspec="l",
-        argspec='Ol',
-        arguments=["PyObject* obj", "long expected"],
-        callfunction="wrap_PyLong_AsLong",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test__PyLong_AsInt = CPyExtFunction(
+        _reference_as_int,
+        _int_examples,
+        resultspec="l",
+        argspec='O',
+        arguments=["PyObject* obj"],
         cmpfunc=unhandled_error_compare
     )
 
     test_PyLong_AsLongAndOverflow = CPyExtFunctionOutVars(
-        _reference_aslong_overflow,
-        lambda: (
-            (0,),
-            (-1,),
-            (0x7fffffff,),
-        ),
+        _reference_as_long_and_overflow,
+        _int_examples,
         resultspec="li",
         argspec='O',
         arguments=["PyObject* obj"],
@@ -151,16 +198,7 @@ class TestPyLong(CPyExtTestCase):
 
     test_PyLong_AsUnsignedLong = CPyExtFunction(
         _reference_as_unsigned_long,
-        lambda: (
-            (0,),
-            (-1,),
-            (-2,),
-            (True,),
-            (False,),
-            (0x7fffffff,),
-            (0xffffffff,),
-            # we could use larger values on 64-bit systems but how should we know?
-        ),
+        _int_examples,
         resultspec="k",
         argspec='O',
         arguments=["PyObject* obj"],
@@ -168,12 +206,8 @@ class TestPyLong(CPyExtTestCase):
     )
 
     test_PyLong_AsSsize_t = CPyExtFunction(
-        lambda args: int(args[0]),
-        lambda: (
-            (0,),
-            (-1,),
-            (0x7fffffff,),
-        ),
+        _reference_as_ssize_t,
+        _int_examples,
         resultspec="n",
         argspec='O',
         arguments=["PyObject* obj"],

@@ -270,8 +270,10 @@ graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyr
 graalpython/com.oracle.graal.python.cext/modules/clinic/_testmultiphase.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/memoryobject.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/pyexpat.c.h,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/clinic/termios.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/unicodedata.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/pyexpat.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/termios.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/testcapi_long.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodedata_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodename_db.h,python.copyright

@@ -697,6 +697,7 @@ suite = {
                             "bin/modules/_testmultiphase<graalpy_ext:native>",
                             "bin/modules/_ctypes_test<graalpy_ext:native>",
                             "bin/modules/pyexpat<graalpy_ext:native>",
+                            "bin/modules/termios<graalpy_ext:native>",
                         ],
                     },
                 },

@@ -1,5 +1,5 @@
 diff --git a/meson.build b/meson.build
-index ad18b245..b18f3b89 100644
+index ad18b245..24108760 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -11,7 +11,7 @@ project(
@@ -11,6 +11,17 @@ index ad18b245..b18f3b89 100644
      'blas=openblas',
      'lapack=openblas'
    ],
+@@ -66,6 +66,10 @@ if ff.has_argument('-Wno-conversion')
+   add_project_arguments('-Wno-conversion', language: 'fortran')
+ endif
+ 
++if ff.has_argument('-fallow-argument-mismatch')
++  add_project_arguments('-fallow-argument-mismatch', language: 'fortran')
++endif
++
+ is_windows = host_machine.system() == 'windows'
+ 
+ # Intel compilers default to fast-math, so disable it if we detect Intel
 diff --git a/mesonpy_wrapper.py b/mesonpy_wrapper.py
 new file mode 100644
 index 00000000..afa33ecc
@@ -104,7 +115,7 @@ index 00000000..afa33ecc
 +    with env_vars(scipy_build_env):
 +        return mesonpy.build_sdist(sdist_directory, config_settings=config_settings)
 diff --git a/pyproject.toml b/pyproject.toml
-index 454a3c2e..a4157fea 100644
+index 454a3c2e..94a754aa 100644
 --- a/pyproject.toml
 +++ b/pyproject.toml
 @@ -8,55 +8,21 @@
@@ -164,7 +175,7 @@ index 454a3c2e..a4157fea 100644
 -    # become available.
 -    "numpy; python_version>='3.12'",
 -    "numpy; python_version>='3.8' and platform_python_implementation=='PyPy'",
-+    "numpy",
++    "numpy==1.23.5",
 +    "ninja",
  ]
  

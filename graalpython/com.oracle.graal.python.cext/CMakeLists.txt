@@ -186,6 +186,9 @@ add_library(${TARGET_LIBPYTHON} SHARED)
 native_module("_cpython_sre" TRUE "${SRC_DIR}/modules/_cpython_sre/sre.c")
 simple_native_module("_cpython_unicodedata")
 simple_native_module("_cpython_struct")
+if(NOT WIN32)
+    simple_native_module("termios")
+endif()
 set(SQLITE3_SRC
     "${SRC_DIR}/modules/_sqlite/sqlite/sqlite3.c"
     "${SRC_DIR}/modules/_sqlite/blob.c"

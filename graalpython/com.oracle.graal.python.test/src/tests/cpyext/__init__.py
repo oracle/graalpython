@@ -311,6 +311,9 @@ static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
 #endif
 
     res = {callfunction}({argumentnames}{resultvarlocations});
+    if (PyErr_Occurred()) {{
+        return NULL;
+    }}
 
     return Py_BuildValue("{resultspec}", res {resultvarnames});
 }}
