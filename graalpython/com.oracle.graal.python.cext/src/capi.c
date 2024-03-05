@@ -663,6 +663,11 @@ PyAPI_FUNC(int) WriteObjectMember(void* object, Py_ssize_t offset, PyObject* val
     return 0;
 }
 
+PyAPI_FUNC(int) WritePointerMember(void* object, Py_ssize_t offset, void* value) {
+    WriteMember(object, offset, value, void*);
+    return 0;
+}
+
 PyAPI_FUNC(int) WriteCharMember(void* object, Py_ssize_t offset, char value) {
     WriteMember(object, offset, value, char);
     return 0;

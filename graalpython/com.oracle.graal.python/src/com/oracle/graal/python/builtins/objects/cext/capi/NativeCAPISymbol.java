@@ -106,6 +106,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_WRITE_STRING_MEMBER("WriteStringMember", Int, Pointer, Py_ssize_t, ConstCharPtr),
     FUN_WRITE_STRING_IN_PLACE_MEMBER("WriteStringInPlaceMember", Int, Pointer, Py_ssize_t, ConstCharPtr),
     FUN_WRITE_OBJECT_MEMBER("WriteObjectMember", Int, Pointer, Py_ssize_t, Pointer),
+    FUN_WRITE_POINTER_MEMBER("WritePointerMember", Int, Pointer, Py_ssize_t, Pointer),
     FUN_WRITE_OBJECT_EX_MEMBER("WriteObjectExMember", Int, Pointer, Py_ssize_t, Pointer),
     FUN_WRITE_CHAR_MEMBER("WriteCharMember", Int, Pointer, Py_ssize_t, Int),
     FUN_WRITE_UBYTE_MEMBER("WriteUByteMember", Int, Pointer, Py_ssize_t, Int),

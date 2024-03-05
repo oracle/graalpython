@@ -1196,7 +1196,7 @@ public class CStructAccess {
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
-            call.call(NativeCAPISymbol.FUN_WRITE_LONG_MEMBER, pointer, offset, value);
+            call.call(NativeCAPISymbol.FUN_WRITE_POINTER_MEMBER, pointer, offset, value);
         }
 
         public static WritePointerNode getUncached() {
