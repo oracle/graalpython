@@ -350,6 +350,8 @@ public final class CApiContext extends CExtContext {
      */
     Object getOrCreateSmallInts() {
         CompilerAsserts.neverPartOfCompilation();
+        // TODO(fa): this should not require the GIL (GR-51314)
+        assert getContext().ownsGil();
         if (nativeSmallIntsArray == null) {
             int nSmallNegativeInts = CConstants._PY_NSMALLNEGINTS.intValue();
             int nSmallPositiveInts = CConstants._PY_NSMALLPOSINTS.intValue();
@@ -364,6 +366,8 @@ public final class CApiContext extends CExtContext {
 
     private void freeSmallInts() {
         CompilerAsserts.neverPartOfCompilation();
+        // TODO(fa): this should not require the GIL (GR-51314)
+        assert getContext().ownsGil();
         if (nativeSmallIntsArray != null) {
             int nSmallNegativeInts = CConstants._PY_NSMALLNEGINTS.intValue();
             int nSmallPositiveInts = CConstants._PY_NSMALLPOSINTS.intValue();
