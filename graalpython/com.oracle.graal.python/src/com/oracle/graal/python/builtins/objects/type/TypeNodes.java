@@ -1275,16 +1275,16 @@ public abstract class TypeNodes {
             return InstancesOfTypeHaveWeakrefsNodeGen.getUncached().execute(null, type);
         }
 
-        @Specialization(guards = "!isNativeObject(type)")
-        static boolean doManaged(Object type,
-                        @Cached(inline = false) ReadAttributeFromObjectNode read) {
-            return read.execute(type, T___WEAKREF__) != PNone.NO_VALUE;
-        }
-
         @Specialization
-        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject type,
+        static boolean check(Node inliningTarget, Object type,
+                        @Cached NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Cached(inline = false) ReadAttributeFromObjectNode read,
                         @Cached GetWeakListOffsetNode getWeakListOffsetNode) {
-            return getWeakListOffsetNode.execute(inliningTarget, type) != 0;
+            if (needsNativeAllocationNode.execute(inliningTarget, type)) {
+                return getWeakListOffsetNode.execute(inliningTarget, type) != 0;
+            } else {
+                return read.execute(type, T___WEAKREF__) != PNone.NO_VALUE;
+            }
         }
     }
 
