@@ -115,8 +115,10 @@ def ccompile(self, name, check_duplicate_name=True):
             m.update(block)
     cur_checksum = m.hexdigest()
 
+    install_dir = _install_dir_for(name)
+
     # see if there is already a checksum file
-    checksum_file = DIR / f'{name}{EXT_SUFFIX}.sha256'
+    checksum_file = install_dir / f'{name}{EXT_SUFFIX}.sha256'
     available_checksum = ""
     if checksum_file.exists():
         # read checksum file
@@ -124,7 +126,7 @@ def ccompile(self, name, check_duplicate_name=True):
             available_checksum = f.readline()
 
     # note, the suffix is already a string like '.so'
-    lib_file = DIR / f'{name}{EXT_SUFFIX}'
+    lib_file = install_dir / f'{name}{EXT_SUFFIX}'
 
     if check_duplicate_name and available_checksum != cur_checksum and name in compiled_registry:
         print(f"\n\nWARNING: module with name '{name}' was already compiled, but with different source code. "
@@ -140,7 +142,7 @@ def ccompile(self, name, check_duplicate_name=True):
     if available_checksum != cur_checksum or not lib_file.exists():
         module = Extension(name, sources=[str(source_file)])
         verbosity = '--verbose' if sys.flags.verbose else '--quiet'
-        args = [verbosity, 'build', 'install_lib', '-f', f'--install-dir={DIR}', 'clean']
+        args = [verbosity, 'build', 'install_lib', '-f', f'--install-dir={install_dir}', 'clean']
         setup(
             script_name='setup',
             script_args=args,
@@ -402,7 +404,7 @@ class CPyExtFunction():
         return "<CPyExtFunction %s>" % self.name
 
     def test(self):
-        sys.path.insert(0, str(DIR))
+        sys.path.insert(0, str(_install_dir_for(self.name)))
         try:
             cmodule = __import__(self.name)
         finally:
@@ -509,6 +511,10 @@ class UnseenFormatter(Formatter):
             return Formatter.get_value(key, args, kwds)
 
 
+def _install_dir_for(name):
+    return DIR / 'build' / name
+
+
 def _compile_module(c_source, name):
     source_file = DIR / f'{name}.c'
     with open(source_file, "wb", buffering=0) as f:
@@ -521,7 +527,7 @@ def _compile_module(c_source, name):
     except FileNotFoundError:
         raise SystemError("source file %s not available" % (source_file,))
     ccompile(None, name)
-    sys.path.insert(0, str(DIR))
+    sys.path.insert(0, str(_install_dir_for(name)))
     try:
         cmodule = __import__(name)
     finally:
