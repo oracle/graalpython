@@ -21,8 +21,10 @@ GraalPy has first-class support for embedding in Java and can turn Python applic
 * See if the packages you need work with our [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/)
 * Use almost any standard Python feature, the CPython tests run on every commit and pass ~85%
 ![](docs/user/assets/mcd.svg)<sup>
-We run the tests of the [top PyPI packages](https://hugovk.github.io/top-pypi-packages/) on GraalPy every day.
-For more than 96% of the top PyPI packages, there is at least one recent version that installs successfully and we are currently passing over 50% of all tests those top packages.
+We run the tests of the [most depended on PyPI packages](https://libraries.io/pypi) every day.
+For 96% of those packages a recent version can be installed on GraalPy and GraalPy passes about 50% of all tests of all packages combined.
+We assume that CPython not passing 100% of all tests is due to problems in our infrastructure that may also affect GraalPy.
+Packages where CPython fails all tests are marked as "not tested" for both CPython and GraalPy.
 </sup>
 
 **Runs Python code faster**
