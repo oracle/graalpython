@@ -239,7 +239,7 @@ PyComplex_FromCComplex(Py_complex cval)
 	return GraalPyComplex_FromDoubles(cval.real, cval.imag);
 }
 
-PyObject * // GraalPy change: remove static
+PyAPI_FUNC(PyObject *) // GraalPy change: expose the function for downcalls
 complex_subtype_from_doubles(PyTypeObject *type, double real, double imag)
 {
     Py_complex c;
