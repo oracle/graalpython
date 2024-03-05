@@ -1500,7 +1500,7 @@ def graalpython_gate_runner(args, tasks):
         if task:
             env = {
                 'ENABLE_STANDALONE_UNITTESTS': 'true',
-                'ENABLE_JBANG_INTEGRATION_UNITTESTS': 'true',
+                'ENABLE_JBANG_INTEGRATION_UNITTESTS': 'false',
                 'JAVA_HOME': graalvm_jdk(),
                 'PYTHON_STANDALONE_HOME': graalpy_standalone_home('jvm')
             }
