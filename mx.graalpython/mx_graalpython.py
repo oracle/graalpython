@@ -1511,6 +1511,9 @@ def graalpython_gate_runner(args, tasks):
 
             # setup JBang executable
             env["JBANG_CMD"] = _prepare_jbang()
+            m2_cache = get_maven_cache()
+            if m2_cache:
+                env["JBANG_REPO"] = m2_cache
 
             # run the test
             mx.logv(f"running with os.environ extended with: {env=}")
