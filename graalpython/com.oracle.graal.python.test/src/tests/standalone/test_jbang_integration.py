@@ -74,6 +74,7 @@ class TestJBangIntegration(unittest.TestCase):
             return
         self.ensureProxy()
         self.ensureLocalMavenRepo()
+        self.clearCache()
         self.catalog_file = self.getCatalogFile()
         self.registerCatalog(self.catalog_file)
 
@@ -115,6 +116,10 @@ class TestJBangIntegration(unittest.TestCase):
         if MAVEN_REPO_LOCAL_URL is None:
             self.fail("'org.graalvm.maven.downloader.repository' is not defined")
 
+    def clearCache(self):
+        command = [JBANG_CMD, "cache", "clear"]
+        out, result = run_cmd(command)
+            
     def getCatalogFile(self):
         catalog_dir = os.path.dirname(os.path.abspath(__file__))
         for _ in range(5):
