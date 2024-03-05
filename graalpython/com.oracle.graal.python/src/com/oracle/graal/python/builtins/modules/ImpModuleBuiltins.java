@@ -315,20 +315,20 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private Object run(PythonContext context, ModuleSpec spec) throws IOException, ApiInitException, ImportException {
-            Object existingModule = findExtension(context, spec);
+            PythonModule existingModule = findExtension(context, spec);
             if (existingModule != null) {
                 return existingModule;
             }
             return CExtContext.loadCExtModule(this, context, spec, getCheckResultNode());
         }
 
-        private Object findExtension(PythonContext context, ModuleSpec spec) {
-            // TODO check m_size
-            // TODO populate m_copy
+        private PythonModule findExtension(PythonContext context, ModuleSpec spec) {
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext == null) {
                 return null;
             }
+            // TODO check m_size
+            // TODO populate m_copy?
             return cApiContext.findExtension(spec.path, spec.name);
         }
 
