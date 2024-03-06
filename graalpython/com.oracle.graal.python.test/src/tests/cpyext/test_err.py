@@ -204,10 +204,10 @@ ExceptionSubclass = CPyExtType(
     "ExceptionSubclass",
     '',
     struct_base='PyBaseExceptionObject base;',
+    tp_base='(PyTypeObject*)PyExc_Exception',
     tp_new='0',
     tp_alloc='0',
     tp_free='0',
-    ready_code='ExceptionSubclassType.tp_base = (PyTypeObject*)PyExc_Exception;'
 )
 
 

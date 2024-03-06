@@ -545,6 +545,10 @@ def compile_module_from_file(module_name: str):
 
 
 def CPyExtType(name, code='', **kwargs):
+    kwargs['set_base_code'] = ''
+    # We set tp_base later, because MSVC doesn't see the usual &PySomething_Type expressions as constants
+    if tp_base := kwargs.get('tp_base'):
+        kwargs['set_base_code'] = f'{name}Type.tp_base = {tp_base};'
     mod_template = """
     static PyModuleDef {name}module = {{
         PyModuleDef_HEAD_INIT,
@@ -561,6 +565,7 @@ def CPyExtType(name, code='', **kwargs):
         if (m == NULL)
             return NULL;
 
+        {set_base_code}
         {ready_code}
         if (PyType_Ready(&{name}Type) < 0)
             return NULL;
@@ -705,7 +710,7 @@ def CPyExtTypeDecl(name, code='', **kwargs):
         {name}_methods,             /* tp_methods */
         {name}_members,             /* tp_members */
         {name}_getset,              /* tp_getset */
-        {tp_base},                  /* tp_base */
+        0, /* set later */          /* tp_base */
         {tp_dict},                  /* tp_dict */
         {tp_descr_get},             /* tp_descr_get */
         {tp_descr_set},             /* tp_descr_set */
