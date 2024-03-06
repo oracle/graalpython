@@ -68,7 +68,7 @@ static int getbuffer(PyObject *arg, Py_buffer *view, const char **errmsg) {
     return 0;
 }
 
-int get_buffer_r(PyObject *arg, Py_buffer *view) {
+PyAPI_FUNC(int) get_buffer_r(PyObject *arg, Py_buffer *view) {
     if (PyObject_GetBuffer(arg, view, PyBUF_SIMPLE) != 0) {
         return -1;
     }
@@ -79,7 +79,7 @@ int get_buffer_r(PyObject *arg, Py_buffer *view) {
     return 0;
 }
 
-int get_buffer_rw(PyObject *arg, Py_buffer *view) {
+PyAPI_FUNC(int) get_buffer_rw(PyObject *arg, Py_buffer *view) {
     if (PyObject_GetBuffer(arg, view, PyBUF_WRITABLE) != 0) {
         PyErr_Clear();
         return -1;
@@ -91,7 +91,7 @@ int get_buffer_rw(PyObject *arg, Py_buffer *view) {
     return 0;
 }
 
-Py_ssize_t convertbuffer(PyObject *arg, const void **p) {
+PyAPI_FUNC(Py_ssize_t) convertbuffer(PyObject *arg, const void **p) {
     PyBufferProcs *pb = Py_TYPE(arg)->tp_as_buffer;
     Py_ssize_t count;
     Py_buffer view;

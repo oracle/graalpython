@@ -758,7 +758,7 @@ tuple_vectorcall(PyObject *type, PyObject * const*args,
 
 PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
 
-PyObject * // GraalPy change: not static
+PyAPI_FUNC(PyObject *) // GraalPy change: export for downcall
 tuple_subtype_new(PyTypeObject *type, PyObject *iterable)
 {
     // GraalPy change: different implementation
