@@ -175,7 +175,7 @@ public final class CDataBuiltins extends PythonBuiltins {
             Object clazz = getClassNode.execute(inliningTarget, self);
             Object[] t2 = new Object[]{clazz, factory.createTuple(t1)};
             PythonModule ctypes = PythonContext.get(inliningTarget).lookupBuiltinModule(T__CTYPES);
-            Object unpickle = readAttrNode.execute(ctypes.getStorage(), T_UNPICKLE, null);
+            Object unpickle = readAttrNode.execute(ctypes, T_UNPICKLE, null);
             if (unpickle == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, toTruffleStringUncached("unpickle isn't supported yet."));

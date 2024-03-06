@@ -853,7 +853,7 @@ public final class PythonCextSlotBuiltins {
                 if (existing != null) {
                     dict.setDictStorage(existing.getDictStorage());
                 } else {
-                    dict.setDictStorage(new DynamicObjectStorage(object.getStorage()));
+                    dict.setDictStorage(new DynamicObjectStorage(object));
                 }
                 setDict.execute(inliningTarget, object, dict);
             } else {

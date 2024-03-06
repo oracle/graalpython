@@ -44,7 +44,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -106,14 +105,10 @@ public class PythonObject extends PythonAbstractObject {
         return initialPythonClass;
     }
 
-    public final DynamicObject getStorage() {
-        return this;
-    }
-
     @SuppressWarnings("deprecation")
     @TruffleBoundary
     public final Object getAttribute(Object key) {
-        return DynamicObjectLibrary.getUncached().getOrDefault(getStorage(), assertNoJavaString(key), PNone.NO_VALUE);
+        return DynamicObjectLibrary.getUncached().getOrDefault(this, assertNoJavaString(key), PNone.NO_VALUE);
     }
 
     @SuppressWarnings("deprecation")
@@ -122,15 +117,15 @@ public class PythonObject extends PythonAbstractObject {
         Object name = assertNoJavaString(nameObj);
         assert name instanceof TruffleString : name.getClass().getSimpleName();
         CompilerAsserts.neverPartOfCompilation();
-        DynamicObjectLibrary.getUncached().put(getStorage(), name, assertNoJavaString(value));
+        DynamicObjectLibrary.getUncached().put(this, name, assertNoJavaString(value));
     }
 
     @SuppressWarnings("deprecation")
     @TruffleBoundary
     public List<TruffleString> getAttributeNames() {
         ArrayList<TruffleString> keyList = new ArrayList<>();
-        for (Object o : getStorage().getShape().getKeyList()) {
-            if (o instanceof TruffleString && DynamicObjectLibrary.getUncached().getOrDefault(getStorage(), o, PNone.NO_VALUE) != PNone.NO_VALUE) {
+        for (Object o : getShape().getKeyList()) {
+            if (o instanceof TruffleString && DynamicObjectLibrary.getUncached().getOrDefault(this, o, PNone.NO_VALUE) != PNone.NO_VALUE) {
                 keyList.add((TruffleString) o);
             }
         }

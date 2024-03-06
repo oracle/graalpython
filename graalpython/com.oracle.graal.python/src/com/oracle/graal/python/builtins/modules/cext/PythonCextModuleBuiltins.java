@@ -235,7 +235,7 @@ public final class PythonCextModuleBuiltins {
                         @Cached ObjectBuiltins.SetattrNode setattrNode,
                         @Cached ReadAttributeFromDynamicObjectNode readAttrNode,
                         @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
-            Object modName = readAttrNode.execute(mod.getStorage(), T___NAME__, null);
+            Object modName = readAttrNode.execute(mod, T___NAME__, null);
             assert modName != null : "module name is missing!";
             Object func = cFunctionNewExMethodNode.execute(inliningTarget, methodDefPtr, name, cfunc, flags, wrapper, mod, modName, doc);
             setattrNode.execute(null, mod, name, func);
