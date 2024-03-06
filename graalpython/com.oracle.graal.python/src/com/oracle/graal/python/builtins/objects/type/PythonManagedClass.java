@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -213,8 +212,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     @Override
     @TruffleBoundary
-    public void setAttribute(Object keyObj, Object value) {
-        Object key = assertNoJavaString(keyObj);
+    public void setAttribute(TruffleString key, Object value) {
         super.setAttribute(key, value);
         onAttributeUpdate(key, value);
     }

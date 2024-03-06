@@ -113,7 +113,7 @@ public final class PythonClass extends PythonManagedClass {
     @Override
     @TruffleBoundary
     @SuppressFBWarnings(value = "UR_UNINIT_READ_CALLED_FROM_SUPER_CONSTRUCTOR")
-    public void setAttribute(Object key, Object value) {
+    public void setAttribute(TruffleString key, Object value) {
         if (slotsFinalAssumption != null) {
             // It is OK when slotsFinalAssumption is null during the super ctor call
             invalidateSlotsFinalAssumption();

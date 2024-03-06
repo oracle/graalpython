@@ -105,22 +105,17 @@ public class PythonObject extends PythonAbstractObject {
         return initialPythonClass;
     }
 
-    @SuppressWarnings("deprecation")
     @TruffleBoundary
-    public final Object getAttribute(Object key) {
-        return DynamicObjectLibrary.getUncached().getOrDefault(this, assertNoJavaString(key), PNone.NO_VALUE);
+    public final Object getAttribute(TruffleString key) {
+        return DynamicObjectLibrary.getUncached().getOrDefault(this, key, PNone.NO_VALUE);
     }
 
-    @SuppressWarnings("deprecation")
     @TruffleBoundary
-    public void setAttribute(Object nameObj, Object value) {
-        Object name = assertNoJavaString(nameObj);
-        assert name instanceof TruffleString : name.getClass().getSimpleName();
+    public void setAttribute(TruffleString name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
         DynamicObjectLibrary.getUncached().put(this, name, assertNoJavaString(value));
     }
 
-    @SuppressWarnings("deprecation")
     @TruffleBoundary
     public List<TruffleString> getAttributeNames() {
         ArrayList<TruffleString> keyList = new ArrayList<>();

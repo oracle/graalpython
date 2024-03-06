@@ -71,7 +71,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     }
 
     @Override
-    public void setAttribute(Object name, Object value) {
+    public void setAttribute(TruffleString name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
         if (!PythonContext.get(null).isCoreInitialized()) {
             setAttributeUnsafe(name, value);
@@ -83,7 +83,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     /**
      * Modify attributes in an unsafe way, should only use when initializing.
      */
-    public void setAttributeUnsafe(Object name, Object value) {
+    public void setAttributeUnsafe(TruffleString name, Object value) {
         super.setAttribute(name, value);
     }
 
