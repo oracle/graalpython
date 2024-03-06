@@ -36,11 +36,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 from importlib import invalidate_caches
 
 import gc
 import os
+import shutil
 import sys
 import unittest
 from copy import deepcopy
@@ -109,10 +109,10 @@ def ccompile(self, name, check_duplicate_name=True):
             m.update(block)
     cur_checksum = m.hexdigest()
 
-    install_dir = DIR / 'build' / name
+    build_dir = DIR / 'build' / name
 
     # see if there is already a checksum file
-    checksum_file = install_dir / f'{name}{EXT_SUFFIX}.sha256'
+    checksum_file = build_dir / f'{name}{EXT_SUFFIX}.sha256'
     available_checksum = ""
     if checksum_file.exists():
         # read checksum file
@@ -120,7 +120,7 @@ def ccompile(self, name, check_duplicate_name=True):
             available_checksum = f.readline()
 
     # note, the suffix is already a string like '.so'
-    lib_file = install_dir / f'{name}{EXT_SUFFIX}'
+    lib_file = build_dir / f'{name}{EXT_SUFFIX}'
 
     if check_duplicate_name and available_checksum != cur_checksum and name in compiled_registry:
         raise RuntimeError(f"\n\nModule with name '{name}' was already compiled, but with different source code. "
@@ -134,20 +134,28 @@ def ccompile(self, name, check_duplicate_name=True):
     # Note: It could be that the C source file's checksum didn't change but someone
     # manually deleted the shared library file.
     if available_checksum != cur_checksum or not lib_file.exists():
-        module = Extension(name, sources=[str(source_file)])
-        args = [
-            '--verbose' if sys.flags.verbose else '--quiet',
-            'build', f'--build-base={install_dir}',
-            'install_lib', '-f', f'--install-dir={install_dir}',
-        ]
-        setup(
-            script_name='setup',
-            script_args=args,
-            name=name,
-            version='1.0',
-            description='',
-            ext_modules=[module]
-        )
+        os.makedirs(build_dir, exist_ok=True)
+        # MSVC linker doesn't like absolute paths in some parameters, so just run from the build dir
+        old_cwd = os.getcwd()
+        os.chdir(build_dir)
+        try:
+            shutil.copy(source_file, '.')
+            module = Extension(name, sources=[source_file.name])
+            args = [
+                '--verbose' if sys.flags.verbose else '--quiet',
+                'build',
+                'install_lib', '-f', '--install-dir=.',
+            ]
+            setup(
+                script_name='setup',
+                script_args=args,
+                name=name,
+                version='1.0',
+                description='',
+                ext_modules=[module]
+            )
+        finally:
+            os.chdir(old_cwd)
 
         # write new checksum
         with open(checksum_file, "w") as f:
@@ -163,7 +171,7 @@ def ccompile(self, name, check_duplicate_name=True):
     if GRAALPYTHON:
         file_not_empty(lib_file)
 
-    return str(install_dir)
+    return str(build_dir)
 
 
 def file_not_empty(path):
