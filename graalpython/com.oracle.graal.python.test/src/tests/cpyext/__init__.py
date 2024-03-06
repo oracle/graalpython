@@ -123,7 +123,7 @@ def ccompile(self, name, check_duplicate_name=True):
     lib_file = install_dir / f'{name}{EXT_SUFFIX}'
 
     if check_duplicate_name and available_checksum != cur_checksum and name in compiled_registry:
-        print(f"\n\nWARNING: module with name '{name}' was already compiled, but with different source code. "
+        raise RuntimeError(f"\n\nModule with name '{name}' was already compiled, but with different source code. "
               "Have you accidentally used the same name for two different CPyExtType, CPyExtHeapType, "
               "or similar helper calls? Modules with same name can sometimes confuse the import machinery "
               "and cause all sorts of trouble.\n")
