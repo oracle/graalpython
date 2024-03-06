@@ -216,11 +216,11 @@ public abstract class CApiTransitions {
             super(handleContext, referent);
             this.pointer = pointer;
             this.strongReference = strong ? referent : null;
+            referent.ref = this;
+            this.handleTableIndex = handleTableIndex;
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.fine(PythonUtils.formatJString("new %s", toString()));
             }
-            referent.ref = this;
-            this.handleTableIndex = handleTableIndex;
         }
 
         static PythonObjectReference create(HandleContext handleContext, PythonAbstractObjectNativeWrapper referent, boolean strong, long pointer, int idx) {
