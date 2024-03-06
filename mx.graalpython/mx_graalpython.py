@@ -980,7 +980,11 @@ def deploy_local_maven_repo():
     if not DISABLE_REBUILD:
         mx.rmtree(path, ignore_errors=True)
         os.mkdir(path)
-        mx.maven_deploy(deploy_args)
+        if m2_cache:
+            with set_env(MAVEN_OPTS = maven_opts):
+                mx.maven_deploy(deploy_args)
+        else:
+            mx.maven_deploy(deploy_args)
     return path, version
 
 
