@@ -50,6 +50,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -57,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode.CreateAndCheckArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -107,7 +108,6 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
     protected final TruffleString callTargetName;
     protected final BuiltinMethodDescriptor builtinMethodDescriptor;
     protected final CApiTiming timing;
-    private final boolean skipSelf;
     private long pointer;
 
     protected PyCFunctionWrapper(RootCallTarget callTarget, Signature signature) {
@@ -119,7 +119,6 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         this.callTargetName = PythonUtils.toTruffleStringUncached(ctName);
         this.builtinMethodDescriptor = null;
         this.timing = CApiTiming.create(false, ctName);
-        this.skipSelf = false;
     }
 
     protected PyCFunctionWrapper(BuiltinMethodDescriptor builtinMethodDescriptor) {
@@ -129,7 +128,6 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         this.callTargetName = null;
         this.builtinMethodDescriptor = builtinMethodDescriptor;
         this.timing = CApiTiming.create(false, builtinMethodDescriptor.getName());
-        this.skipSelf = builtinMethodDescriptor.getEnclosingType() == null && !builtinMethodDescriptor.getBuiltinAnnotation().declaresExplicitSelf();
     }
 
     public final RootCallTarget getCallTarget() {
@@ -142,10 +140,6 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         }
         assert callTarget != null;
         return callTarget;
-    }
-
-    protected final boolean skipFirstArg() {
-        return skipSelf;
     }
 
     abstract String getSignature();
@@ -212,12 +206,13 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
              * 'builtin_function_or_method' or 'method_descriptor' in which case we need to have the
              * call target available.
              */
-            if (CExtContext.isMethNoArgs(flags) || CExtContext.isMethO(flags)) {
+            if (CExtContext.isMethNoArgs(flags) && builtinMethodDescriptor instanceof UnaryBuiltinDescriptor ||
+                            CExtContext.isMethO(flags) && builtinMethodDescriptor instanceof BinaryBuiltinDescriptor) {
                 cApiContext.getContext().getLanguage().registerBuiltinDescriptorCallTarget(builtinMethodDescriptor, builtinFunction.getCallTarget());
             }
-            if (CExtContext.isMethNoArgs(flags)) {
+            if (CExtContext.isMethNoArgs(flags) && builtinMethodDescriptor instanceof UnaryBuiltinDescriptor) {
                 return cApiContext.getOrCreatePyCFunctionWrapper(builtinMethodDescriptor, PyCFunctionUnaryWrapper::new);
-            } else if (CExtContext.isMethO(flags)) {
+            } else if (CExtContext.isMethO(flags) && builtinMethodDescriptor instanceof BinaryBuiltinDescriptor) {
                 return cApiContext.getOrCreatePyCFunctionWrapper(builtinMethodDescriptor, PyCFunctionBinaryWrapper::new);
             }
         }
@@ -282,7 +277,6 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallNode callNode,
                         @Cached CallUnaryMethodNode callUnaryNode,
                         @Cached CreateAndCheckArgumentsNode createArgsNode,
                         @Cached CallTargetDispatchNode invokeNode,
@@ -305,11 +299,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     Object jArg0 = toJavaNode.execute(arguments[0]);
                     if (builtinMethodDescriptor != null) {
                         assert callTarget == null;
-                        if (skipFirstArg()) {
-                            result = callNode.execute(builtinMethodDescriptor);
-                        } else {
-                            result = callUnaryNode.executeObject(null, builtinMethodDescriptor, jArg0);
-                        }
+                        result = callUnaryNode.executeObject(null, builtinMethodDescriptor, jArg0);
                     } else {
                         assert callTarget != null;
                         assert callTargetName != null;
@@ -356,7 +346,6 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
                         @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallUnaryMethodNode callUnaryMethodNode,
                         @Cached CallBinaryMethodNode callBinaryMethodNode,
                         @Cached CallTargetDispatchNode invokeNode,
                         @Cached CreateAndCheckArgumentsNode createArgsNode,
@@ -376,11 +365,8 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     Object jArg1 = toJavaNode.execute(arguments[1]);
                     if (builtinMethodDescriptor != null) {
                         assert callTarget == null;
-                        if (skipFirstArg()) {
-                            result = callUnaryMethodNode.executeObject(builtinMethodDescriptor, jArg1);
-                        } else {
-                            result = callBinaryMethodNode.executeObject(builtinMethodDescriptor, jArg0, jArg1);
-                        }
+                        assert builtinMethodDescriptor instanceof BinaryBuiltinDescriptor;
+                        result = callBinaryMethodNode.executeObject(builtinMethodDescriptor, jArg0, jArg1);
                     } else {
                         assert callTarget != null;
                         assert callTargetName != null;
