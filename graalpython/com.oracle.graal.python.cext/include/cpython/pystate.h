@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -205,6 +205,13 @@ struct _ts {
 
     /* The bottom-most frame on the stack. */
     _PyCFrame root_cframe;
+
+    /* GraalVM change: We add field 'small_ints' which roughly corresponds to
+       field '_PyRuntimeState._Py_global_objects.small_ints'. We do so because
+       we maintain the runtime state in Java objects and don't want to allocate
+       the large structures and arrays where for us, most fields will be zero.
+    */
+    PyObject **small_ints;
 };
 
 

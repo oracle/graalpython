@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -97,6 +97,9 @@ class TestNativeThread:
                 PyGILState_STATE gstate;
                 gstate = PyGILState_Ensure();
                 if (!PyObject_CallNoArgs(callable)) {
+                    PyErr_WriteUnraisable(callable);
+                }
+                if (PyThreadState_Get() == NULL || PyThreadState_Get() == NULL) {
                     PyErr_WriteUnraisable(callable);
                 }
                 PyGILState_Release(gstate);

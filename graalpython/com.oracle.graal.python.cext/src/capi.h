@@ -57,6 +57,14 @@
 #  define LIKELY(value) (value)
 #endif
 
+#if defined(__GNUC__)
+#define THREAD_LOCAL __thread
+#elif defined(_MSC_VER)
+#define THREAD_LOCAL __declspec(thread)
+#else
+#error "don't know how to declare thread local variable"
+#endif
+
 #ifdef MS_WINDOWS
 // define the below, otherwise windows' sdk defines complex to _complex and breaks us
 #define _COMPLEX_DEFINED
@@ -71,6 +79,7 @@
 #include "pycore_pymem.h"
 #include "pycore_fileutils.h"
 #include "bytesobject.h"
+#include "pycore_global_objects.h" // _PY_NSMALLPOSINTS
 
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED
 #include <graalvm/llvm/polyglot.h>
@@ -133,8 +142,10 @@ CAPI_BUILTINS
 #define GET_SLOT_SPECIAL(OBJ, RECEIVER, NAME, SPECIAL) ( points_to_py_handle_space(OBJ) ? GraalPy_get_##RECEIVER##_##NAME((RECEIVER*) (OBJ)) : ((RECEIVER*) (OBJ))->SPECIAL )
 
 PyAPI_DATA(uint32_t) Py_Truffle_Options;
-PyAPI_DATA(PyObject*) _PyTruffle_Zero;
-PyAPI_DATA(PyObject*) _PyTruffle_One;
+
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+extern THREAD_LOCAL Py_LOCAL_SYMBOL PyThreadState *tstate_current;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 
 /* Flags definitions representing global (debug) options. */
 static MUST_INLINE int PyTruffle_Trace_Memory() {

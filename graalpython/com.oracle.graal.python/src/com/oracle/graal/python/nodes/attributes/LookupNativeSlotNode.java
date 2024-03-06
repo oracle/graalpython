@@ -114,7 +114,7 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
     }
 
     private static Object getNULL() {
-        return PythonContext.get(null).getNativeNull().getPtr();
+        return PythonContext.get(null).getNativeNull();
     }
 
     private static Object readSlot(SlotMethodDef slot, PythonAbstractClass currentType, ReadAttributeFromObjectNode readNode, CStructAccess.ReadPointerNode readPointerNode,

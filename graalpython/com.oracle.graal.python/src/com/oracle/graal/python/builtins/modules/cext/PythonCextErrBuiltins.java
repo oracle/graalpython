@@ -83,7 +83,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins.PyFile_WriteObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -465,7 +465,7 @@ public final class PythonCextErrBuiltins {
                         @Cached ExitNode exitNode,
                         @Cached PyTruffleErr_Fetch fetchNode,
                         @Cached PyErr_Display errDisplayNode) {
-            PythonNativePointer nativeNull = getNativeNull();
+            NativePointer nativeNull = getNativeNull();
 
             Object err = errOccuredNode.execute();
             PythonModule sys = getCore().getSysModule();

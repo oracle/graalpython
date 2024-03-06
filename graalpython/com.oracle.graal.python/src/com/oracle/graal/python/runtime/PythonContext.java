@@ -114,13 +114,14 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativePointer;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -309,6 +310,12 @@ public final class PythonContext extends Python3Core {
          */
         PThreadState nativeWrapper;
 
+        /*
+         * Pointer to the native thread-local variable used to store the native PyThreadState struct
+         * for this thread.
+         */
+        Object nativeThreadLocalVarPointer;
+
         /* The global tracing function, set by sys.settrace and returned by sys.gettrace. */
         Object traceFun;
 
@@ -487,7 +494,7 @@ public final class PythonContext extends Python3Core {
             this.contextVarsContext = contextVarsContext;
         }
 
-        public void dispose() {
+        public void dispose(PythonContext context) {
             // This method may be called twice on the same object.
 
             /*
@@ -505,6 +512,14 @@ public final class PythonContext extends Python3Core {
             if (nativeWrapper != null && nativeWrapper.ref == null) {
                 PyTruffleObjectFree.releaseNativeWrapperUncached(nativeWrapper);
                 nativeWrapper = null;
+            }
+            /*
+             * Write 'NULL' to the native thread-local variable used to store the PyThreadState
+             * struct such that it cannot accidentally be reused.
+             */
+            if (nativeThreadLocalVarPointer != null) {
+                CStructAccess.WritePointerNode.writeUncached(nativeThreadLocalVarPointer, 0, context.getNativeNull());
+                nativeThreadLocalVarPointer = null;
             }
         }
 
@@ -571,6 +586,13 @@ public final class PythonContext extends Python3Core {
 
         public void setAsyncgenFirstIter(Object asyncgenFirstIter) {
             this.asyncgenFirstIter = asyncgenFirstIter;
+        }
+
+        public void setNativeThreadLocalVarPointer(Object ptr) {
+            // either unset or same
+            assert nativeThreadLocalVarPointer == null || nativeThreadLocalVarPointer == ptr ||
+                            InteropLibrary.getUncached().isIdentical(nativeThreadLocalVarPointer, ptr, InteropLibrary.getUncached());
+            this.nativeThreadLocalVarPointer = ptr;
         }
     }
 
@@ -799,7 +821,7 @@ public final class PythonContext extends Python3Core {
     private TruffleString pyPackageContext;
 
     // the actual pointer will be set when the cext is initialized
-    private final PythonNativePointer nativeNull = new PythonNativePointer(null);
+    private final NativePointer nativeNull = NativePointer.createNull();
 
     public RootCallTarget signatureContainer;
 
@@ -1192,7 +1214,7 @@ public final class PythonContext extends Python3Core {
         return REFERENCE.get(node);
     }
 
-    public PythonNativePointer getNativeNull() {
+    public NativePointer getNativeNull() {
         return nativeNull;
     }
 
@@ -2064,7 +2086,7 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     private void disposeThreadStates() {
         for (PythonThreadState ts : threadStateMapping.values()) {
-            ts.dispose();
+            ts.dispose(this);
         }
         threadStateMapping.clear();
     }
@@ -2491,7 +2513,7 @@ public final class PythonContext extends Python3Core {
         }
         ts.shutdown();
         threadStateMapping.remove(thread);
-        ts.dispose();
+        ts.dispose(this);
         releaseSentinelLock(ts.sentinelLock);
         getSharedMultiprocessingData().removeChildContextThread(PThread.getThreadId(thread));
     }

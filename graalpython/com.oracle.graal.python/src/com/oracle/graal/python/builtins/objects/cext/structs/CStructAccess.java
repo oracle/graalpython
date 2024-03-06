@@ -79,6 +79,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 import sun.misc.Unsafe;
@@ -94,22 +95,30 @@ public class CStructAccess {
     @GenerateUncached
     public abstract static class AllocateNode extends Node {
 
-        abstract Object execute(long size, boolean allocatePyMem);
+        abstract Object execute(long count, long elsize, boolean allocatePyMem);
 
         public final Object alloc(CStructs struct) {
-            return execute(struct.size(), false);
+            return execute(1, struct.size(), false);
+        }
+
+        public final Object calloc(long count, CStructs elstruct) {
+            return execute(count, elstruct.size(), false);
         }
 
         public final Object alloc(CStructs struct, boolean allocatePyMem) {
-            return execute(struct.size(), allocatePyMem);
+            return execute(1, struct.size(), allocatePyMem);
         }
 
         public final Object alloc(long size) {
-            return execute(size, false);
+            return execute(1, size, false);
+        }
+
+        public final Object calloc(long count, long elSize) {
+            return execute(count, elSize, false);
         }
 
         public Object alloc(int size, boolean allocatePyMem) {
-            return execute(size, allocatePyMem);
+            return execute(1, size, allocatePyMem);
         }
 
         @Idempotent
@@ -118,31 +127,52 @@ public class CStructAccess {
         }
 
         @Specialization(guards = {"!allocatePyMem", "nativeAccess()"})
-        static Object allocLong(long size, @SuppressWarnings("unused") boolean allocatePyMem) {
+        static Object allocLong(long count, long size, @SuppressWarnings("unused") boolean allocatePyMem,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile overflowProfile) {
+            assert count >= 0;
             assert size >= 0;
             // non-zero size to get unique pointers
-            long memory = UNSAFE.allocateMemory(size == 0 ? 1 : size);
-            UNSAFE.setMemory(memory, size, (byte) 0);
-            return new NativePointer(memory);
+            try {
+                long totalSize = Math.multiplyExact(count, size);
+                long memory = UNSAFE.allocateMemory(totalSize == 0 ? 1 : totalSize);
+                UNSAFE.setMemory(memory, totalSize, (byte) 0);
+                return new NativePointer(memory);
+            } catch (ArithmeticException e) {
+                overflowProfile.enter(inliningTarget);
+                return NativePointer.createNull();
+            }
         }
 
         @Specialization(guards = {"!allocatePyMem", "!nativeAccess()"})
-        static Object allocLong(long size, @SuppressWarnings("unused") boolean allocatePyMem,
+        static Object allocLong(long count, long size, @SuppressWarnings("unused") boolean allocatePyMem,
                         @Shared @Cached PCallCapiFunction call) {
             assert size >= 0;
             // non-zero size to get unique pointers
-            return call.call(NativeCAPISymbol.FUN_CALLOC, size == 0 ? 1 : size);
+            return call.call(NativeCAPISymbol.FUN_CALLOC, count, size == 0 ? 1 : size);
         }
 
         @Specialization(guards = "allocatePyMem")
-        static Object allocLongPyMem(long size, @SuppressWarnings("unused") boolean allocatePyMem,
+        static Object allocLongPyMem(long count, long elsize, @SuppressWarnings("unused") boolean allocatePyMem,
                         @Shared @Cached PCallCapiFunction call) {
-            assert size >= 0;
-            return call.call(NativeCAPISymbol.FUN_PYMEM_ALLOC, size, 1);
+            assert elsize >= 0;
+            return call.call(NativeCAPISymbol.FUN_PYMEM_ALLOC, count, elsize);
         }
 
-        public static AllocateNode getUncached() {
-            return AllocateNodeGen.getUncached();
+        public static Object allocUncached(CStructs struct) {
+            return AllocateNodeGen.getUncached().alloc(struct);
+        }
+
+        public static Object callocUncached(long count, CStructs elstruct) {
+            return AllocateNodeGen.getUncached().calloc(count, elstruct);
+        }
+
+        public static Object allocUncached(long size) {
+            return AllocateNodeGen.getUncached().alloc(size);
+        }
+
+        public static Object callocUncached(long count, long elSize) {
+            return AllocateNodeGen.getUncached().calloc(count, elSize);
         }
     }
 
@@ -1118,6 +1148,14 @@ public class CStructAccess {
     @GenerateUncached
     public abstract static class WritePointerNode extends Node implements CStructAccessNode {
 
+        public static void writeUncached(Object pointer, CFields field, Object value) {
+            WritePointerNodeGen.getUncached().write(pointer, field, value);
+        }
+
+        public static void writeUncached(Object pointer, long offset, Object value) {
+            WritePointerNodeGen.getUncached().execute(pointer, offset, value);
+        }
+
         abstract void execute(Object pointer, long offset, Object value);
 
         public final void write(Object pointer, CFields field, Object value) {
@@ -1158,7 +1196,7 @@ public class CStructAccess {
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
-            call.call(NativeCAPISymbol.FUN_WRITE_LONG_MEMBER, pointer, offset, value);
+            call.call(NativeCAPISymbol.FUN_WRITE_POINTER_MEMBER, pointer, offset, value);
         }
 
         public static WritePointerNode getUncached() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,7 +61,9 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 public enum CConstants {
     PYLONG_BITS_IN_DIGIT,
     READONLY,
-    CHAR_MIN;
+    CHAR_MIN,
+    _PY_NSMALLNEGINTS,
+    _PY_NSMALLPOSINTS;
 
     @CompilationFinal(dimensions = 1) public static final CConstants[] VALUES = values();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -112,7 +112,7 @@ public final class PythonCextArrayBuiltins {
                         @Cached CStructAccess.WriteByteNode writeByteNode,
                         @Cached CStructAccess.AllocateNode allocateNode) {
             Object bufPtr = ensureNativeStorageNode.execute(inliningTarget, array).getPtr();
-            Object nativeNull = PythonContext.get(inliningTarget).getNativeNull().getPtr();
+            Object nativeNull = PythonContext.get(inliningTarget).getNativeNull();
             writePointerNode.write(pyBufferPtr, CFields.Py_buffer__buf, bufPtr);
             writePointerNode.write(pyBufferPtr, CFields.Py_buffer__obj, toNativeNewRefNode.execute(array));
             writeLongNode.write(pyBufferPtr, CFields.Py_buffer__len, array.getBytesLength());

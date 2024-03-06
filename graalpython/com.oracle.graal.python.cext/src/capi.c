@@ -257,17 +257,20 @@ PyObject* _Py_EllipsisObjectReference;
 PyObject* _Py_NoneStructReference;
 PyObject* _Py_NotImplementedStructReference;
 
-PyObject* _PyTruffle_Zero;
-PyObject* _PyTruffle_One;
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+THREAD_LOCAL PyThreadState *tstate_current = NULL;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 
 static void initialize_globals() {
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+    // store the thread state into a thread local variable
+    tstate_current = GraalPyTruffleThreadState_Get(&tstate_current);
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
     _Py_NoneStructReference = GraalPyTruffle_None();
     _Py_NotImplementedStructReference = GraalPyTruffle_NotImplemented();
     _Py_EllipsisObjectReference = GraalPyTruffle_Ellipsis();
     _Py_TrueStructReference = (struct _longobject*)GraalPyTruffle_True();
     _Py_FalseStructReference = (struct _longobject*)GraalPyTruffle_False();
-    _PyTruffle_Zero = GraalPyTruffleLong_Zero();
-    _PyTruffle_One = GraalPyTruffleLong_One();
 }
 
 /* internal functions to avoid unnecessary managed <-> native conversions */
@@ -420,26 +423,6 @@ PyAPI_FUNC(void) PyTruffle_INCREF(PyObject* obj) {
 /** to be used from Java code only; calls DECREF */
 PyAPI_FUNC(void) PyTruffle_DECREF(PyObject* obj) {
     Py_DECREF(obj);
-}
-
-/** to be used from Java code only; calls ADDREF */
-PyAPI_FUNC(Py_ssize_t) PyTruffle_ADDREF(intptr_t ptr, Py_ssize_t value) {
-	PyObject* obj = (PyObject*) ptr; // avoid type attachment at the interop boundary
-#ifdef ASSERTIONS
-	if (obj->ob_refcnt & 0xFFFFFFFF00000000L) {
-		char buf[1024];
-		sprintf(buf, "suspicious refcnt value during managed adjustment for %p (%zd 0x%zx + %zd)\n", obj, obj->ob_refcnt, obj->ob_refcnt, value);
-		Py_FatalError(buf);
-	}
-	if ((obj->ob_refcnt + value) <= 0) {
-		char buf[1024];
-		sprintf(buf, "refcnt reached zero during managed adjustment for %p (%zd 0x%zx + %zd)\n", obj, obj->ob_refcnt, obj->ob_refcnt, value);
-		Py_FatalError(buf);
-	}
-//	printf("refcnt value during managed adjustment for %p (%zd 0x%zx + %zd)\n", obj, obj->ob_refcnt, obj->ob_refcnt, value);
-#endif // ASSERTIONS
-
-	return (obj->ob_refcnt += value);
 }
 
 /** to be used from Java code only; calls DECREF */
@@ -680,6 +663,11 @@ PyAPI_FUNC(int) WriteObjectMember(void* object, Py_ssize_t offset, PyObject* val
     return 0;
 }
 
+PyAPI_FUNC(int) WritePointerMember(void* object, Py_ssize_t offset, void* value) {
+    WriteMember(object, offset, value, void*);
+    return 0;
+}
+
 PyAPI_FUNC(int) WriteCharMember(void* object, Py_ssize_t offset, char value) {
     WriteMember(object, offset, value, char);
     return 0;
@@ -770,8 +758,8 @@ PyAPI_FUNC(void) truffle_memcpy_bytes(void *dest, size_t dest_offset, void *src,
     memcpy(dest + dest_offset, src + src_offset, len);
 }
 
-PyAPI_FUNC(void*) truffle_calloc(size_t size) {
-	return calloc(1, size);
+PyAPI_FUNC(void*) truffle_calloc(size_t count, size_t elsize) {
+	return calloc(count, elsize);
 }
 
 // avoid problems with calling "void" intrinsics via interop
@@ -880,7 +868,7 @@ void initialize_hashes();
 // defined in 'floatobject.c'
 void _PyFloat_InitState(PyInterpreterState* state);
 
-TruffleContext* TRUFFLE_CONTEXT;
+Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
 
 PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int id)) {
 	clock_t t = clock();
@@ -892,9 +880,6 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int 
 	initialize_builtins(getBuiltin);
 	PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
-
-    // this will set PythonContext.nativeNull and is required to be first
-    GraalPyTruffle_Register_NULL(NULL);
 
     initialize_builtin_types_and_structs();
     // initialize global variables like '_Py_NoneStruct', etc.

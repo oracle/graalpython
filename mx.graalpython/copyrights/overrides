@@ -146,12 +146,14 @@ graalpython/com.oracle.graal.python.cext/include/import.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_atomic.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_blocks_output_buffer.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_call.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/internal/pycore_ceval.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_condvar.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_dtoa.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_fileutils.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_frame.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_gc.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_gil.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/internal/pycore_global_objects.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_long.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_moduleobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_namespace.h,python.copyright

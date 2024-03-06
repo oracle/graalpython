@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
@@ -65,7 +64,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -270,10 +268,8 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(name = "PyLong_FromSsize_t", ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
-    @CApiBuiltin(name = "PyLong_FromLong", ret = PyObjectTransfer, args = {ArgDescriptor.Long}, call = Direct)
-    @CApiBuiltin(ret = PyObjectTransfer, args = {LONG_LONG}, call = Direct)
-    abstract static class PyLong_FromLongLong extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {LONG_LONG}, call = Ignored)
+    abstract static class PyTruffleLong_FromLongLong extends CApiUnaryBuiltinNode {
 
         @Specialization
         static int doSignedInt(int n) {
@@ -410,22 +406,6 @@ public final class PythonCextLongBuiltins {
                 transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
             }
             return transformExceptionToNativeNode;
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    abstract static class PyTruffleLong_One extends CApiNullaryBuiltinNode {
-        @Specialization
-        static int run() {
-            return 1;
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    abstract static class PyTruffleLong_Zero extends CApiNullaryBuiltinNode {
-        @Specialization
-        static int run() {
-            return 0;
         }
     }
 

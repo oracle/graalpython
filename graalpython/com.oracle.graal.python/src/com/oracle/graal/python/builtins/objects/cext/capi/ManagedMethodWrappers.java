@@ -151,7 +151,7 @@ public abstract class ManagedMethodWrappers {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(callNode).getNativeNull().getPtr();
+                return PythonContext.get(callNode).getNativeNull();
             } finally {
                 gil.release(mustRelease);
             }

@@ -40,10 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
@@ -52,7 +50,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi11BuiltinNode;
@@ -62,7 +59,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
@@ -74,8 +70,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
@@ -84,9 +78,6 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
@@ -203,39 +194,6 @@ public final class PythonCextCEvalBuiltins {
 
             RootCallTarget rootCallTarget = getCallTargetNode.execute(inliningTarget, code);
             return invokeNode.execute(rootCallTarget, pArguments);
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {ConstCharPtr}, call = Ignored)
-    abstract static class PyTruffle_EnterRecursiveCall extends CApiUnaryBuiltinNode {
-        @Specialization
-        int doGeneric(Object where) {
-            PythonLanguage language = PythonLanguage.get(this);
-            PythonContext context = PythonContext.get(this);
-            PythonThreadState threadState = context.getThreadState(language);
-            if (++threadState.recursionDepth > CApiContext.DEFAULT_RECURSION_LIMIT) {
-                throw raiseRecursionError(this, where);
-            }
-            return 0;
-        }
-
-        @TruffleBoundary
-        private static PException raiseRecursionError(Node node, Object where) {
-            TruffleString msg = CastToTruffleStringNode.executeUncached(FromCharPointerNodeGen.getUncached().execute(where));
-            TruffleString.ConcatNode.getUncached().execute(ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, msg, TS_ENCODING, false);
-            throw PRaiseNode.raiseUncached(node, RecursionError, msg);
-        }
-    }
-
-    @CApiBuiltin(ret = Void, args = {}, call = Ignored)
-    abstract static class PyTruffle_LeaveRecursiveCall extends CApiNullaryBuiltinNode {
-        @Specialization
-        Object doGeneric() {
-            PythonLanguage language = PythonLanguage.get(this);
-            PythonContext context = PythonContext.get(this);
-            PythonThreadState threadState = context.getThreadState(language);
-            --threadState.recursionDepth;
-            return PNone.NO_VALUE;
         }
     }
 }

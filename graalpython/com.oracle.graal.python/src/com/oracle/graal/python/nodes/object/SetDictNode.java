@@ -93,7 +93,7 @@ public abstract class SetDictNode extends PNodeWithContext {
                     @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResult) {
         assert !IsTypeNode.executeUncached(object);
         PythonContext context = getContext();
-        Object result = callGetDictNode.call(FUN_PY_OBJECT_GENERIC_SET_DICT, objectToSulong.execute(object), dictToSulong.execute(dict), context.getNativeNull().getPtr());
+        Object result = callGetDictNode.call(FUN_PY_OBJECT_GENERIC_SET_DICT, objectToSulong.execute(object), dictToSulong.execute(dict), context.getNativeNull());
         checkResult.execute(context, FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);
     }
 

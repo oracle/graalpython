@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -13,19 +13,30 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
-// GraalVM change: use our own globals instead of interpreter state
-PyAPI_DATA(PyObject*) _PyTruffle_Zero;
-PyAPI_DATA(PyObject*) _PyTruffle_One;
+#include "pycore_global_objects.h"  // _PY_NSMALLNEGINTS
+
+/* other API */
+
+/* GraalVM change
+#define _PyLong_SMALL_INTS _Py_SINGLETON(small_ints)
+*/
+#define _PyLong_SMALL_INT_PTRS (PyThreadState_GET()->small_ints)
 
 // Return a borrowed reference to the zero singleton.
 // The function cannot return NULL.
 static inline PyObject* _PyLong_GetZero(void)
-{ return _PyTruffle_Zero; }
+/* GraalVM change
+{ return (PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS]; }
+*/
+{ return _PyLong_SMALL_INT_PTRS[_PY_NSMALLNEGINTS]; }
 
 // Return a borrowed reference to the one singleton.
 // The function cannot return NULL.
 static inline PyObject* _PyLong_GetOne(void)
-{ return _PyTruffle_One; }
+/* GraalVM change
+{ return (PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS+1]; }
+*/
+{ return _PyLong_SMALL_INT_PTRS[_PY_NSMALLNEGINTS+1]; }
 
 static inline PyObject* _PyLong_FromUnsignedChar(unsigned char i)
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,7 +87,7 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
     }
 
     private static Object intArrayToNativePySSizeArray(int[] intArray) {
-        Object mem = CStructAccess.AllocateNode.getUncached().alloc(intArray.length * Long.BYTES);
+        Object mem = CStructAccess.AllocateNode.allocUncached(intArray.length * Long.BYTES);
         CStructAccess.WriteLongNode.getUncached().writeIntArray(mem, intArray);
         return mem;
     }
@@ -103,7 +103,7 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
         CStructAccess.WriteIntNode writeI32Node = CStructAccess.WriteIntNode.getUncached();
         CExtNodes.AsCharPointerNode asCharPointerNode = CExtNodes.AsCharPointerNode.getUncached();
 
-        Object mem = CStructAccess.AllocateNode.getUncached().alloc(PyMemoryViewObject);
+        Object mem = CStructAccess.AllocateNode.allocUncached(PyMemoryViewObject);
         writeI64Node.write(mem, PyObject__ob_refcnt, IMMORTAL_REFCNT); // TODO: immortal for now
         writePointerNode.write(mem, PyObject__ob_type, PythonToNativeNewRefNode.executeUncached(GetClassNode.executeUncached(object)));
         writeI32Node.write(mem, PyMemoryViewObject__flags, object.getFlags());

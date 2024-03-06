@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1241,7 +1241,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
                 case Int64_t, Uint64_t, Size_t, HPy_ssize_t, HPy_hash_t -> -1L;
                 case CDouble -> -1.0;
                 case HPy -> GraalHPyHandle.NULL_HANDLE;
-                case VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr -> PythonContext.get(inliningTarget).getNativeNull().getPtr();
+                case VoidPtr, CharPtr, ConstCharPtr, Cpy_PyObjectPtr -> PythonContext.get(inliningTarget).getNativeNull();
                 case CVoid -> PNone.NO_VALUE;
                 default -> throw CompilerDirectives.shouldNotReachHere("unsupported return type");
             };

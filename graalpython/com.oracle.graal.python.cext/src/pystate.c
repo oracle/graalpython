@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,9 +44,28 @@
 
 extern TruffleContext* TRUFFLE_CONTEXT;
 
+static inline PyThreadState *
+_get_thread_state() {
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+    PyThreadState *ts = tstate_current;
+    if (UNLIKELY(ts == NULL)) {
+         ts = GraalPyTruffleThreadState_Get(&tstate_current);
+         tstate_current = ts;
+    }
+    return ts;
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+    return GraalPyTruffleThreadState_Get(NULL);
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+}
+
+PyThreadState *
+PyThreadState_Get() {
+    return _get_thread_state();
+}
+
 PyThreadState *
 _PyThreadState_UncheckedGet(void) {
-    return GraalPyThreadState_Get();
+    return _get_thread_state();
 }
 
 void PyThreadState_Clear(PyThreadState *tstate) {
@@ -71,8 +90,7 @@ PyInterpreterState* PyInterpreterState_Main()
 }
 
 PyThreadState* PyGILState_GetThisThreadState(void) {
-    // TODO this should return NULL when called from a thread that is not known to python
-    return GraalPyThreadState_Get();
+    return _get_thread_state();
 }
 
 PyObject* PyState_FindModule(struct PyModuleDef* module) {
@@ -125,10 +143,10 @@ int PyState_RemoveModule(struct PyModuleDef* def) {
 PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
     int result = 0;
     if (TRUFFLE_CONTEXT) {
-		if ((*TRUFFLE_CONTEXT)->getTruffleEnv(TRUFFLE_CONTEXT) == NULL) {
-			(*TRUFFLE_CONTEXT)->attachCurrentThread(TRUFFLE_CONTEXT);
-			result |= _PYGILSTATE_ATTACHED;
-		}
+        if ((*TRUFFLE_CONTEXT)->getTruffleEnv(TRUFFLE_CONTEXT) == NULL) {
+            (*TRUFFLE_CONTEXT)->attachCurrentThread(TRUFFLE_CONTEXT);
+            result |= _PYGILSTATE_ATTACHED;
+        }
     }
     int locked = GraalPyTruffleGILState_Ensure();
     if (locked) {

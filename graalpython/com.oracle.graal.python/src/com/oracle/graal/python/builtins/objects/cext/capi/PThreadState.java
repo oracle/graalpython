@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -93,17 +93,17 @@ public final class PThreadState extends PythonStructNativeWrapper {
     private static Object allocateCLayout(PythonThreadState threadState) {
         PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
 
-        Object ptr = CStructAccess.AllocateNode.getUncached().alloc(CStructs.PyThreadState);
+        Object ptr = CStructAccess.AllocateNode.allocUncached(CStructs.PyThreadState);
         CStructAccess.WritePointerNode writePtrNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
         PythonContext pythonContext = PythonContext.get(null);
-        Object nullValue = pythonContext.getNativeNull().getPtr();
         PDict threadStateDict = threadState.getDict();
         if (threadStateDict == null) {
             threadStateDict = pythonContext.factory().createDict();
             threadState.setDict(threadStateDict);
         }
         writePtrNode.write(ptr, CFields.PyThreadState__dict, toNative.execute(threadStateDict));
-        writePtrNode.write(ptr, CFields.PyThreadState__interp, nullValue);
+        CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+        writePtrNode.write(ptr, CFields.PyThreadState__small_ints, cApiContext.getOrCreateSmallInts());
         return ptr;
     }
 }

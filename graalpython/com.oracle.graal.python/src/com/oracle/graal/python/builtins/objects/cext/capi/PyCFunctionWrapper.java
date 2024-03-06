@@ -323,7 +323,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull().getPtr();
+                return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -394,7 +394,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull().getPtr();
+                return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -467,7 +467,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull().getPtr();
+                return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -537,7 +537,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull().getPtr();
+                return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
