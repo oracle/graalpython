@@ -20,9 +20,11 @@ GraalPy has first-class support for embedding in Java and can turn Python applic
 * Install [packages](docs/user/Python-Runtime.md#installing-packages) like *NumPy*, *PyTorch*, or *Tensorflow*; run [Hugging Face](https://huggingface.co/) models like *Stable Diffusion* or *GPT*
 * See if the packages you need work with our [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/)
 * Use almost any standard Python feature, the CPython tests run on every commit and pass ~85%
-![](docs/user/assets/mcd.svg)<sup>
-We run the tests of the [top PyPI packages](https://hugovk.github.io/top-pypi-packages/) on GraalPy every day.
-For more than 96% of the top PyPI packages, there is at least one recent version that installs successfully and we are currently passing over 50% of all tests those top packages.
+![](docs/user/assets/mcd.svg#gh-light-mode-only)![](docs/user/assets/mcd-dark.svg#gh-dark-mode-only)<sup>
+We run the tests of the [most depended on PyPI packages](https://libraries.io/pypi) every day.
+For 96% of those packages a recent version can be installed on GraalPy and GraalPy passes about 50% of all tests of all packages combined.
+We assume that CPython not passing 100% of all tests is due to problems in our infrastructure that may also affect GraalPy.
+Packages where CPython fails all tests are marked as "not tested" for both CPython and GraalPy.
 </sup>
 
 **Runs Python code faster**
@@ -30,7 +32,7 @@ For more than 96% of the top PyPI packages, there is at least one recent version
 * Pure Python code is often faster than on CPython after JIT compilation
 * C extension performance is near CPython, but varies depending on the specific interactions of native and Python code
 * GraalPy is ~4x faster than CPython on the official [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/)
-![](docs/user/assets/performance.svg)<sup>
+![](docs/user/assets/performance.svg#gh-light-mode-only)![](docs/user/assets/performance-dark.svg#gh-dark-mode-only)<sup>
 Benchmarks run via `pip install pyperformance && pyperformance run` on each of CPython and GraalPy.
 Harness and benchmarks were adapted by hand for Jython due to missing Python 3 support.
 Each interpreter was installed via <tt>[pyenv](https://github.com/pyenv/pyenv)</tt>.
