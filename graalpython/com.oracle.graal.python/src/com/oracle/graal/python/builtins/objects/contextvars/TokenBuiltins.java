@@ -50,8 +50,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNodeGen;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -94,8 +93,7 @@ public final class TokenBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        WriteAttributeToBuiltinTypeNode addMissing = WriteAttributeToBuiltinTypeNodeGen.getUncached();
-        addMissing.execute(PythonBuiltinClassType.ContextVarsToken, MISSING_NAME, PContextVarsToken.MISSING);
+        WriteAttributeToDynamicObjectNode.executeUncached(core.lookupType(PythonBuiltinClassType.ContextVarsToken), MISSING_NAME, PContextVarsToken.MISSING);
     }
 
     @Builtin(name = J___CLASS_GETITEM__, minNumOfPositionalArgs = 2, isClassmethod = true)
