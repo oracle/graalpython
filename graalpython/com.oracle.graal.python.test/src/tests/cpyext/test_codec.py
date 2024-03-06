@@ -44,10 +44,6 @@ from tests.cpyext import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
 
 class TestPyCodec(CPyExtTestCase):
 
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super().compile_module(name)
-
     test_PyCodec_Encoder = CPyExtFunction(
         lambda args: codecs.lookup(args[0])[0],
         lambda: (

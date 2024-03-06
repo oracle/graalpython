@@ -86,10 +86,6 @@ class DummyComplexSubclass(complex):
 
 class TestPyComplex(CPyExtTestCase):
 
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyComplex, self).compile_module(name)
-
     test_PyComplex_AsCComplex = CPyExtFunction(
         lambda args: True,
         lambda: (

@@ -37,11 +37,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
-import pathlib
-import os
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 import builtins
+import os
+import pathlib
+import sys
+
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+
 __dir__ = __file__.rpartition("/")[0]
 
 __global_builtins_dict = builtins.__dict__
@@ -63,10 +65,6 @@ def _reference_builtins(args):
 
 
 class TestMisc(CPyExtTestCase):
-
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestMisc, self).compile_module(name)
 
     test_PyEllipsis_isSingleton = CPyExtFunction(
         lambda args: 1,

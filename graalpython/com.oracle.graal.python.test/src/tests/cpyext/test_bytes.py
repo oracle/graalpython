@@ -108,10 +108,6 @@ ByteArraySubclass = CPyExtType(
 
 class TestPyBytes(CPyExtTestCase):
 
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyBytes, self).compile_module(name)
-
     # Below are the PyBytes_* identifiers that we know are used in numpy
 
     # PyBytes_FromStringAndSize

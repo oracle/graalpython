@@ -39,7 +39,9 @@
 
 import array
 import sys
+
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, IS_MANAGED_LAUNCHER
+
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -74,10 +76,6 @@ def identCallResult(arg):
 
 class TestPyObject(CPyExtTestCase):
 
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyObject, self).compile_module(name)
-
     test_Py_TYPE = CPyExtFunction(
         type,
         lambda: ([], 12, sys.modules),
@@ -85,13 +83,6 @@ class TestPyObject(CPyExtTestCase):
     )
 
     # Below are the PyObject_* identifiers that we know are used in numpy
-
-    def is_buffer(x):
-        __breakpoint__()
-        if (isinstance(x, bytes) or isinstance(x, bytearray) or isinstance(x, array.array)):
-            return 1
-        else:
-            return 0
 
     # test_PyObject_CheckBuffer = CPyExtFunction(
     #     is_buffer,
@@ -460,11 +451,17 @@ class TestPyObject(CPyExtTestCase):
         arguments=["PyObject* object", "PyObject* attr"],
         argspec="OO",
     )
+    test_PyObject_GenericGetAttr = CPyExtFunction(
+        lambda args: object.__getattribute__(*args),
+        lambda: TestPyObject.__PyObject_GetAttr_ARGS,
+        arguments=["PyObject* object", "PyObject* attr"],
+        argspec="OO",
+    )
+
     test_PyObject_SelfIter = CPyExtFunction(
         lambda x: x,
         lambda: ([], 1, 42, "abc", {}, type),
     )
-    test_PyObject_GenericGetAttr = test_PyObject_GetAttr
 
     test_PyObject_IsTrue = CPyExtFunction(
         lambda arg: 1 if bool(arg) else 0,

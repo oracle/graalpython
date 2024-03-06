@@ -37,10 +37,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
 import mmap
 import tempfile
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -53,10 +54,6 @@ def create_and_map_file():
     
 
 class TestPyMmap(CPyExtTestCase):
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyMmap, self).compile_module(name)
-
 
     test_buffer = CPyExtFunction(
         lambda args: b"hello, world",

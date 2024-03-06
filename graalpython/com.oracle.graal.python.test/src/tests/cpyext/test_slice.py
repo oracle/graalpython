@@ -37,18 +37,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+
 __dir__ = __file__.rpartition("/")[0]
 
 
 
 class TestPySlice(CPyExtTestCase):
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPySlice, self).compile_module(name)
-
-
 
     def reference_get_indices(slize, length):
         r = slize.indices(length)

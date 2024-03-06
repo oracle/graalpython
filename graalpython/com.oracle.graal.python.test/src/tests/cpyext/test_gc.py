@@ -37,10 +37,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
 import gc
+import sys
 import time
-from . import CPyExtTestCase, CPyExtFunction, CPyExtType
+
+from . import CPyExtType
+
 __dir__ = __file__.rpartition("/")[0]
 
 GRAALPYTHON_NATIVE = sys.implementation.name == 'graalpy' and __graalpython__.get_platform_id() == 'native'
@@ -137,11 +139,6 @@ class TestGC1():
 
 #
 # class TestGC2(CPyExtTestCase):
-#
-#     def compile_module(self, name):
-#         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-#         super(TestGC2, self).compile_module(name)
-#
 #
 #     test_simple = CPyExtFunction(
 #         lambda args: (1, 0),

@@ -38,7 +38,9 @@
 # SOFTWARE.
 
 import sys
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON
+
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+
 __dir__ = __file__.rpartition("/")[0]
 
 def _reference_get_object(args):
@@ -49,10 +51,6 @@ def _reference_get_object(args):
         
 class TestPySys(CPyExtTestCase):
     
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPySys, self).compile_module(name)
-        
     test_PySys_GetObject = CPyExtFunction(
         _reference_get_object,
         lambda: (

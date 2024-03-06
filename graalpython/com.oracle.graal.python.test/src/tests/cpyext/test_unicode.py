@@ -221,10 +221,6 @@ def gen_intern_args():
 
 class TestPyUnicode(CPyExtTestCase):
 
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyUnicode, self).compile_module(name)
-
     test_PyUnicode_FromObject = CPyExtFunction(
         _reference_fromobject,
         lambda: (

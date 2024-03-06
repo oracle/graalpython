@@ -38,8 +38,8 @@
 # SOFTWARE.
 
 import itertools
-import sys
 import struct
+import sys
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtType, unhandled_error_compare_with_message, unhandled_error_compare
 
@@ -95,9 +95,6 @@ def compare_unicode_bytes_with_kind(x, y):
 
 
 class TestPyMemoryView(CPyExtTestCase):
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyMemoryView, self).compile_module(name)
 
     test_memoryview_read = CPyExtFunction(
         lambda args: args[1],

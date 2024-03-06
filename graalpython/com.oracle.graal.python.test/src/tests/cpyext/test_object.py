@@ -39,7 +39,7 @@
 
 import sys
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, GRAALPYTHON, unhandled_error_compare, assert_raises
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, assert_raises
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -1455,9 +1455,6 @@ class DummyBytes(bytes):
     pass     
 
 class TestObjectFunctions(CPyExtTestCase):
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super().compile_module(name)
 
     test_PyCallable_Check = CPyExtFunction(
         lambda args: callable(args[0]),

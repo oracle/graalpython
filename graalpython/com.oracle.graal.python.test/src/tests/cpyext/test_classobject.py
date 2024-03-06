@@ -38,7 +38,9 @@
 # SOFTWARE.
 
 import sys
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+
+from . import CPyExtTestCase, CPyExtFunction
+
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -51,9 +53,6 @@ DummyInstance = DummyClass()
 
 
 class TestClassobject(CPyExtTestCase):
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super().compile_module(name)
 
     testmod = type(sys)("foo")
 

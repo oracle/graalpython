@@ -37,19 +37,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import CPyExtTestCase, GRAALPYTHON
+from . import CPyExtTestCase, compile_module_from_file
 
 
 class TestWiki(CPyExtTestCase):
 
     def test_noddy(self):
-        from . import noddy
+        noddy = compile_module_from_file('noddy')
         assert type(noddy.Noddy) is type
         assert type(noddy.Noddy()) is noddy.Noddy, str(type(noddy.Noddy()))
         assert str(noddy.Noddy()).startswith("<noddy.Noddy object at"), str(noddy.Noddy())
 
     def test_noddy2(self):
-        from . import noddy2
+        noddy2 = compile_module_from_file('noddy2')
         nd = noddy2.Noddy2("First", "Last", 42)
         assert nd.name() == "'First' 'Last' '42'"
         assert nd.first == "First", ("%s != First" % nd.first)
@@ -85,7 +85,7 @@ class TestWiki(CPyExtTestCase):
         assert nd.n_ulong == 0xffffffffffffffff, ("%s != 0xffffffffffffffff" % nd.n_ulong)
 
     def test_noddy3(self):
-        from . import noddy3
+        noddy3 = compile_module_from_file('noddy3')
         nd = noddy3.Noddy(b"First", b"Last", 42)
         assert nd.name() == "b'First' b'Last'", nd.name()
         assert nd.first == b"First", ("%s != First" % nd.first)

@@ -163,10 +163,6 @@ def _int_examples():
 
 class TestPyLong(CPyExtTestCase):
 
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyLong, self).compile_module(name)
-
     test_PyLong_AsLong = CPyExtFunction(
         _reference_as_long,
         _int_examples,

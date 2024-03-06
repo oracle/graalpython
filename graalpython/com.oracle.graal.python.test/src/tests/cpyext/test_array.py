@@ -61,10 +61,6 @@ TEST_ARRAY = array('i', [1, 2, 3])
 
 class TestPyArray(CPyExtTestCase):
 
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super().compile_module(name)
-
     if sys.implementation.name == 'graalpy':
         test__PyArray_Resize = CPyExtFunction(
             reference_array_resize,

@@ -38,16 +38,13 @@
 # SOFTWARE.
 
 import sys
-from unittest import skipUnless
+
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON
 
 
 # Test for the presence of a few custom symbols we have that are considered
 # "public" because we use them in our patches to C extensions
 class TestPublicSymbols(CPyExtTestCase):
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super().compile_module(name)
 
     test_PyO3_symbols = CPyExtFunction(
         lambda args: True,

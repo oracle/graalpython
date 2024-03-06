@@ -99,10 +99,6 @@ TupleSubclass = CPyExtType(
 
 class TestPyTuple(CPyExtTestCase):
 
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyTuple, self).compile_module(name)
-
     # PyTuple_Size
     test_PyTuple_Size = CPyExtFunction(
         lambda args: len(args[0]),
