@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,15 +37,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import CPyExtTestCase, GRAALPYTHON
+from . import CPyExtTestCase, compile_module_from_file
 
 
 class TestSimple(CPyExtTestCase):
     def test_demo(self):
-        from . import demo
+        demo = compile_module_from_file('demo')
         assert demo.system("echo 1") == 0
         assert demo.system("arrrr") != 0
 
     def test_demo2(self):
-        from . import demo2
+        demo2 = compile_module_from_file('demo2')
         assert demo2.system("Hello World") == "Hello World from C", demo2.system("Hello World")

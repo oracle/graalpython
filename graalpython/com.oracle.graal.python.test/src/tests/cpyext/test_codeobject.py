@@ -79,9 +79,6 @@ DictInstance = {}
 
 
 class TestCodeobject(CPyExtTestCase):
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super().compile_module(name)
 
     testmod = type(sys)("foo")
 

@@ -204,18 +204,14 @@ ExceptionSubclass = CPyExtType(
     "ExceptionSubclass",
     '',
     struct_base='PyBaseExceptionObject base;',
+    tp_base='(PyTypeObject*)PyExc_Exception',
     tp_new='0',
     tp_alloc='0',
     tp_free='0',
-    ready_code='ExceptionSubclassType.tp_base = (PyTypeObject*)PyExc_Exception;'
 )
 
 
 class TestPyErr(CPyExtTestCase):
-
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyErr, self).compile_module(name)
 
     test_PyErr_SetString = CPyExtFunctionVoid(
         _reference_setstring,

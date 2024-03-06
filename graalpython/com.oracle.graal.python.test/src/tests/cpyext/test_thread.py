@@ -45,10 +45,6 @@ __dir__ = __file__.rpartition("/")[0]
 
 class TestPyThread(CPyExtTestCase):
 
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyThread, self).compile_module(name)
-
     # TODO test that it's really thread-local
     test_PyThread_tss = CPyExtFunction(
         lambda args: args[0],

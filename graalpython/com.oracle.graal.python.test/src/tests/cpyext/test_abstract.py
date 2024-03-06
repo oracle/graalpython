@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,8 +37,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys, array, collections
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, CPyExtType, unhandled_error_compare, GRAALPYTHON
+import array
+import collections
+import sys
+
+from . import CPyExtTestCase, CPyExtFunction, CPyExtType, unhandled_error_compare
+
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -659,10 +663,6 @@ class TestAbstractWithNative(object):
 
 class TestAbstract(CPyExtTestCase):
 
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestAbstract, self).compile_module(name)
-
     test_PyNumber_Absolute = CPyExtFunction(
         lambda args: abs(args[0]),
         _default_unarop_args,
@@ -683,15 +683,6 @@ class TestAbstract(CPyExtTestCase):
 
     test_PyNumber_Check = CPyExtFunction(
         _reference_checknumber,
-        _default_unarop_args,
-        resultspec="i",
-        argspec='O',
-        arguments=["PyObject* v"],
-        cmpfunc=unhandled_error_compare
-    )
-
-    test_PyLong_Check = CPyExtFunction(
-        lambda args: isinstance(args[0], int),
         _default_unarop_args,
         resultspec="i",
         argspec='O',
@@ -1158,7 +1149,7 @@ class TestAbstract(CPyExtTestCase):
     )
 
     # 'PySequence_Length' is just a redefinition of 'PySequence_Size'
-    test_PySequence_Length = test_PySequence_Size
+    test_PySequence_Length = test_PySequence_Size.copy()
 
     test_PySequence_GetItem = CPyExtFunction(
         _reference_getitem,
@@ -1565,4 +1556,4 @@ class TestAbstract(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test_PyObject_Length = test_PyObject_Size
+    test_PyObject_Length = test_PyObject_Size.copy()

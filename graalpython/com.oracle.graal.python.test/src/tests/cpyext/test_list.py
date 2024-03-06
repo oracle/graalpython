@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,7 +38,9 @@
 # SOFTWARE.
 
 import sys
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -121,10 +123,6 @@ class DummyListSubclass(list):
 
 
 class TestPyList(CPyExtTestCase):
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyList, self).compile_module(name)
-
 
     test_PyList_New = CPyExtFunction(
         _reference_new_list,

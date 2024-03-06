@@ -36,14 +36,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import os
 from importlib import invalidate_caches
+
+import gc
+import os
+import shutil
+import sys
+import unittest
+from copy import deepcopy
 from io import StringIO
 from pathlib import Path
 from string import Formatter
-
-import gc
-import sys
 
 DIR = Path(__file__).parent.absolute()
 
@@ -81,22 +84,13 @@ def unhandled_error_compare_with_message(x, y):
     else:
         return x == y
 
-class CPyExtTestCase():
 
-    def setUpClass(self):
-        for typ in type(self).mro():
-            for k, v in typ.__dict__.items():
-                if k.startswith("test_"):
-                    modname = k.replace("test_", "")
-                    if k.startswith("test_graalpython_"):
-                        if not GRAALPYTHON:
-                            continue
-                        else:
-                            modname = k.replace("test_graalpython_", "")
-                    self.compile_module(modname)
+class CPyExtTestCase(unittest.TestCase):
+    pass
 
 
 compiled_registry = set()
+
 
 def ccompile(self, name, check_duplicate_name=True):
     from distutils.core import setup, Extension
@@ -115,8 +109,10 @@ def ccompile(self, name, check_duplicate_name=True):
             m.update(block)
     cur_checksum = m.hexdigest()
 
+    build_dir = DIR / 'build' / name
+
     # see if there is already a checksum file
-    checksum_file = DIR / f'{name}{EXT_SUFFIX}.sha256'
+    checksum_file = build_dir / f'{name}{EXT_SUFFIX}.sha256'
     available_checksum = ""
     if checksum_file.exists():
         # read checksum file
@@ -124,10 +120,10 @@ def ccompile(self, name, check_duplicate_name=True):
             available_checksum = f.readline()
 
     # note, the suffix is already a string like '.so'
-    lib_file = DIR / f'{name}{EXT_SUFFIX}'
+    lib_file = build_dir / f'{name}{EXT_SUFFIX}'
 
     if check_duplicate_name and available_checksum != cur_checksum and name in compiled_registry:
-        print(f"\n\nWARNING: module with name '{name}' was already compiled, but with different source code. "
+        raise RuntimeError(f"\n\nModule with name '{name}' was already compiled, but with different source code. "
               "Have you accidentally used the same name for two different CPyExtType, CPyExtHeapType, "
               "or similar helper calls? Modules with same name can sometimes confuse the import machinery "
               "and cause all sorts of trouble.\n")
@@ -138,17 +134,28 @@ def ccompile(self, name, check_duplicate_name=True):
     # Note: It could be that the C source file's checksum didn't change but someone
     # manually deleted the shared library file.
     if available_checksum != cur_checksum or not lib_file.exists():
-        module = Extension(name, sources=[str(source_file)])
-        verbosity = '--verbose' if sys.flags.verbose else '--quiet'
-        args = [verbosity, 'build', 'install_lib', '-f', f'--install-dir={DIR}', 'clean']
-        setup(
-            script_name='setup',
-            script_args=args,
-            name=name,
-            version='1.0',
-            description='',
-            ext_modules=[module]
-        )
+        os.makedirs(build_dir, exist_ok=True)
+        # MSVC linker doesn't like absolute paths in some parameters, so just run from the build dir
+        old_cwd = os.getcwd()
+        os.chdir(build_dir)
+        try:
+            shutil.copy(source_file, '.')
+            module = Extension(name, sources=[source_file.name])
+            args = [
+                '--verbose' if sys.flags.verbose else '--quiet',
+                'build',
+                'install_lib', '-f', '--install-dir=.',
+            ]
+            setup(
+                script_name='setup',
+                script_args=args,
+                name=name,
+                version='1.0',
+                description='',
+                ext_modules=[module]
+            )
+        finally:
+            os.chdir(old_cwd)
 
         # write new checksum
         with open(checksum_file, "w") as f:
@@ -163,6 +170,8 @@ def ccompile(self, name, check_duplicate_name=True):
     # ensure file was really written
     if GRAALPYTHON:
         file_not_empty(lib_file)
+
+    return str(build_dir)
 
 
 def file_not_empty(path):
@@ -340,13 +349,13 @@ PyInit_{capifunction}(void)
 """
 
 
-class CPyExtFunction():
+class CPyExtFunction:
 
     def __init__(self, pfunc, parameters, template=c_template, cmpfunc=None, stderr_validator=None, **kwargs):
         self.template = template
         self.pfunc = pfunc
         self.parameters = parameters
-        kwargs["name"] = kwargs["name"] if "name" in kwargs else None
+        kwargs.setdefault("name", None)
         self.name = kwargs["name"]
         if "code" in kwargs:
             kwargs["customcode"] = kwargs["code"]
@@ -401,12 +410,28 @@ class CPyExtFunction():
     def __repr__(self):
         return "<CPyExtFunction %s>" % self.name
 
-    def test(self):
-        sys.path.insert(0, str(DIR))
+    def __set_name__(self, owner, name):
+        if self.name:
+            raise RuntimeError(f"{type(self)} already assigned to a test suite. Use copy() method to duplicate a test")
+        self.name = name.removeprefix('test_')
+        self.__name__ = name
+        self.__qualname__ = f'{owner.__qualname__}.{name}'
+
+    def copy(self):
+        inst = deepcopy(self)
+        inst.name = None
+        return inst
+
+    @property
+    def __code__(self):
+        return type(self).__call__.__code__
+
+    def __call__(self):
         try:
-            cmodule = __import__(self.name)
-        finally:
-            sys.path.pop(0)
+            self.create_module(self.name)
+            cmodule = compile_module_from_file(self.name)
+        except Exception as e:
+            raise RuntimeError(f"{self.__qualname__}: Failed to create module") from e
         ctest = getattr(cmodule, "test_%s" % self.name)
         cargs = self.parameters()
         pargs = self.parameters()
@@ -416,7 +441,7 @@ class CPyExtFunction():
                 sys.stderr = StringIO()
             try:
                 cresult = ctest(cargs[i])
-            except BaseException as e:
+            except Exception as e:
                 cresult = e
             else:
                 if self.stderr_validator:
@@ -430,19 +455,12 @@ class CPyExtFunction():
             except BaseException as e:
                 presult = e
 
-            if not self.cmpfunc:
-                assert cresult == presult, ("%r == %r in %s(%s)" % (cresult, presult, self.name, pargs[i]))
+            if self.cmpfunc:
+                success = self.cmpfunc(cresult, presult)
             else:
-                assert self.cmpfunc(cresult, presult), ("%r == %r in %s(%s)" % (cresult, presult, self.name, pargs[i]))
+                success = cresult == presult
+            assert success, f"{self.__qualname__}: C result not equal to python reference implementation result.\n\tArguments: {pargs[i]!r}\n\tExpected result: {presult!r}\n\tActual C result: {cresult!r}"
         gc.collect()
-
-    def __get__(self, instance, typ=None):
-        if typ is None:
-            return self
-        else:
-            CPyExtFunction.test.__name__ = self.name
-            CPyExtFunction.test.__qualname__ = f'{CPyExtFunction.__name__}.test_{self.name}'
-            return self.test
 
 
 class CPyExtFunctionOutVars(CPyExtFunction):
@@ -509,27 +527,28 @@ class UnseenFormatter(Formatter):
             return Formatter.get_value(key, args, kwds)
 
 
-def _compile_module(c_source, name):
+def compile_module_from_string(c_source: str, name: str):
     source_file = DIR / f'{name}.c'
     with open(source_file, "wb", buffering=0) as f:
         f.write(bytes(c_source, 'utf-8'))
-    # ensure file was really written
+    return compile_module_from_file(name)
+
+
+def compile_module_from_file(module_name: str):
+    install_dir = ccompile(None, module_name)
+    sys.path.insert(0, install_dir)
     try:
-        stat_result = os.stat(source_file)
-        if stat_result[6] == 0:
-            raise SystemError("empty source file %s" % (source_file,))
-    except FileNotFoundError:
-        raise SystemError("source file %s not available" % (source_file,))
-    ccompile(None, name)
-    sys.path.insert(0, str(DIR))
-    try:
-        cmodule = __import__(name)
+        cmodule = __import__(module_name)
     finally:
         sys.path.pop(0)
     return cmodule
 
 
 def CPyExtType(name, code='', **kwargs):
+    kwargs['set_base_code'] = ''
+    # We set tp_base later, because MSVC doesn't see the usual &PySomething_Type expressions as constants
+    if tp_base := kwargs.get('tp_base'):
+        kwargs['set_base_code'] = f'{name}Type.tp_base = {tp_base};'
     mod_template = """
     static PyModuleDef {name}module = {{
         PyModuleDef_HEAD_INIT,
@@ -546,6 +565,7 @@ def CPyExtType(name, code='', **kwargs):
         if (m == NULL)
             return NULL;
 
+        {set_base_code}
         {ready_code}
         if (PyType_Ready(&{name}Type) < 0)
             return NULL;
@@ -564,7 +584,7 @@ def CPyExtType(name, code='', **kwargs):
     kwargs.setdefault("post_ready_code", "")
     c_source = type_decl + UnseenFormatter().format(mod_template, **kwargs)
 
-    cmodule = _compile_module(c_source, name)
+    cmodule = compile_module_from_string(c_source, name)
     return getattr(cmodule, name)
 
 
@@ -690,7 +710,7 @@ def CPyExtTypeDecl(name, code='', **kwargs):
         {name}_methods,             /* tp_methods */
         {name}_members,             /* tp_members */
         {name}_getset,              /* tp_getset */
-        {tp_base},                  /* tp_base */
+        0, /* set later */          /* tp_base */
         {tp_dict},                  /* tp_dict */
         {tp_descr_get},             /* tp_descr_get */
         {tp_descr_set},             /* tp_descr_set */
@@ -781,7 +801,7 @@ def CPyExtHeapType(name, bases=(object), code='', slots=None, **kwargs):
     kwargs.setdefault("ready_code", "")
     kwargs.setdefault("post_ready_code", "")
     code = UnseenFormatter().format(template, **kwargs)
-    mod = _compile_module(code, name)
+    mod = compile_module_from_string(code, name)
     return mod.create(bases)
 
 
