@@ -47,7 +47,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -58,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -71,7 +71,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -126,8 +125,7 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
         PyMethodDefHelper pyMethodDef = new PyMethodDefHelper(builtinFunction.getName(), getMethFromBuiltinFunction(cApiContext, builtinFunction), builtinFunction.getFlags(), doc);
         Object result = cApiContext.getOrAllocateNativePyMethodDef(pyMethodDef);
         // store the PyMethodDef pointer to the built-in function object for fast access
-        DynamicObjectLibrary dylib = DynamicObjectLibrary.getFactory().getUncached(builtinFunction);
-        dylib.put(builtinFunction, PythonCextMethodBuiltins.METHOD_DEF_PTR, result);
+        HiddenAttr.WriteNode.executeUncached(builtinFunction, HiddenAttr.METHOD_DEF_PTR, result);
         return result;
     }
 
