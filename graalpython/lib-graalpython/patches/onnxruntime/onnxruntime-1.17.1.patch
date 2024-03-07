@@ -1,0 +1,100 @@
+diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
+index 94d650f..62ffee7 100644
+--- a/cmake/CMakeLists.txt
++++ b/cmake/CMakeLists.txt
+@@ -54,6 +54,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+ enable_testing()
+ include(Dart)
+ 
++set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-error=array-bounds -Wno-error=maybe-uninitialized -Wno-error=uninitialized -Wno-error=restrict -Wno-error=unused-but-set-variable -Wno-error=overloaded-virtual")
++
+ if (NOT CMAKE_BUILD_TYPE)
+   message(STATUS "Build type not set - using RelWithDebInfo")
+   set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose build type: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+diff --git a/onnxruntime_build_backend.py b/onnxruntime_build_backend.py
+new file mode 100644
+index 0000000..dac866e
+--- /dev/null
++++ b/onnxruntime_build_backend.py
+@@ -0,0 +1,52 @@
++import os
++import re
++import sys
++import tarfile
++import subprocess
++import tempfile
++import shutil
++from pathlib import Path
++
++
++def build_sdist(sdist_directory, config_settings=None):
++    nv = 'onnxruntime-1.17.1'
++    srcdir = Path(__file__).parent
++    archive_path = Path(sdist_directory) / f'{nv}.tar.gz'
++
++    def tarfilter(info):
++        if re.match(r'\./(?:.git|venv|[^-/]+-venv|dist)', info.name):
++            return None
++        info.name = f'./{nv}/{info.name}'
++        return info
++
++    with tarfile.open(archive_path, 'w:gz') as tar:
++        tar.add('.', filter=tarfilter)
++    return archive_path.name
++
++
++def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
++    wheel_directory = Path(wheel_directory).absolute()
++    builddir = Path('build/Release')
++    parallel = os.environ.get('CMAKE_BUILD_PARALLEL_LEVEL', os.cpu_count())
++    build_cmd = [
++        sys.executable,
++        'tools/ci_build/build.py',
++        '--build_dir', 'build',
++        '--build_wheel',
++        '--skip_submodule_sync',
++        '--skip_tests',
++        '--config', 'Release',
++        '--enable_pybind',
++        '--parallel', str(parallel),
++    ]
++    subprocess.check_call(build_cmd)
++    if sys.implementation.name == 'graalpy':
++        # The cmake build downloads a bunch of sources that need to be patched
++        subprocess.check_call([sys.executable, '-m', 'autopatch_capi', '.'])
++        # Rerun to rebuild the patched sources
++        subprocess.check_call(build_cmd)
++    wheels = list((builddir / 'dist').glob('*.whl'))
++    assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
++    wheel = wheels[0]
++    shutil.copyfile(wheel, wheel_directory / wheel.name)
++    return str(wheel.name)
+diff --git a/pyproject.toml b/pyproject.toml
+index 97515cb..143790d 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -1,3 +1,8 @@
++[build-system]
++requires = ["setuptools >= 40.6.0", "wheel", "packaging", "numpy>=1.24.2"]
++build-backend = "onnxruntime_build_backend"
++backend-path = ["."]
++
+ [tool.black]
+ line-length = 120
+ # NOTE: Do not extend the exclude list. Edit .lintrunner.toml instead
+diff --git a/tools/ci_build/build.py b/tools/ci_build/build.py
+index 31f242c..300211b 100644
+--- a/tools/ci_build/build.py
++++ b/tools/ci_build/build.py
+@@ -1266,6 +1266,11 @@ def generate_build_tree(
+             "-Ddml_EXTERNAL_PROJECT=ON",
+         ]
+ 
++    if not args.test:
++        cmake_args += [
++            "-Donnxruntime_BUILD_UNIT_TESTS=OFF",
++        ]
++
+     if args.use_gdk:
+         cmake_args += [
+             "-DCMAKE_TOOLCHAIN_FILE=" + os.path.join(source_dir, "cmake", "gdk_toolchain.cmake"),

@@ -1,8 +1,8 @@
 [[rules]]
-version = '== 1.14.1'
-patch = 'onnxruntime-1.14.1.patch'
+version = '== 1.17.1'
+patch = 'onnxruntime-1.17.1.patch'
 dist-type = 'sdist'
 
 [[add-sources]]
-version = '1.14.1'
-url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.14.1.tar.gz'
+version = '1.17.1'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.17.1.tar.gz'
