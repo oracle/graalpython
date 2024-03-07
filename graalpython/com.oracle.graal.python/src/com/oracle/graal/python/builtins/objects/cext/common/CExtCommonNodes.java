@@ -59,10 +59,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
@@ -146,30 +144,6 @@ public abstract class CExtCommonNodes {
             // abort does not return
         }
         throw new PythonExitException(location, status);
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class ImportCExtSymbolNode extends PNodeWithContext {
-
-        public final Object execute(Node inliningTarget, NativeCAPISymbol symbol) {
-            return execute(inliningTarget, PythonContext.get(inliningTarget).getCApiContext(), symbol);
-        }
-
-        public abstract Object execute(Node inliningTarget, CApiContext nativeContext, NativeCExtSymbol symbol);
-
-        @Specialization(guards = {"isSingleContext()", "cachedSymbol == symbol"}, limit = "1")
-        static Object doCached(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") CApiContext nativeContext, @SuppressWarnings("unused") NativeCAPISymbol symbol,
-                        @Cached("symbol") @SuppressWarnings("unused") NativeCAPISymbol cachedSymbol,
-                        @Cached(value = "nativeContext.getNativeSymbol(symbol)", weak = true) Object llvmSymbol) {
-            return llvmSymbol;
-        }
-
-        @Specialization(replaces = "doCached")
-        static Object doGeneric(CApiContext nativeContext, NativeCAPISymbol symbol) {
-            return nativeContext.getNativeSymbol(symbol);
-        }
     }
 
     @GenerateUncached

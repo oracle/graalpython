@@ -103,7 +103,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByte
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
@@ -233,7 +232,7 @@ public abstract class CExtNodes {
                         @Cached PythonToNativeNode toSulongNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached ImportCExtSymbolNode importCAPISymbolNode) {
+                        @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
             try {
                 CApiContext cApiContext = PythonContext.get(inliningTarget).getCApiContext();
@@ -584,7 +583,7 @@ public abstract class CExtNodes {
 
         public abstract boolean execute(Node inliningTarget, ComparisonOp op, Object a, Object b);
 
-        private static boolean executeCFunction(Node inliningTarget, int op, Object a, Object b, InteropLibrary interopLibrary, ImportCExtSymbolNode importCAPISymbolNode) {
+        private static boolean executeCFunction(Node inliningTarget, int op, Object a, Object b, InteropLibrary interopLibrary, ImportCAPISymbolNode importCAPISymbolNode) {
             try {
                 Object sym = importCAPISymbolNode.execute(inliningTarget, FUN_PTR_COMPARE);
                 return (int) interopLibrary.execute(sym, a, b, op) != 0;
@@ -604,7 +603,7 @@ public abstract class CExtNodes {
         @Specialization
         static boolean doPythonNativeObject(Node inliningTarget, ComparisonOp op, PythonNativeObject a, PythonNativeObject b,
                         @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
+                        @Shared @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             CompilerAsserts.partialEvaluationConstant(op);
             return executeCFunction(inliningTarget, op.opCode, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
         }
@@ -612,7 +611,7 @@ public abstract class CExtNodes {
         @Specialization
         static boolean doPythonNativeObjectLong(Node inliningTarget, ComparisonOp op, PythonNativeObject a, long b,
                         @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
+                        @Shared @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             CompilerAsserts.partialEvaluationConstant(op);
             return executeCFunction(inliningTarget, op.opCode, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
         }
@@ -620,7 +619,7 @@ public abstract class CExtNodes {
         @Specialization
         static boolean doNativeVoidPtrLong(Node inliningTarget, ComparisonOp op, PythonNativeVoidPtr a, long b,
                         @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared @Cached ImportCExtSymbolNode importCAPISymbolNode) {
+                        @Shared @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             CompilerAsserts.partialEvaluationConstant(op);
             return executeCFunction(inliningTarget, op.opCode, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
         }
@@ -825,7 +824,7 @@ public abstract class CExtNodes {
         @Specialization
         static Object doWithoutContext(NativeCAPISymbol name, Object[] args,
                         @Bind("this") Node inliningTarget,
-                        @Cached ImportCExtSymbolNode importCExtSymbolNode,
+                        @Cached ImportCAPISymbolNode importCAPISymbolNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
             try {
@@ -838,7 +837,7 @@ public abstract class CExtNodes {
                     cApiContext = pythonContext.getCApiContext();
                 }
                 // TODO review EnsureTruffleStringNode with GR-37896
-                return ensureTruffleStringNode.execute(inliningTarget, interopLibrary.execute(importCExtSymbolNode.execute(inliningTarget, cApiContext, name), args));
+                return ensureTruffleStringNode.execute(inliningTarget, interopLibrary.execute(importCAPISymbolNode.execute(inliningTarget, cApiContext, name), args));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 // consider these exceptions to be fatal internal errors
                 throw shouldNotReachHere(e);
@@ -2019,6 +2018,30 @@ public abstract class CExtNodes {
                 }
             }
             return null;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class ImportCAPISymbolNode extends PNodeWithContext {
+
+        public final Object execute(Node inliningTarget, NativeCAPISymbol symbol) {
+            return execute(inliningTarget, PythonContext.get(inliningTarget).getCApiContext(), symbol);
+        }
+
+        public abstract Object execute(Node inliningTarget, CApiContext nativeContext, NativeCAPISymbol symbol);
+
+        @Specialization(guards = {"isSingleContext()", "cachedSymbol == symbol"}, limit = "1")
+        static Object doCached(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") CApiContext nativeContext, @SuppressWarnings("unused") NativeCAPISymbol symbol,
+                        @Cached("symbol") @SuppressWarnings("unused") NativeCAPISymbol cachedSymbol,
+                        @Cached(value = "nativeContext.getNativeSymbol(symbol)", weak = true) Object llvmSymbol) {
+            return llvmSymbol;
+        }
+
+        @Specialization(replaces = "doCached")
+        static Object doGeneric(CApiContext nativeContext, NativeCAPISymbol symbol) {
+            return nativeContext.getNativeSymbol(symbol);
         }
     }
 }

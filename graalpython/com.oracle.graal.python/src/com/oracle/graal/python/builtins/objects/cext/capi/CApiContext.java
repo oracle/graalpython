@@ -391,7 +391,7 @@ public final class CApiContext extends CExtContext {
         return null;
     }
 
-    public Object getNativeSymbol(NativeCAPISymbol symbol) {
+    Object getNativeSymbol(NativeCAPISymbol symbol) {
         Object result = nativeSymbolCache[symbol.ordinal()];
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, result == null)) {
             result = lookupNativeSymbol(symbol);
