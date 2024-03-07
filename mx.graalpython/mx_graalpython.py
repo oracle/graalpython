@@ -944,11 +944,25 @@ def graalvm_jdk():
     mx.run_mx(mx_args + ["graalvm-home"], out=out)
     return out.data.splitlines()[-1].strip()
 
+def get_maven_cache():
+    buildnr = os.environ.get('BUILD_NUMBER')
+    # don't worry about maven.repo.local if not running on gate
+    return os.path.join(SUITE.get_mx_output_dir(), 'm2_cache_' + buildnr) if buildnr else None
 
 def deploy_local_maven_repo():
+    env = os.environ.copy()
+    m2_cache = get_maven_cache()
+    if m2_cache:
+        mvn_repo_local = f'-Dmaven.repo.local={m2_cache}'
+        maven_opts = env.get('MAVEN_OPTS')
+        maven_opts = maven_opts + " " + mvn_repo_local if maven_opts else mvn_repo_local
+        env['MAVEN_OPTS'] = maven_opts
+        mx.log(f'Added {mvn_repo_local} to MAVEN_OPTS={maven_opts}')
+
     if not DISABLE_REBUILD:
         # build GraalPy and all the necessary dependencies, so that we can deploy them
-        mx.run_mx(["build"])
+        mx.run_mx(["build"], env=env)
+
     # deploy maven artifacts
     version = GRAAL_VERSION
     path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
@@ -964,11 +978,16 @@ def deploy_local_maven_repo():
         'local',
         pathlib.Path(path).as_uri(),
     ]
+
     if not DISABLE_REBUILD:
         mx.rmtree(path, ignore_errors=True)
         os.mkdir(path)
-        mx.maven_deploy(deploy_args)
-    return path, version
+        if m2_cache:
+            with set_env(MAVEN_OPTS = maven_opts):
+                mx.maven_deploy(deploy_args)
+        else:
+            mx.maven_deploy(deploy_args)
+    return path, version, env
 
 
 def python_jvm(_=None):
@@ -1406,7 +1425,7 @@ def graalpython_gate_runner(args, tasks):
     # JUnit tests with Maven
     with Task('GraalPython integration JUnit with Maven', tasks, tags=[GraalPythonTags.junit_maven]) as task:
         if task:
-            mvn_repo_path, artifacts_version = deploy_local_maven_repo()
+            mvn_repo_path, artifacts_version, env = deploy_local_maven_repo()
             mvn_repo_path = pathlib.Path(mvn_repo_path).as_uri()
             central_override = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
             pom_path = os.path.join(SUITE.dir, 'graalpython/com.oracle.graal.python.test.integration/pom.xml')
@@ -1420,9 +1439,10 @@ def graalpython_gate_runner(args, tasks):
             mx.run_maven(mvn_cmd_base + ['dependency:purge-local-repository', '-DreResolve=false'])
 
             mx.log("Running integration JUnit tests on GraalVM SDK")
-            env = extend_os_env(JAVA_HOME=graalvm_jdk())
+            env['JAVA_HOME'] = graalvm_jdk()
             mx.run_maven(mvn_cmd_base + ['-U', 'clean', 'test'], env=env)
 
+            env['JAVA_HOME'] = os.environ['JAVA_HOME']
             mx.log(f"Running integration JUnit tests on vanilla JDK: {os.environ.get('JAVA_HOME', 'system java')}")
             mx.run_maven(mvn_cmd_base + ['-U', '-Dpolyglot.engine.WarnInterpreterOnly=false', 'clean', 'test'])
 
@@ -1481,13 +1501,15 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
         if task:
-            env = {
-                'ENABLE_STANDALONE_UNITTESTS': 'true',
-                'ENABLE_JBANG_INTEGRATION_UNITTESTS': 'false',
-                'JAVA_HOME': graalvm_jdk(),
-                'PYTHON_STANDALONE_HOME': graalpy_standalone_home('jvm')
-            }
-            mvn_repo_path, version = deploy_local_maven_repo()
+            gvm_jdk = graalvm_jdk()
+            standalone_home = graalpy_standalone_home('jvm')
+            mvn_repo_path, version, env = deploy_local_maven_repo()
+
+            env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
+            env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
+            env['JAVA_HOME'] = gvm_jdk
+            env['PYTHON_STANDALONE_HOME'] = standalone_home
+
             # setup maven downloader overrides
             env['MAVEN_REPO_OVERRIDE'] = ",".join([
                 f"{pathlib.Path(mvn_repo_path).as_uri()}/",
@@ -1498,13 +1520,15 @@ def graalpython_gate_runner(args, tasks):
 
             # setup JBang executable
             env["JBANG_CMD"] = _prepare_jbang()
+            m2_cache = get_maven_cache()
+            if m2_cache:
+                env["JBANG_REPO"] = m2_cache
 
             # run the test
             mx.logv(f"running with os.environ extended with: {env=}")
-            full_env = extend_os_env(**env)
             mx.run([sys.executable, _graalpytest_driver(), "-v",
                 "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_jbang_integration.py",
-                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py"], env=full_env)
+                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py"], env=env)
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
