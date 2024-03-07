@@ -79,7 +79,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -120,6 +119,8 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
@@ -164,6 +165,12 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
+    static final class NativeTypeDictStorage extends DynamicObject {
+        public NativeTypeDictStorage(Shape shape) {
+            super(shape);
+        }
+    }
+
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyTypeObject}, call = Ignored)
     abstract static class PyTruffle_NewTypeDict extends CApiUnaryBuiltinNode {
 
@@ -171,7 +178,7 @@ public final class PythonCextTypeBuiltins {
         @TruffleBoundary
         static PDict doGeneric(PythonNativeClass nativeClass) {
             PythonLanguage language = PythonLanguage.get(null);
-            Store nativeTypeStore = new Store(language.getEmptyShape());
+            NativeTypeDictStorage nativeTypeStore = new NativeTypeDictStorage(language.getEmptyShape());
             PDict dict = PythonObjectFactory.getUncached().createDict(new DynamicObjectStorage(nativeTypeStore));
             HiddenAttr.WriteNode.executeUncached(dict, HiddenAttr.INSTANCESHAPE, language.getShapeForClass(nativeClass));
             return dict;

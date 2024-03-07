@@ -1192,12 +1192,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return referenceQueue;
     }
 
-    @Override
-    protected Store initializeSymbolCache() {
-
-        return null;
-    }
-
     public int getCTypeSize(HPyContextSignatureType ctype) {
         return backend.getCTypeSize(ctype);
     }

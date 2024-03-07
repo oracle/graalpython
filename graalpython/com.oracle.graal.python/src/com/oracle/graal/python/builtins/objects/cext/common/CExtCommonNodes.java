@@ -59,8 +59,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
@@ -93,7 +95,6 @@ import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -108,13 +109,10 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -155,55 +153,22 @@ public abstract class CExtCommonNodes {
     @GenerateCached(false)
     public abstract static class ImportCExtSymbolNode extends PNodeWithContext {
 
-        public abstract Object execute(Node inliningTarget, CExtContext nativeContext, NativeCExtSymbol symbol);
+        public final Object execute(Node inliningTarget, NativeCAPISymbol symbol) {
+            return execute(inliningTarget, PythonContext.get(inliningTarget).getCApiContext(), symbol);
+        }
+
+        public abstract Object execute(Node inliningTarget, CApiContext nativeContext, NativeCExtSymbol symbol);
 
         @Specialization(guards = {"isSingleContext()", "cachedSymbol == symbol"}, limit = "1")
-        static Object doSymbolCached(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") CExtContext nativeContext, @SuppressWarnings("unused") NativeCExtSymbol symbol,
-                        @Cached("symbol") @SuppressWarnings("unused") NativeCExtSymbol cachedSymbol,
-                        @Cached("importCAPISymbolUncached(inliningTarget, nativeContext, symbol)") Object llvmSymbol) {
+        static Object doCached(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") CApiContext nativeContext, @SuppressWarnings("unused") NativeCAPISymbol symbol,
+                        @Cached("symbol") @SuppressWarnings("unused") NativeCAPISymbol cachedSymbol,
+                        @Cached(value = "nativeContext.getNativeSymbol(symbol)", weak = true) Object llvmSymbol) {
             return llvmSymbol;
         }
 
-        // n.b. if 'singleContextAssumption' is valid, we may also cache the native context
-        @Specialization(guards = {"isSingleContext()", "nativeContext == cachedNativeContext"}, limit = "1", //
-                        replaces = "doSymbolCached")
-        static Object doWithSymbolCacheSingleContext(Node inliningTarget, @SuppressWarnings("unused") CExtContext nativeContext, NativeCExtSymbol symbol,
-                        @Cached("nativeContext") CExtContext cachedNativeContext,
-                        @Cached("nativeContext.getSymbolCache()") DynamicObject cachedSymbolCache,
-                        @CachedLibrary("cachedSymbolCache") DynamicObjectLibrary dynamicObjectLib) {
-            return doWithSymbolCache(inliningTarget, cachedNativeContext, symbol, cachedSymbolCache, dynamicObjectLib);
-        }
-
-        @Specialization(replaces = {"doSymbolCached", "doWithSymbolCacheSingleContext"}, limit = "1")
-        static Object doWithSymbolCache(Node inliningTarget, CExtContext nativeContext, NativeCExtSymbol symbol,
-                        @Bind("nativeContext.getSymbolCache()") DynamicObject symbolCache,
-                        @CachedLibrary("symbolCache") DynamicObjectLibrary dynamicObjectLib) {
-            Object nativeSymbol = dynamicObjectLib.getOrDefault(symbolCache, symbol, PNone.NO_VALUE);
-            if (nativeSymbol == PNone.NO_VALUE) {
-                nativeSymbol = importCAPISymbolUncached(inliningTarget, nativeContext, symbol, symbolCache, dynamicObjectLib);
-            }
-            return nativeSymbol;
-        }
-
-        protected static Object importCAPISymbolUncached(Node location, CExtContext nativeContext, NativeCExtSymbol symbol) {
-            CompilerAsserts.neverPartOfCompilation();
-            return importCAPISymbolUncached(location, nativeContext, symbol, nativeContext.getSymbolCache(), DynamicObjectLibrary.getUncached());
-        }
-
-        @TruffleBoundary
-        protected static Object importCAPISymbolUncached(Node location, CExtContext nativeContext, NativeCExtSymbol symbol, DynamicObject symbolCache, DynamicObjectLibrary dynamicObjectLib) {
-            Object llvmLibrary = nativeContext.getLLVMLibrary();
-            String name = symbol.getName();
-            try {
-                Object nativeSymbol = InteropLibrary.getUncached().readMember(llvmLibrary, name);
-                nativeSymbol = CExtContext.ensureExecutable(nativeSymbol, symbol);
-                dynamicObjectLib.put(symbolCache, symbol, nativeSymbol);
-                return nativeSymbol;
-            } catch (UnknownIdentifierException e) {
-                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, symbol.getTsName());
-            } catch (UnsupportedMessageException e) {
-                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, llvmLibrary);
-            }
+        @Specialization(replaces = "doCached")
+        static Object doGeneric(CApiContext nativeContext, NativeCAPISymbol symbol) {
+            return nativeContext.getNativeSymbol(symbol);
         }
     }
 

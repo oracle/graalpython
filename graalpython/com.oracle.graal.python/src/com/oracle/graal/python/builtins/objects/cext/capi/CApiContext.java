@@ -126,8 +126,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -201,6 +199,9 @@ public final class CApiContext extends CExtContext {
     public Object timezoneType;
     private PyCapsule pyDateTimeCAPICapsule;
 
+    /** A cache for C symbols. */
+    private final Object[] nativeSymbolCache;
+
     private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
     }
 
@@ -239,6 +240,7 @@ public final class CApiContext extends CExtContext {
 
     public CApiContext(PythonContext context, Object llvmLibrary, boolean useNativeBackend) {
         super(context, llvmLibrary, useNativeBackend);
+        this.nativeSymbolCache = new Object[NativeCAPISymbol.values().length];
 
         // initialize primitive native wrapper cache
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
@@ -382,25 +384,30 @@ public final class CApiContext extends CExtContext {
         }
     }
 
-    @TruffleBoundary
-    @Override
-    protected Store initializeSymbolCache() {
-        PythonLanguage language = getContext().getLanguage();
-        Shape symbolCacheShape = language.getCApiSymbolCacheShape();
-        // We will always get an empty shape from the language and we do always add same key-value
-        // pairs (in the same order). So, in the end, each context should get the same shape.
-        Store s = new Store(symbolCacheShape);
-        for (NativeCAPISymbol sym : NativeCAPISymbol.getValues()) {
-            DynamicObjectLibrary.getUncached().put(s, sym, PNone.NO_VALUE);
-        }
-        return s;
-    }
-
     public Object getModuleByIndex(int i) {
         if (i < modulesByIndex.size()) {
             return modulesByIndex.get(i);
         }
         return null;
+    }
+
+    public Object getNativeSymbol(NativeCAPISymbol symbol) {
+        Object result = nativeSymbolCache[symbol.ordinal()];
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, result == null)) {
+            result = lookupNativeSymbol(symbol);
+        }
+        return result;
+    }
+
+    @TruffleBoundary
+    private Object lookupNativeSymbol(NativeCAPISymbol symbol) {
+        String name = symbol.getName();
+        try {
+            Object nativeSymbol = InteropLibrary.getUncached().readMember(getLLVMLibrary(), name);
+            return nativeSymbolCache[symbol.ordinal()] = CExtContext.ensureExecutable(nativeSymbol, symbol);
+        } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
     }
 
     @TruffleBoundary
