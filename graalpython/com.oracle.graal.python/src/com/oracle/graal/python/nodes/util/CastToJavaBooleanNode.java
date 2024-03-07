@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,14 +40,19 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -94,13 +99,14 @@ public abstract class CastToJavaBooleanNode extends PNodeWithContext {
     }
 
     @Specialization
+    @HostCompilerDirectives.InliningCutoff
     static boolean doNativeObject(Node inliningTarget, PythonNativeObject x,
                     @SuppressWarnings("unused") @Shared("dummy") @Cached InlinedConditionProfile isBoolean,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
         if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.Boolean)) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new RuntimeException("casting a native long object to a Java boolean is not implemented yet");
+            throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.CASTING_A_NATIVE_INT_OBJECT_IS_NOT_IMPLEMENTED_YET);
         }
         // the object's type is not a subclass of 'int'
         throw CannotCastException.INSTANCE;
