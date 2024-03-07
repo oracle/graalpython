@@ -79,7 +79,6 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateInline(value = false)
 @GenerateUncached
 public abstract class PySequenceSizeNode extends Node {
-    // todo: fa [GR-51456]
     private static final NativeCAPISymbol SYMBOL = NativeCAPISymbol.FUN_PY_SEQUENCE_SIZE;
     private static final CApiTiming C_API_TIMING = CApiTiming.create(true, SYMBOL.getName());
 

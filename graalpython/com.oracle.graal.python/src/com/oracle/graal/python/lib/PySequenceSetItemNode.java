@@ -75,7 +75,6 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateInline(false) // One lazy usage, one eager usage => not worth it
 @GenerateUncached
 public abstract class PySequenceSetItemNode extends Node {
-    // todo: fa [GR-51456]
     private static final NativeCAPISymbol SYMBOL = NativeCAPISymbol.FUN_PY_SEQUENCE_SET_ITEM;
     private static final CApiTiming C_API_TIMING = CApiTiming.create(true, SYMBOL.getName());
 
