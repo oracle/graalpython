@@ -586,7 +586,7 @@ public abstract class CExtNodes {
 
         private static boolean executeCFunction(Node inliningTarget, int op, Object a, Object b, InteropLibrary interopLibrary, ImportCExtSymbolNode importCAPISymbolNode) {
             try {
-                Object sym = importCAPISymbolNode.execute(inliningTarget, PythonContext.get(inliningTarget).getCApiContext(), FUN_PTR_COMPARE);
+                Object sym = importCAPISymbolNode.execute(inliningTarget, FUN_PTR_COMPARE);
                 return (int) interopLibrary.execute(sym, a, b, op) != 0;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
