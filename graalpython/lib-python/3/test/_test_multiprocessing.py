@@ -708,6 +708,7 @@ class _TestProcess(BaseTestCase):
 
         close_queue(q)
 
+    @support.impl_detail("timing", graalpy=False)
     @support.requires_resource('walltime')
     def test_many_processes(self):
         if self.TYPE == 'threads':
@@ -999,6 +1000,7 @@ class _TestSubclassingProcess(BaseTestCase):
         sys.stderr = open(fd, 'w', encoding="utf-8", closefd=False)
         sys.exit(reason)
 
+    @support.impl_detail("timeout", graalpy=False)
     def test_sys_exit(self):
         # See Issue 13854
         if self.TYPE == 'threads':

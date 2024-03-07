@@ -240,6 +240,10 @@ public abstract class BuiltinClassProfiles {
             return getUncached().profileObject(null, obj, type);
         }
 
+        public static boolean profileExceptionUncached(PException obj, PythonBuiltinClassType type) {
+            return IsBuiltinObjectProfileNodeGen.getUncached().profileException(null, obj, type);
+        }
+
         public static IsBuiltinObjectExactProfile getUncached() {
             return IsBuiltinObjectExactProfileNodeGen.getUncached();
         }

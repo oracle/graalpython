@@ -1236,7 +1236,7 @@ public final class PythonContext extends Python3Core {
 
     public long spawnTruffleContext(int fd, int sentinel, int[] fdsToKeep) {
         ChildContextData data = new ChildContextData(isChildContext() ? childContextData.parentCtx : this);
-        Builder builder = data.parentCtx.env.newInnerContextBuilder().//
+        Builder childContextBuilder = data.parentCtx.env.newInnerContextBuilder().//
                         forceSharing(getOption(PythonOptions.ForceSharingForInnerContexts)).//
                         inheritAllAccess(true).//
                         initializeCreatorContext(true).//
@@ -1245,7 +1245,11 @@ public final class PythonContext extends Python3Core {
                         // with that. Gives "OSError: [Errno 9] Bad file number"
                         // option("python.PosixModuleBackend", "java").//
                         config(PythonContext.CHILD_CONTEXT_DATA, data);
-        Thread thread = data.parentCtx.env.createThread(new ChildContextThread(fd, sentinel, data, builder));
+
+        TruffleContext childContext = childContextBuilder.build();
+        data.setTruffleContext(childContext);
+        ChildContextThread childContextRunnable = new ChildContextThread(fd, sentinel, data);
+        Thread thread = data.parentCtx.env.newTruffleThreadBuilder(childContextRunnable).context(childContext).threadGroup(threadGroup).build();
         long tid = PThread.getThreadId(thread);
         getSharedMultiprocessingData().putChildContextThread(tid, thread);
         getSharedMultiprocessingData().putChildContextData(tid, data);
@@ -1270,7 +1274,7 @@ public final class PythonContext extends Python3Core {
         return childContextFDs;
     }
 
-    private static class ChildContextThread implements Runnable {
+    private static final class ChildContextThread implements Runnable {
         private static final TruffleLogger MULTIPROCESSING_LOGGER = PythonLanguage.getLogger(ChildContextThread.class);
         private static final Source MULTIPROCESSING_SOURCE = Source.newBuilder(PythonLanguage.ID,
                         "from multiprocessing.popen_truffleprocess import spawn_truffleprocess; spawn_truffleprocess(fd, sentinel)",
@@ -1278,13 +1282,11 @@ public final class PythonContext extends Python3Core {
 
         private final int fd;
         private final ChildContextData data;
-        private final Builder builder;
         private final int sentinel;
 
-        public ChildContextThread(int fd, int sentinel, ChildContextData data, Builder builder) {
+        public ChildContextThread(int fd, int sentinel, ChildContextData data) {
             this.fd = fd;
             this.data = data;
-            this.builder = builder;
             this.sentinel = sentinel;
         }
 
@@ -1292,9 +1294,6 @@ public final class PythonContext extends Python3Core {
         public void run() {
             try {
                 MULTIPROCESSING_LOGGER.fine("starting spawned child context");
-                TruffleContext ctx = builder.build();
-                data.setTruffleContext(ctx);
-                Object parent = ctx.enter(null);
                 CallTarget ct = PythonContext.get(null).getEnv().parsePublic(MULTIPROCESSING_SOURCE, "fd", "sentinel");
                 try {
                     data.running.countDown();
@@ -1302,10 +1301,8 @@ public final class PythonContext extends Python3Core {
                     int exitCode = CastToJavaIntLossyNode.executeUncached(res);
                     data.setExitCode(exitCode);
                 } finally {
-                    ctx.leave(null, parent);
                     if (data.compareAndSetExiting(false, true)) {
                         try {
-                            ctx.close();
                             MULTIPROCESSING_LOGGER.log(Level.FINE, "closed spawned child context");
                         } catch (Throwable t) {
                             MULTIPROCESSING_LOGGER.log(Level.FINE, "exception while closing spawned child context", t);

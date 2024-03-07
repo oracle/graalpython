@@ -85,6 +85,7 @@ import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleThreadBuilder;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -228,15 +229,15 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
 
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment
-            Thread thread = env.createThread(() -> {
-                try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
-
+            TruffleThreadBuilder threadBuilder = env.newTruffleThreadBuilder(() -> {
+                GilNode.UncachedAcquire gil = GilNode.uncachedAcquire();
+                try {
                     // the increment is protected by the gil
                     int curCount = (int) HiddenAttr.ReadNode.executeUncached(threadModule, THREAD_COUNT, 0);
                     HiddenAttr.WriteNode.executeUncached(threadModule, THREAD_COUNT, curCount + 1);
                     try {
                         // n.b.: It is important to pass 'null' frame here because each thread has
-                        // it's own stack and if we would pass the current frame, this would be
+                        // its own stack and if we would pass the current frame, this would be
                         // connected as a caller which is incorrect. However, the thread-local
                         // 'topframeref' is initialized with EMPTY which will be picked up.
                         callNode.execute(null, callable, arguments, keywords);
@@ -246,14 +247,17 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         if (!IsBuiltinObjectProfile.profileObjectUncached(e.getUnreifiedException(), PythonBuiltinClassType.SystemExit)) {
                             WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), IN_THREAD_STARTED_BY, callable);
                         }
+                        // SystemExit is silently ignored (see _threadmodule.c: thread_run)
                     } finally {
                         curCount = (int) HiddenAttr.ReadNode.executeUncached(threadModule, THREAD_COUNT, 1);
                         HiddenAttr.WriteNode.executeUncached(threadModule, THREAD_COUNT, curCount - 1);
                     }
+                } finally {
+                    gil.close();
                 }
-            }, env.getContext(), context.getThreadGroup());
+            }).context(env.getContext()).threadGroup(context.getThreadGroup());
 
-            PThread pThread = factory.createPythonThread(cls, thread);
+            PThread pThread = factory.createPythonThread(cls, threadBuilder.build());
             pThread.start();
             return pThread.getId();
         }
@@ -296,9 +300,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     @Builtin(name = J_EXIT)
     @Builtin(name = "exit_thread")
     @GenerateNodeFactory
-    abstract static class ExitNode extends PythonBuiltinNode {
+    abstract static class ExitThreadNode extends PythonBuiltinNode {
         @Specialization
-        Object exit(
+        static Object exit(
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raiseSystemExit(PNone.NONE);
         }
