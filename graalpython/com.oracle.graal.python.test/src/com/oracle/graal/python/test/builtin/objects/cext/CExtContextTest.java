@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,11 +82,6 @@ public class CExtContextTest {
     private static class TestCExtContext extends CExtContext {
         public TestCExtContext(PythonContext context, Object llvmLibrary) {
             super(context, llvmLibrary, false);
-        }
-
-        @Override
-        protected Store initializeSymbolCache() {
-            throw new RuntimeException("should not reach here");
         }
 
         public static TruffleString getBN(TruffleString s) {
