@@ -1,0 +1,250 @@
+diff --git a/pybind11/include/pybind11/cast.h b/pybind11/include/pybind11/cast.h
+index 6f0a75a..173a3d9 100644
+--- a/pybind11/include/pybind11/cast.h
++++ b/pybind11/include/pybind11/cast.h
+@@ -132,7 +132,7 @@ public:
+             return false;
+         }
+ 
+-#if !defined(PYPY_VERSION)
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+         auto index_check = [](PyObject *o) { return PyIndex_Check(o); };
+ #else
+         // In PyPy 7.3.3, `PyIndex_Check` is implemented by calling `__index__`,
+@@ -328,7 +328,7 @@ public:
+             if (src.is_none()) {
+                 res = 0; // None is implicitly converted to False
+             }
+-#if defined(PYPY_VERSION)
++#if defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)
+             // On PyPy, check that "__bool__" attr exists
+             else if (hasattr(src, PYBIND11_BOOL_ATTR)) {
+                 res = PyObject_IsTrue(src.ptr());
+@@ -445,7 +445,7 @@ struct string_caster {
+ 
+ private:
+     static handle decode_utfN(const char *buffer, ssize_t nbytes) {
+-#if !defined(PYPY_VERSION)
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+         return UTF_N == 8    ? PyUnicode_DecodeUTF8(buffer, nbytes, nullptr)
+                : UTF_N == 16 ? PyUnicode_DecodeUTF16(buffer, nbytes, nullptr, nullptr)
+                              : PyUnicode_DecodeUTF32(buffer, nbytes, nullptr, nullptr);
+diff --git a/pybind11/include/pybind11/detail/class.h b/pybind11/include/pybind11/detail/class.h
+index 528e716..352f686 100644
+--- a/pybind11/include/pybind11/detail/class.h
++++ b/pybind11/include/pybind11/detail/class.h
+@@ -26,7 +26,7 @@ PYBIND11_NAMESPACE_BEGIN(detail)
+ #endif
+ 
+ inline std::string get_fully_qualified_tp_name(PyTypeObject *type) {
+-#if !defined(PYPY_VERSION)
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+     return type->tp_name;
+ #else
+     auto module_name = handle((PyObject *) type).attr("__module__").cast<std::string>();
+@@ -42,7 +42,7 @@ inline PyTypeObject *type_incref(PyTypeObject *type) {
+     return type;
+ }
+ 
+-#if !defined(PYPY_VERSION)
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+ 
+ /// `pybind11_static_property.__get__()`: Always pass the class instead of the instance.
+ extern "C" inline PyObject *pybind11_static_get(PyObject *self, PyObject * /*ob*/, PyObject *cls) {
+@@ -149,7 +149,7 @@ extern "C" inline int pybind11_meta_setattro(PyObject *obj, PyObject *name, PyOb
+                                 && (PyObject_IsInstance(value, static_prop) == 0);
+     if (call_descr_set) {
+         // Call `static_property.__set__()` instead of replacing the `static_property`.
+-#if !defined(PYPY_VERSION)
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+         return Py_TYPE(descr)->tp_descr_set(descr, obj, value);
+ #else
+         if (PyObject *result = PyObject_CallMethod(descr, "__set__", "OO", obj, value)) {
+@@ -347,7 +347,7 @@ inline bool deregister_instance(instance *self, void *valptr, const type_info *t
+ /// for holding C++ objects and holders.  Allocation is done lazily (the first time the instance is
+ /// cast to a reference or pointer), and initialization is done by an `__init__` function.
+ inline PyObject *make_new_instance(PyTypeObject *type) {
+-#if defined(PYPY_VERSION)
++#if defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)
+     // PyPy gets tp_basicsize wrong (issue 2482) under multiple inheritance when the first
+     // inherited object is a plain Python type (i.e. not derived from an extension type).  Fix it.
+     ssize_t instance_size = static_cast<ssize_t>(sizeof(instance));
+@@ -638,7 +638,7 @@ inline PyObject *make_new_python_type(const type_record &rec) {
+     }
+ 
+     const auto *full_name = c_str(
+-#if !defined(PYPY_VERSION)
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+         module_ ? str(module_).cast<std::string>() + "." + rec.name :
+ #endif
+                 rec.name);
+diff --git a/pybind11/include/pybind11/detail/common.h b/pybind11/include/pybind11/detail/common.h
+index f34fd27..f1681b7 100644
+--- a/pybind11/include/pybind11/detail/common.h
++++ b/pybind11/include/pybind11/detail/common.h
+@@ -233,6 +233,9 @@
+ #if defined(PYPY_VERSION) && !defined(PYBIND11_SIMPLE_GIL_MANAGEMENT)
+ #    define PYBIND11_SIMPLE_GIL_MANAGEMENT
+ #endif
++#ifdef GRAALVM_PYTHON
++#    define PYBIND11_SIMPLE_GIL_MANAGEMENT
++#endif
+ 
+ #if defined(_MSC_VER)
+ #    if defined(PYBIND11_DEBUG_MARKER)
+diff --git a/pybind11/include/pybind11/detail/internals.h b/pybind11/include/pybind11/detail/internals.h
+index 7de7794..146b084 100644
+--- a/pybind11/include/pybind11/detail/internals.h
++++ b/pybind11/include/pybind11/detail/internals.h
+@@ -174,7 +174,7 @@ struct internals {
+     PyTypeObject *static_property_type;
+     PyTypeObject *default_metaclass;
+     PyObject *instance_base;
+-#if defined(WITH_THREAD)
++#if defined(WITH_THREAD) && !defined(GRAALVM_PYTHON)
+     // Unused if PYBIND11_SIMPLE_GIL_MANAGEMENT is defined:
+     PYBIND11_TLS_KEY_INIT(tstate)
+ #    if PYBIND11_INTERNALS_VERSION > 4
+@@ -278,7 +278,7 @@ struct type_info {
+ #endif
+ 
+ #ifndef PYBIND11_INTERNALS_KIND
+-#    if defined(WITH_THREAD)
++#    if defined(WITH_THREAD) && !defined(GRAALVM_PYTHON)
+ #        define PYBIND11_INTERNALS_KIND ""
+ #    else
+ #        define PYBIND11_INTERNALS_KIND "_without_thread"
+@@ -454,7 +454,7 @@ PYBIND11_NOINLINE internals &get_internals() {
+         }
+         auto *&internals_ptr = *internals_pp;
+         internals_ptr = new internals();
+-#if defined(WITH_THREAD)
++#if defined(WITH_THREAD) && !defined(GRAALVM_PYTHON)
+ 
+ #    if PY_VERSION_HEX < 0x03090000
+         PyEval_InitThreads();
+@@ -491,7 +491,7 @@ PYBIND11_NOINLINE internals &get_internals() {
+ struct local_internals {
+     type_map<type_info *> registered_types_cpp;
+     std::forward_list<ExceptionTranslator> registered_exception_translators;
+-#if defined(WITH_THREAD) && PYBIND11_INTERNALS_VERSION == 4
++#if defined(WITH_THREAD) && !defined(GRAALVM_PYTHON) && PYBIND11_INTERNALS_VERSION == 4
+ 
+     // For ABI compatibility, we can't store the loader_life_support TLS key in
+     // the `internals` struct directly.  Instead, we store it in `shared_data` and
+diff --git a/pybind11/include/pybind11/detail/type_caster_base.h b/pybind11/include/pybind11/detail/type_caster_base.h
+index 21f69c2..0b853f0 100644
+--- a/pybind11/include/pybind11/detail/type_caster_base.h
++++ b/pybind11/include/pybind11/detail/type_caster_base.h
+@@ -36,7 +36,7 @@ private:
+     loader_life_support *parent = nullptr;
+     std::unordered_set<PyObject *> keep_alive;
+ 
+-#if defined(WITH_THREAD)
++#if defined(WITH_THREAD) && !defined(GRAALVM_PYTHON)
+     // Store stack pointer in thread-local storage.
+     static PYBIND11_TLS_KEY_REF get_stack_tls_key() {
+ #    if PYBIND11_INTERNALS_VERSION == 4
+@@ -55,7 +55,7 @@ private:
+     // Use single global variable for stack.
+     static loader_life_support **get_stack_pp() {
+         static loader_life_support *global_stack = nullptr;
+-        return global_stack;
++        return &global_stack;
+     }
+     static loader_life_support *get_stack_top() { return *get_stack_pp(); }
+     static void set_stack_top(loader_life_support *value) { *get_stack_pp() = value; }
+@@ -484,7 +484,7 @@ PYBIND11_NOINLINE handle get_object_handle(const void *ptr, const detail::type_i
+ }
+ 
+ inline PyThreadState *get_thread_state_unchecked() {
+-#if defined(PYPY_VERSION)
++#if defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)
+     return PyThreadState_GET();
+ #else
+     return _PyThreadState_UncheckedGet();
+diff --git a/pybind11/include/pybind11/eval.h b/pybind11/include/pybind11/eval.h
+index bd5f981..c25f036 100644
+--- a/pybind11/include/pybind11/eval.h
++++ b/pybind11/include/pybind11/eval.h
+@@ -94,7 +94,7 @@ void exec(const char (&s)[N], object global = globals(), object local = object()
+     eval<eval_statements>(s, std::move(global), std::move(local));
+ }
+ 
+-#if defined(PYPY_VERSION)
++#if defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)
+ template <eval_mode mode = eval_statements>
+ object eval_file(str, object, object) {
+     pybind11_fail("eval_file not supported in PyPy3. Use eval");
+diff --git a/pybind11/include/pybind11/gil.h b/pybind11/include/pybind11/gil.h
+index cb0028d..6435226 100644
+--- a/pybind11/include/pybind11/gil.h
++++ b/pybind11/include/pybind11/gil.h
+@@ -173,8 +173,8 @@ public:
+         if (disassoc) {
+             // Python >= 3.7 can remove this, it's an int before 3.7
+             // NOLINTNEXTLINE(readability-qualified-auto)
+-            auto key = detail::get_internals().tstate;
+-            PYBIND11_TLS_REPLACE_VALUE(key, tstate);
++            // auto key = detail::get_internals().tstate;
++            // PYBIND11_TLS_REPLACE_VALUE(key, tstate);
+         }
+     }
+ 
+diff --git a/pybind11/include/pybind11/pybind11.h b/pybind11/include/pybind11/pybind11.h
+index 42d432a..2e12a93 100644
+--- a/pybind11/include/pybind11/pybind11.h
++++ b/pybind11/include/pybind11/pybind11.h
+@@ -537,7 +537,7 @@ protected:
+                 chain_start = rec;
+                 rec->next = chain;
+                 auto rec_capsule
+-                    = reinterpret_borrow<capsule>(((PyCFunctionObject *) m_ptr)->m_self);
++                    = reinterpret_borrow<capsule>(PyCFunction_GetSelf(m_ptr));
+                 rec_capsule.set_pointer(unique_rec.release());
+                 guarded_strdup.release();
+             } else {
+@@ -2657,7 +2657,7 @@ get_type_override(const void *this_ptr, const type_info *this_type, const char *
+ 
+     /* Don't call dispatch code if invoked from overridden function.
+        Unfortunately this doesn't work on PyPy. */
+-#if !defined(PYPY_VERSION)
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+ #    if PY_VERSION_HEX >= 0x03090000
+     PyFrameObject *frame = PyThreadState_GetFrame(PyThreadState_Get());
+     if (frame != nullptr) {
+diff --git a/pybind11/include/pybind11/pytypes.h b/pybind11/include/pybind11/pytypes.h
+index d21fc89..70cf72a 100644
+--- a/pybind11/include/pybind11/pytypes.h
++++ b/pybind11/include/pybind11/pytypes.h
+@@ -534,7 +534,7 @@ struct error_fetch_and_normalize {
+ 
+         bool have_trace = false;
+         if (m_trace) {
+-#if !defined(PYPY_VERSION)
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+             auto *tb = reinterpret_cast<PyTracebackObject *>(m_trace.ptr());
+ 
+             // Get the deepest trace possible.
+@@ -1208,7 +1208,7 @@ private:
+ };
+ PYBIND11_NAMESPACE_END(iterator_policies)
+ 
+-#if !defined(PYPY_VERSION)
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+ using tuple_iterator = generic_iterator<iterator_policies::sequence_fast_readonly>;
+ using list_iterator = generic_iterator<iterator_policies::sequence_fast_readonly>;
+ #else
+diff --git a/pybind11/include/pybind11/stl/filesystem.h b/pybind11/include/pybind11/stl/filesystem.h
+index e26f421..a221955 100644
+--- a/pybind11/include/pybind11/stl/filesystem.h
++++ b/pybind11/include/pybind11/stl/filesystem.h
+@@ -40,7 +40,7 @@ struct path_caster {
+ 
+ private:
+     static PyObject *unicode_from_fs_native(const std::string &w) {
+-#    if !defined(PYPY_VERSION)
++#    if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+         return PyUnicode_DecodeFSDefaultAndSize(w.c_str(), ssize_t(w.size()));
+ #    else
+         // PyPy mistakenly declares the first parameter as non-const.

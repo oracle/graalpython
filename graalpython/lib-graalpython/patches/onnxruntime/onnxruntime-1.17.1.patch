@@ -1,22 +1,22 @@
 diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
-index 94d650f..62ffee7 100644
+index 94d650f..175a6b8 100644
 --- a/cmake/CMakeLists.txt
 +++ b/cmake/CMakeLists.txt
 @@ -54,6 +54,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
  enable_testing()
  include(Dart)
  
-+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-error=array-bounds -Wno-error=maybe-uninitialized -Wno-error=uninitialized -Wno-error=restrict -Wno-error=unused-but-set-variable -Wno-error=overloaded-virtual")
++set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=array-bounds -Wno-error=maybe-uninitialized -Wno-error=uninitialized -Wno-error=restrict -Wno-error=unused-but-set-variable -Wno-error=overloaded-virtual")
 +
  if (NOT CMAKE_BUILD_TYPE)
    message(STATUS "Build type not set - using RelWithDebInfo")
    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose build type: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 diff --git a/onnxruntime_build_backend.py b/onnxruntime_build_backend.py
 new file mode 100644
-index 0000000..dac866e
+index 0000000..33fc235
 --- /dev/null
 +++ b/onnxruntime_build_backend.py
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,59 @@
 +import os
 +import re
 +import sys
@@ -45,26 +45,33 @@ index 0000000..dac866e
 +
 +def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
 +    wheel_directory = Path(wheel_directory).absolute()
-+    builddir = Path('build/Release')
++    build_type = 'Release'
++    build_dir = Path(f'build/{build_type}')
 +    parallel = os.environ.get('CMAKE_BUILD_PARALLEL_LEVEL', os.cpu_count())
 +    build_cmd = [
 +        sys.executable,
 +        'tools/ci_build/build.py',
 +        '--build_dir', 'build',
-+        '--build_wheel',
 +        '--skip_submodule_sync',
 +        '--skip_tests',
-+        '--config', 'Release',
++        '--config', build_type,
 +        '--enable_pybind',
 +        '--parallel', str(parallel),
 +    ]
-+    subprocess.check_call(build_cmd)
 +    if sys.implementation.name == 'graalpy':
 +        # The cmake build downloads a bunch of sources that need to be patched
-+        subprocess.check_call([sys.executable, '-m', 'autopatch_capi', '.'])
-+        # Rerun to rebuild the patched sources
 +        subprocess.check_call(build_cmd)
-+    wheels = list((builddir / 'dist').glob('*.whl'))
++        marker = build_dir / 'graalpy-patched-marker'
++        if not marker.exists():
++            subprocess.check_call([sys.executable, '-m', 'autopatch_capi', '.'])
++            pybind11_dir = build_dir / '_deps/pybind11_project-src'
++            patches_dir = Path(__graalpython__.core_home) / 'patches'
++            with open(patches_dir / 'pybind11' / 'pybind11-2.10.1.patch') as f:
++                subprocess.check_call(['patch', '-p2', '-f'], stdin=f, cwd=pybind11_dir)
++            with open(marker, 'w') as f:
++                pass
++    subprocess.check_call([*build_cmd, '--build_wheel'])
++    wheels = list((build_dir / 'dist').glob('*.whl'))
 +    assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
 +    wheel = wheels[0]
 +    shutil.copyfile(wheel, wheel_directory / wheel.name)
