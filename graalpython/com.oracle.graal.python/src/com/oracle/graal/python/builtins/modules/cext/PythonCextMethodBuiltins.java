@@ -59,15 +59,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateFuncti
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.HiddenAttr;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextMethodBuiltins {
@@ -94,20 +93,20 @@ public final class PythonCextMethodBuiltins {
                         @Cached(inline = false) PythonObjectFactory factory,
                         @Cached CreateFunctionNode createFunctionNode,
                         @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+                        @Cached(inline = false) WriteAttributeToDynamicObjectNode writeAttrNode) {
             Object f = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, PNone.NO_VALUE, flags);
             assert f instanceof PBuiltinFunction;
             PBuiltinFunction func = (PBuiltinFunction) f;
             writeHiddenAttrNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
-            dylib.put(func, T___NAME__, name);
-            dylib.put(func, T___DOC__, doc);
+            writeAttrNode.execute(func, T___NAME__, name);
+            writeAttrNode.execute(func, T___DOC__, doc);
             PBuiltinMethod method;
             if (cls != PNone.NO_VALUE) {
                 method = factory.createBuiltinMethod(self, func, cls);
             } else {
                 method = factory.createBuiltinMethod(self, func);
             }
-            dylib.put(method, T___MODULE__, module);
+            writeAttrNode.execute(method, T___MODULE__, module);
             return method;
         }
     }

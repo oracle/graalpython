@@ -120,7 +120,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
@@ -253,19 +252,18 @@ public final class PythonCextTypeBuiltins {
         static Object classOrStatic(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
                         @Cached(inline = false) PythonObjectFactory factory,
                         @Exclusive @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
+                        @Cached(inline = false) WriteAttributeToDynamicObjectNode writeAttrNode,
                         @Exclusive @Cached CreateFunctionNode createFunctionNode) {
-            Object func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
-            assert func instanceof PythonAbstractObject;
-            writeHiddenAttrNode.execute(inliningTarget, (PythonAbstractObject) func, METHOD_DEF_PTR, methodDefPtr);
+            PythonAbstractObject func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
+            writeHiddenAttrNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
             PythonObject function;
             if ((flags & METH_CLASS) != 0) {
                 function = factory.createClassmethodFromCallableObj(func);
             } else {
                 function = factory.createStaticmethodFromCallableObj(func);
             }
-            dylib.put(function, T___NAME__, name);
-            dylib.put(function, T___DOC__, doc);
+            writeAttrNode.execute(function, T___NAME__, name);
+            writeAttrNode.execute(function, T___DOC__, doc);
             return function;
         }
 
@@ -274,10 +272,10 @@ public final class PythonCextTypeBuiltins {
                         @Cached PyObjectSetAttrNode setattr,
                         @Exclusive @Cached HiddenAttr.WriteNode writeNode,
                         @Exclusive @Cached CreateFunctionNode createFunctionNode) {
-            Object func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
+            PythonAbstractObject func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
             setattr.execute(inliningTarget, func, T___NAME__, name);
             setattr.execute(inliningTarget, func, T___DOC__, doc);
-            writeNode.execute(inliningTarget, (PythonAbstractObject) func, METHOD_DEF_PTR, methodDefPtr);
+            writeNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
             return func;
         }
     }
@@ -350,7 +348,6 @@ public final class PythonCextTypeBuiltins {
         @TruffleBoundary
         static GetSetDescriptor createGetSet(Node inliningTarget, TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
                         @Cached(inline = false) PythonObjectFactory factory,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
             assert !(doc instanceof CArrayWrapper);
             // note: 'doc' may be NULL; in this case, we would store 'None'
@@ -371,7 +368,7 @@ public final class PythonCextTypeBuiltins {
 
             // create get-set descriptor
             GetSetDescriptor descriptor = factory.createGetSetDescriptor(get, set, name, cls, hasSetter);
-            dylib.put(descriptor.getStorage(), T___DOC__, doc);
+            WriteAttributeToDynamicObjectNode.executeUncached(descriptor, T___DOC__, doc);
             return descriptor;
         }
 

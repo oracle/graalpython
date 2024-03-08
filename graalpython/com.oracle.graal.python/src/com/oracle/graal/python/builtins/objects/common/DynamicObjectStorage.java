@@ -171,7 +171,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
 
         private static boolean hasStringKey(DynamicObjectStorage self, TruffleString key, ReadAttributeFromDynamicObjectNode readNode) {
-            return readNode.execute(self.store, key) != PNone.NO_VALUE;
+            return readNode.execute(self.store, key, PNone.NO_VALUE) != PNone.NO_VALUE;
         }
 
         private static int incrementLen(DynamicObjectStorage self, ReadAttributeFromDynamicObjectNode readNode, int len, Object key) {
@@ -201,7 +201,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         static Object string(Node inliningTarget, DynamicObjectStorage self, TruffleString key, @SuppressWarnings("unused") long keyHash,
                         @Shared("readKey") @Cached(inline = false) ReadAttributeFromDynamicObjectNode readKey,
                         @Exclusive @Cached InlinedConditionProfile noValueProfile) {
-            Object result = readKey.execute(self.store, key);
+            Object result = readKey.execute(self.store, key, PNone.NO_VALUE);
             return noValueProfile.profile(inliningTarget, result == PNone.NO_VALUE) ? null : result;
         }
 

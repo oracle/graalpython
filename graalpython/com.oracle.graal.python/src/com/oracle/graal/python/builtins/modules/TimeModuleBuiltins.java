@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -110,10 +111,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "time")
@@ -1107,7 +1106,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object getClockInfo(TruffleString name,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
+                        @Cached WriteAttributeToDynamicObjectNode writeAttrNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -1126,10 +1125,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             }
 
             final PSimpleNamespace ns = factory.createSimpleNamespace();
-            dyLib.put(ns, T_ADJUSTABLE, adjustable);
-            dyLib.put(ns, T_IMPLEMENTATION, name);
-            dyLib.put(ns, T_MONOTONIC, monotonic);
-            dyLib.put(ns, T_RESOLUTION, TIME_RESOLUTION);
+            writeAttrNode.execute(ns, T_ADJUSTABLE, adjustable);
+            writeAttrNode.execute(ns, T_IMPLEMENTATION, name);
+            writeAttrNode.execute(ns, T_MONOTONIC, monotonic);
+            writeAttrNode.execute(ns, T_RESOLUTION, TIME_RESOLUTION);
             return ns;
         }
     }

@@ -187,8 +187,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
@@ -719,10 +717,8 @@ public enum SpecialMethodSlot {
     private static void setSlotsFromManaged(Object[] slots, PythonManagedClass source, PythonLanguage language) {
         PDict dict = GetDictIfExistsNode.getUncached().execute(source);
         if (dict == null) {
-            DynamicObject storage = source.getStorage();
-            DynamicObjectLibrary domLib = DynamicObjectLibrary.getFactory().getUncached(storage);
             for (SpecialMethodSlot slot : VALUES) {
-                final Object value = domLib.getOrDefault(source, slot.getName(), PNone.NO_VALUE);
+                final Object value = ReadAttributeFromDynamicObjectNode.executeUncached(source, slot.getName(), PNone.NO_VALUE);
                 if (value != PNone.NO_VALUE) {
                     slots[slot.ordinal()] = asSlotValue(slot, value, language);
                 }

@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixN
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -83,9 +84,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextModuleBuiltins {
@@ -234,9 +233,9 @@ public final class PythonCextModuleBuiltins {
         static Object moduleFunction(Object methodDefPtr, PythonModule mod, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
                         @Bind("this") Node inliningTarget,
                         @Cached ObjectBuiltins.SetattrNode setattrNode,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
+                        @Cached ReadAttributeFromDynamicObjectNode readAttrNode,
                         @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
-            Object modName = dylib.getOrDefault(mod.getStorage(), T___NAME__, null);
+            Object modName = readAttrNode.execute(mod.getStorage(), T___NAME__, null);
             assert modName != null : "module name is missing!";
             Object func = cFunctionNewExMethodNode.execute(inliningTarget, methodDefPtr, name, cfunc, flags, wrapper, mod, modName, doc);
             setattrNode.execute(null, mod, name, func);

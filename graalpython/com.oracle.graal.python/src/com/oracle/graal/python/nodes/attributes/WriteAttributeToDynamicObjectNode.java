@@ -67,6 +67,10 @@ public abstract class WriteAttributeToDynamicObjectNode extends PNodeWithContext
 
     public abstract void execute(PythonObject primary, TruffleString key, Object value);
 
+    public static void executeUncached(PythonObject primary, TruffleString key, Object value) {
+        WriteAttributeToDynamicObjectNodeGen.getUncached().execute(primary, key, value);
+    }
+
     @NeverDefault
     public static WriteAttributeToDynamicObjectNode create() {
         return WriteAttributeToDynamicObjectNodeGen.create();

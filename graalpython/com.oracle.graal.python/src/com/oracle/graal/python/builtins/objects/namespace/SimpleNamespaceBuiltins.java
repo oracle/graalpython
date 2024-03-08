@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -104,9 +105,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -120,14 +119,14 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class SimpleNamespaceInitNode extends PythonVarargsBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         Object init(PSimpleNamespace self, Object[] args, PKeyword[] kwargs,
-                        @CachedLibrary(value = "self") DynamicObjectLibrary dyLib) {
+                        @Cached WriteAttributeToDynamicObjectNode writeAttrNode) {
             if (args.length > 0) {
                 throw raise(PythonBuiltinClassType.TypeError, NO_POSITIONAL_ARGUMENTS_EXPECTED);
             }
             for (PKeyword keyword : kwargs) {
-                dyLib.put(self, keyword.getName(), keyword.getValue());
+                writeAttrNode.execute(self, keyword.getName(), keyword.getValue());
             }
             return PNone.NONE;
         }

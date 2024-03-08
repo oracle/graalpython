@@ -77,14 +77,22 @@ public abstract class ReadAttributeFromDynamicObjectNode extends PNodeWithContex
         return ReadAttributeFromDynamicObjectNodeGen.getUncached();
     }
 
-    public abstract Object execute(PythonObject object, TruffleString key);
+    public static Object executeUncached(PythonObject object, TruffleString key, Object defaultValue) {
+        return getUncached().execute(object, key, defaultValue);
+    }
+
+    public abstract Object execute(PythonObject object, TruffleString key, Object defaultValue);
+
+    public final Object execute(PythonObject object, TruffleString key) {
+        return execute(object, key, PNone.NO_VALUE);
+    }
 
     // used only by DynamicObjectStorage, which will be removed during the transition from
     // DynamicObject to ObjectHashMap
-    public abstract Object execute(DynamicObject object, TruffleString key);
+    public abstract Object execute(DynamicObject object, TruffleString key, Object defaultValue);
 
-    protected static Object getAttribute(DynamicObject object, TruffleString key) {
-        return DynamicObjectLibrary.getUncached().getOrDefault(object, key, PNone.NO_VALUE);
+    protected static Object getAttribute(DynamicObject object, TruffleString key, Object defaultValue) {
+        return DynamicObjectLibrary.getUncached().getOrDefault(object, key, defaultValue);
     }
 
     @Idempotent
@@ -118,13 +126,13 @@ public abstract class ReadAttributeFromDynamicObjectNode extends PNodeWithContex
                                     "!isPrimitive(value)"
                     }, //
                     assumptions = {"cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
-    protected static Object readFinalAttr(DynamicObject dynamicObject, TruffleString key,
+    protected static Object readFinalAttr(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
                     @Cached("key") TruffleString cachedKey,
                     @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
                     @Cached("dynamicObject.getShape()") Shape cachedShape,
                     @Cached("getLocationOrNull(cachedShape.getProperty(cachedKey))") Location loc,
                     @Cached("dynamicObject.getShape().getPropertyAssumption(key)") Assumption propertyAssumption,
-                    @Cached(value = "getAttribute(dynamicObject, key)", weak = true) Object value) {
+                    @Cached(value = "getAttribute(dynamicObject, key, defaultValue)", weak = true) Object value) {
         return value;
     }
 
@@ -140,19 +148,19 @@ public abstract class ReadAttributeFromDynamicObjectNode extends PNodeWithContex
                                     "isPrimitive(value)"
                     }, //
                     assumptions = {"cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
-    protected static Object readFinalPrimitiveAttr(DynamicObject dynamicObject, TruffleString key,
+    protected static Object readFinalPrimitiveAttr(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
                     @Cached("key") TruffleString cachedKey,
                     @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
                     @Cached("dynamicObject.getShape()") Shape cachedShape,
                     @Cached("getLocationOrNull(cachedShape.getProperty(cachedKey))") Location loc,
                     @Cached("dynamicObject.getShape().getPropertyAssumption(key)") Assumption propertyAssumption,
-                    @Cached(value = "getAttribute(dynamicObject, key)") Object value) {
+                    @Cached(value = "getAttribute(dynamicObject, key, defaultValue)") Object value) {
         return value;
     }
 
     @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = {"readFinalAttr", "readFinalPrimitiveAttr"})
-    protected static Object readDirect(DynamicObject dynamicObject, TruffleString key,
+    protected static Object readDirect(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        return dylib.getOrDefault(dynamicObject, key, PNone.NO_VALUE);
+        return dylib.getOrDefault(dynamicObject, key, defaultValue);
     }
 }
