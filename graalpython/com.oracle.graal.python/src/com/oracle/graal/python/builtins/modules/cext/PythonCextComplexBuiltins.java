@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -96,9 +96,9 @@ public final class PythonCextComplexBuiltins {
         return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PComplex);
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Ignored)
     @ImportStatic(PythonCextComplexBuiltins.class)
-    abstract static class PyComplex_RealAsDouble extends CApiUnaryBuiltinNode {
+    abstract static class PyTruffleComplex_RealAsDouble extends CApiUnaryBuiltinNode {
 
         public static final TruffleString T_REAL = tsLiteral("real");
 
@@ -130,9 +130,9 @@ public final class PythonCextComplexBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Ignored)
     @ImportStatic(PythonCextComplexBuiltins.class)
-    abstract static class PyComplex_ImagAsDouble extends CApiUnaryBuiltinNode {
+    abstract static class PyTruffleComplex_ImagAsDouble extends CApiUnaryBuiltinNode {
 
         public static final TruffleString T_IMAG = tsLiteral("imag");
 

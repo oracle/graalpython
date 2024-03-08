@@ -1279,6 +1279,7 @@ public abstract class ErrorMessages {
     public static final TruffleString OTHER_ARG_MUST_BE_KEY = tsLiteral("other argument must be K instance");
     public static final TruffleString INVALID_PARTIAL_STATE = tsLiteral("invalid partial state");
     public static final TruffleString LOST_S = tsLiteral("lost %s");
+    public static final TruffleString CTYPES_FUNCTION_CALL_COULD_NOT_OBTAIN_FUNCTION_POINTER = tsLiteral("ctypes function call could not obtain function pointer");
 
     // ssl error messages
     public static final TruffleString SSL_ERR_DECODING_PEM_FILE_S = tsLiteral("Error decoding PEM-encoded file: %s");
@@ -1290,9 +1291,6 @@ public abstract class ErrorMessages {
     // syntax errors
     public static final TruffleString MISSING_PARENTHESES_IN_CALL_TO_EXEC = tsLiteral("Missing parentheses in call to 'exec'");
     public static final TruffleString MISSING_PARENTHESES_IN_CALL_TO_PRINT = tsLiteral("Missing parentheses in call to 'print'. Did you mean print(%s%s)?");
-
-    // pickle errors
-    public static final TruffleString CANNOT_PICKLE_OBJECT_TYPE = tsLiteral("cannot pickle '%p' object");
 
     // csv errors
     public static final TruffleString MUST_BE_ONE_CHARACTER_STRING = tsLiteral("\"%s\" must be a 1-character string");
@@ -1537,6 +1535,7 @@ public abstract class ErrorMessages {
     public static final TruffleString S_MUST_BE_A_S_TUPLE = tsLiteral("%s must be a %s-tuple");
 
     // pickle
+    public static final TruffleString CANNOT_PICKLE_OBJECT_TYPE = tsLiteral("cannot pickle '%p' object");
     public static final TruffleString STRUCT_SIZE_TOO_LONG = tsLiteral("total struct size too long");
     public static final TruffleString OP_FORBIDDEN_ON_OBJECT = tsLiteral("operation forbidden on released %s object");
     public static final TruffleString PICKLE_PROTO_MUST_BE_LE = tsLiteral("pickle protocol must be <= %sd");
@@ -1614,4 +1613,5 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_A_FUNCTION_EXCEPTION_TYPE_OR_TUPLE_OF_EXCEPTION_TYPES = tsLiteral("expected a function, exception type or tuple of exception types");
     public static final TruffleString NOTE_MUST_BE_A_STR_NOT_P = tsLiteral("note must be a str, not '%p'");
     public static final TruffleString CANNOT_ADD_NOTE_NOTES_IS_NOT_A_LIST = tsLiteral("Cannot add note: __notes__ is not a list");
+    public static final TruffleString CANT_GET_ATTRIBUTE_S_ON_S = tsLiteral("Can't get attribute %s on %s");
 }

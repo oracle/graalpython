@@ -1,11 +1,4 @@
 [[rules]]
-version = '== 1.4.3'
-patch = 'pandas-1.4.3.patch'
-dist-type = 'sdist'
-
-[[rules]]
-# pin to 1.5.2
-install-priority = 10
 version = '== 1.5.2'
 patch = 'pandas-1.5.2.patch'
 dist-type = 'sdist'

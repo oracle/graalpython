@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,9 +36,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from pathlib import Path
+
 import sys
 
-from pathlib import Path
+SECTIONS = frozenset({'rules', 'add-sources'})
+RULE_KEYS = frozenset({'version', 'patch', 'subdir', 'dist-type', 'install-priority', 'ignore-rule-on-llvm'})
 
 if sys.implementation.name == 'graalpy':
     import ensurepip
@@ -53,12 +56,12 @@ if sys.implementation.name == 'graalpy':
 
 
     def validate_metadata(package_dir, metadata):
-        if unexpected_keys := set(metadata) - {'rules', 'add-sources'}:
+        if unexpected_keys := set(metadata) - SECTIONS:
             assert False, f"Unexpected top-level metadata keys: {unexpected_keys}"
         patches = set()
         if rules := metadata.get('rules'):
             for rule in rules:
-                if unexpected_keys := set(rule) - {'version', 'patch', 'subdir', 'dist-type', 'install-priority'}:
+                if unexpected_keys := set(rule) - RULE_KEYS:
                     assert False, f"Unexpected rule keys: {unexpected_keys}"
                 if patch := rule.get('patch'):
                     patch_path = package_dir / patch
@@ -71,6 +74,8 @@ if sys.implementation.name == 'graalpy':
                 if version := rule.get('version'):
                     # Just try that it doesn't raise
                     SpecifierSet(version)
+                if ignore_on_llvm := rule.get('ignore-rule-on-llvm'):
+                    assert isinstance(ignore_on_llvm, bool)
         for file in package_dir.iterdir():
             assert file.name == 'metadata.toml' or file in patches, f"Dangling file in patch directory: {file}"
         if add_sources := metadata.get('add-sources'):

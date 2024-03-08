@@ -180,7 +180,7 @@ public final class CApiContext extends CExtContext {
     private Object nativeSmallIntsArray;
 
     /** Same as {@code import.c: extensions} but we don't keep a PDict; just a bare Java HashMap. */
-    private final HashMap<Pair<TruffleString, TruffleString>, Object> extensions = new HashMap<>(4);
+    private final HashMap<Pair<TruffleString, TruffleString>, PythonModule> extensions = new HashMap<>(4);
 
     /** corresponds to {@code unicodeobject.c: interned} */
     private PDict internedUnicode;
@@ -812,9 +812,14 @@ public final class CApiContext extends CExtContext {
             modulesByIndex.set(mIndex, module);
 
             // add to 'import.c: extensions'
-            extensions.put(Pair.create(spec.path, spec.name), module.getNativeModuleDef());
+            extensions.put(Pair.create(spec.path, spec.name), module);
             return result;
         }
+    }
+
+    @TruffleBoundary
+    public PythonModule findExtension(TruffleString filename, TruffleString name) {
+        return extensions.get(Pair.create(filename, name));
     }
 
     @ExportLibrary(InteropLibrary.class)

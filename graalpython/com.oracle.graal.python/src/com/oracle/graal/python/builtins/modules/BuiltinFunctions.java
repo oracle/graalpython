@@ -329,8 +329,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static int absBoolean(boolean arg) {
-            return arg ? 1 : 0;
+        static Object absInt(int arg) {
+            return PInt.abs(arg);
         }
 
         @Specialization
@@ -365,18 +365,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
         abstract boolean execute(VirtualFrame frame, Node inliningTarget, SequenceStorage storageObj, AnyOrAllNodeType nodeType);
 
         @Specialization
-        static boolean doBoolSequence(VirtualFrame frame, Node inliningTarget, BoolSequenceStorage sequenceStorage, AnyOrAllNodeType nodeType,
-                        @Shared @Cached InlinedLoopConditionProfile loopConditionProfile,
-                        @Shared @Cached InlinedCountingConditionProfile earlyExitProfile,
-                        @Shared @Cached PyObjectIsTrueNode isTrueNode) {
+        static boolean doBoolSequence(Node inliningTarget, BoolSequenceStorage sequenceStorage, AnyOrAllNodeType nodeType,
+                        @Exclusive @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Exclusive @Cached InlinedCountingConditionProfile earlyExitProfile) {
             boolean[] internalArray = sequenceStorage.getInternalBoolArray();
             int seqLength = sequenceStorage.length();
 
             for (int i = 0; loopConditionProfile.profile(inliningTarget, i < seqLength); i++) {
-                if (nodeType == AnyOrAllNodeType.ALL && earlyExitProfile.profile(inliningTarget, !isTrueNode.execute(frame, inliningTarget, internalArray[i]))) {
+                if (nodeType == AnyOrAllNodeType.ALL && earlyExitProfile.profile(inliningTarget, !internalArray[i])) {
                     LoopNode.reportLoopCount(inliningTarget, i);
                     return false;
-                } else if (nodeType == AnyOrAllNodeType.ANY && earlyExitProfile.profile(inliningTarget, isTrueNode.execute(frame, inliningTarget, internalArray[i]))) {
+                } else if (nodeType == AnyOrAllNodeType.ANY && earlyExitProfile.profile(inliningTarget, internalArray[i])) {
                     LoopNode.reportLoopCount(inliningTarget, i);
                     return true;
                 }
@@ -386,18 +385,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        static boolean doIntSequence(VirtualFrame frame, Node inliningTarget, IntSequenceStorage sequenceStorage, AnyOrAllNodeType nodeType,
-                        @Shared @Cached InlinedLoopConditionProfile loopConditionProfile,
-                        @Shared @Cached InlinedCountingConditionProfile earlyExitProfile,
-                        @Shared @Cached PyObjectIsTrueNode isTrueNode) {
+        static boolean doIntSequence(Node inliningTarget, IntSequenceStorage sequenceStorage, AnyOrAllNodeType nodeType,
+                        @Exclusive @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Exclusive @Cached InlinedCountingConditionProfile earlyExitProfile) {
             int[] internalArray = sequenceStorage.getInternalIntArray();
             int seqLength = sequenceStorage.length();
 
             for (int i = 0; loopConditionProfile.profile(inliningTarget, i < seqLength); i++) {
-                if (nodeType == AnyOrAllNodeType.ALL && earlyExitProfile.profile(inliningTarget, !isTrueNode.execute(frame, inliningTarget, internalArray[i]))) {
+                if (nodeType == AnyOrAllNodeType.ALL && earlyExitProfile.profile(inliningTarget, internalArray[i] == 0)) {
                     LoopNode.reportLoopCount(inliningTarget, i);
                     return false;
-                } else if (nodeType == AnyOrAllNodeType.ANY && earlyExitProfile.profile(inliningTarget, isTrueNode.execute(frame, inliningTarget, internalArray[i]))) {
+                } else if (nodeType == AnyOrAllNodeType.ANY && earlyExitProfile.profile(inliningTarget, internalArray[i] != 0)) {
                     LoopNode.reportLoopCount(inliningTarget, i);
                     return true;
                 }
@@ -408,17 +406,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static boolean doGenericSequence(VirtualFrame frame, Node inliningTarget, SequenceStorage sequenceStorage, AnyOrAllNodeType nodeType,
-                        @Shared @Cached InlinedLoopConditionProfile loopConditionProfile,
-                        @Shared @Cached InlinedCountingConditionProfile earlyExitProfile,
-                        @Shared @Cached PyObjectIsTrueNode isTrueNode) {
-            Object[] internalArray = sequenceStorage.getInternalArray();
+                        @Exclusive @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Exclusive @Cached InlinedCountingConditionProfile earlyExitProfile,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItem) {
             int seqLength = sequenceStorage.length();
 
             for (int i = 0; loopConditionProfile.profile(inliningTarget, i < seqLength); i++) {
-                if (nodeType == AnyOrAllNodeType.ALL && earlyExitProfile.profile(inliningTarget, !isTrueNode.execute(frame, inliningTarget, internalArray[i]))) {
+                if (nodeType == AnyOrAllNodeType.ALL &&
+                                earlyExitProfile.profile(inliningTarget, !isTrueNode.execute(frame, inliningTarget, getItem.execute(inliningTarget, sequenceStorage, i)))) {
                     LoopNode.reportLoopCount(inliningTarget, i);
                     return false;
-                } else if (nodeType == AnyOrAllNodeType.ANY && earlyExitProfile.profile(inliningTarget, isTrueNode.execute(frame, inliningTarget, internalArray[i]))) {
+                } else if (nodeType == AnyOrAllNodeType.ANY &&
+                                earlyExitProfile.profile(inliningTarget, isTrueNode.execute(frame, inliningTarget, getItem.execute(inliningTarget, sequenceStorage, i)))) {
                     LoopNode.reportLoopCount(inliningTarget, i);
                     return true;
                 }

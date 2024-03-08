@@ -986,14 +986,14 @@ public final class PythonCextUnicodeBuiltins {
         }
 
         @Specialization(guards = "isNoValue(errors)")
-        Object doUnicode(PString s, @SuppressWarnings("unused") PNone errors,
+        Object doUnicode(Object s, @SuppressWarnings("unused") PNone errors,
                         @Shared("encodeNode") @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Shared @Cached PythonObjectFactory factory) {
             return doUnicode(s, T_STRICT, encodeNativeStringNode, factory);
         }
 
         @Specialization
-        Object doUnicode(PString s, TruffleString errors,
+        Object doUnicode(Object s, TruffleString errors,
                         @Shared("encodeNode") @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createBytes(encodeNativeStringNode.execute(charset, s, errors));

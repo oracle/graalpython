@@ -87,6 +87,7 @@ import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -150,6 +151,7 @@ public final class PicklerNodes {
         @Child private PyObjectSizeNode sizeNode;
         @Child private PyObjectLookupAttr lookupAttrNode;
         @Child private BytesNodes.ToBytesNode toBytesNode;
+        @Child private PyObjectReprAsTruffleStringNode reprNode;
         @Child private TruffleString.FromByteArrayNode tsFromByteArrayNode;
         @Child private TruffleString.CodePointLengthNode tsCodePointLengthNode;
         @Child private TruffleString.CodePointAtIndexNode tsCodePointAtIndexNode;
@@ -276,6 +278,14 @@ public final class PicklerNodes {
                 toBytesNode = insert(BytesNodes.ToBytesNode.create());
             }
             return toBytesNode.execute(frame, obj);
+        }
+
+        private PyObjectReprAsTruffleStringNode getReprNode() {
+            if (reprNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reprNode = insert(PyObjectReprAsTruffleStringNode.create());
+            }
+            return reprNode;
         }
 
         protected HashingStorageIterator getHashingStorageIterator(HashingStorage s) {
@@ -653,7 +663,12 @@ public final class PicklerNodes {
         public Object getattribute(VirtualFrame frame, Object obj, TruffleString name, boolean allowQualname) {
             if (allowQualname) {
                 TruffleString[] dottedPath = getDottedPath(obj, name);
-                return getDeepAttribute(frame, getLookupAttrNode(), obj, dottedPath).getLeft();
+                Pair<Object, Object> result = getDeepAttribute(frame, getLookupAttrNode(), obj, dottedPath);
+                if (result != null) {
+                    return result.getLeft();
+                } else {
+                    throw raise(AttributeError, ErrorMessages.CANT_GET_ATTRIBUTE_S_ON_S, name, getReprNode().execute(frame, null, obj));
+                }
             } else {
                 return lookupAttributeStrict(frame, obj, name);
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -62,11 +61,11 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateCached(false)
 @GenerateInline
 public abstract class PyLongAsDoubleNode extends PNodeWithContext {
-    public static Object executeUncached(Object object) {
+    public static double executeUncached(Object object) {
         return PyLongAsDoubleNodeGen.getUncached().execute(null, object);
     }
 
-    public abstract Object execute(Node inliningTarget, Object object);
+    public abstract double execute(Node inliningTarget, Object object);
 
     @Specialization
     static double doBoolean(boolean self) {
@@ -89,10 +88,7 @@ public abstract class PyLongAsDoubleNode extends PNodeWithContext {
     }
 
     @Fallback
-    Object fallback(Object object) {
-        if (!PyLongCheckNode.executeUncached(object)) {
-            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
-        }
-        return PNotImplemented.NOT_IMPLEMENTED;
+    double fallback(@SuppressWarnings("unused") Object object) {
+        throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
     }
 }

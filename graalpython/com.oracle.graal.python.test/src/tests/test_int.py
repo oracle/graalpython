@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,42 @@ def test_int_subclassing():
     MAXREPEAT = _NamedIntConstant(1, 'MAXREPEAT')
     assert MAXREPEAT == 1
     assert str(MAXREPEAT) == "MAXREPEAT"
+
+
+def test_abs():
+    assert abs(True) == 1
+    assert abs(False) == 0
+    assert abs(0) == 0
+    assert abs(1) == 1
+    assert abs(-1) == 1
+    assert abs(-2147483647-1) == 2147483648  # Smallest int
+    assert abs(-2147483647) == 2147483647
+    assert abs(-9223372036854775807-1) == 9223372036854775808  # Smallest long
+    assert abs(-9223372036854775807) == 9223372036854775807
+    assert abs(-BIG_NUMBER) == BIG_NUMBER
+    assert abs(-50.0) == 50.0
+    assert repr(abs(-0.0)) == '0.0'
+
+    class CustomInt(int):
+        def __int__(self):
+            return 100
+
+        def __index__(self):
+            return 100
+
+    class CustomFloat(float):
+        def __float__(self):
+            return 100.0
+    assert abs(CustomInt(-3)) == 3
+    assert abs(CustomFloat(-3.0)) == 3.0
+
+    try:
+        abs(object())
+    except TypeError:
+        pass
+    else:
+        assert False, "Expected TypeError"
+
 
 
 def test_bigint():

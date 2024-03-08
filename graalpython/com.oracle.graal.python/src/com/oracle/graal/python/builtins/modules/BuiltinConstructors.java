@@ -257,6 +257,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -393,77 +394,83 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callComplexNode;
         @Child private WarnNode warnNode;
 
-        private static PComplex createComplex(Object cls, double real, double imaginary, Node inliningTarget, IsBuiltinClassExactProfile isPrimitiveProfile, PythonObjectFactory factory) {
-            if (isPrimitiveProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PComplex)) {
-                return factory.createComplex(real, imaginary);
-            }
-            return factory.createComplex(cls, real, imaginary);
-        }
+        @GenerateInline
+        @GenerateCached(false)
+        @GenerateUncached
+        abstract static class CreateComplexNode extends Node {
+            public abstract Object execute(Node inliningTarget, Object cls, double real, double imaginary);
 
-        private static PComplex createComplex(Object cls, PComplex value, Node inliningTarget, IsBuiltinClassExactProfile isPrimitiveProfile, PyComplexCheckExactNode complexCheckExact,
-                        PythonObjectFactory factory) {
-            if (isPrimitiveProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PComplex)) {
-                if (complexCheckExact.execute(inliningTarget, value)) {
-                    return value;
-                }
-                return factory.createComplex(value.getReal(), value.getImag());
+            public static Object executeUncached(Object cls, double real, double imaginary) {
+                return BuiltinConstructorsFactory.ComplexNodeFactory.CreateComplexNodeGen.getUncached().execute(null, cls, real, imaginary);
             }
-            return factory.createComplex(cls, value.getReal(), value.getImag());
+
+            @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+            static PComplex doManaged(@SuppressWarnings("unused") Node inliningTarget, Object cls, double real, double imaginary,
+                            @SuppressWarnings("unused") @Cached NeedsNativeAllocationNode needsNativeAllocationNode,
+                            @Cached(inline = false) PythonObjectFactory factory) {
+                return factory.createComplex(cls, real, imaginary);
+            }
+
+            @Fallback
+            static Object doNative(Node inliningTarget, Object cls, double real, double imaginary,
+                            @Cached(inline = false) PCallCapiFunction callCapiFunction,
+                            @Cached(inline = false) PythonToNativeNode toNativeNode,
+                            @Cached(inline = false) NativeToPythonNode toPythonNode,
+                            @Cached(inline = false) ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode) {
+                NativeCAPISymbol symbol = NativeCAPISymbol.FUN_COMPLEX_SUBTYPE_FROM_DOUBLES;
+                Object nativeResult = callCapiFunction.call(symbol, toNativeNode.execute(cls), real, imaginary);
+                return toPythonNode.execute(checkFunctionResultNode.execute(PythonContext.get(inliningTarget), symbol.getTsName(), nativeResult));
+            }
         }
 
         @Specialization(guards = {"isNoValue(real)", "isNoValue(imag)"})
         @SuppressWarnings("unused")
-        static PComplex complexFromNone(Object cls, PNone real, PNone imag,
+        static Object complexFromNone(Object cls, PNone real, PNone imag,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return createComplex(cls, 0, 0, inliningTarget, isPrimitiveProfile, factory);
+                        @Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, 0, 0);
         }
 
         @Specialization
-        static PComplex complexFromIntInt(Object cls, int real, int imaginary,
+        static Object complexFromIntInt(Object cls, int real, int imaginary,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return createComplex(cls, real, imaginary, inliningTarget, isPrimitiveProfile, factory);
+                        @Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, real, imaginary);
         }
 
         @Specialization
-        static PComplex complexFromLongLong(Object cls, long real, long imaginary,
+        static Object complexFromLongLong(Object cls, long real, long imaginary,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return createComplex(cls, real, imaginary, inliningTarget, isPrimitiveProfile, factory);
+                        @Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, real, imaginary);
         }
 
         @Specialization
-        PComplex complexFromLongLong(Object cls, PInt real, PInt imaginary,
+        static Object complexFromLongLong(Object cls, PInt real, PInt imaginary,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return createComplex(cls, real.doubleValueWithOverflow(this),
-                            imaginary.doubleValueWithOverflow(this), inliningTarget, isPrimitiveProfile, factory);
+                        @Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, real.doubleValueWithOverflow(inliningTarget),
+                            imaginary.doubleValueWithOverflow(inliningTarget));
         }
 
         @Specialization
-        static PComplex complexFromDoubleDouble(Object cls, double real, double imaginary,
+        static Object complexFromDoubleDouble(Object cls, double real, double imaginary,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return createComplex(cls, real, imaginary, inliningTarget, isPrimitiveProfile, factory);
+                        @Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, real, imaginary);
         }
 
         @Specialization(guards = "isNoValue(imag)")
-        static PComplex complexFromDouble(Object cls, double real, @SuppressWarnings("unused") PNone imag,
+        static Object complexFromDouble(Object cls, double real, @SuppressWarnings("unused") PNone imag,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return createComplex(cls, real, 0, inliningTarget, isPrimitiveProfile, factory);
+                        @Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, real, 0);
         }
 
         @Specialization(guards = "isNoValue(imag)")
-        PComplex complexFromDouble(VirtualFrame frame, Object cls, PFloat real, @SuppressWarnings("unused") PNone imag,
+        Object complexFromDouble(VirtualFrame frame, Object cls, PFloat real, @SuppressWarnings("unused") PNone imag,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached CreateComplexNode createComplexNode,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
@@ -472,29 +479,29 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Shared("isBuiltinObj") @Cached PyComplexCheckExactNode isBuiltinObjectProfile,
                         @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            return complexFromObject(frame, cls, real, imag, inliningTarget, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile, isBuiltinObjectProfile, factory,
+            return complexFromObject(frame, cls, real, imag, inliningTarget, createComplexNode, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile,
+                            isBuiltinObjectProfile, factory,
                             raiseNode);
         }
 
         @Specialization(guards = "isNoValue(imag)")
-        static PComplex complexFromInt(Object cls, int real, @SuppressWarnings("unused") PNone imag,
+        static Object complexFromInt(Object cls, int real, @SuppressWarnings("unused") PNone imag,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return createComplex(cls, real, 0, inliningTarget, isPrimitiveProfile, factory);
+                        @Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, real, 0);
         }
 
         @Specialization(guards = "isNoValue(imag)")
-        static PComplex complexFromLong(Object cls, long real, @SuppressWarnings("unused") PNone imag,
+        static Object complexFromLong(Object cls, long real, @SuppressWarnings("unused") PNone imag,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return createComplex(cls, real, 0, inliningTarget, isPrimitiveProfile, factory);
+                        @Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, real, 0);
         }
 
         @Specialization(guards = "isNoValue(imag)")
-        PComplex complexFromLong(VirtualFrame frame, Object cls, PInt real, @SuppressWarnings("unused") PNone imag,
+        Object complexFromLong(VirtualFrame frame, Object cls, PInt real, @SuppressWarnings("unused") PNone imag,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached CreateComplexNode createComplexNode,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
@@ -503,13 +510,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Shared("isBuiltinObj") @Cached PyComplexCheckExactNode complexCheck,
                         @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            return complexFromObject(frame, cls, real, imag, inliningTarget, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile, complexCheck, factory,
-                            raiseNode);
+            return complexFromObject(frame, cls, real, imag, inliningTarget, createComplexNode, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile, complexCheck,
+                            factory, raiseNode);
         }
 
         @Specialization(guards = {"isNoValue(imag)", "!isNoValue(number)", "!isString(number)"})
-        PComplex complexFromObject(VirtualFrame frame, Object cls, Object number, @SuppressWarnings("unused") PNone imag,
+        Object complexFromObject(VirtualFrame frame, Object cls, Object number, @SuppressWarnings("unused") PNone imag,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached CreateComplexNode createComplexNode,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
@@ -521,151 +529,149 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PComplex value = getComplexNumberFromObject(frame, number, inliningTarget, isComplexType, isResultComplexType, raiseNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, number)) {
-                    return createComplex(cls, asDoubleNode.execute(frame, inliningTarget, number), 0.0, inliningTarget, isPrimitiveProfile, factory);
+                    return createComplexNode.execute(inliningTarget, cls, asDoubleNode.execute(frame, inliningTarget, number), 0.0);
                 } else {
                     throw raiseFirstArgError(number, raiseNode.get(inliningTarget));
                 }
             }
-            return createComplex(cls, value, inliningTarget, isPrimitiveProfile, complexCheck, factory);
+            if (isPrimitiveProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PComplex)) {
+                if (complexCheck.execute(inliningTarget, value)) {
+                    return value;
+                }
+                return factory.createComplex(value.getReal(), value.getImag());
+            }
+            return createComplexNode.execute(inliningTarget, cls, value.getReal(), value.getImag());
         }
 
         @Specialization
-        static PComplex complexFromLongComplex(Object cls, long one, PComplex two,
+        static Object complexFromLongComplex(Object cls, long one, PComplex two,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return createComplex(cls, one - two.getImag(), two.getReal(), inliningTarget, isPrimitiveProfile, factory);
+                        @Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, one - two.getImag(), two.getReal());
         }
 
         @Specialization
-        PComplex complexFromPIntComplex(Object cls, PInt one, PComplex two,
+        static Object complexFromPIntComplex(Object cls, PInt one, PComplex two,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return createComplex(cls, one.doubleValueWithOverflow(this) - two.getImag(), two.getReal(), inliningTarget, isPrimitiveProfile, factory);
+                        @Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, one.doubleValueWithOverflow(inliningTarget) - two.getImag(), two.getReal());
         }
 
         @Specialization
-        static PComplex complexFromDoubleComplex(Object cls, double one, PComplex two,
+        static Object complexFromDoubleComplex(Object cls, double one, PComplex two,
                         @Bind("this") Node inliningTarget,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return createComplex(cls, one - two.getImag(), two.getReal(), inliningTarget, isPrimitiveProfile, factory);
+                        @Shared @Cached CreateComplexNode createComplexNode) {
+            return createComplexNode.execute(inliningTarget, cls, one - two.getImag(), two.getReal());
         }
 
         @Specialization(guards = "!isString(one)")
-        PComplex complexFromComplexLong(VirtualFrame frame, Object cls, Object one, long two,
+        Object complexFromComplexLong(VirtualFrame frame, Object cls, Object one, long two,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached CreateComplexNode createComplexNode,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
                         @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, one)) {
-                    return createComplex(cls, asDoubleNode.execute(frame, inliningTarget, one), two, inliningTarget, isPrimitiveProfile, factory);
+                    return createComplexNode.execute(inliningTarget, cls, asDoubleNode.execute(frame, inliningTarget, one), two);
                 } else {
                     throw raiseFirstArgError(one, raiseNode.get(inliningTarget));
                 }
             }
-            return createComplex(cls, value.getReal(), value.getImag() + two, inliningTarget, isPrimitiveProfile, factory);
+            return createComplexNode.execute(inliningTarget, cls, value.getReal(), value.getImag() + two);
         }
 
         @Specialization(guards = "!isString(one)")
-        PComplex complexFromComplexDouble(VirtualFrame frame, Object cls, Object one, double two,
+        Object complexFromComplexDouble(VirtualFrame frame, Object cls, Object one, double two,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached CreateComplexNode createComplexNode,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
                         @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, one)) {
-                    return createComplex(cls, asDoubleNode.execute(frame, inliningTarget, one), two, inliningTarget, isPrimitiveProfile, factory);
+                    return createComplexNode.execute(inliningTarget, cls, asDoubleNode.execute(frame, inliningTarget, one), two);
                 } else {
                     throw raiseFirstArgError(one, raiseNode.get(inliningTarget));
                 }
             }
-            return createComplex(cls, value.getReal(), value.getImag() + two, inliningTarget, isPrimitiveProfile, factory);
+            return createComplexNode.execute(inliningTarget, cls, value.getReal(), value.getImag() + two);
         }
 
         @Specialization(guards = "!isString(one)")
-        PComplex complexFromComplexPInt(VirtualFrame frame, Object cls, Object one, PInt two,
+        Object complexFromComplexPInt(VirtualFrame frame, Object cls, Object one, PInt two,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached CreateComplexNode createComplexNode,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
                         @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, one)) {
-                    return createComplex(cls, asDoubleNode.execute(frame, inliningTarget, one), two.doubleValueWithOverflow(this), inliningTarget, isPrimitiveProfile, factory);
+                    return createComplexNode.execute(inliningTarget, cls, asDoubleNode.execute(frame, inliningTarget, one), two.doubleValueWithOverflow(this));
                 } else {
                     throw raiseFirstArgError(one, raiseNode.get(inliningTarget));
                 }
             }
-            return createComplex(cls, value.getReal(), value.getImag() + two.doubleValueWithOverflow(this), inliningTarget, isPrimitiveProfile, factory);
+            return createComplexNode.execute(inliningTarget, cls, value.getReal(), value.getImag() + two.doubleValueWithOverflow(this));
         }
 
         @Specialization(guards = "!isString(one)")
-        PComplex complexFromComplexComplex(VirtualFrame frame, Object cls, Object one, PComplex two,
+        Object complexFromComplexComplex(VirtualFrame frame, Object cls, Object one, PComplex two,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached CreateComplexNode createComplexNode,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
                         @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, one)) {
-                    return createComplex(cls, asDoubleNode.execute(frame, inliningTarget, one) - two.getImag(), two.getReal(), inliningTarget, isPrimitiveProfile, factory);
+                    return createComplexNode.execute(inliningTarget, cls, asDoubleNode.execute(frame, inliningTarget, one) - two.getImag(), two.getReal());
                 } else {
                     throw raiseFirstArgError(one, raiseNode.get(inliningTarget));
                 }
             }
-            return createComplex(cls, value.getReal() - two.getImag(), value.getImag() + two.getReal(), inliningTarget, isPrimitiveProfile, factory);
+            return createComplexNode.execute(inliningTarget, cls, value.getReal() - two.getImag(), value.getImag() + two.getReal());
         }
 
         @Specialization(guards = {"!isString(one)", "!isNoValue(two)", "!isPComplex(two)"})
         @SuppressWarnings("truffle-static-method")
-        PComplex complexFromComplexObject(VirtualFrame frame, Object cls, Object one, Object two,
+        Object complexFromComplexObject(VirtualFrame frame, Object cls, Object one, Object two,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached CreateComplexNode createComplexNode,
                         @Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
                         @Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
-                        @Shared("isPrimitive") @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             PComplex oneValue = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
             if (canBeDoubleNode.execute(inliningTarget, two)) {
                 double twoValue = asDoubleNode.execute(frame, inliningTarget, two);
                 if (oneValue == null) {
                     if (canBeDoubleNode.execute(inliningTarget, one)) {
-                        return createComplex(cls, asDoubleNode.execute(frame, inliningTarget, one), twoValue, inliningTarget, isPrimitiveProfile, factory);
+                        return createComplexNode.execute(inliningTarget, cls, asDoubleNode.execute(frame, inliningTarget, one), twoValue);
                     } else {
                         throw raiseFirstArgError(one, raiseNode.get(inliningTarget));
                     }
                 }
-                return createComplex(cls, oneValue.getReal(), oneValue.getImag() + twoValue, inliningTarget, isPrimitiveProfile, factory);
+                return createComplexNode.execute(inliningTarget, cls, oneValue.getReal(), oneValue.getImag() + twoValue);
             } else {
                 throw raiseSecondArgError(two, raiseNode.get(inliningTarget));
             }
         }
 
         @Specialization
-        PComplex complexFromString(VirtualFrame frame, Object cls, TruffleString real, Object imaginary,
+        Object complexFromString(VirtualFrame frame, Object cls, TruffleString real, Object imaginary,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
@@ -676,7 +682,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex complexFromString(VirtualFrame frame, Object cls, PString real, Object imaginary,
+        Object complexFromString(VirtualFrame frame, Object cls, PString real, Object imaginary,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaStringNode castToStringNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
@@ -742,7 +748,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         // Adapted from CPython's complex_subtype_from_string
-        private PComplex convertStringToComplex(VirtualFrame frame, Node inliningTarget, String src, Object cls, Object origObj, PRaiseNode.Lazy raiseNode) {
+        private Object convertStringToComplex(VirtualFrame frame, Node inliningTarget, String src, Object cls, Object origObj, PRaiseNode.Lazy raiseNode) {
             String str = FloatUtils.removeUnicodeAndUnderscores(src);
             if (str == null) {
                 if (callReprNode == null) {
@@ -760,7 +766,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raiseNode.get(inliningTarget).raise(ValueError);
                 }
             }
-            PComplex c = convertStringToComplexOrNull(str, cls);
+            Object c = convertStringToComplexOrNull(str, cls);
             if (c == null) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.COMPLEX_ARG_IS_MALFORMED_STR);
             }
@@ -769,7 +775,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         // Adapted from CPython's complex_from_string_inner
         @TruffleBoundary
-        private PComplex convertStringToComplexOrNull(String str, Object cls) {
+        private Object convertStringToComplexOrNull(String str, Object cls) {
             int len = str.length();
 
             // position on first nonblank
@@ -857,7 +863,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (i != len) {
                 return null;
             }
-            return createComplex(cls, x, y, null, IsBuiltinClassExactProfile.getUncached(), PythonObjectFactory.getUncached());
+            return CreateComplexNode.executeUncached(cls, x, y);
         }
     }
 

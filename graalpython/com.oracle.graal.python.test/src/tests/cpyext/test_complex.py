@@ -36,9 +36,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import operator
 
-import sys
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType, is_native_object
+
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -84,6 +85,21 @@ class DummyComplexSubclass(complex):
     pass
 
 
+NativeComplexSubclass = CPyExtType(
+    "NativeComplexSubclass",
+    '',
+    struct_base='PyComplexObject base;',
+    tp_base='&PyComplex_Type',
+    tp_new='0',
+    tp_alloc='0',
+    tp_free='0',
+)
+
+
+class ManagedNativeComplexSubclass(NativeComplexSubclass):
+    pass
+
+
 class TestPyComplex(CPyExtTestCase):
 
     test_PyComplex_AsCComplex = CPyExtFunction(
@@ -91,6 +107,8 @@ class TestPyComplex(CPyExtTestCase):
         lambda: (
             (complex(1.0, 2.0), 1.0, 2.0),
             (DummyComplexSubclass(2.0, 3.0), 2.0, 3.0),
+            (NativeComplexSubclass(1.0, 2.0), 1.0, 2.0),
+            (ManagedNativeComplexSubclass(1.0, 2.0), 1.0, 2.0),
         ),
         code='''int isNaN(double d) {
             return d != d;
@@ -122,6 +140,8 @@ class TestPyComplex(CPyExtTestCase):
         lambda: (
             (complex(1.0, 2.0), ),
             (DummyComplexSubclass(2.0, 3.0), ),
+            (NativeComplexSubclass(1.0, 2.0),),
+            (ManagedNativeComplexSubclass(1.0, 2.0),),
         ),
         code='''
         PyObject* wrap_PyComplex_cval(PyObject* obj) {
@@ -143,6 +163,8 @@ class TestPyComplex(CPyExtTestCase):
             (complex(0.0, 2.0), ),
             (complex(1.0, 2.0), ),
             (DummyComplexSubclass(2.0, 3.0), ),
+            (NativeComplexSubclass(1.0, 2.0),),
+            (ManagedNativeComplexSubclass(1.0, 2.0),),
             ("10.0", ),
         ),
         resultspec="f",
@@ -157,6 +179,8 @@ class TestPyComplex(CPyExtTestCase):
             (complex(0.0, 2.0), ),
             (complex(1.0, 2.0), ),
             (DummyComplexSubclass(2.0, 3.0), ),
+            (NativeComplexSubclass(1.0, 2.0),),
+            (ManagedNativeComplexSubclass(1.0, 2.0),),
             ("10.0", ),
         ),
         resultspec="f",
@@ -176,3 +200,35 @@ class TestPyComplex(CPyExtTestCase):
         arguments=["double r", "double i"],
         cmpfunc=unhandled_error_compare
     )
+
+
+class TestNativeComplex:
+    def test_builtins_on_subclass(self):
+        for t in [NativeComplexSubclass, ManagedNativeComplexSubclass]:
+            c = t(2, 3)
+            assert is_native_object(c)
+            assert type(c) is t
+            assert c.real == 2
+            assert c.imag == 3
+            assert type(complex(c)) is complex
+            assert complex(c) == 2 + 3j
+            assert c == 2 + 3j
+            assert t(2) == 2
+            assert t(2.4) == 2.4
+
+            def assert_op_same(f):
+                assert f(t(2, 3)) == f(2 + 3j)
+
+            assert_op_same(abs)
+            assert_op_same(repr)
+            assert_op_same(format)
+            assert_op_same(bool)
+            assert_op_same(hash)
+            assert_op_same(operator.pos)
+            assert_op_same(operator.neg)
+            assert_op_same(lambda x: x + (1 + 2j))
+            assert_op_same(lambda x: x - (1 + 2j))
+            assert_op_same(lambda x: x * (1 + 2j))
+            assert_op_same(lambda x: x / (1 + 2j))
+            assert_op_same(lambda x: x ** (1 + 2j))
+            assert_op_same(lambda x: x.conjugate())

@@ -158,9 +158,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.Hashfun
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InitWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InquiryWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.LenfuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.ObjobjargWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.RichcmpFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeargfuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeobjargfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TernaryFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -178,14 +179,14 @@ public enum SlotMethodDef {
     TP_ITERNEXT(PyTypeObject__tp_iternext, T___NEXT__, UnaryFuncWrapper::new),
     TP_REPR(PyTypeObject__tp_repr, T___REPR__, UnaryFuncWrapper::new),
     TP_RICHCOMPARE(PyTypeObject__tp_richcompare, T___TRUFFLE_RICHCOMPARE__, RichcmpFunctionWrapper::new),
-    TP_SETATTRO(PyTypeObject__tp_setattro, T___SETATTR__, SetAttrWrapper::new),
+    TP_SETATTRO(PyTypeObject__tp_setattro, T___SETATTR__, ObjobjargWrapper::new),
     TP_STR(PyTypeObject__tp_str, T___STR__, UnaryFuncWrapper::new),
     TP_DESCR_GET(PyTypeObject__tp_descr_get, T___GET__, DescrGetFunctionWrapper::new),
-    TP_DESCR_SET(PyTypeObject__tp_descr_set, T___SET__, SetAttrWrapper::new),
+    TP_DESCR_SET(PyTypeObject__tp_descr_set, T___SET__, ObjobjargWrapper::new),
 
     MP_LENGTH(PyMappingMethods__mp_length, T___LEN__, LenfuncWrapper::new, MethodsFlags.MP_LENGTH),
     MP_SUBSCRIPT(PyMappingMethods__mp_subscript, T___GETITEM__, BinaryFuncWrapper::new, MethodsFlags.MP_SUBSCRIPT),
-    MP_ASS_SUBSCRIPT(PyMappingMethods__mp_ass_subscript, T___SETITEM__, SetAttrWrapper::new, MethodsFlags.MP_ASS_SUBSCRIPT),
+    MP_ASS_SUBSCRIPT(PyMappingMethods__mp_ass_subscript, T___SETITEM__, ObjobjargWrapper::new, MethodsFlags.MP_ASS_SUBSCRIPT),
 
     AM_AWAIT(PyAsyncMethods__am_await, T___AWAIT__, UnaryFuncWrapper::new, MethodsFlags.AM_AWAIT),
     AM_AITER(PyAsyncMethods__am_aiter, T___AITER__, UnaryFuncWrapper::new, MethodsFlags.AM_AITER),
@@ -195,7 +196,7 @@ public enum SlotMethodDef {
 
     SQ_LENGTH(PySequenceMethods__sq_length, T___LEN__, LenfuncWrapper::new, MethodsFlags.SQ_LENGTH),
     SQ_ITEM(PySequenceMethods__sq_item, T___GETITEM__, SsizeargfuncWrapper::new, MethodsFlags.SQ_ITEM),
-    SQ_ASS_ITEM(PySequenceMethods__sq_ass_item, T___SETITEM__, SetAttrWrapper::new, MethodsFlags.SQ_ASS_ITEM),
+    SQ_ASS_ITEM(PySequenceMethods__sq_ass_item, T___SETITEM__, SsizeobjargfuncWrapper::new, MethodsFlags.SQ_ASS_ITEM),
     SQ_REPEAT(PySequenceMethods__sq_repeat, T___MUL__, SsizeargfuncWrapper::new, MethodsFlags.SQ_REPEAT),
     SQ_CONCAT(PySequenceMethods__sq_concat, T___ADD__, BinaryFuncWrapper::new, MethodsFlags.SQ_CONCAT),
 
