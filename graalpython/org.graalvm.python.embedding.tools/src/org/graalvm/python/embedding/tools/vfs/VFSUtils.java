@@ -63,8 +63,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class VFSUtils {
+
+    public static final String VFS_ROOT = "org.graalvm.python.vfs";
+    public static final String VFS_HOME = "home";
+    public static final String VFS_VENV = "venv";
+    public static final String VFS_FILESLIST = "fileslist.txt";
+
     public static void generateVFSFilesList(Path vfs) throws IOException {
-        Path filesList = vfs.resolve("fileslist.txt");
+        Path filesList = vfs.resolve(VFS_FILESLIST);
         if (!Files.isDirectory(vfs)) {
             throw new IOException(String.format("'%s' has to exist and be a directory.\n", vfs.toString()));
         }

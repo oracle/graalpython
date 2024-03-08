@@ -54,9 +54,9 @@ import java.io.IOException;
 import org.graalvm.python.embedding.vfs.VirtualFileSystem;
 
 public class GraalPy {
-    private static final String VENV_PREFIX = "/vfs/venv";
-    private static final String HOME_PREFIX = "/vfs/home";
-    private static final String PROJ_PREFIX = "/vfs/proj";
+    private static final String VENV_PREFIX = "/org.graalvm.python.vfs/venv";
+    private static final String HOME_PREFIX = "/org.graalvm.python.vfs/home";
+    private static final String PROJ_PREFIX = "/org.graalvm.python.vfs/proj";
     
     private static final String PYTHON = "python";
 
@@ -108,7 +108,7 @@ public class GraalPy {
             // Do not warn if running without JIT. This can be desirable for short running scripts
             // to reduce memory footprint.
             .option("engine.WarnInterpreterOnly", "false")
-            // Set python path to point to sources stored in src/main/resources/vfs/proj
+            // Set python path to point to sources stored in src/main/resources/org.graalvm.python.vfs/proj
             .option("python.PythonPath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))
             .build();
         return context;

@@ -41,8 +41,8 @@ public class {baseName} {
 }
 
 final class VirtualGraalPyContext {
-    private static final String VENV_PREFIX = "/vfs/venv";
-    private static final String HOME_PREFIX = "/vfs/home";
+    private static final String VENV_PREFIX = "/org.graalvm.python.vfs/venv";
+    private static final String HOME_PREFIX = "/org.graalvm.python.vfs/home";
 
     public static Context getContext() {
         VirtualFileSystem vfs = VirtualFileSystem.create();

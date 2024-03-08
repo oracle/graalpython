@@ -64,6 +64,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_HOME;
+import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
+import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
+
 public class JBangIntegration {
     private static final String PIP = "//PIP";
     private static final String PIP_DROP = "//PIP_DROP";
@@ -96,9 +100,9 @@ public class JBangIntegration {
                     List<Map.Entry<String, Path>> dependencies,
                     List<String> comments,
                     boolean nativeImage) {
-        Path vfs = temporaryJar.resolve("vfs");
-        Path venv = vfs.resolve("venv");
-        Path home = vfs.resolve("home");
+        Path vfs = temporaryJar.resolve(VFS_ROOT);
+        Path venv = vfs.resolve(VFS_VENV);
+        Path home = vfs.resolve(VFS_HOME);
 
         try {
             Files.createDirectories(vfs);

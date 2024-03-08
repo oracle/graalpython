@@ -77,6 +77,10 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public final class VirtualFileSystem implements FileSystem, AutoCloseable {
+
+    private static final String VFS_ROOT = "org.graalvm.python.vfs";
+    private static final String VFS_FILESLIST = "fileslist.txt";
+
     public static enum HostIO {
         NONE,
         READ,
