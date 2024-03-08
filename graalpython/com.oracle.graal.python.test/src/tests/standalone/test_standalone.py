@@ -256,9 +256,9 @@ class PolyglotAppTest(unittest.TestCase):
         if not skip_purge:
             self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
             if resolve:
-                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dinclude=org.graalvm.python:graalpy-maven-plugin", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
             else:
-                cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+                cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dinclude=org.graalvm.python:graalpy-maven-plugin", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
             run_cmd(cmd, self.env, cwd=target_dir)
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
@@ -316,12 +316,7 @@ class PolyglotAppTest(unittest.TestCase):
             try:
                 cmd = MVN_CMD + ["process-resources"]
                 out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                if sys.platform != 'win32':
-                    assert "Missing GraalPy dependency org.graalvm.python:python-language" in out
-                else:
-                    # different error message on windows due to generate launcher python script executed
-                    # before the actuall process-resources goal
-                    assert "Could not find or load main class com.oracle.graal.python.shell.GraalPythonMain" in out
+                assert "Missing GraalPy dependency. Please add to your pom either org.graalvm.polyglot:python-community or org.graalvm.polyglot:python" in out                
 
             finally:
                 self.purge_local_repo(target_dir, False)

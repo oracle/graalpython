@@ -1453,7 +1453,10 @@ suite = {
             "class": "MavenProject",
             "subDir": "graalpython",
             "noMavenJavadoc": True,
-            "dependencies": ["GRAALPYTHON_EMBEDDING"],
+            "dependencies": [
+                "GRAALPYTHON_EMBEDDING",
+                "GRAALPYTHON-LAUNCHER"
+            ],
             "maven": {
                 "tag": ["default", "public"],
             },

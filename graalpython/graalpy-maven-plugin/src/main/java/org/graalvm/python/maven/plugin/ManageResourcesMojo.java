@@ -40,35 +40,44 @@
  */
 package org.graalvm.python.maven.plugin;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.*;
-import java.nio.file.attribute.PosixFilePermission;
-import java.util.*;
-import java.util.stream.Collectors;
-
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.artifact.handler.DefaultArtifactHandler;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.project.MavenProject;
-import org.graalvm.python.embedding.utils.VFSUtils;
+import org.apache.maven.plugins.annotations.*;
+import org.apache.maven.project.*;
+import org.eclipse.aether.graph.Dependency;
 import org.graalvm.python.embedding.utils.GraalPyRunner;
+import org.graalvm.python.embedding.utils.VFSUtils;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Mojo(name = "process-graalpy-resources", defaultPhase = LifecyclePhase.PROCESS_RESOURCES,
                 requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
                 requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class ManageResourcesMojo extends AbstractMojo {
 
-    private static final String PYTHON_LANGUAGE = "python-language";
+    private static final String PYTHON_LANGUAGE_ARTIFACT_ID = "python-language";
     private static final String PYTHON_RESOURCES = "python-resources";
-    private static final String PYTHON_LAUNCHER = "python-launcher";
-    private static final String GRAALPY_GROUP = "org.graalvm.python";
+    private static final String PYTHON_LAUNCHER_ARTIFACT_ID = "python-launcher";
+    private static final String GRAALPY_GROUP_ID = "org.graalvm.python";
+
+    private static final String POLYGLOT_GROUP_ID = "org.graalvm.polyglot";
+    private static final String PYTHON_COMMUNITY_ARTIFACT_ID = "python-community";
+    private static final String PYTHON_ARTIFACT_ID = "python";
+    private static final String GRAALPY_MAVEN_PLUGIN_ARTIFACT_ID = "graalpy-maven-plugin";
 
     private static final String GRAALPY_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain";
 
@@ -87,6 +96,14 @@ public class ManageResourcesMojo extends AbstractMojo {
 
     @Parameter
     PythonHome pythonHome;
+
+    @Parameter(defaultValue = "${session}", readonly = true, required = true)
+    private MavenSession session;
+
+    @Component
+    private ProjectBuilder projectBuilder;
+
+    private Set<String> launcherClassPath;
 
     static Path getHomeDirectory(MavenProject project) {
         return Path.of(project.getBuild().getOutputDirectory(), "vfs", "home");
@@ -136,7 +153,7 @@ public class ManageResourcesMojo extends AbstractMojo {
         try {
             if (!Files.exists(homeDirectory)) {
                 Files.createDirectories(homeDirectory.getParent());
-                VFSUtils.copyGraalPyHome(calculateClasspath(project), homeDirectory, pythonHomeIncludes, pythonHomeExcludes, new MavenDelegateLog(getLog()));
+                VFSUtils.copyGraalPyHome(calculateLauncherClasspath(project), homeDirectory, pythonHomeIncludes, pythonHomeExcludes, new MavenDelegateLog(getLog()));
             }
             Files.write(tag, List.of(graalPyVersion), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             write(tag, pythonHomeIncludes, INCLUDE_PREFIX);
@@ -279,7 +296,7 @@ public class ManageResourcesMojo extends AbstractMojo {
         var launcher = getLauncherPath();
         if (!Files.exists(launcher)) {
             var java = Paths.get(System.getProperty("java.home"), "bin", "java");
-            var classpath = calculateClasspath(project);
+            var classpath = calculateLauncherClasspath(project);
             if (!IS_WINDOWS) {
                 var script = String.format("""
                                 #!/usr/bin/env bash
@@ -357,8 +374,8 @@ public class ManageResourcesMojo extends AbstractMojo {
         }
     }
 
-    private static void runGraalPy(MavenProject project, Log log, String... args) throws MojoExecutionException {
-        var classpath = calculateClasspath(project);
+    private void runGraalPy(MavenProject project, Log log, String... args) throws MojoExecutionException {
+        var classpath = calculateLauncherClasspath(project);
         try {
             GraalPyRunner.run(classpath, new MavenDelegateLog(log), args);
         } catch (IOException | InterruptedException e) {
@@ -367,17 +384,21 @@ public class ManageResourcesMojo extends AbstractMojo {
     }
 
     private static String getGraalPyVersion(MavenProject project) throws MojoExecutionException {
-        return getGraalPyArtifact(project, PYTHON_LANGUAGE).getVersion();
+        return getGraalPyArtifact(project).getVersion();
     }
 
-    private static Artifact getGraalPyArtifact(MavenProject project, String aid) throws MojoExecutionException {
+    private static Artifact getGraalPyArtifact(MavenProject project) throws MojoExecutionException {
         var projectArtifacts = resolveProjectDependencies(project);
-        for (var a : projectArtifacts) {
-            if (a.getGroupId().equals(GRAALPY_GROUP) && a.getArtifactId().equals(aid)) {
-                return a;
-            }
-        }
-        throw new MojoExecutionException(String.format("Missing GraalPy dependency %s:%s. Please add it to your pom", GRAALPY_GROUP, aid));
+        Artifact graalPyArtifact = projectArtifacts.stream().
+                filter(a -> isPythonArtifact(a))
+                .findFirst()
+                .orElse(null);
+        return Optional.ofNullable(graalPyArtifact).orElseThrow(() -> new MojoExecutionException("Missing GraalPy dependency. Please add to your pom either %s:%s or %s:%s".formatted(POLYGLOT_GROUP_ID, PYTHON_COMMUNITY_ARTIFACT_ID, POLYGLOT_GROUP_ID, PYTHON_ARTIFACT_ID)));
+    }
+
+    private static boolean isPythonArtifact(Artifact a) {
+        return POLYGLOT_GROUP_ID.equals(a.getGroupId()) &&
+                (PYTHON_COMMUNITY_ARTIFACT_ID.equals(a.getArtifactId()) || PYTHON_ARTIFACT_ID.equals(a.getArtifactId()));
     }
 
     private static Collection<Artifact> resolveProjectDependencies(MavenProject project) {
@@ -387,11 +408,62 @@ public class ManageResourcesMojo extends AbstractMojo {
                 .collect(Collectors.toList());
     }
 
-    private static HashSet<String> calculateClasspath(MavenProject project) throws MojoExecutionException {
-        var classpath = new HashSet<String>();
-        for (var r : resolveProjectDependencies(project)) {
-            classpath.add(r.getFile().getAbsolutePath());
+    private Set<String> calculateLauncherClasspath(MavenProject project) throws MojoExecutionException {
+        if(launcherClassPath == null) {
+            String version = getGraalPyVersion(project);
+            launcherClassPath = new HashSet<String>();
+
+            // 1.) python-launcher and transitive dependencies
+            // get the artifact from its direct dependency in graalpy-maven-plugin
+            DefaultArtifact mvnPlugin = new DefaultArtifact(GRAALPY_GROUP_ID, GRAALPY_MAVEN_PLUGIN_ARTIFACT_ID, version, "compile", "jar", null, new DefaultArtifactHandler("pom"));
+            ProjectBuildingResult result = buildProjectFromArtifact(mvnPlugin);
+            Artifact graalPyLauncherArtifact = result.getProject().getArtifacts().stream().filter(a ->GRAALPY_GROUP_ID.equals(a.getGroupId()) && PYTHON_LAUNCHER_ARTIFACT_ID.equals(a.getArtifactId()) && version.equals(a.getVersion()))
+                    .findFirst()
+                    .orElse(null);
+            // python-launcher artifact
+            launcherClassPath.add(graalPyLauncherArtifact.getFile().getAbsolutePath());
+            // and transitively all its dependencies
+            launcherClassPath.addAll(resolveDependencies(graalPyLauncherArtifact));
+
+            // 2.) graalpy dependencies
+            Artifact graalPyArtifact = getGraalPyArtifact(project);
+            assert graalPyArtifact != null;
+            launcherClassPath.addAll(resolveDependencies(graalPyArtifact));
         }
-        return classpath;
+        return launcherClassPath;
+    }
+
+    private Set<String> resolveDependencies(Artifact artifact) throws MojoExecutionException {
+        Set<String> dependencies = new HashSet<>();
+        ProjectBuildingResult result = buildProjectFromArtifact(artifact);
+        for(Dependency d : result.getDependencyResolutionResult().getResolvedDependencies()) {
+            addDependency(d, dependencies);
+        }
+        return dependencies;
+    }
+
+    private ProjectBuildingResult buildProjectFromArtifact(Artifact artifact) throws MojoExecutionException{
+        try{
+            ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
+            buildingRequest.setProject(null);
+            buildingRequest.setResolveDependencies(true);
+            buildingRequest.setPluginArtifactRepositories(project.getPluginArtifactRepositories());
+            buildingRequest.setRemoteRepositories(project.getRemoteArtifactRepositories());
+
+            return projectBuilder.build(artifact, buildingRequest);
+        } catch (ProjectBuildingException e) {
+            throw new MojoExecutionException("Error while building project", e);
+        }
+    }
+
+    private void addDependency(Dependency d, Set<String> dependencies) {
+        File f = d.getArtifact().getFile();
+        if(f != null) {
+            dependencies.add(f.getAbsolutePath());
+        } else {
+            getLog().warn("could not retrieve local file for artifact " + d.getArtifact());
+        }
     }
 }
+
+
