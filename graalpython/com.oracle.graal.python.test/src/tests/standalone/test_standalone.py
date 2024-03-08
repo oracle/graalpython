@@ -46,7 +46,6 @@ import urllib.parse
 import shutil
 
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
-skip_purge = 'SKIP_STANDALONE_UNITTESTS_PURGE' in os.environ and os.environ['SKIP_STANDALONE_UNITTESTS_PURGE'] == "true"
 
 MVN_CMD = [shutil.which('mvn'), "--batch-mode"]
 
@@ -252,53 +251,39 @@ class PolyglotAppTest(unittest.TestCase):
                     line = line.replace("{graalpy-maven-plugin-version}", self.graalvmVersion)
                 f.write(line)
 
-    def purge_local_repo(self, target_dir, resolve=True):
-        if not skip_purge:
-            self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
-            if resolve:
-                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dinclude=org.graalvm.python:graalpy-maven-plugin", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
-            else:
-                cmd = MVN_CMD + ["dependency:purge-local-repository", "-DreResolve=false", f"-Dinclude=org.graalvm.python:graalpy-maven-plugin", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
-            run_cmd(cmd, self.env, cwd=target_dir)
-
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_generated_app(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_name = "generated_app_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             self.generate_app(tmpdir, target_dir, target_name)
-            self.purge_local_repo(target_dir)
 
-            try:
-                # build
-                cmd = MVN_CMD + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy"] #, f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
-                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                assert "BUILD SUCCESS" in out
+            # build
+            cmd = MVN_CMD + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy"] #, f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+            out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
+            assert "BUILD SUCCESS" in out
 
-                # check fileslist.txt
-                fl_path = os.path.join(target_dir, "target", "classes", "vfs", "fileslist.txt")
-                with open(fl_path) as f:
-                    lines = f.readlines()
-                assert "/vfs/\n" in lines
-                assert "/vfs/home/\n" in lines
-                assert "/vfs/home/lib-graalpython/\n" in lines
-                assert "/vfs/home/lib-python/\n" in lines
+            # check fileslist.txt
+            fl_path = os.path.join(target_dir, "target", "classes", "vfs", "fileslist.txt")
+            with open(fl_path) as f:
+                lines = f.readlines()
+            assert "/vfs/\n" in lines
+            assert "/vfs/home/\n" in lines
+            assert "/vfs/home/lib-graalpython/\n" in lines
+            assert "/vfs/home/lib-python/\n" in lines
 
-                # execute and check native image
-                cmd = [os.path.join(target_dir, "target", target_name)]
-                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                assert "hello java" in out
+            # execute and check native image
+            cmd = [os.path.join(target_dir, "target", target_name)]
+            out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
+            assert "hello java" in out
 
-                # execute with java and check
-                cmd = MVN_CMD + ["exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
-                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                assert "hello java" in out
+            # execute with java and check
+            cmd = MVN_CMD + ["exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
+            out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
+            assert "hello java" in out
 
-                #GR-51132 - NoClassDefFoundError when running polyglot app in java mode
-                assert "java.lang.NoClassDefFoundError" not in out
-
-            finally:
-                self.purge_local_repo(target_dir, False)
+            #GR-51132 - NoClassDefFoundError when running polyglot app in java mode
+            assert "java.lang.NoClassDefFoundError" not in out
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_fail_without_graalpy_dep(self):
@@ -307,19 +292,10 @@ class PolyglotAppTest(unittest.TestCase):
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "fail_without_graalpy_dep_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
-            self.purge_local_repo(target_dir)
 
-            if not skip_purge:
-                self.env["MVN"] = " ".join(MVN_CMD + [f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"])
-                cmd = MVN_CMD + ["dependency:purge-local-repository", f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
-                run_cmd(cmd, self.env, cwd=target_dir)
-            try:
-                cmd = MVN_CMD + ["process-resources"]
-                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                assert "Missing GraalPy dependency. Please add to your pom either org.graalvm.polyglot:python-community or org.graalvm.polyglot:python" in out                
-
-            finally:
-                self.purge_local_repo(target_dir, False)
+            cmd = MVN_CMD + ["process-resources"]
+            out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
+            assert "Missing GraalPy dependency. Please add to your pom either org.graalvm.polyglot:python-community or org.graalvm.polyglot:python" in out    
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_gen_launcher_and_venv(self):
@@ -328,40 +304,35 @@ class PolyglotAppTest(unittest.TestCase):
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "prepare_venv_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
-            self.purge_local_repo(target_dir)
+            
+            cmd = MVN_CMD + ["process-resources"]
+            out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
+            assert "-m venv" in out
+            assert "-m ensurepip" in out
+            assert "ujson" in out
+            assert "termcolor" in out
 
-            try:
-                cmd = MVN_CMD + ["process-resources"]
-                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                assert "-m venv" in out
-                assert "-m ensurepip" in out
-                assert "ujson" in out
-                assert "termcolor" in out
+            # run again and assert that we do not regenerate the venv
+            cmd = MVN_CMD + ["process-resources"]
+            out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
+            assert "-m venv" not in out
+            assert "-m ensurepip" not in out
+            assert "ujson" not in out
+            assert "termcolor" not in out
 
-                # run again and assert that we do not regenerate the venv
-                cmd = MVN_CMD + ["process-resources"]
-                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                assert "-m venv" not in out
-                assert "-m ensurepip" not in out
-                assert "ujson" not in out
-                assert "termcolor" not in out
+            # remove ujson pkg from plugin config and check if unistalled
+            with open(os.path.join(target_dir, "pom.xml"), "r") as f:
+                contents = f.read()
 
-                # remove ujson pkg from plugin config and check if unistalled
-                with open(os.path.join(target_dir, "pom.xml"), "r") as f:
-                    contents = f.read()
+            with open(os.path.join(target_dir, "pom.xml"), "w") as f:
+                f.write(contents.replace("<package>ujson</package>", ""))
 
-                with open(os.path.join(target_dir, "pom.xml"), "w") as f:
-                    f.write(contents.replace("<package>ujson</package>", ""))
-
-                cmd = MVN_CMD + ["process-resources"]
-                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-                assert "-m venv" not in out
-                assert "-m ensurepip" not in out
-                assert "Uninstalling ujson" in out
-                assert "termcolor" not in out
-
-            finally:
-                self.purge_local_repo(target_dir, False)
+            cmd = MVN_CMD + ["process-resources"]
+            out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
+            assert "-m venv" not in out
+            assert "-m ensurepip" not in out
+            assert "Uninstalling ujson" in out
+            assert "termcolor" not in out
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_check_home(self):
@@ -370,25 +341,21 @@ class PolyglotAppTest(unittest.TestCase):
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "check_home_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
-            self.purge_local_repo(target_dir)
+        
+            cmd = MVN_CMD + ["process-resources"]
+            out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
 
-            try:
-                cmd = MVN_CMD + ["process-resources"]
-                out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-
-                # check fileslist.txt
-                fl_path = os.path.join(target_dir, "target", "classes", "vfs", "fileslist.txt")
-                with open(fl_path) as f:
-                    for line in f:
-                        line = f.readline()
-                        # string \n
-                        line = line[:len(line)-1]
-                        if line.endswith("/") or line == "/vfs/home/tagfile" or line == "/vfs/proj/hello.py":
-                            continue
-                        assert line.endswith("/__init__.py")
-                        assert not line.endswith("html/__init__.py")
-            finally:
-                self.purge_local_repo(target_dir, False)
+            # check fileslist.txt
+            fl_path = os.path.join(target_dir, "target", "classes", "vfs", "fileslist.txt")
+            with open(fl_path) as f:
+                for line in f:
+                    line = f.readline()
+                    # string \n
+                    line = line[:len(line)-1]
+                    if line.endswith("/") or line == "/vfs/home/tagfile" or line == "/vfs/proj/hello.py":
+                        continue
+                    assert line.endswith("/__init__.py")
+                    assert not line.endswith("html/__init__.py")
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_one_file():
