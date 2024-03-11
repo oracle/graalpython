@@ -541,6 +541,19 @@ class TestObject(object):
         tester = TestNew()
         assert tester.get_none() is None
 
+    def test_object_new_m_ml(self):
+        ObjectNew = CPyExtType("ObjectNew_", 
+                            '''
+                            static PyObject* get_flags(PyObject* cls, PyObject* func) {
+                                return PyLong_FromLong(PyCFunction_GetFlags(func));
+                            }
+
+                            ''',
+                            tp_methods='''{"get_flags", (PyCFunction)get_flags, METH_O | METH_CLASS, ""}''',
+                            )
+        f = ObjectNew.get_flags(object.__new__)
+        assert f == 3, "PyCFunction_GetFlags(object.__new__) 3 != %d" % f
+
     def test_init(self):
         TestInit = CPyExtType("TestInit", 
                              '''static PyObject* testnew_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
