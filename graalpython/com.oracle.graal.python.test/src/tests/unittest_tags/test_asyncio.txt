@@ -126,6 +126,7 @@
 *test.test_asyncio.test_events.PolicyTests.test_set_event_loop
 *test.test_asyncio.test_events.PolicyTests.test_set_event_loop_policy
 *test.test_asyncio.test_events.SelectEventLoopTests.test_add_fds_after_closing
+*test.test_asyncio.test_events.SelectEventLoopTests.test_bidirectional_pty
 *test.test_asyncio.test_events.SelectEventLoopTests.test_call_later
 *test.test_asyncio.test_events.SelectEventLoopTests.test_call_soon
 *test.test_asyncio.test_events.SelectEventLoopTests.test_call_soon_threadsafe
