@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -38,6 +38,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -47,13 +48,14 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(defineModule = "gc")
 public final class GcModuleBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return GcModuleBuiltinsFactory.getFactories();
     }
 
@@ -172,11 +174,22 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcGetReferentsNode extends PythonBuiltinNode {
         @Specialization
-        static PList getReferents(@SuppressWarnings("unused") Object objects,
-                        @Cached PythonObjectFactory factory) {
+        @TruffleBoundary
+        static PList getReferents(@SuppressWarnings("unused") Object objects) {
             // TODO: this is just a dummy implementation; for native objects, this should actually
             // use 'tp_traverse'
-            return factory.createList();
+            return PythonContext.get(null).factory().createList();
+        }
+    }
+
+    @Builtin(name = "get_referrers", takesVarArgs = true)
+    @GenerateNodeFactory
+    abstract static class GcGetReferrersNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static PList doGeneric(@SuppressWarnings("unused") Object objects) {
+            // dummy implementation
+            return PythonContext.get(null).factory().createList();
         }
     }
 }
