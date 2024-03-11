@@ -329,15 +329,17 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class ExitCalleeContextExceptional {
         @Specialization
         public static void doPException(VirtualFrame frame, PException pe,
-                        @Bind("$root") PBytecodeDSLRootNode root) {
+                        @Bind("$root") PBytecodeDSLRootNode root,
+                        @Bind("this") Node location) {
             pe.notifyAddedTracebackFrame(!root.isPythonInternal());
-            root.calleeContext.exit(frame, root);
+            root.calleeContext.exit(frame, root, location);
         }
 
         @Specialization
         public static void doOther(VirtualFrame frame, AbstractTruffleException ate,
-                        @Bind("$root") PBytecodeDSLRootNode root) {
-            root.calleeContext.exit(frame, root);
+                        @Bind("$root") PBytecodeDSLRootNode root,
+                        @Bind("this") Node location) {
+            root.calleeContext.exit(frame, root, location);
         }
     }
 
