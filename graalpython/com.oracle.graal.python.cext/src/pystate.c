@@ -137,29 +137,56 @@ int PyState_RemoveModule(struct PyModuleDef* def) {
     return 0;
 }
 
-#define _PYGILSTATE_LOCKED   0x1
-#define _PYGILSTATE_ATTACHED 0x2
-
-PyAPI_FUNC(PyGILState_STATE) PyGILState_Ensure() {
-    int result = 0;
+int
+PyGILState_Check()
+{
+    int attached = 0;
+    /*
+     * PyGILState_Check is allowed to be called from a new thread that didn't yet setup the GIL.
+     * If we don't attach the thread ourselves, the upcall will work because NFI will attach
+     * the thread automatically, but it won't create the context which would then break
+     * subsequent PyGILState_Ensure.
+     */
     if (TRUFFLE_CONTEXT) {
         if ((*TRUFFLE_CONTEXT)->getTruffleEnv(TRUFFLE_CONTEXT) == NULL) {
             (*TRUFFLE_CONTEXT)->attachCurrentThread(TRUFFLE_CONTEXT);
-            result |= _PYGILSTATE_ATTACHED;
+            attached = 1;
         }
     }
-    int locked = GraalPyTruffleGILState_Ensure();
-    if (locked) {
-        result |= _PYGILSTATE_LOCKED;
+    int ret = GraalPyTruffleGILState_Check();
+    if (attached) {
+        (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
     }
-    return result;
+    return ret;
 }
 
-PyAPI_FUNC(void) PyGILState_Release(PyGILState_STATE state) {
-    if (state & _PYGILSTATE_LOCKED) {
+static THREAD_LOCAL int graalpy_attached_thread = 0;
+static THREAD_LOCAL int graalpy_gilstate_counter = 0;
+
+PyGILState_STATE
+PyGILState_Ensure(void)
+{
+    if (TRUFFLE_CONTEXT) {
+        if ((*TRUFFLE_CONTEXT)->getTruffleEnv(TRUFFLE_CONTEXT) == NULL) {
+            (*TRUFFLE_CONTEXT)->attachCurrentThread(TRUFFLE_CONTEXT);
+            graalpy_attached_thread = 1;
+        }
+        graalpy_gilstate_counter++;
+    }
+    return GraalPyTruffleGILState_Ensure() ? PyGILState_UNLOCKED : PyGILState_LOCKED;
+}
+
+void
+PyGILState_Release(PyGILState_STATE oldstate)
+{
+    if (oldstate == PyGILState_UNLOCKED) {
         GraalPyTruffleGILState_Release();
     }
-    if (TRUFFLE_CONTEXT && (state & _PYGILSTATE_ATTACHED)) {
-        (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
+    if (TRUFFLE_CONTEXT) {
+        graalpy_gilstate_counter--;
+        if (graalpy_gilstate_counter == 0 && graalpy_attached_thread) {
+            (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
+            graalpy_attached_thread = 0;
+        }
     }
 }

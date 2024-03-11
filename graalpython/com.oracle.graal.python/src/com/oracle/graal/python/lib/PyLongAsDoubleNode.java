@@ -40,12 +40,17 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -83,12 +88,23 @@ public abstract class PyLongAsDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
-    double doPInt(PInt self) {
-        return self.doubleValueWithOverflow(this);
+    static double doPInt(Node inliningTarget, PInt self) {
+        return self.doubleValueWithOverflow(inliningTarget);
+    }
+
+    @Specialization(guards = "check.execute(inliningTarget, self)", limit = "1")
+    @InliningCutoff
+    static double doNative(Node inliningTarget, @SuppressWarnings("unused") PythonAbstractNativeObject self,
+                    @SuppressWarnings("unused") @Cached PyLongCheckNode check) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.CASTING_A_NATIVE_INT_OBJECT_IS_NOT_IMPLEMENTED_YET);
     }
 
     @Fallback
-    double fallback(@SuppressWarnings("unused") Object object) {
-        throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+    @InliningCutoff
+    @SuppressWarnings("unused")
+    static double fallback(Node inliningTarget, Object object,
+                    @Cached(inline = false) PRaiseNode raiseNode) {
+        throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
     }
 }

@@ -113,6 +113,7 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -168,6 +169,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "check.execute(inliningTarget, v)", limit = "1")
+        @InliningCutoff
         static ComplexValue doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject v,
                         @SuppressWarnings("unused") @Cached PyComplexCheckNode check,
                         @Cached(inline = false) CStructAccess.ReadDoubleNode read) {
@@ -187,6 +189,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "check.execute(inliningTarget, v)", limit = "1")
+        @InliningCutoff
         static ComplexValue doIntGeneric(Node inliningTarget, Object v,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode check,
                         @Cached PyLongAsDoubleNode longAsDoubleNode) {
@@ -194,6 +197,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "check.execute(inliningTarget, v)", limit = "1")
+        @InliningCutoff
         static ComplexValue doFloatGeneric(Node inliningTarget, Object v,
                         @SuppressWarnings("unused") @Cached PyFloatCheckNode check,
                         @Cached PyFloatAsDoubleNode floatAsDoubleNode) {
@@ -232,6 +236,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
         public abstract double executeDouble(Object arg);
 
         @Specialization
+        @InliningCutoff
         static double abs(Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached ToComplexValueNode toComplexValueNode,
@@ -380,19 +385,19 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static PComplex doComplex(PComplex left, int right,
+        static PComplex doInt(PComplex left, int right,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createComplex(left.getReal() + right, left.getImag());
         }
 
         @Specialization
-        static PComplex doComplex(PComplex left, double right,
+        static PComplex doDouble(PComplex left, double right,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createComplex(left.getReal() + right, left.getImag());
         }
 
         @Specialization
-        static Object doComplex(Object leftObj, Object rightObj,
+        static Object doGeneric(Object leftObj, Object rightObj,
                         @Bind("this") Node inliningTarget,
                         @Cached ToComplexValueNode toComplexLeft,
                         @Cached ToComplexValueNode toComplexRight,
@@ -533,6 +538,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
     abstract static class PowerNode extends PythonTernaryBuiltinNode {
 
         @Specialization
+        @InliningCutoff
         static Object doGeneric(Object leftObj, Object rightObj, @SuppressWarnings("unused") PNone mod,
                         @Bind("this") Node inliningTarget,
                         @Cached ToComplexValueNode toComplexLeft,
@@ -579,8 +585,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPNone(mod)")
+        @InliningCutoff
         @SuppressWarnings("unused")
-        static Object doGeneric(Object left, Object right, Object mod,
+        static Object error(Object left, Object right, Object mod,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(ValueError, ErrorMessages.COMPLEX_MODULO);
         }
@@ -660,7 +667,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        static PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doNotImplemented(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -735,6 +742,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
+        @InliningCutoff
         static TruffleString repr(Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached ToComplexValueNode toComplexValueNode) {
@@ -760,6 +768,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @InliningCutoff
         static TruffleString format(Object self, TruffleString formatString,
                         @Bind("this") Node inliningTarget,
                         @Cached ToComplexValueNode toComplexValueNode,
@@ -849,6 +858,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @InliningCutoff
         static double getNative(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadDoubleNode read) {
             return read.readFromObj(self, PyComplexObject__cval__real);
@@ -864,6 +874,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @InliningCutoff
         static double getNative(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadDoubleNode read) {
             return read.readFromObj(self, PyComplexObject__cval__imag);

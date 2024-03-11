@@ -186,6 +186,7 @@ public final class CApiFunction {
     /*
      * Functions that are implemented as C code that can be executed both in native and in Sulong:
      */
+    @CApiBuiltin(name = "PyGILState_Check", ret = Int, args = {}, acquiresGIL = false, call = CImpl)
     @CApiBuiltin(name = "PyArg_Parse", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyArg_ParseTuple", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyArg_ParseTupleAndKeywords", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST, VARARGS}, call = CImpl)

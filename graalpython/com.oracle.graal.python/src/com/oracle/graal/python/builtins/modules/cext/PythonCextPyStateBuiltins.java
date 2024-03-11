@@ -71,7 +71,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 public final class PythonCextPyStateBuiltins {
 
     @CApiBuiltin(ret = Int, args = {}, acquiresGIL = false, call = Direct)
-    abstract static class PyGILState_Check extends CApiNullaryBuiltinNode {
+    abstract static class PyTruffleGILState_Check extends CApiNullaryBuiltinNode {
 
         @Specialization
         Object check() {
