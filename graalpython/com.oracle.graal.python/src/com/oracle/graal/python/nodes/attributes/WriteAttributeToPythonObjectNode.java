@@ -63,21 +63,21 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
 @GenerateInline(false) // Should be reconsidered during anticipated refactoring from DOM library
-public abstract class WriteAttributeToDynamicObjectNode extends PNodeWithContext {
+public abstract class WriteAttributeToPythonObjectNode extends PNodeWithContext {
 
     public abstract void execute(PythonObject primary, TruffleString key, Object value);
 
     public static void executeUncached(PythonObject primary, TruffleString key, Object value) {
-        WriteAttributeToDynamicObjectNodeGen.getUncached().execute(primary, key, value);
+        WriteAttributeToPythonObjectNodeGen.getUncached().execute(primary, key, value);
     }
 
     @NeverDefault
-    public static WriteAttributeToDynamicObjectNode create() {
-        return WriteAttributeToDynamicObjectNodeGen.create();
+    public static WriteAttributeToPythonObjectNode create() {
+        return WriteAttributeToPythonObjectNodeGen.create();
     }
 
-    public static WriteAttributeToDynamicObjectNode getUncached() {
-        return WriteAttributeToDynamicObjectNodeGen.getUncached();
+    public static WriteAttributeToPythonObjectNode getUncached() {
+        return WriteAttributeToPythonObjectNodeGen.getUncached();
     }
 
     @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()")

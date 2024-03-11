@@ -52,7 +52,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -135,12 +135,12 @@ public final class MroShape {
     public static final class MroShapeLookupResult extends Node {
         private static final int NOT_FOUND_INDEX = -1;
         private final int mroIndex;
-        @Child ReadAttributeFromDynamicObjectNode readNode;
+        @Child ReadAttributeFromPythonObjectNode readNode;
 
         public MroShapeLookupResult(int mroIndex) {
             this.mroIndex = mroIndex;
             if (mroIndex != NOT_FOUND_INDEX) {
-                readNode = ReadAttributeFromDynamicObjectNode.create();
+                readNode = ReadAttributeFromPythonObjectNode.create();
             }
         }
 

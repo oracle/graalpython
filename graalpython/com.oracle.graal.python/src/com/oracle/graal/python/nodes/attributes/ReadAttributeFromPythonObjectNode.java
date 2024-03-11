@@ -67,14 +67,14 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic({PGuards.class, PythonOptions.class})
 @GenerateUncached
 @GenerateInline(false) // footprint reduction 44 -> 25
-public abstract class ReadAttributeFromDynamicObjectNode extends PNodeWithContext {
+public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext {
     @NeverDefault
-    public static ReadAttributeFromDynamicObjectNode create() {
-        return ReadAttributeFromDynamicObjectNodeGen.create();
+    public static ReadAttributeFromPythonObjectNode create() {
+        return ReadAttributeFromPythonObjectNodeGen.create();
     }
 
-    public static ReadAttributeFromDynamicObjectNode getUncached() {
-        return ReadAttributeFromDynamicObjectNodeGen.getUncached();
+    public static ReadAttributeFromPythonObjectNode getUncached() {
+        return ReadAttributeFromPythonObjectNodeGen.getUncached();
     }
 
     public static Object executeUncached(PythonObject object, TruffleString key, Object defaultValue) {

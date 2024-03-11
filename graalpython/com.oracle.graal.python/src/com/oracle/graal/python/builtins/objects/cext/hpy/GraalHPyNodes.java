@@ -137,7 +137,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -405,7 +405,7 @@ public abstract class GraalHPyNodes {
                         @Cached(parameters = "context") GraalHPyCAccess.WriteSizeTNode writeSizeTNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttrToMethodNode,
+                        @Cached WriteAttributeToPythonObjectNode writeAttrToMethodNode,
                         @Cached HPyCreateFunctionNode addFunctionNode,
                         @Cached CreateMethodNode addLegacyMethodNode,
                         @Cached HPyReadSlotNode readSlotNode,
@@ -672,7 +672,7 @@ public abstract class GraalHPyNodes {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached HPyAttachFunctionTypeNode attachFunctionTypeNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
+                        @Cached WriteAttributeToPythonObjectNode writeAttributeToPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
 
             TruffleString methodName = fromCharPointerNode.execute(readPointerNode.read(context, methodDef, GraalHPyCField.HPyDef__meth__name));
@@ -698,7 +698,7 @@ public abstract class GraalHPyNodes {
 
             // write doc string; we need to directly write to the storage otherwise it is
             // disallowed writing to builtin types.
-            writeAttributeToDynamicObjectNode.execute(function, SpecialAttributeNames.T___DOC__, methodDoc);
+            writeAttributeToPythonObjectNode.execute(function, SpecialAttributeNames.T___DOC__, methodDoc);
 
             return function;
         }
@@ -729,7 +729,7 @@ public abstract class GraalHPyNodes {
                         @Cached(parameters = "context") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToDynamicObjectNode writeDocNode,
+                        @Cached WriteAttributeToPythonObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
 
             // compute offset of name and read name pointer
@@ -917,7 +917,7 @@ public abstract class GraalHPyNodes {
                         @Cached(parameters = "context") GraalHPyCAccess.ReadGenericNode readGenericNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToDynamicObjectNode writeDocNode,
+                        @Cached WriteAttributeToPythonObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
 
             // computes offsets like '&(memberDefArrPtr[i].name)'
@@ -986,7 +986,7 @@ public abstract class GraalHPyNodes {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToDynamicObjectNode writeDocNode,
+                        @Cached WriteAttributeToPythonObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
 
             TruffleString name = fromCharPointerNode.execute(readPointerNode.read(context, memberDef, GraalHPyCField.HPyDef__member__name));
@@ -1049,7 +1049,7 @@ public abstract class GraalHPyNodes {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached HPyAttachFunctionTypeNode attachFunctionTypeNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToDynamicObjectNode writeDocNode) {
+                        @Cached WriteAttributeToPythonObjectNode writeDocNode) {
 
             TruffleString name = fromCharPointerNode.execute(readPointerNode.read(context, memberDef, GraalHPyCField.HPyDef__getset__name));
 

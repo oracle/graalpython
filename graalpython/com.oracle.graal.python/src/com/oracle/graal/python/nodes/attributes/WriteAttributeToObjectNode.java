@@ -134,7 +134,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
     @Specialization(guards = {"isAttrWritable(object)", "writeToDynamicStorageNoTypeGuard(object, getDict)"})
     static boolean writeToDynamicStorageNoType(PythonObject object, TruffleString key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                    @Cached WriteAttributeToDynamicObjectNode writeNode) {
+                    @Cached WriteAttributeToPythonObjectNode writeNode) {
         // Objects w/o dict that are not classes do not have any special handling
         writeNode.execute(object, key, value);
         return true;

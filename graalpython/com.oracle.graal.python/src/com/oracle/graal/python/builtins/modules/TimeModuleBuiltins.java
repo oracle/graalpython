@@ -79,7 +79,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -1106,7 +1106,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object getClockInfo(TruffleString name,
                         @Bind("this") Node inliningTarget,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttrNode,
+                        @Cached WriteAttributeToPythonObjectNode writeAttrNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {

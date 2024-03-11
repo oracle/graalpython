@@ -167,8 +167,8 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -1008,8 +1008,8 @@ public final class PythonCextBuiltins {
 
         @Specialization(guards = {"!isPythonBuiltinClass(object)"})
         static void doObject(PythonObject object, TruffleString key, Object value,
-                        @Exclusive @Cached(inline = false) WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode) {
-            writeAttrToDynamicObjectNode.execute(object, key, value);
+                        @Exclusive @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttrToPythonObjectNode) {
+            writeAttrToPythonObjectNode.execute(object, key, value);
         }
     }
 

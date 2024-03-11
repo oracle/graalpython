@@ -71,7 +71,7 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixN
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -233,7 +233,7 @@ public final class PythonCextModuleBuiltins {
         static Object moduleFunction(Object methodDefPtr, PythonModule mod, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
                         @Bind("this") Node inliningTarget,
                         @Cached ObjectBuiltins.SetattrNode setattrNode,
-                        @Cached ReadAttributeFromDynamicObjectNode readAttrNode,
+                        @Cached ReadAttributeFromPythonObjectNode readAttrNode,
                         @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
             Object modName = readAttrNode.execute(mod, T___NAME__, null);
             assert modName != null : "module name is missing!";

@@ -58,6 +58,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -81,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -121,7 +121,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     protected abstract static class SimpleNamespaceInitNode extends PythonVarargsBuiltinNode {
         @Specialization
         Object init(PSimpleNamespace self, Object[] args, PKeyword[] kwargs,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttrNode) {
+                        @Cached WriteAttributeToPythonObjectNode writeAttrNode) {
             if (args.length > 0) {
                 throw raise(PythonBuiltinClassType.TypeError, NO_POSITIONAL_ARGUMENTS_EXPECTED);
             }

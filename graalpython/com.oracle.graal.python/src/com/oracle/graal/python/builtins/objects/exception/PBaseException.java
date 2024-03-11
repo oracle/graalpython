@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -388,7 +388,7 @@ public class PBaseException extends PythonObject {
                     @Cached CastToJavaIntExactNode castToInt,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached GetClassNode getClassNode,
-                    @Cached ReadAttributeFromDynamicObjectNode readNode,
+                    @Cached ReadAttributeFromPythonObjectNode readNode,
                     @Exclusive @Cached InlinedBranchProfile unsupportedProfile,
                     @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();

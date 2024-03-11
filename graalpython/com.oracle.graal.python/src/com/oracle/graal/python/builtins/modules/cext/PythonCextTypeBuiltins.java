@@ -94,7 +94,7 @@ import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -252,7 +252,7 @@ public final class PythonCextTypeBuiltins {
         static Object classOrStatic(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
                         @Cached(inline = false) PythonObjectFactory factory,
                         @Exclusive @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
-                        @Cached(inline = false) WriteAttributeToDynamicObjectNode writeAttrNode,
+                        @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttrNode,
                         @Exclusive @Cached CreateFunctionNode createFunctionNode) {
             PythonAbstractObject func = createFunctionNode.execute(inliningTarget, name, methObj, wrapper, type, flags);
             writeHiddenAttrNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
@@ -305,7 +305,7 @@ public final class PythonCextTypeBuiltins {
         static int addSlot(Object clazz, PDict tpDict, TruffleString memberName, Object cfunc, int flags, int wrapper, Object memberDoc) {
             // create wrapper descriptor
             PythonObject wrapperDescriptor = CreateFunctionNode.executeUncached(memberName, cfunc, wrapper, clazz, flags);
-            WriteAttributeToDynamicObjectNode.getUncached().execute(wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
+            WriteAttributeToPythonObjectNode.getUncached().execute(wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
             // add wrapper descriptor to tp_dict
             PyDictSetDefault.executeUncached(tpDict, memberName, wrapperDescriptor);
@@ -330,7 +330,7 @@ public final class PythonCextTypeBuiltins {
 
             // create member descriptor
             GetSetDescriptor memberDescriptor = PythonObjectFactory.getUncached().createMemberDescriptor(getterObject, setterObject, memberName, clazz);
-            WriteAttributeToDynamicObjectNode.getUncached().execute(memberDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
+            WriteAttributeToPythonObjectNode.getUncached().execute(memberDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
             // add member descriptor to tp_dict
             PyDictSetDefault.executeUncached(tpDict, memberName, memberDescriptor);
@@ -368,7 +368,7 @@ public final class PythonCextTypeBuiltins {
 
             // create get-set descriptor
             GetSetDescriptor descriptor = factory.createGetSetDescriptor(get, set, name, cls, hasSetter);
-            WriteAttributeToDynamicObjectNode.executeUncached(descriptor, T___DOC__, doc);
+            WriteAttributeToPythonObjectNode.executeUncached(descriptor, T___DOC__, doc);
             return descriptor;
         }
 

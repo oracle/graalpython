@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -88,7 +88,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
     @Specialization
     int makeFunction(VirtualFrame frame, Object globals, int initialStackTop, int flags,
                     @Cached PythonObjectFactory factory,
-                    @Cached WriteAttributeToDynamicObjectNode writeAttrNode) {
+                    @Cached WriteAttributeToPythonObjectNode writeAttrNode) {
         int stackTop = initialStackTop;
 
         PCode codeObj = cachedCode;

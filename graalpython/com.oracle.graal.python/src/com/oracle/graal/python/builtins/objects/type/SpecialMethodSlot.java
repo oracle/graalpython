@@ -176,7 +176,7 @@ import com.oracle.graal.python.lib.GetMethodsFlagsNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -718,7 +718,7 @@ public enum SpecialMethodSlot {
         PDict dict = GetDictIfExistsNode.getUncached().execute(source);
         if (dict == null) {
             for (SpecialMethodSlot slot : VALUES) {
-                final Object value = ReadAttributeFromDynamicObjectNode.executeUncached(source, slot.getName(), PNone.NO_VALUE);
+                final Object value = ReadAttributeFromPythonObjectNode.executeUncached(source, slot.getName(), PNone.NO_VALUE);
                 if (value != PNone.NO_VALUE) {
                     slots[slot.ordinal()] = asSlotValue(slot, value, language);
                 }
@@ -1302,7 +1302,7 @@ public enum SpecialMethodSlot {
         if (initializingTypes.contains(klassIn)) {
             return true;
         }
-        ReadAttributeFromDynamicObjectNode uncachedReadAttrNode = ReadAttributeFromDynamicObjectNode.getUncached();
+        ReadAttributeFromPythonObjectNode uncachedReadAttrNode = ReadAttributeFromPythonObjectNode.getUncached();
         final Python3Core core = PythonContext.get(uncachedReadAttrNode);
         Object klass = klassIn;
         if (klass instanceof PythonBuiltinClassType) {

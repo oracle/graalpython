@@ -143,7 +143,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
@@ -1613,7 +1613,7 @@ public abstract class CExtNodes {
                         @CachedLibrary(limit = "3") InteropLibrary interopLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttrToMethodNode,
+                        @Cached WriteAttributeToPythonObjectNode writeAttrToMethodNode,
                         @Cached CreateMethodNode addLegacyMethodNode,
                         @Cached NativeToPythonStealingNode toJavaNode,
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
@@ -1835,7 +1835,7 @@ public abstract class CExtNodes {
                         @Cached(inline = false) FromCharPointerNode fromCharPointerNode,
                         @Cached(inline = false) PythonObjectFactory factory,
                         @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
-                        @Cached(inline = false) WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
+                        @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttributeToPythonObjectNode) {
             Object methodNamePtr = readPointerNode.readStructArrayElement(methodDef, element, PyMethodDef__ml_name);
             if (resultLib.isNull(methodNamePtr) || (methodNamePtr instanceof Long && ((long) methodNamePtr) == 0)) {
                 return null;
@@ -1861,7 +1861,7 @@ public abstract class CExtNodes {
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed
             // writing to builtin types.
-            writeAttributeToDynamicObjectNode.execute(function, SpecialAttributeNames.T___DOC__, methodDoc);
+            writeAttributeToPythonObjectNode.execute(function, SpecialAttributeNames.T___DOC__, methodDoc);
 
             return function;
         }

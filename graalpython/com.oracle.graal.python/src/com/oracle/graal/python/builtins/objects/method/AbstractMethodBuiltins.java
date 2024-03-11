@@ -63,9 +63,9 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -212,7 +212,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached ReadAttributeFromDynamicObjectNode readAttrNode) {
+                        @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
             // No profiling, performance here is not very important
             Object module = readAttrNode.execute(self, T___MODULE__, PNone.NO_VALUE);
             if (module != PNone.NO_VALUE) {
@@ -233,7 +233,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object getModule(PBuiltinMethod self, Object value,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttrNode) {
+                        @Cached WriteAttributeToPythonObjectNode writeAttrNode) {
             writeAttrNode.execute(self, T___MODULE__, value);
             return PNone.NONE;
         }
