@@ -86,7 +86,7 @@ public class Py2BinLauncher {
                 .option("python.AlwaysRunExcepthook", "true")
                 .option("python.ForceImportSite", "true")
                 .option("python.RunViaLauncher", "true")
-                .option("python.Executable", vfs.resourcePathToPlatformPath(VENV_PREFIX) + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.cmd" : "/bin/python"))
+                .option("python.Executable", vfs.resourcePathToPlatformPath(VENV_PREFIX) + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.exe" : "/bin/python"))
                 .option("python.InputFilePath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))
                 .option("python.PythonHome", vfs.resourcePathToPlatformPath(HOME_PREFIX))
                 .option("python.CheckHashPycsMode", "never");

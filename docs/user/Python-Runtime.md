@@ -129,7 +129,7 @@ It has the following known issues:
   - _pip.exe_ cannot be used directly
   - `pip` has trouble with cache file loading, use `--no-cache-dir`
   - Only pure Python binary wheels can be installed, no native extensions or source builds
-  - To install a package, use `myvenv/Scripts/python.cmd -m pip --no-cache-dir install <pkg>`
+  - To install a package, use `myvenv/Scripts/python.exe -m pip --no-cache-dir install <pkg>`
 - Running from PowerShell works better than running from CMD, various scripts will fail on the latter
 
 ## Installing Packages
