@@ -71,6 +71,7 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictFromGlobalsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNodeFactory.ImportNameNodeGen;
@@ -93,9 +94,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -172,9 +171,9 @@ public abstract class AbstractImportNode extends PNodeWithContext {
     public abstract static class ImportName extends Node {
         public abstract Object execute(Frame frame, PythonContext context, PythonModule builtins, TruffleString name, Object globals, TruffleString[] fromList, int level);
 
-        @Specialization(limit = "1")
+        @Specialization
         static Object importName(VirtualFrame frame, PythonContext context, PythonModule builtins, TruffleString name, Object globals, TruffleString[] fromList, int level,
-                        @CachedLibrary("builtins") DynamicObjectLibrary builtinsDylib,
+                        @Cached ReadAttributeFromPythonObjectNode readAttrNode,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile importFuncProfile,
                         @Cached PConstructAndRaiseNode.Lazy raiseNode,
@@ -182,7 +181,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         @Cached GetDictFromGlobalsNode getDictNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PyImportImportModuleLevelObject importModuleLevel) {
-            Object importFunc = builtinsDylib.getOrDefault(builtins, T___IMPORT__, null);
+            Object importFunc = readAttrNode.execute(builtins, T___IMPORT__, null);
             if (importFunc == null) {
                 throw raiseNode.get(inliningTarget).raiseImportError(frame, IMPORT_NOT_FOUND);
             }

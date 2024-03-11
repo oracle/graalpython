@@ -107,6 +107,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -144,7 +145,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -1200,7 +1200,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             @TruffleBoundary
             private void executeImpl(Object source, Object category, TruffleString format, int stackLevel, Object... formatArgs) {
                 PythonModule _warnings = PythonContext.get(this).lookupBuiltinModule(T__WARNINGS);
-                Object warn = DynamicObjectLibrary.getUncached().getOrDefault(_warnings, T_WARN, PNone.NONE);
+                Object warn = ReadAttributeFromPythonObjectNode.executeUncached(_warnings, T_WARN, PNone.NONE);
                 TruffleString message;
                 try {
                     message = TruffleString.fromJavaStringUncached(ErrorMessageFormatter.format(format, formatArgs), TS_ENCODING);

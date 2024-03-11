@@ -321,7 +321,7 @@ public abstract class ToNativeTypeNode {
         if (!(dict instanceof StgDictObject)) {
             HashingStorage dictStorage = dict.getDictStorage();
             if (!(dictStorage instanceof DynamicObjectStorage)) {
-                HashingStorage storage = new DynamicObjectStorage(clazz.getStorage());
+                HashingStorage storage = new DynamicObjectStorage(clazz);
                 dict.setDictStorage(storage);
                 if (dictStorage != null) {
                     // copy all mappings to the new storage

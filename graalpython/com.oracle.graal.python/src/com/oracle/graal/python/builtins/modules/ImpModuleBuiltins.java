@@ -100,9 +100,9 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -289,8 +289,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Cached ReadAttributeFromDynamicObjectNode readNameNode,
-                        @Cached ReadAttributeFromDynamicObjectNode readOriginNode,
+                        @Cached ReadAttributeFromPythonObjectNode readNameNode,
+                        @Cached ReadAttributeFromPythonObjectNode readOriginNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
@@ -694,14 +694,14 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         if (info.isPackage) {
             /* Set __path__ to the empty list */
-            WriteAttributeToDynamicObjectNode.getUncached().execute(module, T___PATH__, core.factory().createList());
+            WriteAttributeToPythonObjectNode.getUncached().execute(module, T___PATH__, core.factory().createList());
         }
 
         RootCallTarget callTarget = CodeNodes.GetCodeCallTargetNode.executeUncached(code);
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(module));
 
         Object origName = info.origName == null ? PNone.NONE : info.origName;
-        WriteAttributeToDynamicObjectNode.getUncached().execute(module, T___ORIGNAME__, origName);
+        WriteAttributeToPythonObjectNode.getUncached().execute(module, T___ORIGNAME__, origName);
 
         return module;
     }

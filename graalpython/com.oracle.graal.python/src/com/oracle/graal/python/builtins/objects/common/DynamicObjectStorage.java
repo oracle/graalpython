@@ -55,7 +55,7 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -144,7 +144,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         static int cachedLen(DynamicObjectStorage self,
                         @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
                         @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Shared @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                        @Shared @Cached ReadAttributeFromPythonObjectNode readNode) {
             int len = 0;
             for (Object key : keys) {
                 len = incrementLen(self, readNode, len, key);
@@ -156,7 +156,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         static int cachedKeys(DynamicObjectStorage self,
                         @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
                         @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Shared @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                        @Shared @Cached ReadAttributeFromPythonObjectNode readNode) {
             int len = 0;
             for (Object key : keys) {
                 len = incrementLen(self, readNode, len, key);
@@ -166,15 +166,15 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(replaces = "cachedKeys")
         static int length(DynamicObjectStorage self,
-                        @Shared @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                        @Shared @Cached ReadAttributeFromPythonObjectNode readNode) {
             return cachedKeys(self, self.store.getShape(), keyArray(self), readNode);
         }
 
-        private static boolean hasStringKey(DynamicObjectStorage self, TruffleString key, ReadAttributeFromDynamicObjectNode readNode) {
-            return readNode.execute(self.store, key) != PNone.NO_VALUE;
+        private static boolean hasStringKey(DynamicObjectStorage self, TruffleString key, ReadAttributeFromPythonObjectNode readNode) {
+            return readNode.execute(self.store, key, PNone.NO_VALUE) != PNone.NO_VALUE;
         }
 
-        private static int incrementLen(DynamicObjectStorage self, ReadAttributeFromDynamicObjectNode readNode, int len, Object key) {
+        private static int incrementLen(DynamicObjectStorage self, ReadAttributeFromPythonObjectNode readNode, int len, Object key) {
             key = assertNoJavaString(key);
             if (key instanceof TruffleString) {
                 if (hasStringKey(self, (TruffleString) key, readNode)) {
@@ -199,9 +199,9 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization
         static Object string(Node inliningTarget, DynamicObjectStorage self, TruffleString key, @SuppressWarnings("unused") long keyHash,
-                        @Shared("readKey") @Cached(inline = false) ReadAttributeFromDynamicObjectNode readKey,
+                        @Shared("readKey") @Cached(inline = false) ReadAttributeFromPythonObjectNode readKey,
                         @Exclusive @Cached InlinedConditionProfile noValueProfile) {
-            Object result = readKey.execute(self.store, key);
+            Object result = readKey.execute(self.store, key, PNone.NO_VALUE);
             return noValueProfile.profile(inliningTarget, result == PNone.NO_VALUE) ? null : result;
         }
 
@@ -210,7 +210,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         static Object pstring(Node inliningTarget, DynamicObjectStorage self, PString key, @SuppressWarnings("unused") long keyHash,
                         @SuppressWarnings("unused") @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Cached CastToTruffleStringNode castStr,
-                        @Shared("readKey") @Cached(inline = false) ReadAttributeFromDynamicObjectNode readKey,
+                        @Shared("readKey") @Cached(inline = false) ReadAttributeFromPythonObjectNode readKey,
                         @Exclusive @Cached InlinedConditionProfile noValueProfile) {
             return string(inliningTarget, self, castStr.execute(inliningTarget, key), -1, readKey, noValueProfile);
         }
@@ -232,7 +232,7 @@ public final class DynamicObjectStorage extends HashingStorage {
             @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
             static Object notString(Frame frame, DynamicObjectStorage self, Object key, long hashIn,
                             @Bind("this") Node inliningTarget,
-                            @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
+                            @Shared("readKey") @Cached ReadAttributeFromPythonObjectNode readKey,
                             @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
                             @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1) Object[] keyList,
                             @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
@@ -253,7 +253,7 @@ public final class DynamicObjectStorage extends HashingStorage {
             @Specialization(replaces = "notString")
             static Object notStringLoop(Frame frame, DynamicObjectStorage self, Object key, long hashIn,
                             @Bind("this") Node inliningTarget,
-                            @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
+                            @Shared("readKey") @Cached ReadAttributeFromPythonObjectNode readKey,
                             @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                             @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                             @Shared("noValueProfile") @Cached InlinedConditionProfile noValueProfile) {

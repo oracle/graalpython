@@ -77,7 +77,7 @@ import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -167,7 +167,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    private void addDigestAlias(PythonModule self, PythonModule mod, ReadAttributeFromDynamicObjectNode readNode, EconomicMapStorage storage, String digest) {
+    private void addDigestAlias(PythonModule self, PythonModule mod, ReadAttributeFromPythonObjectNode readNode, EconomicMapStorage storage, String digest) {
         TruffleString tsDigest = toTruffleStringUncached(digest);
         Object function = readNode.execute(mod, tsDigest);
         if (function != NO_VALUE) {
@@ -180,7 +180,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonModule self = core.lookupBuiltinModule(T_HASHLIB);
-        ReadAttributeFromDynamicObjectNode readNode = ReadAttributeFromDynamicObjectNode.getUncached();
+        ReadAttributeFromPythonObjectNode readNode = ReadAttributeFromPythonObjectNode.getUncached();
         EconomicMapStorage storage = (EconomicMapStorage) HiddenAttr.ReadNode.executeUncached(self, HiddenAttr.ORIGINAL_CONSTRUCTORS, NO_VALUE);
         PythonModule sha3module = AbstractImportNode.importModule(T_SHA3);
         for (int i = 0; i < DIGEST_ALIASES.length; i += 2) {

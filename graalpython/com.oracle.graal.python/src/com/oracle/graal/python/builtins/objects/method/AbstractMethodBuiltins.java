@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -63,7 +63,9 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -87,9 +89,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PMethod, PythonBuiltinClassType.PBuiltinFunctionOrMethod, PythonBuiltinClassType.MethodWrapper})
@@ -207,14 +207,14 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetModuleNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "isNoValue(none)", limit = "2")
+        @Specialization(guards = "isNoValue(none)")
         static Object getModule(VirtualFrame frame, PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PyObjectLookupAttr lookup,
-                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
+                        @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
             // No profiling, performance here is not very important
-            Object module = dylib.getOrDefault(self, T___MODULE__, PNone.NO_VALUE);
+            Object module = readAttrNode.execute(self, T___MODULE__, PNone.NO_VALUE);
             if (module != PNone.NO_VALUE) {
                 return module;
             }
@@ -231,10 +231,10 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isNoValue(value)", limit = "2")
+        @Specialization(guards = "!isNoValue(value)")
         static Object getModule(PBuiltinMethod self, Object value,
-                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
-            dylib.put(self.getStorage(), T___MODULE__, value);
+                        @Cached WriteAttributeToPythonObjectNode writeAttrNode) {
+            writeAttrNode.execute(self, T___MODULE__, value);
             return PNone.NONE;
         }
 

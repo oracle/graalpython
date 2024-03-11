@@ -297,7 +297,7 @@ public abstract class PythonBuiltins {
                 HiddenAttr.WriteNode.executeUncached(obj, attr, value);
             } else {
                 assert constant instanceof TruffleString;
-                obj.setAttribute(constant, value);
+                obj.setAttribute((TruffleString) constant, value);
             }
         }
     }

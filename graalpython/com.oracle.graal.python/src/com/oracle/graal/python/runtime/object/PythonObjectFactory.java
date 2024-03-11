@@ -853,11 +853,11 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PDict createDictFixedStorage(PythonObject pythonObject, MroSequenceStorage mroSequenceStorage) {
-        return createDict(new DynamicObjectStorage(pythonObject.getStorage(), mroSequenceStorage));
+        return createDict(new DynamicObjectStorage(pythonObject, mroSequenceStorage));
     }
 
     public final PDict createDictFixedStorage(PythonObject pythonObject) {
-        return createDict(new DynamicObjectStorage(pythonObject.getStorage()));
+        return createDict(new DynamicObjectStorage(pythonObject));
     }
 
     public final PDict createDict(Object cls, HashingStorage storage) {

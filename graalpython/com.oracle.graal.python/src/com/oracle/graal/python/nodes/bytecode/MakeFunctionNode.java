@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -62,8 +63,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -89,7 +88,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
     @Specialization
     int makeFunction(VirtualFrame frame, Object globals, int initialStackTop, int flags,
                     @Cached PythonObjectFactory factory,
-                    @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+                    @Cached WriteAttributeToPythonObjectNode writeAttrNode) {
         int stackTop = initialStackTop;
 
         PCode codeObj = cachedCode;
@@ -141,10 +140,10 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         PFunction function = factory.createFunction(code.name, code.qualname, codeObj, (PythonObject) globals, defaults, kwdefaults, closure, codeStableAssumption, defaultsStableAssumption);
 
         if (annotations != null) {
-            dylib.put(function, T___ANNOTATIONS__, annotations);
+            writeAttrNode.execute(function, T___ANNOTATIONS__, annotations);
         }
         if (doc != null) {
-            dylib.put(function, T___DOC__, doc);
+            writeAttrNode.execute(function, T___DOC__, doc);
         }
 
         frame.setObject(++stackTop, function);

@@ -144,11 +144,11 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
                     @Bind("this") Node inliningTarget,
                     @Cached InlinedConditionProfile profileHasDict,
                     @Exclusive @Cached GetDictIfExistsNode getDict,
-                    @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode,
+                    @Cached ReadAttributeFromPythonObjectNode readAttributeFromPythonObjectNode,
                     @Exclusive @Cached HashingStorageGetItem getItem) {
         var dict = getDict.execute(object);
         if (profileHasDict.profile(inliningTarget, dict == null)) {
-            return readAttributeFromDynamicObjectNode.execute(object, key);
+            return readAttributeFromPythonObjectNode.execute(object, key);
         } else {
             // Note: we should pass the frame. In theory a subclass of a string may override
             // __hash__ or __eq__ and run some side effects in there.

@@ -36,7 +36,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyTypeExtra;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.nodes.HiddenAttr;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -113,7 +113,7 @@ public final class PythonClass extends PythonManagedClass {
     @Override
     @TruffleBoundary
     @SuppressFBWarnings(value = "UR_UNINIT_READ_CALLED_FROM_SUPER_CONSTRUCTOR")
-    public void setAttribute(Object key, Object value) {
+    public void setAttribute(TruffleString key, Object value) {
         if (slotsFinalAssumption != null) {
             // It is OK when slotsFinalAssumption is null during the super ctor call
             invalidateSlotsFinalAssumption();
@@ -176,7 +176,7 @@ public final class PythonClass extends PythonManagedClass {
     protected static SourceSection findSourceSection(PythonManagedClass self) {
         for (Object key : self.getShape().getKeys()) {
             if (key instanceof TruffleString ts) {
-                Object value = ReadAttributeFromDynamicObjectNode.getUncached().execute(self, ts);
+                Object value = ReadAttributeFromPythonObjectNode.getUncached().execute(self, ts);
                 InteropLibrary uncached = InteropLibrary.getFactory().getUncached();
                 if (uncached.hasSourceLocation(value)) {
                     try {

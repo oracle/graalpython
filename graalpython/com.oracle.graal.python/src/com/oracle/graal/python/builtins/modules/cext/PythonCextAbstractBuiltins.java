@@ -118,7 +118,7 @@ import com.oracle.graal.python.lib.PySequenceIterSearchNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -963,21 +963,21 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PyObject_SetDoc extends CApiBinaryBuiltinNode {
         @Specialization
         static int set(PBuiltinFunction obj, TruffleString value,
-                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode write) {
+                        @Shared("write") @Cached WriteAttributeToPythonObjectNode write) {
             write.execute(obj, T___DOC__, value);
             return 1;
         }
 
         @Specialization
         static int set(PBuiltinMethod obj, TruffleString value,
-                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode write) {
+                        @Shared("write") @Cached WriteAttributeToPythonObjectNode write) {
             set(obj.getBuiltinFunction(), value, write);
             return 1;
         }
 
         @Specialization
         static int set(GetSetDescriptor obj, TruffleString value,
-                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode write) {
+                        @Shared("write") @Cached WriteAttributeToPythonObjectNode write) {
             write.execute(obj, T___DOC__, value);
             return 1;
         }
