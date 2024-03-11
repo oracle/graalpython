@@ -984,11 +984,12 @@ static void print_c_stacktrace() {
 #endif
 
 static void unimplemented(const char* name) {
+    printf("Function not implemented in GraalPy: %s\n", name);
     printf("Native stacktrace:\n");
     print_c_stacktrace();
 }
 
-#define FUNC_NOT_IMPLEMENTED unimplemented(__func__); GraalPyTrufflePrintStacktrace(__func__, "Function not implemented in GraalPy: "); exit(-1);
+#define FUNC_NOT_IMPLEMENTED unimplemented(__func__); GraalPyTrufflePrintStacktrace(); exit(-1);
 
 // {{start CAPI_BUILTINS}}
 #include "capi.gen.c.h"

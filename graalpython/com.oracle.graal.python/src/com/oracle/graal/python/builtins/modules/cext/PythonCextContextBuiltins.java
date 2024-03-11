@@ -53,6 +53,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
@@ -71,13 +72,12 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextContextBuiltins {
 
-    @CApiBuiltin(ret = VoidNoReturn, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class PyTrufflePrintStacktrace extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = VoidNoReturn, args = {}, call = Ignored)
+    abstract static class PyTrufflePrintStacktrace extends CApiNullaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        static Object stacktrace(TruffleString where, TruffleString msg) {
-            System.err.println(msg.toJavaStringUncached() + where.toJavaStringUncached());
+        static Object stacktrace() {
             printPythonLikeStackTrace();
             return 0;
         }
