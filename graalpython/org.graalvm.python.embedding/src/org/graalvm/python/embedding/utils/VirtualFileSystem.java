@@ -84,6 +84,13 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     private static final String VFS_ROOT = "org.graalvm.python.vfs";
     private static final String VFS_FILESLIST = "fileslist.txt";
+    private static final String VFS_HOME = "home";
+    private static final String VFS_VENV = "venv";
+    private static final String VFS_PROJ = "proj";
+
+    private static final String VENV_PREFIX = "/" + VFS_ROOT + "/" + VFS_VENV;
+    private static final String HOME_PREFIX = "/" + VFS_ROOT + "/" + VFS_HOME;
+    private static final String PROJ_PREFIX = "/" + VFS_ROOT + "/" + VFS_PROJ;
 
     public static enum HostIO {
         NONE,
@@ -376,7 +383,19 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
     }
 
-    public String resourcePathToPlatformPath(String inputPath) {
+    public String vfsHomePath() {
+        return resourcePathToPlatformPath(HOME_PREFIX);
+    }
+
+    public String vfsProjPath() {
+        return resourcePathToPlatformPath(PROJ_PREFIX);
+    }
+
+    public String vfsVenvPath() {
+        return resourcePathToPlatformPath(VENV_PREFIX);
+    }
+
+    private String resourcePathToPlatformPath(String inputPath) {
         assert inputPath.length() > vfsPrefix.length() && inputPath.startsWith(vfsPrefix) : "inputPath expected to start with '" + vfsPrefix + "' but was '" + inputPath + "'";
         var path = inputPath.substring(vfsPrefix.length() + 1);
         if (!PLATFORM_SEPARATOR.equals(RESOURCE_SEPARATOR)) {

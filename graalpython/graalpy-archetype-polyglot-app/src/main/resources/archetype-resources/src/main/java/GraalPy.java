@@ -54,10 +54,6 @@ import java.io.IOException;
 import org.graalvm.python.embedding.vfs.VirtualFileSystem;
 
 public class GraalPy {
-    private static final String VENV_PREFIX = "/org.graalvm.python.vfs/venv";
-    private static final String HOME_PREFIX = "/org.graalvm.python.vfs/home";
-    private static final String PROJ_PREFIX = "/org.graalvm.python.vfs/proj";
-    
     private static final String PYTHON = "python";
 
     public static Context getContext() {
@@ -102,14 +98,14 @@ public class GraalPy {
             // Force to automatically import site.py module, to make Python packages available
             .option("python.ForceImportSite", "true")
             // The sys.executable path, a virtual path that is used by the interpreter to discover packages
-            .option("python.Executable", vfs.resourcePathToPlatformPath(VENV_PREFIX) + (VirtualFileSystem.isWindows() ? "${symbol_escape}${symbol_escape}Scripts${symbol_escape}${symbol_escape}python.exe" : "/bin/python"))
+            .option("python.Executable", vfs.vfsVenvPath() + (VirtualFileSystem.isWindows() ? "${symbol_escape}${symbol_escape}Scripts${symbol_escape}${symbol_escape}python.exe" : "/bin/python"))
             // Set the python home to be read from the embedded resources
-            .option("python.PythonHome", vfs.resourcePathToPlatformPath(HOME_PREFIX))
+            .option("python.PythonHome", vfs.vfsHomePath())
             // Do not warn if running without JIT. This can be desirable for short running scripts
             // to reduce memory footprint.
             .option("engine.WarnInterpreterOnly", "false")
             // Set python path to point to sources stored in src/main/resources/org.graalvm.python.vfs/proj
-            .option("python.PythonPath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))
+            .option("python.PythonPath", vfs.vfsProjPath())
             .build();
         return context;
     }

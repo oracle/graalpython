@@ -61,9 +61,6 @@ import org.graalvm.python.embedding.vfs.VirtualFileSystem;
  * filesystem, as well as showing how to embed Python code into a single native image binary.
  */
 public class Py2BinLauncher {
-    private static final String HOME_PREFIX = "/{vfs-home-prefix}";
-    private static final String VENV_PREFIX = "/{vfs-venv-prefix}";
-    private static final String PROJ_PREFIX = "/{vfs-proj-prefix}";
 
     public static void main(String[] args) throws IOException {
         VirtualFileSystem vfs = VirtualFileSystem.newBuilder()
@@ -86,9 +83,9 @@ public class Py2BinLauncher {
                 .option("python.AlwaysRunExcepthook", "true")
                 .option("python.ForceImportSite", "true")
                 .option("python.RunViaLauncher", "true")
-                .option("python.Executable", vfs.resourcePathToPlatformPath(VENV_PREFIX) + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.exe" : "/bin/python"))
-                .option("python.InputFilePath", vfs.resourcePathToPlatformPath(PROJ_PREFIX))
-                .option("python.PythonHome", vfs.resourcePathToPlatformPath(HOME_PREFIX))
+                .option("python.Executable", vfs.vfsVenvPath() + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.cmd" : "/bin/python"))
+                .option("python.InputFilePath", vfs.vfsProjPath())
+                .option("python.PythonHome", vfs.vfsHomePath())
                 .option("python.CheckHashPycsMode", "never");
         if(ImageInfo.inImageRuntimeCode()) {
             builder.option("engine.WarnInterpreterOnly", "false");
