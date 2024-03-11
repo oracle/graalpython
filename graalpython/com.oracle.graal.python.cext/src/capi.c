@@ -869,6 +869,7 @@ void initialize_hashes();
 void _PyFloat_InitState(PyInterpreterState* state);
 
 Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
+Py_LOCAL_SYMBOL int graalpy_finalizing;
 
 PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int id)) {
 	clock_t t = clock();
@@ -931,25 +932,22 @@ void nop_GraalPyTruffle_BulkNotifyRefCount(void* ptrs, int count) {
  * ATTENTION: the array is expected to be NULL-terminated !
  *
  */
-static int64_t reset_func_ptrs[] = {
-        &GraalPy_get_PyObject_ob_refcnt,
-        nop_GraalPy_get_PyObject_ob_refcnt,
-        &GraalPy_set_PyObject_ob_refcnt,
-        nop_GraalPy_set_PyObject_ob_refcnt,
-        &GraalPyTruffle_NotifyRefCount,
-        nop_GraalPyTruffle_NotifyRefCount,
-        &GraalPyTruffle_BulkNotifyRefCount,
-        nop_GraalPyTruffle_NotifyRefCount,
+static int64_t reset_ptrs[] = {
+        &graalpy_finalizing, 1,
+        &GraalPy_get_PyObject_ob_refcnt, nop_GraalPy_get_PyObject_ob_refcnt,
+        &GraalPy_set_PyObject_ob_refcnt, nop_GraalPy_set_PyObject_ob_refcnt,
+        &GraalPyTruffle_NotifyRefCount, nop_GraalPyTruffle_NotifyRefCount,
+        &GraalPyTruffle_BulkNotifyRefCount, nop_GraalPyTruffle_NotifyRefCount,
         /* sentinel (required) */
         NULL
 };
 
 /*
  * This function is called from Java during C API initialization to get the
- * pointer to array 'reset_func_pts'.
+ * pointer to array 'reset_pts'.
  */
 PyAPI_FUNC(int64_t *) GraalPy_get_finalize_capi_pointer_array() {
-    return reset_func_ptrs;
+    return reset_ptrs;
 }
 
 #if ((__linux__ && __GNU_LIBRARY__) || __APPLE__)

@@ -41,7 +41,7 @@
 #include "capi.h"
 
 int Py_IsInitialized(void) {
-    return 1;
+    return !graalpy_finalizing;
 }
 
 void _Py_NO_RETURN  _Py_FatalErrorFunc(const char *func, const char *msg) {

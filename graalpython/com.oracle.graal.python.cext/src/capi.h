@@ -147,6 +147,8 @@ PyAPI_DATA(uint32_t) Py_Truffle_Options;
 extern THREAD_LOCAL Py_LOCAL_SYMBOL PyThreadState *tstate_current;
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 
+extern Py_LOCAL_SYMBOL int graalpy_finalizing;
+
 /* Flags definitions representing global (debug) options. */
 static MUST_INLINE int PyTruffle_Trace_Memory() {
 	return Py_Truffle_Options & PY_TRUFFLE_TRACE_MEM;
