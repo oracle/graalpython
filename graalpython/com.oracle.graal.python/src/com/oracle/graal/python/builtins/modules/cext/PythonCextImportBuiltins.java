@@ -52,7 +52,6 @@ import static com.oracle.graal.python.lib.PyImportImport.T_LEVEL;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_GLOBALS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LOCALS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
-import static com.oracle.graal.python.nodes.statement.AbstractImportNode.T_IMPORT_ALL;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -76,7 +75,7 @@ public final class PythonCextImportBuiltins {
     abstract static class PyImport_ImportModule extends CApiUnaryBuiltinNode {
         @Specialization
         static Object imp(TruffleString name) {
-            return AbstractImportNode.importModule(name, T_IMPORT_ALL);
+            return AbstractImportNode.importModule(name);
         }
     }
 

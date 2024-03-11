@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ATTEMPTED_RELATIVE_IMP
 import static com.oracle.graal.python.nodes.ErrorMessages.IMPORT_NOT_FOUND;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsbCapacity;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
@@ -83,7 +82,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
@@ -101,7 +99,6 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public abstract class AbstractImportNode extends PNodeWithContext {
 
-    @CompilationFinal(dimensions = 1) public static final TruffleString[] T_IMPORT_ALL = tsArray("*");
     public static final TruffleString T__FIND_AND_LOAD = tsLiteral("_find_and_load");
 
     public static PythonModule importModule(TruffleString name) {

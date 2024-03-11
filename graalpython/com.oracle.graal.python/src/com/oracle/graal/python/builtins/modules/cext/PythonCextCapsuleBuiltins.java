@@ -52,7 +52,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.nodes.ErrorMessages.CALLED_WITH_INVALID_PY_CAPSULE_OBJECT;
 import static com.oracle.graal.python.nodes.ErrorMessages.PY_CAPSULE_IMPORT_S_IS_NOT_VALID;
-import static com.oracle.graal.python.nodes.statement.AbstractImportNode.T_IMPORT_ALL;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -364,7 +363,7 @@ public final class PythonCextCapsuleBuiltins {
                 }
                 if (object == null) {
                     // noBlock has no effect anymore since 3.3
-                    object = AbstractImportNode.importModule(trace, T_IMPORT_ALL);
+                    object = AbstractImportNode.importModule(trace);
                 } else {
                     object = getAttrNode.execute(object, trace);
                 }
