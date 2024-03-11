@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,7 +58,7 @@ import org.graalvm.polyglot.Context;
  * The interface to a source of input/output for the context, which may have different
  * implementations for different contexts.
  */
-public abstract class ConsoleHandler {
+abstract class ConsoleHandler {
 
     /**
      * Read a line of input, newline is <b>NOT</b> included in result.

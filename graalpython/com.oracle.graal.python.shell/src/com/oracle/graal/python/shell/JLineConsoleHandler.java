@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,9 +56,9 @@ import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
+
 import org.graalvm.shadowed.org.jline.keymap.KeyMap;
 import org.graalvm.shadowed.org.jline.reader.Binding;
-
 import org.graalvm.shadowed.org.jline.reader.Candidate;
 import org.graalvm.shadowed.org.jline.reader.Completer;
 import org.graalvm.shadowed.org.jline.reader.EndOfFileException;
@@ -72,7 +72,7 @@ import org.graalvm.shadowed.org.jline.reader.impl.DefaultParser;
 import org.graalvm.shadowed.org.jline.terminal.Terminal;
 import org.graalvm.shadowed.org.jline.terminal.TerminalBuilder;
 
-public class JLineConsoleHandler extends ConsoleHandler {
+class JLineConsoleHandler extends ConsoleHandler {
     private final boolean noPrompt;
     private final Terminal terminal;
     private LineReader reader;
@@ -80,7 +80,7 @@ public class JLineConsoleHandler extends ConsoleHandler {
     private String prompt;
     private LinkedList<String> lineBuffer = new LinkedList<>();
 
-    public JLineConsoleHandler(InputStream inStream, OutputStream outStream, boolean noPrompt) {
+    JLineConsoleHandler(InputStream inStream, OutputStream outStream, boolean noPrompt) {
         this.noPrompt = noPrompt;
         try {
             this.terminal = TerminalBuilder.builder().jna(false).streams(inStream, outStream).system(true).signalHandler(Terminal.SignalHandler.SIG_IGN).build();
