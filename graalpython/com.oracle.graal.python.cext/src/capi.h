@@ -408,6 +408,7 @@ EXCEPTION(ArithmeticError) \
 EXCEPTION(AssertionError) \
 EXCEPTION(AttributeError) \
 EXCEPTION(BaseException) \
+EXCEPTION(BaseExceptionGroup) \
 EXCEPTION(BlockingIOError) \
 EXCEPTION(BrokenPipeError) \
 EXCEPTION(BufferError) \
