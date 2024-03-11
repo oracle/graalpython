@@ -1,0 +1,22 @@
+diff --git a/src/greenlet/TThreadStateDestroy.cpp b/src/greenlet/TThreadStateDestroy.cpp
+index 645bf52..80e8864 100644
+--- a/src/greenlet/TThreadStateDestroy.cpp
++++ b/src/greenlet/TThreadStateDestroy.cpp
+@@ -125,6 +125,9 @@ struct ThreadState_DestroyNoGIL
+         // drop this lock.
+         LockGuard cleanup_lock(*mod_globs->thread_states_to_destroy_lock);
+ 
++#if GRAALVM_PYTHON
++        return; // 'PyInterpreterState_Head()' is not supported
++#else
+         if (state && state->has_main_greenlet()) {
+             // Because we don't have the GIL, this is a race condition.
+             if (!PyInterpreterState_Head()) {
+@@ -150,6 +153,7 @@ struct ThreadState_DestroyNoGIL
+                 }
+             }
+         }
++#endif
+     }
+ 
+     static int
