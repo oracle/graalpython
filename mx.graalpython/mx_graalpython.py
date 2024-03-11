@@ -608,7 +608,7 @@ def update_unittest_tags(args):
 
     tag_exclusions = [
         # Tests for bytecode optimizations. We don't have the same bytecode, ignore the whole suite
-        'graalpython.lib-python.3.test.test_peepholer.*'
+        'graalpython.lib-python.3.test.test_peepholer.*',
         # This test times out in the gate even though it succeeds locally and in the retagger. Race condition?
         'graalpython.lib-python.3.test.test_cprofile.CProfileTest.test_run_profile_as_module',
         # The following two try to read bytecode and fail randomly as our co_code is changing
