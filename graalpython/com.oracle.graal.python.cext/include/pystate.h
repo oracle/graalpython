@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -39,6 +39,7 @@ PyAPI_FUNC(PyObject *) PyInterpreterState_GetDict(PyInterpreterState *);
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03070000
 /* New in 3.7 */
 PyAPI_FUNC(int64_t) PyInterpreterState_GetID(PyInterpreterState *);
+// GraalPy-specific
 PyAPI_FUNC(int64_t) PyInterpreterState_GetIDFromThreadState(PyThreadState *);
 #endif
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03030000
@@ -79,8 +80,9 @@ PyAPI_FUNC(PyFrameObject*) PyThreadState_GetFrame(PyThreadState *tstate);
 PyAPI_FUNC(uint64_t) PyThreadState_GetID(PyThreadState *tstate);
 #endif
 
-/* GraalVM change: we need more state bits */
-typedef int PyGILState_STATE;
+typedef
+    enum {PyGILState_LOCKED, PyGILState_UNLOCKED}
+        PyGILState_STATE;
 
 
 /* Ensure that the current thread is ready to call the Python
