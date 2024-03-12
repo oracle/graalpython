@@ -45,7 +45,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctio
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -110,9 +110,8 @@ public abstract class PySequenceGetItemNode extends Node {
     static Object doNative(VirtualFrame frame, PythonAbstractNativeObject object, int index,
                     @Bind("this") Node inliningTarget,
                     @Cached CApiTransitions.PythonToNativeNode toNativeNode,
-                    @Cached CExtNodes.ImportCAPISymbolNode importCAPISymbolNode,
                     @Cached ExternalFunctionNodes.ExternalFunctionInvokeNode invokeNode) {
-        Object executable = importCAPISymbolNode.execute(inliningTarget, SYMBOL);
+        Object executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
         return invokeNode.execute(frame, GETITEM, C_API_TIMING, SYMBOL.getTsName(), executable, new Object[]{toNativeNode.execute(object), index});
     }
 }

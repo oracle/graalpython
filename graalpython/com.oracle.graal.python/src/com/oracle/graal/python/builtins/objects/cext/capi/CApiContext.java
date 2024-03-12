@@ -446,7 +446,7 @@ public final class CApiContext extends CExtContext {
         return PythonContext.get(caller).getCApiContext().nativeSymbolCache;
     }
 
-    static Object getNativeSymbol(Node caller, NativeCAPISymbol symbol) {
+    public static Object getNativeSymbol(Node caller, NativeCAPISymbol symbol) {
         Object[] nativeSymbolCache = getSymbolCache(caller);
         Object result = nativeSymbolCache[symbol.ordinal()];
         if (result == null) {

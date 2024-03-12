@@ -231,12 +231,11 @@ public abstract class CExtNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached PythonToNativeNode toSulongNode,
                         @Cached NativeToPythonNode toJavaNode,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached ImportCAPISymbolNode importCAPISymbolNode) {
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
             try {
-                CApiContext cApiContext = PythonContext.get(inliningTarget).getCApiContext();
-                Object result = interopLibrary.execute(importCAPISymbolNode.execute(inliningTarget, cApiContext, getFunction()), toSulongNode.execute(object), arg);
+                Object callable = CApiContext.getNativeSymbol(inliningTarget, getFunction());
+                Object result = interopLibrary.execute(callable, toSulongNode.execute(object), arg);
                 return toJavaNode.execute(result);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                 throw shouldNotReachHere("C subtype_new function failed", e);
@@ -583,9 +582,9 @@ public abstract class CExtNodes {
 
         public abstract boolean execute(Node inliningTarget, ComparisonOp op, Object a, Object b);
 
-        private static boolean executeCFunction(Node inliningTarget, int op, Object a, Object b, InteropLibrary interopLibrary, ImportCAPISymbolNode importCAPISymbolNode) {
+        private static boolean executeCFunction(Node inliningTarget, int op, Object a, Object b, InteropLibrary interopLibrary) {
             try {
-                Object sym = importCAPISymbolNode.execute(inliningTarget, FUN_PTR_COMPARE);
+                Object sym = CApiContext.getNativeSymbol(inliningTarget, FUN_PTR_COMPARE);
                 return (int) interopLibrary.execute(sym, a, b, op) != 0;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -602,26 +601,23 @@ public abstract class CExtNodes {
 
         @Specialization
         static boolean doPythonNativeObject(Node inliningTarget, ComparisonOp op, PythonNativeObject a, PythonNativeObject b,
-                        @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared @Cached ImportCAPISymbolNode importCAPISymbolNode) {
+                        @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
             CompilerAsserts.partialEvaluationConstant(op);
-            return executeCFunction(inliningTarget, op.opCode, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
+            return executeCFunction(inliningTarget, op.opCode, a.getPtr(), b.getPtr(), interopLibrary);
         }
 
         @Specialization
         static boolean doPythonNativeObjectLong(Node inliningTarget, ComparisonOp op, PythonNativeObject a, long b,
-                        @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared @Cached ImportCAPISymbolNode importCAPISymbolNode) {
+                        @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
             CompilerAsserts.partialEvaluationConstant(op);
-            return executeCFunction(inliningTarget, op.opCode, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
+            return executeCFunction(inliningTarget, op.opCode, a.getPtr(), b, interopLibrary);
         }
 
         @Specialization
         static boolean doNativeVoidPtrLong(Node inliningTarget, ComparisonOp op, PythonNativeVoidPtr a, long b,
-                        @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared @Cached ImportCAPISymbolNode importCAPISymbolNode) {
+                        @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
             CompilerAsserts.partialEvaluationConstant(op);
-            return executeCFunction(inliningTarget, op.opCode, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
+            return executeCFunction(inliningTarget, op.opCode, a.getPointerObject(), b, interopLibrary);
         }
     }
 
@@ -822,22 +818,19 @@ public abstract class CExtNodes {
         protected abstract Object execute(NativeCAPISymbol symbol, Object[] args);
 
         @Specialization
-        static Object doWithoutContext(NativeCAPISymbol name, Object[] args,
+        static Object doWithoutContext(NativeCAPISymbol symbol, Object[] args,
                         @Bind("this") Node inliningTarget,
-                        @Cached ImportCAPISymbolNode importCAPISymbolNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
             try {
                 PythonContext pythonContext = PythonContext.get(inliningTarget);
-                CApiContext cApiContext;
                 if (!pythonContext.hasCApiContext()) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    cApiContext = CApiContext.ensureCapiWasLoaded();
-                } else {
-                    cApiContext = pythonContext.getCApiContext();
+                    CApiContext.ensureCapiWasLoaded();
                 }
                 // TODO review EnsureTruffleStringNode with GR-37896
-                return ensureTruffleStringNode.execute(inliningTarget, interopLibrary.execute(importCAPISymbolNode.execute(inliningTarget, cApiContext, name), args));
+                Object callable = CApiContext.getNativeSymbol(inliningTarget, symbol);
+                return ensureTruffleStringNode.execute(inliningTarget, interopLibrary.execute(callable, args));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 // consider these exceptions to be fatal internal errors
                 throw shouldNotReachHere(e);
@@ -2018,23 +2011,6 @@ public abstract class CExtNodes {
                 }
             }
             return null;
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class ImportCAPISymbolNode extends PNodeWithContext {
-
-        public final Object execute(Node inliningTarget, NativeCAPISymbol symbol) {
-            return execute(inliningTarget, PythonContext.get(inliningTarget).getCApiContext(), symbol);
-        }
-
-        public abstract Object execute(Node inliningTarget, CApiContext nativeContext, NativeCAPISymbol symbol);
-
-        @Specialization
-        static Object doGeneric(Node inliningTarget, @SuppressWarnings("unused") CApiContext nativeContext, NativeCAPISymbol symbol) {
-            return CApiContext.getNativeSymbol(inliningTarget, symbol);
         }
     }
 }
