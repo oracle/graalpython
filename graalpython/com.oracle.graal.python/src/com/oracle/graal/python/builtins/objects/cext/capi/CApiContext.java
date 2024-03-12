@@ -815,6 +815,15 @@ public final class CApiContext extends CExtContext {
         for (Object pyMethodDefPointer : methodDefinitions.values()) {
             PyMethodDefHelper.free(pyMethodDefPointer);
         }
+        /*
+         * If the static symbol cache is not null, then it is guaranteed that this context instance
+         * was the exclusive user of it. We can now reset the state such that other contexts created
+         * after this can use it.
+         */
+        if (CApiContext.nativeSymbolCacheSingleContext != null) {
+            CApiContext.nativeSymbolCacheSingleContext = null;
+            CApiContext.STATIC_SYMBOL_CACHE_USED.set(false);
+        }
     }
 
     @TruffleBoundary
