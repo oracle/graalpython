@@ -269,8 +269,8 @@ public final class CApiContext extends CExtContext {
 
                 // this is the first context accessing the static symbol cache
                 CApiContext.nativeSymbolCacheSingleContext = this.nativeSymbolCache;
-                CApiContext.nativeSymbolCacheSingleContextUsed = true;
             } else if (CApiContext.nativeSymbolCacheSingleContext != null) {
+                assert CApiContext.nativeSymbolCacheSingleContextUsed;
                 /*
                  * In this case, this context instance is at least the second one attempting to use
                  * the static symbol cache. We now clear the static field to indicate that every
@@ -280,7 +280,7 @@ public final class CApiContext extends CExtContext {
                  */
                 CApiContext.nativeSymbolCacheSingleContext = null;
             }
-            assert CApiContext.nativeSymbolCacheSingleContextUsed;
+            CApiContext.nativeSymbolCacheSingleContextUsed = true;
         }
 
         // initialize primitive native wrapper cache
