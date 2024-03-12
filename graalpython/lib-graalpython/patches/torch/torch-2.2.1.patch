@@ -439,19 +439,85 @@ index 3b128027..b670f3f2 100644
          torch::jit::IntType::get());
    }
  }
+diff --git a/torch/csrc/autograd/python_variable_indexing.h b/torch/csrc/autograd/python_variable_indexing.h
+index 688ea19b..5c9c1ecb 100644
+--- a/torch/csrc/autograd/python_variable_indexing.h
++++ b/torch/csrc/autograd/python_variable_indexing.h
+@@ -38,15 +38,16 @@ static inline UnpackedSlice __PySlice_Unpack(PyObject* _r) {
+     return val;
+   };
+ 
+-  if (r->step == Py_None) {
++  PyObject* stepObj = PySlice_Step(r);
++  if (stepObj == Py_None) {
+     step_sym = c10::SymInt(1);
+   } else {
+-    if (torch::is_symint(r->step)) {
+-      auto step_sym = py::handle(r->step).cast<c10::SymInt>();
++    if (torch::is_symint(stepObj)) {
++      auto step_sym = py::handle(stepObj).cast<c10::SymInt>();
+     } else {
+       // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
+       Py_ssize_t step;
+-      if (!_PyEval_SliceIndex(r->step, &step)) {
++      if (!_PyEval_SliceIndex(stepObj, &step)) {
+         throw python_error();
+       }
+       if (step == 0) {
+@@ -58,29 +59,31 @@ static inline UnpackedSlice __PySlice_Unpack(PyObject* _r) {
+     }
+   }
+ 
+-  if (torch::is_symint(r->start)) {
+-    start_sym = py::handle(r->start).cast<c10::SymInt>();
+-  } else if (r->start == Py_None) {
++  PyObject* startObj = PySlice_Start(r);
++  if (torch::is_symint(startObj)) {
++    start_sym = py::handle(startObj).cast<c10::SymInt>();
++  } else if (startObj == Py_None) {
+     start_sym = c10::SymInt(step_sym < 0 ? PY_SSIZE_T_MAX : 0);
+   } else {
+     // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
+     Py_ssize_t start;
+-    if (!_PyEval_SliceIndex(r->start, &start)) {
++    if (!_PyEval_SliceIndex(startObj, &start)) {
+       throw python_error();
+     }
+     start = clip_val(start);
+     start_sym = c10::SymInt(start);
+   }
+ 
+-  if (torch::is_symint(r->stop)) {
+-    stop_sym = py::handle(r->stop).cast<c10::SymInt>();
+-  } else if (r->stop == Py_None) {
++  PyObject* stopObj = PySlice_Stop(r);
++  if (torch::is_symint(stopObj)) {
++    stop_sym = py::handle(stopObj).cast<c10::SymInt>();
++  } else if (stopObj == Py_None) {
+     stop_sym = c10::SymInt(
+         step_sym < 0 ? c10::SymInt::min_representable_int() : PY_SSIZE_T_MAX);
+   } else {
+     // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
+     Py_ssize_t stop;
+-    if (!_PyEval_SliceIndex(r->stop, &stop)) {
++    if (!_PyEval_SliceIndex(stopObj, &stop)) {
+       throw python_error();
+     }
+     stop = clip_val(stop);
 diff --git a/torch/csrc/dynamo/cpython_defs.c b/torch/csrc/dynamo/cpython_defs.c
-index 5d249d99..df9b631d 100644
+index 5d249d99..d00c18bf 100644
 --- a/torch/csrc/dynamo/cpython_defs.c
 +++ b/torch/csrc/dynamo/cpython_defs.c
-@@ -15,7 +15,7 @@
+@@ -1,3 +1,4 @@
++#if 0
+ #include <torch/csrc/dynamo/cpython_defs.h>
  
- // NOTE: all `assert`s below are converted to `CHECK`s
+ #ifdef _WIN32
+@@ -360,3 +361,4 @@ THP_PyFrame_Clear(_PyInterpreterFrame *frame)
+ }
  
--#if IS_PYTHON_3_11_PLUS
-+#if IS_PYTHON_3_11_PLUS && !defined(GRAALVM_PYTHON)
- 
- // Problem in CPython includes when mixing core and non-core build
- // The fix was not backported to 3.12 so this is needed here
+ #endif
++#endif
 diff --git a/torch/csrc/dynamo/eval_frame.c b/torch/csrc/dynamo/eval_frame.c
 index 0245b192..f195d97d 100644
 --- a/torch/csrc/dynamo/eval_frame.c
