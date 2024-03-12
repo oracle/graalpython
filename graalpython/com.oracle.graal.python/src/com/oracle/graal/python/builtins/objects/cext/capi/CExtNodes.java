@@ -142,8 +142,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -582,16 +582,6 @@ public abstract class CExtNodes {
 
         public abstract boolean execute(Node inliningTarget, ComparisonOp op, Object a, Object b);
 
-        private static boolean executeCFunction(Node inliningTarget, int op, Object a, Object b, InteropLibrary interopLibrary) {
-            try {
-                Object sym = CApiContext.getNativeSymbol(inliningTarget, FUN_PTR_COMPARE);
-                return (int) interopLibrary.execute(sym, a, b, op) != 0;
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(FUN_PTR_COMPARE + " didn't work!");
-            }
-        }
-
         @Specialization(guards = "op.isEqualityOp()", limit = "2")
         static boolean doEqNe(ComparisonOp op, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
                         @CachedLibrary("a") InteropLibrary aLib,
@@ -599,25 +589,42 @@ public abstract class CExtNodes {
             return aLib.isIdentical(a, b, bLib) == (op == ComparisonOp.EQ);
         }
 
-        @Specialization
-        static boolean doPythonNativeObject(Node inliningTarget, ComparisonOp op, PythonNativeObject a, PythonNativeObject b,
-                        @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+        @Specialization(guards = {"isNativeObjectOrVoidPointer(a)", "isNativeObjectOrLong(b)"})
+        static boolean doGeneric(Node inliningTarget, ComparisonOp op, Object a, Object b,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Cached InlinedConditionProfile aProfile,
+                        @Cached InlinedConditionProfile bProfile) {
             CompilerAsserts.partialEvaluationConstant(op);
-            return executeCFunction(inliningTarget, op.opCode, a.getPtr(), b.getPtr(), interopLibrary);
+            Object ptrA;
+            if (aProfile.profile(inliningTarget, a instanceof PythonNativeObject)) {
+                ptrA = ((PythonNativeObject) a).getPtr();
+            } else {
+                // guaranteed by the guard
+                assert a instanceof PythonNativeVoidPtr;
+                ptrA = ((PythonNativeVoidPtr) a).getNativePointer();
+            }
+            Object ptrB;
+            if (bProfile.profile(inliningTarget, b instanceof PythonNativeObject)) {
+                ptrB = ((PythonNativeObject) b).getPtr();
+            } else {
+                // guaranteed by the guard
+                assert b instanceof Long;
+                ptrB = b;
+            }
+            try {
+                Object sym = CApiContext.getNativeSymbol(inliningTarget, FUN_PTR_COMPARE);
+                return (int) interopLibrary.execute(sym, ptrA, ptrB, op.opCode) != 0;
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
-        @Specialization
-        static boolean doPythonNativeObjectLong(Node inliningTarget, ComparisonOp op, PythonNativeObject a, long b,
-                        @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
-            CompilerAsserts.partialEvaluationConstant(op);
-            return executeCFunction(inliningTarget, op.opCode, a.getPtr(), b, interopLibrary);
+        static boolean isNativeObjectOrVoidPointer(Object object) {
+            return object instanceof PythonNativeObject || object instanceof PythonNativeVoidPtr;
         }
 
-        @Specialization
-        static boolean doNativeVoidPtrLong(Node inliningTarget, ComparisonOp op, PythonNativeVoidPtr a, long b,
-                        @Shared @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
-            CompilerAsserts.partialEvaluationConstant(op);
-            return executeCFunction(inliningTarget, op.opCode, a.getPointerObject(), b, interopLibrary);
+        static boolean isNativeObjectOrLong(Object object) {
+            return object instanceof PythonNativeObject || object instanceof Long;
         }
     }
 
