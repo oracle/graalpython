@@ -6,7 +6,3 @@ patch = 'pybind11-2.10.4.patch'
 # Note: This patch file is also used directly outside of pip during onnxruntime build
 version = '== 2.10.1'
 patch = 'pybind11-2.10.1.patch'
-
-[[rules]]
-version = '== 2.10.0'
-patch = 'pybind11-2.10.0.patch'
