@@ -1,8 +1,4 @@
 [[rules]]
-version = '== 2.10.4'
-patch = 'pybind11-2.10.4.patch'
-
-[[rules]]
 # Note: This patch file is also used directly outside of pip during onnxruntime build
-version = '== 2.10.1'
+version = '>= 2.10.1, < 2.11'
 patch = 'pybind11-2.10.1.patch'
