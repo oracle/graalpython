@@ -205,7 +205,7 @@ public final class CApiContext extends CExtContext {
      * in single-context mode). Will be {@code null} in case of multiple contexts.
      */
     @CompilationFinal(dimensions = 1) private static Object[] nativeSymbolCacheSingleContext;
-    private static final AtomicBoolean STATIC_SYMBOL_CACHE_USED = new AtomicBoolean();
+    private static boolean nativeSymbolCacheSingleContextUsed;
 
     /**
      * A private (i.e. per-context) cache of C API symbols (usually helper functions).
@@ -259,25 +259,28 @@ public final class CApiContext extends CExtContext {
          * 'CApiContext.nativeSymbolCacheSingleContext != null', the context is safe to use it and
          * just needs to do a null check.
          */
-        if (!STATIC_SYMBOL_CACHE_USED.compareAndExchange(false, true) && context.getLanguage().isSingleContext()) {
-            assert CApiContext.nativeSymbolCacheSingleContext == null;
+        synchronized (CApiContext.class) {
+            if (!CApiContext.nativeSymbolCacheSingleContextUsed && context.getLanguage().isSingleContext()) {
+                assert CApiContext.nativeSymbolCacheSingleContext == null;
 
-            // we cannot be in built-time code because this is using pre-initialized contexts
-            assert !ImageInfo.inImageBuildtimeCode();
+                // we cannot be in built-time code because this is using pre-initialized contexts
+                assert !ImageInfo.inImageBuildtimeCode();
 
-            // this is the first context accessing the static symbol cache
-            CApiContext.nativeSymbolCacheSingleContext = this.nativeSymbolCache;
-        } else if (CApiContext.nativeSymbolCacheSingleContext != null) {
-            /*
-             * In this case, this context instance is at least the second one attempting to use the
-             * static symbol cache. We now clear the static field to indicate that every context
-             * instance should use its private cache. If a former context already used the cache and
-             * there is already compiled code, it is not necessary to invalidate the code because
-             * the cache is still valid.
-             */
-            CApiContext.nativeSymbolCacheSingleContext = null;
+                // this is the first context accessing the static symbol cache
+                CApiContext.nativeSymbolCacheSingleContext = this.nativeSymbolCache;
+                CApiContext.nativeSymbolCacheSingleContextUsed = true;
+            } else if (CApiContext.nativeSymbolCacheSingleContext != null) {
+                /*
+                 * In this case, this context instance is at least the second one attempting to use
+                 * the static symbol cache. We now clear the static field to indicate that every
+                 * context instance should use its private cache. If a former context already used
+                 * the cache and there is already compiled code, it is not necessary to invalidate
+                 * the code because the cache is still valid.
+                 */
+                CApiContext.nativeSymbolCacheSingleContext = null;
+            }
+            assert CApiContext.nativeSymbolCacheSingleContextUsed;
         }
-        assert STATIC_SYMBOL_CACHE_USED.get();
 
         // initialize primitive native wrapper cache
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
@@ -820,9 +823,11 @@ public final class CApiContext extends CExtContext {
          * was the exclusive user of it. We can now reset the state such that other contexts created
          * after this can use it.
          */
-        if (CApiContext.nativeSymbolCacheSingleContext != null) {
-            CApiContext.nativeSymbolCacheSingleContext = null;
-            CApiContext.STATIC_SYMBOL_CACHE_USED.set(false);
+        synchronized (CApiContext.class) {
+            if (CApiContext.nativeSymbolCacheSingleContext != null) {
+                CApiContext.nativeSymbolCacheSingleContext = null;
+                CApiContext.nativeSymbolCacheSingleContextUsed = false;
+            }
         }
     }
 
