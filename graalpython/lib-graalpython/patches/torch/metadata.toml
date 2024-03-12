@@ -2,6 +2,7 @@
 version = '== 1.13.1'
 patch = 'torch-1.13.1.patch'
 dist-type = 'sdist'
+install-priority = 2
 
 [[rules]]
 version = '== 2.2.1'
