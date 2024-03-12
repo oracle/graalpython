@@ -62,6 +62,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Pair;
+import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -199,7 +200,16 @@ public final class CApiContext extends CExtContext {
     public Object timezoneType;
     private PyCapsule pyDateTimeCAPICapsule;
 
-    /** A cache for C symbols. */
+    /**
+     * Same as {@link #nativeSymbolCache} if there is only one context per JVM (i.e. just one engine
+     * in single-context mode). Will be {@code null} in case of multiple contexts.
+     */
+    @CompilationFinal(dimensions = 1) private static Object[] nativeSymbolCacheSingleContext;
+    private static final AtomicBoolean STATIC_SYMBOL_CACHE_USED = new AtomicBoolean();
+
+    /**
+     * A private (i.e. per-context) cache of C API symbols (usually helper functions).
+     */
     private final Object[] nativeSymbolCache;
 
     private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
@@ -241,6 +251,33 @@ public final class CApiContext extends CExtContext {
     public CApiContext(PythonContext context, Object llvmLibrary, boolean useNativeBackend) {
         super(context, llvmLibrary, useNativeBackend);
         this.nativeSymbolCache = new Object[NativeCAPISymbol.values().length];
+
+        /*
+         * Publish the native symbol cache to the static field if following is given: (1) The static
+         * field hasn't been used by another instance yet (i.e. '!used'), and (2) we are in
+         * single-context mode. This initialization ensures that if
+         * 'CApiContext.nativeSymbolCacheSingleContext != null', the context is safe to use it and
+         * just needs to do a null check.
+         */
+        if (!STATIC_SYMBOL_CACHE_USED.compareAndExchange(false, true) && context.getLanguage().isSingleContext()) {
+            assert CApiContext.nativeSymbolCacheSingleContext == null;
+
+            // we cannot be in built-time code because this is using pre-initialized contexts
+            assert !ImageInfo.inImageBuildtimeCode();
+
+            // this is the first context accessing the static symbol cache
+            CApiContext.nativeSymbolCacheSingleContext = this.nativeSymbolCache;
+        } else if (CApiContext.nativeSymbolCacheSingleContext != null) {
+            /*
+             * In this case, this context instance is at least the second one attempting to use the
+             * static symbol cache. We now clear the static field to indicate that every context
+             * instance should use its private cache. If a former context already used the cache and
+             * there is already compiled code, it is not necessary to invalidate the code because
+             * the cache is still valid.
+             */
+            CApiContext.nativeSymbolCacheSingleContext = null;
+        }
+        assert STATIC_SYMBOL_CACHE_USED.get();
 
         // initialize primitive native wrapper cache
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
@@ -391,19 +428,44 @@ public final class CApiContext extends CExtContext {
         return null;
     }
 
-    Object getNativeSymbol(NativeCAPISymbol symbol) {
-        Object result = nativeSymbolCache[symbol.ordinal()];
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, result == null)) {
-            result = lookupNativeSymbol(symbol);
+    /**
+     * Retrieves the C API symbol cache instance in the fastest possible way. If there is just one
+     * instance of {@link CApiContext}, it will load the cache stored from the static field
+     * {@link CApiContext#nativeSymbolCacheSingleContext}. Otherwise, it will load the cache from
+     * the instance field {@link CApiContext#nativeSymbolCache}.
+     * 
+     * @param caller The requesting node (may be {@code null}). Used for the fast-path lookup of the
+     *            {@link CApiContext} instance (if necessary).
+     * @return The C API symbol cache.
+     */
+    private static Object[] getSymbolCache(Node caller) {
+        Object[] nativeSymbolCacheSingleContext = CApiContext.nativeSymbolCacheSingleContext;
+        if (nativeSymbolCacheSingleContext != null) {
+            return nativeSymbolCacheSingleContext;
         }
+        return PythonContext.get(caller).getCApiContext().nativeSymbolCache;
+    }
+
+    static Object getNativeSymbol(Node caller, NativeCAPISymbol symbol) {
+        Object[] nativeSymbolCache = getSymbolCache(caller);
+        Object result = nativeSymbolCache[symbol.ordinal()];
+        if (result == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            result = lookupNativeSymbol(nativeSymbolCache, symbol);
+        }
+        assert result != null;
         return result;
     }
 
-    @TruffleBoundary
-    private Object lookupNativeSymbol(NativeCAPISymbol symbol) {
+    /**
+     * Lookup the given C API symbol in the library, store it to the provided cache, and return the
+     * callable symbol.
+     */
+    private static Object lookupNativeSymbol(Object[] nativeSymbolCache, NativeCAPISymbol symbol) {
+        CompilerAsserts.neverPartOfCompilation();
         String name = symbol.getName();
         try {
-            Object nativeSymbol = InteropLibrary.getUncached().readMember(getLLVMLibrary(), name);
+            Object nativeSymbol = InteropLibrary.getUncached().readMember(PythonContext.get(null).getCApiContext().getLLVMLibrary(), name);
             return nativeSymbolCache[symbol.ordinal()] = CExtContext.ensureExecutable(nativeSymbol, symbol);
         } catch (UnsupportedMessageException | UnknownIdentifierException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
