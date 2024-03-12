@@ -755,14 +755,14 @@ public abstract class TypeNodes {
             assert IsTypeNode.executeUncached(clazz);
             long flags = getTypeFlagsNode.execute(clazz);
             if ((flags & HEAPTYPE) != 0) {
-                Object qualname = readObjectNode.read(clazz, PyHeapTypeObject__ht_qualname);
+                Object qualname = readObjectNode.readFromObj(clazz, PyHeapTypeObject__ht_qualname);
                 try {
                     return cast.execute(inliningTarget, qualname);
                 } catch (CannotCastException e) {
                     throw CompilerDirectives.shouldNotReachHere("Cannot cast ht_qualname to string");
                 }
             } else {
-                return readCharPtrNode.read(clazz, PyTypeObject__tp_name);
+                return readCharPtrNode.readFromObj(clazz, PyTypeObject__tp_name);
             }
         }
     }
