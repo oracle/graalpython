@@ -66,13 +66,13 @@ import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
 public class GraalPythonMain extends AbstractLanguageLauncher {
 
-    public static final String SHORT_HELP = "usage: python [option] ... [-c cmd | -m mod | file | -] [arg] ...\n" +
+    private static final String SHORT_HELP = "usage: python [option] ... [-c cmd | -m mod | file | -] [arg] ...\n" +
                     "Try `python -h' for more information.";
 
-    public static final String STRING_LIST_DELIMITER = "🏆";
+    private static final String STRING_LIST_DELIMITER = "🏆";
 
     // Duplicate of SysModuleBuiltins.INT_MAX_STR_DIGITS_THRESHOLD
-    public static final int INT_MAX_STR_DIGITS_THRESHOLD = 640;
+    private static final int INT_MAX_STR_DIGITS_THRESHOLD = 640;
 
     /**
      * The first method called with the arguments by the thin launcher is
@@ -480,7 +480,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         System.err.println(string);
     }
 
-    protected String getLauncherExecName() {
+    private String getLauncherExecName() {
         if (execName != null) {
             return execName;
         }
@@ -489,7 +489,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         if (execName == null) {
             return null;
         }
-        execName = calculateProgramFullPath(execName);
+        execName = calculateProgramFullPath(execName, Files::isExecutable, null);
         log("resolved executable name: ", execName);
         return execName;
     }
@@ -510,9 +510,12 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
      * </dl>
      *
      * @param program The program name as passed in the process' argument vector (position 0).
+     * @param isExecutable Check whether given {@link Path} exists and is executable (for testing).
+     * @param envPath If non-null: value to be used as $PATH (for testing), otherwise
+     *            {@link #getEnv(String)} is used to retrieve $PATH.
      * @return The absolute path to the program or {@code null}.
      */
-    private String calculateProgramFullPath(String program) {
+    private String calculateProgramFullPath(String program, Function<Path, Boolean> isExecutable, String envPath) {
         Path programPath = Paths.get(program);
 
         // If this is an absolute path, we are already fine.
@@ -527,21 +530,22 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
          */
         if (programPath.getNameCount() < 2) {
             // Resolve the program name with respect to the PATH variable.
-            String path = getEnv("PATH");
+            String path = envPath != null ? envPath : getEnv("PATH");
             if (path != null) {
                 log("resolving the executable name in $PATH = ", path);
-                int last = 0;
-                for (int i = path.indexOf(File.pathSeparatorChar); i != -1; i = path.indexOf(File.pathSeparatorChar, last)) {
-                    Path resolvedProgramName = Paths.get(path.substring(last, i)).resolve(programPath);
-                    log("checking if exists and is executable: ", resolvedProgramName);
-                    if (Files.isExecutable(resolvedProgramName)) {
+                int i, previous = 0;
+                do {
+                    i = path.indexOf(File.pathSeparatorChar, previous);
+                    int end = i == -1 ? path.length() : i;
+                    Path resolvedProgramName = Paths.get(path.substring(previous, end)).resolve(programPath);
+                    if (isExecutable.apply(resolvedProgramName)) {
                         return resolvedProgramName.toString();
                     }
 
                     // next start is the char after the separator because we have "path0:path1" and
                     // 'i' points to ':'
-                    last = i + 1;
-                }
+                    previous = i + 1;
+                } while (i != -1);
             } else {
                 log("executable name looks like it is from $PATH, but $PATH is not available.");
             }
@@ -1103,7 +1107,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
      * In case 2, we must implicitly execute a {@code quit("default, 0L, TRUE} command before
      * exiting. So,in either case, we never return.
      */
-    public int readEvalPrint(Context context, ConsoleHandler consoleHandler) {
+    private int readEvalPrint(Context context, ConsoleHandler consoleHandler) {
         int lastStatus = 0;
         try {
             setupREPL(context, consoleHandler);
