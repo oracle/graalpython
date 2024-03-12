@@ -48,6 +48,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.invoke.VarHandle;
 import java.nio.file.LinkOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -469,7 +470,9 @@ public final class CApiContext extends CExtContext {
         String name = symbol.getName();
         try {
             Object nativeSymbol = InteropLibrary.getUncached().readMember(PythonContext.get(null).getCApiContext().getLLVMLibrary(), name);
-            return nativeSymbolCache[symbol.ordinal()] = CExtContext.ensureExecutable(nativeSymbol, symbol);
+            nativeSymbol = CExtContext.ensureExecutable(nativeSymbol, symbol);
+            VarHandle.storeStoreFence();
+            return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
         } catch (UnsupportedMessageException | UnknownIdentifierException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
