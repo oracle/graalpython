@@ -169,7 +169,6 @@ import com.oracle.graal.python.util.Consumer;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.graal.python.util.Supplier;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -179,7 +178,6 @@ import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleContext;
 import com.oracle.truffle.api.TruffleContext.Builder;
 import com.oracle.truffle.api.TruffleFile;
@@ -728,8 +726,6 @@ public final class PythonContext extends Python3Core {
     @CompilationFinal private boolean nativeAccessAllowed;
 
     private TruffleString soABI; // cache for soAPI
-
-    private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
     private static final class GlobalInterpreterLock extends ReentrantLock {
         private static final long serialVersionUID = 1L;
@@ -2222,10 +2218,6 @@ public final class PythonContext extends Python3Core {
         if (path != null) {
             mainModule.setAttribute(T___FILE__, path);
         }
-    }
-
-    public static Assumption getSingleNativeContextAssumption() {
-        return singleNativeContext;
     }
 
     public boolean isExecutableAccessAllowed() {
