@@ -1,4 +1,5 @@
 [[rules]]
 # Note: This patch file is also used directly outside of pip during onnxruntime build
+# Note: This patch is also inlined in torch
 version = '>= 2.10.1, < 2.11'
 patch = 'pybind11-2.10.1.patch'
