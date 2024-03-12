@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "f54611aa91551ffd57138799a360a7ff70c638a2",
+                "version": "219b3c7e4c89b8229ba9af7adfa8c1f3acfddbbd",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "f54611aa91551ffd57138799a360a7ff70c638a2",
+                "version": "219b3c7e4c89b8229ba9af7adfa8c1f3acfddbbd",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "f54611aa91551ffd57138799a360a7ff70c638a2",
+                "version": "219b3c7e4c89b8229ba9af7adfa8c1f3acfddbbd",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "f54611aa91551ffd57138799a360a7ff70c638a2",
+                "version": "219b3c7e4c89b8229ba9af7adfa8c1f3acfddbbd",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -1099,30 +1099,6 @@ suite = {
         },
 
         "PYTHON_COMMUNITY": {
-            "type": "pom",
-            "runtimeDependencies": [
-                "GRAALPYTHON",
-                "GRAALPYTHON_RESOURCES",
-                "truffle:TRUFFLE_RUNTIME",
-            ],
-            "description": "GraalPython engine.",
-            "maven": {
-                "groupId": "org.graalvm.polyglot",
-                "artifactId": "python-community",
-                "tag": ["default", "public"],
-            },
-            "license": [
-                "UPL",
-                "MIT",
-                "PSF-License",
-            ],
-        },
-
-        # We generate the POM project twice with different group ids,
-        # because we found some users look into the org.graalvm.python
-        # maven group directly and pick python-language directly as
-        # dependency, which then spells trouble.
-        "PYTHON_COMMUNITY_2": {
             "type": "pom",
             "runtimeDependencies": [
                 "GRAALPYTHON",
