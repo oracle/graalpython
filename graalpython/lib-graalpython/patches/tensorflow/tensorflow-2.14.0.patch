@@ -413,7 +413,7 @@ index 00000000000..dc67a9fc453
 +    "icu-release-69-1": "",
 +    "pybind11_protobuf-80f3440cd8fee124e077e2e47a8a17b78b451363": "",
 +    "pybind11_abseil-2c4932ed6f6204f1656e245838f4f5eae69d2e29": "",
-+    "pybind11-2.10.4": str(os.path.join(PATCHES_BASE_DIR, 'pybind11', 'pybind11-2.10.4.patch')),
++    "pybind11-2.10.4": str(os.path.join(PATCHES_BASE_DIR, 'pybind11', 'pybind11-2.10.1.patch')),
 +    "jsoncpp-1.9.5": "",
 +    "cython-0.29.32": str(os.path.join(PATCHES_BASE_DIR, 'Cython', 'Cython-0.29.32.patch')),
 +    "sqlite-amalgamation-3400100": "",
