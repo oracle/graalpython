@@ -134,6 +134,7 @@ import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -962,40 +963,46 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
     abstract static class PyObject_SetDoc extends CApiBinaryBuiltinNode {
         @Specialization
-        static int set(PBuiltinFunction obj, TruffleString value,
+        static int set(PBuiltinFunction obj, Object value,
                         @Shared("write") @Cached WriteAttributeToPythonObjectNode write) {
             write.execute(obj, T___DOC__, value);
             return 1;
         }
 
         @Specialization
-        static int set(PBuiltinMethod obj, TruffleString value,
+        static int set(PBuiltinMethod obj, Object value,
                         @Shared("write") @Cached WriteAttributeToPythonObjectNode write) {
             set(obj.getBuiltinFunction(), value, write);
             return 1;
         }
 
         @Specialization
-        static int set(GetSetDescriptor obj, TruffleString value,
+        static int set(GetSetDescriptor obj, Object value,
                         @Shared("write") @Cached WriteAttributeToPythonObjectNode write) {
             write.execute(obj, T___DOC__, value);
             return 1;
         }
 
         @Specialization(guards = "isType.execute(inliningTarget, type)", limit = "1")
-        static int set(PythonAbstractNativeObject type, TruffleString value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+        static int set(PythonAbstractNativeObject type, Object value,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsTypeNode isType,
                         @Cached CStructAccess.WritePointerNode writePointerNode) {
-            writePointerNode.write(type.getPtr(), PyTypeObject__tp_doc, new CStringWrapper(value));
+            Object cValue;
+            if (value instanceof TruffleString stringValue) {
+                cValue = new CStringWrapper(stringValue);
+            } else {
+                cValue = PythonContext.get(inliningTarget).getNativeNull();
+            }
+            writePointerNode.write(type.getPtr(), PyTypeObject__tp_doc, cValue);
             return 1;
         }
 
         @Fallback
         @SuppressWarnings("unused")
         static int set(Object obj, Object value) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw CompilerDirectives.shouldNotReachHere("Don't know how to set doc for " + obj.getClass());
+            // The callers don't expect errors, so just do nothing
+            return 1;
         }
     }
 }
