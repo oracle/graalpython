@@ -120,12 +120,13 @@ public abstract class PyTruffleObjectFree extends Node {
         // If wrapper already received toNative, release the handle or free the native memory.
         if (nativeWrapper.isNative()) {
             long nativePointer = nativeWrapper.getNativePointer();
-            if (LOGGER.isLoggable(Level.FINER)) {
-                LOGGER.finer(PythonUtils.formatJString("Releasing handle: %x (object: %s)", nativePointer, nativeWrapper));
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(PythonUtils.formatJString("Freeing pointer: 0x%x (wrapper: %s ;; object: %s)", nativePointer, nativeWrapper, nativeWrapper.getDelegate()));
             }
             if (HandlePointerConverter.pointsToPyHandleSpace(nativePointer)) {
                 // In this case, we are up to free a native object stub.
                 assert tableEntryRemoved(PythonContext.get(freeNode).nativeContext, nativeWrapper);
+                nativePointer = HandlePointerConverter.pointerToStub(nativePointer);
             } else {
                 CApiTransitions.nativeLookupRemove(PythonContext.get(freeNode).nativeContext, nativePointer);
             }
