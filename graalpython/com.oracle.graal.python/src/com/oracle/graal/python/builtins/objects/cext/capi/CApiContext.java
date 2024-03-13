@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -875,15 +876,27 @@ public final class CApiContext extends CExtContext {
         CApiTransitions.disableReferenceQueuePolling(getContext().nativeContext);
         // TODO(fa): remove GIL acquisition (GR-51314)
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
+            HandleContext nativeContext = getContext().nativeContext;
             freeSmallInts();
             for (int i = 0; i < singletonNativePtrs.length; i++) {
                 PythonNativeWrapper singletonNativeWrapper = singletonNativePtrs[i];
                 singletonNativePtrs[i] = null;
                 assert singletonNativeWrapper != null;
                 if (singletonNativeWrapper.ref != null) {
-                    CApiTransitions.nativeStubLookupRemove(getContext().nativeContext, singletonNativeWrapper.ref);
+                    CApiTransitions.nativeStubLookupRemove(nativeContext, singletonNativeWrapper.ref);
                 }
                 PyTruffleObjectFree.releaseNativeWrapperUncached(singletonNativeWrapper);
+            }
+            /*
+             * Clear all remaining native object stubs. This must be done after the small int and
+             * the singleton wrappers were cleared because they might also end up in the lookup
+             * table and may otherwise be double-free'd.
+             */
+            for (PythonObjectReference ref : nativeContext.nativeStubLookup) {
+                if (ref != null) {
+                    CApiTransitions.nativeStubLookupRemove(nativeContext, ref);
+                    CApiTransitions.freeNativeStub(ref);
+                }
             }
         }
         if (pyDateTimeCAPICapsule != null) {

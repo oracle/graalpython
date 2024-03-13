@@ -383,8 +383,7 @@ public abstract class CApiTransitions {
                              */
                             long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
                             if (subNativeRefCount(stubPointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
-                                LOGGER.fine(() -> PythonUtils.formatJString("freeing native object stub 0x%x", stubPointer));
-                                FreeNode.executeUncached(stubPointer);
+                                freeNativeStub(stubPointer);
                             } else {
                                 /*
                                  * In this case, the object is no longer referenced from managed but
@@ -420,6 +419,20 @@ public abstract class CApiTransitions {
 
     public static void disableReferenceQueuePolling(HandleContext handleContext) {
         handleContext.referenceQueuePollActive = true;
+    }
+
+    public static boolean isReferenceQueuePollingDisabled(HandleContext handleContext) {
+        return handleContext.referenceQueuePollActive;
+    }
+
+    private static void freeNativeStub(long stubPointer) {
+        LOGGER.fine(() -> PythonUtils.formatJString("freeing native object stub 0x%x", stubPointer));
+        FreeNode.executeUncached(stubPointer);
+    }
+
+    public static void freeNativeStub(PythonObjectReference ref) {
+        assert HandlePointerConverter.pointsToPyHandleSpace(ref.pointer);
+        freeNativeStub(HandlePointerConverter.pointerToStub(ref.pointer));
     }
 
     /**
