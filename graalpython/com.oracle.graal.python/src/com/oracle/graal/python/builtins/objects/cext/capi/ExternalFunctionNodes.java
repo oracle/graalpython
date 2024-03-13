@@ -380,7 +380,7 @@ public abstract class ExternalFunctionNodes {
         GE(26, PyObjectTransfer, PyObject, PyObject, Int),
         ITERNEXT(27, IterResult, PyObject),
         INQUIRY(28, InquiryResult, PyObject),
-        DELITEM(29, Int, PyObject, Py_ssize_t, PyObject),
+        DELITEM(29, defaults(1), Int, PyObject, Py_ssize_t, PyObject),
         GETITEM(30, PyObjectTransfer, PyObject, Py_ssize_t),
         GETTER(31, PyObjectTransfer, PyObject, Pointer),
         SETTER(32, Int, PyObject, PyObject, Pointer),
@@ -388,7 +388,7 @@ public abstract class ExternalFunctionNodes {
         HASHFUNC(34, PrimitiveResult64, PyObject),
         CALL(35, PyObjectTransfer, PyObject, PyObject, PyObject),
         SETATTRO(36, InitResult, PyObject, PyObject, PyObject),
-        DESCR_GET(37, PyObjectTransfer, PyObject, PyObject, PyObject),
+        DESCR_GET(37, defaults(1), PyObjectTransfer, PyObject, PyObject, PyObject),
         DESCR_SET(38, InitResult, PyObject, PyObject, PyObject),
         LENFUNC(39, PrimitiveResult64, PyObject),
         OBJOBJPROC(40, InquiryResult, PyObject, PyObject),
@@ -400,14 +400,19 @@ public abstract class ExternalFunctionNodes {
         DESCR_DELETE(46, InitResult, PyObject, PyObject, PyObject), // the last one is always NULL
         DELATTRO(47, InitResult, PyObject, PyObject, PyObject); // the last one is always NULL
 
+        private static int defaults(int x) {
+            return x;
+        }
+
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = values();
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] BY_ID = new PExternalFunctionWrapper[50];
 
         public final String signature;
         public final ArgDescriptor returnValue;
         public final ArgDescriptor[] arguments;
+        public final int numDefaults;
 
-        PExternalFunctionWrapper(int value, ArgDescriptor returnValue, ArgDescriptor... arguments) {
+        PExternalFunctionWrapper(int value, int numDefaults, ArgDescriptor returnValue, ArgDescriptor... arguments) {
             this.value = value;
             this.returnValue = returnValue;
             this.arguments = arguments;
@@ -419,6 +424,11 @@ public abstract class ExternalFunctionNodes {
             }
             s.append("):").append(returnValue.getNFISignature());
             this.signature = s.toString();
+            this.numDefaults = numDefaults;
+        }
+
+        PExternalFunctionWrapper(int value, ArgDescriptor returnValue, ArgDescriptor... arguments) {
+            this(value, 0, returnValue, arguments);
         }
 
         private final int value;
@@ -693,7 +703,7 @@ public abstract class ExternalFunctionNodes {
 
             // generate default values for positional args (if necessary)
             if (numDefaults == -1) {
-                numDefaults = sig == DELITEM ? 1 : 0;
+                numDefaults = sig.numDefaults;
             }
             Object[] defaults = PBuiltinFunction.generateDefaults(numDefaults);
 
