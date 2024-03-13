@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.PythonLanguage.CONTEXT_INSENSITIVE_SINGLETONS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
@@ -61,7 +62,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Pair;
 import org.graalvm.nativeimage.ImageInfo;
@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
@@ -130,6 +131,8 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
@@ -172,7 +175,7 @@ public final class CApiContext extends CExtContext {
     private Map<Object, AllocInfo> freedNativeMemory;
 
     /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
-    @CompilationFinal(dimensions = 1) private final PythonAbstractObjectNativeWrapper[] singletonNativePtrs = new PythonAbstractObjectNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
+    @CompilationFinal(dimensions = 1) private final PythonAbstractObjectNativeWrapper[] singletonNativePtrs;
 
     /**
      * This cache is used to cache native wrappers for frequently used primitives. This is strictly
@@ -295,6 +298,20 @@ public final class CApiContext extends CExtContext {
             CApiContext.nativeSymbolCacheSingleContextUsed = true;
         }
 
+        // initialize singleton native wrappers
+        singletonNativePtrs = new PythonAbstractObjectNativeWrapper[CONTEXT_INSENSITIVE_SINGLETONS.length];
+        // Other threads must see the nativeWrapper fully initialized once it becomes non-null
+        for (int i = 0; i < singletonNativePtrs.length; i++) {
+            assert CApiGuards.isSpecialSingleton(CONTEXT_INSENSITIVE_SINGLETONS[i]);
+            /*
+             * Note: this does intentionally not use 'PythonObjectNativeWrapper.wrap' because the
+             * wrapper must not be reachable from the Python object since the singletons are shared.
+             */
+            PythonObjectNativeWrapper singletonWrapper = new PythonObjectNativeWrapper(CONTEXT_INSENSITIVE_SINGLETONS[i]);
+            VarHandle.storeStoreFence();
+            singletonNativePtrs[i] = singletonWrapper;
+        }
+
         // initialize primitive native wrapper cache
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[PY_NSMALLNEGINTS + PY_NSMALLPOSINTS];
         for (int i = 0; i < primitiveNativeWrapperCache.length; i++) {
@@ -387,16 +404,18 @@ public final class CApiContext extends CExtContext {
         tssStorage.remove(key);
     }
 
-    public void setSingletonNativeWrapper(PythonAbstractObject obj, PythonAbstractObjectNativeWrapper nativePtr) {
-        assert PythonLanguage.getSingletonNativeWrapperIdx(obj) != -1 : "invalid special singleton object";
-        assert singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] == null;
-        // Other threads must see the nativeWrapper fully initialized once it becomes non-null
-        VarHandle.storeStoreFence();
-        singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] = nativePtr;
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+    static int getSingletonNativeWrapperIdx(Object obj) {
+        for (int i = 0; i < CONTEXT_INSENSITIVE_SINGLETONS.length; i++) {
+            if (CONTEXT_INSENSITIVE_SINGLETONS[i] == obj) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public PythonAbstractObjectNativeWrapper getSingletonNativeWrapper(PythonAbstractObject obj) {
-        int singletonNativePtrIdx = PythonLanguage.getSingletonNativeWrapperIdx(obj);
+        int singletonNativePtrIdx = CApiContext.getSingletonNativeWrapperIdx(obj);
         if (singletonNativePtrIdx != -1) {
             return singletonNativePtrs[singletonNativePtrIdx];
         }
@@ -857,6 +876,15 @@ public final class CApiContext extends CExtContext {
         // TODO(fa): remove GIL acquisition (GR-51314)
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
             freeSmallInts();
+            for (int i = 0; i < singletonNativePtrs.length; i++) {
+                PythonNativeWrapper singletonNativeWrapper = singletonNativePtrs[i];
+                singletonNativePtrs[i] = null;
+                assert singletonNativeWrapper != null;
+                if (singletonNativeWrapper.ref != null) {
+                    CApiTransitions.nativeStubLookupRemove(getContext().nativeContext, singletonNativeWrapper.ref);
+                }
+                PyTruffleObjectFree.releaseNativeWrapperUncached(singletonNativeWrapper);
+            }
         }
         if (pyDateTimeCAPICapsule != null) {
             PyDateTimeCAPIWrapper.destroyWrapper(pyDateTimeCAPICapsule);
@@ -867,11 +895,6 @@ public final class CApiContext extends CExtContext {
                 nativeFinalizerRunnable.run();
             } catch (IllegalStateException e) {
                 // Shutdown already in progress, let it do the finalization then
-            }
-        }
-        for (PythonNativeWrapper singletonNativeWrapper : singletonNativePtrs) {
-            if (singletonNativeWrapper != null) {
-                PyTruffleObjectFree.releaseNativeWrapperUncached(singletonNativeWrapper);
             }
         }
         pyCFunctionWrappers.clear();

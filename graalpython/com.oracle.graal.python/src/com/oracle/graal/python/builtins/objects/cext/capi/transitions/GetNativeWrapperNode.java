@@ -161,12 +161,7 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
                     @Bind("this") Node inliningTarget) {
         PythonContext context = PythonContext.get(inliningTarget);
         PythonAbstractObjectNativeWrapper nativeWrapper = context.getCApiContext().getSingletonNativeWrapper(object);
-        if (nativeWrapper == null) {
-            // this will happen just once per context and special singleton
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            nativeWrapper = new PythonObjectNativeWrapper(object);
-            context.getCApiContext().setSingletonNativeWrapper(object, nativeWrapper);
-        }
+        assert nativeWrapper != null;
         return nativeWrapper;
     }
 

@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 
 public abstract class CApiGuards {
@@ -58,7 +57,7 @@ public abstract class CApiGuards {
     }
 
     public static boolean isSpecialSingleton(Object delegate) {
-        return PythonLanguage.getSingletonNativeWrapperIdx(delegate) != -1;
+        return CApiContext.getSingletonNativeWrapperIdx(delegate) != -1;
     }
 
     /**
