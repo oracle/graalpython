@@ -418,6 +418,10 @@ public abstract class CApiTransitions {
         }
     }
 
+    public static void disableReferenceQueuePolling(HandleContext handleContext) {
+        handleContext.referenceQueuePollActive = true;
+    }
+
     /**
      * We need to call __dealloc__ for native weakref objects before exit, as some objects might
      * need to use capi functions.

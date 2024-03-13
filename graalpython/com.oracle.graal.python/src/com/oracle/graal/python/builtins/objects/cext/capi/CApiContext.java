@@ -828,6 +828,12 @@ public final class CApiContext extends CExtContext {
     @TruffleBoundary
     @SuppressWarnings("try")
     public void finalizeCapi() {
+        /*
+         * Disable reference queue polling because during finalization, we will free any known
+         * allocated resources (e.g. native object stubs). Calling
+         * 'CApiTransitions.pollReferenceQueue' could then lead to a double-free.
+         */
+        CApiTransitions.disableReferenceQueuePolling(getContext().nativeContext);
         // TODO(fa): remove GIL acquisition (GR-51314)
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
             freeSmallInts();
