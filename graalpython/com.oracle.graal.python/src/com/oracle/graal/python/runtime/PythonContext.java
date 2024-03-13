@@ -748,9 +748,6 @@ public final class PythonContext extends Python3Core {
      */
     private final AtomicBoolean inAsyncHandler = new AtomicBoolean(false);
 
-    /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
-    @CompilationFinal(dimensions = 1) private final PythonAbstractObjectNativeWrapper[] singletonNativePtrs = new PythonAbstractObjectNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
-
     // The context-local resources
     private final AsyncHandler handler;
     private final AsyncHandler.SharedFinalizer sharedFinalizer;
@@ -2090,16 +2087,6 @@ public final class PythonContext extends Python3Core {
      */
     @TruffleBoundary
     private void cleanupCApiResources() {
-        for (PythonNativeWrapper singletonNativeWrapper : singletonNativePtrs) {
-            /*
-             * Note: we may only free the native wrappers if they have no PythonObjectReference
-             * otherwise it could happen that we free them here and again in
-             * 'CApiTransitions.pollReferenceQueue'.
-             */
-            if (singletonNativeWrapper != null && singletonNativeWrapper.ref == null) {
-                PyTruffleObjectFree.releaseNativeWrapperUncached(singletonNativeWrapper);
-            }
-        }
         CApiTransitions.deallocateNativeWeakRefs(this);
     }
 
@@ -2260,22 +2247,6 @@ public final class PythonContext extends Python3Core {
             nativeClassStableAssumptions.put(cls, assumption);
         }
         return assumption;
-    }
-
-    public void setSingletonNativeWrapper(PythonAbstractObject obj, PythonAbstractObjectNativeWrapper nativePtr) {
-        assert PythonLanguage.getSingletonNativeWrapperIdx(obj) != -1 : "invalid special singleton object";
-        assert singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] == null;
-        // Other threads must see the nativeWrapper fully initialized once it becomes non-null
-        VarHandle.storeStoreFence();
-        singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] = nativePtr;
-    }
-
-    public PythonAbstractObjectNativeWrapper getSingletonNativeWrapper(PythonAbstractObject obj) {
-        int singletonNativePtrIdx = PythonLanguage.getSingletonNativeWrapperIdx(obj);
-        if (singletonNativePtrIdx != -1) {
-            return singletonNativePtrs[singletonNativePtrIdx];
-        }
-        return null;
     }
 
     /**

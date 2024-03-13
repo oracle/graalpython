@@ -108,7 +108,7 @@ public final class PythonObjectNativeWrapper extends PythonAbstractObjectNativeW
              * should be immortal.
              */
             boolean immortal = CApiGuards.isSpecialSingleton(getDelegate());
-            assert !immortal || (getDelegate() instanceof PythonAbstractObject po && PythonContext.get(inliningTarget).getSingletonNativeWrapper(po) == this);
+            assert !immortal || (getDelegate() instanceof PythonAbstractObject po && PythonContext.get(inliningTarget).getCApiContext().getSingletonNativeWrapper(po) == this);
             setNativePointer(firstToNativeNode.execute(inliningTarget, this, immortal));
         }
     }

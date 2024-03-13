@@ -61,6 +61,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Pair;
 import org.graalvm.nativeimage.ImageInfo;
@@ -169,6 +170,9 @@ public final class CApiContext extends CExtContext {
 
     /** Container of pointers that have seen to be free'd. */
     private Map<Object, AllocInfo> freedNativeMemory;
+
+    /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
+    @CompilationFinal(dimensions = 1) private final PythonAbstractObjectNativeWrapper[] singletonNativePtrs = new PythonAbstractObjectNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
 
     /**
      * This cache is used to cache native wrappers for frequently used primitives. This is strictly
@@ -381,6 +385,22 @@ public final class CApiContext extends CExtContext {
     @TruffleBoundary
     public void tssDelete(long key) {
         tssStorage.remove(key);
+    }
+
+    public void setSingletonNativeWrapper(PythonAbstractObject obj, PythonAbstractObjectNativeWrapper nativePtr) {
+        assert PythonLanguage.getSingletonNativeWrapperIdx(obj) != -1 : "invalid special singleton object";
+        assert singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] == null;
+        // Other threads must see the nativeWrapper fully initialized once it becomes non-null
+        VarHandle.storeStoreFence();
+        singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] = nativePtr;
+    }
+
+    public PythonAbstractObjectNativeWrapper getSingletonNativeWrapper(PythonAbstractObject obj) {
+        int singletonNativePtrIdx = PythonLanguage.getSingletonNativeWrapperIdx(obj);
+        if (singletonNativePtrIdx != -1) {
+            return singletonNativePtrs[singletonNativePtrIdx];
+        }
+        return null;
     }
 
     public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(int i) {
@@ -847,6 +867,11 @@ public final class CApiContext extends CExtContext {
                 nativeFinalizerRunnable.run();
             } catch (IllegalStateException e) {
                 // Shutdown already in progress, let it do the finalization then
+            }
+        }
+        for (PythonNativeWrapper singletonNativeWrapper : singletonNativePtrs) {
+            if (singletonNativeWrapper != null) {
+                PyTruffleObjectFree.releaseNativeWrapperUncached(singletonNativeWrapper);
             }
         }
         pyCFunctionWrappers.clear();
