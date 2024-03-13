@@ -2,7 +2,17 @@
 version = '== 1.13.1'
 patch = 'torch-1.13.1.patch'
 dist-type = 'sdist'
+install-priority = 2
+
+[[rules]]
+version = '== 2.2.1'
+patch = 'torch-2.2.1.patch'
+dist-type = 'sdist'
 
 [[add-sources]]
 version = '1.13.1'
 url = 'https://github.com/pytorch/pytorch/releases/download/v1.13.1/pytorch-v1.13.1.tar.gz'
+
+[[add-sources]]
+version = '2.2.1'
+url = 'https://github.com/pytorch/pytorch/releases/download/v2.2.1/pytorch-v2.2.1.tar.gz'

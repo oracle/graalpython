@@ -1,12 +1,6 @@
 [[rules]]
-version = '== 2.10.4'
-patch = 'pybind11-2.10.4.patch'
-
-[[rules]]
 # Note: This patch file is also used directly outside of pip during onnxruntime build
-version = '== 2.10.1'
+# Note: This patch file is also used directly outside of pip during tensorflow build
+# Note: This patch is also inlined in torch
+version = '>= 2.10.1, < 2.11'
 patch = 'pybind11-2.10.1.patch'
-
-[[rules]]
-version = '== 2.10.0'
-patch = 'pybind11-2.10.0.patch'

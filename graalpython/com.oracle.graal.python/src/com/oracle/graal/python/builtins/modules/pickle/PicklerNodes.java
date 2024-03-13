@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
+import static com.oracle.graal.python.nodes.statement.AbstractImportNode.importModule;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -729,10 +730,7 @@ public final class PicklerNodes {
 
             // we don't use PyImport_GetModule here, because it can return partially-initialised
             // modules, which then cause the getattribute to fail.
-            Object module = PickleUtils.importDottedModule(mName);
-            if (module == PNone.NONE || module == NO_VALUE) {
-                return null;
-            }
+            Object module = importModule(mName);
             return getattribute(frame, module, gName, self.getProto() >= 4);
         }
 

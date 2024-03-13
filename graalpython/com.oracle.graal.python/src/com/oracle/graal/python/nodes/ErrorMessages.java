@@ -971,6 +971,7 @@ public abstract class ErrorMessages {
     public static final TruffleString N_SLOTNAMES_SHOULD_BE_A_LIST_OR_NONE_NOT_P = tsLiteral("%N.__slotnames__ should be a list or None, not %p");
     public static final TruffleString COPYREG_SLOTNAMES_DIDN_T_RETURN_A_LIST_OR_NONE = tsLiteral("copyreg._slotnames didn't return a list or None");
     public static final TruffleString CASTING_A_NATIVE_INT_OBJECT_IS_NOT_IMPLEMENTED_YET = tsLiteral("casting a native int object is not implemented yet");
+    public static final TruffleString PUTTING_NON_MODULE_OBJECTS_IN_SYS_MODULES_IS_NOT_SUPPORTED = tsLiteral("Putting non-module objects in sys.modules is not supported");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");

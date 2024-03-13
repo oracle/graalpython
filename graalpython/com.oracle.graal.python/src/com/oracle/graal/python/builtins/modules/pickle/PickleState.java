@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.pickle;
 
+import static com.oracle.graal.python.nodes.statement.AbstractImportNode.importModule;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -105,7 +106,7 @@ public class PickleState {
             final PythonModule builtins = context.getBuiltins();
             state.getattr = getAttr.execute(null, inliningTarget, builtins, T_GETATTR);
 
-            final Object copyreg = PickleUtils.importSimpleModule(PickleUtils.T_MOD_COPYREG);
+            final Object copyreg = importModule(PickleUtils.T_MOD_COPYREG);
             state.dispatchTable = getAttr.execute(null, inliningTarget, copyreg, PickleUtils.T_ATTR_DISPATCH_TABLE);
             if (!PGuards.isDict(state.dispatchTable)) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, "copyreg.dispatch_table", "dict", state.dispatchTable);
@@ -126,17 +127,17 @@ public class PickleState {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, "copyreg._extension_cache", "dict", state.extensionCache);
             }
 
-            final Object codecs = PickleUtils.importSimpleModule(PickleUtils.T_MOD_CODECS);
+            final Object codecs = importModule(PickleUtils.T_MOD_CODECS);
             state.codecsEncode = getAttr.execute(null, inliningTarget, codecs, PickleUtils.T_METHOD_ENCODE);
             if (!callableCheck.execute(inliningTarget, state.codecsEncode)) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, "codecs.encode", "callable", state.codecsEncode);
             }
 
-            final Object functools = PickleUtils.importSimpleModule(PickleUtils.T_MOD_FUNCTOOLS);
+            final Object functools = importModule(PickleUtils.T_MOD_FUNCTOOLS);
             state.partial = getAttr.execute(null, inliningTarget, functools, PickleUtils.T_METHOD_PARTIAL);
 
             // Load the 2.x -> 3.x stdlib module mapping tables
-            Object compatPickle = PickleUtils.importSimpleModule(PickleUtils.T_MOD_COMPAT_PICKLE);
+            Object compatPickle = importModule(PickleUtils.T_MOD_COMPAT_PICKLE);
             state.nameMapping2To3 = getAttr.execute(null, inliningTarget, compatPickle, PickleUtils.T_ATTR_NAME_MAPPING);
             if (!PGuards.isDict(state.nameMapping2To3)) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, PickleUtils.T_CP_NAME_MAPPING, "dict", state.nameMapping2To3);

@@ -40,30 +40,29 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.objects.module.ModuleBuiltins.T__INITIALIZING;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTEMPTED_RELATIVE_IMPORT_BEYOND_TOPLEVEL;
 import static com.oracle.graal.python.nodes.ErrorMessages.IMPORT_NOT_FOUND;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsbCapacity;
-import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
-import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreterAndInvalidate;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.lib.PyDictGetItem;
-import com.oracle.graal.python.lib.PyFrameGetBuiltins;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -83,8 +82,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -101,40 +98,34 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public abstract class AbstractImportNode extends PNodeWithContext {
 
-    @CompilationFinal(dimensions = 1) public static final TruffleString[] T_IMPORT_ALL = tsArray("*");
     public static final TruffleString T__FIND_AND_LOAD = tsLiteral("_find_and_load");
 
+    /**
+     * Equivalent of {@code PyImport_Import} and {@code PyImport_ImportModule}.
+     */
     public static PythonModule importModule(TruffleString name) {
-        return importModule(name, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
-    }
-
-    public static PythonModule importModule(TruffleString name, TruffleString[] fromList) {
-        return importModule(name, PythonObjectFactory.getUncached().createTuple(fromList), 0);
-    }
-
-    @TruffleBoundary
-    public static PythonModule importModule(TruffleString name, Object[] fromList, Object level) {
-        return importModule(name, PythonObjectFactory.getUncached().createTuple(fromList), level);
-    }
-
-    @TruffleBoundary
-    public static PythonModule importModule(TruffleString name, Object fromList, Object level) {
-        Object builtinImport = PyFrameGetBuiltins.executeUncached().getAttribute(T___IMPORT__);
+        /*
+         * TODO we should rather use {@link com.oracle.graal.python.lib.PyImportImport}, but it
+         * currently can't be made uncached because it properly reads builtins from frame globals.
+         */
+        PythonContext context = PythonContext.get(null);
+        Object builtinImport = context.getBuiltins().getAttribute(T___IMPORT__);
         if (builtinImport == PNone.NO_VALUE) {
             throw PConstructAndRaiseNode.getUncached().raiseImportError(null, IMPORT_NOT_FOUND);
         }
-        assert builtinImport instanceof PMethod || builtinImport instanceof PFunction;
-        Object module = CallNode.getUncached().execute(builtinImport, name, PNone.NONE, PNone.NONE, fromList, level);
+        Object fromList = context.factory().createTuple(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
+        CallNode.getUncached().execute(builtinImport, name, PNone.NONE, PNone.NONE, fromList, 0);
+        PythonModule sysModule = context.lookupBuiltinModule(T_SYS);
+        Object modules = sysModule.getAttribute(T_MODULES);
+        if (modules == PNone.NO_VALUE) {
+            throw PRaiseNode.getUncached().raise(RuntimeError, ErrorMessages.UNABLE_TO_GET_S, "sys.modules");
+        }
+        Object module = PyObjectGetItem.executeUncached(modules, name);
         if (module instanceof PythonModule pythonModule) {
             return pythonModule;
         }
-        transferToInterpreterAndInvalidate();
-        throw shouldNotReachHere("__import__ returned " + module.getClass() + " instead of PythonModule");
-    }
-
-    @TruffleBoundary
-    public static Object importModule(PythonContext context, TruffleString name, TruffleString[] fromList, int level) {
-        return ImportNameNodeGen.getUncached().execute(null, context, PyFrameGetBuiltins.execute(context), name, PNone.NONE, fromList, level);
+        // FIXME CPython allows putting any object in sys.modules
+        throw PRaiseNode.getUncached().raise(NotImplementedError, ErrorMessages.PUTTING_NON_MODULE_OBJECTS_IN_SYS_MODULES_IS_NOT_SUPPORTED);
     }
 
     protected final Object importModule(VirtualFrame frame, TruffleString name, Object globals, TruffleString[] fromList, int level, ImportName importNameNode) {

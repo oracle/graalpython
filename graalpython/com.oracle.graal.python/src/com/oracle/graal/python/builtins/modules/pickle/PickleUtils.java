@@ -41,9 +41,7 @@
 package com.oracle.graal.python.builtins.modules.pickle;
 
 import static com.oracle.graal.python.builtins.modules.pickle.PPickler.BasePickleWriteNode.NEW_LINE_BYTE;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
-import static com.oracle.graal.python.nodes.statement.AbstractImportNode.importModule;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -112,8 +110,6 @@ public final class PickleUtils {
     public static final String J_ATTR_MEMO = "memo";
     public static final String J_ATTR_FAST = "fast";
     public static final String J_ATTR_BIN = "bin";
-
-    private static final TruffleString[] SILLY_IMPORT_FROM_LIST = new TruffleString[]{T___DOC__};
 
     public static final int READ_WHOLE_LINE = -1;
 
@@ -230,14 +226,6 @@ public final class PickleUtils {
         for (int i = sizeofSizeT; i < 8; i++) {
             out[start + i] = 0;
         }
-    }
-
-    public static Object importDottedModule(TruffleString dottedModuleName) {
-        return importModule(dottedModuleName, SILLY_IMPORT_FROM_LIST);
-    }
-
-    public static Object importSimpleModule(TruffleString simpleModuleName) {
-        return importModule(simpleModuleName);
     }
 
     public static byte[] resize(byte[] src, int newSize) {

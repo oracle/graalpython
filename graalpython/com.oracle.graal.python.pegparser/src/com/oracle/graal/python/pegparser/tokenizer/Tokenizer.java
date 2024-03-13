@@ -391,9 +391,6 @@ public class Tokenizer {
      * spec comment are ignored,
      */
     public static Tokenizer fromString(ErrorCallback errorCallback, String code, EnumSet<Flag> flags, SourceRange inputSourceRange) {
-        if (code.length() > 0 && code.charAt(0) == '\\') {
-            System.out.println("Creating tokenizer for *" + code + "*");
-        }
         return new Tokenizer(errorCallback, charsToCodePoints(code.toCharArray()), flags, inputSourceRange);
     }
 
