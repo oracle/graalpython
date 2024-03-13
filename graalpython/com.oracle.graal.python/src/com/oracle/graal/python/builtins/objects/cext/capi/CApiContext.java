@@ -74,9 +74,11 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCall
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonStealingNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -138,6 +140,12 @@ import sun.misc.Unsafe;
 public final class CApiContext extends CExtContext {
 
     public static final String LOGGER_CAPI_NAME = "capi";
+
+    /** Same as _PY_NSMALLNEGINTS */
+    public static final int PY_NSMALLNEGINTS = 5;
+
+    /** Same as _PY_NSMALLPOSINTS */
+    public static final int PY_NSMALLPOSINTS = 257;
 
     /**
      * NFI source for Python module init functions (i.e. {@code "PyInit_modname"}).
@@ -284,9 +292,9 @@ public final class CApiContext extends CExtContext {
         }
 
         // initialize primitive native wrapper cache
-        primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
+        primitiveNativeWrapperCache = new PrimitiveNativeWrapper[PY_NSMALLNEGINTS + PY_NSMALLPOSINTS];
         for (int i = 0; i < primitiveNativeWrapperCache.length; i++) {
-            int value = i - 5;
+            int value = i - PY_NSMALLNEGINTS;
             assert CApiGuards.isSmallInteger(value);
             primitiveNativeWrapperCache[i] = PrimitiveNativeWrapper.createInt(value);
         }
@@ -396,11 +404,11 @@ public final class CApiContext extends CExtContext {
         // TODO(fa): this should not require the GIL (GR-51314)
         assert getContext().ownsGil();
         if (nativeSmallIntsArray == null) {
-            int nSmallNegativeInts = CConstants._PY_NSMALLNEGINTS.intValue();
-            int nSmallPositiveInts = CConstants._PY_NSMALLPOSINTS.intValue();
-            Object smallInts = CStructAccess.AllocateNode.callocUncached(nSmallNegativeInts + nSmallPositiveInts, CStructAccess.POINTER_SIZE);
-            for (int i = 0; i < nSmallNegativeInts + nSmallPositiveInts; i++) {
-                CStructAccessFactory.WriteObjectNewRefNodeGen.getUncached().writeArrayElement(smallInts, i, i - nSmallNegativeInts);
+            assert CConstants._PY_NSMALLNEGINTS.intValue() == PY_NSMALLNEGINTS;
+            assert CConstants._PY_NSMALLPOSINTS.intValue() == PY_NSMALLPOSINTS;
+            Object smallInts = CStructAccess.AllocateNode.callocUncached(PY_NSMALLNEGINTS + PY_NSMALLPOSINTS, CStructAccess.POINTER_SIZE);
+            for (int i = 0; i < PY_NSMALLNEGINTS + PY_NSMALLPOSINTS; i++) {
+                CStructAccessFactory.WriteObjectNewRefNodeGen.getUncached().writeArrayElement(smallInts, i, i - PY_NSMALLNEGINTS);
             }
             nativeSmallIntsArray = smallInts;
         }
@@ -409,20 +417,39 @@ public final class CApiContext extends CExtContext {
 
     private void freeSmallInts() {
         CompilerAsserts.neverPartOfCompilation();
-        // TODO(fa): this should not require the GIL (GR-51314)
-        assert getContext().ownsGil();
         if (nativeSmallIntsArray != null) {
-            int nSmallNegativeInts = CConstants._PY_NSMALLNEGINTS.intValue();
-            int nSmallPositiveInts = CConstants._PY_NSMALLPOSINTS.intValue();
-            for (int i = 0; i < nSmallNegativeInts + nSmallPositiveInts; i++) {
-                Object elementPtr = ReadPointerNode.getUncached().readArrayElement(nativeSmallIntsArray, i);
-                // again, take ownership
-                Object element = NativeToPythonStealingNode.executeUncached(elementPtr);
-                assert element instanceof Number number && number.intValue() == i - nSmallNegativeInts;
-            }
+            assert verifyNativeSmallInts();
+            // free the native array used to store the stub pointers of the small int wrappers
             FreeNode.executeUncached(nativeSmallIntsArray);
             nativeSmallIntsArray = null;
         }
+        HandleContext nativeContext = getContext().nativeContext;
+        for (PrimitiveNativeWrapper wrapper : primitiveNativeWrapperCache) {
+            assert wrapper.isIntLike() && CApiGuards.isSmallLong(wrapper.getLong());
+            assert !wrapper.isNative() || wrapper.getRefCount() == PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
+            if (wrapper.ref != null) {
+                CApiTransitions.nativeStubLookupRemove(nativeContext, wrapper.ref);
+            }
+            PyTruffleObjectFree.releaseNativeWrapperUncached(wrapper);
+        }
+    }
+
+    /**
+     * Verifies integrity of the pointers stored in the native small int array. Each pointer must
+     * denote the according small int wrapper. The objects are expected to be immortal.
+     */
+    private boolean verifyNativeSmallInts() {
+        // TODO(fa): this should not require the GIL (GR-51314)
+        assert getContext().ownsGil();
+        for (int i = 0; i < PY_NSMALLNEGINTS + PY_NSMALLPOSINTS; i++) {
+            Object elementPtr = ReadPointerNode.getUncached().readArrayElement(nativeSmallIntsArray, i);
+            PythonNativeWrapper wrapper = ToPythonWrapperNode.executeUncached(elementPtr, false);
+            if (!(wrapper == primitiveNativeWrapperCache[i] && primitiveNativeWrapperCache[i].isNative() &&
+                            primitiveNativeWrapperCache[i].getRefCount() == PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public Object getModuleByIndex(int i) {

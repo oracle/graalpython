@@ -66,12 +66,12 @@ public abstract class CApiGuards {
      * case, native wrappers) are cached.
      */
     public static boolean isSmallInteger(int i) {
-        return -5 <= i && i < 257;
+        return -CApiContext.PY_NSMALLNEGINTS <= i && i < CApiContext.PY_NSMALLPOSINTS;
     }
 
     /** see {@link #isSmallInteger(int)} */
     public static boolean isSmallLong(long i) {
-        return -5 <= i && i < 257;
+        return -CApiContext.PY_NSMALLNEGINTS <= i && i < CApiContext.PY_NSMALLPOSINTS;
     }
 
     public static boolean isSmallIntegerWrapper(PrimitiveNativeWrapper nativeWrapper) {

@@ -580,7 +580,7 @@ public abstract class CApiTransitions {
         return idx;
     }
 
-    private static PythonObjectReference nativeStubLookupRemove(HandleContext context, PythonObjectReference ref) {
+    public static PythonObjectReference nativeStubLookupRemove(HandleContext context, PythonObjectReference ref) {
         assert ref.handleTableIndex > 0;
         final int idx = ref.handleTableIndex;
         PythonObjectReference result = context.nativeStubLookup[idx];
@@ -1363,6 +1363,10 @@ public abstract class CApiTransitions {
     @GenerateInline(false)
     @ImportStatic(CApiGuards.class)
     public abstract static class ToPythonWrapperNode extends CExtToJavaNode {
+
+        public static PythonNativeWrapper executeUncached(Object obj, boolean strict) {
+            return getUncached().executeWrapper(obj, strict);
+        }
 
         @Override
         public final Object execute(Object object) {
