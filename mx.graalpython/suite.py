@@ -326,6 +326,13 @@ suite = {
             "javaCompliance": "17+",
             "checkstyle": "com.oracle.graal.python",
         },
+        "org.graalvm.python.embedding.tools": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "jacoco": "include",
+            "javaCompliance": "17+",
+            "checkstyle": "com.oracle.graal.python",
+        },
 
         "com.oracle.graal.python.annotations": {
             "subDir": "graalpython",
@@ -918,12 +925,11 @@ suite = {
                 "name": "org.graalvm.python.embedding",
                 "exports": [
                     "org.graalvm.python.embedding.utils",
-                    "org.graalvm.python.embedding.jbang",
                 ]
             },
             "useModulePath": True,
             "dependencies": [
-                "org.graalvm.python.embedding",
+                "org.graalvm.python.embedding"
             ],
             "distDependencies": [
                 "sdk:POLYGLOT",
@@ -932,6 +938,30 @@ suite = {
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-embedding",
+                "tag": ["default", "public"],
+            },
+
+        },
+        "GRAALPYTHON_EMBEDDING_TOOLS" : {
+            "moduleInfo": {
+                "name": "org.graalvm.python.embedding.tools",
+                "exports": [
+                    "org.graalvm.python.embedding.tools.vfs",
+                    "org.graalvm.python.embedding.tools.exec",
+                    "org.graalvm.python.embedding.tools.jbang",
+                ]
+            },
+            "useModulePath": True,
+            "dependencies": [
+                "org.graalvm.python.embedding.tools",
+            ],
+            "distDependencies": [
+                "sdk:POLYGLOT",
+            ],
+            "description": "GraalPy Embedding Tools",
+            "maven": {
+                "groupId": "org.graalvm.python",
+                "artifactId": "python-embedding-tools",
                 "tag": ["default", "public"],
             },
 
@@ -1430,8 +1460,8 @@ suite = {
             "subDir": "graalpython",
             "noMavenJavadoc": True,
             "dependencies": [
-                "GRAALPYTHON_EMBEDDING",
-                "GRAALPYTHON-LAUNCHER"
+                "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON_EMBEDDING_TOOLS",
             ],
             "maven": {
                 "tag": ["default", "public"],

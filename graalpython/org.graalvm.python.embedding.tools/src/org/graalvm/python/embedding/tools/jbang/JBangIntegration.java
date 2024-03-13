@@ -39,11 +39,11 @@
  * SOFTWARE.
  */
 
-package org.graalvm.python.embedding.jbang;
+package org.graalvm.python.embedding.tools.jbang;
 
-import org.graalvm.python.embedding.utils.SubprocessLog;
-import org.graalvm.python.embedding.utils.VFSUtils;
-import org.graalvm.python.embedding.utils.GraalPyRunner;
+import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
+import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
 import java.io.File;
 import java.io.FileWriter;

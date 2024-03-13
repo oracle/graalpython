@@ -47,11 +47,12 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
+
 import org.apache.maven.plugins.annotations.*;
 import org.apache.maven.project.*;
 import org.eclipse.aether.graph.Dependency;
-import org.graalvm.python.embedding.utils.GraalPyRunner;
-import org.graalvm.python.embedding.utils.VFSUtils;
+import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
+import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
 import java.io.File;
 import java.io.FileWriter;

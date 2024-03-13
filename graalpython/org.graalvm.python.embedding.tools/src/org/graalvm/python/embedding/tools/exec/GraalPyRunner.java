@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.embedding.utils;
+package org.graalvm.python.embedding.tools.exec;
 
 import java.io.BufferedReader;
 import java.io.File;

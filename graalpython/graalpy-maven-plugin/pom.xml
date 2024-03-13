@@ -108,7 +108,7 @@ SOFTWARE.
 
     <dependency>
       <groupId>org.graalvm.python</groupId>
-      <artifactId>python-embedding</artifactId>
+      <artifactId>python-embedding-tools</artifactId>
       <version>${graalpy.version}</version>
     </dependency>
     <dependency>
