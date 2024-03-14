@@ -1,0 +1,28 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index 61e4a95..1b05805 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -15,4 +15,4 @@ excludes = [
+ 
+ [build-system]
+ 
+-requires = ["setuptools", "torch", "wheel"]
++requires = ["setuptools", "torch>2", "wheel"]
+diff --git a/setup.py b/setup.py
+index ce1cd90..511affd 100644
+--- a/setup.py
++++ b/setup.py
+@@ -53,9 +53,10 @@ def write_version_file():
+         f.write("    cuda = _check_cuda_version()\n")
+ 
+ 
+-pytorch_dep = "torch"
+-if os.getenv("PYTORCH_VERSION"):
+-    pytorch_dep += "==" + os.getenv("PYTORCH_VERSION")
++# pytorch_dep = "torch"
++# if os.getenv("PYTORCH_VERSION"):
++#     pytorch_dep += "==" + os.getenv("PYTORCH_VERSION")
++pytorch_dep = f'torch >= {torch.__version__}'
+ 
+ requirements = [
+     "numpy",

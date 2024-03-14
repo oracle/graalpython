@@ -1,7 +1,7 @@
 [[rules]]
-version = '== 0.14.1'
-patch = 'torchvision-1.14.1.patch'
+version = '== 0.17.1'
+patch = 'torchvision-1.17.1.patch'
 
 [[add-sources]]
-version = '0.14.1'
-url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.14.1.tar.gz'
+version = '0.17.1'
+url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.17.1.tar.gz'
