@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBaseException;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
@@ -2603,14 +2602,15 @@ public abstract class TypeNodes {
         }
 
         private static int getBuiltinDictoffset(PythonBuiltinClassType cls) {
-            // TODO properly specify for all builtin classes
-            PythonBuiltinClassType current = cls;
-            do {
-                if (current == PBaseException) {
-                    return 16;
-                }
-            } while ((current = current.getBase()) != null);
-            return 0;
+            if (!cls.isBuiltinWithDict()) {
+                return 0;
+            }
+            // TODO there are more builtins with dict
+            return switch (cls) {
+                case PBaseException, PythonModule -> 16;
+                case PythonClass -> 264;
+                default -> cls.getBase() != null ? getBuiltinDictoffset(cls.getBase()) : 0;
+            };
         }
     }
 
