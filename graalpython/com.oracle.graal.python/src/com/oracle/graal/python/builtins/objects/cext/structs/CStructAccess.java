@@ -1120,7 +1120,7 @@ public class CStructAccess {
 
         public final void writeIntArray(Object pointer, int[] values, int length, int sourceOffset, int targetOffset) {
             for (int i = 0; i < length; i++) {
-                execute(pointer, (i + targetOffset) * Long.BYTES, values[i + sourceOffset]);
+                execute(pointer, (long) (i + targetOffset) * Long.BYTES, values[i + sourceOffset]);
             }
         }
 
@@ -1182,6 +1182,12 @@ public class CStructAccess {
 
         public final void writeArrayElement(Object pointer, long element, Object value) {
             execute(pointer, element * POINTER_SIZE, value);
+        }
+
+        public final void writePointerArray(Object pointer, long[] values, int length, int sourceOffset, int targetOffset) {
+            for (int i = 0; i < length; i++) {
+                execute(pointer, (i + targetOffset) * POINTER_SIZE, values[i + sourceOffset]);
+            }
         }
 
         @Specialization
