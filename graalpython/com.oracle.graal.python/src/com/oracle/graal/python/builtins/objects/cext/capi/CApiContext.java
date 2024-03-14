@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.PythonLanguage.CONTEXT_INSENSITIVE_SINGLETONS;
+import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
@@ -423,6 +424,29 @@ public final class CApiContext extends CExtContext {
         return null;
     }
 
+    /**
+     * Deallocates all singleton wrappers (in {@link #singletonNativePtrs}) which are immortal and
+     * must therefore be explicitly free'd. This method modifies the
+     * {@link HandleContext#nativeStubLookup stub lookup table} but runs not guest code.
+     */
+    private void freeSingletonNativeWrappers() {
+        CompilerAsserts.neverPartOfCompilation();
+        // TODO(fa): this should not require the GIL (GR-51314)
+        assert getContext().ownsGil();
+        HandleContext nativeContext = getContext().nativeContext;
+        for (int i = 0; i < singletonNativePtrs.length; i++) {
+            PythonAbstractObjectNativeWrapper singletonNativeWrapper = singletonNativePtrs[i];
+            singletonNativePtrs[i] = null;
+            assert singletonNativeWrapper != null;
+            assert getSingletonNativeWrapperIdx(singletonNativeWrapper.getDelegate()) != -1;
+            assert !singletonNativeWrapper.isNative() || singletonNativeWrapper.getRefCount() == IMMORTAL_REFCNT;
+            if (singletonNativeWrapper.ref != null) {
+                CApiTransitions.nativeStubLookupRemove(nativeContext, singletonNativeWrapper.ref);
+            }
+            PyTruffleObjectFree.releaseNativeWrapperUncached(singletonNativeWrapper);
+        }
+    }
+
     public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(int i) {
         assert CApiGuards.isSmallInteger(i);
         PrimitiveNativeWrapper primitiveNativeWrapper = primitiveNativeWrapperCache[i + 5];
@@ -455,8 +479,16 @@ public final class CApiContext extends CExtContext {
         return nativeSmallIntsArray;
     }
 
+    /**
+     * Deallocates the native small int array (pointer {@link #nativeSmallIntsArray}) and all
+     * wrappers of the small ints (in {@link #primitiveNativeWrapperCache}) which are immortal and
+     * must therefore be explicitly free'd. This method modifies the
+     * {@link HandleContext#nativeStubLookup stub lookup table} but runs not guest code.
+     */
     private void freeSmallInts() {
         CompilerAsserts.neverPartOfCompilation();
+        // TODO(fa): this should not require the GIL (GR-51314)
+        assert getContext().ownsGil();
         if (nativeSmallIntsArray != null) {
             assert verifyNativeSmallInts();
             // free the native array used to store the stub pointers of the small int wrappers
@@ -466,7 +498,7 @@ public final class CApiContext extends CExtContext {
         HandleContext nativeContext = getContext().nativeContext;
         for (PrimitiveNativeWrapper wrapper : primitiveNativeWrapperCache) {
             assert wrapper.isIntLike() && CApiGuards.isSmallLong(wrapper.getLong());
-            assert !wrapper.isNative() || wrapper.getRefCount() == PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
+            assert !wrapper.isNative() || wrapper.getRefCount() == IMMORTAL_REFCNT;
             if (wrapper.ref != null) {
                 CApiTransitions.nativeStubLookupRemove(nativeContext, wrapper.ref);
             }
@@ -485,7 +517,7 @@ public final class CApiContext extends CExtContext {
             Object elementPtr = ReadPointerNode.getUncached().readArrayElement(nativeSmallIntsArray, i);
             PythonNativeWrapper wrapper = ToPythonWrapperNode.executeUncached(elementPtr, false);
             if (!(wrapper == primitiveNativeWrapperCache[i] && primitiveNativeWrapperCache[i].isNative() &&
-                            primitiveNativeWrapperCache[i].getRefCount() == PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT)) {
+                            primitiveNativeWrapperCache[i].getRefCount() == IMMORTAL_REFCNT)) {
                 return false;
             }
         }
@@ -876,28 +908,14 @@ public final class CApiContext extends CExtContext {
         CApiTransitions.disableReferenceQueuePolling(getContext().nativeContext);
         // TODO(fa): remove GIL acquisition (GR-51314)
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
-            HandleContext nativeContext = getContext().nativeContext;
             freeSmallInts();
-            for (int i = 0; i < singletonNativePtrs.length; i++) {
-                PythonNativeWrapper singletonNativeWrapper = singletonNativePtrs[i];
-                singletonNativePtrs[i] = null;
-                assert singletonNativeWrapper != null;
-                if (singletonNativeWrapper.ref != null) {
-                    CApiTransitions.nativeStubLookupRemove(nativeContext, singletonNativeWrapper.ref);
-                }
-                PyTruffleObjectFree.releaseNativeWrapperUncached(singletonNativeWrapper);
-            }
+            freeSingletonNativeWrappers();
             /*
              * Clear all remaining native object stubs. This must be done after the small int and
              * the singleton wrappers were cleared because they might also end up in the lookup
              * table and may otherwise be double-free'd.
              */
-            for (PythonObjectReference ref : nativeContext.nativeStubLookup) {
-                if (ref != null) {
-                    CApiTransitions.nativeStubLookupRemove(nativeContext, ref);
-                    CApiTransitions.freeNativeStub(ref);
-                }
-            }
+            freeNativeObjectStubs();
         }
         if (pyDateTimeCAPICapsule != null) {
             PyDateTimeCAPIWrapper.destroyWrapper(pyDateTimeCAPICapsule);
@@ -924,6 +942,21 @@ public final class CApiContext extends CExtContext {
             if (CApiContext.nativeSymbolCacheSingleContext != null) {
                 CApiContext.nativeSymbolCacheSingleContext = null;
                 CApiContext.nativeSymbolCacheSingleContextUsed = false;
+            }
+        }
+    }
+
+    /**
+     * Deallocates any native object stub that is still reachable via the
+     * {@link HandleContext#nativeStubLookup lookup table}. This method modifies the
+     * {@link HandleContext#nativeStubLookup stub lookup table} but runs not guest code.
+     */
+    private void freeNativeObjectStubs() {
+        HandleContext nativeContext = getContext().nativeContext;
+        for (PythonObjectReference ref : nativeContext.nativeStubLookup) {
+            if (ref != null) {
+                CApiTransitions.nativeStubLookupRemove(nativeContext, ref);
+                CApiTransitions.freeNativeStub(ref);
             }
         }
     }
