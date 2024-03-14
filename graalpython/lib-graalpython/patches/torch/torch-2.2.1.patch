@@ -317,6 +317,19 @@ index 68fd53d0..2871915e 100644
              auto *tb = reinterpret_cast<PyTracebackObject *>(m_trace.ptr());
  
              // Get the deepest trace possible.
+diff --git a/torch/_dynamo/types.py b/torch/_dynamo/types.py
+index 0c1deddd..f60e9d72 100644
+--- a/torch/_dynamo/types.py
++++ b/torch/_dynamo/types.py
+@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List, NamedTuple, Optional, Protocol, Un
+ from typing_extensions import TypeAlias
+ 
+ 
+-if sys.version_info >= (3, 11):
++if sys.version_info >= (3, 11) and not sys.implementation.name == 'graalpy':
+     from torch._C._dynamo import eval_frame
+ 
+     DynamoFrameType: TypeAlias = eval_frame._PyInterpreterFrame
 diff --git a/torch/_tensor_str.py b/torch/_tensor_str.py
 index 1293a0fd..dfb4385a 100644
 --- a/torch/_tensor_str.py
@@ -331,7 +344,7 @@ index 1293a0fd..dfb4385a 100644
 +            torch._C._DisableFuncTorch():
          return _str_intern(self, tensor_contents=tensor_contents)
 diff --git a/torch/csrc/Module.cpp b/torch/csrc/Module.cpp
-index a8bf9903..67f89057 100644
+index a8bf9903..0168b101 100644
 --- a/torch/csrc/Module.cpp
 +++ b/torch/csrc/Module.cpp
 @@ -341,46 +341,16 @@ PyObject* THPModule_addDocStr(PyObject* _unused, PyObject* args) {
@@ -390,16 +403,6 @@ index a8bf9903..67f89057 100644
    }
  
    Py_INCREF(obj);
-@@ -1410,7 +1380,8 @@ PyObject* initModule() {
-   torch::jit::initJITBindings(module);
-   torch::monitor::initMonitorBindings(module);
-   torch::impl::dispatch::initDispatchBindings(module);
--  torch::dynamo::initDynamoBindings(module);
-+  // GraalPy change: dynamo uses bytecode parsing
-+  // torch::dynamo::initDynamoBindings(module);
-   torch::functorch::impl::initFuncTorchBindings(module);
-   torch::throughput_benchmark::initThroughputBenchmarkBindings(module);
-   torch::autograd::initReturnTypes(module);
 diff --git a/torch/csrc/autograd/python_variable_indexing.cpp b/torch/csrc/autograd/python_variable_indexing.cpp
 index 3b128027..b670f3f2 100644
 --- a/torch/csrc/autograd/python_variable_indexing.cpp
@@ -505,68 +508,191 @@ index 688ea19b..5c9c1ecb 100644
      }
      stop = clip_val(stop);
 diff --git a/torch/csrc/dynamo/cpython_defs.c b/torch/csrc/dynamo/cpython_defs.c
-index 5d249d99..d00c18bf 100644
+index 5d249d99..9f83824e 100644
 --- a/torch/csrc/dynamo/cpython_defs.c
 +++ b/torch/csrc/dynamo/cpython_defs.c
-@@ -1,3 +1,4 @@
-+#if 0
- #include <torch/csrc/dynamo/cpython_defs.h>
+@@ -24,6 +24,7 @@
+ #undef _PyGC_FINALIZED
+ #endif
  
- #ifdef _WIN32
-@@ -360,3 +361,4 @@ THP_PyFrame_Clear(_PyInterpreterFrame *frame)
++#if 0 // GraalPy change
+ #define Py_BUILD_CORE
+ #include <internal/pycore_pystate.h>
+ #define NEED_OPCODE_TABLES // To get _PyOpcode_Deopt
+@@ -31,6 +32,7 @@
+ #undef NEED_OPCODE_TABLES
+ #undef Py_BUILD_CORE
+ #include <internal/pycore_frame.h>
++#endif // GraalPy change
+ 
+ // As a simple way to reduce the impact of ABI changes on the CPython side, this check forces
+ // us to manually re-check that the function didn't change on the next major version
+@@ -39,6 +41,7 @@
+ // #error "Please ensure that the functions below still match the CPython implementation for 3.12"
+ #endif
+ 
++#if 0 // GraalPy change
+ // https://github.com/python/cpython/blob/a7715ccfba5b86ab09f86ec56ac3755c93b46b48/Objects/frameobject.c#L1079
+ static int
+ THP_PyFrame_OpAlreadyRan(_PyInterpreterFrame *frame, int opcode, int oparg)
+@@ -64,10 +67,15 @@ THP_PyFrame_OpAlreadyRan(_PyInterpreterFrame *frame, int opcode, int oparg)
+     }
+     return 0;
+ }
++#endif
+ 
+ // https://github.com/python/cpython/blob/a7715ccfba5b86ab09f86ec56ac3755c93b46b48/Objects/frameobject.c#L1182
+ int
+ THP_PyFrame_FastToLocalsWithError(_PyInterpreterFrame *frame) {
++    // GraalPy change
++    PyErr_SetString(PyExc_NotImplementedError, "dynamo compilation is not supported on GraalPy");
++    return -1;
++#if 0
+     /* Merge fast locals into f->f_locals */
+     PyObject *locals = NULL;
+     PyObject **fast = NULL;
+@@ -162,6 +170,7 @@ THP_PyFrame_FastToLocalsWithError(_PyInterpreterFrame *frame) {
+         }
+     }
+     return 0;
++#endif
+ }
+ 
+ // e.g. COPY_FIELD(op, o, globals) becomes
+@@ -328,6 +337,7 @@ THP_take_ownership(PyFrameObject *f, _PyInterpreterFrame *frame)
+ void
+ THP_PyFrame_Clear(_PyInterpreterFrame *frame)
+ {
++#if 0 // GraalPy change
+     /* It is the responsibility of the owning generator/coroutine
+      * to have cleared the enclosing generator, if any. */
+     CHECK(frame->owner != FRAME_OWNED_BY_GENERATOR ||
+@@ -357,6 +367,7 @@ THP_PyFrame_Clear(_PyInterpreterFrame *frame)
+     Py_DECREF(frame->f_func);
+     #endif
+     Py_DECREF(frame->f_code);
++#endif // GraalPy change
  }
  
  #endif
-+#endif
 diff --git a/torch/csrc/dynamo/eval_frame.c b/torch/csrc/dynamo/eval_frame.c
-index 0245b192..f195d97d 100644
+index 0245b192..22e58dd5 100644
 --- a/torch/csrc/dynamo/eval_frame.c
 +++ b/torch/csrc/dynamo/eval_frame.c
-@@ -1,3 +1,4 @@
-+#if 0 // GraalPy change
+@@ -1,8 +1,8 @@
  #define PY_SSIZE_T_CLEAN
  #include <torch/csrc/dynamo/cpp_shim.h>
- #include <torch/csrc/dynamo/cpython_defs.h>
-@@ -610,7 +611,7 @@ static inline PyObject* call_callback(
+-#include <torch/csrc/dynamo/cpython_defs.h>
++//#include <torch/csrc/dynamo/cpython_defs.h>
+ #include <torch/csrc/utils/python_compat.h>
+-#include <opcode.h>
++//#include <opcode.h>
+ #include <stdbool.h>
  
- // remember to update the type signature for DynamoCallbackFn.__call__ in torch/_dynamo/types.py
- // if this function changes
--#if IS_PYTHON_3_11_PLUS
-+#if IS_PYTHON_3_11_PLUS && !defined(GRAALVM_PYTHON)
-   THPPyInterpreterFrame* frame = THPPyInterpreterFrame_New(_frame);
-   if (frame == NULL) {
-     return NULL;
-@@ -697,7 +698,7 @@ inline static PyObject* eval_custom_code_impl(
-   DEBUG_NULL_CHECK(frame);
-   DEBUG_NULL_CHECK(code);
+ // Problem in CPython includes when mixing core and non-core build
+@@ -12,6 +12,7 @@
+ #undef _PyGC_FINALIZED
+ #endif
  
--  #if IS_PYTHON_3_11_PLUS
-+  #if IS_PYTHON_3_11_PLUS && !defined(GRAALVM_PYTHON)
- 
-   // Generate Python function object and _PyInterpreterFrame in a way similar to
-   // https://github.com/python/cpython/blob/e715da6db1d1d70cd779dc48e1ba8110c51cc1bf/Python/ceval.c#L1130
-@@ -1175,3 +1176,6 @@ PyObject* torch_c_dynamo_eval_frame_init(void) {
- 
-   return module;
- }
-+#endif // GraalPy change
-+#include <stdbool.h>
-+bool is_dynamo_compiling = false;
-diff --git a/torch/csrc/dynamo/init.cpp b/torch/csrc/dynamo/init.cpp
-index 1889ca6f..7f7fbbe8 100644
---- a/torch/csrc/dynamo/init.cpp
-+++ b/torch/csrc/dynamo/init.cpp
-@@ -1,3 +1,5 @@
-+// GraalPy change
 +#if 0
- #include <torch/csrc/dynamo/init.h>
+ // see https://bugs.python.org/issue35886
+ #if PY_VERSION_HEX >= 0x03080000
+ #define Py_BUILD_CORE
+@@ -131,6 +132,7 @@ THPPyInterpreterFrame* THPPyInterpreterFrame_New(_PyInterpreterFrame* frame) {
  
- #include <torch/csrc/Exceptions.h>
-@@ -38,3 +40,4 @@ void initDynamoBindings(PyObject* torch) {
- 
- } // namespace dynamo
- } // namespace torch
+ #define THP_PyFrame_FastToLocalsWithError PyFrame_FastToLocalsWithError
+ #endif
 +#endif
+ 
+ #ifdef _WIN32
+ #define unlikely(x) (x)
+@@ -199,6 +201,7 @@ inline static void eval_frame_callback_set(PyObject* obj) {
+   PyThread_tss_set(&eval_frame_callback_key, obj);
+ }
+ 
++#if 0
+ static PyObject* _custom_eval_frame_shim(
+     PyThreadState* tstate,
+     THP_EVAL_API_FRAME_OBJECT* frame,
+@@ -284,6 +287,7 @@ inline static const char* get_frame_name(THP_EVAL_API_FRAME_OBJECT* frame) {
+   DEBUG_CHECK(PyUnicode_Check(frame->f_code->co_name));
+   return PyUnicode_AsUTF8(frame->f_code->co_name);
+ }
++#endif
+ 
+ typedef PyObject FrameState;
+ /*
+@@ -602,6 +606,7 @@ PyObject* _debug_get_cache_entry_list(PyObject* self, PyObject* args) {
+   return (PyObject*)current_node;
+ }
+ 
++#if 0
+ static inline PyObject* call_callback(
+     PyObject* callable,
+     THP_EVAL_API_FRAME_OBJECT* _frame,
+@@ -644,7 +649,6 @@ static PyObject* call_guard_fail_hook(
+       (Py_ssize_t)index,
+       (e->next == (CacheEntry*)Py_None ? Py_True : Py_False));
+ }
+-
+ // Return value: borrowed reference
+ // Is either Py_None or a PyCodeObject
+ static PyObject* lookup(CacheEntry* e, THP_EVAL_API_FRAME_OBJECT *frame, CacheEntry* prev, size_t index) {
+@@ -1033,6 +1037,7 @@ static PyObject* decrement_working_threads(PyThreadState* tstate) {
+   }
+   Py_RETURN_NONE;
+ }
++#endif
+ 
+ static PyObject* set_eval_frame(PyObject* new_callback, PyThreadState* tstate) {
+   // Change the eval frame callback and return the old one
+@@ -1045,9 +1050,13 @@ static PyObject* set_eval_frame(PyObject* new_callback, PyThreadState* tstate) {
+   Py_INCREF(old_callback);
+ 
+   if (old_callback != Py_None && new_callback == Py_None) {
+-    decrement_working_threads(tstate);
++    // GraalPy change
++    PyErr_SetString(PyExc_NotImplementedError, "dynamo compilation is not supported on GraalPy");
++    return NULL;
+   } else if (old_callback == Py_None && new_callback != Py_None) {
+-    increment_working_threads(tstate);
++    // GraalPy change
++    PyErr_SetString(PyExc_NotImplementedError, "dynamo compilation is not supported on GraalPy");
++    return NULL;
+   }
+ 
+   Py_INCREF(new_callback);
+@@ -1135,12 +1144,14 @@ static struct PyModuleDef _module = {
+ 
+ 
+ PyObject* torch_c_dynamo_eval_frame_init(void) {
++#if 0
+   extra_index = _PyEval_RequestCodeExtraIndex(destroy_extra_state);
+   if (extra_index < 0) {
+     PyErr_SetString(PyExc_RuntimeError,
+                     "dynamo: unable to register extra index");
+     return NULL;
+   }
++#endif
+ 
+   int result = PyThread_tss_create(&eval_frame_callback_key);
+   CHECK(result == 0);
+@@ -1153,6 +1164,7 @@ PyObject* torch_c_dynamo_eval_frame_init(void) {
+     return NULL;
+   }
+ 
++#if 0
+ #if IS_PYTHON_3_11_PLUS
+   if (PyType_Ready(&THPPyInterpreterFrameType) < 0) {
+     return NULL;
+@@ -1162,6 +1174,7 @@ PyObject* torch_c_dynamo_eval_frame_init(void) {
+     return NULL;
+   }
+ #endif
++#endif
+ 
+ 
+   if (PyType_Ready(&CacheEntryType) < 0) {
 diff --git a/torch/csrc/jit/python/python_tracer.cpp b/torch/csrc/jit/python/python_tracer.cpp
 index bdc62d33..e16c3715 100644
 --- a/torch/csrc/jit/python/python_tracer.cpp
