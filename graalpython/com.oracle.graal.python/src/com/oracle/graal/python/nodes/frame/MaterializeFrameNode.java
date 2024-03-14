@@ -50,6 +50,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.bytecode.BytecodeLocation;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -181,8 +182,13 @@ public abstract class MaterializeFrameNode extends Node {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
             BytecodeDSLFrameInfo bytecodeDSLFrameInfo = (BytecodeDSLFrameInfo) info;
             PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
+            if (location instanceof PBytecodeDSLRootNode) {
+                throw new AssertionError("The root node was passed as a location, but the root node is insufficient for identifying a bytecode location.");
+            } else if (location.getRootNode() != rootNode) {
+                throw new AssertionError("A node that did not belong to this root node was passed as a location.");
+            }
             BytecodeNode bytecodeNode = BytecodeNode.get(location);
-            pyFrame.setBci(rootNode.readBciFromFrame(frameToMaterialize));
+            pyFrame.setBci(bytecodeNode.getBytecodeLocation(frameToMaterialize, location).getBytecodeIndex());
             pyFrame.setLocation(bytecodeNode);
         } else {
             BytecodeFrameInfo bytecodeFrameInfo = (BytecodeFrameInfo) info;
