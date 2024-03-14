@@ -43,7 +43,9 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GC_DEL;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TYPE_GENERIC_ALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CConstants.PYLONG_BITS_IN_DIGIT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_doc;
@@ -872,16 +874,19 @@ public abstract class CExtNodes {
      */
     @TruffleBoundary
     public static Object lookupNativeMemberInMRO(PythonManagedClass cls, @SuppressWarnings("unused") CFields nativeMemberName, HiddenAttr managedMemberName) {
-        if (cls instanceof PythonClass && (managedMemberName == HiddenAttr.ALLOC || managedMemberName == HiddenAttr.DEL)) {
+        if (cls instanceof PythonClass && (managedMemberName == HiddenAttr.ALLOC || managedMemberName == HiddenAttr.FREE)) {
             Object func = HiddenAttr.ReadNode.executeUncached(cls, managedMemberName, null);
             if (func != null) {
                 return func;
             }
-            PythonObject object = PythonContext.get(null).lookupType(PythonBuiltinClassType.PythonObject);
             // We need to point to PyType_GenericAlloc or PyObject_GC_Del
-            func = HiddenAttr.ReadNode.executeUncached(object, managedMemberName, NO_VALUE);
-            HiddenAttr.WriteNode.executeUncached(cls, managedMemberName, func);
-            return func;
+            NativeCAPISymbol symbol;
+            if (managedMemberName == HiddenAttr.ALLOC) {
+                symbol = FUN_PY_TYPE_GENERIC_ALLOC;
+            } else {
+                symbol = FUN_PY_OBJECT_GC_DEL;
+            }
+            return CApiContext.getNativeSymbol(null, symbol);
         }
         MroSequenceStorage mroStorage = GetMroStorageNode.executeUncached(cls);
         int n = mroStorage.length();
