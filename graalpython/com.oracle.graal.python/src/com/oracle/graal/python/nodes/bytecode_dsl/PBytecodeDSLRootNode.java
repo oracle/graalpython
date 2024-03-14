@@ -319,8 +319,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class ExitCalleeContext {
         @Specialization
         public static Object doExit(VirtualFrame frame, Object returnValue,
-                        @Bind("$root") PBytecodeDSLRootNode root) {
-            root.calleeContext.exit(frame, root);
+                        @Bind("$root") PBytecodeDSLRootNode root,
+                        @Bind("this") Node location) {
+            root.calleeContext.exit(frame, root, location);
             return returnValue;
         }
     }

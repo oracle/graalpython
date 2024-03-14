@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode.GeneratorReturnException;
 import com.oracle.graal.python.nodes.bytecode.GeneratorYieldResult;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -404,7 +405,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 PTraceback newTraceback = factory.get(inliningTarget).createTraceback(pFrame, pFrame.getLine(),
                                 (existingTracebackObj instanceof PTraceback existingTraceback) ? existingTraceback : null);
                 setTracebackNode.execute(inliningTarget, instance, newTraceback);
-                throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(language));
+                throw PException.fromObject(instance, inliningTarget, PythonOptions.isPExceptionWithJavaStacktrace(language));
             }
         }
     }

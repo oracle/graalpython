@@ -330,7 +330,7 @@ public final class PFrame extends PythonBuiltinObject {
     @TruffleBoundary
     public static int bciToLasti(int bci, Node location) {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            if (location instanceof BytecodeNode bytecodeNode) {
+            if (bci >= 0 && location instanceof BytecodeNode bytecodeNode) {
                 // Emulate CPython's fixed 2-word instructions.
                 return bytecodeNode.findInstructionIndex(bci) * 2;
             }
