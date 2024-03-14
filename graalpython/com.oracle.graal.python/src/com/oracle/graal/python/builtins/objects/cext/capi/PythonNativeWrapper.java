@@ -139,19 +139,19 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     }
 
     @TruffleBoundary
-    public final Object registerReplacement(Object pointer, InteropLibrary lib) {
+    public final Object registerReplacement(Object pointer, boolean freeAtCollection, InteropLibrary lib) {
         LOGGER.finest(() -> PythonUtils.formatJString("assigning %s with %s", getDelegate(), pointer));
         Object result;
         if (pointer instanceof Long lptr) {
             // need to convert to actual pointer
             result = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_CONVERT_POINTER, lptr);
-            CApiTransitions.createReference(this, lptr);
+            CApiTransitions.createReference(this, lptr, freeAtCollection);
         } else {
             result = pointer;
             if (lib.isPointer(pointer)) {
                 assert CApiContext.isPointerObject(pointer);
                 try {
-                    CApiTransitions.createReference(this, lib.asPointer(pointer));
+                    CApiTransitions.createReference(this, lib.asPointer(pointer), freeAtCollection);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }

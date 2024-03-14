@@ -207,17 +207,28 @@ public abstract class CApiTransitions {
          * The index in the lookup table, where this reference is stored. This duplicates the native
          * field {@link CFields#GraalPyObject__handle_table_index} in order to save reading the
          * native field if we already have the reference object. The value may be {@code -1} in
-         * which case it means that the reference's referent is a managed object and
-         * {@link #pointer} points into the handle space.
+         * which case it means that {@link #pointer} is not a tagged pointer but a pointer to some
+         * other off-heap memory (e.g. {@code PyTypeObject} or other Python structs).
          */
         private final int handleTableIndex;
 
-        private PythonObjectReference(HandleContext handleContext, PythonNativeWrapper referent, boolean strong, long pointer, int handleTableIndex) {
+        /**
+         * Indicates if the native memory {@link #pointer} should be freed (using {@link FreeNode})
+         * if this reference was enqueued because the referent was collected. For example, this will
+         * be {@code true} if the referent is
+         * {@link com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper} and
+         * the class native replacement was allocated on the heap (usually a heap type). It will be
+         * {@code false} if the class wraps a static type.
+         */
+        private final boolean freeAtCollection;
+
+        private PythonObjectReference(HandleContext handleContext, PythonNativeWrapper referent, boolean strong, long pointer, int handleTableIndex, boolean freeAtCollection) {
             super(handleContext, referent);
             this.pointer = pointer;
             this.strongReference = strong ? referent : null;
             referent.ref = this;
             this.handleTableIndex = handleTableIndex;
+            this.freeAtCollection = freeAtCollection;
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.fine(PythonUtils.formatJString("new %s", toString()));
             }
@@ -225,11 +236,11 @@ public abstract class CApiTransitions {
 
         static PythonObjectReference create(HandleContext handleContext, PythonAbstractObjectNativeWrapper referent, boolean strong, long pointer, int idx) {
             assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
-            return new PythonObjectReference(handleContext, referent, strong, pointer, idx);
+            return new PythonObjectReference(handleContext, referent, strong, pointer, idx, true);
         }
 
-        static PythonObjectReference create(HandleContext handleContext, PythonNativeWrapper referent, long pointer) {
-            return new PythonObjectReference(handleContext, referent, true, pointer, -1);
+        static PythonObjectReference create(HandleContext handleContext, PythonNativeWrapper referent, long pointer, boolean freeAtCollection) {
+            return new PythonObjectReference(handleContext, referent, true, pointer, -1, freeAtCollection);
         }
 
         public boolean isStrongReference() {
@@ -242,6 +253,10 @@ public abstract class CApiTransitions {
 
         public int getHandleTableIndex() {
             return handleTableIndex;
+        }
+
+        public boolean isFreeAtCollection() {
+            return freeAtCollection;
         }
 
         @Override
@@ -390,6 +405,9 @@ public abstract class CApiTransitions {
                         } else {
                             assert nativeLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
                             nativeLookupRemove(context, reference.pointer);
+                            if (reference.freeAtCollection) {
+                                freeNativeStruct(reference);
+                            }
                         }
                     } else if (entry instanceof NativeObjectReference reference) {
                         nativeLookupRemove(context, reference.pointer);
@@ -454,21 +472,16 @@ public abstract class CApiTransitions {
         assert PythonContext.get(null).ownsGil();
         handleContext.nativeLookup.forEach((l, ref) -> {
             if (ref instanceof PythonObjectReference reference) {
-                /*
-                 * If a PythonObjectReference is in this table, it either refers to an object that
-                 * is backed by static native memory (e.g. static PyTypeObject), or it refers to
-                 * some non-object structure (e.g. PyThreadState). In any case, the objects are
-                 * immutable and so the references are expected to be strong.
-                 */
-                assert reference.strongReference != null;
+                // We don't expect references to wrappers that would have a native object stub.
                 assert reference.handleTableIndex == -1;
                 /*
-                 * TODO(fa): For classes, distinguish between static and heap memory.
-                 *
-                 * The ref may denote class wrappers where some of them are backed by static native
-                 * memory and some of them were allocated in heap. There is currently no reliable
-                 * way to distinguish them and so we leak the heap types.
+                 * The ref may denote: (a) class wrappers, where some of them are backed by static
+                 * native memory and some of them were allocated in heap, and (b) struct wrappers,
+                 * which may be freed manually in a separate step.
                  */
+                if (reference.freeAtCollection) {
+                    freeNativeStruct(reference);
+                }
             }
         });
         handleContext.nativeLookup.clear();
@@ -479,13 +492,20 @@ public abstract class CApiTransitions {
     }
 
     private static void freeNativeStub(long stubPointer) {
-        LOGGER.fine(() -> PythonUtils.formatJString("freeing native object stub 0x%x", stubPointer));
+        LOGGER.fine(() -> PythonUtils.formatJString("releasing native object stub 0x%x", stubPointer));
         FreeNode.executeUncached(stubPointer);
     }
 
     private static void freeNativeStub(PythonObjectReference ref) {
         assert HandlePointerConverter.pointsToPyHandleSpace(ref.pointer);
         freeNativeStub(HandlePointerConverter.pointerToStub(ref.pointer));
+    }
+
+    private static void freeNativeStruct(PythonObjectReference ref) {
+        assert ref.handleTableIndex == -1;
+        assert ref.freeAtCollection;
+        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref.toString()));
+        FreeNode.executeUncached(ref.pointer);
     }
 
     private static void freeNativeStorage(NativeStorageReference ref) {
@@ -617,7 +637,12 @@ public abstract class CApiTransitions {
     }
 
     @TruffleBoundary
-    public static IdReference<?> nativeLookupPut(HandleContext context, long pointer, IdReference<?> value) {
+    public static IdReference<?> nativeLookupPut(HandleContext context, long pointer, NativeObjectReference value) {
+        return context.nativeLookup.put(pointer, value);
+    }
+
+    @TruffleBoundary
+    public static IdReference<?> nativeLookupPut(HandleContext context, long pointer, PythonObjectReference value) {
         return context.nativeLookup.put(pointer, value);
     }
 
@@ -814,7 +839,7 @@ public abstract class CApiTransitions {
      */
     @TruffleBoundary
     @SuppressWarnings("try")
-    public static void createReference(PythonNativeWrapper obj, long ptr) {
+    public static void createReference(PythonNativeWrapper obj, long ptr, boolean freeAtCollection) {
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
             /*
              * The first test if '!obj.isNative()' in the caller is done on a fast-path but not
@@ -825,7 +850,7 @@ public abstract class CApiTransitions {
                 obj.setNativePointer(ptr);
                 pollReferenceQueue();
                 HandleContext context = getContext();
-                nativeLookupPut(context, ptr, PythonObjectReference.create(context, obj, ptr));
+                nativeLookupPut(context, ptr, PythonObjectReference.create(context, obj, ptr, freeAtCollection));
             }
         }
     }

@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.AllocateNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetBasicSi
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetItemSizeNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -111,7 +110,6 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
 
         CStructAccess.ReadI64Node readI64 = CStructAccess.ReadI64Node.getUncached();
         CStructAccess.ReadPointerNode readPointer = CStructAccess.ReadPointerNode.getUncached();
-        WriteAttributeToObjectNode writeAttr = WriteAttributeToObjectNode.getUncached();
         InteropLibrary lib = InteropLibrary.getUncached();
 
         // some values are retained from the native representation
@@ -158,7 +156,7 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
          * 'getReplacement' for more explanation).
          */
         wrapper.replacement = pointer;
-        wrapper.registerReplacement(pointer, lib);
+        wrapper.registerReplacement(pointer, false, lib);
     }
 
     public static void initNative(PythonManagedClass clazz, Object pointer) {
@@ -190,8 +188,8 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
              */
             PythonManagedClass clazz = (PythonManagedClass) getDelegate();
             boolean heaptype = (GetTypeFlagsNode.executeUncached(clazz) & TypeFlags.HEAPTYPE) != 0;
-            Object pointerObject = CStructAccessFactory.AllocateNodeGen.getUncached().alloc(heaptype ? CStructs.PyHeapTypeObject : CStructs.PyTypeObject);
-            replacement = registerReplacement(pointerObject, lib);
+            Object pointerObject = AllocateNode.allocUncached(heaptype ? CStructs.PyHeapTypeObject : CStructs.PyTypeObject);
+            replacement = registerReplacement(pointerObject, true, lib);
 
             ToNativeTypeNode.initializeType(this, pointerObject, heaptype);
         }
