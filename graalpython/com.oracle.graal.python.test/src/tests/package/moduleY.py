@@ -41,3 +41,8 @@ print("module Y")
 import math
 print("cos(100) = "+str(math.cos(100)))
 from .subpackage1 import moduleX
+
+__all__ = ['publicProperty', '_privateProperty']
+publicProperty = 1
+_privateProperty = 2
+unlistedProperty = 3

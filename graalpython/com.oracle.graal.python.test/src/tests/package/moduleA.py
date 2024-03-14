@@ -40,3 +40,6 @@
 """MODULE A DOC"""
 
 print("module A")
+
+publicProperty = 1
+_privateProperty = 2
