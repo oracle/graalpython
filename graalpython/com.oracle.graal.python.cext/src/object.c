@@ -916,8 +916,9 @@ PyVarObject* _PyObject_GC_NewVar(PyTypeObject *tp, Py_ssize_t nitems) {
     return _PyObject_NewVar(tp, nitems);
 }
 
-void PyObject_GC_Del(void *tp) {
-    PyObject_Free(tp);
+void PyObject_GC_Del(void *op) {
+    size_t presize = _PyType_PreHeaderSize(((PyObject *)op)->ob_type);
+    PyObject_Free(((char *)op)-presize);
 }
 
 void PyObject_GC_Track(void* a) {

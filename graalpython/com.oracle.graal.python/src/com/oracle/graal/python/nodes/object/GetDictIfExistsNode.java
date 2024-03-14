@@ -41,13 +41,13 @@
 package com.oracle.graal.python.nodes.object;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GENERIC_GET_DICT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GET_DICT_PTR;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -64,6 +65,8 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
@@ -118,17 +121,27 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
     @Specialization
     @InliningCutoff
     PDict doNativeObject(PythonAbstractNativeObject object,
-                    @Cached PythonToNativeNode toSulong,
-                    @Cached NativeToPythonNode toJava,
-                    @Cached CExtNodes.PCallCapiFunction callGetDictNode) {
-        Object javaDict = toJava.execute(callGetDictNode.call(FUN_PY_OBJECT_GENERIC_GET_DICT, toSulong.execute(object)));
-        if (javaDict instanceof PDict) {
-            return (PDict) javaDict;
-        } else if (javaDict == PNone.NO_VALUE) {
+                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Cached PythonToNativeNode toNative,
+                    @Cached CStructAccess.ReadObjectNode readObjectNode,
+                    @Cached CStructAccess.WriteObjectNewRefNode writeObjectNode,
+                    @Cached PythonObjectFactory factory,
+                    @Cached CExtNodes.PCallCapiFunction callGetDictPtr) {
+        Object dictPtr = callGetDictPtr.call(FUN_PY_OBJECT_GET_DICT_PTR, toNative.execute(object));
+        if (lib.isNull(dictPtr)) {
             return null;
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, javaDict);
+            Object dictObject = readObjectNode.readGeneric(dictPtr, 0);
+            if (dictObject == PNone.NO_VALUE) {
+                PDict dict = factory.createDict();
+                writeObjectNode.write(dictPtr, dict);
+                return dict;
+            } else if (dictObject instanceof PDict dict) {
+                return dict;
+            } else {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, dictObject);
+            }
         }
     }
 

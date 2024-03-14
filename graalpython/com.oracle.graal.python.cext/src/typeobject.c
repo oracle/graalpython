@@ -1118,12 +1118,16 @@ _PyType_AllocNoTrack(PyTypeObject *type, Py_ssize_t nitems)
     const size_t size = _PyObject_VAR_SIZE(type, nitems+1);
     /* note that we need to add one, for the sentinel */
 
-    // GraalPy change: remove the GC header
-    char *alloc = PyObject_Malloc(size);
+    const size_t presize = _PyType_PreHeaderSize(type);
+    char *alloc = PyObject_Malloc(size + presize);
     if (alloc  == NULL) {
         return PyErr_NoMemory();
     }
-    obj = (PyObject *)alloc;
+    obj = (PyObject *)(alloc + presize);
+    if (presize) {
+        // GraalPy change: different header layout, no GC link
+        ((PyObject **)alloc)[0] = NULL;
+    }
     memset(obj, '\0', size);
 
     if (type->tp_itemsize == 0) {

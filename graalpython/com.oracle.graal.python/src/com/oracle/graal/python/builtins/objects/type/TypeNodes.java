@@ -69,6 +69,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IMMUTABLET
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IS_ABSTRACT;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LIST_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LONG_SUBCLASS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MANAGED_DICT;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MAPPING;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.METHOD_DESCRIPTOR;
@@ -313,6 +314,10 @@ public abstract class TypeNodes {
 
             if (clazz.isAbstractClass()) {
                 result |= IS_ABSTRACT;
+            }
+
+            if ((clazz.getInstanceShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0) {
+                result |= MANAGED_DICT;
             }
 
             PythonContext context = PythonContext.get(this);
@@ -1390,21 +1395,20 @@ public abstract class TypeNodes {
                     return tSize != bSize || tItemSize != bItemSize;
                 }
 
-                if ((GetTypeFlagsNode.executeUncached(type) & HEAPTYPE) != 0) {
-                    long tDictOffset = GetDictOffsetNode.executeUncached(type);
-                    long bDictOffset = GetDictOffsetNode.executeUncached(base);
-                    long tWeakListOffset = GetWeakListOffsetNode.executeUncached(type);
-                    long bWeakListOffset = GetWeakListOffsetNode.executeUncached(base);
-                    if (tWeakListOffset != 0 && bWeakListOffset == 0 && tWeakListOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                        tSize -= SIZEOF_PY_OBJECT_PTR;
-                    }
-                    if (tDictOffset != 0 && bDictOffset == 0 && tDictOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                        tSize -= SIZEOF_PY_OBJECT_PTR;
-                    }
-                    // Check weaklist again in case it precedes dict
-                    if (tWeakListOffset != 0 && bWeakListOffset == 0 && tWeakListOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
-                        tSize -= SIZEOF_PY_OBJECT_PTR;
-                    }
+                long flags = GetTypeFlagsNode.executeUncached(type);
+                long tDictOffset = GetDictOffsetNode.executeUncached(type);
+                long bDictOffset = GetDictOffsetNode.executeUncached(base);
+                long tWeakListOffset = GetWeakListOffsetNode.executeUncached(type);
+                long bWeakListOffset = GetWeakListOffsetNode.executeUncached(base);
+                if (tWeakListOffset != 0 && bWeakListOffset == 0 && tWeakListOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
+                    tSize -= SIZEOF_PY_OBJECT_PTR;
+                }
+                if ((flags & MANAGED_DICT) == 0 && tDictOffset != 0 && bDictOffset == 0 && tDictOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
+                    tSize -= SIZEOF_PY_OBJECT_PTR;
+                }
+                // Check weaklist again in case it precedes dict
+                if (tWeakListOffset != 0 && bWeakListOffset == 0 && tWeakListOffset + SIZEOF_PY_OBJECT_PTR == tSize) {
+                    tSize -= SIZEOF_PY_OBJECT_PTR;
                 }
 
                 return tSize != bSize;
@@ -2579,6 +2583,8 @@ public abstract class TypeNodes {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class GetDictOffsetNode extends Node {
+        private static final long MANAGED_DICT_OFFSET = -8;
+
         public abstract long execute(Node inliningTarget, Object cls);
 
         public static long executeUncached(Object cls) {
@@ -2587,8 +2593,13 @@ public abstract class TypeNodes {
 
         @Specialization
         static long lookup(Object cls,
+                        @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
                         @Cached(inline = false) CExtNodes.LookupNativeI64MemberFromBaseNode lookup) {
-            return lookup.execute(cls, PyTypeObject__tp_dictoffset, DICTOFFSET, GetDictOffsetNode::getBuiltinDictoffset);
+            long result = lookup.execute(cls, PyTypeObject__tp_dictoffset, DICTOFFSET, GetDictOffsetNode::getBuiltinDictoffset);
+            if (result == 0 && (getTypeFlagsNode.execute(cls) & TypeFlags.MANAGED_DICT) != 0) {
+                return MANAGED_DICT_OFFSET;
+            }
+            return result;
         }
 
         private static int getBuiltinDictoffset(PythonBuiltinClassType cls) {
