@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static java.util.stream.Collectors.summingLong;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -78,8 +79,8 @@ public final class CApiTiming {
 
     private final String name;
     private final boolean fromJava;
-    private long time;
-    private long count;
+    private final AtomicLong time = new AtomicLong();
+    private final AtomicLong count = new AtomicLong();
 
     private CApiTiming(boolean fromJava, String name) {
         this.fromJava = fromJava;
@@ -127,18 +128,18 @@ public final class CApiTiming {
         sorted.sort((a, b) -> Boolean.compare(a.fromJava, b.fromJava) * 100 + a.name.compareTo(b.name));
         System.out.println("======================================================================");
         System.out.printf("%70s  %8s %10s\n", "Name:", "Count:", "Time:");
-        long totalCount = sorted.stream().collect(summingLong(e -> e.count));
-        long totalTime = sorted.stream().collect(summingLong(e -> e.time));
-        long cutoffTime = getCutoff(totalTime, sorted.stream().map(e -> e.time));
-        long cutoffCount = getCutoff(totalCount, sorted.stream().map(e -> e.count));
+        long totalCount = sorted.stream().collect(summingLong(e -> e.count.get()));
+        long totalTime = sorted.stream().collect(summingLong(e -> e.time.get()));
+        long cutoffTime = getCutoff(totalTime, sorted.stream().map(e -> e.time.get()));
+        long cutoffCount = getCutoff(totalCount, sorted.stream().map(e -> e.count.get()));
         long percent = totalTime / 100;
         long visibleCount = 0;
         long visibleTime = 0;
         for (var e : sorted) {
-            if (e.time >= cutoffTime || e.count >= cutoffCount) {
-                System.out.printf("%70s  %8s %8sms %s\n", e.name, e.count, e.time / 1000000, stars(percent, e.time));
-                visibleCount += e.count;
-                visibleTime += e.time;
+            if (e.time.get() >= cutoffTime || e.count.get() >= cutoffCount) {
+                System.out.printf("%70s  %8s %8sms %s\n", e.name, e.count, e.time.get() / 1000000, stars(percent, e.time.get()));
+                visibleCount += e.count.get();
+                visibleTime += e.time.get();
             }
         }
         System.out.printf("%70s  %8s %8sms %s\n", "Others:", (totalCount - visibleCount), (totalTime - visibleTime) / 1000000, stars(percent, totalTime - visibleTime));
@@ -201,10 +202,10 @@ public final class CApiTiming {
         TimingStack stack = STACK.get();
         long startTime = stack.startTimes[--stack.sp];
         long delta = System.nanoTime() - startTime;
-        t.time += delta - stack.subTimes[stack.sp];
+        t.time.addAndGet(delta - stack.subTimes[stack.sp]);
         if (stack.sp > 0) {
             stack.subTimes[stack.sp - 1] += delta;
         }
-        t.count++;
+        t.count.getAndIncrement();
     }
 }

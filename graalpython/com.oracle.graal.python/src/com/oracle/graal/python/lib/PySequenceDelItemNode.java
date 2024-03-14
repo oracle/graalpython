@@ -45,11 +45,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctio
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -57,7 +57,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -76,7 +75,6 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateInline(false) // One lazy usage, one eager usage => not worth it
 @GenerateUncached
 public abstract class PySequenceDelItemNode extends Node {
-    // todo: fa [GR-51456]
     private static final NativeCAPISymbol SYMBOL = NativeCAPISymbol.FUN_PY_SEQUENCE_DEL_ITEM;
     private static final CApiTiming C_API_TIMING = CApiTiming.create(true, SYMBOL.getName());
 
@@ -112,9 +110,8 @@ public abstract class PySequenceDelItemNode extends Node {
     static Object doNative(VirtualFrame frame, PythonAbstractNativeObject object, int index,
                     @Bind("this") Node inliningTarget,
                     @Cached CApiTransitions.PythonToNativeNode toNativeNode,
-                    @Cached CExtCommonNodes.ImportCExtSymbolNode importCExtSymbolNode,
                     @Cached ExternalFunctionNodes.ExternalFunctionInvokeNode invokeNode) {
-        Object executable = importCExtSymbolNode.execute(inliningTarget, PythonContext.get(inliningTarget).getCApiContext(), SYMBOL);
+        Object executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
         return invokeNode.execute(frame, DELITEM, C_API_TIMING, SYMBOL.getTsName(), executable, new Object[]{toNativeNode.execute(object), index});
     }
 }

@@ -45,11 +45,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctio
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -59,7 +59,6 @@ import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -80,7 +79,6 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateInline(value = false)
 @GenerateUncached
 public abstract class PySequenceSizeNode extends Node {
-    // todo: fa [GR-51456]
     private static final NativeCAPISymbol SYMBOL = NativeCAPISymbol.FUN_PY_SEQUENCE_SIZE;
     private static final CApiTiming C_API_TIMING = CApiTiming.create(true, SYMBOL.getName());
 
@@ -127,9 +125,8 @@ public abstract class PySequenceSizeNode extends Node {
     static long doNative(VirtualFrame frame, PythonAbstractNativeObject object,
                     @Bind("this") Node inliningTarget,
                     @Cached CApiTransitions.PythonToNativeNode toNativeNode,
-                    @Cached CExtCommonNodes.ImportCExtSymbolNode importCExtSymbolNode,
                     @Cached ExternalFunctionNodes.ExternalFunctionInvokeNode invokeNode) {
-        Object executable = importCExtSymbolNode.execute(inliningTarget, PythonContext.get(inliningTarget).getCApiContext(), SYMBOL);
+        Object executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
         Object size = invokeNode.execute(frame, LENFUNC, C_API_TIMING, SYMBOL.getTsName(), executable, new Object[]{toNativeNode.execute(object)});
         assert PGuards.isInteger(size);
         return (long) size;

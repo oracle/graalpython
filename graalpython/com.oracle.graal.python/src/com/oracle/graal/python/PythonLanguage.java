@@ -364,9 +364,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;
 
-    /** A shared shape for the C symbol cache (lazily initialized). */
-    private Shape cApiSymbolCache;
-
     /** For fast access to the PythonThreadState object by the owning thread. */
     private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
 
@@ -982,17 +979,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             builtinTypeInstanceShapes[ordinal] = shape;
         }
         return shape;
-    }
-
-    /**
-     * Returns the shape used for the C API symbol cache.
-     */
-    @TruffleBoundary
-    public synchronized Shape getCApiSymbolCacheShape() {
-        if (cApiSymbolCache == null) {
-            cApiSymbolCache = Shape.newBuilder().build();
-        }
-        return cApiSymbolCache;
     }
 
     /**

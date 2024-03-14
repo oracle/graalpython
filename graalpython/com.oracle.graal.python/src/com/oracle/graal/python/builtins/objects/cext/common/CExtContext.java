@@ -89,8 +89,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
@@ -127,9 +125,6 @@ public abstract class CExtContext {
 
     /** The LLVM bitcode library object representing 'libpython.*.so' or similar. */
     private final Object llvmLibrary;
-
-    /** A cache for C symbols. */
-    private DynamicObject symbolCache;
 
     /**
      * The native API implementation was loaded as native code (as opposed to bitcode via Sulong).
@@ -185,21 +180,6 @@ public abstract class CExtContext {
     public static boolean isClassOrStaticMethod(int flags) {
         return flags > 0 && (flags & (METH_CLASS | METH_STATIC)) != 0;
     }
-
-    public static final class Store extends DynamicObject {
-        public Store(Shape shape) {
-            super(shape);
-        }
-    }
-
-    public final DynamicObject getSymbolCache() {
-        if (symbolCache == null) {
-            symbolCache = initializeSymbolCache();
-        }
-        return symbolCache;
-    }
-
-    protected abstract Store initializeSymbolCache();
 
     /**
      * A simple helper object that just remembers the name and the path of the original module spec
