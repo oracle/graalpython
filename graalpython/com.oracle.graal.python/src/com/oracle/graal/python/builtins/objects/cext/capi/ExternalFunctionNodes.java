@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCha
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ReleaseNativeWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ExternalFunctionInvokeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeSequenceStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
@@ -143,6 +144,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -820,33 +822,21 @@ public abstract class ExternalFunctionNodes {
      * Like {@link com.oracle.graal.python.nodes.call.FunctionInvokeNode} but invokes a C function.
      */
     @GenerateUncached
-    @GenerateInline(false)
+    @GenerateCached(false)
+    @GenerateInline
     public abstract static class ExternalFunctionInvokeNode extends PNodeWithContext {
-        public abstract Object execute(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments);
 
-        static CheckFunctionResultNode createCheckResultNode(PExternalFunctionWrapper provider) {
-            CheckFunctionResultNode node = provider.createCheckFunctionResultNode();
-            return node != null ? node : DefaultCheckFunctionResultNodeGen.create();
+        public final Object call(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable,
+                        Object... cArguments) {
+            return execute(frame, inliningTarget, ctx, threadState, timing, name, callable, cArguments);
         }
 
-        static CheckFunctionResultNode getUncachedCheckResultNode(PExternalFunctionWrapper provider) {
-            CheckFunctionResultNode node = provider.getUncachedCheckFunctionResultNode();
-            return node != null ? node : DefaultCheckFunctionResultNodeGen.getUncached();
-        }
-
-        @Specialization(guards = {"provider == cachedProvider"}, limit = "1")
-        static Object invoke(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("provider") PExternalFunctionWrapper cachedProvider,
-                        @Cached(value = "createCheckResultNode(provider)", uncached = "getUncachedCheckResultNode(provider)") CheckFunctionResultNode checkResultNode,
-                        @Cached(value = "provider.createConvertRetNode()", uncached = "provider.getUncachedConvertRetNode()") CExtToJavaNode convertReturnValue,
-                        @Cached PForeignToPTypeNode fromForeign,
-                        @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached GilNode gilNode,
+        @Specialization
+        static Object invoke(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
+                        @Cached(inline = false) GilNode gilNode,
                         @Cached(value = "createFor(this)", uncached = "getUncached()") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "2") InteropLibrary lib) {
-            PythonContext ctx = PythonContext.get(inliningTarget);
-            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
@@ -854,12 +844,7 @@ public abstract class ExternalFunctionNodes {
 
             CApiTiming.enter();
             try {
-                Object result = lib.execute(callable, cArguments);
-                result = checkResultNode.execute(threadState, name, result);
-                if (convertReturnValue != null) {
-                    result = convertReturnValue.execute(result);
-                }
-                return fromForeign.executeConvert(result);
+                return lib.execute(callable, cArguments);
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
@@ -873,7 +858,7 @@ public abstract class ExternalFunctionNodes {
                  * extensions are releasing the GIL and if then an LLVM exception occurs, C code
                  * wouldn't re-acquire it (unexpectedly).
                  */
-                gilNode.acquire();
+                gilNode.acquire(ctx);
 
                 /*
                  * Special case after calling a C function: transfer caught exception back to frame
@@ -885,14 +870,73 @@ public abstract class ExternalFunctionNodes {
                 IndirectCallContext.exit(frame, threadState, state);
             }
         }
+    }
+
+    /**
+     * Wraps {@link ExternalFunctionInvokeNode} with result checking and conversion according to the
+     * passed {@link PExternalFunctionWrapper}. This node assumes that the provider argument is in
+     * the cached case a PE constant.
+     */
+    @GenerateInline(false)
+    public abstract static class ExternalFunctionWrapperInvokeNode extends PNodeWithContext {
+        public abstract Object execute(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments);
 
         @NeverDefault
-        public static ExternalFunctionInvokeNode create() {
-            return ExternalFunctionNodesFactory.ExternalFunctionInvokeNodeGen.create();
+        static CheckFunctionResultNode createCheckResultNode(PExternalFunctionWrapper provider) {
+            CheckFunctionResultNode node = provider.createCheckFunctionResultNode();
+            return node != null ? node : DefaultCheckFunctionResultNodeGen.create();
         }
 
-        public static ExternalFunctionInvokeNode getUncached() {
-            return ExternalFunctionNodesFactory.ExternalFunctionInvokeNodeGen.getUncached();
+        static CheckFunctionResultNode getUncachedCheckResultNode(PExternalFunctionWrapper provider) {
+            CheckFunctionResultNode node = provider.getUncachedCheckFunctionResultNode();
+            return node != null ? node : DefaultCheckFunctionResultNodeGen.getUncached();
+        }
+
+        @Specialization
+        static Object invokeCached(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
+                        @Bind("this") Node inliningTarget,
+                        @Cached("createCheckResultNode(provider)") CheckFunctionResultNode checkResultNode,
+                        @SuppressWarnings("truffle-neverdefault") @Cached("provider.createConvertRetNode()") CExtToJavaNode convertReturnValue,
+                        @Cached PForeignToPTypeNode fromForeign,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached ExternalFunctionInvokeNode invokeNode) {
+            CompilerAsserts.partialEvaluationConstant(provider);
+            PythonContext ctx = PythonContext.get(inliningTarget);
+            return invoke(frame, ctx, timing, name, callable, cArguments, inliningTarget, checkResultNode, convertReturnValue, fromForeign, getThreadStateNode, invokeNode);
+        }
+
+        private static Object invoke(VirtualFrame frame, PythonContext ctx, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments, Node inliningTarget,
+                        CheckFunctionResultNode checkResultNode, CExtToJavaNode convertReturnValue, PForeignToPTypeNode fromForeign, GetThreadStateNode getThreadStateNode,
+                        ExternalFunctionInvokeNode invokeNode) {
+            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
+            Object result = invokeNode.execute(frame, inliningTarget, ctx, threadState, timing, name, callable, cArguments);
+            result = checkResultNode.execute(threadState, name, result);
+            if (convertReturnValue != null) {
+                result = convertReturnValue.execute(result);
+            }
+            return fromForeign.executeConvert(result);
+        }
+
+        @GenerateCached(false)
+        private static final class ExternalFunctionWrapperInvokeNodeUncached extends ExternalFunctionWrapperInvokeNode {
+            private static final ExternalFunctionWrapperInvokeNodeUncached INSTANCE = new ExternalFunctionWrapperInvokeNodeUncached();
+
+            @Override
+            public Object execute(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                PythonContext ctx = PythonContext.get(null);
+                return invoke(frame, ctx, timing, name, callable, cArguments, null, getUncachedCheckResultNode(provider), provider.getUncachedConvertRetNode(), PForeignToPTypeNode.getUncached(),
+                                GetThreadStateNode.getUncached(), ExternalFunctionInvokeNodeGen.getUncached());
+            }
+        }
+
+        @NeverDefault
+        public static ExternalFunctionWrapperInvokeNode create() {
+            return ExternalFunctionNodesFactory.ExternalFunctionWrapperInvokeNodeGen.create();
+        }
+
+        public static ExternalFunctionWrapperInvokeNode getUncached() {
+            return ExternalFunctionWrapperInvokeNodeUncached.INSTANCE;
         }
     }
 
@@ -901,7 +945,7 @@ public abstract class ExternalFunctionNodes {
         private final CApiTiming timing;
         @Child private CalleeContext calleeContext = CalleeContext.create();
         @Child private CallVarargsMethodNode invokeNode;
-        @Child private ExternalFunctionInvokeNode externalInvokeNode;
+        @Child private ExternalFunctionWrapperInvokeNode externalInvokeNode;
         @Child private ReadIndexedArgumentNode readSelfNode;
         @Child private ReadIndexedArgumentNode readCallableNode;
         @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
@@ -920,7 +964,7 @@ public abstract class ExternalFunctionNodes {
             this.timing = CApiTiming.create(true, name);
             this.provider = provider;
             if (provider != null) {
-                this.externalInvokeNode = ExternalFunctionInvokeNode.create();
+                this.externalInvokeNode = ExternalFunctionWrapperInvokeNode.create();
                 this.convertArgs = provider.createConvertArgNodes();
             } else {
                 this.invokeNode = CallVarargsMethodNode.create();

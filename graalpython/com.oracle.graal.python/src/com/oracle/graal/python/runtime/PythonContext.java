@@ -159,6 +159,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
+import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
@@ -611,6 +612,10 @@ public final class PythonContext extends Python3Core {
     @GenerateUncached
     @GenerateInline(inlineByDefault = true)
     public abstract static class GetThreadStateNode extends Node {
+
+        public static GetThreadStateNode getUncached() {
+            return GetThreadStateNodeGen.getUncached();
+        }
 
         public abstract PythonThreadState execute(Node inliningTarget, PythonContext context);
 
