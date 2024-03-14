@@ -71,9 +71,9 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -121,8 +121,12 @@ public class CStructAccess {
             return execute(1, size, allocatePyMem);
         }
 
-        @Idempotent
-        protected boolean nativeAccess() {
+        /*
+         * This guard is nonIdempotent because 'isNativeAccessAllowed' may be different for each
+         * context.
+         */
+        @NonIdempotent
+        final boolean nativeAccess() {
             return PythonContext.get(this).isNativeAccessAllowed();
         }
 
