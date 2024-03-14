@@ -1004,7 +1004,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected void exitContext(PythonContext context, ExitMode exitMode, int exitCode) {
         if (context.getCApiContext() != null) {
-            context.getCApiContext().finalizeCapi();
+            context.getCApiContext().exitCApiContext();
         }
         if (!PythonOptions.WITHOUT_PLATFORM_ACCESS && !ImageInfo.inImageBuildtimeCode()) {
             // Reset signal handlers back to what they were

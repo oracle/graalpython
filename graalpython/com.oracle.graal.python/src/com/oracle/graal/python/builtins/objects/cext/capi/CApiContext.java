@@ -81,7 +81,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -124,6 +123,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -429,11 +429,10 @@ public final class CApiContext extends CExtContext {
      * must therefore be explicitly free'd. This method modifies the
      * {@link HandleContext#nativeStubLookup stub lookup table} but runs not guest code.
      */
-    private void freeSingletonNativeWrappers() {
+    private void freeSingletonNativeWrappers(HandleContext handleContext) {
         CompilerAsserts.neverPartOfCompilation();
         // TODO(fa): this should not require the GIL (GR-51314)
         assert getContext().ownsGil();
-        HandleContext nativeContext = getContext().nativeContext;
         for (int i = 0; i < singletonNativePtrs.length; i++) {
             PythonAbstractObjectNativeWrapper singletonNativeWrapper = singletonNativePtrs[i];
             singletonNativePtrs[i] = null;
@@ -441,7 +440,7 @@ public final class CApiContext extends CExtContext {
             assert getSingletonNativeWrapperIdx(singletonNativeWrapper.getDelegate()) != -1;
             assert !singletonNativeWrapper.isNative() || singletonNativeWrapper.getRefCount() == IMMORTAL_REFCNT;
             if (singletonNativeWrapper.ref != null) {
-                CApiTransitions.nativeStubLookupRemove(nativeContext, singletonNativeWrapper.ref);
+                CApiTransitions.nativeStubLookupRemove(handleContext, singletonNativeWrapper.ref);
             }
             PyTruffleObjectFree.releaseNativeWrapperUncached(singletonNativeWrapper);
         }
@@ -485,7 +484,7 @@ public final class CApiContext extends CExtContext {
      * must therefore be explicitly free'd. This method modifies the
      * {@link HandleContext#nativeStubLookup stub lookup table} but runs not guest code.
      */
-    private void freeSmallInts() {
+    private void freeSmallInts(HandleContext handleContext) {
         CompilerAsserts.neverPartOfCompilation();
         // TODO(fa): this should not require the GIL (GR-51314)
         assert getContext().ownsGil();
@@ -495,12 +494,11 @@ public final class CApiContext extends CExtContext {
             FreeNode.executeUncached(nativeSmallIntsArray);
             nativeSmallIntsArray = null;
         }
-        HandleContext nativeContext = getContext().nativeContext;
         for (PrimitiveNativeWrapper wrapper : primitiveNativeWrapperCache) {
             assert wrapper.isIntLike() && CApiGuards.isSmallLong(wrapper.getLong());
             assert !wrapper.isNative() || wrapper.getRefCount() == IMMORTAL_REFCNT;
             if (wrapper.ref != null) {
-                CApiTransitions.nativeStubLookupRemove(nativeContext, wrapper.ref);
+                CApiTransitions.nativeStubLookupRemove(handleContext, wrapper.ref);
             }
             PyTruffleObjectFree.releaseNativeWrapperUncached(wrapper);
         }
@@ -897,28 +895,63 @@ public final class CApiContext extends CExtContext {
         }
     }
 
-    @TruffleBoundary
-    @SuppressWarnings("try")
-    public void finalizeCapi() {
+    /**
+     * This method is called to exit the context assuming a
+     * {@link com.oracle.truffle.api.TruffleLanguage.ExitMode#NATURAL natural exit}. This means, it
+     * is allowed to run guest code. Hence, we deallocate any reachable native object here since
+     * they may have custom {@code tp_dealloc} functions.
+     */
+    public void exitCApiContext() {
+        CompilerAsserts.neverPartOfCompilation();
+        /*
+         * Polling the native reference queue is the only task we can do here because deallocating
+         * objects may run arbitrary guest code that can again call into the interpreter.
+         */
+        CApiTransitions.pollReferenceQueue();
+        /*
+         * Deallocating native storages and objects may run arbitrary guest code. So, we need to
+         * ensure that the GIL is held.
+         */
+        try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
+            CApiTransitions.deallocateNativeWeakRefs(getContext());
+        }
+    }
+
+    public void finalizeCApi() {
+        CompilerAsserts.neverPartOfCompilation();
+        HandleContext handleContext = getContext().nativeContext;
         /*
          * Disable reference queue polling because during finalization, we will free any known
          * allocated resources (e.g. native object stubs). Calling
          * 'CApiTransitions.pollReferenceQueue' could then lead to a double-free.
          */
-        CApiTransitions.disableReferenceQueuePolling(getContext().nativeContext);
-        // TODO(fa): remove GIL acquisition (GR-51314)
-        try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
-            freeSmallInts();
-            freeSingletonNativeWrappers();
-            /*
-             * Clear all remaining native object stubs. This must be done after the small int and
-             * the singleton wrappers were cleared because they might also end up in the lookup
-             * table and may otherwise be double-free'd.
-             */
-            freeNativeObjectStubs();
-        }
-        if (pyDateTimeCAPICapsule != null) {
-            PyDateTimeCAPIWrapper.destroyWrapper(pyDateTimeCAPICapsule);
+        CApiTransitions.disableReferenceQueuePolling(handleContext);
+
+        TruffleSafepoint sp = TruffleSafepoint.getCurrent();
+        boolean prev = sp.setAllowActions(false);
+        try {
+            // TODO(fa): remove GIL acquisition (GR-51314)
+            try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
+                freeSmallInts(handleContext);
+                freeSingletonNativeWrappers(handleContext);
+                /*
+                 * Clear all remaining native object stubs. This must be done after the small int
+                 * and the singleton wrappers were cleared because they might also end up in the
+                 * lookup table and may otherwise be double-freed.
+                 */
+                CApiTransitions.freeNativeObjectStubs(handleContext);
+                CApiTransitions.freeClassReplacements(handleContext);
+                CApiTransitions.freeNativeStorages(handleContext);
+            }
+            if (pyDateTimeCAPICapsule != null) {
+                PyDateTimeCAPIWrapper.destroyWrapper(pyDateTimeCAPICapsule);
+            }
+            // free all allocated PyMethodDef structures
+            for (Object pyMethodDefPointer : methodDefinitions.values()) {
+                PyMethodDefHelper.free(pyMethodDefPointer);
+            }
+        } finally {
+            sp.setAllowActions(prev);
         }
         if (nativeFinalizerShutdownHook != null) {
             try {
@@ -929,10 +962,6 @@ public final class CApiContext extends CExtContext {
             }
         }
         pyCFunctionWrappers.clear();
-        // free all allocated PyMethodDef structures
-        for (Object pyMethodDefPointer : methodDefinitions.values()) {
-            PyMethodDefHelper.free(pyMethodDefPointer);
-        }
         /*
          * If the static symbol cache is not null, then it is guaranteed that this context instance
          * was the exclusive user of it. We can now reset the state such that other contexts created
@@ -942,21 +971,6 @@ public final class CApiContext extends CExtContext {
             if (CApiContext.nativeSymbolCacheSingleContext != null) {
                 CApiContext.nativeSymbolCacheSingleContext = null;
                 CApiContext.nativeSymbolCacheSingleContextUsed = false;
-            }
-        }
-    }
-
-    /**
-     * Deallocates any native object stub that is still reachable via the
-     * {@link HandleContext#nativeStubLookup lookup table}. This method modifies the
-     * {@link HandleContext#nativeStubLookup stub lookup table} but runs not guest code.
-     */
-    private void freeNativeObjectStubs() {
-        HandleContext nativeContext = getContext().nativeContext;
-        for (PythonObjectReference ref : nativeContext.nativeStubLookup) {
-            if (ref != null) {
-                CApiTransitions.nativeStubLookupRemove(nativeContext, ref);
-                CApiTransitions.freeNativeStub(ref);
             }
         }
     }

@@ -79,8 +79,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.HandleStack;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.AllocateNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -343,20 +343,13 @@ public abstract class CApiTransitions {
                 ReferenceQueue<Object> queue = context.referenceQueue;
                 int count = 0;
                 long start = 0;
-                NativeObjectReferenceArrayWrapper referencesToBeFreed = getContext().referencesToBeFreed;
+                NativeObjectReferenceArrayWrapper referencesToBeFreed = context.referencesToBeFreed;
                 while (true) {
                     Object entry = queue.poll();
                     if (entry == null) {
                         if (count > 0) {
                             assert context.referenceQueuePollActive;
-                            if (!referencesToBeFreed.isEmpty()) {
-                                LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", referencesToBeFreed.getArraySize()));
-                                Object array = CStructAccessFactory.AllocateNodeGen.getUncached().alloc(referencesToBeFreed.getArraySize() * Long.BYTES);
-                                CStructAccessFactory.WriteLongNodeGen.getUncached().writeLongArray(array, referencesToBeFreed.getArray(), (int) referencesToBeFreed.getArraySize(), 0, 0);
-                                PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_BULK_DEALLOC, array, referencesToBeFreed.getArraySize());
-                                CStructAccessFactory.FreeNodeGen.getUncached().free(array);
-                                referencesToBeFreed.reset();
-                            }
+                            releaseNativeObjects(referencesToBeFreed);
                             context.referenceQueuePollActive = false;
                             LOGGER.fine("collected " + count + " references from native reference queue in " + ((System.nanoTime() - start) / 1000000) + "ms");
                         }
@@ -399,30 +392,90 @@ public abstract class CApiTransitions {
                             nativeLookupRemove(context, reference.pointer);
                         }
                     } else if (entry instanceof NativeObjectReference reference) {
-                        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
                         nativeLookupRemove(context, reference.pointer);
-                        if (subNativeRefCount(reference.pointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
-                            referencesToBeFreed.add(reference.pointer);
-                        }
+                        processNativeObjectReference(reference, referencesToBeFreed);
                     } else if (entry instanceof NativeStorageReference reference) {
-                        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
-                        context.nativeStorageReferences.remove(entry);
-                        if (reference.type == ListStorageType.Generic) {
-                            PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_RELEASE, reference.ptr, reference.size);
-                        }
-                        CStructAccessFactory.FreeNodeGen.getUncached().free(reference.ptr);
+                        context.nativeStorageReferences.remove(reference);
+                        processNativeStorageReference(reference);
                     }
                 }
             }
         }
     }
 
-    public static void disableReferenceQueuePolling(HandleContext handleContext) {
-        handleContext.referenceQueuePollActive = true;
+    /**
+     * Subtracts {@link PythonAbstractObjectNativeWrapper#MANAGED_REFCNT} from the object's
+     * reference count and if it is then {@code 0}, it puts the pointer into the list of references
+     * to be freed. Therefore, this method neither frees any native memory nor runs any object
+     * destructor (guest code).
+     */
+    private static void processNativeObjectReference(NativeObjectReference reference, NativeObjectReferenceArrayWrapper referencesToBeFreed) {
+        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
+        if (subNativeRefCount(reference.pointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
+            referencesToBeFreed.add(reference.pointer);
+        }
     }
 
-    public static boolean isReferenceQueuePollingDisabled(HandleContext handleContext) {
-        return handleContext.referenceQueuePollActive;
+    /**
+     * Calls function {@link NativeCAPISymbol#FUN_PY_TRUFFLE_OBJECT_ARRAY_RELEASE} to decrement the
+     * reference counts of the stored objects by one and frees the native array. Therefore, this
+     * operation may run guest code because if the stored objects where exclusively owned by this
+     * storage, then they will be freed by calling the element object's destructor.
+     */
+    private static void processNativeStorageReference(NativeStorageReference reference) {
+        if (reference.type == ListStorageType.Generic) {
+            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_RELEASE, reference.ptr, reference.size);
+        }
+        freeNativeStorage(reference);
+    }
+
+    /**
+     * Deallocates all objects in the given collection by calling {@code _Py_Dealloc} for each
+     * element. This method may therefore run arbitrary guest code and strictly requires the GIL to
+     * be held at the time of invocation.
+     */
+    private static void releaseNativeObjects(NativeObjectReferenceArrayWrapper referencesToBeFreed) {
+        if (!referencesToBeFreed.isEmpty()) {
+            /*
+             * This needs the GIL because this will call the native objects' destructors which can
+             * be arbitrary guest code.
+             */
+            assert PythonContext.get(null).ownsGil();
+            LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", referencesToBeFreed.getArraySize()));
+            Object array = AllocateNode.allocUncached(referencesToBeFreed.getArraySize() * Long.BYTES);
+            CStructAccess.WriteLongNode.getUncached().writeLongArray(array, referencesToBeFreed.getArray(), (int) referencesToBeFreed.getArraySize(), 0, 0);
+            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_BULK_DEALLOC, array, referencesToBeFreed.getArraySize());
+            FreeNode.executeUncached(array);
+            referencesToBeFreed.reset();
+        }
+    }
+
+    public static void freeClassReplacements(HandleContext handleContext) {
+        assert PythonContext.get(null).ownsGil();
+        handleContext.nativeLookup.forEach((l, ref) -> {
+            if (ref instanceof PythonObjectReference reference) {
+                /*
+                 * If a PythonObjectReference is in this table, it either refers to an object that
+                 * is backed by static native memory (e.g. static PyTypeObject), or it refers to
+                 * some non-object structure (e.g. PyThreadState). In any case, the objects are
+                 * immutable and so the references are expected to be strong.
+                 */
+                assert reference.strongReference != null;
+                assert reference.handleTableIndex == -1;
+                /*
+                 * TODO(fa): For classes, distinguish between static and heap memory.
+                 *
+                 * The ref may denote class wrappers where some of them are backed by static native
+                 * memory and some of them were allocated in heap. There is currently no reliable
+                 * way to distinguish them and so we leak the heap types.
+                 */
+            }
+        });
+        handleContext.nativeLookup.clear();
+    }
+
+    public static void disableReferenceQueuePolling(HandleContext handleContext) {
+        handleContext.referenceQueuePollActive = true;
     }
 
     private static void freeNativeStub(long stubPointer) {
@@ -430,9 +483,44 @@ public abstract class CApiTransitions {
         FreeNode.executeUncached(stubPointer);
     }
 
-    public static void freeNativeStub(PythonObjectReference ref) {
+    private static void freeNativeStub(PythonObjectReference ref) {
         assert HandlePointerConverter.pointsToPyHandleSpace(ref.pointer);
         freeNativeStub(HandlePointerConverter.pointerToStub(ref.pointer));
+    }
+
+    private static void freeNativeStorage(NativeStorageReference ref) {
+        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref.toString()));
+        FreeNode.executeUncached(ref.ptr);
+    }
+
+    /**
+     * Deallocates any native object stub that is still reachable via the
+     * {@link HandleContext#nativeStubLookup lookup table}. This method modifies the
+     * {@link HandleContext#nativeStubLookup stub lookup table} but runs no guest code.
+     */
+    public static void freeNativeObjectStubs(HandleContext handleContext) {
+        // TODO(fa): this should not require the GIL (GR-51314)
+        assert PythonContext.get(null).ownsGil();
+        assert PythonContext.get(null).isFinalizing();
+        for (PythonObjectReference ref : handleContext.nativeStubLookup) {
+            if (ref != null) {
+                nativeStubLookupRemove(handleContext, ref);
+                freeNativeStub(ref);
+            }
+        }
+    }
+
+    /**
+     * Frees any native storage registered in {@link HandleContext#nativeStorageReferences}. This
+     * doesn't decref the contained objects because that could run arbitrary guest code which is not
+     * allowed here.
+     */
+    public static void freeNativeStorages(HandleContext handleContext) {
+        // TODO(fa): this should not require the GIL (GR-51314)
+        assert PythonContext.get(null).ownsGil();
+        assert PythonContext.get(null).isFinalizing();
+        handleContext.nativeStorageReferences.forEach(CApiTransitions::freeNativeStorage);
+        handleContext.nativeStorageReferences.clear();
     }
 
     /**
@@ -461,12 +549,14 @@ public abstract class CApiTransitions {
         }
     }
 
-    @TruffleBoundary
+    /**
+     * Deallocates any native weak reference that is still reachable via
+     * {@link HandleContext#nativeWeakRef}. This method then clears the table and will call
+     * {@link NativeCAPISymbol#FUN_SHUTDOWN_BULK_DEALLOC} which may run arbitrary guest code.
+     */
     public static void deallocateNativeWeakRefs(PythonContext pythonContext) {
-        if (!pythonContext.isFinalizing()) {
-            // We should avoid deallocation until exit.
-            return;
-        }
+        CompilerAsserts.neverPartOfCompilation();
+        assert pythonContext.ownsGil();
         HandleContext context = pythonContext.nativeContext;
         int idx = -1;
         Object[] list = context.nativeWeakRef.values().toArray();
@@ -479,18 +569,17 @@ public abstract class CApiTransitions {
         }
         if (idx != -1) {
             int len = idx + 1;
-            Object array = CStructAccessFactory.AllocateNodeGen.getUncached().alloc((long) len * Long.BYTES);
+            Object array = CStructAccess.AllocateNode.allocUncached((long) len * Long.BYTES);
             try {
-                CStructAccessFactory.WriteLongNodeGen.getUncached().writeLongArray(array, ptrArray, len, 0, 0);
+                CStructAccess.WritePointerNode.getUncached().writePointerArray(array, ptrArray, len, 0, 0);
                 CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_SHUTDOWN_BULK_DEALLOC, array, len);
             } finally {
-                CStructAccessFactory.FreeNodeGen.getUncached().free(array);
+                CStructAccess.FreeNode.executeUncached(array);
                 context.nativeWeakRef.clear();
             }
         }
-        if (context.nativeWeakRef.size() > 0) {
-            LOGGER.warning("Weak references have been added during shutdown!");
-        }
+        // we are holding the GIL; no one can create weakrefs concurrently
+        assert context.nativeWeakRef.isEmpty();
     }
 
     public static void maybeGCALot() {

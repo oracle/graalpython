@@ -68,7 +68,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.nio.file.LinkOption;
@@ -108,15 +107,12 @@ import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
@@ -2018,9 +2014,8 @@ public final class PythonContext extends Python3Core {
             finalizing = true;
             // interrupt and join or kill python threads
             joinThreads();
-            if (!cancelling) {
-                // this cleanup calls into Sulong
-                cleanupCApiResources();
+            if (cApiContext != null) {
+                cApiContext.finalizeCApi();
             }
             // destroy thread state data, if anything is still running, it will crash now
             disposeThreadStates();
@@ -2079,15 +2074,6 @@ public final class PythonContext extends Python3Core {
             ts.dispose(this);
         }
         threadStateMapping.clear();
-    }
-
-    /**
-     * Release all native wrappers of singletons. This function needs to run as long as the context
-     * is still valid because it may call into LLVM to release handles.
-     */
-    @TruffleBoundary
-    private void cleanupCApiResources() {
-        CApiTransitions.deallocateNativeWeakRefs(this);
     }
 
     private void cleanupHPyResources() {
