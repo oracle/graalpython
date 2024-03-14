@@ -54,6 +54,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.io.IOException;
 import java.nio.file.LinkOption;
 
+import org.graalvm.collections.Pair;
 import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
 import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
 
@@ -424,7 +425,9 @@ public abstract class CExtContext {
             boolean panama = PythonOptions.UsePanama.getValue(env.getOptions());
 
             assert sig.getSignature() != null && !sig.getSignature().isEmpty();
-            Object nfiSignature = env.parseInternal(Source.newBuilder("nfi", (panama ? "with panama " : "") + sig.getSignature(), sig.getName()).build()).call();
+            String src = (panama ? "with panama " : "") + sig.getSignature();
+            Source nfiSource = pythonContext.getLanguage().getOrCreateSource(CExtContext::buildNFISource, Pair.create(src, sig.getName()));
+            Object nfiSignature = env.parseInternal(nfiSource).call();
 
             /*
              * Since we mix native and LLVM execution, it happens that 'callable' is an LLVM pointer
@@ -447,5 +450,10 @@ public abstract class CExtContext {
         }
         // nothing to do
         return callable;
+    }
+
+    private static Source buildNFISource(Object key) {
+        Pair<?, ?> srcAndName = (Pair<?, ?>) key;
+        return Source.newBuilder(J_NFI_LANGUAGE, (String) srcAndName.getLeft(), (String) srcAndName.getRight()).build();
     }
 }
