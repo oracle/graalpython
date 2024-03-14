@@ -199,10 +199,15 @@ public class CStructAccess {
             UNSAFE.freeMemory(pointer);
         }
 
+        @Specialization
+        static void freeNativePointer(NativePointer pointer) {
+            UNSAFE.freeMemory(pointer.asPointer());
+        }
+
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static void freePointer(Object pointer,
                         @CachedLibrary("pointer") InteropLibrary lib) {
-            freeLong(asPointer(pointer, lib));
+            UNSAFE.freeMemory(asPointer(pointer, lib));
         }
 
         @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
