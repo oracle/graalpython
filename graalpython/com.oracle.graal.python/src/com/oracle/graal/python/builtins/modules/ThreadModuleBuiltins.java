@@ -230,8 +230,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment
             TruffleThreadBuilder threadBuilder = env.newTruffleThreadBuilder(() -> {
-                GilNode.UncachedAcquire gil = GilNode.uncachedAcquire();
-                try {
+                try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
                     // the increment is protected by the gil
                     int curCount = (int) HiddenAttr.ReadNode.executeUncached(threadModule, THREAD_COUNT, 0);
                     HiddenAttr.WriteNode.executeUncached(threadModule, THREAD_COUNT, curCount + 1);
@@ -252,8 +251,6 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         curCount = (int) HiddenAttr.ReadNode.executeUncached(threadModule, THREAD_COUNT, 1);
                         HiddenAttr.WriteNode.executeUncached(threadModule, THREAD_COUNT, curCount - 1);
                     }
-                } finally {
-                    gil.close();
                 }
             }).context(env.getContext()).threadGroup(context.getThreadGroup());
 

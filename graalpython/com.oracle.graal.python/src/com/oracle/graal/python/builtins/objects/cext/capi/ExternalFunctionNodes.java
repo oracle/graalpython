@@ -851,15 +851,17 @@ public abstract class ExternalFunctionNodes {
             } catch (ArityException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
-            } finally {
-                CApiTiming.exit(timing);
+            } catch (Throwable exception) {
                 /*
                  * Always re-acquire the GIL here. This is necessary because it could happen that C
                  * extensions are releasing the GIL and if then an LLVM exception occurs, C code
                  * wouldn't re-acquire it (unexpectedly).
                  */
-                gilNode.acquire(ctx);
-
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                GilNode.uncachedAcquire();
+                throw exception;
+            } finally {
+                CApiTiming.exit(timing);
                 /*
                  * Special case after calling a C function: transfer caught exception back to frame
                  * to simulate the global state semantics.
