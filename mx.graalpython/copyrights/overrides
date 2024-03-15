@@ -280,6 +280,7 @@ graalpython/com.oracle.graal.python.cext/modules/testcapi_long.h,python.copyrigh
 graalpython/com.oracle.graal.python.cext/modules/unicodedata_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodename_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/src/abstract.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/boolobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/bytesobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/bytearrayobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/call.c,python.copyright
