@@ -901,6 +901,7 @@ public final class CApiContext extends CExtContext {
      * is allowed to run guest code. Hence, we deallocate any reachable native object here since
      * they may have custom {@code tp_dealloc} functions.
      */
+    @SuppressWarnings("try")
     public void exitCApiContext() {
         CompilerAsserts.neverPartOfCompilation();
         /*
@@ -917,6 +918,7 @@ public final class CApiContext extends CExtContext {
         }
     }
 
+    @SuppressWarnings("try")
     public void finalizeCApi() {
         CompilerAsserts.neverPartOfCompilation();
         HandleContext handleContext = getContext().nativeContext;
