@@ -132,47 +132,6 @@ PyObject_GenericGetDict(PyObject *obj, void *context)
     return dict;
 }
 
-PyObject **
-_PyObject_DictPointer(PyObject *obj)
-{
-    Py_ssize_t dictoffset;
-    PyTypeObject *tp = Py_TYPE(obj);
-
-    if (tp->tp_flags & Py_TPFLAGS_MANAGED_DICT) {
-        return _PyObject_ManagedDictPointer(obj);
-    }
-    dictoffset = tp->tp_dictoffset;
-    if (dictoffset == 0)
-        return NULL;
-    if (dictoffset < 0) {
-        Py_ssize_t tsize = Py_SIZE(obj);
-        if (tsize < 0) {
-            tsize = -tsize;
-        }
-        size_t size = _PyObject_VAR_SIZE(tp, tsize);
-        assert(size <= (size_t)PY_SSIZE_T_MAX);
-        dictoffset += (Py_ssize_t)size;
-
-        _PyObject_ASSERT(obj, dictoffset > 0);
-        _PyObject_ASSERT(obj, dictoffset % SIZEOF_VOID_P == 0);
-    }
-    return (PyObject **) ((char *)obj + dictoffset);
-}
-
-/* Helper to get a pointer to an object's __dict__ slot, if any.
- * Creates the dict from inline attributes if necessary.
- * Does not set an exception.
- *
- * Note that the tp_dictoffset docs used to recommend this function,
- * so it should be treated as part of the public API.
- */
-PyObject **
-_PyObject_GetDictPtr(PyObject *obj)
-{
-    // GraalPy change: we don't have inlined managed dict values, so just use the common path
-    return _PyObject_DictPointer(obj);
-}
-
 /* Taken from CPython */
 int
 _PyDict_ContainsId(PyObject *op, struct _Py_Identifier *key)
