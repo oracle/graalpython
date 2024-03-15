@@ -130,15 +130,6 @@ typedef struct {
 CAPI_BUILTINS
 #undef BUILTIN
 
-#define CALL_WITH_STRING(STRING, RESULT_TYPE, ERR_RESULT, NAME, ...) \
-	PyObject* string = PyUnicode_FromString(STRING); \
-	if (string == NULL) { \
-		return ERR_RESULT; \
-	} \
-	RESULT_TYPE result = NAME(__VA_ARGS__); \
-	Py_DECREF(string); \
-	return result;
-
 #define GET_SLOT_SPECIAL(OBJ, RECEIVER, NAME, SPECIAL) ( points_to_py_handle_space(OBJ) ? GraalPy_get_##RECEIVER##_##NAME((RECEIVER*) (OBJ)) : ((RECEIVER*) (OBJ))->SPECIAL )
 
 PyAPI_DATA(uint32_t) Py_Truffle_Options;
