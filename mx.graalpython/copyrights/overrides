@@ -309,6 +309,7 @@ graalpython/com.oracle.graal.python.cext/src/typeobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodectype.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodeobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodetype_db.h,python.copyright
+graalpython/com.oracle.graal.python.cext/src/_warnings.c,python.copyright
 graalpython/com.oracle.graal.python.frozen/freeze_modules.py,python.copyright
 graalpython/com.oracle.graal.python.hpy.llvm/include/hpy.h,hpy.copyright
 graalpython/com.oracle.graal.python.hpy.llvm/include/hpy/autogen_hpyfunc_declare.h,hpy.copyright
