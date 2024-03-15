@@ -11,9 +11,7 @@
 #endif // GraalPy change
 #include "pycore_object.h"        // _PyObject_GC_TRACK()
 #include "pycore_pyerrors.h"      // _PyErr_Occurred()
-#if 0 // GraalPy change
 #include "pycore_pystate.h"       // _PyThreadState_GET()
-#endif // GraalPy change
 #include "pycore_tuple.h"         // _PyTuple_ITEMS()
 #include "frameobject.h"          // _PyFrame_New_NoTrack()
 
@@ -199,7 +197,7 @@ PyObject *
 PyObject_VectorcallDict(PyObject *callable, PyObject *const *args,
                        size_t nargsf, PyObject *kwargs)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     return _PyObject_FastCallDictTstate(tstate, callable, args, nargsf, kwargs);
 }
 
@@ -305,8 +303,7 @@ _PyVectorcall_Call(PyThreadState *tstate, vectorcallfunc func,
 PyObject *
 PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwargs)
 {
-    // GraalPy change: don't get thread state
-    PyThreadState *tstate = NULL;
+    PyThreadState *tstate = _PyThreadState_GET();
 
     /* get vectorcallfunc as in _PyVectorcall_Function, but without
      * the Py_TPFLAGS_HAVE_VECTORCALL check */
@@ -336,7 +333,7 @@ PyObject *
 PyObject_Vectorcall(PyObject *callable, PyObject *const *args,
                      size_t nargsf, PyObject *kwnames)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     return _PyObject_VectorcallTstate(tstate, callable,
                                       args, nargsf, kwnames);
 }
@@ -345,7 +342,7 @@ PyObject_Vectorcall(PyObject *callable, PyObject *const *args,
 PyObject *
 _PyObject_FastCall(PyObject *func, PyObject *const *args, Py_ssize_t nargs)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     return _PyObject_FastCallTstate(tstate, func, args, nargs);
 }
 
@@ -416,7 +413,7 @@ PyObject_CallOneArg(PyObject *func, PyObject *arg)
     PyObject *_args[2];
     PyObject **args = _args + 1;  // For PY_VECTORCALL_ARGUMENTS_OFFSET
     args[0] = arg;
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     size_t nargsf = 1 | PY_VECTORCALL_ARGUMENTS_OFFSET;
     return _PyObject_VectorcallTstate(tstate, func, args, nargsf, NULL);
 }
@@ -875,8 +872,7 @@ PyObject_VectorcallMethod(PyObject *name, PyObject *const *args,
     assert(args != NULL);
     assert(PyVectorcall_NARGS(nargsf) >= 1);
 
-    // GraalPy change: don't get thread state
-    PyThreadState *tstate = NULL;
+    PyThreadState *tstate = _PyThreadState_GET();
     PyObject *callable = NULL;
     /* Use args[0] as "self" argument */
     int unbound = _PyObject_GetMethod(args[0], name, &callable);

@@ -13,7 +13,8 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
-// #include "pycore_runtime.h"   /* PyRuntimeState */
+#if 0 // GraalPy change
+#include "pycore_runtime.h"   /* PyRuntimeState */
 
 
 /* Check if the current thread is the main thread.
@@ -80,6 +81,7 @@ _PyRuntimeState_GetThreadState(_PyRuntimeState *runtime)
 {
     return (PyThreadState*)_Py_atomic_load_relaxed(&runtime->gilstate.tstate_current);
 }
+#endif // GraalPy change
 
 /* Get the current Python thread state.
 
@@ -97,6 +99,7 @@ _PyThreadState_GET(void)
     return PyThreadState_Get();
 }
 
+#if 0 // GraalPy change
 PyAPI_FUNC(void) _Py_NO_RETURN _Py_FatalError_TstateNULL(const char *func);
 
 static inline void
@@ -172,6 +175,7 @@ PyAPI_FUNC(int) _PyState_AddModule(
 
 
 PyAPI_FUNC(int) _PyOS_InterruptOccurred(PyThreadState *tstate);
+#endif // GraalPy change
 
 #ifdef __cplusplus
 }

@@ -13,8 +13,8 @@
 #include "pycore_initconfig.h"    // _PyStatus_ERR()
 #endif // GraalPy change
 #include "pycore_pyerrors.h"      // _PyErr_Format()
-#if 0 // GraalPy change
 #include "pycore_pystate.h"       // _PyThreadState_GET()
+#if 0 // GraalPy change
 #include "pycore_structseq.h"     // _PyStructSequence_FiniType()
 #include "pycore_sysmodule.h"     // _PySys_Audit()
 #include "pycore_traceback.h"     // _PyTraceBack_FromFrame()
@@ -106,7 +106,7 @@ _PyErr_SetObject(PyThreadState *tstate, PyObject *exception, PyObject *value)
 void
 PyErr_SetObject(PyObject *exception, PyObject *value)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     _PyErr_SetObject(tstate, exception, value);
 }
 
@@ -138,7 +138,7 @@ _PyErr_SetNone(PyThreadState *tstate, PyObject *exception)
 void
 PyErr_SetNone(PyObject *exception)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     _PyErr_SetNone(tstate, exception);
 }
 
@@ -157,7 +157,7 @@ _PyErr_SetString(PyThreadState *tstate, PyObject *exception,
 void
 PyErr_SetString(PyObject *exception, const char *string)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     _PyErr_SetString(tstate, exception, string);
 }
 
@@ -217,7 +217,7 @@ _PyErr_ExceptionMatches(PyThreadState *tstate, PyObject *exc)
 int
 PyErr_ExceptionMatches(PyObject *exc)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     return _PyErr_ExceptionMatches(tstate, exc);
 }
 
@@ -245,7 +245,7 @@ _PyErr_NormalizeException(PyThreadState *tstate, PyObject **exc,
 void
 PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     _PyErr_NormalizeException(tstate, exc, val, tb);
 }
 
@@ -275,7 +275,7 @@ _PyErr_Fetch(PyThreadState *tstate, PyObject **p_type, PyObject **p_value,
 void
 PyErr_Fetch(PyObject **p_type, PyObject **p_value, PyObject **p_traceback)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     _PyErr_Fetch(tstate, p_type, p_value, p_traceback);
 }
 
@@ -290,7 +290,7 @@ _PyErr_Clear(PyThreadState *tstate)
 void
 PyErr_Clear(void)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     _PyErr_Clear(tstate);
 }
 
@@ -370,7 +370,7 @@ PyErr_SetHandledException(PyObject *exc)
 void
 PyErr_GetExcInfo(PyObject **p_type, PyObject **p_value, PyObject **p_traceback)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     _PyErr_GetExcInfo(tstate, p_type, p_value, p_traceback);
 }
 
@@ -542,7 +542,7 @@ NO_INLINE // GraalPy change: disallow bitcode inlining
 PyObject *
 _PyErr_FormatFromCause(PyObject *exception, const char *format, ...)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     va_list vargs;
 #ifdef HAVE_STDARG_PROTOTYPES
     va_start(vargs, format);
@@ -559,7 +559,7 @@ _PyErr_FormatFromCause(PyObject *exception, const char *format, ...)
 int
 PyErr_BadArgument(void)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     _PyErr_SetString(tstate, PyExc_TypeError,
                      "bad argument type for built-in operation");
     return 0;
@@ -583,7 +583,7 @@ _PyErr_NoMemory(PyThreadState *tstate)
 PyObject *
 PyErr_NoMemory(void)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     return _PyErr_NoMemory(tstate);
 }
 
@@ -596,7 +596,7 @@ PyErr_SetFromErrnoWithFilenameObject(PyObject *exc, PyObject *filenameObject)
 PyObject *
 PyErr_SetFromErrnoWithFilenameObjects(PyObject *exc, PyObject *filenameObject, PyObject *filenameObject2)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     PyObject *message;
     PyObject *v, *args;
     int i = errno;
@@ -865,7 +865,7 @@ PyErr_SetImportError(PyObject *msg, PyObject *name, PyObject *path)
 void
 _PyErr_BadInternalCall(const char *filename, int lineno)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     _PyErr_Format(tstate, PyExc_SystemError,
                   "%s:%d: bad argument to internal function",
                   filename, lineno);
@@ -878,7 +878,7 @@ void
 PyErr_BadInternalCall(void)
 {
     assert(0 && "bad argument to internal function");
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     _PyErr_SetString(tstate, PyExc_SystemError,
                      "bad argument to internal function");
 }
@@ -907,7 +907,7 @@ _PyErr_FormatV(PyThreadState *tstate, PyObject *exception,
 PyObject *
 PyErr_FormatV(PyObject *exception, const char *format, va_list vargs)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     return _PyErr_FormatV(tstate, exception, format, vargs);
 }
 
@@ -933,7 +933,7 @@ NO_INLINE // GraalPy change: disallow bitcode inlining
 PyObject *
 PyErr_Format(PyObject *exception, const char *format, ...)
 {
-    PyThreadState *tstate = NULL; // GrallPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     va_list vargs;
 #ifdef HAVE_STDARG_PROTOTYPES
     va_start(vargs, format);

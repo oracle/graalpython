@@ -20,8 +20,8 @@
 #include "pycore_object.h"        // _PyType_CheckConsistency(), _Py_FatalRefcountError()
 #include "pycore_pyerrors.h"      // _PyErr_Occurred()
 #include "pycore_pymem.h"         // _PyMem_IsPtrFreed()
-#if 0 // GraalPy change
 #include "pycore_pystate.h"       // _PyThreadState_GET()
+#if 0 // GraalPy change
 #include "pycore_symtable.h"      // PySTEntry_Type
 #include "pycore_typeobject.h"    // _PyTypes_InitSlotDefs()
 #include "pycore_unionobject.h"   // _PyUnion_Type
@@ -755,7 +755,7 @@ do_richcompare(PyThreadState *tstate, PyObject *v, PyObject *w, int op)
 PyObject *
 PyObject_RichCompare(PyObject *v, PyObject *w, int op)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
 
     assert(Py_LT <= op && op <= Py_GE);
     if (v == NULL || w == NULL) {
