@@ -2646,31 +2646,6 @@ void PyTruffle_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
 	}
 }
 
-PyObject* _PyObject_GC_New(PyTypeObject *tp) {
-    return _PyObject_New(tp);
-}
-
-PyVarObject* _PyObject_GC_NewVar(PyTypeObject *tp, Py_ssize_t nitems) {
-    return _PyObject_NewVar(tp, nitems);
-}
-
-void PyObject_GC_Del(void *op) {
-    size_t presize = _PyType_PreHeaderSize(((PyObject *)op)->ob_type);
-    PyObject_Free(((char *)op)-presize);
-}
-
-void PyObject_GC_Track(void* a) {
-    if (PyTruffle_Trace_Memory()) {
-        GraalPyTruffleObject_GC_Track(a);
-    }
-}
-
-void PyObject_GC_UnTrack(void* a) {
-    if (PyTruffle_Trace_Memory()) {
-        GraalPyTruffleObject_GC_UnTrack(a);
-    }
-}
-
 #define DEFERRED_NOTIFY_SIZE 16
 static PyObject *deferred_notify_ops[DEFERRED_NOTIFY_SIZE];
 static int deferred_notify_cur = 0;

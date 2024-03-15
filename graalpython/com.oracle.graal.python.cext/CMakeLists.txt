@@ -109,7 +109,7 @@ set(SRC_FILES ${CAPI_SRC}/codecs.c ${CAPI_SRC}/setobject.c ${CAPI_SRC}/compile.c
               ${CAPI_SRC}/getcompiler.c ${CAPI_SRC}/pyhash.c ${CAPI_SRC}/fileutils.c
               ${CAPI_SRC}/modsupport.c ${CAPI_SRC}/context.c ${CAPI_SRC}/abstract.c ${CAPI_SRC}/frameobject.c
               ${CAPI_SRC}/posixmodule.c ${CAPI_SRC}/exceptions.c ${CAPI_SRC}/pyctype.c
-              ${CAPI_SRC}/mystrtoul.c ${CAPI_SRC}/weakrefobject.c
+              ${CAPI_SRC}/mystrtoul.c ${CAPI_SRC}/weakrefobject.c ${CAPI_SRC}/gcmodule.c
               ${CAPI_SRC}/modsupport_shared.c ${CAPI_SRC}/fileobject.c ${CAPI_SRC}/pystrcmp.c ${CAPI_SRC}/getversion.c
               ${CAPI_SRC}/genobject.c ${CAPI_SRC}/methodobject.c ${CAPI_SRC}/boolobject.c ${CAPI_SRC}/pylifecycle.c
               ${CAPI_SRC}/errors.c ${CAPI_SRC}/signals.c ${CAPI_SRC}/datetime.c ${CAPI_SRC}/call.c

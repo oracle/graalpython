@@ -288,6 +288,7 @@ graalpython/com.oracle.graal.python.cext/src/codeobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/complexobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/errors.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/floatobject.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/gcmodule.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getcompiler.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getversion.c,python.copyright
