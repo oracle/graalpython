@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionWrapperInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -110,7 +111,7 @@ public abstract class PySequenceSetItemNode extends Node {
     static Object doNative(VirtualFrame frame, PythonAbstractNativeObject object, int index, Object value,
                     @Bind("this") Node inliningTarget,
                     @Cached CApiTransitions.PythonToNativeNode toNativeNode,
-                    @Cached ExternalFunctionNodes.ExternalFunctionInvokeNode invokeNode) {
+                    @Cached ExternalFunctionWrapperInvokeNode invokeNode) {
         Object executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
         return invokeNode.execute(frame, SETITEM, C_API_TIMING, SYMBOL.getTsName(), executable, new Object[]{toNativeNode.execute(object), index, toNativeNode.execute(value)});
     }

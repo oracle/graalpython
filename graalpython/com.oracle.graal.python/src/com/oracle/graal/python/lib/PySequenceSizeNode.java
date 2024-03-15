@@ -125,7 +125,7 @@ public abstract class PySequenceSizeNode extends Node {
     static long doNative(VirtualFrame frame, PythonAbstractNativeObject object,
                     @Bind("this") Node inliningTarget,
                     @Cached CApiTransitions.PythonToNativeNode toNativeNode,
-                    @Cached ExternalFunctionNodes.ExternalFunctionInvokeNode invokeNode) {
+                    @Cached ExternalFunctionNodes.ExternalFunctionWrapperInvokeNode invokeNode) {
         Object executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
         Object size = invokeNode.execute(frame, LENFUNC, C_API_TIMING, SYMBOL.getTsName(), executable, new Object[]{toNativeNode.execute(object)});
         assert PGuards.isInteger(size);
