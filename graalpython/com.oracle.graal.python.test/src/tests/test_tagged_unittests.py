@@ -229,7 +229,8 @@ def run_with_timeout(cmd, *, timeout, **kwargs):
         print("Cannot find the 'timeout' GNU tool. Do you have coreutils installed?")
     else:
         timeout_cmd = p[1].strip()
-        cmd = [timeout_cmd, "-k", "10", str(timeout)] + cmd
+        # signal nr. 2 is SIGINT; this has better chances to print a Python traceback
+        cmd = [timeout_cmd, "-s", "2", "-k", "10", str(timeout)] + cmd
     return subprocess.run(cmd, **kwargs)
 
 
