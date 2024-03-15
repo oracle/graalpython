@@ -514,8 +514,10 @@ public final class CApiContext extends CExtContext {
         for (int i = 0; i < PY_NSMALLNEGINTS + PY_NSMALLPOSINTS; i++) {
             Object elementPtr = ReadPointerNode.getUncached().readArrayElement(nativeSmallIntsArray, i);
             PythonNativeWrapper wrapper = ToPythonWrapperNode.executeUncached(elementPtr, false);
-            if (!(wrapper == primitiveNativeWrapperCache[i] && primitiveNativeWrapperCache[i].isNative() &&
-                            primitiveNativeWrapperCache[i].getRefCount() == IMMORTAL_REFCNT)) {
+            if (wrapper != primitiveNativeWrapperCache[i]) {
+                return false;
+            }
+            if (primitiveNativeWrapperCache[i].isNative() && primitiveNativeWrapperCache[i].getRefCount() != IMMORTAL_REFCNT) {
                 return false;
             }
         }
