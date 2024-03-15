@@ -309,9 +309,7 @@ public final class CApiContext extends CExtContext {
              * Note: this does intentionally not use 'PythonObjectNativeWrapper.wrap' because the
              * wrapper must not be reachable from the Python object since the singletons are shared.
              */
-            PythonObjectNativeWrapper singletonWrapper = new PythonObjectNativeWrapper(CONTEXT_INSENSITIVE_SINGLETONS[i]);
-            VarHandle.storeStoreFence();
-            singletonNativePtrs[i] = singletonWrapper;
+            singletonNativePtrs[i] = new PythonObjectNativeWrapper(CONTEXT_INSENSITIVE_SINGLETONS[i]);
         }
 
         // initialize primitive native wrapper cache
