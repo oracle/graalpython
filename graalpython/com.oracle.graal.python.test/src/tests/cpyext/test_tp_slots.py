@@ -81,6 +81,7 @@ def test_descr():
     raw = TestDescrSetAndDel()
     raw.__set__('foo', 42)
     assert raw.__get__(raw, 'foo') == 42
+    assert raw.__get__(raw) == 42
     raw.__delete__(raw)
     assert raw.__get__(raw, 'foo') is None
 
