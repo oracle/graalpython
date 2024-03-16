@@ -1,0 +1,20 @@
+diff --git a/flake8/checker.py b/flake8/checker.py
+--- a/flake8/checker.py
++++ b/flake8/checker.py
+@@ -1,6 +1,7 @@
+ """Checker Manager and Checker classes."""
+ from __future__ import annotations
+ 
++import sys
+ import argparse
+ import contextlib
+ import errno
+@@ -149,6 +150,8 @@ class Manager:
+         # default to 1
+         if jobs.is_auto:
+             try:
++                if sys.implementation.name == 'graalpy':
++                    return 0
+                 return multiprocessing.cpu_count()
+             except NotImplementedError:
+                 return 0

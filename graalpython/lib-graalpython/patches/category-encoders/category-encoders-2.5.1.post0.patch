@@ -1,0 +1,16 @@
+diff --git a/category_encoders/hashing.py b/category_encoders/hashing.py
+index d366908..9b2ae78 100644
+--- a/category_encoders/hashing.py
++++ b/category_encoders/hashing.py
+@@ -114,7 +114,10 @@ class HashingEncoder(util.BaseEncoder, util.UnsupervisedTransformerMixin):
+             if platform.system == 'Windows':
+                 self.max_process = 1
+             else:
+-                self.max_process = int(math.ceil(multiprocessing.cpu_count() / 2))
++                if sys.implementation.name == 'graalpy':
++                    self.max_process = __graalpython__.get_max_process_count()
++                else:
++                    self.max_process = int(math.ceil(multiprocessing.cpu_count() / 2))
+                 if self.max_process < 1:
+                     self.max_process = 1
+                 elif self.max_process > 128:
