@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,7 +38,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.embedding.utils;
+package org.graalvm.python.embedding.tools.vfs;
+
+import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
+import org.graalvm.python.embedding.tools.exec.SubprocessLog;
 
 import java.io.File;
 import java.io.FileWriter;

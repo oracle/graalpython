@@ -38,7 +38,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.embedding.utils;
+package org.graalvm.python.embedding.vfs;
+
+import org.graalvm.polyglot.io.FileSystem;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -74,12 +76,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.graalvm.polyglot.io.FileSystem;
-
-@Deprecated(since = "24.1.0")
-/**
- * @deprecated use org.graalvm.python.embedding.vfs.VirtualFileSystem instead
- */
 public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     public static enum HostIO {
         NONE,

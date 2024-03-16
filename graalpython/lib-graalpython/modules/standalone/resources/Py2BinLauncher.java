@@ -47,7 +47,7 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.io.IOAccess;
-import org.graalvm.python.embedding.utils.VirtualFileSystem;
+import org.graalvm.python.embedding.vfs.VirtualFileSystem;
 
 /**
  * A simple launcher for Python. The launcher sets the filesystem up to read the Python core,
