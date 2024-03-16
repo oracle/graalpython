@@ -49,13 +49,17 @@ is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_
 
 MVN_CMD = [shutil.which('mvn'), "--batch-mode"]
 
+VFS_PREFIX = "org.graalvm.python.vfs"
+
 def run_cmd(cmd, env, cwd=None):
     print(f"Executing:\n    {cmd=}\n")
     process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True, errors='backslashreplace')
     out = []
+    print("============== output =============")
     for line in iter(process.stdout.readline, ""):
         print(line, end="")
         out.append(line)
+    print("\n========== end of output ==========")
     return "".join(out), process.wait()
 
 def get_executable(file):
@@ -259,28 +263,28 @@ class PolyglotAppTest(unittest.TestCase):
             self.generate_app(tmpdir, target_dir, target_name)
 
             # build
-            cmd = MVN_CMD + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy"] #, f"-Dgraalpy.version={self.graalvmVersion}", "-Dgraalpy.edition=python-community"]
+            cmd = MVN_CMD + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-            assert "BUILD SUCCESS" in out
+            assert "BUILD SUCCESS" in out, "unexpected output from " + str(cmd)
 
             # check fileslist.txt
-            fl_path = os.path.join(target_dir, "target", "classes", "vfs", "fileslist.txt")
+            fl_path = os.path.join(target_dir, "target", "classes", VFS_PREFIX, "fileslist.txt")
             with open(fl_path) as f:
                 lines = f.readlines()
-            assert "/vfs/\n" in lines
-            assert "/vfs/home/\n" in lines
-            assert "/vfs/home/lib-graalpython/\n" in lines
-            assert "/vfs/home/lib-python/\n" in lines
+            assert "/" + VFS_PREFIX + "/\n" in lines, "unexpected output from " + str(cmd)
+            assert "/" + VFS_PREFIX + "/home/\n" in lines, "unexpected output from " + str(cmd)
+            assert "/" + VFS_PREFIX + "/home/lib-graalpython/\n" in lines, "unexpected output from " + str(cmd)
+            assert "/" + VFS_PREFIX + "/home/lib-python/\n" in lines, "unexpected output from " + str(cmd)
 
             # execute and check native image
             cmd = [os.path.join(target_dir, "target", target_name)]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-            assert "hello java" in out
+            assert "hello java" in out, "unexpected output from " + str(cmd)
 
             # execute with java and check
             cmd = MVN_CMD + ["exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-            assert "hello java" in out
+            assert "hello java" in out, "unexpected output from " + str(cmd)
 
             #GR-51132 - NoClassDefFoundError when running polyglot app in java mode
             assert "java.lang.NoClassDefFoundError" not in out
@@ -307,18 +311,18 @@ class PolyglotAppTest(unittest.TestCase):
             
             cmd = MVN_CMD + ["process-resources"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-            assert "-m venv" in out
-            assert "-m ensurepip" in out
-            assert "ujson" in out
-            assert "termcolor" in out
+            assert "-m venv" in out, "unexpected output from " + str(cmd)
+            assert "-m ensurepip" in out, "unexpected output from " + str(cmd)
+            assert "ujson" in out, "unexpected output from " + str(cmd)
+            assert "termcolor" in out, "unexpected output from " + str(cmd)
 
             # run again and assert that we do not regenerate the venv
             cmd = MVN_CMD + ["process-resources"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-            assert "-m venv" not in out
-            assert "-m ensurepip" not in out
-            assert "ujson" not in out
-            assert "termcolor" not in out
+            assert "-m venv" not in out, "unexpected output from " + str(cmd)
+            assert "-m ensurepip" not in out, "unexpected output from " + str(cmd)
+            assert "ujson" not in out, "unexpected output from " + str(cmd)
+            assert "termcolor" not in out, "unexpected output from " + str(cmd)
 
             # remove ujson pkg from plugin config and check if unistalled
             with open(os.path.join(target_dir, "pom.xml"), "r") as f:
@@ -329,10 +333,10 @@ class PolyglotAppTest(unittest.TestCase):
 
             cmd = MVN_CMD + ["process-resources"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-            assert "-m venv" not in out
-            assert "-m ensurepip" not in out
-            assert "Uninstalling ujson" in out
-            assert "termcolor" not in out
+            assert "-m venv" not in out, "unexpected output from " + str(cmd)
+            assert "-m ensurepip" not in out, "unexpected output from " + str(cmd)
+            assert "Uninstalling ujson" in out, "unexpected output from " + str(cmd)
+            assert "termcolor" not in out, "unexpected output from " + str(cmd)
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_check_home(self):
@@ -346,13 +350,13 @@ class PolyglotAppTest(unittest.TestCase):
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
 
             # check fileslist.txt
-            fl_path = os.path.join(target_dir, "target", "classes", "vfs", "fileslist.txt")
+            fl_path = os.path.join(target_dir, "target", "classes", VFS_PREFIX, "fileslist.txt")
             with open(fl_path) as f:
                 for line in f:
                     line = f.readline()
                     # string \n
                     line = line[:len(line)-1]
-                    if line.endswith("/") or line == "/vfs/home/tagfile" or line == "/vfs/proj/hello.py":
+                    if line.endswith("/") or line == "/" + VFS_PREFIX + "/home/tagfile" or line == "/" + VFS_PREFIX + "/proj/hello.py":
                         continue
                     assert line.endswith("/__init__.py")
                     assert not line.endswith("html/__init__.py")
@@ -376,11 +380,11 @@ def test_native_executable_one_file():
         cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-ce", "-m", source_file, "-o", target_file]
 
         out, return_code = run_cmd(cmd, env)
-        assert "Bundling Python resources into" in out
+        assert "Bundling Python resources into" in out, "unexpected output from " + str(cmd)
 
         cmd = [target_file, "arg1", "arg2"]
         out, return_code = run_cmd(cmd, env)
-        assert "hello world, argv[1:]: " + str(cmd[1:]) in out
+        assert "hello world, argv[1:]: " + str(cmd[1:]) in out, "unexpected output from " + str(cmd)
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_venv_and_one_file():
@@ -411,13 +415,12 @@ def test_native_executable_venv_and_one_file():
         target_file = os.path.join(target_dir, "hello")
         cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-ce", "-Os", "-m", source_file, "--venv", venv_dir, "-o", target_file]
         out, return_code = run_cmd(cmd, env)
-        assert "Bundling Python resources into" in out
+        assert "Bundling Python resources into" in out, "unexpected output from " + str(cmd)
 
         cmd = [target_file]
         out, return_code = run_cmd(cmd, env)
-
-        assert "hello standalone world" in out
-        assert "key=value" in out
+        assert "hello standalone world" in out, "unexpected output from " + str(cmd)
+        assert "key=value" in out, "unexpected output from " + str(cmd)
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_module():
@@ -444,13 +447,12 @@ def test_native_executable_module():
 
         target_file = os.path.join(tmp_dir, "hello")
         cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-ce", "-Os", "-m", module_dir, "-o", target_file]
-
         out, return_code = run_cmd(cmd, env)
-        assert "Bundling Python resources into" in out
+        assert "Bundling Python resources into" in out, "unexpected output from " + str(cmd)
 
         cmd = [target_file]
         out, return_code = run_cmd(cmd, env)
-        assert "hello standalone world" in out
+        assert "hello standalone world" in out, "unexpected output from " + str(cmd)
 
 
 unittest.skip_deselected_test_functions(globals())

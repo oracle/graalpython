@@ -77,8 +77,6 @@ public class hello {
 }
 
 final class VirtualGraalPyContext {
-    private static final String VENV_PREFIX = "/vfs/venv";
-    private static final String HOME_PREFIX = "/vfs/home";
 
     public static Context getContext() {
         VirtualFileSystem vfs = VirtualFileSystem.create();
@@ -113,13 +111,13 @@ final class VirtualGraalPyContext {
             // Force to automatically import site.py module, to make Python packages available
             .option("python.ForceImportSite", "true")
             // The sys.executable path, a virtual path that is used by the interpreter to discover packages
-            .option("python.Executable", vfs.resourcePathToPlatformPath(VENV_PREFIX) + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.exe" : "/bin/python"))
+            .option("python.Executable", vfs.vfsVenvPath() + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.exe" : "/bin/python"))
             // Do not warn if running without JIT. This can be desirable for short running scripts
             // to reduce memory footprint.
             .option("engine.WarnInterpreterOnly", "false");
         if (System.getProperty("org.graalvm.nativeimage.imagecode") != null) {
             // Set the python home to be read from the embedded resources
-            builder.option("python.PythonHome", vfs.resourcePathToPlatformPath(HOME_PREFIX));
+            builder.option("python.PythonHome", vfs.vfsHomePath());
         }
         return builder.build();
     }

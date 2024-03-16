@@ -65,6 +65,10 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_HOME;
+import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
+import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
+
 @Mojo(name = "process-graalpy-resources", defaultPhase = LifecyclePhase.PROCESS_RESOURCES,
                 requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
                 requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
@@ -107,7 +111,7 @@ public class ManageResourcesMojo extends AbstractMojo {
     private Set<String> launcherClassPath;
 
     static Path getHomeDirectory(MavenProject project) {
-        return Path.of(project.getBuild().getOutputDirectory(), "vfs", "home");
+        return Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT, VFS_HOME);
     }
 
     public void execute() throws MojoExecutionException {
@@ -266,7 +270,7 @@ public class ManageResourcesMojo extends AbstractMojo {
     }
 
     static Path getVenvDirectory(MavenProject project) {
-        return Path.of(project.getBuild().getOutputDirectory(), "vfs", "venv");
+        return Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT, VFS_VENV);
     }
 
     private void installWantedPackages(Path venvDirectory, List<String> installedPackages) throws MojoExecutionException {

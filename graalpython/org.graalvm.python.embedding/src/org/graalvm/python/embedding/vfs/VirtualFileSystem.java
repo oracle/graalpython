@@ -40,8 +40,6 @@
  */
 package org.graalvm.python.embedding.vfs;
 
-import org.graalvm.polyglot.io.FileSystem;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -76,7 +74,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import org.graalvm.polyglot.io.FileSystem;
+
 public final class VirtualFileSystem implements FileSystem, AutoCloseable {
+
+    private static final String VFS_ROOT = "org.graalvm.python.vfs";
+    private static final String VFS_FILESLIST = "fileslist.txt";
+    private static final String VFS_HOME = "home";
+    private static final String VFS_VENV = "venv";
+    private static final String VFS_PROJ = "proj";
+
+    private static final String VENV_PREFIX = "/" + VFS_ROOT + "/" + VFS_VENV;
+    private static final String HOME_PREFIX = "/" + VFS_ROOT + "/" + VFS_HOME;
+    private static final String PROJ_PREFIX = "/" + VFS_ROOT + "/" + VFS_PROJ;
+
     public static enum HostIO {
         NONE,
         READ,
@@ -89,8 +100,8 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll");
         };
 
-        private String vfsPrefix = "/vfs";
-        private String filesListPath = vfsPrefix + "/fileslist.txt";
+        private String vfsPrefix = "/" + VFS_ROOT;
+        private String filesListPath = vfsPrefix + "/" + VFS_FILESLIST;
         private String windowsMountPoint = "X:\\graalpy_vfs";
         private String unixMountPoint = "/graalpy_vfs";
         private Predicate<Path> extractFilter = DEFAULT_EXTRACT_FILTER;
@@ -100,15 +111,6 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         private Class<?> resourceLoadingClass;
 
         private Builder() {
-        }
-
-        /**
-         * The path in the Java resources to the virtual filesystem.
-         */
-        public Builder vfsPrefix(String s) {
-            vfsPrefix = s;
-            filesListPath = vfsPrefix + "/fileslist.txt";
-            return this;
         }
 
         /**
@@ -125,15 +127,6 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
          */
         public Builder allowHostIO(HostIO b) {
             allowHostIO = b;
-            return this;
-        }
-
-        /**
-         * The resource path to a file that lists all files and directories under the
-         * {@link #vfsPrefix}.
-         */
-        public Builder filesListPath(String s) {
-            filesListPath = s;
             return this;
         }
 
@@ -386,8 +379,20 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
     }
 
-    public String resourcePathToPlatformPath(String inputPath) {
-        assert inputPath.startsWith(vfsPrefix);
+    public String vfsHomePath() {
+        return resourcePathToPlatformPath(HOME_PREFIX);
+    }
+
+    public String vfsProjPath() {
+        return resourcePathToPlatformPath(PROJ_PREFIX);
+    }
+
+    public String vfsVenvPath() {
+        return resourcePathToPlatformPath(VENV_PREFIX);
+    }
+
+    private String resourcePathToPlatformPath(String inputPath) {
+        assert inputPath.length() > vfsPrefix.length() && inputPath.startsWith(vfsPrefix) : "inputPath expected to start with '" + vfsPrefix + "' but was '" + inputPath + "'";
         var path = inputPath.substring(vfsPrefix.length() + 1);
         if (!PLATFORM_SEPARATOR.equals(RESOURCE_SEPARATOR)) {
             path = path.replace(RESOURCE_SEPARATOR, PLATFORM_SEPARATOR);

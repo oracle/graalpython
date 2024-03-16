@@ -61,12 +61,11 @@ import urllib
 import urllib.request
 import tarfile
 import zipfile
-import glob
 
 assert sys.pycache_prefix is None
 
 # Prefix and filelist match the defaults in org.graalvm.python.embedding.utils.VirtualFileSystem
-VFS_PREFIX = "vfs"
+VFS_PREFIX = "org.graalvm.python.vfs"
 FILES_LIST_NAME = "fileslist.txt"
 FILES_LIST_PATH = VFS_PREFIX + "/" + FILES_LIST_NAME
 
@@ -205,20 +204,6 @@ def index_vfs(target_dir):
             f(dir_path, dir_names, "/\n")
             f(dir_path, file_names, "\n")
 
-
-def create_launcher_file(template, launcher):
-    lines = open(template, 'r').readlines()
-    with open(launcher, 'w') as f:
-        for line in lines:
-            if "{vfs-home-prefix}" in line:
-                line = line.replace("{vfs-home-prefix}", VFS_HOME_PREFIX)
-            if "{vfs-venv-prefix}" in line:
-                line = line.replace("{vfs-venv-prefix}", VFS_VENV_PREFIX)
-            if "{vfs-proj-prefix}" in line:
-                line = line.replace("{vfs-proj-prefix}", VFS_PROJ_PREFIX)
-            f.write(line)
-
-
 def create_target_directory(target_dir, launcher_file, parsed_args):
     if parsed_args.verbose:
         print(f"Bundling Python resources into {target_dir}")
@@ -230,7 +215,7 @@ def create_target_directory(target_dir, launcher_file, parsed_args):
     )
 
     os.makedirs(os.path.dirname(launcher_file), exist_ok=True)
-    create_launcher_file(get_file(NATIVE_EXEC_LAUNCHER_TEMPLATE_PATH), launcher_file)
+    shutil.copy(get_file(NATIVE_EXEC_LAUNCHER_TEMPLATE_PATH), launcher_file)
 
     shutil.copy(get_file(NATIVE_IMAGE_RESOURCES_PATH), os.path.join(target_dir, NATIVE_IMAGE_RESOURCES_FILE))
 

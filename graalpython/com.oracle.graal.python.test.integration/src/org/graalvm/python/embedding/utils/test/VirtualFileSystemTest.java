@@ -61,8 +61,6 @@ import org.junit.Test;
 
 public class VirtualFileSystemTest {
 
-    private static final String VFS_PREFIX = "/org/graalvm/python/embedding/utils/test/vfs";
-
     private static final String VFS_UNIX_MOUNT_POINT = "/test_mount_point";
     private static final String VFS_WIN_MOUNT_POINT = "X:\\test_win_mount_point";
     private static final String VFS_MOUNT_POINT = IS_WINDOWS ? VFS_WIN_MOUNT_POINT : VFS_UNIX_MOUNT_POINT;
@@ -81,7 +79,6 @@ public class VirtualFileSystemTest {
     @Test
     public void toRealPath() throws Exception {
         VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
-                        vfsPrefix(VFS_PREFIX).//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().equals("file1")).//
@@ -97,7 +94,6 @@ public class VirtualFileSystemTest {
     @Test
     public void toAbsolutePath() throws Exception {
         VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
-                        vfsPrefix(VFS_PREFIX).//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().equals("file1")).//
@@ -384,7 +380,7 @@ public class VirtualFileSystemTest {
             return cachedContext;
         }
         VirtualFileSystem.Builder builder = VirtualFileSystem.newBuilder().//
-                        vfsPrefix(VFS_PREFIX).//
+// vfsPrefix(VFS_PREFIX).//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         resourceLoadingClass(VirtualFileSystemTest.class);
