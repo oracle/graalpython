@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -137,6 +138,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -962,6 +964,8 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
     abstract static class PyObject_SetDoc extends CApiBinaryBuiltinNode {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyObject_SetDoc.class);
+
         @Specialization
         static int set(PBuiltinFunction obj, Object value,
                         @Shared("write") @Cached WriteAttributeToPythonObjectNode write) {
@@ -1001,7 +1005,9 @@ public final class PythonCextAbstractBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static int set(Object obj, Object value) {
-            // The callers don't expect errors, so just do nothing
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // The callers don't expect errors, so just warn
+            LOGGER.warning("Unexpected type in PyObject_SetDoc: " + obj.getClass());
             return 1;
         }
     }

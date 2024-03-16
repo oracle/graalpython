@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -91,6 +91,21 @@ def test_import_star_has_to_be_module():
         assert True
     else:
         assert False
+
+
+def test_import_star_no_all():
+    g = {}
+    exec("from package.moduleA import *", g)
+    assert 'publicProperty' in g
+    assert '_privateProperty' not in g
+
+
+def test_import_star_all():
+    g = {}
+    exec("from package.moduleY import *", g)
+    assert 'publicProperty' in g
+    assert '_privateProperty' in g
+    assert 'unlistedProperty' not in g
 
 
 def test_import_as_local():

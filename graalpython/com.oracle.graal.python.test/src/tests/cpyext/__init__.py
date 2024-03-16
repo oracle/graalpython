@@ -754,13 +754,18 @@ def CPyExtHeapType(name, bases=(object), code='', slots=None, **kwargs):
 
     {includes}
 
+    typedef struct {{
+        {struct_base}
+        {cmembers}
+    }} {name}Object;
+
     {code}
 
     PyType_Slot slots[] = {{
         {slots}
     }};
 
-    PyType_Spec spec = {{ "{name}Type", sizeof(PyHeapTypeObject), 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, slots }};
+    PyType_Spec spec = {{ "{name}Type", sizeof({name}Object), 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, slots }};
 
     static PyObject* create(PyObject* unused, PyObject* bases) {{
         {ready_code}
@@ -798,6 +803,8 @@ def CPyExtHeapType(name, bases=(object), code='', slots=None, **kwargs):
     kwargs["code"] = code
     kwargs["slots"] = '{0}' if slots is None else ',\n'.join(slots + ['{0}'])
     kwargs.setdefault("includes", "")
+    kwargs.setdefault("struct_base", "PyObject_HEAD")
+    kwargs.setdefault("cmembers", "")
     kwargs.setdefault("ready_code", "")
     kwargs.setdefault("post_ready_code", "")
     code = UnseenFormatter().format(template, **kwargs)

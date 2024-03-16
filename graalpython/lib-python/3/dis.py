@@ -74,6 +74,8 @@ def dis(x=None, *, file=None, depth=None, show_caches=False, adaptive=False):
     objects, and coroutine objects, all of which store their code object
     in a special attribute.
     """
+    # GraalPy change
+    raise NotImplementedError("dis module is not supported on GraalPy")
     if x is None:
         distb(file=file, show_caches=show_caches, adaptive=adaptive)
         return
@@ -338,6 +340,8 @@ def get_instructions(x, *, first_line=None, show_caches=False, adaptive=False):
     Otherwise, the source line information (if any) is taken directly from
     the disassembled code object.
     """
+    # GraalPy change
+    raise NotImplementedError("dis module is not supported on GraalPy")
     co = _get_code_object(x)
     linestarts = dict(findlinestarts(co))
     if first_line is not None:
@@ -519,6 +523,8 @@ def _get_instructions_bytes(code, varname_from_oparg=None,
 
 def disassemble(co, lasti=-1, *, file=None, show_caches=False, adaptive=False):
     """Disassemble a code object."""
+    # GraalPy change
+    raise NotImplementedError("dis module is not supported on GraalPy")
     linestarts = dict(findlinestarts(co))
     exception_entries = _parse_exception_table(co)
     _disassemble_bytes(_get_code_array(co, adaptive),
@@ -697,6 +703,8 @@ class Bytecode:
     Iterating over this yields the bytecode operations as Instruction instances.
     """
     def __init__(self, x, *, first_line=None, current_offset=None, show_caches=False, adaptive=False):
+        # GraalPy change
+        raise NotImplementedError("'dis' module is not supported on GraalPy")
         self.codeobj = co = _get_code_object(x)
         if first_line is None:
             self.first_line = co.co_firstlineno
@@ -758,6 +766,11 @@ class Bytecode:
                                co_positions=co.co_positions(),
                                show_caches=self.show_caches)
             return output.getvalue()
+
+
+# GraalPy stubs
+def stack_effect(opcode, oparg=None, /, *, jump=None):
+    raise NotImplementedError("'dis' module is not supported on GraalPy")
 
 
 def main():

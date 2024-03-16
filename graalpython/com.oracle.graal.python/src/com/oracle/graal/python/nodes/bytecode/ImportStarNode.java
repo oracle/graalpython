@@ -155,9 +155,11 @@ public abstract class ImportStarNode extends AbstractImportNode {
                     PyObjectSetItem dictWriteNode, PyObjectSetAttr setAttrNode) {
         try {
             TruffleString name = castToTruffleStringNode.execute(inliningTarget, attrName);
-            // skip attributes with leading '__' if there was no '__all__' attribute (see
-            // 'ceval.c: import_all_from')
-            if (fromAll || !isDunder(name, cpLenNode, cpAtIndexNode)) {
+            /*
+             * skip attributes with leading '_' if there was no '__all__' attribute (see 'ceval.c:
+             * import_all_from')
+             */
+            if (fromAll || !startsWithUnderscore(name, cpLenNode, cpAtIndexNode)) {
                 Object moduleAttr = getAttr.execute(frame, inliningTarget, importedModule, name);
                 writeAttribute(frame, inliningTarget, locals, name, moduleAttr, dictWriteNode, setAttrNode);
             }
@@ -167,8 +169,8 @@ public abstract class ImportStarNode extends AbstractImportNode {
         }
     }
 
-    private static boolean isDunder(TruffleString s, TruffleString.CodePointLengthNode cpLenNode, TruffleString.CodePointAtIndexNode cpAtIndexNode) {
-        return cpLenNode.execute(s, TS_ENCODING) >= 2 && cpAtIndexNode.execute(s, 0, TS_ENCODING) == '_' && cpAtIndexNode.execute(s, 1, TS_ENCODING) == '_';
+    private static boolean startsWithUnderscore(TruffleString s, TruffleString.CodePointLengthNode cpLenNode, TruffleString.CodePointAtIndexNode cpAtIndexNode) {
+        return cpLenNode.execute(s, TS_ENCODING) > 0 && cpAtIndexNode.execute(s, 0, TS_ENCODING) == '_';
     }
 
     public static ImportStarNode create() {

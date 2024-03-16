@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ package com.oracle.graal.python.builtins.objects.type;
  */
 public abstract class TypeFlags {
 
+    public static final long MANAGED_DICT = (1L << 4);
     public static final long SEQUENCE = (1L << 5);
     public static final long MAPPING = (1L << 6);
     public static final long HEAPTYPE = (1L << 9);

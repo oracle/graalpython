@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ALL__;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -57,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -73,7 +78,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -88,7 +92,21 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateNodeFactory
 public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
 
-    public static final String J_HPY_UNIVERSAL = "_hpy_universal";
+    static final String J_HPY_UNIVERSAL = "_hpy_universal";
+    private static final TruffleString T_HPY_UNIVERSAL = tsLiteral(J_HPY_UNIVERSAL);
+    private static final TruffleString T_HPY = tsLiteral("HPY");
+
+    private static final TruffleString[] ALL_ARRAY;
+
+    static {
+        List<TruffleString> allList = new ArrayList<>();
+        for (HPyMode mode : HPyMode.values()) {
+            allList.add(tsLiteral(mode.name()));
+        }
+        allList.add(tsLiteral("load"));
+        allList.add(tsLiteral("_load_bootstrap"));
+        ALL_ARRAY = allList.toArray(new TruffleString[0]);
+    }
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -101,6 +119,12 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
             addBuiltinConstant(mode.name(), mode.getValue());
         }
         super.initialize(core);
+    }
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        PythonModule module = core.lookupBuiltinModule(T_HPY_UNIVERSAL);
+        module.setAttribute(T___ALL__, core.factory().createTuple(ALL_ARRAY));
     }
 
     @Builtin(name = "load", parameterNames = {"name", "path", "spec", "debug", "mode"}, minNumOfPositionalArgs = 3)
@@ -205,7 +229,7 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
         private static HPyMode getHPyModeFromEnviron(TruffleString moduleName, Object env) throws CannotCastException {
             Object result;
             try {
-                result = PyObjectGetItem.executeUncached(env, PythonUtils.tsLiteral("HPY"));
+                result = PyObjectGetItem.executeUncached(env, T_HPY);
             } catch (PException e) {
                 e.expect(null, PythonBuiltinClassType.KeyError, IsBuiltinObjectProfile.getUncached());
                 // this is not an error; it just means that the key was not present in 'env'
