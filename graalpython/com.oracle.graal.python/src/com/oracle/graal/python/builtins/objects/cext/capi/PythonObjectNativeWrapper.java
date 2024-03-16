@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -108,7 +108,7 @@ public final class PythonObjectNativeWrapper extends PythonAbstractObjectNativeW
              * should be immortal.
              */
             boolean immortal = CApiGuards.isSpecialSingleton(getDelegate());
-            assert !immortal || (getDelegate() instanceof PythonAbstractObject po && PythonContext.get(inliningTarget).getSingletonNativeWrapper(po) == this);
+            assert !immortal || (getDelegate() instanceof PythonAbstractObject po && PythonContext.get(inliningTarget).getCApiContext().getSingletonNativeWrapper(po) == this);
             setNativePointer(firstToNativeNode.execute(inliningTarget, this, immortal));
         }
     }

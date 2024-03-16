@@ -158,6 +158,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -1603,6 +1604,10 @@ public abstract class CExtNodes {
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 68 -> 49
     public abstract static class CreateModuleNode extends MultiPhaseExtensionModuleInitNode {
+        private static final String NFI_CREATE_NAME = "create";
+        private static final String NFI_CREATE_SRC = "(POINTER,POINTER):POINTER";
+        private static final Source NFI_LIBFFI_CREATE = Source.newBuilder(J_NFI_LANGUAGE, NFI_CREATE_SRC, NFI_CREATE_NAME).build();
+        private static final Source NFI_PANAMA_CREATE = Source.newBuilder(J_NFI_LANGUAGE, "with panama " + NFI_CREATE_SRC, NFI_CREATE_NAME).build();
 
         public abstract Object execute(CApiContext capiContext, ModuleSpec moduleSpec, Object moduleDef, Object library);
 
@@ -1677,13 +1682,15 @@ public abstract class CExtNodes {
                 Object[] cArguments = new Object[]{PythonToNativeNode.executeUncached(moduleSpec.originalModuleSpec), moduleDef};
                 try {
                     Object result;
+                    PythonContext context = capiContext.getContext();
                     if (!interopLib.isExecutable(createFunction)) {
-                        Object signature = capiContext.getContext().getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(POINTER,POINTER):POINTER", "exec").build()).call();
+                        boolean panama = context.getOption(PythonOptions.UsePanama);
+                        Object signature = context.getEnv().parseInternal(panama ? NFI_PANAMA_CREATE : NFI_LIBFFI_CREATE).call();
                         result = interopLib.execute(SignatureLibrary.getUncached().bind(signature, createFunction), cArguments);
                     } else {
                         result = interopLib.execute(createFunction, cArguments);
                     }
-                    CheckFunctionResultNode.checkFunctionResult(inliningTarget, mName, interopLib.isNull(result), true, PythonLanguage.get(raiseNode), capiContext.getContext(), errOccurredProfile,
+                    CheckFunctionResultNode.checkFunctionResult(inliningTarget, mName, interopLib.isNull(result), true, PythonLanguage.get(raiseNode), context, errOccurredProfile,
                                     ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
                     module = toJavaNode.execute(result);
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -1738,6 +1745,9 @@ public abstract class CExtNodes {
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 60 -> 42
     public abstract static class ExecModuleNode extends MultiPhaseExtensionModuleInitNode {
+        private static final String NFI_EXEC_SRC = "(POINTER):SINT32";
+        private static final Source NFI_LIBFFI_EXEC = Source.newBuilder(J_NFI_LANGUAGE, NFI_EXEC_SRC, "exec").build();
+        private static final Source NFI_PANAMA_EXEC = Source.newBuilder(J_NFI_LANGUAGE, "with panama " + NFI_EXEC_SRC, "exec").build();
 
         public abstract int execute(CApiContext capiContext, PythonModule module, Object moduleDef);
 
@@ -1786,8 +1796,10 @@ public abstract class CExtNodes {
                             break;
                         case SLOT_PY_MOD_EXEC:
                             Object execFunction = readPointerNode.readStructArrayElement(slotDefinitions, i, PyModuleDef_Slot__value);
+                            PythonContext context = capiContext.getContext();
                             if (!U.isExecutable(execFunction)) {
-                                Object signature = capiContext.getContext().getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(POINTER):SINT32", "exec").build()).call();
+                                boolean panama = context.getOption(PythonOptions.UsePanama);
+                                Object signature = context.getEnv().parseInternal(panama ? NFI_PANAMA_EXEC : NFI_LIBFFI_EXEC).call();
                                 execFunction = SignatureLibrary.getUncached().bind(signature, execFunction);
                             }
                             Object result = interopLib.execute(execFunction, PythonToNativeNode.executeUncached(module));
@@ -1799,7 +1811,7 @@ public abstract class CExtNodes {
                              * and won't ignore this if no error is set. This is then the same
                              * behaviour if we would have a pointer return type and got 'NULL'.
                              */
-                            CheckFunctionResultNode.checkFunctionResult(inliningTarget, mName, iResult != 0, true, PythonLanguage.get(raiseNode), capiContext.getContext(),
+                            CheckFunctionResultNode.checkFunctionResult(inliningTarget, mName, iResult != 0, true, PythonLanguage.get(raiseNode), context,
                                             InlinedConditionProfile.getUncached(), ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION, ErrorMessages.EXECUTION_RAISED_EXCEPTION);
                             break;
                         default:

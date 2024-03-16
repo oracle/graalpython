@@ -165,7 +165,7 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
     public Object getReplacement(InteropLibrary lib) {
         if (replacement == null) {
             Object pointerObject = allocate((PMemoryView) getDelegate());
-            replacement = registerReplacement(pointerObject, lib);
+            replacement = registerReplacement(pointerObject, false, lib);
         }
         return replacement;
     }

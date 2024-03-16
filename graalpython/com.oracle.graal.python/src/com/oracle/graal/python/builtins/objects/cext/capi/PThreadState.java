@@ -69,7 +69,7 @@ public final class PThreadState extends PythonStructNativeWrapper {
     private PThreadState(PythonThreadState threadState) {
         super(threadState, true);
         // 'registerReplacement' will set the native pointer if not running LLVM managed mode.
-        replacement = registerReplacement(allocateCLayout(threadState), InteropLibrary.getUncached());
+        replacement = registerReplacement(allocateCLayout(threadState), false, InteropLibrary.getUncached());
     }
 
     public static Object getThreadState(PythonLanguage language, PythonContext context) {

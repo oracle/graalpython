@@ -71,9 +71,9 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -121,8 +121,12 @@ public class CStructAccess {
             return execute(1, size, allocatePyMem);
         }
 
-        @Idempotent
-        protected boolean nativeAccess() {
+        /*
+         * This guard is nonIdempotent because 'isNativeAccessAllowed' may be different for each
+         * context.
+         */
+        @NonIdempotent
+        final boolean nativeAccess() {
             return PythonContext.get(this).isNativeAccessAllowed();
         }
 
@@ -195,10 +199,15 @@ public class CStructAccess {
             UNSAFE.freeMemory(pointer);
         }
 
+        @Specialization
+        static void freeNativePointer(NativePointer pointer) {
+            UNSAFE.freeMemory(pointer.asPointer());
+        }
+
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static void freePointer(Object pointer,
                         @CachedLibrary("pointer") InteropLibrary lib) {
-            freeLong(asPointer(pointer, lib));
+            UNSAFE.freeMemory(asPointer(pointer, lib));
         }
 
         @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
@@ -1111,7 +1120,7 @@ public class CStructAccess {
 
         public final void writeIntArray(Object pointer, int[] values, int length, int sourceOffset, int targetOffset) {
             for (int i = 0; i < length; i++) {
-                execute(pointer, (i + targetOffset) * Long.BYTES, values[i + sourceOffset]);
+                execute(pointer, (long) (i + targetOffset) * Long.BYTES, values[i + sourceOffset]);
             }
         }
 
@@ -1173,6 +1182,12 @@ public class CStructAccess {
 
         public final void writeArrayElement(Object pointer, long element, Object value) {
             execute(pointer, element * POINTER_SIZE, value);
+        }
+
+        public final void writePointerArray(Object pointer, long[] values, int length, int sourceOffset, int targetOffset) {
+            for (int i = 0; i < length; i++) {
+                execute(pointer, (i + targetOffset) * POINTER_SIZE, values[i + sourceOffset]);
+            }
         }
 
         @Specialization

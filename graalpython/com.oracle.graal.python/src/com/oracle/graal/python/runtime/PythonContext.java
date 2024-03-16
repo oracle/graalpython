@@ -68,7 +68,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.nio.file.LinkOption;
@@ -108,15 +107,12 @@ import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
@@ -752,9 +748,6 @@ public final class PythonContext extends Python3Core {
      * main thread, so it doesn't have to be thread-local.
      */
     private final AtomicBoolean inAsyncHandler = new AtomicBoolean(false);
-
-    /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
-    @CompilationFinal(dimensions = 1) private final PythonAbstractObjectNativeWrapper[] singletonNativePtrs = new PythonAbstractObjectNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
 
     // The context-local resources
     private final AsyncHandler handler;
@@ -2026,9 +2019,8 @@ public final class PythonContext extends Python3Core {
             finalizing = true;
             // interrupt and join or kill python threads
             joinThreads();
-            if (!cancelling) {
-                // this cleanup calls into Sulong
-                cleanupCApiResources();
+            if (cApiContext != null) {
+                cApiContext.finalizeCApi();
             }
             // destroy thread state data, if anything is still running, it will crash now
             disposeThreadStates();
@@ -2087,25 +2079,6 @@ public final class PythonContext extends Python3Core {
             ts.dispose(this);
         }
         threadStateMapping.clear();
-    }
-
-    /**
-     * Release all native wrappers of singletons. This function needs to run as long as the context
-     * is still valid because it may call into LLVM to release handles.
-     */
-    @TruffleBoundary
-    private void cleanupCApiResources() {
-        for (PythonNativeWrapper singletonNativeWrapper : singletonNativePtrs) {
-            /*
-             * Note: we may only free the native wrappers if they have no PythonObjectReference
-             * otherwise it could happen that we free them here and again in
-             * 'CApiTransitions.pollReferenceQueue'.
-             */
-            if (singletonNativeWrapper != null && singletonNativeWrapper.ref == null) {
-                PyTruffleObjectFree.releaseNativeWrapperUncached(singletonNativeWrapper);
-            }
-        }
-        CApiTransitions.deallocateNativeWeakRefs(this);
     }
 
     private void cleanupHPyResources() {
@@ -2265,22 +2238,6 @@ public final class PythonContext extends Python3Core {
             nativeClassStableAssumptions.put(cls, assumption);
         }
         return assumption;
-    }
-
-    public void setSingletonNativeWrapper(PythonAbstractObject obj, PythonAbstractObjectNativeWrapper nativePtr) {
-        assert PythonLanguage.getSingletonNativeWrapperIdx(obj) != -1 : "invalid special singleton object";
-        assert singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] == null;
-        // Other threads must see the nativeWrapper fully initialized once it becomes non-null
-        VarHandle.storeStoreFence();
-        singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] = nativePtr;
-    }
-
-    public PythonAbstractObjectNativeWrapper getSingletonNativeWrapper(PythonAbstractObject obj) {
-        int singletonNativePtrIdx = PythonLanguage.getSingletonNativeWrapperIdx(obj);
-        if (singletonNativePtrIdx != -1) {
-            return singletonNativePtrs[singletonNativePtrIdx];
-        }
-        return null;
     }
 
     /**

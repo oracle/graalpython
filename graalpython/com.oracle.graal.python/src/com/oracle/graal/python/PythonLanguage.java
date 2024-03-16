@@ -128,8 +128,6 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExecutableNode;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
@@ -345,7 +343,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
     @CompilationFinal(dimensions = 1) private final Shape[] builtinTypeInstanceShapes = new Shape[PythonBuiltinClassType.VALUES.length];
 
-    @CompilationFinal(dimensions = 1) private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
+    @CompilationFinal(dimensions = 1) public static final PythonAbstractObject[] CONTEXT_INSENSITIVE_SINGLETONS = new PythonAbstractObject[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE,
+                    PNotImplemented.NOT_IMPLEMENTED};
 
     /**
      * Named semaphores are shared between all processes in a system, and they persist until the
@@ -379,20 +378,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static PythonLanguage get(Node node) {
         return REFERENCE.get(node);
-    }
-
-    public static int getNumberOfSpecialSingletons() {
-        return CONTEXT_INSENSITIVE_SINGLETONS.length;
-    }
-
-    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    public static int getSingletonNativeWrapperIdx(Object obj) {
-        for (int i = 0; i < CONTEXT_INSENSITIVE_SINGLETONS.length; i++) {
-            if (CONTEXT_INSENSITIVE_SINGLETONS[i] == obj) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     /**
@@ -1019,7 +1004,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected void exitContext(PythonContext context, ExitMode exitMode, int exitCode) {
         if (context.getCApiContext() != null) {
-            context.getCApiContext().finalizeCapi();
+            context.getCApiContext().exitCApiContext();
         }
         if (!PythonOptions.WITHOUT_PLATFORM_ACCESS && !ImageInfo.inImageBuildtimeCode()) {
             // Reset signal handlers back to what they were

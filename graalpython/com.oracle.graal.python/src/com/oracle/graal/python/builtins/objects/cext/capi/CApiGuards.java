@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 
 public abstract class CApiGuards {
@@ -58,7 +57,7 @@ public abstract class CApiGuards {
     }
 
     public static boolean isSpecialSingleton(Object delegate) {
-        return PythonLanguage.getSingletonNativeWrapperIdx(delegate) != -1;
+        return CApiContext.getSingletonNativeWrapperIdx(delegate) != -1;
     }
 
     /**
@@ -66,12 +65,12 @@ public abstract class CApiGuards {
      * case, native wrappers) are cached.
      */
     public static boolean isSmallInteger(int i) {
-        return -5 <= i && i < 257;
+        return -CApiContext.PY_NSMALLNEGINTS <= i && i < CApiContext.PY_NSMALLPOSINTS;
     }
 
     /** see {@link #isSmallInteger(int)} */
     public static boolean isSmallLong(long i) {
-        return -5 <= i && i < 257;
+        return -CApiContext.PY_NSMALLNEGINTS <= i && i < CApiContext.PY_NSMALLPOSINTS;
     }
 
     public static boolean isSmallIntegerWrapper(PrimitiveNativeWrapper nativeWrapper) {
