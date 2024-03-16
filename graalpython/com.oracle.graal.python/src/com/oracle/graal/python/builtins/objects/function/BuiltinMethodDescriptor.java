@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -135,6 +137,9 @@ public abstract class BuiltinMethodDescriptor {
     private static Builtin findBuiltinAnnotation(String name, NodeFactory<? extends PythonBuiltinBaseNode> factory) {
         for (Builtin builtin : factory.getNodeClass().getAnnotationsByType(Builtin.class)) {
             if (builtin.name().equals(name)) {
+                return builtin;
+            }
+            if (builtin.constructsClass() != PythonBuiltinClassType.nil && J___NEW__.equals(name)) {
                 return builtin;
             }
         }

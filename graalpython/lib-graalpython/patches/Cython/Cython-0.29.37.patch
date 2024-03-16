@@ -177,6 +177,33 @@ index aaa8a8e..152e9dc 100644
      Py_DECREF(ev);
  #else
      {
+@@ -715,7 +713,7 @@ PyObject *__Pyx_Coroutine_SendEx(__pyx_CoroutineObject *self, PyObject *value, i
+ 
+     exc_state = &self->gi_exc_state;
+     if (exc_state->exc_type) {
+-        #if CYTHON_COMPILING_IN_PYPY || CYTHON_COMPILING_IN_PYSTON
++        #if CYTHON_COMPILING_IN_PYPY || CYTHON_COMPILING_IN_PYSTON || GRAALVM_PYTHON
+         // FIXME: what to do in PyPy?
+         #else
+         // Generators always return to their most recent caller, not
+@@ -777,7 +775,7 @@ static CYTHON_INLINE void __Pyx_Coroutine_ResetFrameBackpointer(__Pyx_ExcInfoStr
+     PyObject *exc_tb = exc_state->exc_traceback;
+ 
+     if (likely(exc_tb)) {
+-#if CYTHON_COMPILING_IN_PYPY || CYTHON_COMPILING_IN_PYSTON
++#if CYTHON_COMPILING_IN_PYPY || CYTHON_COMPILING_IN_PYSTON || GRAALVM_PYTHON
+     // FIXME: what to do in PyPy?
+ #else
+         PyTracebackObject *tb = (PyTracebackObject *) exc_tb;
+@@ -1250,7 +1248,7 @@ static void __Pyx_Coroutine_del(PyObject *self) {
+ #else
+         {PyObject *msg;
+         char *cmsg;
+-        #if CYTHON_COMPILING_IN_PYPY
++        #if CYTHON_COMPILING_IN_PYPY || GRAALVM_PYTHON
+         msg = NULL;
+         cmsg = (char*) "coroutine was never awaited";
+         #else
 diff --git a/Cython/Utility/CythonFunction.c b/Cython/Utility/CythonFunction.c
 index 93f577f..5dac1d7 100644
 --- a/Cython/Utility/CythonFunction.c
@@ -212,7 +239,7 @@ index cfff606..4a6a6ea 100644
 +  #undef CYTHON_USE_PYTYPE_LOOKUP
 +  #define CYTHON_USE_PYTYPE_LOOKUP 0
 +  #undef CYTHON_USE_ASYNC_SLOTS
-+  #define CYTHON_USE_ASYNC_SLOTS 0
++  #define CYTHON_USE_ASYNC_SLOTS 1
 +  #undef CYTHON_USE_PYLIST_INTERNALS
 +  #define CYTHON_USE_PYLIST_INTERNALS 0
 +  #undef CYTHON_USE_UNICODE_INTERNALS

@@ -809,7 +809,6 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_INTERN_P = tsLiteral("can't intern %p");
     public static final TruffleString METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P = tsLiteral("Method requires a 'bytes' object, got '%p'");
     public static final TruffleString FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P = tsLiteral("first arg must be bytes or a tuple of bytes, not %p");
-    public static final TruffleString A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P = tsLiteral("a bytes-like object is required, not '%p'");
     public static final TruffleString TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT = tsLiteral("type '%s' takes at least one argument");
     public static final TruffleString S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN = tsLiteral("%s() takes at least %d arguments (%d given)");
     public static final TruffleString S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = tsLiteral("%s() takes at most %d arguments (%d given)");

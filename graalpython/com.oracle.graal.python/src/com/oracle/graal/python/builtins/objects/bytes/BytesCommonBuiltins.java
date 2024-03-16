@@ -36,7 +36,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_ENDSWITH;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REMOVEPREFIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REMOVESUFFIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_STARTSWITH;
-import static com.oracle.graal.python.nodes.ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.BYTESLIKE_OBJ_REQUIRED;
 import static com.oracle.graal.python.nodes.ErrorMessages.DECODER_RETURNED_P_INSTEAD_OF_BYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.DESCRIPTOR_NEED_OBJ;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P;
@@ -500,7 +500,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @NeverDefault
         static BytesNodes.ToBytesNode createToBytesFromTuple() {
-            return BytesNodes.ToBytesNode.create(PythonBuiltinClassType.TypeError, A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P);
+            return BytesNodes.ToBytesNode.create(PythonBuiltinClassType.TypeError, BYTESLIKE_OBJ_REQUIRED);
         }
     }
 
@@ -1368,7 +1368,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Fallback
         static boolean error(@SuppressWarnings("unused") Object self, Object substr, @SuppressWarnings("unused") Object replacement, @SuppressWarnings("unused") Object count,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, substr);
+            throw raiseNode.raise(TypeError, BYTESLIKE_OBJ_REQUIRED, substr);
         }
 
         @TruffleBoundary(allowInlining = true)

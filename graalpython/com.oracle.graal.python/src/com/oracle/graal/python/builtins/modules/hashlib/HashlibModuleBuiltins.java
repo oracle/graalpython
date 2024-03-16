@@ -256,7 +256,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (msg instanceof PNone) {
                 // hmac_digest is a bit more strict
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, msg);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, msg);
             }
             Object hmacObject = newNode.execute(frame, self, key, msg, digest);
             return digestNode.execute(frame, hmacObject);
@@ -311,7 +311,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
             TruffleString digestmod = castStr.execute(inliningTarget, digestmodObj);
             Object key;
             if (!acquireLib.hasBuffer(keyObj)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, keyObj);
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, keyObj);
             } else {
                 key = acquireLib.acquireReadonly(keyObj);
             }
@@ -322,7 +322,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 } else if (acquireLib.hasBuffer(msgObj)) {
                     msg = acquireLib.acquireReadonly(msgObj);
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, msgObj);
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, msgObj);
                 }
                 try {
                     byte[] msgBytes = msg == null ? null : bufferLib.getInternalOrCopiedByteArray(msg);
@@ -374,7 +374,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
             } else if (acquireLib.hasBuffer(value)) {
                 buffer = acquireLib.acquireReadonly(value, frame, indirectCallData);
             } else {
-                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, value);
+                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
             }
             try {
                 byte[] bytes = buffer == null ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
