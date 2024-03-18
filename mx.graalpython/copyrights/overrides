@@ -291,6 +291,7 @@ graalpython/com.oracle.graal.python.cext/src/datetime.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/dictobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/dtoa.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/errors.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/fileobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/floatobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/gcmodule.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c,python.copyright
