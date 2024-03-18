@@ -1,47 +1,5 @@
-From 0194b00a93f145c5539767689c112e04c8bf2b51 Mon Sep 17 00:00:00 2001
-From: Mohaned Qunaibit <mohaned.qunaibit@oracle.com>
-Date: Mon, 30 Oct 2023 17:19:59 +0300
-Subject: [PATCH] patch tensorflow 2.14.0
-
----
- WORKSPACE                                     |   7 +-
- graalpy_build.py                              | 260 ++++++++++++++++++
- graalpy_patch.py                              | 105 +++++++
- pyproject.toml                                |  50 ++++
- rules_python-0.23.1.patch                     | 182 ++++++++++++
- .../dtensor/python/tests/test_backend_util.py |   2 +-
- tensorflow/python/autograph/impl/api_test.py  |   3 +
- .../python/client/tf_session_wrapper.cc       |   4 +-
- .../data/kernel_tests/memory_cleanup_test.py  |   4 +
- .../python/distribute/multi_process_lib.py    |   3 +
- .../eager/memory_tests/memory_test_util.py    |   4 +
- tensorflow/python/eager/pywrap_tfe_src.cc     |  11 +-
- tensorflow/python/framework/dtypes.py         |   2 +-
- .../python/framework/error_interpolation.py   |   3 +-
- tensorflow/python/framework/errors_test.py    |   4 +
- .../python_api_dispatcher_wrapper.cc          |   2 +-
- .../python/framework/python_memory_checker.py |   4 +
- tensorflow/python/framework/test_util.py      |   8 +
- .../tools/api/generator/create_python_api.py  |   2 +-
- tensorflow/python/util/module_wrapper.py      |  55 +++-
- tensorflow/python/util/tf_stack_test.py       |   3 +
- tensorflow/tools/git/gen_git_source.py        |   3 +-
- tensorflow/tools/pip_package/setup.py         |   2 +-
- .../devel.usertools/squash_testlogs.py        |  13 +-
- .../tools/toolchains/python/python_repo.bzl   |   7 +-
- tensorflow/workspace2.bzl                     |   6 +-
- tf_build_backend.py                           |  57 ++++
- third_party/protobuf/protobuf.patch           |   2 +-
- third_party/repo.bzl                          |   8 +-
- 29 files changed, 789 insertions(+), 27 deletions(-)
- create mode 100644 graalpy_build.py
- create mode 100644 graalpy_patch.py
- create mode 100644 pyproject.toml
- create mode 100644 rules_python-0.23.1.patch
- create mode 100644 tf_build_backend.py
-
 diff --git a/WORKSPACE b/WORKSPACE
-index fb3af8a2bea..44ddffba73c 100644
+index fb3af8a2..44ddffba 100644
 --- a/WORKSPACE
 +++ b/WORKSPACE
 @@ -17,6 +17,10 @@ http_archive(
@@ -74,10 +32,10 @@ index fb3af8a2bea..44ddffba73c 100644
  load("@pypi//:requirements.bzl", "install_deps")
 diff --git a/graalpy_build.py b/graalpy_build.py
 new file mode 100644
-index 00000000000..09290d0fd26
+index 00000000..cc493553
 --- /dev/null
 +++ b/graalpy_build.py
-@@ -0,0 +1,260 @@
+@@ -0,0 +1,256 @@
 +
 +import subprocess
 +import os
@@ -91,10 +49,6 @@ index 00000000000..09290d0fd26
 +INTERPRETER_HOME = sys.base_prefix
 +WHL_DIR_PATH = os.path.join(TF_ROOT, "wheel_build")
 +TRACK_DIR = os.path.join(TF_ROOT, "track_test")
-+
-+for e in os.environ:
-+    print(e)
-+    print('\t' + os.environ[e])
 +
 +REQUIREMENTS = [
 +    "setuptools==67.6.1",
@@ -338,13 +292,12 @@ index 00000000000..09290d0fd26
 +
 +if __name__ == '__main__':
 +  main()
-\ No newline at end of file
 diff --git a/graalpy_patch.py b/graalpy_patch.py
 new file mode 100644
-index 00000000000..dc67a9fc453
+index 00000000..b8336892
 --- /dev/null
 +++ b/graalpy_patch.py
-@@ -0,0 +1,105 @@
+@@ -0,0 +1,108 @@
 +try:
 +    import __graalpython__
 +except:
@@ -354,77 +307,80 @@ index 00000000000..dc67a9fc453
 +
 +import sys
 +import os
++from collections import namedtuple
 +
 +if sys.prefix == sys.base_prefix:
 +    raise SystemError('Running in virtualenv is required!')
 +
 +PATCHES_BASE_DIR = os.path.join(__graalpython__.core_home, "patches")
 +
++Patch = namedtuple('Patch', ['path', 'patch_level'], defaults=[1])
++
 +patch_dict = {
-+    "runtime-7d879c8b161085a4374ea481b93a52adb19c0529": "",
-+    "llvm-project-dc275fd03254d67d29cc70a5a0569acf24d2280d": "",
-+    "benchmark-f7547e29ccaed7b64ef4f7495ecfff1c9f6f3d03": "",
-+    "grpc-b54a5b338637f92bfcf4b0bc05e0f57a5fd8fadd": "",
-+    "upb-9effcbcb27f0a665f9f345030188c0b291e32482": "",
-+    "protobuf-3.21.9": str(os.path.join(PATCHES_BASE_DIR, 'protobuf', 'protobuf-3.21.9.patch')),
-+    "googleapis-6b3fdcea8bc5398be4e7e9930c693f0ea09316a0": "",
-+    "rules_android-0.1.1": "",
-+    "flatbuffers-23.1.21": "",
-+    "typing_extensions-4.2.0/src": "",
-+    "wrapt-1.14.1/src/wrapt": "",
-+    "six-1.16.0": "",
-+    "abseil-py-1.0.0": "",
-+    "tblib-1.7.0": "",
-+    "pthreadpool-b8374f80e42010941bda6c85b0e3f1a1bd77a1e0": "",
-+    "gast-0.4.0": "",
-+    "termcolor-1.1.0": "",
-+    "astunparse-1.6.3/lib": "",
-+    "FXdiv-63058eff77e11aa15bf531df5dd34395ec3017c8": "",
-+    "dill-0.3.6": str(os.path.join(PATCHES_BASE_DIR, 'dill', 'dill.patch')),
-+    "farmhash-0d859a811870d10f53a594927d0d0b97573ad06d": "",
-+    "pasta-0.2.0": "",
-+    "giflib-5.2.1": "",
-+    "double-conversion-3.2.0": "",
-+    "OouraFFT-1.0": "",
-+    "kissfft-131.1.0": "",
-+    "FP16-4dfe081cf6bcd15db339cf2680b9281b8451eeb3": "",
-+    "ARM_NEON_2_x86_SSE-a15b489e1222b2087007546b4912e21293ea86ff": "",
-+    "highwayhash-c13d28517a4db259d738ea4886b1f00352a3cc33": "",
-+    "zlib-1.2.13": "",
-+    "libjpeg-turbo-2.1.4": "",
-+    "dlpack-9351cf542ab478499294864ff3acfdab5c8c5f3d": "",
-+    "curl-8.0.1": "",
-+    "sobol_data-835a7d7b1ee3bc83e575e302a985c66ec4b65249": "",
-+    "snappy-984b191f0fefdeb17050b42a90b7625999c13b8d": "",
-+    "re2-a276a8c738735a0fe45a6ee590fe2df69bcf4502": "",
-+    "ruy-3286a34cc8de6149ac6844107dfdffac91531e72": "",
-+    "nsync-1.25.0": "",
-+    "opt_einsum-2.3.2": "",
-+    "libpng-1.6.39": "",
-+    "abseil-cpp-b971ac5250ea8de900eae9f95e06548d14cd95fe": "",
-+    "gemmlowp-e844ffd17118c1e17d94e1ba4354c075a4577b88": "",
-+    "eigen-b0f877f8e01e90a5b0f3a79d46ea234899f8b499": "",
-+    "google-cloud-cpp-1.17.1": "",
-+    "nasm-2.14.02": "",
-+    "cpuinfo-3dc310302210c1891ffcfb12ae67b11a3ad3a150": "",
-+    "boringssl-c00d7ca810e93780bd0c8ee4eea28f4f2ea4bcdc": "",
-+    "stablehlo-43d81c6883ade82052920bd367c61f9e52f09954": "",
-+    "XNNPACK-b9d4073a6913891ce9cbd8965c8d506075d2a45a": "",
-+    "icu-release-69-1": "",
-+    "pybind11_protobuf-80f3440cd8fee124e077e2e47a8a17b78b451363": "",
-+    "pybind11_abseil-2c4932ed6f6204f1656e245838f4f5eae69d2e29": "",
-+    "pybind11-2.10.4": str(os.path.join(PATCHES_BASE_DIR, 'pybind11', 'pybind11-2.10.1.patch')),
-+    "jsoncpp-1.9.5": "",
-+    "cython-0.29.32": str(os.path.join(PATCHES_BASE_DIR, 'Cython', 'Cython-0.29.32.patch')),
-+    "sqlite-amalgamation-3400100": "",
-+    "pybind11_bazel-72cbbf1fbc830e487e3012862b7b720001b70672": "",
-+    "oneDNN-2.7.3": "",
++    "runtime-7d879c8b161085a4374ea481b93a52adb19c0529": None,
++    "llvm-project-dc275fd03254d67d29cc70a5a0569acf24d2280d": None,
++    "benchmark-f7547e29ccaed7b64ef4f7495ecfff1c9f6f3d03": None,
++    "grpc-b54a5b338637f92bfcf4b0bc05e0f57a5fd8fadd": None,
++    "upb-9effcbcb27f0a665f9f345030188c0b291e32482": None,
++    "protobuf-3.21.9": Patch(os.path.join(PATCHES_BASE_DIR, 'protobuf', 'protobuf-3.21.9.patch')),
++    "googleapis-6b3fdcea8bc5398be4e7e9930c693f0ea09316a0": None,
++    "rules_android-0.1.1": None,
++    "flatbuffers-23.1.21": None,
++    "typing_extensions-4.2.0/src": None,
++    "wrapt-1.14.1/src/wrapt": None,
++    "six-1.16.0": None,
++    "abseil-py-1.0.0": None,
++    "tblib-1.7.0": None,
++    "pthreadpool-b8374f80e42010941bda6c85b0e3f1a1bd77a1e0": None,
++    "gast-0.4.0": None,
++    "termcolor-1.1.0": None,
++    "astunparse-1.6.3/lib": None,
++    "FXdiv-63058eff77e11aa15bf531df5dd34395ec3017c8": None,
++    "dill-0.3.6": Patch(os.path.join(PATCHES_BASE_DIR, 'dill', 'dill.patch')),
++    "farmhash-0d859a811870d10f53a594927d0d0b97573ad06d": None,
++    "pasta-0.2.0": None,
++    "giflib-5.2.1": None,
++    "double-conversion-3.2.0": None,
++    "OouraFFT-1.0": None,
++    "kissfft-131.1.0": None,
++    "FP16-4dfe081cf6bcd15db339cf2680b9281b8451eeb3": None,
++    "ARM_NEON_2_x86_SSE-a15b489e1222b2087007546b4912e21293ea86ff": None,
++    "highwayhash-c13d28517a4db259d738ea4886b1f00352a3cc33": None,
++    "zlib-1.2.13": None,
++    "libjpeg-turbo-2.1.4": None,
++    "dlpack-9351cf542ab478499294864ff3acfdab5c8c5f3d": None,
++    "curl-8.0.1": None,
++    "sobol_data-835a7d7b1ee3bc83e575e302a985c66ec4b65249": None,
++    "snappy-984b191f0fefdeb17050b42a90b7625999c13b8d": None,
++    "re2-a276a8c738735a0fe45a6ee590fe2df69bcf4502": None,
++    "ruy-3286a34cc8de6149ac6844107dfdffac91531e72": None,
++    "nsync-1.25.0": None,
++    "opt_einsum-2.3.2": None,
++    "libpng-1.6.39": None,
++    "abseil-cpp-b971ac5250ea8de900eae9f95e06548d14cd95fe": None,
++    "gemmlowp-e844ffd17118c1e17d94e1ba4354c075a4577b88": None,
++    "eigen-b0f877f8e01e90a5b0f3a79d46ea234899f8b499": None,
++    "google-cloud-cpp-1.17.1": None,
++    "nasm-2.14.02": None,
++    "cpuinfo-3dc310302210c1891ffcfb12ae67b11a3ad3a150": None,
++    "boringssl-c00d7ca810e93780bd0c8ee4eea28f4f2ea4bcdc": None,
++    "stablehlo-43d81c6883ade82052920bd367c61f9e52f09954": None,
++    "XNNPACK-b9d4073a6913891ce9cbd8965c8d506075d2a45a": None,
++    "icu-release-69-1": None,
++    "pybind11_protobuf-80f3440cd8fee124e077e2e47a8a17b78b451363": None,
++    "pybind11_abseil-2c4932ed6f6204f1656e245838f4f5eae69d2e29": None,
++    "pybind11-2.10.4": Patch(os.path.join(PATCHES_BASE_DIR, 'pybind11', 'pybind11-2.10.1.patch'), 2),
++    "jsoncpp-1.9.5": None,
++    "cython-0.29.32": Patch(os.path.join(PATCHES_BASE_DIR, 'Cython', 'Cython-0.29.32.patch')),
++    "sqlite-amalgamation-3400100": None,
++    "pybind11_bazel-72cbbf1fbc830e487e3012862b7b720001b70672": None,
++    "oneDNN-2.7.3": None,
 +}
 +
 +def apply_patch(strip_prefix, location, patch):
 +    import subprocess
 +    try:
-+        subprocess.run(["patch", "-f", "-d", location, "-p1", "-i", patch], check=True)
++        subprocess.run(["patch", "-f", "-d", location, f"-p{patch.patch_level}", "-i", patch.path], check=True)
 +    except FileNotFoundError:
 +        print(
 +            "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
@@ -452,7 +408,7 @@ index 00000000000..dc67a9fc453
 +  main()
 diff --git a/pyproject.toml b/pyproject.toml
 new file mode 100644
-index 00000000000..841b726f3fe
+index 00000000..841b726f
 --- /dev/null
 +++ b/pyproject.toml
 @@ -0,0 +1,50 @@
@@ -508,7 +464,7 @@ index 00000000000..841b726f3fe
 +backend-path = ["."]
 diff --git a/rules_python-0.23.1.patch b/rules_python-0.23.1.patch
 new file mode 100644
-index 00000000000..442e3c69c7d
+index 00000000..442e3c69
 --- /dev/null
 +++ b/rules_python-0.23.1.patch
 @@ -0,0 +1,182 @@
@@ -695,7 +651,7 @@ index 00000000000..442e3c69c7d
 +     if patches:
 +         for patch in patches:
 diff --git a/tensorflow/dtensor/python/tests/test_backend_util.py b/tensorflow/dtensor/python/tests/test_backend_util.py
-index 02fc82a71b7..58b902b469c 100644
+index 02fc82a7..58b902b4 100644
 --- a/tensorflow/dtensor/python/tests/test_backend_util.py
 +++ b/tensorflow/dtensor/python/tests/test_backend_util.py
 @@ -71,7 +71,7 @@ def slice_host_devices_for_multiworker(num_clients, client_id, ports):
@@ -708,7 +664,7 @@ index 02fc82a71b7..58b902b469c 100644
  
  def handle_test_main(main, *args, **kwargs):
 diff --git a/tensorflow/python/autograph/impl/api_test.py b/tensorflow/python/autograph/impl/api_test.py
-index 1332240d9df..bf8b4a0926f 100644
+index 1332240d..bf8b4a09 100644
 --- a/tensorflow/python/autograph/impl/api_test.py
 +++ b/tensorflow/python/autograph/impl/api_test.py
 @@ -57,6 +57,9 @@ global_n = 2
@@ -722,7 +678,7 @@ index 1332240d9df..bf8b4a0926f 100644
  class TestResource:
  
 diff --git a/tensorflow/python/client/tf_session_wrapper.cc b/tensorflow/python/client/tf_session_wrapper.cc
-index 61551f0f8c1..d19edb3dd59 100644
+index 61551f0f..d19edb3d 100644
 --- a/tensorflow/python/client/tf_session_wrapper.cc
 +++ b/tensorflow/python/client/tf_session_wrapper.cc
 @@ -814,7 +814,7 @@ void PyOperation::add_control_inputs(py::iterable inputs) {
@@ -744,7 +700,7 @@ index 61551f0f8c1..d19edb3dd59 100644
      }
      return copy;
 diff --git a/tensorflow/python/data/kernel_tests/memory_cleanup_test.py b/tensorflow/python/data/kernel_tests/memory_cleanup_test.py
-index afd5e18eecd..4ec8b9a6643 100644
+index afd5e18e..4ec8b9a6 100644
 --- a/tensorflow/python/data/kernel_tests/memory_cleanup_test.py
 +++ b/tensorflow/python/data/kernel_tests/memory_cleanup_test.py
 @@ -36,6 +36,10 @@ try:
@@ -759,7 +715,7 @@ index afd5e18eecd..4ec8b9a6643 100644
  class MemoryCleanupTest(test_base.DatasetTestBase, parameterized.TestCase):
  
 diff --git a/tensorflow/python/distribute/multi_process_lib.py b/tensorflow/python/distribute/multi_process_lib.py
-index fa1e44fbf58..e4bfb8577e3 100644
+index fa1e44fb..e4bfb857 100644
 --- a/tensorflow/python/distribute/multi_process_lib.py
 +++ b/tensorflow/python/distribute/multi_process_lib.py
 @@ -31,6 +31,9 @@ def is_oss():
@@ -773,7 +729,7 @@ index fa1e44fbf58..e4bfb8577e3 100644
    # flags module causes a variety of unusual errors.
    tpu_args = [arg for arg in sys.argv if arg.startswith('--tpu')]
 diff --git a/tensorflow/python/eager/memory_tests/memory_test_util.py b/tensorflow/python/eager/memory_tests/memory_test_util.py
-index 7d584661b34..cf5370a51cf 100644
+index 7d584661..cf5370a5 100644
 --- a/tensorflow/python/eager/memory_tests/memory_test_util.py
 +++ b/tensorflow/python/eager/memory_tests/memory_test_util.py
 @@ -26,6 +26,10 @@ try:
@@ -788,7 +744,7 @@ index 7d584661b34..cf5370a51cf 100644
  def _instance_count_by_class():
    counter = collections.Counter()
 diff --git a/tensorflow/python/eager/pywrap_tfe_src.cc b/tensorflow/python/eager/pywrap_tfe_src.cc
-index 1981bedc2a4..9e356d1d588 100644
+index 1981bedc..9e356d1d 100644
 --- a/tensorflow/python/eager/pywrap_tfe_src.cc
 +++ b/tensorflow/python/eager/pywrap_tfe_src.cc
 @@ -456,9 +456,10 @@ bool SetOpAttrList(TFE_Context* ctx, TFE_Op* op, const char* key,
@@ -824,7 +780,7 @@ index 1981bedc2a4..9e356d1d588 100644
      PyErr_SetString(PyExc_RuntimeError,
                      "Python eager context has been destroyed");
 diff --git a/tensorflow/python/framework/dtypes.py b/tensorflow/python/framework/dtypes.py
-index 9f17099424f..a3d8626658e 100644
+index 9f170994..a3d86266 100644
 --- a/tensorflow/python/framework/dtypes.py
 +++ b/tensorflow/python/framework/dtypes.py
 @@ -72,7 +72,7 @@ class DType(
@@ -837,7 +793,7 @@ index 9f17099424f..a3d8626658e 100644
    def __init__(self, type_enum, handle_data=None):
      super().__init__(type_enum)
 diff --git a/tensorflow/python/framework/error_interpolation.py b/tensorflow/python/framework/error_interpolation.py
-index 76c727a5fe5..b6f74197a29 100644
+index 76c727a5..b6f74197 100644
 --- a/tensorflow/python/framework/error_interpolation.py
 +++ b/tensorflow/python/framework/error_interpolation.py
 @@ -23,6 +23,7 @@ import os
@@ -858,7 +814,7 @@ index 76c727a5fe5..b6f74197a29 100644
      # do not have tracebacks.
      filename = "<unknown>"
 diff --git a/tensorflow/python/framework/errors_test.py b/tensorflow/python/framework/errors_test.py
-index c2124cb7893..14ec9132453 100644
+index c2124cb7..14ec9132 100644
 --- a/tensorflow/python/framework/errors_test.py
 +++ b/tensorflow/python/framework/errors_test.py
 @@ -27,6 +27,10 @@ from tensorflow.python.lib.io import _pywrap_file_io
@@ -873,7 +829,7 @@ index c2124cb7893..14ec9132453 100644
  class ErrorsTest(test.TestCase):
  
 diff --git a/tensorflow/python/framework/python_api_dispatcher_wrapper.cc b/tensorflow/python/framework/python_api_dispatcher_wrapper.cc
-index d3f688578a7..071fadb1e45 100644
+index d3f68857..071fadb1 100644
 --- a/tensorflow/python/framework/python_api_dispatcher_wrapper.cc
 +++ b/tensorflow/python/framework/python_api_dispatcher_wrapper.cc
 @@ -117,7 +117,7 @@ PYBIND11_MODULE(_pywrap_python_api_dispatcher, m) {
@@ -886,7 +842,7 @@ index d3f688578a7..071fadb1e45 100644
          throw py::type_error("`*py_classes` must be a tuple of types.");
        }
 diff --git a/tensorflow/python/framework/python_memory_checker.py b/tensorflow/python/framework/python_memory_checker.py
-index aa0d2023585..3f5f773a361 100644
+index aa0d2023..3f5f773a 100644
 --- a/tensorflow/python/framework/python_memory_checker.py
 +++ b/tensorflow/python/framework/python_memory_checker.py
 @@ -25,6 +25,10 @@ from tensorflow.python.framework import _python_memory_checker_helper
@@ -901,7 +857,7 @@ index aa0d2023585..3f5f773a361 100644
  def _get_typename(obj):
    """Return human readable pretty type name string."""
 diff --git a/tensorflow/python/framework/test_util.py b/tensorflow/python/framework/test_util.py
-index 906fac99b7e..3ea07d28a31 100644
+index 906fac99..3ea07d28 100644
 --- a/tensorflow/python/framework/test_util.py
 +++ b/tensorflow/python/framework/test_util.py
 @@ -92,6 +92,10 @@ from tensorflow.python.util.compat import collections_abc
@@ -927,7 +883,7 @@ index 906fac99b7e..3ea07d28a31 100644
        try:
          return isinstance(obj,
 diff --git a/tensorflow/python/tools/api/generator/create_python_api.py b/tensorflow/python/tools/api/generator/create_python_api.py
-index 742cc879d0e..cdc65b36473 100644
+index 742cc879..cdc65b36 100644
 --- a/tensorflow/python/tools/api/generator/create_python_api.py
 +++ b/tensorflow/python/tools/api/generator/create_python_api.py
 @@ -144,7 +144,7 @@ class _ModuleInitCodeBuilder(object):
@@ -940,7 +896,7 @@ index 742cc879d0e..cdc65b36473 100644
      import_str = self.format_import(source_module_name, source_name, dest_name)
  
 diff --git a/tensorflow/python/util/module_wrapper.py b/tensorflow/python/util/module_wrapper.py
-index fcf7225d683..f0205b919aa 100644
+index fcf7225d..f0205b91 100644
 --- a/tensorflow/python/util/module_wrapper.py
 +++ b/tensorflow/python/util/module_wrapper.py
 @@ -18,12 +18,63 @@ import importlib
@@ -1010,7 +966,7 @@ index fcf7225d683..f0205b919aa 100644
  compat_v1_usage_gauge = monitoring.BoolGauge('/tensorflow/api/compat/v1',
                                               'compat.v1 usage')
 diff --git a/tensorflow/python/util/tf_stack_test.py b/tensorflow/python/util/tf_stack_test.py
-index 8b607acb30a..d60857507e3 100644
+index 8b607acb..d6085750 100644
 --- a/tensorflow/python/util/tf_stack_test.py
 +++ b/tensorflow/python/util/tf_stack_test.py
 @@ -17,6 +17,7 @@
@@ -1031,7 +987,7 @@ index 8b607acb30a..d60857507e3 100644
      frame = trace.last_user_frame()
      self.assertRegex(repr(frame), 'testLastUserFrame')
 diff --git a/tensorflow/tools/git/gen_git_source.py b/tensorflow/tools/git/gen_git_source.py
-index 2a93649f84a..3ac09a7f30c 100644
+index 2a93649f..3ac09a7f 100644
 --- a/tensorflow/tools/git/gen_git_source.py
 +++ b/tensorflow/tools/git/gen_git_source.py
 @@ -220,7 +220,8 @@ def write_version_info(filename, git_version):
@@ -1045,7 +1001,7 @@ index 2a93649f84a..3ac09a7f30c 100644
  
  def generate(arglist, git_tag_override=None):
 diff --git a/tensorflow/tools/pip_package/setup.py b/tensorflow/tools/pip_package/setup.py
-index 2475ee5d7ce..d97a9df8baf 100644
+index 2475ee5d..d97a9df8 100644
 --- a/tensorflow/tools/pip_package/setup.py
 +++ b/tensorflow/tools/pip_package/setup.py
 @@ -102,7 +102,7 @@ REQUIRED_PACKAGES = [
@@ -1058,7 +1014,7 @@ index 2475ee5d7ce..d97a9df8baf 100644
      # BoringSSL support.
      # See https://github.com/tensorflow/tensorflow/issues/17882.
 diff --git a/tensorflow/tools/tf_sig_build_dockerfiles/devel.usertools/squash_testlogs.py b/tensorflow/tools/tf_sig_build_dockerfiles/devel.usertools/squash_testlogs.py
-index 49c6c2d53ad..a6f4647d736 100755
+index 49c6c2d5..a6f4647d 100755
 --- a/tensorflow/tools/tf_sig_build_dockerfiles/devel.usertools/squash_testlogs.py
 +++ b/tensorflow/tools/tf_sig_build_dockerfiles/devel.usertools/squash_testlogs.py
 @@ -37,7 +37,7 @@ from junitparser import JUnitXml
@@ -1101,7 +1057,7 @@ index 49c6c2d53ad..a6f4647d736 100755
  # need to clarify for shard
  for p in result._elem.xpath(".//error | .//failure"):
 diff --git a/tensorflow/tools/toolchains/python/python_repo.bzl b/tensorflow/tools/toolchains/python/python_repo.bzl
-index 61a45964649..05e00ec5d8b 100644
+index 61a45964..05e00ec5 100644
 --- a/tensorflow/tools/toolchains/python/python_repo.bzl
 +++ b/tensorflow/tools/toolchains/python/python_repo.bzl
 @@ -20,10 +20,13 @@ def _python_repository_impl(repository_ctx):
@@ -1121,7 +1077,7 @@ index 61a45964649..05e00ec5d8b 100644
  
  python_repository = repository_rule(
 diff --git a/tensorflow/workspace2.bzl b/tensorflow/workspace2.bzl
-index 7e9faa558a4..d4ace12a6a6 100644
+index 7e9faa55..d4ace12a 100644
 --- a/tensorflow/workspace2.bzl
 +++ b/tensorflow/workspace2.bzl
 @@ -713,10 +713,10 @@ def _tf_repositories():
@@ -1140,7 +1096,7 @@ index 7e9faa558a4..d4ace12a6a6 100644
      # LINT.IfChange
 diff --git a/tf_build_backend.py b/tf_build_backend.py
 new file mode 100644
-index 00000000000..7da2ad7c9ee
+index 00000000..7da2ad7c
 --- /dev/null
 +++ b/tf_build_backend.py
 @@ -0,0 +1,57 @@
@@ -1202,7 +1158,7 @@ index 00000000000..7da2ad7c9ee
 +        shutil.copyfile(wheel, Path(wheel_directory) / wheel.name)
 +        return str(wheel.name)
 diff --git a/third_party/protobuf/protobuf.patch b/third_party/protobuf/protobuf.patch
-index 9d928ba175f..3685acae21e 100644
+index 9d928ba1..3685acae 100644
 --- a/third_party/protobuf/protobuf.patch
 +++ b/third_party/protobuf/protobuf.patch
 @@ -39,7 +39,7 @@ index 162531226..e93ec4809 100644
@@ -1215,7 +1171,7 @@ index 9d928ba175f..3685acae21e 100644
  +{
  +    if (PyFrame_FastToLocalsWithError(frame) < 0) {
 diff --git a/third_party/repo.bzl b/third_party/repo.bzl
-index 226f8799392..6d7b830eb2b 100644
+index 226f8799..6d7b830e 100644
 --- a/third_party/repo.bzl
 +++ b/third_party/repo.bzl
 @@ -23,8 +23,8 @@ def tf_mirror_urls(url):
@@ -1248,6 +1204,3 @@ index 226f8799392..6d7b830eb2b 100644
          "mirror.tensorflow.org",
          "mirror.bazel.build",
          "storage.googleapis.com",
--- 
-2.25.1
-
