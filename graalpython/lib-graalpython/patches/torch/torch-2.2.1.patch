@@ -317,6 +317,18 @@ index 68fd53d0..2871915e 100644
              auto *tb = reinterpret_cast<PyTracebackObject *>(m_trace.ptr());
  
              // Get the deepest trace possible.
+diff --git a/tools/generate_torch_version.py b/tools/generate_torch_version.py
+index 93689693..81e360dc 100644
+--- a/tools/generate_torch_version.py
++++ b/tools/generate_torch_version.py
+@@ -40,6 +40,7 @@ def get_tag(pytorch_root: Union[str, Path]) -> str:
+ 
+ 
+ def get_torch_version(sha: Optional[str] = None) -> str:
++    return '2.2.1'
+     pytorch_root = Path(__file__).parent.parent
+     version = open(pytorch_root / "version.txt").read().strip()
+ 
 diff --git a/torch/_dynamo/types.py b/torch/_dynamo/types.py
 index 0c1deddd..f60e9d72 100644
 --- a/torch/_dynamo/types.py
