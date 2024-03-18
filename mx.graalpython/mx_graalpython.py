@@ -2740,7 +2740,11 @@ class MavenProject(mx.Distribution, mx.ClasspathDependency):
             self._localExtension = self._remoteExtension = "jar"
         else:
             self._localExtension = self._remoteExtension
-        self.description = self.pom.get_text("description", "")
+        self.description = self.pom.get_text("description")
+        if not self.description:
+            mx.abort(f"MavenProject {self.name} does not have a description, which is required by Maven Central")
+        if not self.pom.get_text("url"):
+            mx.abort(f"MavenProject {self.name} does not have a url, which is required by Maven Central")
         self.sourcesname = f"{self.name}-sources.{self._localExtension}"
         self.sourcesPath = os.path.join(self.get_output_root(), self.sourcesname)
         self.path = self._default_path()
