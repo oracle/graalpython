@@ -138,7 +138,6 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_sre": CopyFromWithOverrides("Modules/_sre"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c": CopyFrom("Modules/unicodedata.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_bz2.c": CopyFrom("Modules/_bz2module.c"),
-    "graalpython/com.oracle.graal.python.cext/modules/_mmap.c": CopyFrom("Modules/mmapmodule.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c": CopyFrom("Modules/_struct.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_testcapi.c": CopyFrom("Modules/_testcapimodule.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.h": CopyFrom("Modules/_ctypes/_ctypes_test.h"),
@@ -148,6 +147,7 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/modules": CopyFromWithOverrides("Modules"),
 
     "graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c": CopyFrom("Modules/getbuildinfo.c"),
+    "graalpython/com.oracle.graal.python.cext/src/datetime.c": CopyFrom("Modules/_datetimemodule.c"),
     "graalpython/com.oracle.graal.python.cext/src/getcompiler.c": CopyFrom("Python/getcompiler.c"),
     "graalpython/com.oracle.graal.python.cext/src/getversion.c": CopyFrom("Python/getversion.c"),
     "graalpython/com.oracle.graal.python.cext/src/mysnprintf.c": CopyFrom("Python/mysnprintf.c"),
