@@ -45,6 +45,8 @@ SOFTWARE.
   <groupId>org.graalvm.python</groupId>
   <artifactId>graalpy-archetype-polyglot-app</artifactId>
   <version>24.1.0</version>
+  <url>http://www.graalvm.org/</url>
+  <description>Maven archetype providing a skeleton GraalPy - Java polyglot application.</description>
   <packaging>maven-archetype</packaging>
 
   <properties>
