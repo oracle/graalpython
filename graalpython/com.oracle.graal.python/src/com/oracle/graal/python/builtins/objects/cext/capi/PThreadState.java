@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 
@@ -78,7 +79,7 @@ public final class PThreadState extends PythonStructNativeWrapper {
 
     public static Object getThreadState(PythonThreadState threadState) {
         PThreadState nativeWrapper = threadState.getNativeWrapper();
-        if (nativeWrapper == null) {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, nativeWrapper == null)) {
             nativeWrapper = new PThreadState(threadState);
             threadState.setNativeWrapper(nativeWrapper);
         }
