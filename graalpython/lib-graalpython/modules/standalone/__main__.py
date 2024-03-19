@@ -165,11 +165,11 @@ def create_native_exec(parsed_args):
     else:
         artifacts.append("org.graalvm.polyglot.python")
 
-    target_dir = get_download_dir(parsed_args)
+    target_dir = tempfile.mkdtemp()
     try:
         ni, jc = get_tools(target_dir, parsed_args)
                 
-        modules_path = target_dir
+        modules_path = get_download_dir(parsed_args)
         for artifact in artifacts:
             download_maven_artifact(modules_path, artifact, parsed_args)
         
