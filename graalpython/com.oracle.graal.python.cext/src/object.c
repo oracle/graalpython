@@ -867,7 +867,7 @@ Py_ssize_t PyTruffle_SIZE(PyObject *ob) {
          * PyVarObject in future.
          */
         if (ptr->ob_type == &PyTuple_Type) {
-            res = ((PyVarObject *) ptr)->ob_size;
+            res = ((GraalPyVarObject *) ptr)->ob_size;
 #ifndef NDEBUG
             if (PyTruffle_Debug_CAPI() && GraalPy_get_PyVarObject_ob_size(a) != res)
             {

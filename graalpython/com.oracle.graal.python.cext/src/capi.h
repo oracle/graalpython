@@ -113,12 +113,13 @@ typedef struct {
 } propertyobject;
 
 typedef struct {
-    PyObject_VAR_HEAD
+    PyObject_HEAD
     int32_t handle_table_index;
 } GraalPyObject;
 
 typedef struct {
     GraalPyObject ob_base;
+    Py_ssize_t ob_size;
     PyObject **ob_item;
 } GraalPyVarObject;
 
