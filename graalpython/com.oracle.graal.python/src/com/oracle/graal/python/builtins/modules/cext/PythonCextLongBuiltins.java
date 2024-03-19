@@ -227,7 +227,7 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Long, args = {PyObject, Int, ArgDescriptor.Long}, call = Ignored)
+    @CApiBuiltin(ret = LONG_LONG, args = {PyObject, Int, SIZE_T}, call = Ignored)
     abstract static class PyTruffleLong_AsPrimitive extends CApiTernaryBuiltinNode {
 
         @Specialization

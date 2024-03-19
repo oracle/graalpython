@@ -468,7 +468,7 @@ PyLong_AsLongAndOverflow(PyObject *vv, int *overflow)
         PyErr_BadInternalCall();
         return -1;
     }
-    long result = GraalPyTruffleLong_AsPrimitive(vv, MODE_COERCE_SIGNED, sizeof(long));
+    long result = (long) GraalPyTruffleLong_AsPrimitive(vv, MODE_COERCE_SIGNED, sizeof(long));
     if (result == -1L && PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_OverflowError)) {
         PyErr_Clear();
         *overflow = _PyLong_Sign(vv);
@@ -485,7 +485,7 @@ long
 PyLong_AsLong(PyObject *obj)
 {
     // GraalPy change: different implementation
-    return GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
+    return (long) GraalPyTruffleLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
 }
 
 /* Get a C int from an int object or any object that has an __index__
@@ -511,7 +511,7 @@ _PyLong_AsInt(PyObject *obj)
 
 Py_ssize_t
 PyLong_AsSsize_t(PyObject *vv) {
-    return GraalPyTruffleLong_AsPrimitive(vv, MODE_PINT_SIGNED, sizeof(Py_ssize_t));
+    return (Py_ssize_t) GraalPyTruffleLong_AsPrimitive(vv, MODE_PINT_SIGNED, sizeof(Py_ssize_t));
 }
 
 /* Get a C unsigned long int from an int object.
@@ -535,7 +535,7 @@ size_t
 PyLong_AsSize_t(PyObject *vv)
 {
     // GraalPy change: different implementation
-    return GraalPyTruffleLong_AsPrimitive(vv, MODE_PINT_UNSIGNED, sizeof(size_t));
+    return (size_t) GraalPyTruffleLong_AsPrimitive(vv, MODE_PINT_UNSIGNED, sizeof(size_t));
 }
 
 #if 0 // GraalPy change
