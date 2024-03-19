@@ -297,6 +297,7 @@ graalpython/com.oracle.graal.python.cext/src/gcmodule.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getcompiler.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getversion.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/import.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/longobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/memoryobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/moduleobject.c,python.copyright
