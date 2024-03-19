@@ -9,3 +9,7 @@ patch = 'cryptography-39.0.2.patch'
 [[rules]]
 version = '== 41.0.3'
 patch = 'cryptography-41.0.3.patch'
+
+[[rules]]
+version = '== 42.0.5'
+patch = 'cryptography-42.0.5.patch'
