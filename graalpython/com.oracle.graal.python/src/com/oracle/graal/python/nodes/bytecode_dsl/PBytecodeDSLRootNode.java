@@ -1481,7 +1481,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static PSet perform(VirtualFrame frame, Object[] elements,
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
                         @Bind("this") Node node,
-                        @Cached(value = "elements.length", neverDefault = true) int length,
+                        @Cached(value = "elements.length", neverDefault = false) int length,
                         @Cached SetNodes.AddNode addNode,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode) {
             // TODO (GR-52217): make length a DSL constant.

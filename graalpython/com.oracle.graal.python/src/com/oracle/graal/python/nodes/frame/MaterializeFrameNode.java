@@ -182,14 +182,25 @@ public abstract class MaterializeFrameNode extends Node {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
             BytecodeDSLFrameInfo bytecodeDSLFrameInfo = (BytecodeDSLFrameInfo) info;
             PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
-            if (location instanceof PBytecodeDSLRootNode) {
-                throw new AssertionError("The root node was passed as a location, but the root node is insufficient for identifying a bytecode location.");
-            } else if (location.getRootNode() != rootNode) {
+
+            if (location.getRootNode() != rootNode) {
                 throw new AssertionError("A node that did not belong to this root node was passed as a location.");
             }
-            BytecodeNode bytecodeNode = BytecodeNode.get(location);
-            pyFrame.setBci(bytecodeNode.getBytecodeLocation(frameToMaterialize, location).getBytecodeIndex());
-            pyFrame.setLocation(bytecodeNode);
+
+            if (location instanceof PBytecodeDSLRootNode) {
+                /**
+                 * Sometimes we don't have a precise location (see
+                 * {@link ReadCallerFrameNode#getFrame}). Set bci to -1 to mark the location as
+                 * unknown.
+                 */
+                pyFrame.setBci(-1);
+                pyFrame.setLocation(location);
+            } else {
+                BytecodeNode bytecodeNode = BytecodeNode.get(location);
+                assert bytecodeNode != null;
+                pyFrame.setBci(bytecodeNode.getBytecodeLocation(frameToMaterialize, location).getBytecodeIndex());
+                pyFrame.setLocation(bytecodeNode);
+            }
         } else {
             BytecodeFrameInfo bytecodeFrameInfo = (BytecodeFrameInfo) info;
             pyFrame.setBci(bytecodeFrameInfo.getBci(frameToMaterialize));

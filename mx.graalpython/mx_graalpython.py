@@ -762,8 +762,10 @@ AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py", "test_ssl_java_in
 # These test would work on JVM too, but they are prohibitively slow due to a large amount of subprocesses
 AOT_ONLY_TESTS = ["test_patched_pip.py", "test_multiprocessing_spawn.py"]
 
-# This test hangs the test runner.
-BYTECODE_DSL_INCOMPATIBLE_TESTS = ["test_pdb.py"]
+BYTECODE_DSL_INCOMPATIBLE_TESTS = [
+    "test_pdb.py", # This test hangs the test runner.
+    "test_codeobject.py", # Relies on getBytecodeNode support for continuations
+]
 
 GINSTALL_GATE_PACKAGES = {
     "numpy": "numpy",
@@ -1131,6 +1133,7 @@ def graalpytest(args):
     parser.add_argument('--python', type=str, action='store', default="", help='Run tests with custom Python binary.')
     parser.add_argument('-v', "--verbose", action="store_true", help='Verbose output.', default=True)
     parser.add_argument('-k', dest="filter", default='', help='Test pattern.')
+    parser.add_argument("--use-bytecode-dsl-interpreter", action='store_true')
     parser.add_argument('test', nargs="*", default=[], help='Test file to run (specify absolute or relative; e.g. "/path/to/test_file.py" or "cpyext/test_object.py") ')
     args, unknown_args = parser.parse_known_args(args)
 
@@ -1138,8 +1141,14 @@ def graalpytest(args):
     if not DISABLE_REBUILD:
         mx.command_function("build")(["--only", "com.oracle.graal.python.test"])
 
-    testfiles = _list_graalpython_unittests(args.test)
     cmd_args = []
+    excludes = []
+
+    if args.use_bytecode_dsl_interpreter:
+        cmd_args += ["--vm.Dpython.EnableBytecodeDSLInterpreter=true"]
+        excludes = BYTECODE_DSL_INCOMPATIBLE_TESTS
+
+    testfiles = _list_graalpython_unittests(args.test, exclude=excludes)
     # if we got a binary path it's most likely CPython, so don't add graalpython args
     if not args.python:
         cmd_args += ["--experimental-options=true", "--python.EnableDebuggingBuiltins"]
@@ -1148,7 +1157,7 @@ def graalpytest(args):
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         cmd_args += gp_args
     # we assume that unknown args are polyglot arguments and just prepend them to the test driver
-    cmd_args += unknown_args + [_graalpytest_driver()]
+    cmd_args += unknown_args + [_graalpytest_driver(), "--report", "test_report.json"]
     if args.verbose:
         cmd_args += ["-v"]
     cmd_args += testfiles
