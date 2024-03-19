@@ -74,6 +74,7 @@ public enum CStructs {
     GraalPyFloatObject,
     PyLongObject,
     PyModuleDef_Base,
+    Py_complex,
     PyComplexObject,
     PyDateTime_Date,
     PyDateTime_Time,

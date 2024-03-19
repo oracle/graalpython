@@ -304,6 +304,9 @@ public enum CFields {
 
     PyModuleDef_Base__m_index(Py_ssize_t),
 
+    Py_complex__real(Double),
+    Py_complex__imag(Double),
+
     PyComplexObject__cval__real(Double),
     PyComplexObject__cval__imag(Double),
 
