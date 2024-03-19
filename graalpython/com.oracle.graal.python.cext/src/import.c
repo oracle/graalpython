@@ -23,7 +23,7 @@
 #include "importdl.h"             // _PyImport_DynLoadFiletab
 #include "pydtrace.h"             // PyDTrace_IMPORT_FIND_LOAD_START_ENABLED()
 #include <stdbool.h>              // bool
-#endif 0 // GraalPy change
+#endif // GraalPy change
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
