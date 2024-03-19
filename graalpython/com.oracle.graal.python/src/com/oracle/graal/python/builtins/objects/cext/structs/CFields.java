@@ -118,6 +118,7 @@ public enum CFields {
     GraalPyObject__handle_table_index(Int),
     GraalPyVarObject__ob_size(Py_ssize_t),
     GraalPyVarObject__ob_item(PyObjectPtr),
+    GraalPyFloatObject__ob_fval(Double),
 
     PyModuleDef__m_name(ConstCharPtr),
     PyModuleDef__m_doc(ConstCharPtr),

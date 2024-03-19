@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -82,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.AllocateNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
@@ -102,6 +104,7 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -390,7 +393,7 @@ public abstract class CApiTransitions {
                              * free'd at context finalization.
                              */
                             long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
-                            if (subNativeRefCount(stubPointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
+                            if (subNativeRefCount(stubPointer, MANAGED_REFCNT) == 0) {
                                 freeNativeStub(stubPointer);
                             } else {
                                 /*
@@ -429,7 +432,7 @@ public abstract class CApiTransitions {
      */
     private static void processNativeObjectReference(NativeObjectReference reference, NativeObjectReferenceArrayWrapper referencesToBeFreed) {
         LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
-        if (subNativeRefCount(reference.pointer, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT) == 0) {
+        if (subNativeRefCount(reference.pointer, MANAGED_REFCNT) == 0) {
             referencesToBeFreed.add(reference.pointer);
         }
     }
@@ -752,6 +755,7 @@ public abstract class CApiTransitions {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    @ImportStatic(CApiGuards.class)
     public abstract static class FirstToNativeNode extends Node {
 
         public static long executeUncached(PythonAbstractObjectNativeWrapper wrapper, boolean immortal) {
@@ -765,46 +769,120 @@ public abstract class CApiTransitions {
         public abstract long execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean immortal);
 
         @Specialization
-        static long doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean immortal,
+        static long doPrimitiveNativeWrapper(Node inliningTarget, PrimitiveNativeWrapper wrapper, boolean immortal,
+                        @Shared @Cached(inline = false) CStructAccess.WriteDoubleNode writeDoubleNode,
+                        @Shared @Cached InlinedConditionProfile isFloatObjectProfile,
+                        @Shared @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
+            boolean isFloat = isFloatObjectProfile.profile(inliningTarget, wrapper.isDouble());
+            CStructs ctype = isFloat ? CStructs.GraalPyFloatObject : CStructs.GraalPyObject;
+            Object type;
+            if (wrapper.isBool()) {
+                type = PythonBuiltinClassType.Boolean;
+            } else if (wrapper.isIntLike()) {
+                type = PythonBuiltinClassType.PInt;
+            } else if (isFloat) {
+                type = PythonBuiltinClassType.PFloat;
+            } else {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            long taggedPointer = allocateNativeObjectStubNode.execute(inliningTarget, wrapper, type, ctype, immortal);
+
+            // allocate a native stub object (C type: GraalPy*Object)
+            if (isFloat) {
+                long realPointer = HandlePointerConverter.pointerToStub(taggedPointer);
+                writeDoubleNode.write(realPointer, CFields.GraalPyFloatObject__ob_fval, wrapper.getDouble());
+            }
+            return taggedPointer;
+        }
+
+        @Specialization(guards = "!isPrimitiveNativeWrapper(wrapper)")
+        static long doOther(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean immortal,
+                        @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
+                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
+                        @Shared @Cached(inline = false) CStructAccess.WriteDoubleNode writeDoubleNode,
+                        @Exclusive @Cached InlinedConditionProfile isVarObjectProfile,
+                        @Shared @Cached InlinedConditionProfile isFloatObjectProfile,
+                        @Cached GetClassNode getClassNode,
+                        @Shared @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
+
+            assert !(wrapper instanceof TruffleObjectNativeWrapper);
+            assert !(wrapper instanceof PrimitiveNativeWrapper);
+
+            Object delegate = wrapper.getDelegate();
+            Object type = getClassNode.execute(inliningTarget, delegate);
+
+            CStructs ctype;
+            if (isVarObjectProfile.profile(inliningTarget, delegate instanceof PTuple)) {
+                ctype = CStructs.GraalPyVarObject;
+            } else if (isFloatObjectProfile.profile(inliningTarget, delegate instanceof Double || delegate instanceof PFloat)) {
+                ctype = CStructs.GraalPyFloatObject;
+            } else {
+                ctype = CStructs.GraalPyObject;
+            }
+
+            long taggedPointer = allocateNativeObjectStubNode.execute(inliningTarget, wrapper, type, ctype, immortal);
+
+            // allocate a native stub object (C type: GraalPy*Object)
+            if (ctype == CStructs.GraalPyVarObject) {
+                assert delegate instanceof PTuple;
+                SequenceStorage sequenceStorage = ((PTuple) delegate).getSequenceStorage();
+                long realPointer = HandlePointerConverter.pointerToStub(taggedPointer);
+                writeLongNode.write(realPointer, CFields.GraalPyVarObject__ob_size, sequenceStorage.length());
+                Object obItemPtr = 0L;
+                if (sequenceStorage instanceof NativeSequenceStorage nativeSequenceStorage) {
+                    obItemPtr = nativeSequenceStorage.getPtr();
+                }
+                writePointerNode.write(realPointer, CFields.GraalPyVarObject__ob_item, obItemPtr);
+            } else if (ctype == CStructs.GraalPyFloatObject) {
+                assert delegate instanceof Double || delegate instanceof PFloat;
+                long realPointer = HandlePointerConverter.pointerToStub(taggedPointer);
+                double fval;
+                if (delegate instanceof Double d) {
+                    fval = d;
+                } else {
+                    fval = ((PFloat) delegate).getValue();
+                }
+                writeDoubleNode.write(realPointer, CFields.GraalPyFloatObject__ob_fval, fval);
+            }
+
+            return taggedPointer;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class AllocateNativeObjectStubNode extends Node {
+
+        abstract long execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, Object type, CStructs ctype, boolean immortal);
+
+        @Specialization
+        static long doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, Object type, CStructs ctype, boolean immortal,
                         @Cached(inline = false) GilNode gil,
                         @Cached(inline = false) CStructAccess.AllocateNode allocateNode,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
-                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
                         @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNode,
                         @Cached(inline = false) CStructAccess.WriteIntNode writeIntNode,
-                        @Cached InlinedConditionProfile isVarObjectProfile,
-                        @Cached InlinedExactClassProfile wrapperProfile,
-                        @Cached GetClassNode getClassNode,
                         @Cached CoerceNativePointerToLongNode coerceToLongNode) {
 
+            log(wrapper);
+            pollReferenceQueue();
+
+            long initialRefCount = immortal ? IMMORTAL_REFCNT : MANAGED_REFCNT;
+
+            // allocate a native stub object (C type: GraalPy*Object)
+            Object nativeObjectStub = allocateNode.alloc(ctype);
+
+            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
+            long stubPointer = coerceToLongNode.execute(inliningTarget, nativeObjectStub);
+            long taggedPointer = HandlePointerConverter.stubToPointer(stubPointer);
+
+            writeLongNode.write(stubPointer, CFields.PyObject__ob_refcnt, initialRefCount);
+            writeObjectNode.write(stubPointer, CFields.PyObject__ob_type, type);
+
+            // TODO(fa): this should not require the GIL (GR-51314)
             boolean acquired = gil.acquire();
             try {
-                log(wrapper);
-                assert !(wrapper instanceof TruffleObjectNativeWrapper);
-                pollReferenceQueue();
-
-                long initialRefCount = immortal ? IMMORTAL_REFCNT : PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
-
-                Object delegate = NativeToPythonNode.handleWrapper(inliningTarget, wrapperProfile, false, wrapper);
-                Object type = getClassNode.execute(inliningTarget, delegate);
-
-                // allocate a native stub object (C type: PyObject)
-                boolean isTuple = isVarObjectProfile.profile(inliningTarget, delegate instanceof PTuple);
-                Object nativeObjectStub = allocateNode.alloc(isTuple ? CStructs.GraalPyVarObject : CStructs.GraalPyObject);
-                writeLongNode.write(nativeObjectStub, CFields.PyObject__ob_refcnt, initialRefCount);
-                writeObjectNode.write(nativeObjectStub, CFields.PyObject__ob_type, type);
-                if (isTuple) {
-                    SequenceStorage sequenceStorage = ((PTuple) delegate).getSequenceStorage();
-                    writeLongNode.write(nativeObjectStub, CFields.PyVarObject__ob_size, sequenceStorage.length());
-                    Object obItemPtr = 0L;
-                    if (sequenceStorage instanceof NativeSequenceStorage nativeSequenceStorage) {
-                        obItemPtr = nativeSequenceStorage.getPtr();
-                    }
-                    writePointerNode.write(nativeObjectStub, CFields.GraalPyVarObject__ob_item, obItemPtr);
-                }
-                HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
-                long stubPointer = coerceToLongNode.execute(inliningTarget, nativeObjectStub);
-                long taggedPointer = HandlePointerConverter.stubToPointer(stubPointer);
                 int idx = nativeStubLookupReserve(handleContext);
                 // We don't allow 'handleTableIndex == 0' to avoid that zeroed memory
                 // accidentally maps to some valid object.
@@ -812,8 +890,6 @@ public abstract class CApiTransitions {
                 writeIntNode.write(stubPointer, CFields.GraalPyObject__handle_table_index, idx);
                 PythonObjectReference ref = PythonObjectReference.create(handleContext, wrapper, immortal, taggedPointer, idx);
                 nativeStubLookupPut(handleContext, ref);
-
-                return logResult(taggedPointer);
             } catch (OverflowException e) {
                 /*
                  * The OverflowException may be thrown by 'nativeStubLookupReserve' and indicates
@@ -825,6 +901,7 @@ public abstract class CApiTransitions {
             } finally {
                 gil.release(acquired);
             }
+            return logResult(taggedPointer);
         }
     }
 
@@ -1283,7 +1360,7 @@ public abstract class CApiTransitions {
                  * *MUST* have done an incref and so the refcount must be greater than
                  * MANAGED_REFCNT.
                  */
-                assert objectNativeWrapper.getRefCount() > PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
+                assert objectNativeWrapper.getRefCount() > MANAGED_REFCNT;
                 objectNativeWrapper.decRef();
             }
             if (profiledWrapper instanceof PrimitiveNativeWrapper primitive) {
@@ -1480,7 +1557,7 @@ public abstract class CApiTransitions {
         NativeObjectReference ref = new NativeObjectReference(handleContext, result, pointer);
         nativeLookupPut(getContext(), pointer, ref);
 
-        long refCntDelta = PythonAbstractObjectNativeWrapper.MANAGED_REFCNT - (transfer ? 1 : 0);
+        long refCntDelta = MANAGED_REFCNT - (transfer ? 1 : 0);
         addNativeRefCount(pointer, refCntDelta);
         return result;
     }

@@ -123,6 +123,11 @@ typedef struct {
     PyObject **ob_item;
 } GraalPyVarObject;
 
+typedef struct {
+    GraalPyObject ob_base;
+    double ob_fval;
+} GraalPyFloatObject;
+
 // {{start CAPI_BUILTINS}}
 #include "capi.gen.h"
 
