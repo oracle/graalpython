@@ -1296,12 +1296,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             final int beginBci = bci;
             tracingOrProfilingEnabled = checkTracingAndProfilingEnabled(noTraceOrProfile, mutableData);
             if (isTracingEnabled(tracingOrProfilingEnabled)) {
-                int stackDiff = traceLine(virtualFrame, mutableData, localBC, bci);
+                final int stackDiff = traceLine(virtualFrame, mutableData, localBC, bci);
                 if (stackDiff <= 0) {
-                    // traceLine already set the correct bci
+                    // The loop must be partially unrollable assuming a certain sequence of bytecode
+                    // instructions. A jump can happen non-deterministically and thus break this
+                    // assumption
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     bci = virtualFrame.getInt(bciSlot);
                     stackTop += stackDiff;
-                    continue; // todo code in big loop
+                    continue;
                 }
             }
 
@@ -2926,23 +2929,23 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             PFrame pyFrame = mutableData.getPyFrame();
             if (pyFrame.didJump()) {
                 mutableData.setPastBci(bci);
-                return bci;
+                return ret;
             }
             if (pyFrame.getTraceLine()) {
-                pyFrame.setJumpDestLine(PFrame.NO_JUMP); // jumps from live event allowed
+                pyFrame.setJumpDestLine(PFrame.NO_JUMP); // jumps from line event allowed
                 invokeTraceFunction(virtualFrame, null, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.LINE,
                                 mutableData.getPastLine(), true);
                 if (pyFrame.didJump()) {
                     int newBci = lineToBci(pyFrame.getJumpDestLine());
                     mutableData.setPastBci(bci);
-                    if (newBci == -1) {
-                        // line before the code block
-                        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LINE_D_COMES_AFTER_THE_CURRENT_CODE_BLOCK, pyFrame.getLine());
-                    } else if (newBci == -2) {
+                    if (newBci == CodeUnit.LINE_TO_BCI_LINE_AFTER_CODEBLOCK) {
                         // line after the code block
+                        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LINE_D_COMES_AFTER_THE_CURRENT_CODE_BLOCK, pyFrame.getLine());
+                    } else if (newBci == CodeUnit.LINE_TO_BCI_LINE_BEFORE_CODEBLOCK) {
+                        // line before the code block
                         throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LINE_D_COMES_BEFORE_THE_CURRENT_CODE_BLOCK, pyFrame.getJumpDestLine());
                     } else {
-                        ret = computeJump(bci, newBci);
+                        ret = computeJumpStackDifference(bci, newBci);
                         setCurrentBci(virtualFrame, bcioffset, newBci);
                     }
                 }
@@ -2954,7 +2957,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @TruffleBoundary
-    private int computeJump(int bci, int newBci) {
+    private int computeJumpStackDifference(int bci, int newBci) {
         int ret;
         var stacks = co.computeStackElems();
         String error = co.checkJump(stacks, bci, newBci);

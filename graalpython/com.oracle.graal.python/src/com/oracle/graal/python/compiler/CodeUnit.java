@@ -534,6 +534,9 @@ public final class CodeUnit {
         throw new IllegalStateException("Unknown type");
     }
 
+    public static final int LINE_TO_BCI_LINE_AFTER_CODEBLOCK = -1;
+    public static final int LINE_TO_BCI_LINE_BEFORE_CODEBLOCK = -2;
+
     // -1 for line after the code block, -2 for line before the code block, line number otherwise
     public int lineToBci(int line) {
         if (startLine == line) {
@@ -544,7 +547,7 @@ public final class CodeUnit {
             return 0;
         }
         int[] map = getSourceMap().startLineMap;
-        int bestBci = -1;
+        int bestBci = LINE_TO_BCI_LINE_AFTER_CODEBLOCK;
         int lineDiff = Integer.MAX_VALUE;
         boolean afterFirst = false;
         for (int bci = 0; bci < map.length; ++bci) {
@@ -562,7 +565,7 @@ public final class CodeUnit {
             }
         }
         // bestBci being -1 means the line is outside the code block
-        return afterFirst ? bestBci : -2;
+        return afterFirst ? bestBci : LINE_TO_BCI_LINE_BEFORE_CODEBLOCK;
     }
 
     public enum StackItem {

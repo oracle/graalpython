@@ -87,12 +87,15 @@ public final class FrameBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static TruffleString repr(VirtualFrame frame, PFrame self,
+        TruffleString repr(VirtualFrame frame, PFrame self,
                         @Cached GetCodeNode getCodeNode,
-                        @Cached GetLinenoNode getLinenoNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile profile,
+                        @Cached MaterializeFrameNode materializeFrameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             PCode code = getCodeNode.executeObject(frame, self);
-            int lineno = getLinenoNode.executeInt(frame, self);
+            LinenoNode.syncLocationIfNeeded(frame, self, this, inliningTarget, profile, materializeFrameNode);
+            int lineno = self.getLine();
             return simpleTruffleStringFormatNode.format("<frame at 0x%s, file '%s', line %d, code %s>",
                             objectHashCodeAsHexString(self), code.getFilename(), lineno, code.getName());
         }
@@ -145,26 +148,6 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateNodeFactory
-    public abstract static class GetLinenoNode extends PythonBuiltinNode {
-        // Kept around since it is used by other nodes
-        public abstract int executeInt(VirtualFrame frame, PFrame self);
-
-        @Specialization
-        int get(VirtualFrame frame, PFrame self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile isCurrentFrameProfile,
-                        @Cached MaterializeFrameNode materializeNode) {
-            LinenoNode.syncLocationIfNeeded(frame, self, this, inliningTarget, isCurrentFrameProfile, materializeNode);
-            return self.getLine();
-        }
-
-        @NeverDefault
-        public static GetLinenoNode create() {
-            return FrameBuiltinsFactory.GetLinenoNodeFactory.create(null);
-        }
-    }
-
     @Builtin(name = "f_lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
     @GenerateNodeFactory
     public abstract static class LinenoNode extends PythonBinaryBuiltinNode {
@@ -179,8 +162,11 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(newLineno)")
         int get(VirtualFrame frame, PFrame self, Object newLineno,
-                        @Cached GetLinenoNode getLinenoNode) {
-            return getLinenoNode.executeInt(frame, self);
+                        @Bind("this") Node inliningTarget,
+                        @Cached @Cached.Exclusive InlinedConditionProfile profile,
+                        @Cached @Cached.Exclusive MaterializeFrameNode frameNode) {
+            syncLocationIfNeeded(frame, self, this, inliningTarget, profile, frameNode);
+            return self.getLine();
         }
 
         static void syncLocationIfNeeded(VirtualFrame frame, PFrame self, Node location, Node inliningTarget, InlinedConditionProfile isCurrentFrameProfile, MaterializeFrameNode materializeNode) {
@@ -198,8 +184,8 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(newLineno)", "!isDeleteMarker(newLineno)"})
         PNone set(VirtualFrame frame, PFrame self, Object newLineno,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile isCurrentFrameProfile,
-                        @Cached MaterializeFrameNode materializeNode,
+                        @Cached @Cached.Exclusive InlinedConditionProfile isCurrentFrameProfile,
+                        @Cached @Cached.Exclusive MaterializeFrameNode materializeNode,
                         @Cached @Cached.Exclusive PRaiseNode.Lazy raise,
                         @Cached PyLongCheckExactNode isLong,
                         @Cached PyLongAsLongAndOverflowNode toLong) {
