@@ -300,6 +300,7 @@ graalpython/com.oracle.graal.python.cext/src/getversion.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/import.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/longobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/memoryobject.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/modsupport.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/moduleobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/mysnprintf.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/mystrtoul.c,python.copyright
