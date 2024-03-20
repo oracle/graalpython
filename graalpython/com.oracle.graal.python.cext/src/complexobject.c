@@ -324,18 +324,14 @@ PyComplex_AsCComplex(PyObject *op)
     // GraalPy change: different implementation
     /* If op is already of type PyComplex_Type, return its value */
     if (!points_to_py_handle_space(op) && PyComplex_Check(op)) {
-        return ((PyComplexObject *)op)->cval;
+        return ((PyComplexObject*) op)->cval;
     }
-	PyObject* parts = GraalPyTruffleComplex_AsCComplex(op);
-	Py_complex result;
-	if(parts != NULL) {
-		result.real = PyFloat_AsDouble(PyTuple_GetItem(parts, 0));
-		result.imag = PyFloat_AsDouble(PyTuple_GetItem(parts, 1));
-		Py_DecRef(parts);
-		return result;
-	}
-    Py_complex c_error = {-1., 0.};
-	return c_error;
+    Py_complex result;
+    if (GraalPyTruffleComplex_AsCComplex(op, &result) == 0) {
+        return result;
+    }
+    Py_complex c_error = { -1., 0. };
+    return c_error;
 }
 
 #if 0 // GraalPy change

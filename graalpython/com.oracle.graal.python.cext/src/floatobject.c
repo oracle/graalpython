@@ -299,10 +299,22 @@ float_dealloc(PyObject *op)
 double
 PyFloat_AsDouble(PyObject *op)
 {
-    // GraalPy change: upcall for managed
-	if (points_to_py_handle_space(op)) {
-		return GraalPyTruffleFloat_AsDouble(op);
-	}
+    // GraalPy change: read from native object stub or upcall for managed
+    if (points_to_py_handle_space(op)) {
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+        if (PyFloat_Check(op)) {
+            double val = ((GraalPyFloatObject*) pointer_to_stub(op))->ob_fval;
+#ifndef NDEBUG
+            if (PyTruffle_Debug_CAPI() && GraalPyTruffleFloat_AsDouble(op) != val) {
+                Py_FatalError("ob_size of native stub and managed object differ");
+            }
+#endif
+            return val;
+        }
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+        return GraalPyTruffleFloat_AsDouble(op);
+    }
+
     PyNumberMethods *nb;
     PyObject *res;
     double val;
