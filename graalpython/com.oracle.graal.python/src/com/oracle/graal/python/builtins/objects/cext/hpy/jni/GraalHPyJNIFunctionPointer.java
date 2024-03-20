@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy.jni;
 
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyMode;
-import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -72,7 +72,7 @@ public final class GraalHPyJNIFunctionPointer implements TruffleObject {
     final HPyMode mode;
 
     public GraalHPyJNIFunctionPointer(long pointer, LLVMType signature, HPyMode mode) {
-        assert !PythonOptions.WITHOUT_JNI;
+        assert !PythonImageBuildOptions.WITHOUT_JNI;
         this.pointer = pointer;
         this.signature = signature;
         this.mode = mode;
@@ -93,7 +93,7 @@ public final class GraalHPyJNIFunctionPointer implements TruffleObject {
                         @Cached("receiver.signature") LLVMType cachedSignature,
                         @Cached(parameters = "receiver.signature") GraalHPyJNIConvertArgNode convertArgNode) {
             // Make it explicit, that we cannot to JNI calls if WITHOUT_JNI is true.
-            if (PythonOptions.WITHOUT_JNI) {
+            if (PythonImageBuildOptions.WITHOUT_JNI) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
             return switch (receiver.mode) {

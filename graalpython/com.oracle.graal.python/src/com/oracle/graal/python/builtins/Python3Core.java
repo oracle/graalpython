@@ -58,6 +58,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
+import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -625,10 +626,10 @@ public abstract class Python3Core {
                         new JSONModuleBuiltins(),
                         new SREModuleBuiltins(),
                         new AstModuleBuiltins(),
-                        PythonOptions.WITHOUT_NATIVE_POSIX && (PythonOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SelectModuleBuiltins(),
-                        PythonOptions.WITHOUT_NATIVE_POSIX && (PythonOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SocketModuleBuiltins(),
-                        PythonOptions.WITHOUT_NATIVE_POSIX && (PythonOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SocketBuiltins(),
-                        PythonOptions.WITHOUT_PLATFORM_ACCESS ? null : new SignalModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_NATIVE_POSIX && (PythonImageBuildOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SelectModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_NATIVE_POSIX && (PythonImageBuildOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SocketModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_NATIVE_POSIX && (PythonImageBuildOptions.WITHOUT_JAVA_INET || !socketIOAllowed) ? null : new SocketBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS ? null : new SignalModuleBuiltins(),
                         new TracebackBuiltins(),
                         new GcModuleBuiltins(),
                         new AtexitModuleBuiltins(),
@@ -638,30 +639,30 @@ public abstract class Python3Core {
                         new SysModuleBuiltins(),
                         new MemoryViewBuiltins(),
                         new SuperBuiltins(),
-                        PythonOptions.WITHOUT_SSL ? null : new SSLModuleBuiltins(),
-                        PythonOptions.WITHOUT_SSL ? null : new SSLContextBuiltins(),
-                        PythonOptions.WITHOUT_SSL ? null : new SSLErrorBuiltins(),
-                        PythonOptions.WITHOUT_SSL ? null : new SSLSocketBuiltins(),
-                        PythonOptions.WITHOUT_SSL ? null : new MemoryBIOBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLContextBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLErrorBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLSocketBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_SSL ? null : new MemoryBIOBuiltins(),
                         new BinasciiModuleBuiltins(),
                         new PosixShMemModuleBuiltins(),
-                        PythonOptions.WITHOUT_PLATFORM_ACCESS ? null : new PosixSubprocessModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS ? null : new PosixSubprocessModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
                         new OperatorModuleBuiltins(),
 
                         // hashlib
-                        PythonOptions.WITHOUT_DIGEST ? null : new Md5ModuleBuiltins(),
-                        PythonOptions.WITHOUT_DIGEST ? null : new Sha1ModuleBuiltins(),
-                        PythonOptions.WITHOUT_DIGEST ? null : new Sha256ModuleBuiltins(),
-                        PythonOptions.WITHOUT_DIGEST ? null : new Sha512ModuleBuiltins(),
-                        PythonOptions.WITHOUT_DIGEST ? null : new Sha3ModuleBuiltins(),
-                        PythonOptions.WITHOUT_DIGEST ? null : new Blake2ModuleBuiltins(),
-                        PythonOptions.WITHOUT_DIGEST ? null : new DigestObjectBuiltins(),
-                        PythonOptions.WITHOUT_DIGEST ? null : new HashObjectBuiltins(),
-                        PythonOptions.WITHOUT_DIGEST ? null : new ShakeDigestObjectBuiltins(),
-                        PythonOptions.WITHOUT_DIGEST ? null : new Blake2bObjectBuiltins(),
-                        PythonOptions.WITHOUT_DIGEST ? null : new Blake2sObjectBuiltins(),
-                        PythonOptions.WITHOUT_DIGEST ? null : new HashlibModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Md5ModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha1ModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha256ModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha512ModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Sha3ModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Blake2ModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new DigestObjectBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new HashObjectBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new ShakeDigestObjectBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Blake2bObjectBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new Blake2sObjectBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_DIGEST ? null : new HashlibModuleBuiltins(),
 
                         new PyExpatModuleBuiltins(),
 
@@ -688,9 +689,9 @@ public abstract class Python3Core {
                         new ZipLongestBuiltins(),
 
                         // zlib
-                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZLibModuleBuiltins(),
-                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibCompressBuiltins(),
-                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibDecompressBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZLibModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibCompressBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibDecompressBuiltins(),
 
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),
@@ -715,13 +716,13 @@ public abstract class Python3Core {
                         new UnpicklerMemoProxyBuiltins(),
 
                         // lzma
-                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMAModuleBuiltins(),
-                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMACompressorBuiltins(),
-                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMADecompressorBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMAModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMACompressorBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMADecompressorBuiltins(),
 
                         // _multiprocessing
-                        PythonOptions.WITHOUT_NATIVE_POSIX ? null : new MultiprocessingModuleBuiltins(),
-                        PythonOptions.WITHOUT_NATIVE_POSIX ? null : new SemLockBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_NATIVE_POSIX ? null : new MultiprocessingModuleBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_NATIVE_POSIX ? null : new SemLockBuiltins(),
                         new MultiprocessingGraalPyModuleBuiltins(),
                         new GraalPySemLockBuiltins(),
 
@@ -775,7 +776,7 @@ public abstract class Python3Core {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
         }
-        if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES && (nativeAccessAllowed || ImageInfo.inImageBuildtimeCode())) {
+        if (!PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES && (nativeAccessAllowed || ImageInfo.inImageBuildtimeCode())) {
             builtins.add(new BZ2CompressorBuiltins());
             builtins.add(new BZ2DecompressorBuiltins());
             builtins.add(new BZ2ModuleBuiltins());
@@ -939,7 +940,7 @@ public abstract class Python3Core {
 
         // see CPython's init_importlib_external
         callNode.execute(null, null, bootstrap, toTruffleStringUncached("_install_external_importers"));
-        if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES) {
+        if (!PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES) {
             // see CPython's _PyImportZip_Init
             Object pathHooks = readNode.execute(sysModule, toTruffleStringUncached("path_hooks"));
             if (!(pathHooks instanceof PList pathHooksList)) {
@@ -1001,7 +1002,7 @@ public abstract class Python3Core {
              * would never include the intrinsified _bz2 module in the native image since native
              * access is never allowed during native image build time.
              */
-            if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES && ImageInfo.inImageCode() && !getContext().isNativeAccessAllowed()) {
+            if (!PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES && ImageInfo.inImageCode() && !getContext().isNativeAccessAllowed()) {
                 removeBuiltinModule(BuiltinNames.T_BZ2);
             }
 

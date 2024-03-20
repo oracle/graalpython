@@ -50,6 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionDescriptors;
@@ -1006,7 +1007,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (context.getCApiContext() != null) {
             context.getCApiContext().exitCApiContext();
         }
-        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS && !ImageInfo.inImageBuildtimeCode()) {
+        if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS && !ImageInfo.inImageBuildtimeCode()) {
             // Reset signal handlers back to what they were
             PythonModule signalModule = context.lookupBuiltinModule(T__SIGNAL);
             if (signalModule != null) {

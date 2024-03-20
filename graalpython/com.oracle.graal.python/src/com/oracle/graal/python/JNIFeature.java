@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,17 +40,17 @@
  */
 package com.oracle.graal.python;
 
+import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeJNIAccess;
 
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 
 public final class JNIFeature implements Feature {
     @Override
     public void afterRegistration(AfterRegistrationAccess access) {
-        if (!PythonOptions.WITHOUT_JNI) {
+        if (!PythonImageBuildOptions.WITHOUT_JNI) {
             try {
                 // {{start jni upcall config}}
                 // @formatter:off
