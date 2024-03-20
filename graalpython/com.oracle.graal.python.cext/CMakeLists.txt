@@ -253,7 +253,7 @@ target_include_directories(${TARGET_LIBPYTHON} PRIVATE
 # target-specific compile and link options
 ######################################################################
 
-target_compile_definitions(${TARGET_LIBPYTHON} PRIVATE Py_BUILD_CORE)
+target_compile_definitions(${TARGET_LIBPYTHON} PRIVATE Py_BUILD_CORE Py_BUILD_CORE_BUILTIN)
 target_compile_options(${TARGET_LIBPYTHON} PRIVATE ${CFLAGS_WARNINGS})
 
 if(WIN32)
