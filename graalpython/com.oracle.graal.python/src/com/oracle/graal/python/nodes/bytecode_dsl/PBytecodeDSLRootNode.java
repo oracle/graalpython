@@ -3095,11 +3095,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             Object type = getClass.execute(inliningTarget, contextManager);
             Object enter = lookupEnter.execute(frame, type, contextManager);
             if (enter == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, new Object[]{T___ENTER__});
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.N_OBJECT_DOES_NOT_SUPPORT_CONTEXT_MANAGER_PROTOCOL, type);
             }
             Object exit = lookupExit.execute(frame, type, contextManager);
             if (exit == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, new Object[]{T___EXIT__});
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.N_OBJECT_DOES_NOT_SUPPORT_CONTEXT_MANAGER_PROTOCOL_EXIT, type);
             }
             Object result = callEnter.executeObject(frame, enter, contextManager);
             exitSetter.setObject(frame, exit);
