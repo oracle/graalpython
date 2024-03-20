@@ -496,11 +496,13 @@ _PyStructSequence_InitType(PyTypeObject *type, PyStructSequence_Desc *desc,
     }
 #endif
 
+#if 0 // GraalPy change
     /* PyTypeObject has already been initialized */
     if (Py_REFCNT(type) != 0) {
         PyErr_BadInternalCall();
         return -1;
     }
+#endif // GraalPy change
 
     type->tp_name = desc->name;
     type->tp_basicsize = sizeof(PyStructSequence) - sizeof(PyObject *);
