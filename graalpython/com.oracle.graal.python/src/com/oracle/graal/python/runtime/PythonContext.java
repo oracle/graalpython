@@ -1652,7 +1652,7 @@ public final class PythonContext extends Python3Core {
         }
         initializeLocale();
         setIntMaxStrDigits(getOption(PythonOptions.IntMaxStrDigits));
-        if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES) {
+        if (!PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES) {
             nativeZlib = NFIZlibSupport.createNative(this, "");
             nativeBz2lib = NFIBz2Support.createNative(this, "");
             nativeLZMA = NFILZMASupport.createNative(this, "");
@@ -1717,7 +1717,7 @@ public final class PythonContext extends Python3Core {
         // The resources field will be removed once all posix builtins go through PosixSupport
         TruffleString.EqualNode eqNode = TruffleString.EqualNode.getUncached();
         boolean selectedJavaBackend = eqNode.execute(T_JAVA, option, TS_ENCODING);
-        if (PythonOptions.WITHOUT_NATIVE_POSIX || selectedJavaBackend) {
+        if (PythonImageBuildOptions.WITHOUT_NATIVE_POSIX || selectedJavaBackend) {
             if (!selectedJavaBackend) {
                 writeWarning("Native Posix backend selected, but it was excluded from the runtime, " +
                                 "switching to Java backend.");

@@ -63,6 +63,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -275,7 +276,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public GraalHPyJNIContext(GraalHPyContext context, boolean traceUpcalls) {
         super(context, traceUpcalls);
-        assert !PythonOptions.WITHOUT_JNI;
+        assert !PythonImageBuildOptions.WITHOUT_JNI;
         this.slowPathFactory = context.getContext().factory();
         this.counts = traceUpcalls ? new int[HPyJNIUpcall.VALUES.length] : null;
         this.ctypeSizes = new int[HPyContextSignatureType.values().length];

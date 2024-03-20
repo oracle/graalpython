@@ -149,6 +149,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -2705,7 +2706,7 @@ public abstract class GraalHPyNodes {
             PythonLanguage language = PythonLanguage.get(null);
             switch (language.getEngineOption(PythonOptions.HPyBackend)) {
                 case JNI:
-                    if (!PythonOptions.WITHOUT_JNI) {
+                    if (!PythonImageBuildOptions.WITHOUT_JNI) {
                         return HPyAttachJNIFunctionTypeNodeGen.create();
                     }
                     throw CompilerDirectives.shouldNotReachHere();
@@ -2721,7 +2722,7 @@ public abstract class GraalHPyNodes {
             PythonLanguage language = PythonLanguage.get(null);
             switch (language.getEngineOption(PythonOptions.HPyBackend)) {
                 case JNI:
-                    if (!PythonOptions.WITHOUT_JNI) {
+                    if (!PythonImageBuildOptions.WITHOUT_JNI) {
                         return HPyAttachJNIFunctionTypeNodeGen.getUncached();
                     }
                     throw CompilerDirectives.shouldNotReachHere();

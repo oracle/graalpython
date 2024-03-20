@@ -92,6 +92,7 @@ import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -448,7 +449,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
         LOGGER.config("Using HPy backend:" + backendMode.name());
         if (backendMode == HPyBackendMode.JNI) {
-            if (!PythonOptions.WITHOUT_JNI) {
+            if (!PythonImageBuildOptions.WITHOUT_JNI) {
                 this.useNativeFastPaths = useNativeFastPaths;
                 backend = new GraalHPyJNIContext(this, traceUpcallsInterval > 0);
             } else {
