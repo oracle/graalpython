@@ -312,6 +312,7 @@ graalpython/com.oracle.graal.python.cext/src/pystrcmp.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/pystrhex.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/pystrtod.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/sliceobject.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/structseq.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/thread.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/tupleobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/typeobject.c,python.copyright

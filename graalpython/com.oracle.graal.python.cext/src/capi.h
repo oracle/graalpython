@@ -70,6 +70,7 @@
 #define _COMPLEX_DEFINED
 #endif
 
+#define NEEDS_PY_IDENTIFIER
 
 #include "Python.h"
 #include "datetime.h"
