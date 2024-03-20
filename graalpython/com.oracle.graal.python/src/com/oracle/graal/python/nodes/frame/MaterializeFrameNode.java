@@ -49,8 +49,8 @@ import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.bytecode.BytecodeLocation;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -180,13 +180,6 @@ public abstract class MaterializeFrameNode extends Node {
             return;
         }
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            BytecodeDSLFrameInfo bytecodeDSLFrameInfo = (BytecodeDSLFrameInfo) info;
-            PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
-
-            if (location.getRootNode() != rootNode) {
-                throw new AssertionError("A node that did not belong to this root node was passed as a location.");
-            }
-
             if (location instanceof PBytecodeDSLRootNode) {
                 /**
                  * Sometimes we don't have a precise location (see
@@ -248,20 +241,45 @@ public abstract class MaterializeFrameNode extends Node {
 
         public abstract void execute(PFrame pyFrame, Frame frameToSync);
 
-        @Specialization(guards = {"!pyFrame.hasCustomLocals()", "frameToSync.getFrameDescriptor() == cachedFd",
+        @Specialization(guards = {"!pyFrame.hasCustomLocals()",
+                        "frameToSync.getFrameDescriptor() == cachedFd",
                         "variableSlotCount(cachedFd) < 32"}, limit = "1")
         @ExplodeLoop
         static void doSyncExploded(PFrame pyFrame, Frame frameToSync,
                         @Cached(value = "frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd) {
             MaterializedFrame target = pyFrame.getLocals();
             assert cachedFd == target.getFrameDescriptor();
-            doCopy(cachedFd, frameToSync, target);
+            int slotCount = variableSlotCount(cachedFd);
+
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                FrameInfo info = (FrameInfo) cachedFd.getInfo();
+                if (info instanceof BytecodeDSLFrameInfo bytecodeDSLFrameInfo) {
+                    bytecodeDSLFrameInfo.getRootNode().copyLocals(frameToSync, target, slotCount);
+                }
+            } else {
+                for (int i = 0; i < slotCount; i++) {
+                    PythonUtils.copyFrameSlot(frameToSync, target, i);
+                }
+            }
         }
 
         @Specialization(guards = "!pyFrame.hasCustomLocals()", replaces = "doSyncExploded")
+        @ExplodeLoop
         static void doSync(PFrame pyFrame, Frame frameToSync) {
             MaterializedFrame target = pyFrame.getLocals();
-            doCopy(frameToSync.getFrameDescriptor(), frameToSync, target);
+            FrameDescriptor fd = target.getFrameDescriptor();
+            int slotCount = variableSlotCount(fd);
+
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                FrameInfo info = (FrameInfo) fd.getInfo();
+                if (info instanceof BytecodeDSLFrameInfo bytecodeDSLFrameInfo) {
+                    bytecodeDSLFrameInfo.getRootNode().copyLocals(frameToSync, target, slotCount);
+                }
+            } else {
+                for (int i = 0; i < slotCount; i++) {
+                    PythonUtils.copyFrameSlot(frameToSync, target, i);
+                }
+            }
         }
 
         @Specialization(guards = "pyFrame.hasCustomLocals()")
@@ -277,22 +295,6 @@ public abstract class MaterializeFrameNode extends Node {
                 return 0;
             }
             return info.getVariableCount();
-        }
-
-        private static void doCopy(FrameDescriptor fd, Frame source, MaterializedFrame destination) {
-            FrameInfo info = (FrameInfo) fd.getInfo();
-            if (info == null) {
-                return;
-            }
-            int count = info.getVariableCount();
-
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                ((BytecodeDSLFrameInfo) info).getRootNode().copyLocals(source, destination, count);
-            } else {
-                for (int i = 0; i < count; i++) {
-                    PythonUtils.copyFrameSlot(source, destination, i);
-                }
-            }
         }
     }
 }
