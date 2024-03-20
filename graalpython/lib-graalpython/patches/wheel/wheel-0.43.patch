@@ -1,0 +1,82 @@
+diff --git a/wheel/wheelfile.py b/wheel/wheelfile.py
+index 6440e90..7ef7528 100644
+--- a/wheel/wheelfile.py
++++ b/wheel/wheelfile.py
+@@ -144,7 +144,9 @@ class WheelFile(ZipFile):
+     def write(self, filename, arcname=None, compress_type=None):
+         with open(filename, "rb") as f:
+             st = os.fstat(f.fileno())
+-            data = f.read()
++            data = []
++            while chunk := f.read(4194304):
++                data.append(chunk)
+ 
+         zinfo = ZipInfo(
+             arcname or filename, date_time=get_zipinfo_datetime(st.st_mtime)
+@@ -164,7 +166,10 @@ class WheelFile(ZipFile):
+         if isinstance(data, str):
+             data = data.encode("utf-8")
+ 
+-        ZipFile.writestr(self, zinfo_or_arcname, data, compress_type)
++        # GraalPy change
++        if not isinstance(data, list):
++            data = [data]
++        self.writestr_list(zinfo_or_arcname, data, compress_type)
+         fname = (
+             zinfo_or_arcname.filename
+             if isinstance(zinfo_or_arcname, ZipInfo)
+@@ -172,12 +177,52 @@ class WheelFile(ZipFile):
+         )
+         log.info(f"adding '{fname}'")
+         if fname != self.record_path:
+-            hash_ = self._default_algorithm(data)
++            hash_ = self._default_algorithm()
++            for chunk in data:
++                hash_.update(chunk)
+             self._file_hashes[fname] = (
+                 hash_.name,
+                 urlsafe_b64encode(hash_.digest()).decode("ascii"),
+             )
+-            self._file_sizes[fname] = len(data)
++            self._file_sizes[fname] = sum(map(len, data))
++
++    # GraalPy change: version that accepts data as a list of bytes chunks, to
++    # avoid running into the 2GB limit for bytes object size
++    def writestr_list(self, zinfo_or_arcname, data,
++                 compress_type=None, compresslevel=None):
++        if not isinstance(zinfo_or_arcname, ZipInfo):
++            zinfo = ZipInfo(filename=zinfo_or_arcname,
++                            date_time=time.localtime(time.time())[:6])
++            zinfo.compress_type = self.compression
++            zinfo._compresslevel = self.compresslevel
++            if zinfo.filename[-1] == '/':
++                zinfo.external_attr = 0o40775 << 16   # drwxrwxr-x
++                zinfo.external_attr |= 0x10           # MS-DOS directory flag
++            else:
++                zinfo.external_attr = 0o600 << 16     # ?rw-------
++        else:
++            zinfo = zinfo_or_arcname
++
++        if not self.fp:
++            raise ValueError(
++                "Attempt to write to ZIP archive that was already closed")
++        if self._writing:
++            raise ValueError(
++                "Can't write to ZIP archive while an open writing handle exists."
++            )
++
++        if compress_type is not None:
++            zinfo.compress_type = compress_type
++
++        if compresslevel is not None:
++            zinfo._compresslevel = compresslevel
++
++        zinfo.file_size = sum(map(len, data))            # Uncompressed size
++        with self._lock:
++            with self.open(zinfo, mode='w') as dest:
++                for chunk in data:
++                    dest.write(chunk)
++
+ 
+     def close(self):
+         # Write RECORD

@@ -1,3 +1,4 @@
 [[rules]]
 version = '== 6.0.0'
 patch = 'flake8-6.0.0.patch'
+subdir = 'src'
