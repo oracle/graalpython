@@ -58,7 +58,7 @@ public final class PAsyncGen extends PGenerator {
     }
 
     private PAsyncGen(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        super(lang, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PAsyncGenerator, false);
+        super(lang, name, qualname, arguments, PythonBuiltinClassType.PAsyncGenerator, false, new BytecodeState(rootNode, callTargets));
     }
 
     public boolean isClosed() {

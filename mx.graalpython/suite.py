@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "2d2bfe5080a46dc62c57e37398e2dbeb4de18d15",
+                "version": "mdsouza/operations_dsl",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "2d2bfe5080a46dc62c57e37398e2dbeb4de18d15",
+                "version": "mdsouza/operations_dsl",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "2d2bfe5080a46dc62c57e37398e2dbeb4de18d15",
+                "version": "mdsouza/operations_dsl",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "2d2bfe5080a46dc62c57e37398e2dbeb4de18d15",
+                "version": "mdsouza/operations_dsl",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -362,7 +362,7 @@ suite = {
         "com.oracle.graal.python.frozen": {
             "subDir": "graalpython",
             "vpath": True,
-            "type": "GraalpythonProject",
+            "type": "GraalpythonFrozenProject",
             "args": [
                 "<path:com.oracle.graal.python.frozen>/freeze_modules.py",
                 "--python-lib",

@@ -106,6 +106,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
@@ -709,5 +710,10 @@ public abstract class PGuards {
     /* CPython tests that tp_iter is dict_iter */
     public static boolean hasBuiltinDictIter(Node inliningTarget, PDict dict, GetPythonObjectClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
         return isBuiltinDict(dict) || lookupIter.execute(getClassNode.execute(inliningTarget, dict)) == BuiltinMethodDescriptors.DICT_ITER;
+    }
+
+    @Idempotent
+    public static boolean isBytecodeDSLInterpreter() {
+        return PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
     }
 }

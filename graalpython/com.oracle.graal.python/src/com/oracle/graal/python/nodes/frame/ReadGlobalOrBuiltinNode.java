@@ -67,14 +67,14 @@ import com.oracle.truffle.api.strings.TruffleString;
 @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 30
 public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
     public final Object execute(VirtualFrame frame, TruffleString name) {
-        CompilerAsserts.partialEvaluationConstant(name);
+        CompilerAsserts.compilationConstant(name);
         return executeWithGlobals(frame, PArguments.getGlobals(frame), name);
     }
 
     protected abstract Object executeWithGlobals(VirtualFrame frame, Object globals, TruffleString name);
 
     public Object read(Frame frame, Object globals, TruffleString name) {
-        CompilerAsserts.partialEvaluationConstant(name);
+        CompilerAsserts.compilationConstant(name);
         return executeWithGlobals((VirtualFrame) frame, globals, name);
     }
 

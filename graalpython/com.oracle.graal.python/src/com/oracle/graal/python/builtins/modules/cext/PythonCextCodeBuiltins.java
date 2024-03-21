@@ -117,7 +117,7 @@ public final class PythonCextCodeBuiltins {
             if (lasti < 0) {
                 return code.co_firstlineno();
             }
-            return code.bciToLine(code.lastiToBci(lasti));
+            return code.lastiToLine(lasti);
         }
     }
 

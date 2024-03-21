@@ -50,6 +50,8 @@ import java.util.EnumSet;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -63,11 +65,19 @@ import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.test.GraalPythonEnvVars;
 import com.oracle.graal.python.test.PythonTests;
 
 public class CompilerTests extends PythonTests {
     public CompilerTests() {
+    }
+
+    @Before
+    public void beforeTest() {
+        // These tests are coupled to the manual bytecode interpreter. They shouldn't run if we're
+        // using the Bytecode DSL interpreter.
+        Assume.assumeFalse(PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER);
     }
 
     @Rule public TestName name = new TestName();

@@ -51,6 +51,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -243,6 +244,7 @@ public abstract class RaiseNode extends PNodeWithContext {
         throw raise.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX);
     }
 
+    @NeverDefault
     public static RaiseNode create() {
         return RaiseNodeGen.create();
     }

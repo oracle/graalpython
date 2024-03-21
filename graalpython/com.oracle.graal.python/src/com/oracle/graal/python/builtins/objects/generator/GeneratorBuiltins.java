@@ -50,12 +50,17 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
+import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -188,13 +193,24 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } else {
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
-                Node location = ((FrameInfo) generatorFrame.getFrameDescriptor().getInfo()).getRootNode();
-                PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory);
-                FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-                int bci = self.getBci();
-                frame.setBci(bci);
-                frame.setLine(info.getRootNode().bciToLine(bci));
-                return frame;
+                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                    BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                    PBytecodeDSLRootNode rootNode = info.getRootNode();
+                    ContinuationResult continuation = self.getContinuation();
+                    BytecodeNode bytecodeNode = continuation.getBytecodeNode();
+                    PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(bytecodeNode, generatorFrame, PFrame.Reference.EMPTY, factory);
+                    int bci = continuation.getBci();
+                    frame.setBci(bci);
+                    frame.setLine(rootNode.bciToLine(bci, bytecodeNode));
+                    return frame;
+                } else {
+                    BytecodeFrameInfo info = (BytecodeFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                    PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(info.getRootNode(), generatorFrame, PFrame.Reference.EMPTY, factory);
+                    int bci = self.getBci();
+                    frame.setBci(bci);
+                    frame.setLine(info.getRootNode().bciToLine(bci));
+                    return frame;
+                }
             }
         }
     }
