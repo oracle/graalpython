@@ -158,7 +158,7 @@ public final class PythonCextTupleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObject, Py_ssize_t, PyObjectBorrowed}, call = Direct)
+    @CApiBuiltin(ret = Void, args = {PyObject, Py_ssize_t, PyObjectTransfer}, call = Direct)
     abstract static class PyTruffleTuple_SET_ITEM extends CApiTernaryBuiltinNode {
         @Specialization
         static Object doManaged(PTuple tuple, long index, Object element,

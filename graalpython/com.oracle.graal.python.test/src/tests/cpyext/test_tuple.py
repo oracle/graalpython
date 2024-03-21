@@ -166,6 +166,7 @@ class TestPyTuple(CPyExtTestCase):
                     Py_DECREF(tuple);
                     return NULL;
                 }
+                Py_INCREF(item);
                 PyTuple_SET_ITEM(tuple, i, item);
             }
             Py_INCREF(value);

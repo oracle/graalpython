@@ -65,8 +65,10 @@ class TestMethod(object):
                 PyObject *argTuple = PyTuple_New(nargs);
                 if (!argTuple)
                     return NULL;
-                for (int i = 0; i < nargs; i++)
+                for (int i = 0; i < nargs; i++) {
+                    Py_INCREF(args[i]);
                     PyTuple_SET_ITEM(argTuple, i, args[i]);
+                }
                 return argTuple;
             }
             static PyObject* keywordsToDict(PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames) {
