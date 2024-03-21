@@ -217,6 +217,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
                 languageClass = PythonLanguage.class, //
                 enableYield = true, //
                 enableSerialization = true, //
+                boxingEliminationTypes = {int.class, boolean.class}, //
                 storeBciInFrame = true //
 )
 @TypeSystemReference(PythonTypes.class)
