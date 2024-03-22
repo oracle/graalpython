@@ -3062,7 +3062,11 @@ PyNumber_InPlaceOr(PyObject *v, PyObject *w)
 PyObject **
 PyTruffleSequence_Fast_ITEMS(PyObject *o)
 {
-    return PyList_Check(o) ? PyListObject_ob_item(o) : PyTupleObject_ob_item(o);
+    if (PyTuple_Check(o)) {
+        return PyTruffleTuple_GetItems(o);
+    } else {
+        return PyTruffleList_GetItems(o);
+    }
 }
 
 PyObject*

@@ -42,5 +42,47 @@
 
 // alias for internal function, currently used in PyO3
 void _PyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c) {
-    return PyTruffleList_SET_ITEM(a, b, c);
+    return PyList_SET_ITEM(a, b, c);
+}
+
+static inline int
+valid_index(Py_ssize_t i, Py_ssize_t limit)
+{
+    /* The cast to size_t lets us use just a single comparison
+       to check whether i is in the range: 0 <= i < limit.
+
+       See:  Section 14.2 "Bounds Checking" in the Agner Fog
+       optimization manual found at:
+       https://www.agner.org/optimize/optimizing_cpp.pdf
+    */
+    return (size_t) i < (size_t) limit;
+}
+
+int
+PyList_SetItem(PyObject *op, Py_ssize_t i,
+               PyObject *newitem)
+{
+    PyObject **p;
+    if (!PyList_Check(op)) {
+        Py_XDECREF(newitem);
+        PyErr_BadInternalCall();
+        return -1;
+    }
+    if (!valid_index(i, Py_SIZE(op))) {
+        Py_XDECREF(newitem);
+        PyErr_SetString(PyExc_IndexError,
+                        "list assignment index out of range");
+        return -1;
+    }
+    // GraalPy change: avoid direct struct access
+    p = PyTruffleList_GetItems(op) + i;
+    Py_XSETREF(*p, newitem);
+    return 0;
+}
+
+// GraalPy-additions
+PyObject **
+PyTruffleList_GetItems(PyObject *op)
+{
+    return PyListObject_ob_item(op);
 }

@@ -43,12 +43,10 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -62,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -72,18 +69,14 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public final class PythonCextTupleBuiltins {
 
@@ -107,104 +100,6 @@ public final class PythonCextTupleBuiltins {
              */
             PythonUtils.fill(data, 0, data.length, PNone.NO_VALUE);
             return factory.createTuple(data);
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObjectTransfer}, call = Direct)
-    abstract static class PyTuple_SetItem extends CApiTernaryBuiltinNode {
-        @Specialization
-        static int doManaged(PTuple tuple, long index, Object element,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode,
-                        @Cached InlinedConditionProfile generalizedProfile,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            SequenceStorage sequenceStorage = tuple.getSequenceStorage();
-            checkBounds(inliningTarget, sequenceStorage, index, raiseNode);
-            SequenceStorage newStorage = setItemNode.execute(null, sequenceStorage, (int) index, element);
-            if (generalizedProfile.profile(inliningTarget, tuple.getSequenceStorage() != newStorage)) {
-                tuple.setSequenceStorage(newStorage);
-            }
-            return 0;
-        }
-
-        @Specialization
-        static int doNative(PythonAbstractNativeObject tuple, long index, Object element,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetNativeTupleStorage asNativeStorage,
-                        @Cached SequenceStorageNodes.SetNativeItemScalarNode setItemNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            NativeObjectSequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
-            checkBounds(inliningTarget, sequenceStorage, index, raiseNode);
-            setItemNode.execute(sequenceStorage, (int) index, element);
-            return 0;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        Object fallback(Object tuple, Object index, Object element) {
-            throw raiseFallback(tuple, PythonBuiltinClassType.PTuple);
-        }
-
-        private static void checkBounds(Node inliningTarget, SequenceStorage sequenceStorage, long index, PRaiseNode.Lazy raiseNode) {
-            // we must do a bounds-check but we must not normalize the index
-            if (index < 0 || index >= sequenceStorage.length()) {
-                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.TUPLE_OUT_OF_BOUNDS);
-            }
-        }
-
-        @NeverDefault
-        protected static SetItemNode createSetItem() {
-            return SetItemNode.create(null, ListGeneralizationNode::create);
-        }
-    }
-
-    @CApiBuiltin(ret = Void, args = {PyObject, Py_ssize_t, PyObjectTransfer}, call = Direct)
-    abstract static class PyTruffleTuple_SET_ITEM extends CApiTernaryBuiltinNode {
-        @Specialization
-        static Object doManaged(PTuple tuple, long index, Object element,
-                        @Bind("this") Node inliningTarget,
-                        @Cached ListGeneralizationNode generalizationNode,
-                        @Cached SequenceStorageNodes.InitializeItemScalarNode setItemNode,
-                        @Cached InlinedConditionProfile generalizedProfile,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            // we cannot assume that there is nothing already in the tuple, because the API usage
-            // is valid if the tuple has never been visible to Python code so far, and it is up to
-            // the extension author to take care of correct decref's for the previously contained
-            // elements. c.f. _testcapi.c#test_k_code where a tuple's element 0 is set multiple
-            // times
-            SequenceStorage sequenceStorage = tuple.getSequenceStorage();
-            checkBounds(inliningTarget, sequenceStorage, index, raiseNode);
-            SequenceStorage newStorage = generalizationNode.execute(inliningTarget, sequenceStorage, element);
-            setItemNode.execute(inliningTarget, newStorage, (int) index, element);
-            if (generalizedProfile.profile(inliningTarget, tuple.getSequenceStorage() != newStorage)) {
-                tuple.setSequenceStorage(newStorage);
-            }
-            return PNone.NO_VALUE;
-        }
-
-        @Specialization
-        static int doNative(PythonAbstractNativeObject tuple, long index, Object element,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetNativeTupleStorage asNativeStorage,
-                        @Cached SequenceStorageNodes.InitializeNativeItemScalarNode setItemNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            NativeObjectSequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
-            checkBounds(inliningTarget, sequenceStorage, index, raiseNode);
-            setItemNode.execute(sequenceStorage, (int) index, element);
-            return 0;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        Object fallback(Object tuple, Object index, Object element) {
-            throw raiseFallback(tuple, PythonBuiltinClassType.PTuple);
-        }
-
-        private static void checkBounds(Node inliningTarget, SequenceStorage sequenceStorage, long index, PRaiseNode.Lazy raiseNode) {
-            // we must do a bounds-check but we must not normalize the index
-            if (index < 0 || index >= sequenceStorage.length()) {
-                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.TUPLE_OUT_OF_BOUNDS);
-            }
         }
     }
 

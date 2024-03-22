@@ -153,6 +153,7 @@ PyBytes_FromString(const char *str)
 PyObject *
 PyBytes_FromFormatV(const char *format, va_list vargs)
 {
+    // GraalPy change: different implementation
     /* Unfortunately, we need to know the expected types of the arguments before we can do an upcall. */
     char *s;
     const char *f = format;
@@ -291,7 +292,7 @@ PyBytes_FromFormatV(const char *format, va_list vargs)
     		entry = PyLong_FromVoidPtr(va_arg(vargs, void*));
     		break;
     	}
-    	GraalPyTuple_SetItem(args, i, entry);
+    	PyTuple_SET_ITEM(args, i, entry);
     }
     PyObject* result = GraalPyTruffleBytes_FromFormat(format, args);
   	Py_DecRef(args);

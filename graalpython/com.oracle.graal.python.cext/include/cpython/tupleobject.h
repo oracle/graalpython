@@ -36,11 +36,13 @@ static inline Py_ssize_t PyTuple_GET_SIZE(PyObject *op) {
 PyAPI_FUNC(PyObject *) _PyTuple_GET_ITEM(PyObject *, Py_ssize_t);
 #define PyTuple_GET_ITEM(op, i) _PyTuple_GET_ITEM(_PyObject_CAST(op), (i))
 
+// GraalPy-specific
+PyAPI_FUNC(PyObject **) PyTruffleTuple_GetItems(PyObject *op);
+
 /* Function *only* to be used to fill in brand new tuples */
-PyAPI_FUNC(void) PyTruffleTuple_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value);
 static inline void
 PyTuple_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value) {
-    PyTruffleTuple_SET_ITEM(op, index, value);
+    PyTruffleTuple_GetItems(op)[index] = value;
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #define PyTuple_SET_ITEM(op, index, value) \

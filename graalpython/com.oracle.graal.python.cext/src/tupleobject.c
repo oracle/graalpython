@@ -136,12 +136,12 @@ PyTuple_GetItem(PyObject *op, Py_ssize_t i) {
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
-#if 0 // GraalPy change
 int
 PyTuple_SetItem(PyObject *op, Py_ssize_t i, PyObject *newitem)
 {
     PyObject **p;
-    if (!PyTuple_Check(op) || Py_REFCNT(op) != 1) {
+    // GraalPy change: remove refcount check
+    if (!PyTuple_Check(op)) {
         Py_XDECREF(newitem);
         PyErr_BadInternalCall();
         return -1;
@@ -152,11 +152,13 @@ PyTuple_SetItem(PyObject *op, Py_ssize_t i, PyObject *newitem)
                         "tuple assignment index out of range");
         return -1;
     }
-    p = ((PyTupleObject *)op) -> ob_item + i;
+    // GraalPy change: avoid direct struct access
+    p = PyTruffleTuple_GetItems(op) + i;
     Py_XSETREF(*p, newitem);
     return 0;
 }
 
+#if 0 // GraalPy change
 void
 _PyTuple_MaybeUntrack(PyObject *op)
 {
@@ -1330,6 +1332,31 @@ void PyTruffle_Tuple_Dealloc(PyTupleObject* self) {
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
+PyObject **
+PyTruffleTuple_GetItems(PyObject *op)
+{
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    return GraalPy_get_PyTupleObject_ob_item(op);
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+    PyObject *res;
+    PyObject **ob_item;
+    if (points_to_py_handle_space(op)) {
+        GraalPyVarObject *ptr = (GraalPyVarObject *) pointer_to_stub(op);
+        ob_item = ((GraalPyVarObject *) ptr)->ob_item;
+        /* The UNLIKELY is maybe not true but the branch is costly anyway. So,
+           if we can optimize for something, it should be the path without the
+           upcall. */
+        if (UNLIKELY(ob_item == NULL)) {
+            ptr->ob_item = (ob_item = GraalPy_get_PyTupleObject_ob_item((PyTupleObject *)op));
+        }
+    } else {
+        ob_item = ((PyTupleObject *) op)->ob_item;
+    }
+    assert(ob_item != NULL);
+    return ob_item;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+}
+
 /*
  * Unsafe variant of PyTuple_GetItem for implementing access macro
  * PyTuple_GET_ITEM.
@@ -1339,21 +1366,6 @@ _PyTuple_GET_ITEM(PyObject* a, Py_ssize_t b) {
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED
     return GraalPyTruffleTuple_GetItem(a, b);
 #else /* GRAALVM_PYTHON_LLVM_MANAGED */
-    PyObject *res;
-    PyObject **ob_item;
-    if (points_to_py_handle_space(a)) {
-        GraalPyVarObject *ptr = (GraalPyVarObject *) pointer_to_stub(a);
-        ob_item = ((GraalPyVarObject *) ptr)->ob_item;
-        /* The UNLIKELY is maybe not true but the branch is costly anyway. So,
-           if we can optimize for something, it should be the path without the
-           upcall. */
-        if (UNLIKELY(ob_item == NULL)) {
-            ptr->ob_item = (ob_item = GraalPy_get_PyTupleObject_ob_item((PyTupleObject *)a));
-        }
-    } else {
-        ob_item = ((PyTupleObject *) a)->ob_item;
-    }
-    assert(ob_item != NULL);
-    return ob_item[b];
+    return PyTruffleTuple_GetItems(a)[b];
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
