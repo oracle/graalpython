@@ -835,18 +835,18 @@ public abstract class ExternalFunctionNodes {
     @GenerateCached(false)
     @GenerateInline
     public abstract static class ExternalFunctionInvokeNode extends PNodeWithContext {
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments);
 
-        public final Object call(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable,
-                        Object... cArguments) {
-            return execute(frame, inliningTarget, ctx, threadState, timing, name, callable, cArguments);
+        public final Object call(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object... cArguments) {
+            return execute(frame, inliningTarget, threadState, timing, name, callable, cArguments);
         }
 
         @Specialization
-        static Object invoke(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
-                        @Cached(inline = false) GilNode gilNode,
+        static Object invoke(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
                         @Cached(value = "createFor(this)", uncached = "getUncached()") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "2") InteropLibrary lib) {
+
+            assert threadState.getCurrentException() == null;
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
@@ -921,7 +921,7 @@ public abstract class ExternalFunctionNodes {
                         CheckFunctionResultNode checkResultNode, CExtToJavaNode convertReturnValue, PForeignToPTypeNode fromForeign, GetThreadStateNode getThreadStateNode,
                         ExternalFunctionInvokeNode invokeNode) {
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = invokeNode.execute(frame, inliningTarget, ctx, threadState, timing, name, callable, cArguments);
+            Object result = invokeNode.execute(frame, inliningTarget, threadState, timing, name, callable, cArguments);
             result = checkResultNode.execute(threadState, name, result);
             if (convertReturnValue != null) {
                 result = convertReturnValue.execute(result);

@@ -157,7 +157,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw checkThrowableBeforeNative(t, "GetAttrWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
@@ -210,7 +210,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw checkThrowableBeforeNative(t, "GetAttrWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
@@ -252,7 +252,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw checkThrowableBeforeNative(t, "BinaryFuncWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
@@ -298,7 +298,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw checkThrowableBeforeNative(t, "UnaryFuncWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
@@ -339,7 +339,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw checkThrowableBeforeNative(t, "InquiryWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return -1;
             } finally {
                 CApiTiming.exit(timing);
@@ -382,7 +382,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw checkThrowableBeforeNative(t, "ObjobjargWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return -1;
             } finally {
                 CApiTiming.exit(timing);
@@ -433,7 +433,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         throw checkThrowableBeforeNative(t, "InitWrapper", self.getDelegate());
                     }
                 } catch (PException e) {
-                    transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                    transformExceptionToNativeNode.execute(inliningTarget, e);
                     return -1;
                 } finally {
                     CApiTiming.exit(self.timing);
@@ -492,7 +492,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         throw checkThrowableBeforeNative(t, "TernaryFunctionWrapper", self.getDelegate());
                     }
                 } catch (PException e) {
-                    transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                    transformExceptionToNativeNode.execute(inliningTarget, e);
                     return PythonContext.get(gil).getNativeNull();
                 } finally {
                     CApiTiming.exit(self.timing);
@@ -547,7 +547,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw checkThrowableBeforeNative(t, "RichcmpFunctionWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
@@ -591,7 +591,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw checkThrowableBeforeNative(t, "SsizeargfuncWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(toJavaNode).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
@@ -634,7 +634,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw checkThrowableBeforeNative(t, "SsizeobjargfuncWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return -1;
             } finally {
                 CApiTiming.exit(timing);
@@ -680,7 +680,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw checkThrowableBeforeNative(t, "LenfuncWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return -1;
             } finally {
                 CApiTiming.exit(timing);
@@ -730,7 +730,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw checkThrowableBeforeNative(t, "HashfuncWrapper", getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return -1;
             } finally {
                 CApiTiming.exit(timing);
@@ -777,7 +777,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         throw checkThrowableBeforeNative(t, "DescrGetFunctionWrapper", self.getDelegate());
                     }
                 } catch (PException e) {
-                    transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                    transformExceptionToNativeNode.execute(inliningTarget, e);
                     return PythonContext.get(gil).getNativeNull();
                 } finally {
                     CApiTiming.exit(self.timing);

@@ -123,6 +123,7 @@ import com.oracle.graal.python.builtins.objects.module.ModuleGetNameNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -999,24 +1000,56 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class TransformExceptionToNativeNode extends Node {
 
-        public abstract void execute(Frame frame, Node inliningTarget, PException e);
+        public abstract void execute(Frame frame, Node inliningTarget, PException e, LazyTraceback tb);
 
         public final void execute(Node inliningTarget, PException e) {
-            execute(null, inliningTarget, e);
+            execute(null, inliningTarget, e, null);
+        }
+
+        public final void execute(Frame frame, Node inliningTarget, PException e) {
+            execute(frame, inliningTarget, e, null);
+        }
+
+        public final void execute(Node inliningTarget, PException e, LazyTraceback tb) {
+            execute(null, inliningTarget, e, tb);
         }
 
         public final void executeCached(PException e) {
-            execute(null, this, e);
+            execute(null, this, e, null);
         }
 
         @Specialization
-        static void setCurrentException(Frame frame, Node inliningTarget, PException e,
+        static void setCurrentException(Frame frame, Node inliningTarget, PException e, LazyTraceback tb,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
-                        @Cached GetThreadStateNode getThreadStateNode) {
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(inline = false) PythonToNativeNode pythonToNativeNode,
+                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode) {
             // TODO connect f_back
             getCurrentFrameRef.execute(frame, inliningTarget).markAsEscaped();
             PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
-            threadState.setCurrentException(e);
+            if (tb != null) {
+                threadState.setCurrentException(e, tb);
+            } else {
+                threadState.setCurrentException(e);
+            }
+            /*
+             * Mirror the global exception state to native for faster access. For now, we only write
+             * 'PyThreadState.curexc_type' (which is the only one required for 'PyErr_Occurred').
+             * Since that won't escape the exception object to the program, we can use
+             * 'getUnreifiedException'. As soon as we provide the exception object and the traceback
+             * as well, we need to use 'getEscapedException'.
+             */
+            PThreadState nativeWrapper = threadState.getNativeWrapper();
+            if (nativeWrapper != null) {
+                Object exceptionType = getClassNode.execute(inliningTarget, e.getUnreifiedException());
+                Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
+                /*
+                 * Write a borrowed ref to the native mirror because we need to keep that in sync
+                 * anyway.
+                 */
+                writePointerNode.write(nativeThreadState, CFields.PyThreadState__curexc_type, pythonToNativeNode.execute(exceptionType));
+            }
         }
     }
 

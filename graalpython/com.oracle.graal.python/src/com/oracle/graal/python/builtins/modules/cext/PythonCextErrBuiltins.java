@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins.PyFile_WriteObject;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -141,21 +142,16 @@ public final class PythonCextErrBuiltins {
 
         @Specialization
         Object restore(Object typ, Object val, Object tb,
-                        @Cached PrepareExceptionNode prepareExceptionNode) {
+                        @Cached PrepareExceptionNode prepareExceptionNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             PythonLanguage language = getLanguage();
             PythonContext.PythonThreadState threadState = getContext().getThreadState(language);
             if (typ == PNone.NO_VALUE && val == PNone.NO_VALUE) {
                 threadState.clearCurrentException();
             } else {
-                Object exception;
-                try {
-                    exception = prepareExceptionNode.execute(null, typ, val);
-                } catch (PException e) {
-                    threadState.setCurrentException(e);
-                    return PNone.NO_VALUE;
-                }
+                Object exception = prepareExceptionNode.execute(null, typ, val);
                 PException e = PException.fromExceptionInfo(exception, PythonOptions.isPExceptionWithJavaStacktrace(language));
-                threadState.setCurrentException(e, tb instanceof PTraceback ptb ? new LazyTraceback(ptb) : null);
+                transformExceptionToNativeNode.execute(this, e, tb instanceof PTraceback ptb ? new LazyTraceback(ptb) : null);
             }
             return PNone.NO_VALUE;
         }
@@ -169,16 +165,12 @@ public final class PythonCextErrBuiltins {
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached PrepareExceptionNode prepareExceptionNode,
                         @Cached ExceptionNodes.SetTracebackNode setTracebackNode,
-                        @Cached ExceptionNodes.SetContextNode setContextNode) {
+                        @Cached ExceptionNodes.SetContextNode setContextNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             if (typ != PNone.NO_VALUE) {
                 PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, PythonContext.get(inliningTarget));
                 Object exception;
-                try {
-                    exception = prepareExceptionNode.execute(null, typ, val);
-                } catch (PException e) {
-                    threadState.setCurrentException(e);
-                    return PNone.NO_VALUE;
-                }
+                exception = prepareExceptionNode.execute(null, typ, val);
                 if (threadState.getCurrentException() != null) {
                     if (tb != PNone.NO_VALUE) {
                         setTracebackNode.execute(inliningTarget, exception, tb);
@@ -187,7 +179,7 @@ public final class PythonCextErrBuiltins {
                     setContextNode.execute(inliningTarget, currentException, exception);
                 } else {
                     PException e = PException.fromExceptionInfo(exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(inliningTarget)));
-                    threadState.setCurrentException(e, tb instanceof PTraceback ptb ? new LazyTraceback(ptb) : null);
+                    transformExceptionToNativeNode.execute(inliningTarget, e, tb instanceof PTraceback ptb ? new LazyTraceback(ptb) : null);
                 }
             }
             return PNone.NO_VALUE;

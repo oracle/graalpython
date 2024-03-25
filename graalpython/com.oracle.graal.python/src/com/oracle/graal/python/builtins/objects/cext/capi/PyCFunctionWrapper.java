@@ -316,7 +316,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     throw checkThrowableBeforeNative(t, toString(), "");
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
@@ -383,7 +383,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     throw checkThrowableBeforeNative(t, toString(), "");
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
@@ -456,7 +456,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     throw checkThrowableBeforeNative(t, toString(), "");
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
@@ -526,7 +526,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     throw checkThrowableBeforeNative(t, toString(), "");
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, inliningTarget, e);
+                transformExceptionToNativeNode.execute(inliningTarget, e);
                 return PythonContext.get(gil).getNativeNull();
             } finally {
                 CApiTiming.exit(timing);
