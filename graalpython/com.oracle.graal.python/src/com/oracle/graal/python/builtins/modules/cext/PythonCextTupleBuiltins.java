@@ -56,12 +56,12 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
@@ -69,8 +69,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -84,22 +84,22 @@ public final class PythonCextTupleBuiltins {
     abstract static class PyTuple_New extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static PTuple doGeneric(long size,
+        static PTuple doGeneric(long longSize,
                         @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            if (!PInt.isIntRange(size)) {
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached CStructAccess.AllocateNode alloc) {
+            int size = (int) longSize;
+            if (longSize != size) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.MemoryError);
             }
-            Object[] data = new Object[(int) size];
             /*
-             * We need to fill the empty object array with 'PNone.NO_VALUE' because it may be that
-             * the tuple is accessed with 'PyTuple_GET_ITEM' before all elements are initialized and
-             * the corresponding storage-to-native transition would then fail because of the Java
-             * nulls.
+             * Already allocate the tuple with native memory, since it has to be populated from the
+             * native side
              */
-            PythonUtils.fill(data, 0, data.length, PNone.NO_VALUE);
-            return factory.createTuple(data);
+            Object mem = alloc.alloc((longSize + 1) * CStructAccess.POINTER_SIZE);
+            NativeObjectSequenceStorage storage = NativeObjectSequenceStorage.create(mem, size, size, true);
+            return factory.createTuple(storage);
         }
     }
 
