@@ -38,10 +38,12 @@
 # SOFTWARE.
 
 import sys
+from unittest import skipIf
 
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, assert_raises
 
 __dir__ = __file__.rpartition("/")[0]
+is_windows = sys.platform == "win32"
 
 
 def _reference_bytes(args):
@@ -328,10 +330,9 @@ class TestObject(object):
         NativeModule = CPyExtType("NativeModule_", 
                             '''
                             PyTypeObject NativeBase_Type = {
-                                PyVarObject_HEAD_INIT(&PyType_Type, 0)
+                                .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
                                 .tp_name = "NativeModule_.NativeBase",
                                 .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-                                .tp_base = &PyModule_Type,
                             };
 
                             static PyObject* get_NativeBase_type(PyObject* cls) {
@@ -342,6 +343,8 @@ class TestObject(object):
                             tp_methods='''{"get_NativeBase_type", (PyCFunction)get_NativeBase_type, METH_NOARGS | METH_CLASS, ""}''',
                             ready_code='''
                                /* testing lazy type initialization */
+                               NativeBase_Type.tp_base = &PyModule_Type; // because of MSVC..
+                               NativeBase_Type.ob_base.ob_base.ob_type = &PyType_Type;
                                // if (PyType_Ready(&NativeBase_Type) < 0)
                                //     return NULL;
                                ''',
@@ -1424,6 +1427,7 @@ class TestObject(object):
         obj.clear_value()
         assert value == (1, 2, 3, "hello", "world", dummy)
 
+    @skipIf(is_windows) # GR-52900
     def test_async_slots(self):
         import asyncio, types, functools
         TestTpAsync = CPyExtType("TestTpAsync",

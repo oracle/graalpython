@@ -1390,7 +1390,6 @@ def graalpython_gate_runner(args, tasks):
             "*/cpyext/test_memoryview.py",
             "*/cpyext/test_misc.py",
             "*/cpyext/test_mmap.py",
-            "*/cpyext/test_object.py",
             "*/cpyext/test_slice.py",
             "*/cpyext/test_shutdown.py",
             "*/cpyext/test_thread.py",
