@@ -22,10 +22,9 @@ GraalPy provides the following capabilities:
 
 ### GraalPy Distributions
 
-GraalPy is available as **Oracle GraalPy** and **GraalPy Community**.
+GraalPy is available as **GraalPy built on Oracle GraalVM** and **GraalPy Community**.
 
-* Oracle GraalPy provides the best experience: it comes with additional optimizations, is significantly faster and more memory-efficient.
-Oracle GraalPy is built on top of Oracle GraalVM, and is licensed under the [GraalVM Free Terms and Conditions (GFTC)](https://www.oracle.com/downloads/licenses/graal-free-license.html) license, which permits use by any user including commercial and production use.
+* GraalPy built on top of Oracle GraalVM provides the best experience: it comes with additional optimizations, is significantly faster and more memory-efficient. It is licensed under the [GraalVM Free Terms and Conditions (GFTC)](https://www.oracle.com/downloads/licenses/graal-free-license.html) license, same as Oracle GraalVM, which permits use by any user including commercial and production use.
 Redistribution is permitted as long as it is not for a fee.
 
 * GraalPy Community is built on top of GraalVM Community Edition, and is fully open-source.
@@ -157,10 +156,7 @@ This generates wrapper scripts and makes the implementation usable from a shell 
 
 Multiple executables are available in the virtual environment, including: `python`, `python3`, and `graalpy`.
 
-> Note: To deactivate the Python environment (and return to your shell), use the following command:
-```bash
-deactivate
-```
+> Note: To deactivate the Python environment (and return to your shell), run `deactivate`.
 
 The `pip` package installer is available when using a virtual environment.
 The GraalPy implementation of `pip` may choose package versions other than the latest in cases where it ships patches to make these work better.

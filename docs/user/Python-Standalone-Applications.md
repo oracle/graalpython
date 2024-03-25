@@ -14,7 +14,7 @@ The [Truffle framework](https://github.com/oracle/graal/tree/master/truffle) on 
 GraalPy includes a module named `standalone` to create a Python binary for Linux, macOS, and Windows. 
 The modules bundles all your application's resources into a single file.
 
-> Note: **Prerequisite** GraalPy distribution beginning with version 23.1.0. See [GraalPy releases](https://github.com/oracle/graalpython/releases).
+> Prerequisite: GraalPy distribution beginning with version 23.1.0. See [GraalPy releases](https://github.com/oracle/graalpython/releases).
 
 For example, if you want to produce a native executable from a Python file named _my\_script.py_ along with packages you have installed in a virtual environment named _my\_venv_, run the following command:
 
