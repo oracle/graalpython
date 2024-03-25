@@ -12,8 +12,8 @@
 #include "pycore_abstract.h"      // _PyIndex_Check()
 #include "pycore_gc.h"            // _PyObject_GC_IS_TRACKED()
 #include "pycore_initconfig.h"    // _PyStatus_OK()
-#include "pycore_object.h"        // _PyObject_GC_TRACK(), _Py_FatalRefcountError()
 #endif // GraalPy change
+#include "pycore_object.h"        // _PyObject_GC_TRACK(), _Py_FatalRefcountError()
 
 #if 0 // GraalPy change
 /*[clinic input]
@@ -1303,22 +1303,47 @@ _PyTuple_DebugMallocStats(FILE *out)
 #endif // GraalPy change
 
 // GraalPy additions
-PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {
+PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* type, Py_ssize_t nitems) {
     /*
      * TODO(fa): For 'PyVarObjects' (i.e. 'nitems > 0') we increase the size by 'sizeof(void *)'
      * because this additional pointer can then be used as pointer to the element array.
      * CPython usually embeds the array in the struct but Sulong doesn't currently support that.
      * So we allocate space for the additional array pointer.
      * Also consider any 'PyVarObject' (in particular 'PyTupleObject') if this is fixed.
+     *
+     * This function is mostly an inlined copy-paste of PyType_GenericAlloc, with different size
+     * and added initialization of ob_item
      */
-    Py_ssize_t size = cls->tp_basicsize + cls->tp_itemsize * nitems + sizeof(PyObject **);
-    PyObject* newObj = (PyObject*)PyObject_Malloc(size);
-    if(cls->tp_dictoffset) {
-    	*((PyObject **) ((char *)newObj + cls->tp_dictoffset)) = NULL;
+    PyObject *obj;
+    const size_t size = _PyObject_VAR_SIZE(type, nitems+1) + sizeof(PyObject **);
+    /* note that we need to add one, for the sentinel */
+
+    const size_t presize = _PyType_PreHeaderSize(type);
+    char *alloc = PyObject_Malloc(size + presize);
+    if (alloc  == NULL) {
+        return PyErr_NoMemory();
     }
-    PyObject_INIT_VAR(newObj, cls, nitems);
-    ((PyTupleObject*)newObj)->ob_item = (PyObject **) ((char *)newObj + offsetof(PyTupleObject, ob_item) + sizeof(PyObject **));
-    return newObj;
+    obj = (PyObject *)(alloc + presize);
+    if (presize) {
+        // GraalPy change: different header layout, no GC link
+        ((PyObject **)alloc)[0] = NULL;
+    }
+    memset(obj, '\0', size);
+
+    if (type->tp_itemsize == 0) {
+        _PyObject_Init(obj, type);
+    }
+    else {
+        _PyObject_InitVar((PyVarObject *)obj, type, nitems);
+    }
+
+    if (_PyType_IS_GC(type)) {
+        _PyObject_GC_TRACK(obj);
+    }
+
+    ((PyTupleObject*)obj)->ob_item = (PyObject **) ((char *)obj + offsetof(PyTupleObject, ob_item) + sizeof(PyObject **));
+
+    return obj;
 }
 
 void PyTruffle_Tuple_Dealloc(PyTupleObject* self) {
