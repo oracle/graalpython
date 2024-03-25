@@ -116,18 +116,12 @@ def create_polyglot_app(parsed_args):
         )
         exit(1)
 
-    if os.path.exists(os.path.abspath(parsed_args.output_directory)):
-        print(
-            "Output directory already exists.",
-            sep="\n",
-        )
-        exit(1)
-
     target_dir = parsed_args.output_directory if parsed_args.output_directory else os.getcwd()
     if parsed_args.verbose:
         print(f"Creating polyglot java python application in directory {target_dir}")
 
-    cmd = ["mvn", "archetype:generate", "-DarchetypeGroupId=org.graalvm.python", "-DarchetypeArtifactId=graalpy-archetype-polyglot-app"]
+    cmd = ["mvn", "archetype:generate", "-B", "-DarchetypeGroupId=org.graalvm.python", "-DarchetypeArtifactId=graalpy-archetype-polyglot-app"]
+    cmd += [f"-DarchetypeVersion={MVN_GRAALPY_VERSION}"]
     cmd += [f"-DgroupId={parsed_args.group_id}"]
     cmd += [f"-DartifactId={parsed_args.artifact_id}"]
     cmd += ["-Dversion=1.0-SNAPSHOT" if parsed_args.version else f"-Dversion={parsed_args.version}"]
@@ -476,27 +470,27 @@ def main(args):
         CMD_JAVA_PYTHON_APP,
         help="Create a polyglot Java-Python maven project skeleton preconfigured to build native binaries.",
     )    
-    
+
     parser_app.add_argument(
         "-g",
         "--group-id",
         help="The created maven project group id.",
         required=True,
     )
-    
+
     parser_app.add_argument(
         "-a",
         "--artifact-id",
         help="The created maven project artifact id.",
         required=True,
     )
-    
+
     parser_app.add_argument(
         "-v",
         "--version",
         help="The created maven project version.",
     )
-    
+
     parser_app.add_argument(
         "-o",
         "--output-directory",
