@@ -55,6 +55,7 @@ import stat
 from zipfile import ZipFile
 
 import mx
+import mx_util
 import mx_benchmark
 import mx_gate
 import mx_native
@@ -3076,7 +3077,7 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
             "-B",
             "-S"
         ]
-        mx.ensure_dir_exists(cwd)
+        mx_util.ensure_dir_exists(cwd)
 
         env = env.copy() if env else os.environ.copy()
         env.update(self.subject.getBuildEnv())
