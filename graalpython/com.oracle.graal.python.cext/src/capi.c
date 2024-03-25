@@ -193,11 +193,6 @@ PY_TYPE_OBJECTS
 #undef PY_TRUFFLE_TYPE_GENERIC
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 
-/*
- * This header includes definitions for constant arrays like:
- * _Py_ascii_whitespace, _Py_ctype_table, _Py_ctype_tolower, _Py_ctype_toupper.
- */
-#include "const_arrays.h"
 
 #define BUILTIN(NAME, RET, ...) RET (*Graal##NAME)(__VA_ARGS__);
 CAPI_BUILTINS
@@ -810,55 +805,6 @@ PyAPI_FUNC(void*) truffle_va_arg_pointer(va_list* va) {
 
 PyAPI_FUNC(void*) truffle_convert_pointer(Py_ssize_t value) {
 	return (void*) value;
-}
-
-PyAPI_FUNC(void*) truffle_get_constant(int entry) {
-	// this needs to correspond to CApiContext.resolveConstant
-	switch(entry) {
-	case 0:
-		return _Py_ascii_whitespace;
-	case 1:
-		return _Py_ctype_table;
-	case 2:
-		return _Py_ctype_tolower;
-	case 3:
-		return _Py_ctype_toupper;
-	case 4:
-		return &_Py_tracemalloc_config;
-	case 5:
-		return &_Py_HashSecret;
-	case 6:
-		return &Py_DebugFlag;
-	case 7:
-		return &Py_VerboseFlag;
-	case 8:
-		return &Py_QuietFlag;
-	case 9:
-		return &Py_InteractiveFlag;
-	case 10:
-		return &Py_InspectFlag;
-	case 11:
-		return &Py_OptimizeFlag;
-	case 12:
-		return &Py_NoSiteFlag;
-	case 13:
-		return &Py_BytesWarningFlag;
-	case 14:
-		return &Py_FrozenFlag;
-	case 15:
-		return &Py_IgnoreEnvironmentFlag;
-	case 16:
-		return &Py_DontWriteBytecodeFlag;
-	case 17:
-		return &Py_NoUserSiteDirectory;
-	case 18:
-		return &Py_UnbufferedStdioFlag;
-	case 19:
-		return &Py_HashRandomizationFlag;
-	case 20:
-		return &Py_IsolatedFlag;
-	}
-	return NULL;
 }
 
 // defined in 'exceptions.c'

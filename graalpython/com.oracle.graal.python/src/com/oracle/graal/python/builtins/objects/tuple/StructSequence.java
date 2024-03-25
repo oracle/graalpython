@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,6 +81,8 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.NewN
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReduceNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReprNodeGen;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -257,6 +259,12 @@ public class StructSequence {
     public static void initType(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Descriptor desc) {
         assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
 
+        long flags = TypeNodes.GetTypeFlagsNode.executeUncached(klass);
+        if ((flags & TypeFlags.IMMUTABLETYPE) != 0) {
+            // Temporarily open the type for mutation
+            TypeNodes.SetTypeFlagsNode.executeUncached(klass, flags & ~TypeFlags.IMMUTABLETYPE);
+        }
+
         // create descriptors for accessing named fields by their names
         int unnamedFields = 0;
         for (int idx = 0; idx < desc.fieldNames.length; ++idx) {
@@ -289,6 +297,10 @@ public class StructSequence {
             } else {
                 createConstructor(factory, language, klass, desc, DisabledNewNode.class, d -> DisabledNewNodeGen.create());
             }
+        }
+        if ((flags & TypeFlags.IMMUTABLETYPE) != 0) {
+            // Restore flags
+            TypeNodes.SetTypeFlagsNode.executeUncached(klass, flags);
         }
     }
 

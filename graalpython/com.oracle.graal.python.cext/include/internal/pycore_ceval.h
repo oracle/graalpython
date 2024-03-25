@@ -28,14 +28,17 @@ struct _ceval_runtime_state;
 #  endif
 #endif
 
-// #include "pycore_interp.h"        // PyInterpreterState.eval_frame
-// #include "pycore_pystate.h"       // _PyThreadState_GET()
+#if 0 // GraalPy change
+#include "pycore_interp.h"        // PyInterpreterState.eval_frame
+#endif // GraalPy change
+#include "pycore_pystate.h"       // _PyThreadState_GET()
 
 
+#if 0 // GraalPy change
 extern void _Py_FinishPendingCalls(PyThreadState *tstate);
 extern void _PyEval_InitRuntimeState(struct _ceval_runtime_state *);
-// extern void _PyEval_InitState(struct _ceval_state *, PyThread_type_lock);
-// extern void _PyEval_FiniState(struct _ceval_state *ceval);
+extern void _PyEval_InitState(struct _ceval_state *, PyThread_type_lock);
+extern void _PyEval_FiniState(struct _ceval_state *ceval);
 PyAPI_FUNC(void) _PyEval_SignalReceived(PyInterpreterState *interp);
 PyAPI_FUNC(int) _PyEval_AddPendingCall(
     PyInterpreterState *interp,
@@ -71,7 +74,6 @@ extern PyObject* _PyEval_BuiltinsFromGlobals(
     PyObject *globals);
 
 
-/* GraalVM change
 static inline PyObject*
 _PyEval_EvalFrame(PyThreadState *tstate, struct _PyInterpreterFrame *frame, int throwflag)
 {
@@ -80,7 +82,6 @@ _PyEval_EvalFrame(PyThreadState *tstate, struct _PyInterpreterFrame *frame, int 
     }
     return tstate->interp->eval_frame(tstate, frame, throwflag);
 }
-*/
 
 extern PyObject*
 _PyEval_Vector(PyThreadState *tstate,
@@ -95,6 +96,7 @@ extern void _PyEval_FiniGIL(PyInterpreterState *interp);
 extern void _PyEval_ReleaseLock(PyThreadState *tstate);
 
 extern void _PyEval_DeactivateOpCache(void);
+#endif // GraalPy change
 
 
 /* --- _Py_EnterRecursiveCall() ----------------------------------------- */
@@ -122,10 +124,7 @@ static inline int _Py_EnterRecursiveCallTstate(PyThreadState *tstate,
 }
 
 static inline int _Py_EnterRecursiveCall(const char *where) {
-    /* GraalVM change
     PyThreadState *tstate = _PyThreadState_GET();
-    */
-    PyThreadState *tstate = PyThreadState_GET();
     return _Py_EnterRecursiveCallTstate(tstate, where);
 }
 
@@ -134,16 +133,15 @@ static inline void _Py_LeaveRecursiveCallTstate(PyThreadState *tstate)  {
 }
 
 static inline void _Py_LeaveRecursiveCall(void)  {
-    /* GraalVM change
     PyThreadState *tstate = _PyThreadState_GET();
-    */
-    PyThreadState *tstate = PyThreadState_GET();
     _Py_LeaveRecursiveCallTstate(tstate);
 }
 
+#if 0 // GraalPy change
 extern struct _PyInterpreterFrame* _PyEval_GetFrame(void);
 
 extern PyObject* _Py_MakeCoro(PyFunctionObject *func);
+#endif // GraalPy change
 
 #ifdef __cplusplus
 }

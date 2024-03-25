@@ -14,8 +14,8 @@
 #include "pycore_object.h"        // _Py_CheckSlotResult()
 #endif // GraalPy change
 #include "pycore_pyerrors.h"      // _PyErr_Occurred()
-#if 0 // GraalPy change
 #include "pycore_pystate.h"       // _PyThreadState_GET()
+#if 0 // GraalPy change
 #include "pycore_unionobject.h"   // _PyUnion_Check()
 #endif // GraalPy change
 #include <ctype.h>
@@ -66,7 +66,7 @@ type_error(const char *msg, PyObject *obj)
 static PyObject *
 null_error(void)
 {
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     if (!_PyErr_Occurred(tstate)) {
         _PyErr_SetString(tstate, PyExc_SystemError,
                          "null argument to internal routine");
@@ -1117,7 +1117,6 @@ BINARY_FUNC(PyNumber_Subtract, nb_subtract, "-")
 BINARY_FUNC(PyNumber_Divmod, nb_divmod, "divmod()")
 #endif // GraalPy change
 
-
 PyObject *
 PyNumber_Add(PyObject *v, PyObject *w)
 {
@@ -1449,7 +1448,7 @@ PyNumber_AsSsize_t(PyObject *item, PyObject *err)
     if (result != -1)
         goto finish;
 
-    PyThreadState *tstate = NULL; // GraalPy change: don't get thread state
+    PyThreadState *tstate = _PyThreadState_GET();
     runerr = _PyErr_Occurred(tstate);
     if (!runerr) {
         goto finish;

@@ -49,7 +49,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectTransfer;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.util.ArrayList;
@@ -61,22 +60,18 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuat
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -102,9 +97,7 @@ public final class PythonCextStructSeqBuiltins {
         static int doGeneric(Object klass, Object fields, int nInSequence,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CStructAccess.ReadPointerNode readNode,
-                        @Cached CStructAccess.WriteLongNode setNativeFlags,
-                        @Cached FromCharPointerNode fromCharPtr,
-                        @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode) {
+                        @Cached FromCharPointerNode fromCharPtr) {
 
             ArrayList<TruffleString> names = new ArrayList<>();
             ArrayList<TruffleString> docs = new ArrayList<>();
@@ -126,10 +119,6 @@ public final class PythonCextStructSeqBuiltins {
             TruffleString[] fieldNames = names.toArray(TruffleString[]::new);
             TruffleString[] fieldDocs = docs.toArray(TruffleString[]::new);
 
-            if (klass instanceof PythonAbstractNativeObject c) {
-                setNativeFlags.writeToObject(c, CFields.PyTypeObject__tp_flags, TypeFlags.DEFAULT | TypeFlags.HAVE_GC);
-            }
-            clearNewNode.execute(klass, T___NEW__, PNone.NO_VALUE);
             StructSequence.Descriptor d = new StructSequence.Descriptor(null, nInSequence, fieldNames, fieldDocs);
             StructSequence.initType(PythonLanguage.get(readNode), klass, d);
             return 0;

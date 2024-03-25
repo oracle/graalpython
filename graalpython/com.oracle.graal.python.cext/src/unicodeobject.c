@@ -312,6 +312,7 @@ unicode_fill(enum PyUnicode_Kind kind, void *data, Py_UCS4 value,
     default: Py_UNREACHABLE();
     }
 }
+#endif // GraalPy change
 
 
 /* Fast detection of the most frequent whitespace characters */
@@ -345,6 +346,7 @@ const unsigned char _Py_ascii_whitespace[] = {
     0, 0, 0, 0, 0, 0, 0, 0
 };
 
+#if 0 // GraalPy change
 /* forward */
 static PyUnicodeObject *_PyUnicode_New(Py_ssize_t length);
 static PyObject* get_latin1_char(unsigned char ch);

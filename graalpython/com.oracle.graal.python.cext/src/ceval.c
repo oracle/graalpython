@@ -155,3 +155,27 @@ void Py_LeaveRecursiveCall(void)
 {
     _Py_LeaveRecursiveCall();
 }
+
+/* Extract a slice index from a PyLong or an object with the
+   nb_index slot defined, and store in *pi.
+   Silently reduce values larger than PY_SSIZE_T_MAX to PY_SSIZE_T_MAX,
+   and silently boost values less than PY_SSIZE_T_MIN to PY_SSIZE_T_MIN.
+   Return 0 on error, 1 on success. */
+int _PyEval_SliceIndex(PyObject *v, Py_ssize_t *pi) {
+    if (v != Py_None) {
+        Py_ssize_t x;
+        if (PyIndex_Check(v)) {
+            x = PyNumber_AsSsize_t(v, NULL);
+            if (x == -1 && PyErr_Occurred())
+                return 0;
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError,
+                            "slice indices must be integers or "
+                            "None or have an __index__ method");
+            return 0;
+        }
+        *pi = x;
+    }
+    return 1;
+}

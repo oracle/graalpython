@@ -5,7 +5,6 @@
  */
 /* Type object implementation */
 
-#define NEEDS_PY_IDENTIFIER // GraalPy change
 #include "capi.h" // GraalPy change
 #include "Python.h"
 #if 0 // GraalPy change

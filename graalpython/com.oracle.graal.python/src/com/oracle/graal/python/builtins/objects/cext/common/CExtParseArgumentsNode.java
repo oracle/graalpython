@@ -43,9 +43,9 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CONVERTBUFFER;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BUFFER_R;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BUFFER_RW;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_ARG_CONVERT_BUFFER;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_ARG_GET_BUFFER;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_ARG_GET_BUFFER_WRITABLE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
@@ -779,7 +779,7 @@ public abstract class CExtParseArgumentsNode {
 
         private static void getbuffer(Node inliningTarget, PCallCapiFunction callGetBufferRwNode, PRaiseNativeNode.Lazy raiseNode, Object arg, CExtToNativeNode toSulongNode, Object pybufferPtr,
                         boolean readOnly) throws ParseArgumentsException {
-            NativeCAPISymbol funSymbol = readOnly ? FUN_GET_BUFFER_R : FUN_GET_BUFFER_RW;
+            NativeCAPISymbol funSymbol = readOnly ? FUN_PY_TRUFFLE_ARG_GET_BUFFER : FUN_PY_TRUFFLE_ARG_GET_BUFFER_WRITABLE;
             Object rc = callGetBufferRwNode.call(funSymbol, toSulongNode.execute(arg), pybufferPtr);
             if (!(rc instanceof Number)) {
                 throw raise(raiseNode.get(inliningTarget), SystemError, ErrorMessages.RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S, funSymbol, rc.getClass());
@@ -809,7 +809,7 @@ public abstract class CExtParseArgumentsNode {
         }
 
         private static int convertbuffer(Node inliningTarget, PCallCapiFunction callConvertbuffer, PRaiseNativeNode.Lazy raiseNode, Object arg, CExtToNativeNode toSulong, Object voidPtr) {
-            Object rc = callConvertbuffer.call(FUN_CONVERTBUFFER, toSulong.execute(arg), voidPtr);
+            Object rc = callConvertbuffer.call(FUN_PY_TRUFFLE_ARG_CONVERT_BUFFER, toSulong.execute(arg), voidPtr);
             if (!(rc instanceof Number)) {
                 throw CompilerDirectives.shouldNotReachHere("wrong result of internal function");
             }
