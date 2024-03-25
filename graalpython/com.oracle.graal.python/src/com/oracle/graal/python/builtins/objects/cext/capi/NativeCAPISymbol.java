@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
@@ -127,9 +128,9 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_TRUFFLE_INITIALIZE_STORAGE_ITEM("PyTruffle_InitializeStorageItem", ArgDescriptor.Void, Pointer, Int, PyObject),
     FUN_PY_OBJECT_GET_DICT_PTR("_PyObject_GetDictPtr", Pointer, PyObject),
     FUN_PY_OBJECT_GENERIC_SET_DICT("PyObject_GenericSetDict", Int, PyObject, PyObject, Pointer),
-    FUN_PY_OBJECT_NEW("PyTruffle_Object_New", PyObject, PyTypeObject),
+    FUN_PY_OBJECT_NEW("PyTruffle_Object_New", PyObjectTransfer, PyTypeObject),
     FUN_PY_TYPE_READY("PyType_Ready", Int, PyTypeObject),
-    FUN_PY_TYPE_GENERIC_ALLOC("PyType_GenericAlloc", PyObject, PyTypeObject, Py_ssize_t),
+    FUN_PY_TYPE_GENERIC_ALLOC("PyType_GenericAlloc", PyObjectTransfer, PyTypeObject, Py_ssize_t),
     FUN_PY_OBJECT_GC_DEL("PyObject_GC_Del", Void, Pointer),
     FUN_GET_BUFFER_R("get_buffer_r", Int, PyObject, Pointer),
     FUN_GET_BUFFER_RW("get_buffer_rw", Int, PyObject, Pointer),
@@ -143,22 +144,22 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_BULK_DEALLOC("PyTruffle_bulk_DEALLOC", Py_ssize_t, Pointer, INT64_T),
     FUN_SHUTDOWN_BULK_DEALLOC("PyTruffle_shutdown_bulk_DEALLOC", Py_ssize_t, Pointer, INT64_T),
     FUN_TRUFFLE_ADD_SUBOFFSET("truffle_add_suboffset", Pointer, Pointer, Py_ssize_t, Py_ssize_t),
-    FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT("PyTruffle_MemoryViewFromObject", PyObject, PyObject, Int),
+    FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT("PyTruffle_MemoryViewFromObject", PyObjectTransfer, PyObject, Int),
     FUN_PY_TRUFFLE_RELEASE_BUFFER("PyTruffle_ReleaseBuffer", ArgDescriptor.Void, Pointer),
     FUN_PY_SEQUENCE_CHECK("PySequence_Check", Int, PyObject),
     FUN_PY_SEQUENCE_SIZE("PySequence_Size", Py_ssize_t, PyObject),
-    FUN_PY_SEQUENCE_GET_ITEM("PySequence_GetItem", PyObject, PyObject, Py_ssize_t),
+    FUN_PY_SEQUENCE_GET_ITEM("PySequence_GetItem", PyObjectTransfer, PyObject, Py_ssize_t),
     FUN_PY_SEQUENCE_SET_ITEM("PySequence_SetItem", Int, PyObject, Py_ssize_t, PyObject),
     FUN_PY_SEQUENCE_DEL_ITEM("PySequence_DelItem", Int, PyObject, Py_ssize_t),
-    FUN_TUPLE_SUBTYPE_NEW("tuple_subtype_new", PyObject, PyTypeObject, PyObject),
-    FUN_BYTES_SUBTYPE_NEW("bytes_subtype_new", PyObject, PyTypeObject, Pointer, Py_ssize_t),
-    FUN_FLOAT_SUBTYPE_NEW("float_subtype_new", PyObject, PyTypeObject, ArgDescriptor.Double),
-    FUN_COMPLEX_SUBTYPE_FROM_DOUBLES("complex_subtype_from_doubles", PyObject, PyTypeObject, ArgDescriptor.Double, ArgDescriptor.Double),
-    FUN_EXCEPTION_SUBTYPE_NEW("exception_subtype_new", PyObject, PyTypeObject, PyObject),
+    FUN_TUPLE_SUBTYPE_NEW("tuple_subtype_new", PyObjectTransfer, PyTypeObject, PyObject),
+    FUN_BYTES_SUBTYPE_NEW("bytes_subtype_new", PyObjectTransfer, PyTypeObject, Pointer, Py_ssize_t),
+    FUN_FLOAT_SUBTYPE_NEW("float_subtype_new", PyObjectTransfer, PyTypeObject, ArgDescriptor.Double),
+    FUN_COMPLEX_SUBTYPE_FROM_DOUBLES("complex_subtype_from_doubles", PyObjectTransfer, PyTypeObject, ArgDescriptor.Double, ArgDescriptor.Double),
+    FUN_EXCEPTION_SUBTYPE_NEW("exception_subtype_new", PyObjectTransfer, PyTypeObject, PyObject),
     FUN_SUBCLASS_CHECK("truffle_subclass_check", Int, PyObject),
     FUN_BASETYPE_CHECK("truffle_BASETYPE_check", Int, PyObject),
     FUN_MEMCPY_BYTES("truffle_memcpy_bytes", ArgDescriptor.Void, Pointer, SIZE_T, Pointer, SIZE_T, SIZE_T),
-    FUN_UNICODE_SUBTYPE_NEW("unicode_subtype_new", PyObject, PyTypeObject, PyObject),
+    FUN_UNICODE_SUBTYPE_NEW("unicode_subtype_new", PyObjectTransfer, PyTypeObject, PyObject),
     FUN_CHECK_BASESIZE_FOR_GETSTATE("tuffle_check_basesize_for_getstate", Int, PyTypeObject, Int),
     FUN_MMAP_INIT_BUFFERPROTOCOL("mmap_init_bufferprotocol", ArgDescriptor.Void, PyTypeObject),
     FUN_TRUFFLE_CHECK_TYPE_READY("truffle_check_type_ready", ArgDescriptor.Void, PyTypeObject),
