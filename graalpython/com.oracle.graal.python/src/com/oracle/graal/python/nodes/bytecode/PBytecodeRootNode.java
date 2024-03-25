@@ -1137,6 +1137,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return this.getTraceData().returnCalled;
         }
 
+        public int getJumpBci() {
+            return this.getTraceData().jumpBci;
+        }
+
+        public void setJumpBci(int target) {
+            this.getTraceData().jumpBci = target;
+        }
+
         public void setReturnCalled(boolean value) {
             this.getTraceData().returnCalled = value;
         }
@@ -1186,6 +1194,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             private PFrame pyFrame = null;
             private boolean exceptionNotified;
             private boolean returnCalled;
+
+            private int jumpBci;
 
             private PythonContext.PythonThreadState threadState = null;
         }
@@ -1302,7 +1312,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     // instructions. A jump can happen non-deterministically and thus break this
                     // assumption
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    bci = virtualFrame.getInt(bciSlot);
+                    bci = mutableData.getJumpBci();
                     stackTop += stackDiff;
                     continue;
                 }
@@ -2946,7 +2956,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LINE_D_COMES_BEFORE_THE_CURRENT_CODE_BLOCK, pyFrame.getJumpDestLine());
                     } else {
                         ret = computeJumpStackDifference(bci, newBci);
-                        setCurrentBci(virtualFrame, bcioffset, newBci);
+                        mutableData.setJumpBci(newBci);
                     }
                 }
             }

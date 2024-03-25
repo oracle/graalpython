@@ -631,10 +631,15 @@ public final class CodeUnit {
         ArrayDeque<Integer> todo = new ArrayDeque<>();
         todo.addFirst(0);
         while (!todo.isEmpty()) {
-            int i = todo.removeLast();
-            assert blocks.get(i) != null : "Reached block without determining its stack state";
-            opCodeAt(code, i, (bci, op, oparg, followingArgs) -> {
-                ArrayList<StackItem> next = blocks.get(bci);
+            int firstBci = todo.removeLast();
+            assert blocks.get(firstBci) != null : "Reached block without determining its stack state";
+            opCodeAt(code, firstBci, (bci, op, oparg, followingArgs) -> {
+                // firstBci can be different from bci if EXTEND_ARG is used
+                // the stack is kept both at firstBci and bci
+                ArrayList<StackItem> next = blocks.get(firstBci);
+                if (firstBci != bci) {
+                    blocks.set(bci, next);
+                }
                 for (int j = 0; j < exceptionHandlerRanges.length; j += 4) {
                     int start = exceptionHandlerRanges[j];
                     int handler = exceptionHandlerRanges[j + 2];

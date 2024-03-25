@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1002,6 +1002,9 @@ public enum OpCodes {
             case RETURN_VALUE:
             case RAISE_VARARGS:
             case END_EXC_HANDLER:
+                return -1;
+            case EXTENDED_ARG:
+                assert false : "EXTENDED_ARG passed to getNextBci.";
                 return -1;
             default:
                 return bci + length();
