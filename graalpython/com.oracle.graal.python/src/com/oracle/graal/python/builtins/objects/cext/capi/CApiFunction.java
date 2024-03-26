@@ -244,6 +244,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyErr_Format", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyErr_FormatV", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VA_LIST}, call = CImpl)
     @CApiBuiltin(name = "PyErr_GetExcInfo", ret = Void, args = {PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = CImpl)
+    @CApiBuiltin(name = "PyErr_GivenExceptionMatches", ret = Int, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyErr_NoMemory", ret = PyObject, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyErr_NormalizeException", ret = Void, args = {PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "PyErr_Occurred", ret = PyObjectBorrowed, args = {}, call = CImpl)

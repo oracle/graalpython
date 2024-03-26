@@ -395,17 +395,6 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyErr_GivenExceptionMatches extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static int matches(Object err, Object exc,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyErrExceptionMatchesNode matchesNode) {
-            return PInt.intValue(matchesNode.execute(inliningTarget, err, exc));
-        }
-    }
-
     @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, PyObject}, call = Direct)
     abstract static class _PyErr_WriteUnraisableMsg extends CApiBinaryBuiltinNode {
         @Specialization

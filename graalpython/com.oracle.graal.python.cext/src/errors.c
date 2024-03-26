@@ -173,7 +173,6 @@ PyErr_Occurred(void)
 }
 
 
-#if 0 // GraalPy change
 int
 PyErr_GivenExceptionMatches(PyObject *err, PyObject *exc)
 {
@@ -204,7 +203,6 @@ PyErr_GivenExceptionMatches(PyObject *err, PyObject *exc)
 
     return err == exc;
 }
-#endif // GraalPy change
 
 
 int
