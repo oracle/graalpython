@@ -808,7 +808,6 @@ public final class PythonContext extends Python3Core {
     // the full module name for package imports
     private TruffleString pyPackageContext;
 
-    // the actual pointer will be set when the cext is initialized
     private final NativePointer nativeNull = NativePointer.createNull();
 
     public RootCallTarget signatureContainer;
