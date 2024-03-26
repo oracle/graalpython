@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsNativeComplexNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearCurrentExceptionNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
@@ -672,12 +673,13 @@ public abstract class CExtParseArgumentsNode {
                         @Shared @Cached PCallCapiFunction callGetBufferRwNode,
                         @Shared @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Shared @Cached PythonToNativeNode toNativeNode,
+                        @Shared @Cached ClearCurrentExceptionNode clearCurrentExceptionNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode.Lazy raiseNode) throws InteropException {
             if (la == '*') {
                 /* formatIdx++; */
                 // 'y*'; output to 'Py_buffer*'
                 Object pybufferPtr = getVaArgNode.execute(inliningTarget, varargs);
-                getbuffer(inliningTarget, callGetBufferRwNode, raiseNode, arg, toNativeNode, pybufferPtr, true);
+                getbuffer(inliningTarget, callGetBufferRwNode, raiseNode, arg, toNativeNode, pybufferPtr, true, clearCurrentExceptionNode);
             } else {
                 Object voidPtr = getVaArgNode.execute(inliningTarget, varargs);
                 int count = convertbuffer(inliningTarget, callGetBufferRwNode, raiseNode, arg, toNativeNode, voidPtr);
@@ -768,17 +770,18 @@ public abstract class CExtParseArgumentsNode {
                         @Exclusive @Cached GetNextVaArgNode getVaArgNode,
                         @Shared @Cached PCallCapiFunction callGetBufferRwNode,
                         @Shared @Cached PythonToNativeNode toNativeNode,
+                        @Shared @Cached ClearCurrentExceptionNode clearCurrentExceptionNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode.Lazy raiseNode) throws InteropException, ParseArgumentsException {
             if (la != '*') {
                 throw raise(raiseNode.get(inliningTarget), TypeError, ErrorMessages.INVALID_USE_OF_W_FORMAT_CHAR);
 
             }
             Object pybufferPtr = getVaArgNode.execute(inliningTarget, varargs);
-            getbuffer(inliningTarget, callGetBufferRwNode, raiseNode, arg, toNativeNode, pybufferPtr, false);
+            getbuffer(inliningTarget, callGetBufferRwNode, raiseNode, arg, toNativeNode, pybufferPtr, false, clearCurrentExceptionNode);
         }
 
         private static void getbuffer(Node inliningTarget, PCallCapiFunction callGetBufferRwNode, PRaiseNativeNode.Lazy raiseNode, Object arg, CExtToNativeNode toSulongNode, Object pybufferPtr,
-                        boolean readOnly) throws ParseArgumentsException {
+                        boolean readOnly, ClearCurrentExceptionNode clearCurrentExceptionNode) throws ParseArgumentsException {
             NativeCAPISymbol funSymbol = readOnly ? FUN_PY_TRUFFLE_ARG_GET_BUFFER : FUN_PY_TRUFFLE_ARG_GET_BUFFER_WRITABLE;
             Object rc = callGetBufferRwNode.call(funSymbol, toSulongNode.execute(arg), pybufferPtr);
             if (!(rc instanceof Number)) {
@@ -792,7 +795,7 @@ public abstract class CExtParseArgumentsNode {
                      * test for that, so let's be bug-to-bug compatible.
                      */
                     PythonContext.PythonThreadState threadState = PythonContext.get(inliningTarget).getThreadState(PythonLanguage.get(inliningTarget));
-                    throw threadState.reraiseCurrentException();
+                    throw clearCurrentExceptionNode.getCurrentExceptionForReraise(inliningTarget, threadState);
                 } else {
                     throw converterr(raiseNode.get(inliningTarget), ErrorMessages.READ_WRITE_BYTELIKE_OBJ, arg);
                 }

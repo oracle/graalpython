@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.CImpl;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.NotImplemented;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR;
@@ -245,6 +246,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyErr_GetExcInfo", ret = Void, args = {PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "PyErr_NoMemory", ret = PyObject, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyErr_NormalizeException", ret = Void, args = {PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = CImpl)
+    @CApiBuiltin(name = "PyErr_Occurred", ret = PyObjectBorrowed, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyErr_Print", ret = Void, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyErr_ResourceWarning", ret = Int, args = {PyObject, Py_ssize_t, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyErr_SetFromErrno", ret = PyObject, args = {PyObject}, call = CImpl)

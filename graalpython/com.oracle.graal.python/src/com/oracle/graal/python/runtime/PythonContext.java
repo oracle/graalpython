@@ -407,11 +407,9 @@ public final class PythonContext extends Python3Core {
             this.currentTraceback = currentTraceback;
         }
 
-        public PException reraiseCurrentException() {
+        public PException getCurrentExceptionForReraise() {
             syncTracebackToException();
-            PException exception = currentException.getExceptionForReraise(false);
-            clearCurrentException();
-            throw exception;
+            return currentException.getExceptionForReraise(false);
         }
 
         public void syncTracebackToException() {
@@ -447,10 +445,6 @@ public final class PythonContext extends Python3Core {
             PFrame.Reference ref = topframeref;
             topframeref = null;
             return ref;
-        }
-
-        public PFrame.Reference peekTopFrameInfo() {
-            return topframeref;
         }
 
         public PDict getDict() {

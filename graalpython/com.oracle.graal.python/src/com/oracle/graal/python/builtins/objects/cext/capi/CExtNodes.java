@@ -103,8 +103,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeW
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
@@ -159,6 +159,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -1053,6 +1054,31 @@ public abstract class CExtNodes {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class ClearCurrentExceptionNode extends Node {
+
+        public abstract void execute(Node inliningTarget, PythonThreadState threadState);
+
+        public final PException getCurrentExceptionForReraise(Node inliningTarget, PythonThreadState threadState) {
+            PException exceptionForReraise = threadState.getCurrentExceptionForReraise();
+            execute(inliningTarget, threadState);
+            return exceptionForReraise;
+        }
+
+        @Specialization
+        static void doGeneric(Node inliningTarget, PythonThreadState threadState,
+                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode) {
+            threadState.clearCurrentException();
+            PThreadState nativeWrapper = threadState.getNativeWrapper();
+            if (nativeWrapper != null) {
+                Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
+                writePointerNode.write(nativeThreadState, CFields.PyThreadState__curexc_type, 0L);
+            }
+        }
+    }
+
     @GenerateUncached
     @GenerateCached
     @GenerateInline(false)
@@ -1649,7 +1675,6 @@ public abstract class CExtNodes {
         static Object doGeneric(CApiContext capiContext, ModuleSpec moduleSpec, Object moduleDefWrapper, Object library,
                         @Bind("this") Node inliningTarget,
                         @Cached PythonObjectFactory factory,
-                        @Cached InlinedConditionProfile errOccurredProfile,
                         @Cached CStructAccess.ReadPointerNode readPointer,
                         @Cached CStructAccess.ReadI64Node readI64,
                         @CachedLibrary(limit = "3") InteropLibrary interopLib,
@@ -1660,6 +1685,8 @@ public abstract class CExtNodes {
                         @Cached NativeToPythonTransferNode toJavaNode,
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached CStructAccess.ReadI32Node readI32Node,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             // call to type the pointer
             Object moduleDef = moduleDefWrapper instanceof PythonAbstractNativeObject ? ((PythonAbstractNativeObject) moduleDefWrapper).getPtr() : moduleDefWrapper;
@@ -1723,8 +1750,9 @@ public abstract class CExtNodes {
                     } else {
                         result = interopLib.execute(createFunction, cArguments);
                     }
-                    CheckFunctionResultNode.checkFunctionResult(inliningTarget, mName, interopLib.isNull(result), true, PythonLanguage.get(raiseNode), context, errOccurredProfile,
-                                    ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
+                    PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
+                    transformExceptionFromNativeNode.execute(inliningTarget, threadState, mName, interopLib.isNull(result), true, ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION,
+                                    ErrorMessages.CREATION_RAISED_EXCEPTION);
                     module = toJavaNode.execute(result);
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                     throw shouldNotReachHere(e);
@@ -1795,6 +1823,8 @@ public abstract class CExtNodes {
                         @Cached CStructAccess.ReadI32Node readI32Node,
                         @CachedLibrary(limit = "3") InteropLibrary interopLib,
                         @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode,
                         @Cached PRaiseNode raiseNode) {
             InteropLibrary U = InteropLibrary.getUncached();
             // call to type the pointer
@@ -1845,8 +1875,9 @@ public abstract class CExtNodes {
                              * and won't ignore this if no error is set. This is then the same
                              * behaviour if we would have a pointer return type and got 'NULL'.
                              */
-                            CheckFunctionResultNode.checkFunctionResult(inliningTarget, mName, iResult != 0, true, PythonLanguage.get(raiseNode), context,
-                                            InlinedConditionProfile.getUncached(), ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION, ErrorMessages.EXECUTION_RAISED_EXCEPTION);
+                            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
+                            transformExceptionFromNativeNode.execute(inliningTarget, threadState, mName, iResult != 0, true, ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION,
+                                            ErrorMessages.EXECUTION_RAISED_EXCEPTION);
                             break;
                         default:
                             throw raiseNode.raise(SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);

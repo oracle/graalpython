@@ -84,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsuleNameMatchesNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearCurrentExceptionNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
@@ -1716,9 +1717,10 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetThreadStateNode getThreadStateNode) {
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, hpyContext.getContext());
-            threadState.clearCurrentException();
+            clearCurrentExceptionNode.execute(inliningTarget, threadState);
             return NULL_HANDLE_DELEGATE;
         }
     }
@@ -1747,10 +1749,11 @@ public abstract class GraalHPyContextFunctions {
         static Object doGeneric(GraalHPyContext hpyContext, Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached WriteUnraisableNode writeUnraisableNode) {
+                        @Cached WriteUnraisableNode writeUnraisableNode,
+                        @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, hpyContext.getContext());
             PException exception = threadState.getCurrentException();
-            threadState.clearCurrentException();
+            clearCurrentExceptionNode.execute(inliningTarget, threadState);
             writeUnraisableNode.execute(null, exception.getEscapedException(), null, (object instanceof PNone) ? PNone.NONE : object);
             return 0; // void
         }

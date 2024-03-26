@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION;
+import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -60,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearCurrentExceptionNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
@@ -427,14 +430,24 @@ public abstract class CExtCommonNodes {
     }
 
     public abstract static class CheckFunctionResultNode extends PNodeWithContext {
-        public static void checkFunctionResult(Node inliningTarget, TruffleString name, boolean indicatesError, boolean strict, PythonLanguage language, PythonContext context,
-                        InlinedConditionProfile errOccurredProfile, TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage) {
-            PythonThreadState threadState = context.getThreadState(language);
-            checkFunctionResult(inliningTarget, threadState, name, indicatesError, strict, errOccurredProfile, nullButNoErrorMessage, resultWithErrorMessage);
+
+        public final Object execute(PythonContext context, TruffleString name, Object result) {
+            PythonLanguage language = PythonLanguage.get(this);
+            return execute(context.getThreadState(language), name, result);
         }
 
+        public abstract Object execute(PythonThreadState threadState, TruffleString name, Object result);
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class TransformExceptionFromNativeNode extends Node {
+
         /**
-         * Check the result of a C extension function.
+         * Checks the current exception state with respect to flag {@code indicatesError} (and
+         * {@code strict}).
+         * 
          *
          * @param inliningTarget The processing node (also needed for the source location if a
          *            {@code SystemError} is raised).
@@ -447,37 +460,54 @@ public abstract class CExtCommonNodes {
          *            indicates an error but no exception was set. Setting this to {@code false}
          *            mostly makes sense for primitive return values with semantics
          *            {@code if (res != -1 && PyErr_Occurred()}.
-         * @param errOccurredProfile Profiles if a Python exception occurred and is set in the
-         *            context.
          * @param nullButNoErrorMessage Error message used if the value indicates an error and is
          *            not primitive but no error was set.
          * @param resultWithErrorMessage Error message used if an error was set but the value does
          *            not indicate and error.
          */
-        public static void checkFunctionResult(Node inliningTarget, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict,
-                        InlinedConditionProfile errOccurredProfile, TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage) {
+        public abstract void execute(Node inliningTarget, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict,
+                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage);
+
+        public final void execute(Node inliningTarget, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict) {
+            execute(inliningTarget, threadState, name, indicatesError, strict, RETURNED_NULL_WO_SETTING_EXCEPTION, RETURNED_RESULT_WITH_EXCEPTION_SET);
+        }
+
+        public final void reraise(Node inliningTarget, PythonThreadState threadState) {
+            execute(inliningTarget, threadState, null, true, true, null, null);
+        }
+
+        @Specialization
+        static void doGeneric(Node inliningTarget, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict,
+                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage,
+                        @Cached InlinedConditionProfile errOccurredProfile,
+                        @Cached InlinedConditionProfile indicatesErrorProfile,
+                        @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
             PException currentException = threadState.getCurrentException();
             boolean errOccurred = errOccurredProfile.profile(inliningTarget, currentException != null);
-            if (indicatesError || errOccurred) {
-                checkFunctionResultSlowpath(inliningTarget, threadState, name, indicatesError, strict, nullButNoErrorMessage, resultWithErrorMessage, errOccurred, currentException);
+            boolean indicatesErrorProfiled = indicatesErrorProfile.profile(inliningTarget, indicatesError);
+            if (indicatesErrorProfiled || errOccurred) {
+                checkFunctionResultSlowpath(inliningTarget, threadState, name, indicatesErrorProfiled, strict,
+                                nullButNoErrorMessage, resultWithErrorMessage, errOccurred, currentException, clearCurrentExceptionNode);
             }
+            assert threadState.getCurrentException() == null;
         }
 
         @InliningCutoff
         private static void checkFunctionResultSlowpath(Node inliningTarget, PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict,
-                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage, boolean errOccurred, PException currentException) {
+                        TruffleString nullButNoErrorMessage, TruffleString resultWithErrorMessage, boolean errOccurred, PException currentException,
+                        ClearCurrentExceptionNode clearCurrentExceptionNode) {
             if (indicatesError) {
                 if (errOccurred) {
                     assert currentException != null;
-                    throw threadState.reraiseCurrentException();
+                    throw clearCurrentExceptionNode.getCurrentExceptionForReraise(inliningTarget, threadState);
                 } else if (strict) {
-                    threadState.clearCurrentException();
+                    assert currentException == null;
                     throw raiseNullButNoError(inliningTarget, name, nullButNoErrorMessage);
                 }
             } else if (errOccurred) {
                 assert currentException != null;
                 // consume exception
-                threadState.clearCurrentException();
+                clearCurrentExceptionNode.execute(inliningTarget, threadState);
                 throw raiseResultWithError(inliningTarget, name, currentException, resultWithErrorMessage);
             }
         }
@@ -493,13 +523,6 @@ public abstract class CExtCommonNodes {
             sysExc.setCause(currentException.getEscapedException());
             throw PRaiseNode.raiseExceptionObject(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(null)));
         }
-
-        public final Object execute(PythonContext context, TruffleString name, Object result) {
-            PythonLanguage language = PythonLanguage.get(this);
-            return execute(context.getThreadState(language), name, result);
-        }
-
-        public abstract Object execute(PythonThreadState threadState, TruffleString name, Object result);
     }
 
     @GenerateInline
