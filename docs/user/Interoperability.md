@@ -200,7 +200,8 @@ and these try to "do the right thing" based on the interop type (or raise an exc
 
 Types not listed in the table below have no special interpretation in Python.
 
-| Interop Type   | Python Interpretation                                                                                                                                                                                                                                                                                                                             |
+| Interop Type                        | Python Interpretation                                                                                                                                                                   |
+|:--------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `null`         | `null` is like `None`. Important to know: interop `null` values are all identical to `None`. JavaScript defines two "null-like" values; `undefined` and `null`, which are *not* identical, but when passed to Python, they are treated so.                                                                                                        |
 | `boolean`      | `boolean` behaves like Python booleans, including the fact that in Python, all booleans are also integers (1 and 0 for true and false, respectively).                                                                                                                                                                                             |
 | `number`       | `number` Behaves like Python numbers. Python only has one integer and one floating point type, but ranges are imported in some places such as typed arrays.                                                                                                                                                                                       |
@@ -214,12 +215,12 @@ Types not listed in the table below have no special interpretation in Python.
 | `exception`    | An `exception` can be caught in a generic `except` clause.                                                                                                                                                                                                                                                                                        |
 | `MetaObject`   | Meta objects can be used in subtype and `isinstance` checks.                                                                                                                                                                                                                                                                                      |
 | `executable`   | An `executable` object can be executed as a function, but never with keyword arguments.                                                                                                                                                                                                                                                           |
-| `instantiable` | An `instantiable` object can be called just like a Python type, but never with keyword arguments.                                                                                                                                                                                                                                                 |
-|                |                                                                                                                                                                                                                                                                                                                                                   |
+| `instantiable` | An `instantiable` object can be called just like a Python type, but never with keyword arguments.                                                                                                                    |
 
 ### Python to Interop Types
 
-| Interop Type   | Python Interpretation                                                                                                                                 |
+| Interop Type                        | Python Interpretation                                                                                                                                                                   |
+|:--------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `null`         | Only `None`.                                                                                                                                          |
 | `boolean`      | Only subtypes of Python `bool`. Note that in contrast to Python semantics, Python `bool` is *never* also an interop number.                           |
 | `number`       | Only subtypes of `int` and `float`.                                                                                                                   |
@@ -233,6 +234,7 @@ Types not listed in the table below have no special interpretation in Python.
 | `MetaObject`   | Any Python `type`.                                                                                                                                    |
 | `executable`   | Any Python object  with a `__call__` method.                                                                                                          |
 | `instantiable` | Any Python `type`.                                                                                                                                    |
+
 ## The Interoperability Extension API
 
 It is possible to extend the interoperability protocol directly from Python via a simple API defined in the `polyglot` module. 

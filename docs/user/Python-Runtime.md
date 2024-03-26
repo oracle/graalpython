@@ -22,10 +22,9 @@ GraalPy provides the following capabilities:
 
 ### GraalPy Distributions
 
-GraalPy is available as **Oracle GraalPy** and **GraalPy Community**.
+GraalPy is available as **GraalPy built on Oracle GraalVM** and **GraalPy Community**.
 
-* Oracle GraalPy provides the best experience: it comes with additional optimizations, is significantly faster and more memory-efficient.
-Oracle GraalPy is built on top of Oracle GraalVM, and is licensed under the [GraalVM Free Terms and Conditions (GFTC)](https://www.oracle.com/downloads/licenses/graal-free-license.html) license, which permits use by any user including commercial and production use.
+* GraalPy built on top of Oracle GraalVM provides the best experience: it comes with additional optimizations, is significantly faster and more memory-efficient. It is licensed under the [GraalVM Free Terms and Conditions (GFTC)](https://www.oracle.com/downloads/licenses/graal-free-license.html) license, same as Oracle GraalVM, which permits use by any user including commercial and production use.
 Redistribution is permitted as long as it is not for a fee.
 
 * GraalPy Community is built on top of GraalVM Community Edition, and is fully open-source.
@@ -76,13 +75,14 @@ The four GraalPy runtimes are identified as follows, using the general pattern _
 ### Linux
 
 The easiest way to install GraalPy on Linux is to use [Pyenv](https://github.com/pyenv/pyenv) (the Python version manager).
-To install version 23.1.2 using Pyenv, run the following commands:
+To install version 24.0.0 using Pyenv, run the following commands:
 ```bash
-pyenv install graalpy-23.1.2
+pyenv install graalpy-24.0.0
 ```
 ```bash
-pyenv shell graalpy-23.1.2
+pyenv shell graalpy-24.0.0
 ```
+> Before running `pyenv install`, you may need to update `pyenv` to include the latest GraalPy versions.
 
 Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
 
@@ -92,13 +92,15 @@ Alternatively, you can download a compressed GraalPy installation file from [Git
 ### macOS
 
 The easiest way to install GraalPy on macOS is to use [Pyenv](https://github.com/pyenv/pyenv) (the Python version manager).
-To install version 23.1.2 using Pyenv, run the following commands:
+To install version 24.0.0 using Pyenv, run the following commands:
 ```bash
-pyenv install graalpy-23.1.2
+pyenv install graalpy-24.0.0
 ```
 ```bash
-pyenv shell graalpy-23.1.2
+pyenv shell graalpy-24.0.0
 ```
+> Before running `pyenv install`, you may need to update `pyenv` to include the latest GraalPy versions.
+
 Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
 
 1. Find the download that matches the pattern _graalpy-XX.Y.Z-macos-amd64.tar.gz_ or _graalpy-XX.Y.Z-macos-aarch64.tar.gz_ (depending on your platform) and download. 
@@ -108,7 +110,7 @@ Alternatively, you can download a compressed GraalPy installation file from [Git
     ```
     For example:
     ```bash
-    sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-23.1.2
+    sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-24.0.0
     ```
 3. Uncompress the file and update your `PATH` environment variable to include to the _graalpy-XX.Y.Z-macos-amd64/bin_ (or _graalpy-XX.Y.Z-macos-aarch64/bin_) directory.
 
@@ -143,7 +145,7 @@ This generates wrapper scripts and makes the implementation usable from a shell 
     ```
     For example:
     ```bash
-    graalpy -m venv ~/.virtualenvs/graalpy-23.1.2
+    graalpy -m venv ~/.virtualenvs/graalpy-24.0.0
     ```
 
 2. Activate the environment in your shell session:
@@ -152,15 +154,12 @@ This generates wrapper scripts and makes the implementation usable from a shell 
     ```
     For example:
     ```bash
-    source ~/.virtualenvs/graalpy-23.1.2/bin/activate
+    source ~/.virtualenvs/graalpy-24.0.0/bin/activate
     ```
 
 Multiple executables are available in the virtual environment, including: `python`, `python3`, and `graalpy`.
 
-> Note: To deactivate the Python environment (and return to your shell), use the following command:
-```bash
-deactivate
-```
+> Note: To deactivate the Python environment (and return to your shell), run `deactivate`.
 
 The `pip` package installer is available when using a virtual environment.
 The GraalPy implementation of `pip` may choose package versions other than the latest in cases where it ships patches to make these work better.

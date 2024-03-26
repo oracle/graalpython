@@ -67,18 +67,19 @@ The Java code and the _pom.xml_ file are heavily documented and the generated co
 
 2. Open your project configuration file, _app/build.gradle_, and modify it as follows. 
     - Include the GraalPy support and the [GraalVM SDK Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) in the `dependencies` section:
-        ```kotlin
+
+        ```
         implementation("org.graalvm.polyglot:polyglot:23.1.2")
         implementation("org.graalvm.polyglot:python:23.1.2")
         ```
 
     - We recommend you use the Java modules build. Add the appropriate plugin to the `plugins` section:
-        ```kotlin
+        ```
         id("org.javamodularity.moduleplugin") version "1.8.12"
         ```
 
     - To run the application as a module rather than from the classpath, edit the `application` section to look like this:
-        ```kotlin
+        ```
         application {
             mainClass.set("interop.App")
             mainModule.set("interop")
@@ -112,8 +113,6 @@ The Java code and the _pom.xml_ file are heavily documented and the generated co
     ./gradlew run
     ```
     The application prints "Hello Python!" to the console.
-
-<br>
 
 > Note: The performance of the GraalPy runtime depends on the JDK in which you embed it. For more information, see [Runtime Optimization Support](https://www.graalvm.org/latest/reference-manual/embed-languages/#runtime-optimization-support).
 
