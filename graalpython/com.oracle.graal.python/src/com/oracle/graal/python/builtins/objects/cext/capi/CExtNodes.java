@@ -94,7 +94,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonStealingNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
@@ -233,7 +233,7 @@ public abstract class CExtNodes {
         Object callNativeConstructor(Object object, Object arg,
                         @Bind("this") Node inliningTarget,
                         @Cached PythonToNativeNode toSulongNode,
-                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached NativeToPythonTransferNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
             try {
@@ -1624,7 +1624,7 @@ public abstract class CExtNodes {
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached WriteAttributeToPythonObjectNode writeAttrToMethodNode,
                         @Cached CreateMethodNode addLegacyMethodNode,
-                        @Cached NativeToPythonStealingNode toJavaNode,
+                        @Cached NativeToPythonTransferNode toJavaNode,
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached CStructAccess.ReadI32Node readI32Node,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -1909,7 +1909,7 @@ public abstract class CExtNodes {
         @Specialization
         static PMemoryView fromNative(PythonNativeObject buf, int flags,
                         @Cached(inline = false) PythonToNativeNode toSulongNode,
-                        @Cached(inline = false) NativeToPythonNode asPythonObjectNode,
+                        @Cached(inline = false) NativeToPythonTransferNode asPythonObjectNode,
                         @Cached(inline = false) PCallCapiFunction callCapiFunction,
                         @Cached(inline = false) DefaultCheckFunctionResultNode checkFunctionResultNode) {
             Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);

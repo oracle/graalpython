@@ -127,7 +127,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
@@ -360,7 +360,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             static Object doNative(@SuppressWarnings("unused") Node inliningTarget, Object cls, byte[] bytes,
                             @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                             @Cached(inline = false) PythonToNativeNode toNative,
-                            @Cached(inline = false) NativeToPythonNode toPython,
+                            @Cached(inline = false) NativeToPythonTransferNode toPython,
                             @Cached(inline = false) PCallCapiFunction call) {
                 CByteArrayWrapper wrapper = new CByteArrayWrapper(bytes);
                 try {
@@ -415,7 +415,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             static Object doNative(Node inliningTarget, Object cls, double real, double imaginary,
                             @Cached(inline = false) PCallCapiFunction callCapiFunction,
                             @Cached(inline = false) PythonToNativeNode toNativeNode,
-                            @Cached(inline = false) NativeToPythonNode toPythonNode,
+                            @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
                             @Cached(inline = false) ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode) {
                 NativeCAPISymbol symbol = NativeCAPISymbol.FUN_COMPLEX_SUBTYPE_FROM_DOUBLES;
                 Object nativeResult = callCapiFunction.call(symbol, toNativeNode.execute(cls), real, imaginary);
@@ -1962,7 +1962,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             @Specialization
             static Object call(Object cls,
                             @Cached(inline = false) PythonToNativeNode toNativeNode,
-                            @Cached(inline = false) NativeToPythonNode toPythonNode,
+                            @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
                             @Cached(inline = false) PCallCapiFunction callCapiFunction) {
                 return toPythonNode.execute(callCapiFunction.call(FUN_PY_OBJECT_NEW, toNativeNode.execute(cls)));
             }
@@ -2996,7 +2996,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Shared @Cached PythonObjectFactory factory,
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached PythonToNativeNode toNativeNode,
-                        @Cached NativeToPythonNode toPythonNode,
+                        @Cached NativeToPythonTransferNode toPythonNode,
                         @Cached ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode) {
             Object argsTuple = args.length > 0 ? factory.createTuple(args) : factory.createEmptyTuple();
             Object nativeResult = callCapiFunction.call(NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW, toNativeNode.execute(cls), toNativeNode.execute(argsTuple));

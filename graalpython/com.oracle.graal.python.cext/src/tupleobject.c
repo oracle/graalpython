@@ -12,8 +12,8 @@
 #include "pycore_abstract.h"      // _PyIndex_Check()
 #include "pycore_gc.h"            // _PyObject_GC_IS_TRACKED()
 #include "pycore_initconfig.h"    // _PyStatus_OK()
-#include "pycore_object.h"        // _PyObject_GC_TRACK(), _Py_FatalRefcountError()
 #endif // GraalPy change
+#include "pycore_object.h"        // _PyObject_GC_TRACK(), _Py_FatalRefcountError()
 
 #if 0 // GraalPy change
 /*[clinic input]
@@ -136,12 +136,12 @@ PyTuple_GetItem(PyObject *op, Py_ssize_t i) {
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
-#if 0 // GraalPy change
 int
 PyTuple_SetItem(PyObject *op, Py_ssize_t i, PyObject *newitem)
 {
     PyObject **p;
-    if (!PyTuple_Check(op) || Py_REFCNT(op) != 1) {
+    // GraalPy change: remove refcount check
+    if (!PyTuple_Check(op)) {
         Py_XDECREF(newitem);
         PyErr_BadInternalCall();
         return -1;
@@ -152,11 +152,13 @@ PyTuple_SetItem(PyObject *op, Py_ssize_t i, PyObject *newitem)
                         "tuple assignment index out of range");
         return -1;
     }
-    p = ((PyTupleObject *)op) -> ob_item + i;
+    // GraalPy change: avoid direct struct access
+    p = PyTruffleTuple_GetItems(op) + i;
     Py_XSETREF(*p, newitem);
     return 0;
 }
 
+#if 0 // GraalPy change
 void
 _PyTuple_MaybeUntrack(PyObject *op)
 {
@@ -1301,22 +1303,47 @@ _PyTuple_DebugMallocStats(FILE *out)
 #endif // GraalPy change
 
 // GraalPy additions
-PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {
+PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* type, Py_ssize_t nitems) {
     /*
      * TODO(fa): For 'PyVarObjects' (i.e. 'nitems > 0') we increase the size by 'sizeof(void *)'
      * because this additional pointer can then be used as pointer to the element array.
      * CPython usually embeds the array in the struct but Sulong doesn't currently support that.
      * So we allocate space for the additional array pointer.
      * Also consider any 'PyVarObject' (in particular 'PyTupleObject') if this is fixed.
+     *
+     * This function is mostly an inlined copy-paste of PyType_GenericAlloc, with different size
+     * and added initialization of ob_item
      */
-    Py_ssize_t size = cls->tp_basicsize + cls->tp_itemsize * nitems + sizeof(PyObject **);
-    PyObject* newObj = (PyObject*)PyObject_Malloc(size);
-    if(cls->tp_dictoffset) {
-    	*((PyObject **) ((char *)newObj + cls->tp_dictoffset)) = NULL;
+    PyObject *obj;
+    const size_t size = _PyObject_VAR_SIZE(type, nitems+1) + sizeof(PyObject **);
+    /* note that we need to add one, for the sentinel */
+
+    const size_t presize = _PyType_PreHeaderSize(type);
+    char *alloc = PyObject_Malloc(size + presize);
+    if (alloc  == NULL) {
+        return PyErr_NoMemory();
     }
-    PyObject_INIT_VAR(newObj, cls, nitems);
-    ((PyTupleObject*)newObj)->ob_item = (PyObject **) ((char *)newObj + offsetof(PyTupleObject, ob_item) + sizeof(PyObject **));
-    return newObj;
+    obj = (PyObject *)(alloc + presize);
+    if (presize) {
+        // GraalPy change: different header layout, no GC link
+        ((PyObject **)alloc)[0] = NULL;
+    }
+    memset(obj, '\0', size);
+
+    if (type->tp_itemsize == 0) {
+        _PyObject_Init(obj, type);
+    }
+    else {
+        _PyObject_InitVar((PyVarObject *)obj, type, nitems);
+    }
+
+    if (_PyType_IS_GC(type)) {
+        _PyObject_GC_TRACK(obj);
+    }
+
+    ((PyTupleObject*)obj)->ob_item = (PyObject **) ((char *)obj + offsetof(PyTupleObject, ob_item) + sizeof(PyObject **));
+
+    return obj;
 }
 
 void PyTruffle_Tuple_Dealloc(PyTupleObject* self) {
@@ -1330,6 +1357,31 @@ void PyTruffle_Tuple_Dealloc(PyTupleObject* self) {
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
+PyObject **
+PyTruffleTuple_GetItems(PyObject *op)
+{
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    return GraalPy_get_PyTupleObject_ob_item(op);
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+    PyObject *res;
+    PyObject **ob_item;
+    if (points_to_py_handle_space(op)) {
+        GraalPyVarObject *ptr = (GraalPyVarObject *) pointer_to_stub(op);
+        ob_item = ((GraalPyVarObject *) ptr)->ob_item;
+        /* The UNLIKELY is maybe not true but the branch is costly anyway. So,
+           if we can optimize for something, it should be the path without the
+           upcall. */
+        if (UNLIKELY(ob_item == NULL)) {
+            ptr->ob_item = (ob_item = GraalPy_get_PyTupleObject_ob_item((PyTupleObject *)op));
+        }
+    } else {
+        ob_item = ((PyTupleObject *) op)->ob_item;
+    }
+    assert(ob_item != NULL);
+    return ob_item;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+}
+
 /*
  * Unsafe variant of PyTuple_GetItem for implementing access macro
  * PyTuple_GET_ITEM.
@@ -1339,21 +1391,6 @@ _PyTuple_GET_ITEM(PyObject* a, Py_ssize_t b) {
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED
     return GraalPyTruffleTuple_GetItem(a, b);
 #else /* GRAALVM_PYTHON_LLVM_MANAGED */
-    PyObject *res;
-    PyObject **ob_item;
-    if (points_to_py_handle_space(a)) {
-        GraalPyVarObject *ptr = (GraalPyVarObject *) pointer_to_stub(a);
-        ob_item = ((GraalPyVarObject *) ptr)->ob_item;
-        /* The UNLIKELY is maybe not true but the branch is costly anyway. So,
-           if we can optimize for something, it should be the path without the
-           upcall. */
-        if (UNLIKELY(ob_item == NULL)) {
-            ptr->ob_item = (ob_item = GraalPy_get_PyTupleObject_ob_item((PyTupleObject *)a));
-        }
-    } else {
-        ob_item = ((PyTupleObject *) a)->ob_item;
-    }
-    assert(ob_item != NULL);
-    return ob_item[b];
+    return PyTruffleTuple_GetItems(a)[b];
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }

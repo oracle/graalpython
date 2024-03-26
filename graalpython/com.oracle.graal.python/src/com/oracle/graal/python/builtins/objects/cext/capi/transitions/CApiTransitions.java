@@ -70,7 +70,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonStealingNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonTransferNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
@@ -1405,7 +1405,7 @@ public abstract class CApiTransitions {
 
     @GenerateUncached
     @GenerateInline(false)
-    public abstract static class NativeToPythonStealingNode extends NativeToPythonNode {
+    public abstract static class NativeToPythonTransferNode extends NativeToPythonNode {
 
         @Specialization
         static Object dummy(@SuppressWarnings("unused") Void dummy) {
@@ -1415,7 +1415,7 @@ public abstract class CApiTransitions {
 
         @TruffleBoundary
         public static Object executeUncached(Object obj) {
-            return NativeToPythonStealingNodeGen.getUncached().execute(obj);
+            return NativeToPythonTransferNodeGen.getUncached().execute(obj);
         }
 
         @Override
@@ -1424,12 +1424,12 @@ public abstract class CApiTransitions {
         }
 
         @NeverDefault
-        public static NativeToPythonStealingNode create() {
-            return NativeToPythonStealingNodeGen.create();
+        public static NativeToPythonTransferNode create() {
+            return NativeToPythonTransferNodeGen.create();
         }
 
-        public static NativeToPythonStealingNode getUncached() {
-            return NativeToPythonStealingNodeGen.getUncached();
+        public static NativeToPythonTransferNode getUncached() {
+            return NativeToPythonTransferNodeGen.getUncached();
         }
     }
 

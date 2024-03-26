@@ -52,6 +52,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -164,7 +165,9 @@ public final class PythonCextStructSeqBuiltins {
                     throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, EMPTY_OBJECT_ARRAY);
                 } else {
                     int realSize = castToIntNode.execute(inliningTarget, realSizeObj);
-                    return factory.createTuple(cls, new Object[realSize]);
+                    Object[] values = new Object[realSize];
+                    Arrays.fill(values, PNone.NO_VALUE); // Initialize to C NULL
+                    return factory.createTuple(cls, values);
                 }
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere("attribute 'n_fields' is expected to be a Java int");

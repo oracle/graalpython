@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -571,7 +571,7 @@ class PyPerformanceSuite(PySuite):
         mx.log(f"Return code of benchmark harness: {retcode}")
         shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
         shutil.copy(join(workdir, json_file_memory), join(SUITE.dir, "raw_results_memory.json"))
-        return 0, ",".join([join(workdir, json_file), join(workdir, json_file_memory)])
+        return retcode, ",".join([join(workdir, json_file), join(workdir, json_file_memory)])
 
 
 class PyPySuite(PySuite):
@@ -652,7 +652,7 @@ class PyPySuite(PySuite):
         )
         shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
         mx.log(f"Return code of benchmark harness: {retcode}")
-        return 0, join(workdir, json_file)
+        return retcode, join(workdir, json_file)
 
 
 class NumPySuite(PySuite):
@@ -749,6 +749,7 @@ class NumPySuite(PySuite):
             [
                 join(workdir, vm_venv, "bin", "asv"),
                 "run",
+                "--strict",
                 "--record-samples",
                 "-e",
                 "--python=same",
@@ -765,7 +766,7 @@ class NumPySuite(PySuite):
         if json_file:
             json_file = json_file[0]
             shutil.copy(json_file, join(SUITE.dir, "raw_results.json"))
-            return 0, json_file
+            return retcode, json_file
         else:
             return -1, ""
 
@@ -888,6 +889,7 @@ class PandasSuite(PySuite):
             [
                 join(workdir, vm_venv, "bin", "asv"),
                 "run",
+                "--strict",
                 "--record-samples",
                 "-e",
                 "--python=same",
@@ -904,7 +906,7 @@ class PandasSuite(PySuite):
         if json_file:
             json_file = json_file[0]
             shutil.copy(json_file, join(SUITE.dir, "raw_results.json"))
-            return 0, json_file
+            return retcode, json_file
         else:
             return -1, ""
 
