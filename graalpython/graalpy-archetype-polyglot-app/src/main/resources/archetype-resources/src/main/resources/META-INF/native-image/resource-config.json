@@ -1,7 +1,0 @@
-{
-  "resources": {
-    "includes": [
-      {"pattern": "org.graalvm.python.vfs/.*"}
-    ]
-  }
-}

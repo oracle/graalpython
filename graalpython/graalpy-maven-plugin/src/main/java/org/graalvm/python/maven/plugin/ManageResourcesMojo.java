@@ -144,7 +144,6 @@ public class ManageResourcesMojo extends AbstractMojo {
 
     private void manageNativeImageConfig() throws MojoExecutionException {
         Path metaInf = getMetaInfDirectory(project);
-        // XXX remove resource-config.json and native-image.properties from archetype
         Path resourceConfig = metaInf.resolve("resource-config.json");
         try {
             Files.createDirectories(resourceConfig.getParent());
