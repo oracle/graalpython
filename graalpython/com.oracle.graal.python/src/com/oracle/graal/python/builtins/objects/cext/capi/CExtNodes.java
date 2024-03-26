@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AddRe
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PyErrOccurredNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -1068,7 +1069,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static void doGeneric(Node inliningTarget, PythonThreadState threadState,
+        static void doGeneric(PythonThreadState threadState,
                         @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode) {
             threadState.clearCurrentException();
             PThreadState nativeWrapper = threadState.getNativeWrapper();
@@ -1076,6 +1077,29 @@ public abstract class CExtNodes {
                 Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
                 writePointerNode.write(nativeThreadState, CFields.PyThreadState__curexc_type, 0L);
             }
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class PyErrOccurredNode extends Node {
+
+        public static Object executeUncached(PythonThreadState threadState) {
+            return PyErrOccurredNodeGen.getUncached().execute(null, threadState);
+        }
+
+        public abstract Object execute(Node inliningTarget, PythonThreadState threadState);
+
+        @Specialization
+        static Object doGeneric(Node inliningTarget, PythonThreadState threadState,
+                        @Cached GetClassNode getClassNode) {
+            PException currentException = threadState.getCurrentException();
+            if (currentException != null) {
+                // getClassNode acts as a branch profile
+                return getClassNode.execute(inliningTarget, currentException.getUnreifiedException());
+            }
+            return null;
         }
     }
 
