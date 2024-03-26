@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AddRe
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PyErrFetchNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PyErrOccurredNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
@@ -125,6 +126,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
+import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -1100,6 +1102,40 @@ public abstract class CExtNodes {
                 return getClassNode.execute(inliningTarget, currentException.getUnreifiedException());
             }
             return null;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class PyErrFetchNode extends Node {
+
+        public static Object[] executeUncached(PythonThreadState threadState) {
+            return PyErrFetchNodeGen.getUncached().execute(null, threadState);
+        }
+
+        public abstract Object[] execute(Node inliningTarget, PythonThreadState threadState);
+
+        @Specialization
+        static Object[] doGeneric(Node inliningTarget, PythonThreadState threadState,
+                        @Cached GetClassNode getClassNode,
+                        @Cached MaterializeLazyTracebackNode materializeTraceback,
+                        @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
+            PException currentException = threadState.getCurrentException();
+            if (currentException == null) {
+                /*
+                 * This should be caught in native by checking 'PyErr_Occurred' and avoiding the
+                 * upcall. But let's be defensive and treat that case on a slow path.
+                 */
+                return null;
+            }
+            Object exception = currentException.getEscapedException();
+            Object traceback = null;
+            if (threadState.getCurrentTraceback() != null) {
+                traceback = materializeTraceback.execute(inliningTarget, threadState.getCurrentTraceback());
+            }
+            clearCurrentExceptionNode.execute(inliningTarget, threadState);
+            return new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback};
         }
     }
 

@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
@@ -83,10 +84,13 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins.PyFile_WriteObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearCurrentExceptionNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PyErrFetchNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PyErrOccurredNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -96,7 +100,6 @@ import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -116,6 +119,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -188,34 +192,47 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    abstract static class PyTruffleErr_Fetch extends CApiNullaryBuiltinNode {
+    @CApiBuiltin(ret = Void, args = {PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = Ignored)
+    abstract static class PyTruffleErr_Fetch extends CApiTernaryBuiltinNode {
         @Specialization
-        Object run(
+        static Object doGeneric(Object pType, Object pValue, Object pTraceback,
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached MaterializeLazyTracebackNode materializeTraceback,
-                        @Cached PythonObjectFactory factory,
-                        @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
+                        @Cached PyErrFetchNode pyErrFetchNode,
+                        @Cached PythonToNativeNewRefNode toNativeNewRefNode,
+                        @Cached CStructAccess.WritePointerNode writePointerNode) {
             PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
-            PException currentException = threadState.getCurrentException();
-            Object result;
-            if (currentException == null) {
-                result = getNativeNull();
+            Object[] exceptionState = pyErrFetchNode.execute(inliningTarget, threadState);
+            // null or [type, value, traceback]
+            assert exceptionState == null || exceptionState.length == 3;
+            if (exceptionState == null) {
+                /*
+                 * This should be caught in native by checking 'PyErr_Occurred' and avoiding the
+                 * upcall. But let's be defensive and treat that case on a slow path.
+                 */
+                doNoException(pType, pValue, pTraceback);
             } else {
-                Object exception = currentException.getEscapedException();
-                Object traceback = null;
-                if (threadState.getCurrentTraceback() != null) {
-                    traceback = materializeTraceback.execute(inliningTarget, threadState.getCurrentTraceback());
-                }
-                if (traceback == null) {
-                    traceback = getNativeNull();
-                }
-                result = factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
-                clearCurrentExceptionNode.execute(inliningTarget, threadState);
+                assert exceptionState[0] != null;
+                assert exceptionState[1] != null;
+                /*
+                 * NOTE: We need cannot use 'WriteObjectNewRefNode' because we are writing to out
+                 * variables (C type 'PyObject **out') where the previous value (i.e. '*out') of
+                 * those is unspecified. 'WriteObjectNewRefNode' would try to decref the previous
+                 * object and we MUST NOT do that. Therefore, we use the combination of
+                 * 'WritePointerNode' and 'PythonToNativeNewRefNode'.
+                 */
+                writePointerNode.write(pType, toNativeNewRefNode.execute(exceptionState[0]));
+                writePointerNode.write(pValue, toNativeNewRefNode.execute(exceptionState[1]));
+                writePointerNode.write(pTraceback, toNativeNewRefNode.execute(exceptionState[2] != null ? exceptionState[2] : PNone.NO_VALUE));
             }
-            return result;
+            return PNone.NO_VALUE;
+        }
+
+        @TruffleBoundary
+        private static void doNoException(Object pType, Object pValue, Object pTraceback) {
+            CStructAccess.WritePointerNode.writeUncached(pType, 0, 0L);
+            CStructAccess.WritePointerNode.writeUncached(pValue, 0, 0L);
+            CStructAccess.WritePointerNode.writeUncached(pTraceback, 0, 0L);
         }
     }
 
@@ -223,8 +240,8 @@ public final class PythonCextErrBuiltins {
     abstract static class _PyTruffleErr_Occurred extends CApiUnaryBuiltinNode {
         @Specialization
         Object run(PThreadState state,
-                   @Bind("this") Node inliningTarget,
-                   @Cached PyErrOccurredNode pyErrOccurredNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyErrOccurredNode pyErrOccurredNode) {
             Object excType = pyErrOccurredNode.execute(inliningTarget, state.getThreadState());
             return excType != null ? excType : getNativeNull();
         }
@@ -426,31 +443,32 @@ public final class PythonCextErrBuiltins {
                         @Cached PyErr_Restore restoreNode,
                         @Cached PyFile_WriteObject writeFileNode,
                         @Cached ExitNode exitNode,
-                        @Cached PyTruffleErr_Fetch fetchNode,
                         @Cached PyErr_Display errDisplayNode) {
             PythonContext context = PythonContext.get(null);
             NativePointer nativeNull = context.getNativeNull();
 
-            Object err = PyErrOccurredNode.executeUncached(context.getThreadState(PythonLanguage.get(null)));
+            PythonThreadState threadState = context.getThreadState(PythonLanguage.get(null));
+            Object err = PyErrOccurredNode.executeUncached(threadState);
             PythonModule sys = context.getSysModule();
             if (err != nativeNull && IsBuiltinObjectProfile.profileObjectUncached(err, PythonBuiltinClassType.SystemExit)) {
                 handleSystemExit(excInfoNode, getItemNode, isInstanceNode, restoreNode, (SysModuleBuiltins) sys.getBuiltins(), writeFileNode, exitNode);
             }
-            Object fetched = fetchNode.execute(null);
+            Object[] fetched = PyErrFetchNode.executeUncached(threadState);
+            // null or [type, value, traceback]
+            assert fetched == null || fetched.length == 3;
             Object type = null;
             Object val = null;
             Object tb = null;
 
-            if (fetched != nativeNull) {
-                PTuple fetchedTuple = (PTuple) fetched;
-                type = getItemNode.execute(null, fetchedTuple, 0);
-                val = getItemNode.execute(null, fetchedTuple, 1);
-                tb = getItemNode.execute(null, fetchedTuple, 2);
+            if (fetched != null) {
+                type = fetched[0];
+                val = fetched[1];
+                tb = fetched[2];
             }
             if (type == null || type == PNone.NONE) {
                 return PNone.NONE;
             }
-            if (tb == nativeNull) {
+            if (tb == null) {
                 tb = PNone.NONE;
             }
             if (PyObjectLookupAttr.executeUncached(val, T___TRACEBACK__) == PNone.NONE) {
