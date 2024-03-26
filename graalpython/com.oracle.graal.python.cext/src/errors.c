@@ -255,13 +255,13 @@ _PyErr_Fetch(PyThreadState *tstate, PyObject **p_type, PyObject **p_value,
     // GraalPy change: different implementation
     PyObject* result = GraalPyTruffleErr_Fetch();
     if(result == NULL) {
-    	*p_type = NULL;
-    	*p_value = NULL;
-    	*p_traceback = NULL;
+        *p_type = NULL;
+        *p_value = NULL;
+        *p_traceback = NULL;
     } else {
-    	*p_type = PyTuple_GetItem(result, 0);
-    	*p_value = PyTuple_GetItem(result, 1);
-    	*p_traceback = PyTuple_GetItem(result, 2);
+        *p_type = PyTuple_GetItem(result, 0);
+        *p_value = PyTuple_GetItem(result, 1);
+        *p_traceback = PyTuple_GetItem(result, 2);
         Py_XINCREF(*p_type);
         Py_XINCREF(*p_value);
         Py_XINCREF(*p_traceback);
