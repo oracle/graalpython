@@ -162,7 +162,6 @@ PyErr_SetString(PyObject *exception, const char *string)
 }
 
 
-#if 0 // GraalPy change
 PyObject* _Py_HOT_FUNCTION
 PyErr_Occurred(void)
 {
@@ -174,6 +173,7 @@ PyErr_Occurred(void)
 }
 
 
+#if 0 // GraalPy change
 int
 PyErr_GivenExceptionMatches(PyObject *err, PyObject *exc)
 {

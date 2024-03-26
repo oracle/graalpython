@@ -24,8 +24,10 @@ extern void _PyErr_FiniTypes(PyInterpreterState *);
 
 static inline PyObject* _PyErr_Occurred(PyThreadState *tstate)
 {
+    assert(tstate != NULL);
     // GraalPy change
-    return PyErr_Occurred();
+    assert(tstate->curexc_type == _PyTruffleErr_Occurred(tstate));
+    return tstate->curexc_type;
 }
 
 static inline void _PyErr_ClearExcState(_PyErr_StackItem *exc_state)
