@@ -43,9 +43,11 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_DEALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GC_DEL;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TYPE_GENERIC_ALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CConstants.PYLONG_BITS_IN_DIGIT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_doc;
@@ -58,6 +60,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMo
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_methods;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_size;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_slots;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_buffer;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
@@ -1105,7 +1108,9 @@ public abstract class CExtNodes {
                         @Cached(inline = false) CApiTransitions.ToPythonWrapperNode toPythonWrapperNode,
                         @Cached InlinedBranchProfile isWrapperProfile,
                         @Cached InlinedBranchProfile isNativeObject,
-                        @Cached(inline = false) PCallCapiFunction callDecrefNode) {
+                        @Cached(inline = false) CStructAccess.ReadI64Node readRefcount,
+                        @Cached(inline = false) CStructAccess.WriteLongNode writeRefcount,
+                        @Cached(inline = false) PCallCapiFunction callDealloc) {
             PythonNativeWrapper wrapper = toPythonWrapperNode.executeWrapper(pointer, false);
             if (wrapper instanceof PythonAbstractObjectNativeWrapper objectWrapper) {
                 isWrapperProfile.enter(inliningTarget);
@@ -1113,7 +1118,14 @@ public abstract class CExtNodes {
             } else if (wrapper == null) {
                 isNativeObject.enter(inliningTarget);
                 assert NativeToPythonNode.executeUncached(pointer) instanceof PythonAbstractNativeObject;
-                callDecrefNode.call(NativeCAPISymbol.FUN_DECREF, pointer);
+                long refcount = readRefcount.read(pointer, PyObject__ob_refcnt);
+                if (refcount != IMMORTAL_REFCNT) {
+                    refcount--;
+                    writeRefcount.write(pointer, PyObject__ob_refcnt, refcount);
+                    if (refcount == 0) {
+                        callDealloc.call(FUN_PY_DEALLOC, pointer);
+                    }
+                }
             } else {
                 throw CompilerDirectives.shouldNotReachHere("Cannot DECREF non-object");
             }
