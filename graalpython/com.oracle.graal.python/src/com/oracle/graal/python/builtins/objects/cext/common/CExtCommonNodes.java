@@ -495,10 +495,9 @@ public abstract class CExtCommonNodes {
              * 'getUnreifiedException'. As soon as we provide the exception object and the traceback
              * as well, we need to use 'getEscapedException'.
              */
-            PThreadState nativeWrapper = threadState.getNativeWrapper();
-            if (nativeWrapper != null) {
+            Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
+            if (nativeThreadState != null) {
                 Object exceptionType = getClassNode.execute(inliningTarget, e.getUnreifiedException());
-                Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
                 /*
                  * Write a borrowed ref to the native mirror because we need to keep that in sync
                  * anyway.
@@ -1272,9 +1271,8 @@ public abstract class CExtCommonNodes {
         static void doGeneric(PythonThreadState threadState,
                         @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode) {
             threadState.clearCurrentException();
-            PThreadState nativeWrapper = threadState.getNativeWrapper();
-            if (nativeWrapper != null) {
-                Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
+            Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
+            if (nativeThreadState != null) {
                 writePointerNode.write(nativeThreadState, CFields.PyThreadState__curexc_type, 0L);
             }
         }
