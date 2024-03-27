@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_INITIALIZE_STORAGE_ITEM;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_SET_STORAGE_ITEM;
 import static com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextHelperNode.STOP_MARKER;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
@@ -50,7 +48,6 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -1146,9 +1143,14 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static void doNativeObject(NativeObjectSequenceStorage storage, int idx, Object value,
-                        @Cached PCallCapiFunction call,
-                        @Cached PythonToNativeNewRefNode toSulongNode) {
-            call.call(FUN_PY_TRUFFLE_SET_STORAGE_ITEM, storage.getPtr(), idx, toSulongNode.execute(value));
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonToNativeNewRefNode toNative,
+                        @Cached CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
+                        @Cached CExtNodes.DecRefPointerNode decRefPointerNode) {
+            Object old = readPointerNode.readArrayElement(storage.getPtr(), idx);
+            writePointerNode.writeArrayElement(storage.getPtr(), idx, toNative.execute(value));
+            decRefPointerNode.execute(inliningTarget, old);
         }
     }
 
@@ -1167,9 +1169,9 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static void doNativeObject(NativeObjectSequenceStorage storage, int idx, Object value,
-                        @Cached PCallCapiFunction call,
-                        @Cached PythonToNativeNewRefNode toSulongNode) {
-            call.call(FUN_PY_TRUFFLE_INITIALIZE_STORAGE_ITEM, storage.getPtr(), idx, toSulongNode.execute(value));
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
+                        @Cached PythonToNativeNewRefNode toNative) {
+            writePointerNode.writeArrayElement(storage.getPtr(), idx, toNative.execute(value));
         }
     }
 
