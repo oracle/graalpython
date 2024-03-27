@@ -116,12 +116,10 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -134,7 +132,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -1696,7 +1693,6 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @ImportStatic(CApiGuards.class)
     @Builtin(name = "Py_INCREF", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class PyINCREFNode extends PythonUnaryBuiltinNode {
@@ -1704,25 +1700,12 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object doGeneric(Object arg) {
-
-            Object pointerObject = null;
-            if (arg instanceof PythonAbstractNativeObject nativeObject) {
-                pointerObject = nativeObject.getPtr();
-            } else if (arg instanceof PythonObject managedObject) {
-                pointerObject = managedObject.getNativeWrapper();
-            }
-            // ignore other cases; also: don't allocate wrappers just because of this
-
-            if (pointerObject != null) {
-                AddRefCntNode.executeUncached(pointerObject, //
-                                1 /* that's what this function is for */ + //
-                                                1 /* that for returning it */);
-            }
+            CApiContext.ensureCapiWasLoaded();
+            CApiTransitions.PythonToNativeNewRefNode.executeUncached(arg);
             return arg;
         }
     }
 
-    @ImportStatic(CApiGuards.class)
     @Builtin(name = "Py_DECREF", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class PyDECREFNode extends PythonUnaryBuiltinNode {
@@ -1730,21 +1713,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object doGeneric(Object arg) {
-
-            Object pointerObject = null;
-            if (arg instanceof PythonAbstractNativeObject nativeObject) {
-                pointerObject = nativeObject.getPtr();
-            } else if (arg instanceof PythonObject managedObject) {
-                pointerObject = managedObject.getNativeWrapper();
-            }
-            // ignore other cases; also: don't allocate wrappers just because of this
-
-            if (pointerObject != null) {
-                // that's what this function is for
-                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_DECREF, pointerObject);
-                // that for returning it
-                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_INCREF, pointerObject);
-            }
+            CApiContext.ensureCapiWasLoaded();
+            Object nativePointer = CApiTransitions.PythonToNativeNode.executeUncached(arg);
+            CExtNodes.DecRefPointerNode.executeUncached(nativePointer);
             return arg;
         }
     }
