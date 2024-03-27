@@ -83,12 +83,12 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins.PyFile_WriteObject;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ClearCurrentExceptionNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PyErrFetchNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PyErrOccurredNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ClearCurrentExceptionNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -126,6 +126,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -239,11 +240,17 @@ public final class PythonCextErrBuiltins {
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyThreadState}, call = Ignored)
     abstract static class _PyTruffleErr_Occurred extends CApiUnaryBuiltinNode {
         @Specialization
-        Object run(PThreadState state,
+        Object run(Object threadStatePtr,
                         @Bind("this") Node inliningTarget,
+                        @Cached NativeToPythonNode nativePtrToPythonNode,
                         @Cached PyErrOccurredNode pyErrOccurredNode) {
-            Object excType = pyErrOccurredNode.execute(inliningTarget, state.getThreadState());
-            return excType != null ? excType : getNativeNull();
+            Object resolved = nativePtrToPythonNode.execute(threadStatePtr);
+            if (resolved instanceof PythonThreadState pythonThreadState) {
+                Object excType = pyErrOccurredNode.execute(inliningTarget, pythonThreadState);
+                return excType != null ? excType : getNativeNull();
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw CompilerDirectives.shouldNotReachHere(String.format("invalid PyThreadState pointer %s (resolved to: %s)", threadStatePtr, resolved));
         }
     }
 
