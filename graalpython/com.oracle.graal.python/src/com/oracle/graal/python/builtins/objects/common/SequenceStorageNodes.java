@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
@@ -2935,13 +2936,47 @@ public abstract class SequenceStorageNodes {
         public abstract void execute(Node inliningTarget, SequenceStorage s, int len);
 
         @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
-        static void doSpecial(SequenceStorage s, int len,
+        static void doSpecial(BasicSequenceStorage s, int len,
                         @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
             cachedClass.cast(s).setNewLength(len);
         }
 
         @Specialization(replaces = "doSpecial")
-        static void doGeneric(SequenceStorage s, int len) {
+        static void doGeneric(BasicSequenceStorage s, int len) {
+            s.setNewLength(len);
+        }
+
+        @Specialization
+        static void doNative(NativeSequenceStorage s, int len,
+                        @Cached(inline = false) SetNativeLenNode setLen) {
+            setLen.execute(s, len);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false) // Uncommon node
+    public abstract static class SetNativeLenNode extends Node {
+
+        public abstract void execute(NativeSequenceStorage s, int len);
+
+        @Specialization(guards = "len < s.length()")
+        @InliningCutoff
+        static void doShrink(NativeSequenceStorage s, int len,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CStructAccess.ReadPointerNode readNode,
+                        @Cached CExtNodes.DecRefPointerNode decRefPointerNode) {
+            if (len < s.length()) {
+                // When shrinking, we need to decref the items that are now past the end
+                for (int i = len; i < s.length(); i++) {
+                    Object elementPointer = readNode.readArrayElement(s.getPtr(), i);
+                    decRefPointerNode.execute(inliningTarget, elementPointer);
+                }
+            }
+            s.setNewLength(len);
+        }
+
+        @Fallback
+        static void doEnlarge(NativeSequenceStorage s, int len) {
             s.setNewLength(len);
         }
     }
@@ -3025,29 +3060,27 @@ public abstract class SequenceStorageNodes {
 
         public abstract void execute(Node node, SequenceStorage s, int idx);
 
-        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = {"s.getClass() == cachedClass", "isLastItem(s, cachedClass, idx)"})
-        static void doLastItem(SequenceStorage s, @SuppressWarnings("unused") int idx,
-                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
-            SequenceStorage profiled = cachedClass.cast(s);
-            profiled.setNewLength(profiled.length() - 1);
+        @Specialization(guards = "isLastItem(s, idx)")
+        static void doLastItem(Node inliningTarget, SequenceStorage s, @SuppressWarnings("unused") int idx,
+                        @Shared @Cached SetLenNode setLenNode) {
+            setLenNode.execute(inliningTarget, s, s.length() - 1);
         }
 
-        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
-        static void doGeneric(Node inliningTarget, SequenceStorage s, @SuppressWarnings("unused") int idx,
-                        @Cached(inline = false) GetItemScalarNode getItemNode,
+        @Specialization
+        static void doGeneric(Node inliningTarget, SequenceStorage s, int idx,
+                        @Cached GetItemScalarNode getItemNode,
                         @Cached SetItemScalarNode setItemNode,
-                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
-            SequenceStorage profiled = cachedClass.cast(s);
-            int len = profiled.length();
+                        @Shared @Cached SetLenNode setLenNode) {
+            int len = s.length();
 
             for (int i = idx; i < len - 1; i++) {
-                setItemNode.execute(inliningTarget, profiled, i, getItemNode.execute(inliningTarget, profiled, i + 1));
+                setItemNode.execute(inliningTarget, s, i, getItemNode.execute(inliningTarget, s, i + 1));
             }
-            profiled.setNewLength(len - 1);
+            setLenNode.execute(inliningTarget, s, len - 1);
         }
 
-        protected static boolean isLastItem(SequenceStorage s, Class<? extends SequenceStorage> cachedClass, int idx) {
-            return idx == cachedClass.cast(s).length() - 1;
+        protected static boolean isLastItem(SequenceStorage s, int idx) {
+            return idx == s.length() - 1;
         }
     }
 
