@@ -140,13 +140,13 @@ skip_signature(const char *doc)
     return NULL;
 }
 
-#if 0 // GraalPy change
 int
 _PyType_CheckConsistency(PyTypeObject *type)
 {
 #define CHECK(expr) \
     do { if (!(expr)) { _PyObject_ASSERT_FAILED_MSG((PyObject *)type, Py_STRINGIFY(expr)); } } while (0)
 
+#if 0 // GraalPy change
     CHECK(!_PyObject_IsFreed((PyObject *)type));
 
     if (!(type->tp_flags & Py_TPFLAGS_READY)) {
@@ -170,11 +170,11 @@ _PyType_CheckConsistency(PyTypeObject *type)
         CHECK(type->tp_new == NULL);
         CHECK(PyDict_Contains(type->tp_dict, &_Py_ID(__new__)) == 0);
     }
+#endif // GraalPy change
 
     return 1;
 #undef CHECK
 }
-#endif // GraalPy change
 
 static const char *
 _PyType_DocWithoutSignature(const char *name, const char *internal_doc)
@@ -3654,7 +3654,7 @@ PyType_FromModuleAndSpec(PyObject *module, PyType_Spec *spec, PyObject *bases)
         }
     }
 
-    // assert(_PyType_CheckConsistency(type));
+    assert(_PyType_CheckConsistency(type));
     return (PyObject*)res;
 
  fail:
@@ -6500,7 +6500,7 @@ int
 PyType_Ready(PyTypeObject *type)
 {
     if (type->tp_flags & Py_TPFLAGS_READY) {
-        // assert(_PyType_CheckConsistency(type));
+        assert(_PyType_CheckConsistency(type));
         return 0;
     }
     _PyObject_ASSERT((PyObject *)type,

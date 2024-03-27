@@ -116,7 +116,7 @@ _Py_CheckSlotResult(PyObject *obj, const char *slot_name, int success)
 /* --- Core PyObject call functions ------------------------------- */
 
 // GraalPy addition
-inline int is_single_arg(const char* fmt) {
+static inline int is_single_arg(const char* fmt) {
     if (fmt[0] == 0) {
         return 0;
     }
