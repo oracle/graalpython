@@ -72,9 +72,28 @@ DEFAULT_NUMPY_BENCHMARKS = [
     # "bench_ufunc",
 ]
 
+SKIPPED_NUMPY_BENCHMARKS = [
+    "bench_core.CountNonzero.time_count_nonzero(3, 1000000, <class 'str'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_axis(3, 1000000, <class 'str'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_multi_axis(3, 1000000, <class 'str'>)",  # Times out
+    "bench_linalg.LinalgSmallArrays.time_det_small_array",  # TODO fails with numpy.linalg.LinAlgError
+]
+
 DEFAULT_PANDAS_BENCHMARKS = [
     "reshape",
     "replace"
+]
+
+SKIPPED_PANDAS_BENCHMARKS = [
+    "replace.ReplaceDict.time_replace_series",  # Times out
+    "replace.ReplaceList.time_replace_list",  # OOM, WIP msimacek
+    "replace.ReplaceList.time_replace_list_one_match",  # OOM, WIP msimacek
+    "reshape.Crosstab.time_crosstab_normalize_margins",  # Times out
+    "reshape.Cut.peakmem_cut_interval",  # Times out
+    "reshape.Cut.time_cut_interval",  # Times out
+    "reshape.GetDummies.time_get_dummies_1d_sparse",  # Times out
+    "reshape.PivotTable.time_pivot_table_margins",  # Times out
+    "reshape.WideToLong.time_wide_to_long_big",  # Times out
 ]
 
 DEFAULT_PYPERFORMANCE_BENCHMARKS = [
@@ -171,6 +190,14 @@ DEFAULT_PYPY_BENCHMARKS = [
     # "twisted_pb",
     # "twisted_tcp",
 ]
+
+
+def create_asv_benchmark_selection(benchmarks, skipped=()):
+    regex = '|'.join(benchmarks)
+    if not skipped:
+        return regex
+    negative_lookaheads = [re.escape(skip) + (r'\b' if not skip.endswith(')') else '') for skip in skipped]
+    return '^(?!' + '|'.join(negative_lookaheads) + ')(' + regex + ')'
 
 
 class PyPerfJsonRule(mx_benchmark.Rule):
@@ -731,10 +758,8 @@ class NumPySuite(PySuite):
                 [join(workdir, vm_venv, "bin", "asv"), "machine", "--yes"], cwd=benchdir
             )
 
-        if benchmarks:
-            bms = ["-b", "|".join(benchmarks)]
-        else:
-            bms = ["-b", "|".join(DEFAULT_NUMPY_BENCHMARKS)]
+        if not benchmarks:
+            benchmarks = DEFAULT_NUMPY_BENCHMARKS
         retcode = mx.run(
             [
                 join(workdir, vm_venv, "bin", "asv"),
@@ -745,7 +770,7 @@ class NumPySuite(PySuite):
                 "--python=same",
                 "--set-commit-hash",
                 self.VERSION,
-                *bms,
+                "-b", create_asv_benchmark_selection(benchmarks, skipped=SKIPPED_NUMPY_BENCHMARKS),
             ],
             cwd=benchdir,
             nonZeroIsFatal=False,
@@ -860,10 +885,8 @@ class PandasSuite(PySuite):
                 [join(workdir, vm_venv, "bin", "asv"), "machine", "--yes"], cwd=benchdir
             )
 
-        if benchmarks:
-            bms = ["-b", "|".join(benchmarks)]
-        else:
-            bms = ["-b", "|".join(DEFAULT_PANDAS_BENCHMARKS)]
+        if not benchmarks:
+            benchmarks = DEFAULT_PANDAS_BENCHMARKS
         retcode = mx.run(
             [
                 join(workdir, vm_venv, "bin", "asv"),
@@ -874,7 +897,7 @@ class PandasSuite(PySuite):
                 "--python=same",
                 "--set-commit-hash",
                 self.VERSION_TAG,
-                *bms,
+                "-b", create_asv_benchmark_selection(benchmarks, skipped=SKIPPED_PANDAS_BENCHMARKS),
             ],
             cwd=benchdir,
             nonZeroIsFatal=False,
