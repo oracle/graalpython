@@ -2963,7 +2963,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "len < s.length()")
         @InliningCutoff
-        static void doShrink(NativeSequenceStorage s, int len,
+        static void doShrink(NativeObjectSequenceStorage s, int len,
                         @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadPointerNode readNode,
                         @Cached CExtNodes.DecRefPointerNode decRefPointerNode) {
@@ -2978,7 +2978,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Fallback
-        static void doEnlarge(NativeSequenceStorage s, int len) {
+        static void doOther(NativeSequenceStorage s, int len) {
             s.setNewLength(len);
         }
     }
