@@ -228,8 +228,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
             if (refCount != IMMORTAL_REFCNT) {
                 CApiTransitions.writeNativeRefCount(pointer, refCount + 1);
             }
-            // "-1" because the refcount can briefly go below (e.g., PyTuple_SetItem)
-            assert refCount >= (PythonAbstractObjectNativeWrapper.MANAGED_REFCNT - 1) : "invalid refcnt " + refCount + " during incRef in " + Long.toHexString(getNativePointer());
+            assert refCount >= PythonAbstractObjectNativeWrapper.MANAGED_REFCNT : "invalid refcnt " + refCount + " during incRef in " + Long.toHexString(getNativePointer());
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -239,8 +238,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
             if (refCount != IMMORTAL_REFCNT) {
                 long updatedRefCount = refCount - 1;
                 CApiTransitions.writeNativeRefCount(pointer, updatedRefCount);
-                // "-1" because the refcount can briefly go below (e.g., PyTuple_SetItem)
-                assert updatedRefCount >= (PythonAbstractObjectNativeWrapper.MANAGED_REFCNT - 1) : "invalid refcnt " + updatedRefCount + " during decRef in " + Long.toHexString(getNativePointer());
+                assert updatedRefCount >= PythonAbstractObjectNativeWrapper.MANAGED_REFCNT : "invalid refcnt " + updatedRefCount + " during decRef in " + Long.toHexString(getNativePointer());
                 if (updatedRefCount == PythonAbstractObjectNativeWrapper.MANAGED_REFCNT && ref != null) {
                     // make weak
                     assert ref.isStrongReference();
