@@ -1198,14 +1198,14 @@ public final class CApiContext extends CExtContext {
         return Source.newBuilder(J_NFI_LANGUAGE, (String) srcObj, "exec").build();
     }
 
-    public long registerClosure(String nfiSignature, Object executable, Object delegate) {
+    public long registerClosure(String nfiSignature, Object executable, Object delegate, SignatureLibrary signatureLibrary) {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext context = getContext();
-        boolean panama = PythonOptions.UsePanama.getValue(context.getEnv().getOptions());
+        boolean panama = context.getOption(PythonOptions.UsePanama);
         String srcString = (panama ? "with panama " : "") + nfiSignature;
         Source nfiSource = context.getLanguage().getOrCreateSource(CApiContext::buildNFISource, srcString);
         Object signature = context.getEnv().parseInternal(nfiSource).call();
-        Object closure = SignatureLibrary.getUncached().createClosure(signature, executable);
+        Object closure = signatureLibrary.createClosure(signature, executable);
         long pointer = PythonUtils.coerceToLong(closure, InteropLibrary.getUncached());
         setClosurePointer(closure, delegate, executable, pointer);
         return pointer;
