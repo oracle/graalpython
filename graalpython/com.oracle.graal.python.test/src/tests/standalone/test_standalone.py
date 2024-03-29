@@ -109,6 +109,7 @@ def get_graalvm_version():
     return graalvmVersion
 
 
+@unittest.skipUnless(False, "CPU release")
 class PolyglotAppTest(unittest.TestCase):
 
     def setUpClass(self):
