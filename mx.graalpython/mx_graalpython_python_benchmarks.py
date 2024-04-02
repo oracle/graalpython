@@ -72,9 +72,28 @@ DEFAULT_NUMPY_BENCHMARKS = [
     # "bench_ufunc",
 ]
 
+SKIPPED_NUMPY_BENCHMARKS = [
+    "bench_core.CountNonzero.time_count_nonzero(3, 1000000, <class 'str'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_axis(3, 1000000, <class 'str'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_multi_axis(3, 1000000, <class 'str'>)",  # Times out
+    "bench_linalg.LinalgSmallArrays.time_det_small_array",  # TODO fails with numpy.linalg.LinAlgError
+]
+
 DEFAULT_PANDAS_BENCHMARKS = [
     "reshape",
     "replace"
+]
+
+SKIPPED_PANDAS_BENCHMARKS = [
+    "replace.ReplaceDict.time_replace_series",  # Times out
+    "replace.ReplaceList.time_replace_list",  # OOM, WIP msimacek
+    "replace.ReplaceList.time_replace_list_one_match",  # OOM, WIP msimacek
+    "reshape.Crosstab.time_crosstab_normalize_margins",  # Times out
+    "reshape.Cut.peakmem_cut_interval",  # Times out
+    "reshape.Cut.time_cut_interval",  # Times out
+    "reshape.GetDummies.time_get_dummies_1d_sparse",  # Times out
+    "reshape.PivotTable.time_pivot_table_margins",  # Times out
+    "reshape.WideToLong.time_wide_to_long_big",  # Times out
 ]
 
 DEFAULT_PYPERFORMANCE_BENCHMARKS = [
@@ -171,6 +190,14 @@ DEFAULT_PYPY_BENCHMARKS = [
     # "twisted_pb",
     # "twisted_tcp",
 ]
+
+
+def create_asv_benchmark_selection(benchmarks, skipped=()):
+    regex = '|'.join(benchmarks)
+    if not skipped:
+        return regex
+    negative_lookaheads = [re.escape(skip) + (r'\b' if not skip.endswith(')') else '') for skip in skipped]
+    return '^(?!' + '|'.join(negative_lookaheads) + ')(' + regex + ')'
 
 
 class PyPerfJsonRule(mx_benchmark.Rule):
@@ -656,22 +683,18 @@ class PyPySuite(PySuite):
 
 
 class NumPySuite(PySuite):
-    VERSION = "v1.23.5"
+    VERSION = "v1.26.4"
 
-    PREREQUISITES = """
-    setuptools==63.1.0
-    wheel==0.37.1
-    """
-
-    BENCHMARK_REQ = f"""
-    asv==0.5.1
-    distlib==0.3.6
-    filelock==3.8.0
-    platformdirs==2.5.2
-    six==1.16.0
-    virtualenv==20.16.3
-    numpy=={VERSION}
-    """
+    BENCHMARK_REQ = [
+        "asv==0.5.1",
+        "distlib==0.3.6",
+        "filelock==3.8.0",
+        "platformdirs==2.5.2",
+        "six==1.16.0",
+        "virtualenv==20.16.3",
+        "packaging==24.0",
+        f"numpy=={VERSION}",
+    ]
 
     def name(self):
         return "numpy-suite"
@@ -730,21 +753,13 @@ class NumPySuite(PySuite):
 
             vm.run(workdir, ["-m", "venv", join(workdir, vm_venv)])
             pip = join(workdir, vm_venv, "bin", "pip")
-            requirements_txt = join(workdir, "requirements.txt")
-            with open(requirements_txt, "w") as f:
-                f.write(self.PREREQUISITES)
-            mx.run([pip, "install", "-r", requirements_txt], cwd=workdir)
-            with open(requirements_txt, "w") as f:
-                f.write(self.BENCHMARK_REQ)
-            mx.run([pip, "install", "-r", requirements_txt], cwd=workdir)
+            mx.run([pip, "install", *self.BENCHMARK_REQ], cwd=workdir)
             mx.run(
                 [join(workdir, vm_venv, "bin", "asv"), "machine", "--yes"], cwd=benchdir
             )
 
-        if benchmarks:
-            bms = ["-b", "|".join(benchmarks)]
-        else:
-            bms = ["-b", "|".join(DEFAULT_NUMPY_BENCHMARKS)]
+        if not benchmarks:
+            benchmarks = DEFAULT_NUMPY_BENCHMARKS
         retcode = mx.run(
             [
                 join(workdir, vm_venv, "bin", "asv"),
@@ -755,7 +770,7 @@ class NumPySuite(PySuite):
                 "--python=same",
                 "--set-commit-hash",
                 self.VERSION,
-                *bms,
+                "-b", create_asv_benchmark_selection(benchmarks, skipped=SKIPPED_NUMPY_BENCHMARKS),
             ],
             cwd=benchdir,
             nonZeroIsFatal=False,
@@ -775,22 +790,17 @@ class PandasSuite(PySuite):
     VERSION = "1.5.2"
     VERSION_TAG = "v" + VERSION
 
-    PREREQUISITES = """
-    setuptools==63.1.0
-    wheel==0.37.1
-    """
-
-    BENCHMARK_REQ = f"""
-    asv==0.5.1
-    distlib==0.3.6
-    filelock==3.8.0
-    platformdirs==2.5.2
-    six==1.16.0
-    virtualenv==20.16.3
-    jinja2
-    numpy==1.23.5
-    pandas=={VERSION}
-    """
+    BENCHMARK_REQ = [
+        "asv==0.5.1",
+        "distlib==0.3.6",
+        "filelock==3.8.0",
+        "platformdirs==2.5.2",
+        "six==1.16.0",
+        "virtualenv==20.16.3",
+        "jinja2",
+        f"numpy=={NumPySuite.VERSION}",
+        f"pandas=={VERSION}",
+    ]
 
     def name(self):
         return "pandas-suite"
@@ -870,21 +880,13 @@ class PandasSuite(PySuite):
 
             vm.run(workdir, ["-m", "venv", join(workdir, vm_venv)])
             pip = join(workdir, vm_venv, "bin", "pip")
-            requirements_txt = join(workdir, "requirements.txt")
-            with open(requirements_txt, "w") as f:
-                f.write(self.PREREQUISITES)
-            mx.run([pip, "install", "-r", requirements_txt], cwd=workdir)
-            with open(requirements_txt, "w") as f:
-                f.write(self.BENCHMARK_REQ)
-            mx.run([pip, "install", "-r", requirements_txt], cwd=workdir)
+            mx.run([pip, "install", *self.BENCHMARK_REQ], cwd=workdir)
             mx.run(
                 [join(workdir, vm_venv, "bin", "asv"), "machine", "--yes"], cwd=benchdir
             )
 
-        if benchmarks:
-            bms = ["-b", "|".join(benchmarks)]
-        else:
-            bms = ["-b", "|".join(DEFAULT_PANDAS_BENCHMARKS)]
+        if not benchmarks:
+            benchmarks = DEFAULT_PANDAS_BENCHMARKS
         retcode = mx.run(
             [
                 join(workdir, vm_venv, "bin", "asv"),
@@ -895,7 +897,7 @@ class PandasSuite(PySuite):
                 "--python=same",
                 "--set-commit-hash",
                 self.VERSION_TAG,
-                *bms,
+                "-b", create_asv_benchmark_selection(benchmarks, skipped=SKIPPED_PANDAS_BENCHMARKS),
             ],
             cwd=benchdir,
             nonZeroIsFatal=False,
