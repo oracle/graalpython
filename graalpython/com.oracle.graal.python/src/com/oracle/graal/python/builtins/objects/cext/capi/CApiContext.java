@@ -1130,7 +1130,7 @@ public final class CApiContext extends CExtContext {
                     InteropLibrary lib = null;
                     for (int i = 0; i < PythonCextBuiltinRegistry.builtins.length; i++) {
                         CApiBuiltinExecutable capiBuiltinExecutable = getCAPIBuiltinExecutable(i);
-                        if (lib == null) {
+                        if (lib == null || !lib.accepts(capiBuiltinExecutable)) {
                             lib = InteropLibrary.getUncached(capiBuiltinExecutable);
                         }
                         assert lib.accepts(capiBuiltinExecutable);
