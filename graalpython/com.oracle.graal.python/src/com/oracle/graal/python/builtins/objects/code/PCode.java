@@ -429,6 +429,10 @@ public final class PCode extends PythonBuiltinObject {
         return getRootCallTarget().getRootNode();
     }
 
+    RootNode getRootNodeForExtraction() {
+        return rootNodeForExtraction(getRootNode());
+    }
+
     public TruffleString[] getFreeVars() {
         if (freevars == null) {
             freevars = extractFreeVars(getRootNode());
