@@ -59,7 +59,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.bytecode.BytecodeNode;
+import com.oracle.truffle.api.bytecode.BytecodeLocation;
 import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -197,11 +197,11 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                     BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                     PBytecodeDSLRootNode rootNode = info.getRootNode();
                     ContinuationResult continuation = self.getContinuation();
-                    BytecodeNode bytecodeNode = continuation.getBytecodeNode();
-                    PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(bytecodeNode, generatorFrame, PFrame.Reference.EMPTY, factory);
-                    int bci = continuation.getBci();
+                    BytecodeLocation location = continuation.getBytecodeLocation();
+                    PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location.getBytecodeNode(), generatorFrame, PFrame.Reference.EMPTY, factory);
+                    int bci = location.getBytecodeIndex();
                     frame.setBci(bci);
-                    frame.setLine(rootNode.bciToLine(bci, bytecodeNode));
+                    frame.setLine(rootNode.bciToLine(bci, location.getBytecodeNode()));
                     return frame;
                 } else {
                     BytecodeFrameInfo info = (BytecodeFrameInfo) generatorFrame.getFrameDescriptor().getInfo();

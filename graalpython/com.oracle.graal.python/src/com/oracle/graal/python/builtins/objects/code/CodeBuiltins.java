@@ -307,7 +307,7 @@ public final class CodeBuiltins extends PythonBuiltins {
             CodeUnit co = self.getCodeUnit();
             if (co != null) {
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    BytecodeIntrospection introspectionData = ((PBytecodeDSLRootNode) self.getRootNode()).getIntrospectionData();
+                    BytecodeIntrospection introspectionData = ((PBytecodeDSLRootNode) self.getRootNodeForExtraction()).getIntrospectionData();
                     List<PTuple> lines = new ArrayList<>();
                     for (SourceInformation sourceInfo : introspectionData.getSourceInformation()) {
                         lines.add(factory.createTuple(new int[]{sourceInfo.getBeginBci(), sourceInfo.getEndBci(), sourceInfo.getSourceSection().getStartLine()}));
@@ -351,7 +351,7 @@ public final class CodeBuiltins extends PythonBuiltins {
             if (co != null) {
                 List<PTuple> lines = new ArrayList<>();
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNode();
+                    PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
                     for (Instruction instruction : rootNode.getIntrospectionData().getInstructions()) {
                         SourceSection section = rootNode.getSourceSectionForLocation(instruction.getLocation());
                         lines.add(factory.createTuple(new int[]{
