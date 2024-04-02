@@ -198,16 +198,10 @@ public abstract class PythonNativeWrapper implements TruffleObject {
             return MANAGED_REFCNT;
         }
 
-        public final void setRefCount(Node inliningTarget, long refCount, InlinedConditionProfile hasRefProfile) {
-            CApiTransitions.writeNativeRefCount(HandlePointerConverter.pointerToStub(getNativePointer()), refCount);
-            updateRef(inliningTarget, refCount, hasRefProfile);
-        }
-
         /**
          * Adjusts the native wrapper's reference to be weak (if {@code refCount <= MANAGED_REFCNT})
          * or to be strong (if {@code refCount > MANAGED_REFCNT}) if there is a reference. This
-         * method should be called at appropriate points in the program, e.g., method
-         * {@link #setRefCount(Node, long, InlinedConditionProfile)} uses it, or it should be called
+         * method should be called at appropriate points in the program, e.g., it should be called
          * from native code if the refcount falls below {@link #MANAGED_REFCNT}.
          */
         public final void updateRef(Node inliningTarget, long refCount, InlinedConditionProfile hasRefProfile) {
@@ -233,6 +227,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
         @TruffleBoundary(allowInlining = true)
         public long decRef() {
+            assert isNative();
             long pointer = HandlePointerConverter.pointerToStub(getNativePointer());
             long refCount = CApiTransitions.readNativeRefCount(pointer);
             if (refCount != IMMORTAL_REFCNT) {

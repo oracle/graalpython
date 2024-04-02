@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Ensu
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -1104,20 +1105,36 @@ public abstract class CExtNodes {
         public abstract void execute(Node inliningTarget, Object pointer);
 
         @Specialization
-        static void doDecref(Node inliningTarget, Object pointer,
+        static void doDecref(Node inliningTarget, Object pointerObj,
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached(inline = false) CApiTransitions.ToPythonWrapperNode toPythonWrapperNode,
                         @Cached InlinedBranchProfile isWrapperProfile,
                         @Cached InlinedBranchProfile isNativeObject,
                         @Cached(inline = false) CStructAccess.ReadI64Node readRefcount,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeRefcount,
                         @Cached(inline = false) PCallCapiFunction callDealloc) {
+            long pointer;
+            if (pointerObj instanceof Long longPointer) {
+                pointer = longPointer;
+            } else {
+                if (lib.isPointer(pointerObj)) {
+                    try {
+                        pointer = lib.asPointer(pointerObj);
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere();
+                    }
+                } else {
+                    // No refcounting in managed mode
+                    return;
+                }
+            }
             PythonNativeWrapper wrapper = toPythonWrapperNode.executeWrapper(pointer, false);
             if (wrapper instanceof PythonAbstractObjectNativeWrapper objectWrapper) {
                 isWrapperProfile.enter(inliningTarget);
                 objectWrapper.decRef();
             } else if (wrapper == null) {
                 isNativeObject.enter(inliningTarget);
-                assert NativeToPythonNode.executeUncached(pointer) instanceof PythonAbstractNativeObject;
+                assert NativeToPythonNode.executeUncached(new NativePointer(pointer)) instanceof PythonAbstractNativeObject;
                 long refcount = readRefcount.read(pointer, PyObject__ob_refcnt);
                 if (refcount != IMMORTAL_REFCNT) {
                     refcount--;
