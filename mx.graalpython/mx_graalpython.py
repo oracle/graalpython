@@ -708,6 +708,7 @@ def update_unittest_tags(args):
         'test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_idle_thread_reuse',
         # Transiently times out GR-52666
         'test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_submit_after_interpreter_shutdown',
+        'test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_del_shutdown',
         # Transient lists differ error GR-49936
         'graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_index_getitem_multidim',
         'graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_slice_redundant_suboffsets',
