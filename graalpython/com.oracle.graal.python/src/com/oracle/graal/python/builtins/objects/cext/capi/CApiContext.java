@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -127,6 +128,7 @@ import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -807,12 +809,15 @@ public final class CApiContext extends CExtContext {
                 Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
                 CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative);
                 context.setCApiContext(cApiContext);
-                if (!U.isExecutable(initFunction)) {
-                    Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER):VOID", "exec").build()).call();
-                    initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                    U.execute(initFunction, new GetBuiltin());
-                } else {
-                    U.execute(initFunction, NativePointer.createNull(), new GetBuiltin());
+                try (BuiltinArrayWrapper builtinArrayWrapper = new BuiltinArrayWrapper()) {
+                    if (useNative) {
+                        Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER):VOID", "exec").build()).call();
+                        initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
+                        U.execute(initFunction, builtinArrayWrapper);
+                    } else {
+                        assert U.isExecutable(initFunction);
+                        U.execute(initFunction, NativePointer.createNull(), builtinArrayWrapper);
+                    }
                 }
 
                 assert PythonCApiAssertions.assertBuiltins(capiLibrary);
@@ -1051,29 +1056,48 @@ public final class CApiContext extends CExtContext {
         return extensions.get(Pair.create(filename, name));
     }
 
+    /**
+     * An array wrapper around {@link PythonCextBuiltinRegistry#builtins} which also implements
+     * {@link InteropLibrary#toNative(Object)}. This is intended to be passed to the C API
+     * initialization function. In order to avoid memory leaks if the wrapper receives
+     * {@code toNative}, it should be used in a try-with-resources.
+     */
     @ExportLibrary(InteropLibrary.class)
-    static final class GetBuiltin implements TruffleObject {
+    @SuppressWarnings("static-method")
+    static final class BuiltinArrayWrapper implements TruffleObject, AutoCloseable {
+        private long pointer;
 
-        @SuppressWarnings("static-method")
         @ExportMessage
-        boolean isExecutable() {
+        boolean hasArrayElements() {
             return true;
         }
 
-        @SuppressWarnings("static-method")
+        @ExportMessage
+        long getArraySize() {
+            return PythonCextBuiltinRegistry.builtins.length;
+        }
+
+        @ExportMessage
+        boolean isArrayElementReadable(long index) {
+            return 0 <= index && index < PythonCextBuiltinRegistry.builtins.length;
+        }
+
         @ExportMessage
         @TruffleBoundary
-        Object execute(Object[] arguments) {
-            assert arguments.length == 1;
-            int id = (int) arguments[0];
+        Object readArrayElement(long index) throws InvalidArrayIndexException {
+            if (!isArrayElementReadable(index)) {
+                throw InvalidArrayIndexException.create(index);
+            }
+            // cast is guaranteed by 'isArrayElementReadable'
+            return getCAPIBuiltinExecutable((int) index);
+        }
+
+        private static CApiBuiltinExecutable getCAPIBuiltinExecutable(int id) {
+            CompilerAsserts.neverPartOfCompilation();
             try {
                 CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
-                CApiContext cApiContext = PythonContext.get(null).getCApiContext();
-                if (cApiContext != null) {
-                    Object llvmLibrary = cApiContext.getLLVMLibrary();
-                    assert builtin.call() == CApiCallPath.Direct || !isAvailable(builtin, llvmLibrary) : "name clash in builtin vs. CAPI library: " + builtin.name();
-                }
-                LOGGER.finer("CApiContext.GetBuiltin " + id + " / " + builtin.name());
+                assert builtin.call() == CApiCallPath.Direct || !isAvailable(builtin) : "name clash in builtin vs. CAPI library: " + builtin.name();
+                LOGGER.finer("CApiContext.BuiltinArrayWrapper.get " + id + " / " + builtin.name());
                 return builtin;
             } catch (Throwable e) {
                 // this is a fatal error, so print it to stderr:
@@ -1082,12 +1106,64 @@ public final class CApiContext extends CExtContext {
             }
         }
 
-        private static boolean isAvailable(CApiBuiltinExecutable builtin, Object llvmLibrary) {
-            if (!InteropLibrary.getUncached().isMemberReadable(llvmLibrary, builtin.name())) {
+        @ExportMessage
+        boolean isPointer() {
+            return pointer != 0;
+        }
+
+        @ExportMessage
+        long asPointer() throws UnsupportedMessageException {
+            if (pointer != 0) {
+                return pointer;
+            }
+            throw UnsupportedMessageException.create();
+        }
+
+        @ExportMessage
+        @TruffleBoundary
+        void toNative() {
+            if (pointer == 0) {
+                assert PythonContext.get(null).isNativeAccessAllowed();
+                Object ptr = CStructAccess.AllocateNode.callocUncached(PythonCextBuiltinRegistry.builtins.length, CStructAccess.POINTER_SIZE);
+                pointer = CExtCommonNodes.CoerceNativePointerToLongNode.executeUncached(ptr);
+                if (pointer != 0) {
+                    InteropLibrary lib = null;
+                    for (int i = 0; i < PythonCextBuiltinRegistry.builtins.length; i++) {
+                        CApiBuiltinExecutable capiBuiltinExecutable = getCAPIBuiltinExecutable(i);
+                        if (lib == null || !lib.accepts(capiBuiltinExecutable)) {
+                            lib = InteropLibrary.getUncached(capiBuiltinExecutable);
+                        }
+                        assert lib.accepts(capiBuiltinExecutable);
+                        lib.toNative(capiBuiltinExecutable);
+                        try {
+                            CStructAccess.WritePointerNode.writeArrayElementUncached(pointer, i, lib.asPointer(capiBuiltinExecutable));
+                        } catch (UnsupportedMessageException e) {
+                            throw CompilerDirectives.shouldNotReachHere(e);
+                        }
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void close() {
+            if (pointer != 0) {
+                FreeNode.executeUncached(pointer);
+            }
+        }
+
+        private static boolean isAvailable(CApiBuiltinExecutable builtin) {
+            CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+            if (cApiContext == null) {
+                return false;
+            }
+            Object llvmLibrary = cApiContext.getLLVMLibrary();
+            InteropLibrary lib = InteropLibrary.getUncached(llvmLibrary);
+            if (!lib.isMemberReadable(llvmLibrary, builtin.name())) {
                 return false;
             }
             try {
-                InteropLibrary.getUncached().readMember(llvmLibrary, builtin.name());
+                lib.readMember(llvmLibrary, builtin.name());
                 return true;
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -1122,14 +1198,14 @@ public final class CApiContext extends CExtContext {
         return Source.newBuilder(J_NFI_LANGUAGE, (String) srcObj, "exec").build();
     }
 
-    public long registerClosure(String nfiSignature, Object executable, Object delegate) {
+    public long registerClosure(String nfiSignature, Object executable, Object delegate, SignatureLibrary signatureLibrary) {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext context = getContext();
-        boolean panama = PythonOptions.UsePanama.getValue(context.getEnv().getOptions());
+        boolean panama = context.getOption(PythonOptions.UsePanama);
         String srcString = (panama ? "with panama " : "") + nfiSignature;
         Source nfiSource = context.getLanguage().getOrCreateSource(CApiContext::buildNFISource, srcString);
         Object signature = context.getEnv().parseInternal(nfiSource).call();
-        Object closure = SignatureLibrary.getUncached().createClosure(signature, executable);
+        Object closure = signatureLibrary.createClosure(signature, executable);
         long pointer = PythonUtils.coerceToLong(closure, InteropLibrary.getUncached());
         setClosurePointer(closure, delegate, executable, pointer);
         return pointer;

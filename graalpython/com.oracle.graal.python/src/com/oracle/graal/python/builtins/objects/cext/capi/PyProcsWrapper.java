@@ -79,10 +79,12 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
@@ -119,9 +121,11 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
     @ExportMessage
     @TruffleBoundary
-    protected void toNative() {
+    protected void toNative(
+                    @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
         if (!isPointer()) {
-            setNativePointer(PythonContext.get(null).getCApiContext().registerClosure(getSignature(), this, getDelegate()));
+            CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+            setNativePointer(cApiContext.registerClosure(getSignature(), this, getDelegate(), signatureLibrary));
         }
     }
 

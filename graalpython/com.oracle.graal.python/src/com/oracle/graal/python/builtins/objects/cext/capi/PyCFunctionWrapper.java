@@ -83,10 +83,12 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
  * A wrapper class for managed functions such that they can be called with native function pointers
@@ -157,9 +159,11 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
 
     @ExportMessage
     @TruffleBoundary
-    protected void toNative() {
+    protected void toNative(
+                    @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
         if (pointer == 0) {
-            pointer = PythonContext.get(null).getCApiContext().registerClosure(getSignature(), this, getDelegate());
+            CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+            pointer = cApiContext.registerClosure(getSignature(), this, getDelegate(), signatureLibrary);
         }
     }
 

@@ -1165,6 +1165,10 @@ public class CStructAccess {
             WritePointerNodeGen.getUncached().execute(pointer, offset, value);
         }
 
+        public static void writeArrayElementUncached(long pointer, long element, long value) {
+            UNSAFE.putLong(pointer + element * POINTER_SIZE, value);
+        }
+
         abstract void execute(Object pointer, long offset, Object value);
 
         public final void write(Object pointer, CFields field, Object value) {

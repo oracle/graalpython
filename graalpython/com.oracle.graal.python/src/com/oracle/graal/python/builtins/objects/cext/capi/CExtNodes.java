@@ -1761,6 +1761,7 @@ public abstract class CExtNodes {
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached CStructAccess.ReadI32Node readI32Node,
                         @CachedLibrary(limit = "3") InteropLibrary interopLib,
+                        @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary,
                         @Cached PRaiseNode raiseNode) {
             InteropLibrary U = InteropLibrary.getUncached();
             // call to type the pointer
@@ -1800,7 +1801,7 @@ public abstract class CExtNodes {
                             if (!U.isExecutable(execFunction)) {
                                 boolean panama = context.getOption(PythonOptions.UsePanama);
                                 Object signature = context.getEnv().parseInternal(panama ? NFI_PANAMA_EXEC : NFI_LIBFFI_EXEC).call();
-                                execFunction = SignatureLibrary.getUncached().bind(signature, execFunction);
+                                execFunction = signatureLibrary.bind(signature, execFunction);
                             }
                             Object result = interopLib.execute(execFunction, PythonToNativeNode.executeUncached(module));
                             int iResult = interopLib.asInt(result);

@@ -724,7 +724,7 @@ public final class PythonCextBuiltins {
                 try {
                     SignatureContainerRootNode container = (SignatureContainerRootNode) context.signatureContainer.getRootNode();
                     // create NFI closure and get its address
-                    boolean panama = PythonOptions.UsePanama.getValue(PythonContext.get(null).getEnv().getOptions());
+                    boolean panama = PythonOptions.UsePanama.getValue(context.getEnv().getOptions());
                     StringBuilder signature = new StringBuilder(panama ? "with panama (" : "(");
                     for (int i = 0; i < args.length; i++) {
                         signature.append(i == 0 ? "" : ",");
@@ -732,18 +732,19 @@ public final class PythonCextBuiltins {
                     }
                     signature.append("):").append(ret.getNFISignature());
 
-                    Object nfiSignature = PythonContext.get(null).getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, signature.toString(), "exec").build()).call();
+                    Object nfiSignature = context.getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, signature.toString(), "exec").build()).call();
                     Object closure = container.getLibrary(name).createClosure(nfiSignature, this);
-                    InteropLibrary.getUncached().toNative(closure);
+                    InteropLibrary lib = InteropLibrary.getUncached(closure);
+                    lib.toNative(closure);
                     try {
-                        pointer = InteropLibrary.getUncached().asPointer(closure);
+                        pointer = lib.asPointer(closure);
                     } catch (UnsupportedMessageException e) {
                         throw CompilerDirectives.shouldNotReachHere(e);
                     }
                     context.getCApiContext().setClosurePointer(closure, null, this, pointer);
                     LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
                 } catch (Throwable t) {
-                    t.printStackTrace(new PrintStream(PythonContext.get(null).getEnv().err()));
+                    t.printStackTrace(new PrintStream(context.getEnv().err()));
                     throw t;
                 }
             }

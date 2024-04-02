@@ -62,9 +62,11 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
  * Wrappers for methods used by native code.
@@ -90,9 +92,11 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         @TruffleBoundary
-        public void toNative() {
+        public void toNative(
+                        @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
             if (!isPointer()) {
-                setNativePointer(PythonContext.get(null).getCApiContext().registerClosure(getSignature(), this, getDelegate()));
+                CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+                setNativePointer(cApiContext.registerClosure(getSignature(), this, getDelegate(), signatureLibrary));
             }
         }
 

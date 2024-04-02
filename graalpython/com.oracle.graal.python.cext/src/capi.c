@@ -198,10 +198,9 @@ PY_TYPE_OBJECTS
 CAPI_BUILTINS
 #undef BUILTIN
 
-PyAPI_FUNC(void) initialize_builtins(void* (*getBuiltin)(int id)) {
-	int id = 0;
-//#define BUILTIN(NAME, RET, ...) printf("initializing " #NAME "\n"); Graal##NAME = (RET(*)(__VA_ARGS__)) getBuiltin(id++);
-#define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) getBuiltin(id++);
+static inline void initialize_builtins(void *builtin_closures[]) {
+    int id = 0;
+#define BUILTIN(NAME, RET, ...) Graal##NAME = (RET(*)(__VA_ARGS__)) builtin_closures[id++];
 CAPI_BUILTINS
 #undef BUILTIN
 }
@@ -817,15 +816,15 @@ void _PyFloat_InitState(PyInterpreterState* state);
 Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
 Py_LOCAL_SYMBOL int graalpy_finalizing;
 
-PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void* (*getBuiltin)(int id)) {
-	clock_t t = clock();
+PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures) {
+    clock_t t = clock();
 
-	if (env) {
-		TRUFFLE_CONTEXT = (*env)->getTruffleContext(env);
-	}
+    if (env) {
+        TRUFFLE_CONTEXT = (*env)->getTruffleContext(env);
+    }
 
-	initialize_builtins(getBuiltin);
-	PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+    initialize_builtins(builtin_closures);
+    PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
 
     initialize_builtin_types_and_structs();

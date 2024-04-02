@@ -1136,6 +1136,10 @@ public abstract class CExtCommonNodes {
     @GenerateCached(false)
     public abstract static class CoerceNativePointerToLongNode extends Node {
 
+        public static long executeUncached(Object pointerObject) {
+            return CExtCommonNodesFactory.CoerceNativePointerToLongNodeGen.getUncached().execute(null, pointerObject);
+        }
+
         public abstract long execute(Node inliningTarget, Object pointerObject);
 
         @Specialization
