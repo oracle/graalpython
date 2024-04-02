@@ -35,7 +35,6 @@ import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.L
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Byte;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Double;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Empty;
-import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Generic;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Int;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Long;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Uninitialized;
@@ -245,49 +244,12 @@ public abstract class SequenceStorageNodes {
         protected static final int MAX_SEQUENCE_STORAGES = 9;
         protected static final int MAX_ARRAY_STORAGES = 7;
 
-        @InliningCutoff
-        protected static boolean isByteStorage(NativeSequenceStorage store) {
-            return store.getElementType() == ListStorageType.Byte;
-        }
-
-        @InliningCutoff
-        protected static boolean isObjectStorage(NativeSequenceStorage store) {
-            return store.getElementType() == ListStorageType.Generic;
-        }
-
-        /**
-         * Tests if {@code left} has the same element type as {@code right}.
-         */
-        protected static boolean compatible(SequenceStorage left, NativeSequenceStorage right) {
-            switch (right.getElementType()) {
-                case Boolean:
-                    return left instanceof BoolSequenceStorage;
-                case Byte:
-                    return left instanceof ByteSequenceStorage;
-                case Int:
-                    return left instanceof IntSequenceStorage;
-                case Long:
-                    return left instanceof LongSequenceStorage;
-                case Double:
-                    return left instanceof DoubleSequenceStorage;
-                case Generic:
-                    return left instanceof ObjectSequenceStorage;
-            }
-            assert false : "should not reach";
-            return false;
-        }
-
         protected static boolean isNative(SequenceStorage store) {
             return store instanceof NativeSequenceStorage;
         }
 
         protected static boolean isEmpty(SequenceStorage left) {
             return left.length() == 0;
-        }
-
-        @InliningCutoff
-        protected static boolean isObject(GetElementType getElementTypeNode, Node inliningTarget, SequenceStorage s) {
-            return getElementTypeNode.execute(inliningTarget, s) == ListStorageType.Generic;
         }
 
         protected static boolean isBoolean(ListStorageType et) {
@@ -1697,8 +1659,8 @@ public abstract class SequenceStorageNodes {
             return s.getInternalByteArray();
         }
 
-        @Specialization(guards = "isByteStorage(s)")
-        static byte[] doNativeByte(Node inliningTarget, NativeSequenceStorage s,
+        @Specialization
+        static byte[] doNativeByte(Node inliningTarget, NativeByteSequenceStorage s,
                         @Shared("getItemNode") @Cached GetItemScalarNode getItemNode) {
             byte[] barr = new byte[s.length()];
             for (int i = 0; i < barr.length; i++) {
@@ -2584,12 +2546,10 @@ public abstract class SequenceStorageNodes {
             return s;
         }
 
-        @Specialization(guards = "isObjectStorage(s)")
-        static NativeSequenceStorage doNative(NativeSequenceStorage s, @SuppressWarnings("unused") Object val) {
+        @Specialization
+        static NativeObjectSequenceStorage doNative(NativeObjectSequenceStorage s, @SuppressWarnings("unused") Object val) {
             return s;
         }
-
-        // TODO primitive native storages?
 
         @Specialization(guards = "isAssignCompatibleNode.execute(inliningTarget, s, indicationStorage)")
         static TypedSequenceStorage doTyped(@SuppressWarnings("unused") Node inliningTarget, TypedSequenceStorage s, @SuppressWarnings("unused") SequenceStorage indicationStorage,
@@ -2625,10 +2585,6 @@ public abstract class SequenceStorageNodes {
 
         public static ListGeneralizationNode create() {
             return ListGeneralizationNodeGen.create();
-        }
-
-        protected static boolean isObjectStorage(NativeSequenceStorage storage) {
-            return storage.getElementType() == Generic;
         }
     }
 
@@ -2797,7 +2753,7 @@ public abstract class SequenceStorageNodes {
                     newCapacity = cap;
                 }
                 Object mem = s.getPtr();
-                long elementSize = s.getElementType() == Byte ? 1 : CStructAccess.POINTER_SIZE;
+                long elementSize = s instanceof NativeByteSequenceStorage ? 1 : CStructAccess.POINTER_SIZE;
                 long bytes = elementSize * newCapacity;
                 Object newMem = alloc.alloc(bytes);
                 if (lib.isNull(newMem)) {
@@ -2850,8 +2806,8 @@ public abstract class SequenceStorageNodes {
             return CompilerDirectives.castExact(CompilerDirectives.castExact(s, cachedClass).copy(), cachedClass);
         }
 
-        @Specialization(guards = "isNativeBytesStorage(s)")
-        static SequenceStorage doNativeBytes(NativeSequenceStorage s,
+        @Specialization
+        static SequenceStorage doNativeBytes(NativeByteSequenceStorage s,
                         @Shared @Cached(inline = false) GetNativeItemScalarNode getItem) {
             byte[] bytes = new byte[s.length()];
             for (int i = 0; i < s.length(); i++) {
@@ -2860,8 +2816,8 @@ public abstract class SequenceStorageNodes {
             return new ByteSequenceStorage(bytes);
         }
 
-        @Specialization(guards = "isNativeObjectsStorage(s)")
-        static SequenceStorage doNativeObjects(NativeSequenceStorage s,
+        @Specialization
+        static SequenceStorage doNativeObjects(NativeObjectSequenceStorage s,
                         @Shared @Cached(inline = false) GetNativeItemScalarNode getItem) {
             Object[] objects = new Object[s.length()];
             for (int i = 0; i < s.length(); i++) {
@@ -2878,14 +2834,6 @@ public abstract class SequenceStorageNodes {
 
         protected static boolean isNativeStorage(SequenceStorage storage) {
             return storage instanceof NativeSequenceStorage;
-        }
-
-        protected static boolean isNativeBytesStorage(NativeSequenceStorage storage) {
-            return storage.getElementType() == Byte;
-        }
-
-        protected static boolean isNativeObjectsStorage(NativeSequenceStorage storage) {
-            return storage.getElementType() == Generic;
         }
     }
 
