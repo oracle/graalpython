@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -73,7 +73,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public SequenceStorage createEmpty(int newCapacity) {
+    public BasicSequenceStorage createEmpty(int newCapacity) {
         return new DoubleSequenceStorage(newCapacity);
     }
 

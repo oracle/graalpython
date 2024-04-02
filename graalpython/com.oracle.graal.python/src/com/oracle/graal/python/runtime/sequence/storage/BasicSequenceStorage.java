@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,6 +32,16 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
     public abstract Object getCopyOfInternalArrayObject();
 
     public abstract void setInternalArrayObject(Object arrayObject);
+
+    public final void setNewLength(int length) {
+        this.length = length;
+    }
+
+    protected final void incLength() {
+        this.length++;
+    }
+
+    public abstract BasicSequenceStorage createEmpty(int newCapacity);
 
     /**
      * The capacity we should allocate for a given length.

@@ -2229,13 +2229,13 @@ public abstract class SequenceStorageNodes {
         @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"times > 0", "!isNative(s)", "s.getClass() == cachedClass"})
         SequenceStorage doManaged(BasicSequenceStorage s, int times,
                         @Shared @Cached PRaiseNode raiseNode,
-                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
+                        @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
             try {
-                SequenceStorage profiled = cachedClass.cast(s);
+                BasicSequenceStorage profiled = cachedClass.cast(s);
                 Object arr1 = profiled.getInternalArrayObject();
                 int len = profiled.length();
                 int newLength = PythonUtils.multiplyExact(len, times);
-                SequenceStorage repeated = profiled.createEmpty(newLength);
+                BasicSequenceStorage repeated = profiled.createEmpty(newLength);
                 Object destArr = repeated.getInternalArrayObject();
                 repeat(destArr, arr1, len, times);
                 repeated.setNewLength(newLength);
@@ -2259,7 +2259,7 @@ public abstract class SequenceStorageNodes {
             try {
                 int len = s.length();
                 int newLen = PythonUtils.multiplyExact(len, times);
-                SequenceStorage repeated = createEmptyNode.execute(inliningTarget, s, newLen, -1);
+                BasicSequenceStorage repeated = createEmptyNode.execute(inliningTarget, s, newLen, -1);
 
                 for (int i = 0; i < len; i++) {
                     setItemNode.execute(inliningTarget, repeated, i, getItemNode.execute(inliningTarget, s, i));
@@ -2498,7 +2498,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static SequenceStorage doEmptyStorage(Node inliningTarget, @SuppressWarnings("unused") EmptySequenceStorage s, SequenceStorage other,
+        static SequenceStorage doEmptyStorage(Node inliningTarget, @SuppressWarnings("unused") EmptySequenceStorage s, BasicSequenceStorage other,
                         @Exclusive @Cached InlinedExactClassProfile otherProfile) {
             return otherProfile.profile(inliningTarget, other).createEmpty(DEFAULT_CAPACITY);
         }
@@ -2702,10 +2702,10 @@ public abstract class SequenceStorageNodes {
     @GenerateCached(false)
     public abstract static class CreateEmptyNode extends SequenceStorageBaseNode {
 
-        public abstract SequenceStorage execute(Node inliningTarget, SequenceStorage s, int cap, int len);
+        public abstract BasicSequenceStorage execute(Node inliningTarget, SequenceStorage s, int cap, int len);
 
         @Specialization
-        static SequenceStorage doIt(Node inliningTarget, SequenceStorage s, int cap, int len,
+        static BasicSequenceStorage doIt(Node inliningTarget, SequenceStorage s, int cap, int len,
                         @Cached GetElementType getElementType,
                         @Cached CreateEmptyForTypeNode createEmptyForTypeNode) {
             BasicSequenceStorage ss = createEmptyForTypeNode.execute(inliningTarget, getElementType.execute(inliningTarget, s), cap);
@@ -2937,14 +2937,8 @@ public abstract class SequenceStorageNodes {
 
         public abstract void execute(Node inliningTarget, SequenceStorage s, int len);
 
-        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
-        static void doSpecial(BasicSequenceStorage s, int len,
-                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
-            cachedClass.cast(s).setNewLength(len);
-        }
-
-        @Specialization(replaces = "doSpecial")
-        static void doGeneric(BasicSequenceStorage s, int len) {
+        @Specialization
+        static void doBasic(BasicSequenceStorage s, int len) {
             s.setNewLength(len);
         }
 

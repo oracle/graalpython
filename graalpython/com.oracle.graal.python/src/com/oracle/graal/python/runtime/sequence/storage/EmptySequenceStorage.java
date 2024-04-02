@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,8 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.nio.ByteOrder;
+
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -34,8 +36,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-
-import java.nio.ByteOrder;
 
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public final class EmptySequenceStorage extends SequenceStorage {
@@ -77,20 +77,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void setNewLength(int length) {
-        if (length != 0) {
-            CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_LENGTH_OUT_OF_RANGE);
-        }
-    }
-
-    @Override
     public SequenceStorage copy() {
-        return this;
-    }
-
-    @Override
-    public SequenceStorage createEmpty(int newCapacity) {
         return this;
     }
 

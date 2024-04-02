@@ -78,7 +78,6 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
         return reference != null;
     }
 
-    @Override
     public final void setNewLength(int length) {
         assert length <= capacity;
         this.length = length;
@@ -94,11 +93,6 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
 
     @Override
     public final SequenceStorage copy() {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final SequenceStorage createEmpty(int newCapacity) {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
