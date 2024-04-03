@@ -1017,14 +1017,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached PySequenceSizeNode pySequenceSizeNode,
                         @Cached("create(GetItem)") LookupSpecialMethodSlotNode getItemNode,
                         @Cached InlinedConditionProfile noReversedProfile,
-                        @Cached InlinedConditionProfile noGetItemProfile,
+                        @Cached PySequenceCheckNode pySequenceCheck,
                         @Shared @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object sequenceKlass = getClassNode.execute(inliningTarget, sequence);
             Object reversed = lookupReversed.execute(frame, sequenceKlass, sequence);
             if (noReversedProfile.profile(inliningTarget, reversed == PNone.NO_VALUE)) {
-                Object getItem = getItemNode.execute(frame, sequenceKlass, sequence);
-                if (noGetItemProfile.profile(inliningTarget, getItem == PNone.NO_VALUE)) {
+                if (!pySequenceCheck.execute(inliningTarget, sequence)) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_ISNT_REVERSIBLE, sequence);
                 } else {
                     int lengthHint = pySequenceSizeNode.execute(frame, inliningTarget, sequence);
