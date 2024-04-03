@@ -185,7 +185,7 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
                 return callBoolNode.execute(frame, inliningTarget, slots.nb_bool(), object);
             }
             lenLookupBranch.enter(inliningTarget);
-            TpSlot lenSlot = slots.mp_sq_length();
+            TpSlot lenSlot = slots.combined_mp_sq_length();
             if (hasLenProfile.profile(inliningTarget, lenSlot != null)) {
                 return callLenNode.execute(frame, inliningTarget, lenSlot, object) != 0;
             }

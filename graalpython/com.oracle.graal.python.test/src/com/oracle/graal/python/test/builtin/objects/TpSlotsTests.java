@@ -63,9 +63,9 @@ public class TpSlotsTests {
         TpSlots slots = builder.build();
         verifySlots(slots, def -> true);
 
-        checkSlotValue(TpSlotMeta.SQ_LENGTH, slots.sq_mp_length());
-        checkSlotValue(TpSlotMeta.MP_LENGTH, slots.mp_sq_length());
-        checkSlotValue(TpSlotMeta.TP_GET_ATTRO, slots.tp_get_attro_attr());
+        checkSlotValue(TpSlotMeta.SQ_LENGTH, slots.combined_sq_mp_length());
+        checkSlotValue(TpSlotMeta.MP_LENGTH, slots.combined_mp_sq_length());
+        checkSlotValue(TpSlotMeta.TP_GET_ATTRO, slots.combined_tp_getattro_getattr());
     }
 
     @Test
@@ -77,9 +77,9 @@ public class TpSlotsTests {
         TpSlots slots = builder.build();
         verifySlots(slots, def -> def == TpSlotMeta.MP_LENGTH || def == TpSlotMeta.TP_GET_ATTR);
 
-        checkSlotValue(TpSlotMeta.MP_LENGTH, slots.sq_mp_length());
-        checkSlotValue(TpSlotMeta.MP_LENGTH, slots.mp_sq_length());
-        checkSlotValue(TpSlotMeta.TP_GET_ATTR, slots.tp_get_attro_attr());
+        checkSlotValue(TpSlotMeta.MP_LENGTH, slots.combined_sq_mp_length());
+        checkSlotValue(TpSlotMeta.MP_LENGTH, slots.combined_mp_sq_length());
+        checkSlotValue(TpSlotMeta.TP_GET_ATTR, slots.combined_tp_getattro_getattr());
     }
 
     @Test
@@ -90,9 +90,9 @@ public class TpSlotsTests {
         TpSlots slots = builder.build();
         verifySlots(slots, def -> def == TpSlotMeta.SQ_LENGTH);
 
-        checkSlotValue(TpSlotMeta.SQ_LENGTH, slots.sq_mp_length());
-        checkSlotValue(TpSlotMeta.SQ_LENGTH, slots.mp_sq_length());
-        Assert.assertNull(slots.tp_get_attro_attr());
+        checkSlotValue(TpSlotMeta.SQ_LENGTH, slots.combined_sq_mp_length());
+        checkSlotValue(TpSlotMeta.SQ_LENGTH, slots.combined_mp_sq_length());
+        Assert.assertNull(slots.combined_tp_getattro_getattr());
     }
 
     private static void verifySlots(TpSlots slots, Function<TpSlotMeta, Boolean> checkNonNullValue) {

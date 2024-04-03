@@ -84,12 +84,12 @@ public abstract class PyObjectLookupAttrO extends Node {
         Object type = getClass.execute(inliningTarget, receiver);
         TpSlots slots = getSlotsNode.execute(inliningTarget, type);
         if (!codePointLengthNode.isAdoptable() && name instanceof TruffleString tsName) {
-            // It pays to try this in the uncached case, avoiding a full call to tp_get_attr(o)
+            // It pays to try this in the uncached case, avoiding a full call to tp_getattr(o)
             Object result = readAttributeQuickly(type, slots, receiver, tsName, codePointLengthNode, codePointAtIndexNode);
             if (result != null) {
                 return result;
             }
-            // Otherwise fallback to tp_get_attr(o)
+            // Otherwise fallback to tp_getattr(o)
         }
         try {
             return callGetattribute.execute((VirtualFrame) frame, inliningTarget, slots, receiver, name);

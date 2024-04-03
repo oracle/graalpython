@@ -113,19 +113,19 @@ public abstract class PyObjectLookupAttr extends Node {
 
     protected static boolean getAttributeIs(Node inliningTarget, GetCachedTpSlotsNode getSlotsNode, Object lazyClass, TpSlot slot) {
         TpSlots slots = getSlotsNode.execute(inliningTarget, lazyClass);
-        return slots.tp_get_attro() == slot;
+        return slots.tp_getattro() == slot;
     }
 
     protected static boolean isObjectGetAttribute(Node inliningTarget, GetCachedTpSlotsNode getSlotsNode, Object lazyClass) {
-        return getAttributeIs(inliningTarget, getSlotsNode, lazyClass, ObjectBuiltins.SLOTS.tp_get_attro());
+        return getAttributeIs(inliningTarget, getSlotsNode, lazyClass, ObjectBuiltins.SLOTS.tp_getattro());
     }
 
     protected static boolean isModuleGetAttribute(Node inliningTarget, GetCachedTpSlotsNode getSlotsNode, Object lazyClass) {
-        return getAttributeIs(inliningTarget, getSlotsNode, lazyClass, ModuleBuiltins.SLOTS.tp_get_attro());
+        return getAttributeIs(inliningTarget, getSlotsNode, lazyClass, ModuleBuiltins.SLOTS.tp_getattro());
     }
 
     protected static boolean isTypeGetAttribute(Node inliningTarget, GetCachedTpSlotsNode getSlotsNode, Object lazyClass) {
-        return getAttributeIs(inliningTarget, getSlotsNode, lazyClass, TypeBuiltins.SLOTS.tp_get_attro());
+        return getAttributeIs(inliningTarget, getSlotsNode, lazyClass, TypeBuiltins.SLOTS.tp_getattro());
     }
 
     protected static boolean isBuiltinTypeType(Object type) {
@@ -150,7 +150,7 @@ public abstract class PyObjectLookupAttr extends Node {
                     @Bind("lookupName.execute(type)") Object descr,
                     @Shared @Cached(inline = false) ReadAttributeFromObjectNode readNode) {
         // It should not have __getattr__, because otherwise it would not have builtin
-        // object#tp_get_attro, but slot wrapper dispatching to __getattribute__ or __getattr__
+        // object#tp_getattro, but slot wrapper dispatching to __getattribute__ or __getattr__
         assert hasNoGetAttr(type);
         return readNode.execute(object, cachedName);
     }
@@ -276,12 +276,12 @@ public abstract class PyObjectLookupAttr extends Node {
         Object type = getClass.execute(inliningTarget, receiver);
         TpSlots slots = getSlotsNode.execute(inliningTarget, type);
         if (!codePointLengthNode.isAdoptable()) {
-            // It pays to try this in the uncached case, avoiding a full call to tp_get_attr(o)
+            // It pays to try this in the uncached case, avoiding a full call to tp_getattr(o)
             Object result = readAttributeQuickly(type, slots, receiver, name, codePointLengthNode, codePointAtIndexNode);
             if (result != null) {
                 return result;
             }
-            // Otherwise fallback to tp_get_attr(o)
+            // Otherwise fallback to tp_getattr(o)
         }
         try {
             return callGetattribute.execute((VirtualFrame) frame, inliningTarget, slots, receiver, name);
@@ -319,7 +319,7 @@ public abstract class PyObjectLookupAttr extends Node {
      */
     static Object readAttributeQuickly(Object type, TpSlots slots, Object receiver, TruffleString stringName, TruffleString.CodePointLengthNode codePointLengthNode,
                     TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        if (slots.tp_get_attro() == ObjectBuiltins.SLOTS.tp_get_attro() && type instanceof PythonManagedClass) {
+        if (slots.tp_getattro() == ObjectBuiltins.SLOTS.tp_getattro() && type instanceof PythonManagedClass) {
             PythonAbstractClass[] bases = ((PythonManagedClass) type).getBaseClasses();
             if (bases.length == 1) {
                 PythonAbstractClass base = bases[0];
@@ -337,7 +337,7 @@ public abstract class PyObjectLookupAttr extends Node {
                     }
                 }
             }
-        } else if (slots.tp_get_attro() == ModuleBuiltins.SLOTS.tp_get_attro() && type == PythonBuiltinClassType.PythonModule) {
+        } else if (slots.tp_getattro() == ModuleBuiltins.SLOTS.tp_getattro() && type == PythonBuiltinClassType.PythonModule) {
             // this is slightly simpler than the previous case, since we don't need to check
             // the type. There may be a module-level __getattr__, however. Since that would be
             // a call anyway, we return to the generic code in that case

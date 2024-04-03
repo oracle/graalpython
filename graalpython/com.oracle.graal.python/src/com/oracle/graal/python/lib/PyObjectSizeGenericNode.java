@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,8 +72,8 @@ abstract class PyObjectSizeGenericNode extends Node {
                     @Cached TpSlotLen.CallSlotLenNode callSlotLenNode,
                     @Cached PRaiseNode.Lazy raiseNode) {
         TpSlots slots = getTpSlotsNode.execute(inliningTarget, object);
-        if (slots.sq_mp_length() != null) {
-            return callSlotLenNode.execute(frame, inliningTarget, slots.sq_mp_length(), object);
+        if (slots.combined_sq_mp_length() != null) {
+            return callSlotLenNode.execute(frame, inliningTarget, slots.combined_sq_mp_length(), object);
         }
         throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_HAS_NO_LEN, object);
     }

@@ -108,7 +108,7 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
         Object setattr = lookupSetattr.execute(frame, type, self);
         if (setattr == PNone.NO_VALUE) {
             TpSlots slots = getSlotsNode.execute(inliningTarget, type);
-            if (slots.tp_get_attro_attr() == null) {
+            if (slots.combined_tp_getattro_getattr() == null) {
                 throw raise.get(inliningTarget).raise(TypeError, P_HAS_NO_ATTRS_S_TO_ASSIGN, self, name);
             } else {
                 throw raise.get(inliningTarget).raise(TypeError, P_HAS_RO_ATTRS_S_TO_ASSIGN, self, name);
@@ -129,7 +129,7 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
         Object delattr = lookupDelattr.execute(frame, type, self);
         if (delattr == PNone.NO_VALUE) {
             TpSlots slots = getSlotsNode.execute(inliningTarget, type);
-            if (slots.tp_get_attro_attr() == null) {
+            if (slots.combined_tp_getattro_getattr() == null) {
                 throw raise.get(inliningTarget).raise(TypeError, P_HAS_NO_ATTRS_S_TO_DELETE, self, name);
             } else {
                 throw raise.get(inliningTarget).raise(TypeError, P_HAS_RO_ATTRS_S_TO_DELETE, self, name);

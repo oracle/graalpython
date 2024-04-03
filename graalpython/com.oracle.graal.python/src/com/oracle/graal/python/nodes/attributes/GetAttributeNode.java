@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -106,15 +106,15 @@ public final class GetAttributeNode extends PNodeWithContext {
         }
 
         protected static boolean isObjectGetAttribute(TpSlots slots) {
-            return slots.tp_get_attro() == ObjectBuiltins.SLOTS.tp_get_attro();
+            return slots.tp_getattro() == ObjectBuiltins.SLOTS.tp_getattro();
         }
 
         protected static boolean isModuleGetAttribute(TpSlots slots) {
-            return slots.tp_get_attro() == ModuleBuiltins.SLOTS.tp_get_attro();
+            return slots.tp_getattro() == ModuleBuiltins.SLOTS.tp_getattro();
         }
 
         protected static boolean isTypeGetAttribute(TpSlots slots) {
-            return slots.tp_get_attro() == TypeBuiltins.SLOTS.tp_get_attro();
+            return slots.tp_getattro() == TypeBuiltins.SLOTS.tp_getattro();
         }
 
         @Specialization(guards = "isObjectGetAttribute(slots)")

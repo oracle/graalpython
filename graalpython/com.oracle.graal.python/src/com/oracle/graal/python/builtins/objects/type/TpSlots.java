@@ -119,7 +119,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
- * Wraps fields that hold slot values, instances of {@link TpSlot}, such as {@link #tp_get_attr()}.
+ * Wraps fields that hold slot values, instances of {@link TpSlot}, such as {@link #tp_getattr()}.
  * This is GraalPython equivalent of the same fields in CPython's {@code PyTypeObject}.
  * <p>
  * Summary of the interactions:
@@ -165,22 +165,22 @@ import com.oracle.truffle.nfi.api.SignatureLibrary;
  *      - CPython does that in the type's tp_setattr(o) slot, se we are inconsistent here, which can be fixed later
  * </pre>
  * <p>
- * Note: fields such as {@link #sq_mp_length()} are optimization: the value is {@link #sq_length()}
- * if non-null otherwise {@link #mp_length()}.
+ * Note: fields with "combined" prefix, such as {@link #combined_sq_mp_length()}, are optimization:
+ * the value is {@link #sq_length()} if non-null otherwise {@link #mp_length()}.
  * 
- * @param tp_get_attr Note: in CPython, this slot is considered deprecated and the preferred slot
- *            should be {@link #tp_get_attro()}. We assume that no builtins define this slot.
+ * @param tp_getattr Note: in CPython, this slot is considered deprecated and the preferred slot
+ *            should be {@link #tp_getattro()}. We assume that no builtins define this slot.
  */
 public record TpSlots(TpSlot nb_bool, //
                 TpSlot sq_length, //
                 TpSlot mp_length, //
-                TpSlot sq_mp_length, //
-                TpSlot mp_sq_length, //
+                TpSlot combined_sq_mp_length, //
+                TpSlot combined_mp_sq_length, //
                 TpSlot tp_descr_get, //
                 TpSlot tp_descr_set, //
-                TpSlot tp_get_attro, //
-                TpSlot tp_get_attr, //
-                TpSlot tp_get_attro_attr) {
+                TpSlot tp_getattro, //
+                TpSlot tp_getattr, //
+                TpSlot combined_tp_getattro_getattr) {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(TpSlot.class);
 
@@ -284,7 +284,7 @@ public record TpSlots(TpSlot nb_bool, //
                         PExternalFunctionWrapper.DESCR_SET,
                         DescrSetFunctionWrapper::new),
         TP_GET_ATTRO(
-                        TpSlots::tp_get_attro,
+                        TpSlots::tp_getattro,
                         TpSlotGetAttrPython.class,
                         TpSlotGetAttrBuiltin.class,
                         CFields.PyTypeObject__tp_getattro,
@@ -292,7 +292,7 @@ public record TpSlots(TpSlot nb_bool, //
                         PExternalFunctionWrapper.BINARYFUNC,
                         GetAttrWrapper::new),
         TP_GET_ATTR(
-                        TpSlots::tp_get_attr,
+                        TpSlots::tp_getattr,
                         null,
                         null,
                         CFields.PyTypeObject__tp_getattr,

@@ -172,19 +172,19 @@ public class TpSlotGetAttr {
     }
 
     /**
-     * For managed types, this calls {@link TpSlots#tp_get_attro_attr()}, because their signature
-     * difference is not visible on the managed level. For native slots, this calls
-     * {@link TpSlots#tp_get_attro()} if available, otherwise {@link TpSlots#tp_get_attr()} - at
-     * least one of those must be available, i.e., the caller is expected to check precondition
-     * {@code tp_get_attro_attr() != null}.
+     * For managed types, this calls {@link TpSlots#combined_tp_getattro_getattr()}, because their
+     * signature difference is not visible on the managed level. For native slots, this calls
+     * {@link TpSlots#tp_getattro()} if available, otherwise {@link TpSlots#tp_getattr()} - at least
+     * one of those must be available, i.e., the caller is expected to check precondition
+     * {@code combined_tp_getattro_getattr() != null}.
      */
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
     public abstract static class CallSlotGetAttrNode extends Node {
         public final Object execute(VirtualFrame frame, Node inliningTarget, TpSlots slots, Object self, TruffleString name) {
-            assert slots.tp_get_attro_attr() != null;
-            return executeImpl(frame, inliningTarget, slots, slots.tp_get_attro_attr(), self, name);
+            assert slots.combined_tp_getattro_getattr() != null;
+            return executeImpl(frame, inliningTarget, slots, slots.combined_tp_getattro_getattr(), self, name);
         }
 
         abstract Object executeImpl(VirtualFrame frame, Node inliningTarget, TpSlots slots, TpSlot tp_get_attro_attr, Object self, TruffleString name);
@@ -211,8 +211,8 @@ public class TpSlotGetAttr {
     @GenerateUncached
     public abstract static class CallSlotGetAttrONode extends Node {
         public final Object execute(VirtualFrame frame, Node inliningTarget, TpSlots slots, Object self, Object name) {
-            assert slots.tp_get_attro_attr() != null;
-            return executeImpl(frame, inliningTarget, slots, slots.tp_get_attro_attr(), self, name);
+            assert slots.combined_tp_getattro_getattr() != null;
+            return executeImpl(frame, inliningTarget, slots, slots.combined_tp_getattro_getattr(), self, name);
         }
 
         abstract Object executeImpl(VirtualFrame frame, Node inliningTarget, TpSlots slots, TpSlot tp_get_attro_attr, Object self, Object name);
@@ -249,7 +249,7 @@ public class TpSlotGetAttr {
                         @Cached NativeToPythonTransferNode toPythonNode,
                         @Cached PyObjectCheckFunctionResultNode checkResultNode) {
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, null);
-            boolean isGetAttr = isGetAttrProfile.profile(inliningTarget, slots.tp_get_attr() == slot);
+            boolean isGetAttr = isGetAttrProfile.profile(inliningTarget, slots.tp_getattr() == slot);
             Object nameArg;
             if (isGetAttr) {
                 nameArg = asCharPointerNode.execute(name);
