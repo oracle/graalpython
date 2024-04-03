@@ -436,7 +436,6 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Specialization
         Object get(VirtualFrame frame, SuperObject self, Object attr,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
                         @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached GetObjectTypeNode getObjectType,

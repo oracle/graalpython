@@ -143,7 +143,6 @@ public abstract class PySequenceSizeNode extends Node {
         if (slots.sq_length() != null) {
             return callSlotLenNode.execute((VirtualFrame) frame, inliningTarget, slots.sq_length(), object);
         }
-        hasNoSqLenBranch.enter(inliningTarget);
         throw raiseError(object, inliningTarget, raiseNode, slots);
     }
 

@@ -671,8 +671,8 @@ public final class DequeBuiltins extends PythonBuiltins {
     @GenerateUncached
     public abstract static class DequeLenNode extends LenBuiltinNode {
         @Specialization
-        static int doIt(Object self) {
-            return ((PDeque) self).getSize();
+        static int doGeneric(PDeque self) {
+            return self.getSize();
         }
     }
 

@@ -76,6 +76,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -165,11 +166,13 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         static void doDescriptorSet(VirtualFrame frame, Object descr, Object obj, Object value,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile isGetSetDescrProfile,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Cached DescrSetNode setNode) {
             Object type;
             Object name;
-            if (descr instanceof GetSetDescriptor getSet) {
+            if (isGetSetDescrProfile.profile(inliningTarget, descr instanceof GetSetDescriptor)) {
+                GetSetDescriptor getSet = (GetSetDescriptor) descr;
                 type = getSet.getType();
                 name = getSet.getName();
             } else if (descr instanceof HiddenAttrDescriptor hidden) {
@@ -183,13 +186,15 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        static void doDescriptorDel(VirtualFrame frame, Object descr, Object obj, Object value,
+        static void doDescriptorDel(VirtualFrame frame, Object descr, Object obj, @SuppressWarnings("unused") Object value,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile isGetSetDescrProfile,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Cached DescrDeleteNode deleteNode) {
             Object type;
             Object name;
-            if (descr instanceof GetSetDescriptor getSet) {
+            if (isGetSetDescrProfile.profile(inliningTarget, descr instanceof GetSetDescriptor)) {
+                GetSetDescriptor getSet = (GetSetDescriptor) descr;
                 type = getSet.getType();
                 name = getSet.getName();
             } else if (descr instanceof HiddenAttrDescriptor hidden) {

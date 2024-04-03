@@ -801,18 +801,20 @@ public record TpSlots(TpSlot nb_bool, //
         }
     }
 
-    public static void addOperatorsToBuiltin(Map<TruffleString, BoundBuiltinCallable<?>> builtins, Python3Core core, PythonBuiltinClassType type) {
-        TpSlots slots = type.getDeclaredSlots();
-
+    private static boolean checkNoMagicOverrides(PythonBuiltinClassType type) {
         // Check that no one is trying to define magic methods directly
         // If the assertion fires: you should define @Slot instead of @Builtin
         // We do not look in MRO, we may have already called addOperatorsToBuiltin on super
         var readAttr = ReadAttributeFromObjectNode.getUncachedForceType();
-        assert readAttr.execute(type, T___BOOL__) == PNone.NO_VALUE;
-        assert readAttr.execute(type, T___LEN__) == PNone.NO_VALUE;
-        assert readAttr.execute(type, T___GET__) == PNone.NO_VALUE;
-        assert readAttr.execute(type, T___SET__) == PNone.NO_VALUE;
-        assert readAttr.execute(type, T___DELETE__) == PNone.NO_VALUE;
+        for (TruffleString name : SPECIAL2SLOT.keySet()) {
+            assert readAttr.execute(type, name) == PNone.NO_VALUE : name;
+        }
+        return true;
+    }
+
+    public static void addOperatorsToBuiltin(Map<TruffleString, BoundBuiltinCallable<?>> builtins, Python3Core core, PythonBuiltinClassType type) {
+        TpSlots slots = type.getDeclaredSlots();
+        assert checkNoMagicOverrides(type);
 
         // Similar to CPython:add_operators
         for (var slotDefGroup : SLOTDEFS.entrySet()) {
