@@ -91,7 +91,7 @@ import com.oracle.graal.python.builtins.objects.floats.FloatUtils.PFloatUnboxing
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.InquiryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -290,7 +290,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Slot(SlotKind.nb_bool)
     @GenerateUncached
     @GenerateNodeFactory
-    abstract static class BoolNode extends InquiryBuiltinNode {
+    abstract static class BoolNode extends NbBoolBuiltinNode {
         static boolean op(double self) {
             return self != 0.0;
         }

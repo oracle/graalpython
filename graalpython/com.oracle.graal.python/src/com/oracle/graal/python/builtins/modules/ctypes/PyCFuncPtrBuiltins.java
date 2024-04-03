@@ -109,7 +109,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.InquiryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -317,7 +317,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
     @Slot(SlotKind.nb_bool)
     @GenerateUncached
     @GenerateNodeFactory
-    abstract static class BoolNode extends InquiryBuiltinNode {
+    abstract static class BoolNode extends NbBoolBuiltinNode {
         @Specialization
         static boolean bool(PyCFuncPtrObject self,
                         @Bind("this") Node inliningTarget,

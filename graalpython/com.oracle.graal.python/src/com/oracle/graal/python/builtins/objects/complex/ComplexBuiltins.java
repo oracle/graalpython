@@ -92,7 +92,7 @@ import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.InquiryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyComplexCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -808,7 +808,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @Slot(SlotKind.nb_bool)
     @GenerateUncached
     @GenerateNodeFactory
-    abstract static class BoolNode extends InquiryBuiltinNode {
+    abstract static class BoolNode extends NbBoolBuiltinNode {
         @Specialization
         static boolean bool(Object self,
                         @Bind("this") Node inliningTarget,

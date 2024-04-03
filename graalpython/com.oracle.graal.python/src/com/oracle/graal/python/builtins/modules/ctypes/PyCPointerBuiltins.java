@@ -81,7 +81,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.InquiryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -221,7 +221,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
     @Slot(SlotKind.nb_bool)
     @GenerateUncached
     @GenerateNodeFactory
-    protected abstract static class PointerBoolNode extends InquiryBuiltinNode {
+    protected abstract static class PointerBoolNode extends NbBoolBuiltinNode {
 
         @SuppressWarnings("unused")
         @Specialization

@@ -100,7 +100,7 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.InquiryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -175,7 +175,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @Slot(SlotKind.nb_bool)
     @GenerateUncached
     @GenerateNodeFactory
-    abstract static class BoolNode extends InquiryBuiltinNode {
+    abstract static class BoolNode extends NbBoolBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         static boolean bool(Object receiver,
                         @CachedLibrary("receiver") InteropLibrary lib,

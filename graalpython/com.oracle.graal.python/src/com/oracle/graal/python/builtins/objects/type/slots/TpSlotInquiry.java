@@ -97,6 +97,10 @@ public abstract class TpSlotInquiry {
         }
     }
 
+    @GenerateInline(value = false, inherit = true)
+    public abstract static class NbBoolBuiltinNode extends InquiryBuiltinNode {
+    }
+
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached

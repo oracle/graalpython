@@ -125,7 +125,7 @@ import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.InquiryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -2916,7 +2916,7 @@ public final class IntBuiltins extends PythonBuiltins {
     @Slot(SlotKind.nb_bool)
     @GenerateUncached
     @GenerateNodeFactory
-    public abstract static class BoolNode extends InquiryBuiltinNode {
+    public abstract static class BoolNode extends NbBoolBuiltinNode {
         @Specialization
         static boolean toBoolean(boolean self) {
             return self;
