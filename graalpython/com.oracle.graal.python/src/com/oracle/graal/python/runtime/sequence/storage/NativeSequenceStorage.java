@@ -40,10 +40,18 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import java.util.logging.Level;
+
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeStorageReference;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 
 public abstract class NativeSequenceStorage extends SequenceStorage {
+
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeSequenceStorage.class);
 
     /* native pointer object */
     private Object ptr;
@@ -52,6 +60,14 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
     NativeSequenceStorage(Object ptr, int length, int capacity) {
         super(length, capacity);
         this.ptr = ptr;
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(PythonUtils.formatJString("new %s", toJString()));
+        }
+    }
+
+    @TruffleBoundary
+    private String toJString() {
+        return toString();
     }
 
     public final Object getPtr() {

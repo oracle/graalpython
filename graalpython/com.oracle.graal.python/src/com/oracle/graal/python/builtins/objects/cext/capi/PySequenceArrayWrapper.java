@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import java.util.logging.Level;
+
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapperFactory.ToNativeStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -52,6 +54,7 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -65,6 +68,8 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
  * Wraps a sequence object (like a list) such that it behaves like a bare C array.
  */
 public final class PySequenceArrayWrapper {
+
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PySequenceArrayWrapper.class);
 
     @GenerateInline
     @GenerateCached(false)
@@ -143,22 +148,32 @@ public final class PySequenceArrayWrapper {
 
     @TruffleBoundary
     public static Object ensureNativeSequence(PSequence sequence) {
+        boolean loggable = LOGGER.isLoggable(Level.FINE);
+        if (loggable) {
+            LOGGER.fine(String.format("ensureNativeSequence(%s)", sequence));
+        }
         /*
          * MroSequenceStorages are special. We cannot simply replace them with a
          * NativeSequenceStorage because we still need the "managed" one due to the assumptions.
          * Hence, if an MroSequenceStorage goes to native, we will create an additional
          * NativeSequenceStorage and link to it.
          */
+        Object result;
         SequenceStorage sequenceStorage = sequence.getSequenceStorage();
         if (sequenceStorage instanceof NativeSequenceStorage nativeStorage) {
-            return nativeStorage.getPtr();
+            result = nativeStorage.getPtr();
         } else if (sequenceStorage instanceof MroSequenceStorage mro && mro.isNative()) {
-            return mro.getNativeMirror().getPtr();
+            result = mro.getNativeMirror().getPtr();
+        } else {
+            NativeSequenceStorage nativeStorage = ToNativeStorageNode.executeUncached(sequenceStorage, sequence instanceof PBytesLike);
+            if (!(sequenceStorage instanceof MroSequenceStorage)) {
+                sequence.setSequenceStorage(nativeStorage);
+            }
+            result = nativeStorage.getPtr();
         }
-        NativeSequenceStorage nativeStorage = ToNativeStorageNode.executeUncached(sequenceStorage, sequence instanceof PBytesLike);
-        if (!(sequenceStorage instanceof MroSequenceStorage)) {
-            sequence.setSequenceStorage(nativeStorage);
+        if (loggable) {
+            LOGGER.fine(String.format("ensureNativeSequence(%s) = %s", sequence, PythonUtils.formatPointer(result)));
         }
-        return nativeStorage.getPtr();
+        return result;
     }
 }
