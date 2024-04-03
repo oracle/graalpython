@@ -1246,11 +1246,10 @@ public class CStructAccess {
             return desc.isPyObject();
         }
 
-        public final void writeArray(Object pointer, Object[] values) {
-            writeArray(pointer, values, values.length, 0, 0);
-        }
-
         public final void writeArray(Object pointer, Object[] values, int length, int sourceOffset, int targetOffset) {
+            if (length > values.length) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
             for (int i = 0; i < length; i++) {
                 execute(pointer, (i + targetOffset) * POINTER_SIZE, values[i + sourceOffset]);
             }

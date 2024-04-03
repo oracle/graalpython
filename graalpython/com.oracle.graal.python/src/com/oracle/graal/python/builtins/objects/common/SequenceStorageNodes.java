@@ -1448,19 +1448,19 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static NativeByteSequenceStorage doByte(byte[] arr, int length, boolean createRef,
-                        @Exclusive @Cached(inline = false) CStructAccess.AllocateNode alloc,
+                        @Shared @Cached(inline = false) CStructAccess.AllocateNode alloc,
                         @Cached(inline = false) CStructAccess.WriteByteNode write) {
-            Object mem = alloc.alloc(arr.length + 1);
+            Object mem = alloc.calloc(arr.length + 1, java.lang.Byte.BYTES);
             write.writeByteArray(mem, arr);
             return NativeByteSequenceStorage.create(mem, length, arr.length, createRef);
         }
 
         @Specialization
         static NativeSequenceStorage doObject(Object[] arr, int length, boolean createRef,
-                        @Exclusive @Cached(inline = false) CStructAccess.AllocateNode alloc,
+                        @Shared @Cached(inline = false) CStructAccess.AllocateNode alloc,
                         @Cached(inline = false) CStructAccess.WriteObjectNewRefNode write) {
-            Object mem = alloc.alloc((arr.length + 1) * CStructAccess.POINTER_SIZE);
-            write.writeArray(mem, arr);
+            Object mem = alloc.calloc(arr.length + 1, CStructAccess.POINTER_SIZE);
+            write.writeArray(mem, arr, length, 0, 0);
             return NativeObjectSequenceStorage.create(mem, length, arr.length, createRef);
         }
     }
