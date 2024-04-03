@@ -85,7 +85,7 @@ public final class ContextBuiltins extends PythonBuiltins {
         return ContextBuiltinsFactory.getFactories();
     }
 
-    @Slot(SlotKind.sq_length)
+    @Slot(SlotKind.mp_length)
     @GenerateUncached
     @GenerateNodeFactory
     public abstract static class LenNode extends LenBuiltinNode {

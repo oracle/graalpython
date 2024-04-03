@@ -196,7 +196,6 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(SlotKind.sq_length)
     @Slot(SlotKind.mp_length)
     @GenerateUncached
     @GenerateNodeFactory

@@ -239,6 +239,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     }
 
     @Slot(SlotKind.sq_length)
+    @Slot(SlotKind.mp_length)
     @GenerateUncached
     @GenerateNodeFactory
     abstract static class LenNode extends LenBuiltinNode {

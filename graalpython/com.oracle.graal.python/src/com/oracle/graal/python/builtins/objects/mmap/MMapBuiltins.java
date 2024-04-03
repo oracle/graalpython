@@ -279,6 +279,7 @@ public final class MMapBuiltins extends PythonBuiltins {
     }
 
     @Slot(SlotKind.sq_length)
+    @Slot(SlotKind.mp_length)
     @GenerateUncached
     @GenerateNodeFactory
     public abstract static class LenNode extends LenBuiltinNode {
