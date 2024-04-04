@@ -27,6 +27,7 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.HiddenAttr.ALLOC;
@@ -1255,19 +1256,25 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        static TruffleString getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
+        static Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached GetTypeFlagsNode getTypeFlagsNode,
+                        @Cached CStructAccess.ReadObjectNode getHtName,
                         @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode) {
-            // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            TruffleString tpName = getTpNameNode.readFromObj(cls, PyTypeObject__tp_name);
-            int nameLen = codePointLengthNode.execute(tpName, TS_ENCODING);
-            int firstDot = indexOfCodePointNode.execute(tpName, '.', 0, nameLen, TS_ENCODING);
-            if (firstDot < 0) {
-                return tpName;
+            if ((getTypeFlagsNode.execute(cls) & TypeFlags.HEAPTYPE) != 0) {
+                return getHtName.readFromObj(cls, PyHeapTypeObject__ht_qualname);
+            } else {
+                // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
+                TruffleString tpName = getTpNameNode.readFromObj(cls, PyTypeObject__tp_name);
+                int nameLen = codePointLengthNode.execute(tpName, TS_ENCODING);
+                int firstDot = indexOfCodePointNode.execute(tpName, '.', 0, nameLen, TS_ENCODING);
+                if (firstDot < 0) {
+                    return tpName;
+                }
+                return substringNode.execute(tpName, firstDot + 1, nameLen - firstDot - 1, TS_ENCODING, true);
             }
-            return substringNode.execute(tpName, firstDot + 1, nameLen - firstDot - 1, TS_ENCODING, true);
         }
 
         @Specialization(guards = "!isNoValue(value)")
