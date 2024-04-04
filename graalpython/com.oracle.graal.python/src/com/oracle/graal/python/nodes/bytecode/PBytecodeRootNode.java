@@ -5480,6 +5480,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
+    @ExplodeLoop
     private int bytecodeCollectionFromStack(VirtualFrame virtualFrame, int type, int count, int oldStackTop, Node[] localNodes, int nodeIndex, boolean useCachedNodes) {
         int stackTop = oldStackTop;
         Object res = null;
