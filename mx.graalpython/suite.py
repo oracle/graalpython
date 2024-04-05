@@ -11,7 +11,7 @@ suite = {
 
     "version": "24.0.1",
     "graalpython:pythonVersion": "3.10.13",
-    "release": False,
+    "release": True,
     "groupId": "org.graalvm.python",
     "url": "http://www.graalvm.org/",
 
