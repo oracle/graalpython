@@ -1217,6 +1217,12 @@ public abstract class ExternalFunctionNodes {
                  * NativeSequenceStorageReference such that the NativeSequenceStorage will not leak.
                  */
                 if (s instanceof NativeSequenceStorage nativeSequenceStorage) {
+                    /*
+                     * TODO we would like to release the memory already, but we currently can't tell
+                     * if the args tuple escaped back to managed. So we always create the native
+                     * storage with an ownership reference and the following condition is always
+                     * true.
+                     */
                     if (nativeSequenceStorage.hasReference()) {
                         /*
                          * Not allocated by this root. Note that this can happen even when
@@ -2181,7 +2187,7 @@ public abstract class ExternalFunctionNodes {
             for (int i = 0; i < cachedLen; i++) {
                 args[i] = materializePrimitiveNodes[i].execute(factory, args[i]);
             }
-            return factory.createTuple(storageToNativeNode.execute(inliningTarget, args, cachedLen, false));
+            return factory.createTuple(storageToNativeNode.execute(inliningTarget, args, cachedLen, true));
         }
 
         @Specialization(replaces = {"doCachedLen", "doCachedLenEagerNative"})
@@ -2196,7 +2202,7 @@ public abstract class ExternalFunctionNodes {
             }
             SequenceStorage storage;
             if (eagerNative) {
-                storage = storageToNativeNode.execute(inliningTarget, args, n, false);
+                storage = storageToNativeNode.execute(inliningTarget, args, n, true);
             } else {
                 storage = new ObjectSequenceStorage(args);
             }
