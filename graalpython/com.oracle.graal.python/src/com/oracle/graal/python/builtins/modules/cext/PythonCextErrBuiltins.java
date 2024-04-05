@@ -216,7 +216,7 @@ public final class PythonCextErrBuiltins {
                 assert exceptionState[0] != null;
                 assert exceptionState[1] != null;
                 /*
-                 * NOTE: We need cannot use 'WriteObjectNewRefNode' because we are writing to out
+                 * NOTE: We cannot use 'WriteObjectNewRefNode' because we are writing to out
                  * variables (C type 'PyObject **out') where the previous value (i.e. '*out') of
                  * those is unspecified. 'WriteObjectNewRefNode' would try to decref the previous
                  * object and we MUST NOT do that. Therefore, we use the combination of
