@@ -332,7 +332,7 @@ public final class PFrame extends PythonBuiltinObject {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
             if (bci >= 0 && location instanceof BytecodeNode bytecodeNode) {
                 // Emulate CPython's fixed 2-word instructions.
-                return bytecodeNode.findInstructionIndex(bci) * 2;
+                return bytecodeNode.getBytecodeLocation(bci).getInstructionIndex() * 2;
             }
         } else {
             if (location instanceof PBytecodeRootNode bytecodeRootNode) {

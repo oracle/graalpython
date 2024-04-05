@@ -424,7 +424,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         if (bytecodeNode != null) {
             BytecodeLocation bytecodeLocation = bytecodeNode.getBytecodeLocation(bci);
             if (bytecodeLocation != null) {
-                sourceSection = bytecodeLocation.findSourceLocation();
+                sourceSection = bytecodeLocation.getSourceLocation();
             }
         }
 
