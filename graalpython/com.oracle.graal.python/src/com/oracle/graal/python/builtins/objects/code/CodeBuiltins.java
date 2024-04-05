@@ -71,6 +71,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.bytecode.BytecodeIntrospection;
+import com.oracle.truffle.api.bytecode.Instruction;
 import com.oracle.truffle.api.bytecode.SourceInformation;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -352,7 +353,12 @@ public final class CodeBuiltins extends PythonBuiltins {
                 List<PTuple> lines = new ArrayList<>();
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                     PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
-                    for (Instruction instruction : rootNode.getIntrospectionData().getInstructions()) {
+                    for (Instruction instruction : rootNode.getBytecodeNode().getInstructions()) {
+                        if (instruction.isInstrumentation()) {
+                            // Skip instrumented instructions. The co_positions array should agree
+                            // with the logical instruction index.
+                            continue;
+                        }
                         SourceSection section = rootNode.getSourceSectionForLocation(instruction.getLocation());
                         lines.add(factory.createTuple(new int[]{
                                         section.getStartLine(),
