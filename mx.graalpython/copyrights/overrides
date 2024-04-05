@@ -143,6 +143,7 @@ graalpython/com.oracle.graal.python.cext/include/floatobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/frameobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/genericaliasobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/import.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/internal/pycore_abstract.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_atomic.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_blocks_output_buffer.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_call.h,python.copyright
