@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins.PyFile_WriteObject;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ExceptionState;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PyErrFetchNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PyErrOccurredNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
@@ -203,9 +204,7 @@ public final class PythonCextErrBuiltins {
                         @Cached PythonToNativeNewRefNode toNativeNewRefNode,
                         @Cached CStructAccess.WritePointerNode writePointerNode) {
             PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
-            Object[] exceptionState = pyErrFetchNode.execute(inliningTarget, threadState);
-            // null or [type, value, traceback]
-            assert exceptionState == null || exceptionState.length == 3;
+            ExceptionState exceptionState = pyErrFetchNode.execute(inliningTarget, threadState);
             if (exceptionState == null) {
                 /*
                  * This should be caught in native by checking 'PyErr_Occurred' and avoiding the
@@ -213,8 +212,8 @@ public final class PythonCextErrBuiltins {
                  */
                 doNoException(pType, pValue, pTraceback);
             } else {
-                assert exceptionState[0] != null;
-                assert exceptionState[1] != null;
+                assert exceptionState.type() != null;
+                assert exceptionState.value() != null;
                 /*
                  * NOTE: We cannot use 'WriteObjectNewRefNode' because we are writing to out
                  * variables (C type 'PyObject **out') where the previous value (i.e. '*out') of
@@ -222,9 +221,9 @@ public final class PythonCextErrBuiltins {
                  * object and we MUST NOT do that. Therefore, we use the combination of
                  * 'WritePointerNode' and 'PythonToNativeNewRefNode'.
                  */
-                writePointerNode.write(pType, toNativeNewRefNode.execute(exceptionState[0]));
-                writePointerNode.write(pValue, toNativeNewRefNode.execute(exceptionState[1]));
-                writePointerNode.write(pTraceback, toNativeNewRefNode.execute(exceptionState[2] != null ? exceptionState[2] : PNone.NO_VALUE));
+                writePointerNode.write(pType, toNativeNewRefNode.execute(exceptionState.type()));
+                writePointerNode.write(pValue, toNativeNewRefNode.execute(exceptionState.value()));
+                writePointerNode.write(pTraceback, toNativeNewRefNode.execute(exceptionState.traceback() != null ? exceptionState.traceback() : PNone.NO_VALUE));
             }
             return PNone.NO_VALUE;
         }
@@ -460,17 +459,15 @@ public final class PythonCextErrBuiltins {
             if (err != nativeNull && IsBuiltinObjectProfile.profileObjectUncached(err, PythonBuiltinClassType.SystemExit)) {
                 handleSystemExit(excInfoNode, getItemNode, isInstanceNode, restoreNode, (SysModuleBuiltins) sys.getBuiltins(), writeFileNode, exitNode);
             }
-            Object[] fetched = PyErrFetchNode.executeUncached(threadState);
-            // null or [type, value, traceback]
-            assert fetched == null || fetched.length == 3;
+            ExceptionState fetched = PyErrFetchNode.executeUncached(threadState);
             Object type = null;
             Object val = null;
             Object tb = null;
 
             if (fetched != null) {
-                type = fetched[0];
-                val = fetched[1];
-                tb = fetched[2];
+                type = fetched.type();
+                val = fetched.value();
+                tb = fetched.traceback();
             }
             if (type == null || type == PNone.NONE) {
                 return PNone.NONE;

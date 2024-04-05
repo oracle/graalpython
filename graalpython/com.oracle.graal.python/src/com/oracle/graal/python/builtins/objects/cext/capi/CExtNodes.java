@@ -1017,19 +1017,22 @@ public abstract class CExtNodes {
         }
     }
 
+    public record ExceptionState(Object type, Object value, Object traceback) {
+    }
+
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
     public abstract static class PyErrFetchNode extends Node {
 
-        public static Object[] executeUncached(PythonThreadState threadState) {
+        public static ExceptionState executeUncached(PythonThreadState threadState) {
             return PyErrFetchNodeGen.getUncached().execute(null, threadState);
         }
 
-        public abstract Object[] execute(Node inliningTarget, PythonThreadState threadState);
+        public abstract ExceptionState execute(Node inliningTarget, PythonThreadState threadState);
 
         @Specialization
-        static Object[] doGeneric(Node inliningTarget, PythonThreadState threadState,
+        static ExceptionState doGeneric(Node inliningTarget, PythonThreadState threadState,
                         @Cached GetClassNode getClassNode,
                         @Cached MaterializeLazyTracebackNode materializeTraceback,
                         @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
@@ -1047,7 +1050,7 @@ public abstract class CExtNodes {
                 traceback = materializeTraceback.execute(inliningTarget, threadState.getCurrentTraceback());
             }
             clearCurrentExceptionNode.execute(inliningTarget, threadState);
-            return new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback};
+            return new ExceptionState(getClassNode.execute(inliningTarget, exception), exception, traceback);
         }
     }
 
