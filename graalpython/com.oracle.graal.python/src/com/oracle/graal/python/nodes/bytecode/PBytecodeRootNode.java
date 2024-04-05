@@ -5479,8 +5479,28 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    @BytecodeInterpreterSwitch
     @ExplodeLoop
+    private static void moveFromStack(VirtualFrame virtualFrame, int start, int stop, PSet target, HashingCollectionNodes.SetItemNode setItem) {
+        CompilerAsserts.partialEvaluationConstant(start);
+        CompilerAsserts.partialEvaluationConstant(stop);
+        for (int i = start; i < stop; i++) {
+            setItem.executeCached(virtualFrame, target, virtualFrame.getObject(i), PNone.NONE);
+            virtualFrame.setObject(i, null);
+        }
+    }
+
+    @ExplodeLoop
+    private static void moveFromStack(VirtualFrame virtualFrame, int start, int stop, PDict target, HashingCollectionNodes.SetItemNode setItem) {
+        CompilerAsserts.partialEvaluationConstant(start);
+        CompilerAsserts.partialEvaluationConstant(stop);
+        for (int i = start; i + 1 < stop; i += 2) {
+            setItem.executeCached(virtualFrame, target, virtualFrame.getObject(i), virtualFrame.getObject(i + 1));
+            virtualFrame.setObject(i, null);
+            virtualFrame.setObject(i + 1, null);
+        }
+    }
+
+    @BytecodeInterpreterSwitch
     private int bytecodeCollectionFromStack(VirtualFrame virtualFrame, int type, int count, int oldStackTop, Node[] localNodes, int nodeIndex, boolean useCachedNodes) {
         int stackTop = oldStackTop;
         Object res = null;
@@ -5501,10 +5521,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 PSet set = factory.createSet();
                 HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
                                 useCachedNodes);
-                for (int i = stackTop - count + 1; i <= stackTop; i++) {
-                    newNode.executeCached(virtualFrame, set, virtualFrame.getObject(i), PNone.NONE);
-                    virtualFrame.setObject(i, null);
-                }
+                moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, set, newNode);
                 res = set;
                 break;
             }
@@ -5513,11 +5530,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 HashingCollectionNodes.SetItemNode setItem = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_ITEM, HashingCollectionNodesFactory.SetItemNodeGen.class, NODE_SET_ITEM,
                                 useCachedNodes);
                 assert count % 2 == 0;
-                for (int i = stackTop - count + 1; i <= stackTop; i += 2) {
-                    setItem.executeCached(virtualFrame, dict, virtualFrame.getObject(i), virtualFrame.getObject(i + 1));
-                    virtualFrame.setObject(i, null);
-                    virtualFrame.setObject(i + 1, null);
-                }
+                moveFromStack(virtualFrame, stackTop - count + 1, stackTop + 1, dict, setItem);
                 res = dict;
                 break;
             }
