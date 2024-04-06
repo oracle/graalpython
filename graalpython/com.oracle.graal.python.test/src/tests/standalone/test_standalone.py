@@ -281,9 +281,23 @@ class PolyglotAppTest(unittest.TestCase):
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
             assert "hello java" in out, "unexpected output from " + str(cmd)
 
-            # execute with java and check
-            cmd = MVN_CMD + ["exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
+            # 2.) check java build and exec
+            # run with java asserts on
+            if self.env.get("MAVEN_OPTS"):
+                self.env["MAVEN_OPTS"] = self.env.get("MAVEN_OPTS") + " -ea -esa"
+            else:
+                self.env["MAVEN_OPTS"] = "-ea -esa"
+
+            # import struct from python file triggers extract of native extension files in VirtualFileSystem
+            hello_src = os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs", "proj", "hello.py")
+            contents = open(hello_src, 'r').read()
+            with open(hello_src, 'w') as f:
+                f.write("import struct\n" + contents)
+
+            # rebuild and exec
+            cmd = MVN_CMD + ["package", "exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
+            assert "BUILD SUCCESS" in out, "unexpected output from " + str(cmd)
             assert "hello java" in out, "unexpected output from " + str(cmd)
 
             #GR-51132 - NoClassDefFoundError when running polyglot app in java mode
@@ -299,7 +313,7 @@ class PolyglotAppTest(unittest.TestCase):
 
             cmd = MVN_CMD + ["process-resources"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-            assert "Missing GraalPy dependency. Please add to your pom either org.graalvm.polyglot:python-community or org.graalvm.polyglot:python" in out    
+            assert "Missing GraalPy dependency. Please add to your pom either org.graalvm.polyglot:python-community or org.graalvm.polyglot:python" in out
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_gen_launcher_and_venv(self):
@@ -308,7 +322,7 @@ class PolyglotAppTest(unittest.TestCase):
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "prepare_venv_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
-            
+
             cmd = MVN_CMD + ["process-resources"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
             assert "-m venv" in out, "unexpected output from " + str(cmd)
@@ -345,7 +359,7 @@ class PolyglotAppTest(unittest.TestCase):
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "check_home_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
-        
+
             cmd = MVN_CMD + ["process-resources"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
 

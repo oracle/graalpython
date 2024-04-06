@@ -83,12 +83,15 @@ public class VirtualFileSystemTest {
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().equals("file1")).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build();
-        // check regular resource file
+        // check regular resource dir
         assertEquals("dir1", vfs.toRealPath(Path.of("dir1")).toString());
         assertEquals(VFS_MOUNT_POINT + File.separator + "dir1", vfs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")).toString());
+        // check regular resource file
+        assertEquals("SomeFile", vfs.toRealPath(Path.of("SomeFile")).toString());
+        assertEquals(VFS_MOUNT_POINT + File.separator + "SomeFile", vfs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile")).toString());
         // check to be extracted file
-        checkExtractedFile(vfs.toRealPath(Path.of("file1")));
-        checkExtractedFile(vfs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "file1")));
+        checkExtractedFile(vfs.toRealPath(Path.of("file1")), new String[]{"text1", "text2"});
+        checkExtractedFile(vfs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "file1")), new String[]{"text1", "text2"});
     }
 
     @Test
@@ -96,22 +99,32 @@ public class VirtualFileSystemTest {
         VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
-                        extractFilter(p -> p.getFileName().toString().equals("file1")).//
+                        extractFilter(p -> p.getFileName().toString().equals("file1") || p.getFileName().toString().equals("file2")).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build();
-        // check regular resource file
+        // check regular resource dir
         assertEquals(VFS_MOUNT_POINT + File.separator + "dir1", vfs.toAbsolutePath(Path.of("dir1")).toString());
         assertEquals(VFS_MOUNT_POINT + File.separator + "dir1", vfs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")).toString());
+        // check regular resource file
+        assertEquals(VFS_MOUNT_POINT + File.separator + "SomeFile", vfs.toAbsolutePath(Path.of("SomeFile")).toString());
+        assertEquals(VFS_MOUNT_POINT + File.separator + "SomeFile", vfs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile")).toString());
         // check to be extracted file
-        checkExtractedFile(vfs.toAbsolutePath(Path.of("file1")));
-        checkExtractedFile(vfs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "file1")));
+        checkExtractedFile(vfs.toAbsolutePath(Path.of("file1")), new String[]{"text1", "text2"});
+        checkExtractedFile(vfs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "file1")), new String[]{"text1", "text2"});
+        checkExtractedFile(vfs.toAbsolutePath(Path.of("dir1/file2")), null);
+        checkExtractedFile(vfs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1/file2")), null);
     }
 
-    private static void checkExtractedFile(Path extractedFile) throws IOException {
+    private static void checkExtractedFile(Path extractedFile, String[] expectedContens) throws IOException {
         assertTrue(Files.exists(extractedFile));
         List<String> lines = Files.readAllLines(extractedFile);
-        assertEquals(2, lines.size());
-        assertTrue(lines.contains("text1"));
-        assertTrue(lines.contains("text2"));
+        if (expectedContens != null) {
+            assertEquals("expected " + expectedContens.length + " lines in extracted file '" + extractedFile + "'", expectedContens.length, lines.size());
+            for (String line : expectedContens) {
+                assertTrue("expected line '" + line + "' in file '" + extractedFile + "' with contents:\n" + expectedContens, lines.contains(line));
+            }
+        } else {
+            assertEquals("extracted file '" + extractedFile + "' expected to be empty, but had " + lines.size() + " lines", 0, lines.size());
+        }
     }
 
     @Test
