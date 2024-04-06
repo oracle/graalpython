@@ -74,6 +74,11 @@ public final class PFrame extends PythonBuiltinObject {
      */
     private boolean lockLine = false;
 
+    // -3 for jumps not allowed, -2 for no jump, otherwise the line to jump to - only should be set
+    // in a trace function.
+    public static final int DISALLOW_JUMPS = -3;
+    public static final int NO_JUMP = -2;
+    private int jumpDestLine = DISALLOW_JUMPS;
     private Object localTraceFun = null;
 
     private boolean traceLine = true;
@@ -94,6 +99,18 @@ public final class PFrame extends PythonBuiltinObject {
 
     public void setTraceLine(boolean traceLine) {
         this.traceLine = traceLine;
+    }
+
+    public boolean isTraceArgument() {
+        return jumpDestLine != DISALLOW_JUMPS;
+    }
+
+    public int getJumpDestLine() {
+        return jumpDestLine;
+    }
+
+    public void setJumpDestLine(int jumpDestLine) {
+        this.jumpDestLine = jumpDestLine;
     }
 
     // TODO: frames: this is a large object, think about how to make this
@@ -226,6 +243,10 @@ public final class PFrame extends PythonBuiltinObject {
 
     public void lineUnlock() {
         this.lockLine = false;
+    }
+
+    public boolean didJump() {
+        return jumpDestLine > NO_JUMP;
     }
 
     @TruffleBoundary

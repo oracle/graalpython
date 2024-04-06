@@ -1615,4 +1615,12 @@ public abstract class ErrorMessages {
     public static final TruffleString NOTE_MUST_BE_A_STR_NOT_P = tsLiteral("note must be a str, not '%p'");
     public static final TruffleString CANNOT_ADD_NOTE_NOTES_IS_NOT_A_LIST = tsLiteral("Cannot add note: __notes__ is not a list");
     public static final TruffleString CANT_GET_ATTRIBUTE_S_ON_S = tsLiteral("Can't get attribute %s on %s");
+
+    public static final TruffleString CANT_JUMP_INTO_S = tsLiteral("Can't jump into %s.");
+    public static final TruffleString LINE_D_COMES_AFTER_THE_CURRENT_CODE_BLOCK = tsLiteral("line %d comes after the current code block");
+    public static final TruffleString LINE_D_COMES_BEFORE_THE_CURRENT_CODE_BLOCK = tsLiteral("line %d comes before the current code block");
+    public static final TruffleString CANT_JUMP_FROM_S_EVENT = tsLiteral("Can't jump from \"%s\" event.");
+    public static final TruffleString LINENO_MUST_BE_AN_INTEGER = tsLiteral("lineno must be an integer");
+
+    public static final TruffleString LINENO_OUT_OF_RANGE = tsLiteral("lineno out of range");
 }

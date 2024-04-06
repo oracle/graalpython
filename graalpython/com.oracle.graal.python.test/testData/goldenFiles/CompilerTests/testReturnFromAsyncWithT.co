@@ -14,7 +14,7 @@ Flags: CO_COROUTINE
   2:2   -   4:12  >>    7 YIELD_VALUE
   2:2   -   4:12        8 RESUME_YIELD
   2:2   -   4:12        9 JUMP_BACKWARD                     4    (to 5)
-  2:2   -   4:12       11 THROW                             4                                     (exc handler 8 - 11; stack: 3)
+  2:2   -   4:12       11 THROW                             4    (to 15)                          (exc handler 8 - 11; stack: 3)
   2:2   -   4:12       13 JUMP_BACKWARD                     6    (to 7)
   2:2   -   4:12  >>   15 POP_TOP
   3:15  -   3:16       16 LOAD_GLOBAL                       1    (b)
@@ -25,7 +25,7 @@ Flags: CO_COROUTINE
   3:4   -   4:12  >>   23 YIELD_VALUE
   3:4   -   4:12       24 RESUME_YIELD
   3:4   -   4:12       25 JUMP_BACKWARD                     4    (to 21)
-  3:4   -   4:12       27 THROW                             4                                     (exc handler 24 - 27; stack: 5)
+  3:4   -   4:12       27 THROW                             4    (to 31)                          (exc handler 24 - 27; stack: 5)
   3:4   -   4:12       29 JUMP_BACKWARD                     6    (to 23)
   3:4   -   4:12  >>   31 POP_TOP
   3:4   -   4:12       32 LOAD_NONE
@@ -36,7 +36,7 @@ Flags: CO_COROUTINE
   3:4   -   4:12  >>   38 YIELD_VALUE
   3:4   -   4:12       39 RESUME_YIELD
   3:4   -   4:12       40 JUMP_BACKWARD                     4    (to 36)
-  3:4   -   4:12       42 THROW                             4                                     (exc handler 39 - 42; stack: 4)
+  3:4   -   4:12       42 THROW                             4    (to 46)                          (exc handler 39 - 42; stack: 4)
   3:4   -   4:12       44 JUMP_BACKWARD                     6    (to 38)
   3:4   -   4:12  >>   46 EXIT_AWITH
   2:2   -   4:12       47 LOAD_NONE
@@ -47,7 +47,7 @@ Flags: CO_COROUTINE
   2:2   -   4:12  >>   53 YIELD_VALUE
   2:2   -   4:12       54 RESUME_YIELD
   2:2   -   4:12       55 JUMP_BACKWARD                     4    (to 51)
-  2:2   -   4:12       57 THROW                             4                                     (exc handler 54 - 57; stack: 2)
+  2:2   -   4:12       57 THROW                             4    (to 61)                          (exc handler 54 - 57; stack: 2)
   2:2   -   4:12       59 JUMP_BACKWARD                     6    (to 53)
   2:2   -   4:12  >>   61 EXIT_AWITH
   2:2   -   4:12       62 LOAD_NONE
@@ -60,7 +60,7 @@ Flags: CO_COROUTINE
   3:4   -   4:12  >>   70 YIELD_VALUE
   3:4   -   4:12       71 RESUME_YIELD
   3:4   -   4:12       72 JUMP_BACKWARD                     4    (to 68)
-  3:4   -   4:12       74 THROW                             4                                     (exc handler 71 - 74; stack: 4)
+  3:4   -   4:12       74 THROW                             4    (to 78)                          (exc handler 71 - 74; stack: 4)
   3:4   -   4:12       76 JUMP_BACKWARD                     6    (to 70)
   3:4   -   4:12  >>   78 EXIT_AWITH
   3:4   -   4:12       79 LOAD_NONE
@@ -71,7 +71,7 @@ Flags: CO_COROUTINE
   2:2   -   4:12  >>   85 YIELD_VALUE
   2:2   -   4:12       86 RESUME_YIELD
   2:2   -   4:12       87 JUMP_BACKWARD                     4    (to 83)
-  2:2   -   4:12       89 THROW                             4                                     (exc handler 86 - 89; stack: 2)
+  2:2   -   4:12       89 THROW                             4    (to 93)                          (exc handler 86 - 89; stack: 2)
   2:2   -   4:12       91 JUMP_BACKWARD                     6    (to 85)
   2:2   -   4:12  >>   93 EXIT_AWITH
   2:2   -   4:12       94 LOAD_NONE

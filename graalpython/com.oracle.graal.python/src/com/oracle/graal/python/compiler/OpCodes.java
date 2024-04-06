@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,10 +43,10 @@ package com.oracle.graal.python.compiler;
 import java.math.BigInteger;
 
 import com.oracle.graal.python.annotations.GenerateEnumConstants;
+import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenWrappedValue;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenWrappedValue;
 
 /**
  * Operation codes of our bytecode interpreter. They are similar to CPython's, but not the same. Our
@@ -675,7 +675,7 @@ public enum OpCodes {
      *
      * Pushes: the saved exception state, the exception
      */
-    PUSH_EXC_INFO(0, 0, 1),
+    PUSH_EXC_INFO(0, 1, 2),
     /**
      * Sets the current exception state to the saved state (by {@link #PUSH_EXC_INFO}) on the stack
      * and pop it.
@@ -979,5 +979,35 @@ public enum OpCodes {
 
     public int getStackEffect(int oparg, byte[] followingArgs, boolean withJump) {
         return getNumberOfProducedStackItems(oparg, followingArgs, withJump) - getNumberOfConsumedStackItems(oparg, followingArgs, withJump);
+    }
+
+    public int getNextBci(int bci, int oparg, boolean withJump) {
+        if (this.quickens != null) {
+            return this.quickens.getNextBci(bci, oparg, withJump);
+        }
+        switch (this) {
+            case JUMP_FORWARD:
+                return bci + oparg;
+            case JUMP_BACKWARD:
+                return bci - oparg;
+            case POP_AND_JUMP_IF_FALSE:
+            case POP_AND_JUMP_IF_TRUE:
+            case JUMP_IF_FALSE_OR_POP:
+            case JUMP_IF_TRUE_OR_POP:
+            case FOR_ITER:
+            case MATCH_EXC_OR_JUMP:
+            case SEND:
+            case THROW:
+                return withJump ? bci + oparg : bci + length();
+            case RETURN_VALUE:
+            case RAISE_VARARGS:
+            case END_EXC_HANDLER:
+                return -1;
+            case EXTENDED_ARG:
+                assert false : "EXTENDED_ARG passed to getNextBci.";
+                return -1;
+            default:
+                return bci + length();
+        }
     }
 }

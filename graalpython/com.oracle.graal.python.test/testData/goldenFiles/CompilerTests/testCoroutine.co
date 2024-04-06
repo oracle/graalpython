@@ -13,7 +13,7 @@ Flags: CO_COROUTINE
   2:4   -   2:11  >>    6 YIELD_VALUE
   2:4   -   2:11        7 RESUME_YIELD
   2:4   -   2:11        8 JUMP_BACKWARD                     4    (to 4)
-  2:4   -   2:11       10 THROW                             4                                     (exc handler 7 - 10; stack: 1)
+  2:4   -   2:11       10 THROW                             4    (to 14)                          (exc handler 7 - 10; stack: 1)
   2:4   -   2:11       12 JUMP_BACKWARD                     6    (to 6)
   2:4   -   2:11  >>   14 POP_TOP
   2:4   -   2:11       15 LOAD_NONE

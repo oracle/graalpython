@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,16 +40,21 @@
  */
 package com.oracle.graal.python.compiler;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -420,6 +425,7 @@ public final class CodeUnit {
                     case JUMP_IF_TRUE_OR_POP:
                     case MATCH_EXC_OR_JUMP:
                     case SEND:
+                    case THROW:
                         lines.computeIfAbsent(bcBCI + oparg, k -> new String[DISASSEMBLY_NUM_COLUMNS])[1] = ">>";
                         line[5] = String.format("to %d", bcBCI + oparg);
                         break;
@@ -528,31 +534,253 @@ public final class CodeUnit {
         throw new IllegalStateException("Unknown type");
     }
 
+    public static final int LINE_TO_BCI_LINE_AFTER_CODEBLOCK = -1;
+    public static final int LINE_TO_BCI_LINE_BEFORE_CODEBLOCK = -2;
+
+    // -1 for line after the code block, -2 for line before the code block, line number otherwise
+    public int lineToBci(int line) {
+        if (startLine == line) {
+            return 0;
+        }
+        if ((flags & PCode.CO_GRAALPYHON_MODULE) != 0 && line < startLine) {
+            // allow jump to the first line of a file, even if it is a comment
+            return 0;
+        }
+        int[] map = getSourceMap().startLineMap;
+        int bestBci = LINE_TO_BCI_LINE_AFTER_CODEBLOCK;
+        int lineDiff = Integer.MAX_VALUE;
+        boolean afterFirst = false;
+        for (int bci = 0; bci < map.length; ++bci) {
+            if (map[bci] >= line) {
+                int lineDiff2 = map[bci] - line;
+                // the first bci found is the start of the line
+                if (lineDiff2 < lineDiff) {
+                    bestBci = bci;
+                    lineDiff = lineDiff2;
+                }
+            }
+            if (map[bci] > 0 && map[bci] <= line) {
+                // the line is actually within the codeblock.
+                afterFirst = true;
+            }
+        }
+        // bestBci being -1 means the line is outside the code block
+        return afterFirst ? bestBci : LINE_TO_BCI_LINE_BEFORE_CODEBLOCK;
+    }
+
+    public enum StackItem {
+        With("the body of a with statement"),
+        Iterable("the body of a for loop"),
+        Except("an 'except' block as there's no exception"),
+        Object("Incompatible stack");
+
+        public final String error;
+
+        StackItem(String error) {
+            this.error = error;
+        }
+
+        ArrayList<StackItem> push(ArrayList<StackItem> v) {
+            ArrayList<StackItem> ret = v == null ? new ArrayList<>() : new ArrayList<>(v);
+            ret.add(this);
+            return ret;
+        }
+    }
+
+    private void setNextStack(ArrayDeque<Integer> todo, List<ArrayList<StackItem>> stacks, int target, ArrayList<StackItem> value) {
+        ArrayList<StackItem> blocksAtTarget = stacks.get(target);
+        if (blocksAtTarget == null) {
+            stacks.set(target, value);
+            todo.addLast(target);
+        } else {
+            assert value.equals(blocksAtTarget) : "found conflicting stacks depending on code path: " + this.name + "\t at " + target;
+        }
+    }
+
+    private static ArrayList<StackItem> popStack(ArrayList<StackItem> blocks) {
+        assert blocks != null : "Pop from null stack";
+        assert blocks.size() >= 1 : "Pop from empty stack";
+        return new ArrayList<>(blocks.subList(0, blocks.size() - 1));
+    }
+
+    // returns null if the jump is fine
+    public String checkJump(List<ArrayList<StackItem>> stackElems, int from, int to) {
+        ArrayList<StackItem> blkFrom = stackElems.get(from);
+        if (blkFrom == null) {
+            // this should not happen
+            PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINE_D_COMES_BEFORE_THE_CURRENT_CODE_BLOCK, bciToLine(from));
+        }
+        ArrayList<StackItem> blkTo = stackElems.get(to);
+        if (blkTo == null) {
+            PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINE_D_COMES_AFTER_THE_CURRENT_CODE_BLOCK, bciToLine(from));
+        }
+        if (blkTo.size() > blkFrom.size()) {
+            return blkTo.get(blkTo.size() - 1).error;
+        }
+        for (int i = blkTo.size() - 1; i >= 0; --i) {
+            if (blkTo.get(i) != blkFrom.get(i)) {
+                return blkTo.get(i).error;
+            }
+        }
+        return null;
+    }
+
+    public List<ArrayList<StackItem>> computeStackElems() {
+        List<ArrayList<StackItem>> blocks = new ArrayList<>(Collections.nCopies(code.length + 1, null));
+        blocks.set(0, new ArrayList<>());
+        ArrayDeque<Integer> todo = new ArrayDeque<>();
+        todo.addFirst(0);
+        while (!todo.isEmpty()) {
+            int firstBci = todo.removeLast();
+            assert blocks.get(firstBci) != null : "Reached block without determining its stack state";
+            opCodeAt(code, firstBci, (bci, op, oparg, followingArgs) -> {
+                // firstBci can be different from bci if EXTEND_ARG is used
+                // the stack is kept both at firstBci and bci
+                ArrayList<StackItem> next = blocks.get(firstBci);
+                if (firstBci != bci) {
+                    blocks.set(bci, next);
+                }
+                for (int j = 0; j < exceptionHandlerRanges.length; j += 4) {
+                    int start = exceptionHandlerRanges[j];
+                    int handler = exceptionHandlerRanges[j + 2];
+                    int stack = exceptionHandlerRanges[j + 3];
+                    if (start == bci) {
+                        ArrayList<StackItem> handlerStack = StackItem.Except.push(new ArrayList<>(blocks.get(bci).subList(0, stack)));
+                        // an exception handler is like a jump
+                        // the except block is added in the lines below
+                        setNextStack(todo, blocks, handler, handlerStack);
+                    }
+                }
+                switch (op) {
+                    case GET_ITER:
+                    case GET_AITER:
+                        next = StackItem.Iterable.push(popStack(blocks.get(bci)));
+                        setNextStack(todo, blocks, bci + 1, next);
+                        break;
+                    case FOR_ITER:
+                        setNextStack(todo, blocks, op.getNextBci(bci, oparg, false), StackItem.Object.push(next));
+                        setNextStack(todo, blocks, op.getNextBci(bci, oparg, true), popStack(next));
+                        break;
+                    case PUSH_EXC_INFO:
+                        next = StackItem.Except.push(StackItem.Object.push(popStack(blocks.get(bci))));
+                        setNextStack(todo, blocks, bci + 1, next);
+                        break;
+                    case MATCH_EXC_OR_JUMP:
+                        next = popStack(next);
+                        setNextStack(todo, blocks, op.getNextBci(bci, oparg, false), next);
+                        setNextStack(todo, blocks, op.getNextBci(bci, oparg, true), next);
+                        break;
+                    case SETUP_WITH:
+                    case SETUP_AWITH:
+                        next = StackItem.Object.push(StackItem.With.push(blocks.get(bci)));
+                        setNextStack(todo, blocks, op.getNextBci(bci, oparg, false), next);
+                        break;
+                    case GET_AEXIT_CORO:
+                        next = StackItem.Object.push(StackItem.Except.push(popStack(popStack(popStack(blocks.get(bci))))));
+                        setNextStack(todo, blocks, op.getNextBci(bci, oparg, false), next);
+                        break;
+                    case DUP_TOP:
+                        next = next.get(next.size() - 1).push(next);
+                        setNextStack(todo, blocks, op.getNextBci(bci, oparg, false), next);
+                        break;
+                    case ROT_TWO: {
+                        StackItem top = next.get(next.size() - 1);
+                        StackItem belowTop = next.get(next.size() - 2);
+                        next = belowTop.push(top.push(popStack(popStack(next))));
+                        setNextStack(todo, blocks, op.getNextBci(bci, oparg, false), next);
+                        break;
+                    }
+                    case ROT_THREE: {
+                        StackItem top = next.get(next.size() - 1);
+                        StackItem second = next.get(next.size() - 2);
+                        StackItem third = next.get(next.size() - 3);
+                        next = second.push(third.push(top.push(top.push(popStack(popStack(popStack(next)))))));
+                        setNextStack(todo, blocks, op.getNextBci(bci, oparg, false), next);
+                        break;
+                    }
+                    case LOAD_NONE:
+                        opCodeAt(code, op.getNextBci(bci, oparg, false), (ignored, nextOp, ignored2, ignored3) -> {
+                            // Usually, when compiling bytecode around exception handlers, the code
+                            // is generated twice, once for the path with no exception, and
+                            // once for the path with the exception. However, when generating code
+                            // for a with statement exit, the code is generated as follows (and in a
+                            // similar manner for async with).
+                            // ...
+                            // LOAD_NONE
+                            // EXIT_WITH (exception handler starts here)
+                            // ...
+                            // This means that setting the stack at EXIT_WITH to have Object on top,
+                            // as LOAD_NONE usually would, would cause a conflict with the exception
+                            // handler starting at that position, which has the stack top be an
+                            // Exception.
+                            if (nextOp != OpCodes.GET_AEXIT_CORO && nextOp != OpCodes.EXIT_WITH) {
+                                setNextStack(todo, blocks, op.getNextBci(bci, oparg, false), StackItem.Object.push(blocks.get(bci)));
+                            }
+                        });
+                        break;
+
+                    default: {
+                        int nextWJump = op.getNextBci(bci, oparg, true);
+                        int nextWOJump = op.getNextBci(bci, oparg, false);
+                        int stackLostWJump = op.getNumberOfConsumedStackItems(oparg, followingArgs, true);
+                        int stackLostWOJump = op.getNumberOfConsumedStackItems(oparg, followingArgs, false);
+                        int stackGainWJump = op.getNumberOfProducedStackItems(oparg, followingArgs, true);
+                        int stackGainWOJump = op.getNumberOfProducedStackItems(oparg, followingArgs, false);
+                        handleGeneralOp(blocks, todo, bci, nextWJump, stackLostWJump, stackGainWJump);
+                        if (nextWJump != nextWOJump) {
+                            handleGeneralOp(blocks, todo, bci, nextWOJump, stackLostWOJump, stackGainWOJump);
+                        }
+                        break;
+                    }
+                }
+            });
+        }
+        return blocks;
+    }
+
+    private void handleGeneralOp(List<ArrayList<StackItem>> blocks, ArrayDeque<Integer> todo, int bci, int next, int stackLost, int stackGain) {
+        if (next >= 0) {
+            ArrayList<StackItem> blocksHere = new ArrayList<>(blocks.get(bci));
+            for (int k = 0; k < stackLost; ++k) {
+                blocksHere.remove(blocksHere.size() - 1);
+            }
+            for (int k = 0; k < stackGain; ++k) {
+                blocksHere.add(StackItem.Object);
+            }
+            setNextStack(todo, blocks, next, blocksHere);
+        }
+    }
+
     @FunctionalInterface
     public interface BytecodeAction {
         void run(int bci, OpCodes op, int oparg, byte[] followingArgs);
     }
 
-    public static void iterateBytecode(byte[] bytecode, BytecodeAction action) {
+    // returns the following bci
+    private static int opCodeAt(byte[] bytecode, int bci, BytecodeAction action) {
         int oparg = 0;
-        for (int bci = 0; bci < bytecode.length;) {
-            OpCodes op = OpCodes.fromOpCode(bytecode[bci]);
-            if (op == OpCodes.EXTENDED_ARG) {
-                oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
-                oparg <<= 8;
-            } else {
-                byte[] followingArgs = null;
-                if (op.argLength > 0) {
-                    oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
-                    if (op.argLength > 1) {
-                        followingArgs = new byte[op.argLength - 1];
-                        System.arraycopy(bytecode, bci + 2, followingArgs, 0, followingArgs.length);
-                    }
-                }
-                action.run(bci, op, oparg, followingArgs);
-                oparg = 0;
+        OpCodes op = OpCodes.fromOpCode(bytecode[bci]);
+        while (op == OpCodes.EXTENDED_ARG) {
+            oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
+            oparg <<= 8;
+            bci += 2;
+            op = OpCodes.fromOpCode(bytecode[bci]);
+        }
+        byte[] followingArgs = null;
+        if (op.argLength > 0) {
+            oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
+            if (op.argLength > 1) {
+                followingArgs = new byte[op.argLength - 1];
+                System.arraycopy(bytecode, bci + 2, followingArgs, 0, followingArgs.length);
             }
-            bci += op.length();
+        }
+        action.run(bci, op, oparg, followingArgs);
+        return bci + op.length();
+    }
+
+    public static void iterateBytecode(byte[] bytecode, BytecodeAction action) {
+        for (int bci = 0; bci < bytecode.length;) {
+            bci = opCodeAt(bytecode, bci, action);
         }
     }
 
