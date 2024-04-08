@@ -2564,71 +2564,6 @@ def python_coverage(args):
         mx.run(['coverage-uploader.py', '--associated-repos', f.name])
 
 
-def python_build_watch(args):
-    """
-    Watch the suite and on any changes to .class, .jar, .h, or .c files rebuild.
-    By default, rebuilds only the archives and non-Java projects.
-    """
-    parser = ArgumentParser(prog='mx python-build-watch')
-    parser.add_argument('--full', action='store_true', help='Run a full mx build', required=False)
-    parser.add_argument('--graalvm', action='store_true', help='Build a graalvm', required=False)
-    parser.add_argument('--no-java', action='store_true', help='Build only archives and native projects [default]', required=False)
-    args = parser.parse_args(args)
-    if sum([args.full, args.graalvm, args.no_java]) > 1:
-        mx.abort("Only one of --full, --graalvm, --no-java can be specified")
-    if args.full:
-        # suffixes = [".c", ".h", ".class", ".jar", ".java"]
-        excludes = [".*\\.py$"]
-    elif args.graalvm:
-        # suffixes = [".c", ".h", ".class", ".jar", ".java", ".py"]
-        excludes = ["mx_.*\\.py$"]
-    else:
-        # suffixes = [".c", ".h", ".class", ".jar"]
-        excludes = [".*\\.py$", ".*\\.java$"]
-
-    cmd = ["inotifywait", "-q", "-e", "close_write,moved_to", "-r", "--format=%f"]
-    for e in excludes:
-        cmd += ["--exclude", e]
-    cmd += ["@%s" % os.path.join(SUITE.dir, ".git"), SUITE.dir]
-    cmd_qq = cmd[:]
-    cmd_qq[1] = "-qq"
-    was_quiet = mx.get_opts().quiet
-
-    while True:
-        out = mx.OutputCapture()
-        if mx.run(cmd, out=out, nonZeroIsFatal=False) != 0:
-            continue
-        changed_file = out.data.strip()
-        mx.logv(changed_file)
-        if any(changed_file.endswith(ext) for ext in [".c", ".h", ".class", ".jar"]):
-            if not mx.get_opts().quiet:
-                sys.stdout.write("Build needed ")
-                sys.stdout.flush()
-            while True:
-                # re-run this until it times out, which we'll interpret as quiet
-                # time
-                if not mx.get_opts().quiet:
-                    sys.stdout.write(".")
-                    sys.stdout.flush()
-                mx.get_opts().quiet = True
-                try:
-                    retcode = mx.run(cmd_qq, timeout=3, nonZeroIsFatal=False)
-                finally:
-                    mx.get_opts().quiet = was_quiet
-                if retcode == mx.ERROR_TIMEOUT:
-                    if not mx.get_opts().quiet:
-                        sys.stdout.write("\n")
-                    break
-            mx.log("Building.")
-            if args.full:
-                mx.command_function("build")()
-            elif args.graalvm:
-                mx.log(python_jvm())
-            else:
-                nativebuild([])
-            mx.log("Build done.")
-
-
 class ETMavenPOM:
     DefaultNamespace = "http://maven.apache.org/POM/4.0.0"
 
@@ -3491,7 +3426,6 @@ def graalpy_standalone_wrapper(args_in):
 # ----------------------------------------------------------------------------------------------------------------------
 full_python_cmd = [full_python, '[--hosted, run on the currently executing JVM from source tree, default is to run from GraalVM] [Python args|@VM options]']
 mx.update_commands(SUITE, {
-    'python-build-watch': [python_build_watch, ''],
     'python': full_python_cmd,
     'python3': full_python_cmd,
     'deploy-binary-if-master': [deploy_binary_if_main, ''],
