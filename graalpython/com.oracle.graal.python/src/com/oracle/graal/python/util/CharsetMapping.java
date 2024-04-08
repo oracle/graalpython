@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,7 +54,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.graalvm.shadowed.com.ibm.icu.charset.CharsetICU;
+
 import com.oracle.graal.python.charset.PythonRawUnicodeEscapeCharset;
+import com.oracle.graal.python.charset.PythonUTF32CharsetWrapper;
 import com.oracle.graal.python.charset.PythonUnicodeEscapeCharset;
 import com.oracle.graal.python.util.CharsetMappingFactory.NormalizeEncodingNameNodeGen;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -72,7 +74,10 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
  * Utility class for mapping Python encodings to Java charsets
  */
 public class CharsetMapping {
-    private static final Charset UTF_32 = Charset.forName("UTF_32");
+    private static final Charset UTF_32LE = new PythonUTF32CharsetWrapper(Charset.forName("UTF-32LE"), ByteOrder.LITTLE_ENDIAN);
+    private static final Charset UTF_32LE_BOM = new PythonUTF32CharsetWrapper(Charset.forName("UTF-32LE-BOM"), ByteOrder.LITTLE_ENDIAN);
+    private static final Charset UTF_32BE = new PythonUTF32CharsetWrapper(Charset.forName("UTF-32BE"), ByteOrder.BIG_ENDIAN);
+    private static final Charset UTF_32BE_BOM = new PythonUTF32CharsetWrapper(Charset.forName("UTF-32BE-BOM"), ByteOrder.BIG_ENDIAN);
     private static final ConcurrentMap<String, Charset> JAVA_CHARSETS = new ConcurrentHashMap<>();
     // Name maps are populated by static initializer and are immutable afterwards
     private static final Map<TruffleString, String> CHARSET_NAME_MAP = new HashMap<>();
@@ -101,8 +106,11 @@ public class CharsetMapping {
              */
             if (T_UTF_16_UNDERSCORE.equalsUncached(normalizedEncoding, TS_ENCODING) && hasUTF16BOM(bytes, len)) {
                 return StandardCharsets.UTF_16;
-            } else if (T_UTF_32_UNDERSCORE.equalsUncached(normalizedEncoding, TS_ENCODING) && hasUTF32BOM(bytes, len)) {
-                return UTF_32;
+            } else if (T_UTF_32_UNDERSCORE.equalsUncached(normalizedEncoding, TS_ENCODING)) {
+                Charset charset = getUTF32CharsetForBOM(bytes, len);
+                if (charset != null) {
+                    return charset;
+                }
             }
         }
         String name = CHARSET_NAME_MAP.get(normalizedEncoding);
@@ -120,12 +128,18 @@ public class CharsetMapping {
         return head == (short) 0xFFFE || head == (short) 0xFEFF;
     }
 
-    private static boolean hasUTF32BOM(byte[] bytes, int len) {
+    private static Charset getUTF32CharsetForBOM(byte[] bytes, int len) {
         if (len < 4) {
-            return false;
+            return null;
         }
         int head = PythonUtils.ARRAY_ACCESSOR.getInt(bytes, 0);
-        return head == 0xFFFE0000 || head == 0x0000FEFF;
+        if (head == 0xFFFE0000) {
+            return UTF_32BE_BOM;
+        }
+        if (head == 0x0000FEFF) {
+            return UTF_32LE_BOM;
+        }
+        return null;
     }
 
     @TruffleBoundary
@@ -214,7 +228,9 @@ public class CharsetMapping {
         JAVA_CHARSETS.put("UTF-16BE", StandardCharsets.UTF_16BE);
         JAVA_CHARSETS.put("UTF-16LE", StandardCharsets.UTF_16LE);
         JAVA_CHARSETS.put("UTF-16", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? Charset.forName("UnicodeLittle") : StandardCharsets.UTF_16);
-        JAVA_CHARSETS.put("UTF-32", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? Charset.forName("UTF-32LE-BOM") : Charset.forName("UTF-32BE-BOM"));
+        JAVA_CHARSETS.put("UTF-32BE", UTF_32BE);
+        JAVA_CHARSETS.put("UTF-32LE", UTF_32LE);
+        JAVA_CHARSETS.put("UTF-32", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? UTF_32LE_BOM : UTF_32BE_BOM);
 
         // Add our custom charsets
         addMapping("raw_unicode_escape", "x-python-raw-unicode-escape");
