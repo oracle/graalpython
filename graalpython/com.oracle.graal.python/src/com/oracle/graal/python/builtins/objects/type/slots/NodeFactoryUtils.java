@@ -87,14 +87,51 @@ public class NodeFactoryUtils {
         }
     }
 
+    @FunctionalInterface
+    public interface WrapperFactory<TWrapper, TWrapped> {
+        TWrapper create(TWrapped wrapped);
+    }
+
+    public static final class WrapperNodeFactory<TWrapper, TWrapped> extends NodeFactoryBase<TWrapper> {
+        private final NodeFactory<TWrapped> wrappedFactory;
+        private final Class<TWrapper> nodeClass;
+        private final WrapperFactory<TWrapper, TWrapped> wrapperFactory;
+
+        public WrapperNodeFactory(NodeFactory<TWrapped> wrappedFactory, Class<TWrapper> nodeClass, WrapperFactory<TWrapper, TWrapped> wrapperFactory) {
+            this.wrappedFactory = wrappedFactory;
+            this.nodeClass = nodeClass;
+            this.wrapperFactory = wrapperFactory;
+        }
+
+        public static <TWrapper, TWrapped> WrapperNodeFactory<TWrapper, TWrapped> wrap(NodeFactory<TWrapped> wrappedFactory, Class<TWrapper> nodeClass,
+                        WrapperFactory<TWrapper, TWrapped> wrapperFactory) {
+            return new WrapperNodeFactory<>(wrappedFactory, nodeClass, wrapperFactory);
+        }
+
+        @Override
+        public Class<?> getWrappedNodeClass() {
+            return wrappedFactory.getNodeClass();
+        }
+
+        @Override
+        public Class<TWrapper> getNodeClass() {
+            return nodeClass;
+        }
+
+        @Override
+        TWrapper create() {
+            return wrapperFactory.create(wrappedFactory.createNode());
+        }
+    }
+
     /**
      * Binary builtin node that delegates to given ternary builtin node setting the last argument to
      * {@link PNone#NO_VALUE}.
      */
-    static final class TernaryToBinaryBuiltinNode extends PythonBinaryBuiltinNode {
+    static final class BinaryToTernaryBuiltinNode extends PythonBinaryBuiltinNode {
         @Child PythonTernaryBuiltinNode delegate;
 
-        public TernaryToBinaryBuiltinNode(PythonTernaryBuiltinNode delegate) {
+        public BinaryToTernaryBuiltinNode(PythonTernaryBuiltinNode delegate) {
             this.delegate = delegate;
         }
 
@@ -103,27 +140,8 @@ public class NodeFactoryUtils {
             return delegate.execute(frame, arg, arg2, PNone.NO_VALUE);
         }
 
-        static final class Factory extends NodeFactoryBase<TernaryToBinaryBuiltinNode> {
-            private final NodeFactory<? extends PythonTernaryBuiltinNode> wrappedFactory;
-
-            Factory(NodeFactory<? extends PythonTernaryBuiltinNode> wrappedFactory) {
-                this.wrappedFactory = wrappedFactory;
-            }
-
-            @Override
-            public Class<TernaryToBinaryBuiltinNode> getNodeClass() {
-                return TernaryToBinaryBuiltinNode.class;
-            }
-
-            @Override
-            public Class<?> getWrappedNodeClass() {
-                return wrappedFactory.getNodeClass();
-            }
-
-            @Override
-            TernaryToBinaryBuiltinNode create() {
-                return new TernaryToBinaryBuiltinNode(wrappedFactory.createNode());
-            }
+        public static <T extends PythonTernaryBuiltinNode> WrapperNodeFactory<BinaryToTernaryBuiltinNode, T> wrapFactory(NodeFactory<T> wrappedFactory) {
+            return new WrapperNodeFactory<>(wrappedFactory, BinaryToTernaryBuiltinNode.class, BinaryToTernaryBuiltinNode::new);
         }
     }
 }

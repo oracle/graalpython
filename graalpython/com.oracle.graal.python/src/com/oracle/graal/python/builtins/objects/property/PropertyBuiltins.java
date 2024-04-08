@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.DescrSetBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -82,6 +83,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNod
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -92,6 +94,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PProperty)
@@ -317,24 +320,31 @@ public final class PropertyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(SlotKind.tp_descr_get)
+    @Slot(value = SlotKind.tp_descr_get, isComplex = true)
     @GenerateUncached
     @GenerateNodeFactory
-    abstract static class PropertyGetNode extends PythonTernaryBuiltinNode {
+    abstract static class PropertyGetNode extends DescrGetBuiltinNode {
 
         @Specialization
         static Object get(VirtualFrame frame, PProperty self, Object obj, @SuppressWarnings("unused") Object type,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile objIsPNoneProfile,
                         @Cached CallUnaryMethodNode callNode,
                         @Cached PropertyErrorNode propertyErrorNode) {
-            if (PGuards.isPNone(obj)) {
+            if (objIsPNoneProfile.profile(inliningTarget, PGuards.isPNone(obj))) {
                 return self;
             }
 
             Object fget = self.getFget();
             if (fget == null) {
-                throw propertyErrorNode.execute(frame, self, obj, "getter");
+                raisePropertyError(frame, self, obj, propertyErrorNode);
             }
             return callNode.executeObject(frame, fget, obj);
+        }
+
+        @InliningCutoff
+        private static void raisePropertyError(VirtualFrame frame, PProperty self, Object obj, PropertyErrorNode propertyErrorNode) {
+            throw propertyErrorNode.execute(frame, self, obj, "getter");
         }
     }
 

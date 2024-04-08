@@ -41,9 +41,12 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.builtins.objects.type.slots.BuiltinSlotWrapperSignature.J_DOLLAR_SELF;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -54,11 +57,15 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.WrapperNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.PythonSlotDispatcherNodeBase;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGetFactory.CallSlotDescrGetNodeGen;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.FunctionInvokeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -66,8 +73,11 @@ import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -76,6 +86,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -83,26 +94,45 @@ public abstract class TpSlotDescrGet {
     private TpSlotDescrGet() {
     }
 
-    public abstract static sealed class TpSlotDescrGetBuiltin<T extends PythonTernaryBuiltinNode> extends TpSlotBuiltinBase<T>//
+    public abstract static sealed class TpSlotDescrGetBuiltin<T extends DescrGetBuiltinNode> extends TpSlotBuiltin<T>//
     permits TpSlotDescrGetBuiltinComplex, TpSlotDescrGetBuiltinSimple {
+        static final BuiltinSlotWrapperSignature SIGNATURE = BuiltinSlotWrapperSignature.of(2, J_DOLLAR_SELF, "obj", "type");
+        static final PExternalFunctionWrapper WRAPPER = PExternalFunctionWrapper.DESCR_GET;
+
         protected TpSlotDescrGetBuiltin(NodeFactory<T> nodeFactory) {
-            super(nodeFactory, BuiltinSlotWrapperSignature.of(2, J_DOLLAR_SELF, "obj", "type"), PExternalFunctionWrapper.DESCR_GET);
+            super(nodeFactory);
         }
 
-        final PythonTernaryBuiltinNode createSlotNode() {
+        final DescrGetBuiltinNode createSlotNode() {
             return createNode();
+        }
+
+        @Override
+        public PBuiltinFunction createBuiltin(Python3Core core, Object type, TruffleString tsName, PExternalFunctionWrapper wrapper) {
+            if (wrapper != WRAPPER) {
+                return null;
+            }
+            // The __get__ wrapper normalizes None to NO_VALUE (NULL in CPython), so we cannot use
+            // the "raw" slot node, but a wrapper that implements this logic and delegates to it
+            var factory = WrapperNodeFactory.wrap(getNodeFactory(), DescrGetWrapperNode.class, DescrGetWrapperNode::new);
+            return createBuiltin(core, type, tsName, SIGNATURE, wrapper, factory);
         }
     }
 
-    public abstract static non-sealed class TpSlotDescrGetBuiltinSimple<T extends PythonTernaryBuiltinNode> extends TpSlotDescrGetBuiltin<T> {
+    public abstract static non-sealed class TpSlotDescrGetBuiltinSimple<T extends DescrGetBuiltinNode> extends TpSlotDescrGetBuiltin<T> {
         protected TpSlotDescrGetBuiltinSimple(NodeFactory<T> nodeFactory) {
             super(nodeFactory);
         }
 
         protected abstract Object executeUncached(Object self, Object obj, Object type);
+
+        @Override
+        public void initialize(PythonLanguage language) {
+            // nop
+        }
     }
 
-    public abstract static non-sealed class TpSlotDescrGetBuiltinComplex<T extends PythonTernaryBuiltinNode> extends TpSlotDescrGetBuiltin<T> {
+    public abstract static non-sealed class TpSlotDescrGetBuiltinComplex<T extends DescrGetBuiltinNode> extends TpSlotDescrGetBuiltin<T> {
         private final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
 
         protected TpSlotDescrGetBuiltinComplex(NodeFactory<T> nodeFactory) {
@@ -110,13 +140,49 @@ public abstract class TpSlotDescrGet {
         }
 
         @Override
-        public PBuiltinFunction createBuiltin(Python3Core core, Object type, TruffleString tsName, PExternalFunctionWrapper wrapper) {
-            PBuiltinFunction builtin = super.createBuiltin(core, type, tsName, wrapper);
-            if (builtin == null) {
-                return null;
-            }
-            return TpSlotBuiltinCallTargetRegistry.registerCallTarget(core, builtin, callTargetIndex);
+        public void initialize(PythonLanguage language) {
+            // We need a different call-target for the "raw" slot. It must not normalize None to
+            // NO_VALUE (NULL in CPython) like the __get__ wrapper.
+            RootCallTarget callTarget = createBuiltinCallTarget(language, SIGNATURE, getNodeFactory(), J___GET__);
+            language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
         }
+    }
+
+    static final class DescrGetWrapperNode extends PythonTernaryBuiltinNode {
+        private final ConditionProfile objIsNoneProfile = ConditionProfile.create();
+        private final ConditionProfile typeIsNoneProfile = ConditionProfile.create();
+        @Child private PRaiseNode raiseNode;
+        @Child private DescrGetBuiltinNode wrapped;
+
+        DescrGetWrapperNode(DescrGetBuiltinNode wrapped) {
+            this.wrapped = wrapped;
+        }
+
+        private static Object normalizeNone(ConditionProfile profile, Object o) {
+            return profile.profile(PGuards.isNone(o)) ? PNone.NO_VALUE : o;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame, Object self, Object objIn, Object typeIn) {
+            Object obj = normalizeNone(objIsNoneProfile, objIn);
+            Object type = normalizeNone(typeIsNoneProfile, typeIn);
+            if (obj == PNone.NO_VALUE && type == PNone.NO_VALUE) {
+                if (raiseNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    raiseNode = insert(PRaiseNode.create());
+                }
+                raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GET_NONE_NONE_IS_INVALID);
+            }
+            return wrapped.execute(frame, self, obj, type);
+        }
+
+        @Override
+        protected Object execute1(VirtualFrame frame, Object self, Object obj, Object type) {
+            return execute(frame, self, obj, type);
+        }
+    }
+
+    public abstract static class DescrGetBuiltinNode extends PythonTernaryBuiltinNode {
     }
 
     @GenerateCached
@@ -126,6 +192,11 @@ public abstract class TpSlotDescrGet {
     public abstract static class CallSlotDescrGet extends Node {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "tp_descr_get");
 
+        /**
+         * Note: for GraalPy value {@link PNone#NO_VALUE} has the same semantics as {@code NULL} in
+         * CPython. It is forwarded to builtins and native slots and translated to
+         * {@link PNone#NONE} for Python slots like CPython does in {@code slot_tp_descr_get}.
+         */
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object obj, Object type);
 
         public final Object executeCached(VirtualFrame frame, TpSlot slot, Object self, Object obj, Object type) {
@@ -139,7 +210,7 @@ public abstract class TpSlotDescrGet {
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static Object callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotDescrGetBuiltin slot, Object self, Object obj, Object type,
                         @SuppressWarnings("unused") @Cached("slot") TpSlotDescrGetBuiltin cachedSlot,
-                        @Cached("cachedSlot.createSlotNode()") PythonTernaryBuiltinNode slotNode) {
+                        @Cached("cachedSlot.createSlotNode()") DescrGetBuiltinNode slotNode) {
             return slotNode.execute(frame, self, obj, type);
         }
 
@@ -161,12 +232,9 @@ public abstract class TpSlotDescrGet {
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-            // Within GraalPy we use PNone.NONE as indication that the descriptor was found on the
-            // target object itself, for native code this marker is 'NULL' (NO_VALUE maps to NULL)
-            Object objArg = obj == PNone.NONE ? PNone.NO_VALUE : obj;
             Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GET__, slot.callable, //
                             selfToNativeNode.execute(self), //
-                            objToNativeNode.execute(objArg), //
+                            objToNativeNode.execute(obj), //
                             valueToNativeNode.execute(value));
             return checkResultNode.execute(threadState, T___GET__, toPythonNode.execute(result));
         }
@@ -203,21 +271,32 @@ public abstract class TpSlotDescrGet {
         abstract Object execute(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1, Object arg2);
 
         @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 3)"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        protected static Object doCachedPFunction(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self, Object arg1, Object arg2,
+        protected static Object doCachedPFunction(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self,
+                        Object arg1, Object arg2,
                         @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
+                        @Cached @Shared InlinedConditionProfile arg1Profile,
+                        @Cached @Shared InlinedConditionProfile arg2Profile,
                         @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
             Object[] arguments = PArguments.create(3);
             PArguments.setArgument(arguments, 0, self);
-            PArguments.setArgument(arguments, 1, arg1);
-            PArguments.setArgument(arguments, 2, arg2);
+            PArguments.setArgument(arguments, 1, normalizeNoValue(arg1Profile, inliningTarget, arg1));
+            PArguments.setArgument(arguments, 2, normalizeNoValue(arg2Profile, inliningTarget, arg2));
             return invoke.execute(frame, arguments);
+        }
+
+        private static Object normalizeNoValue(InlinedConditionProfile profile, Node inlinintTarget, Object o) {
+            return profile.profile(inlinintTarget, o == PNone.NO_VALUE) ? PNone.NONE : o;
         }
 
         @Specialization(replaces = "doCachedPFunction")
         @InliningCutoff
-        static Object doGeneric(VirtualFrame frame, Object callable, @SuppressWarnings("unused") Object type, Object self, Object arg1, Object arg2,
+        static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object callable, @SuppressWarnings("unused") Object type, Object self, Object arg1, Object arg2,
+                        @Cached @Shared InlinedConditionProfile arg1Profile,
+                        @Cached @Shared InlinedConditionProfile arg2Profile,
                         @Cached(inline = false) CallNode callNode) {
-            return callNode.execute(frame, callable, self, arg1, arg2);
+            return callNode.execute(frame, callable, self, //
+                            normalizeNoValue(arg1Profile, inliningTarget, arg1), //
+                            normalizeNoValue(arg2Profile, inliningTarget, arg2));
         }
     }
 }

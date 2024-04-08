@@ -57,13 +57,13 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -99,15 +99,19 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
     @ReportPolymorphism
     @GenerateUncached
     @GenerateNodeFactory
-    abstract static class GetNode extends PythonTernaryBuiltinNode {
+    abstract static class GetNode extends DescrGetBuiltinNode {
+        /*-
+        TODO: (GR-53082) this is not handling following code-path added to CPython at some later point:
+        if (Py_TYPE(cm->cm_callable)->tp_descr_get != NULL) {
+            return Py_TYPE(cm->cm_callable)->tp_descr_get(cm->cm_callable, type, type);
+        }
 
-        /**
-         * N.b.: cachedCallable.notNull is sufficient here, because
-         * {@link PDecoratedMethod#setCallable} can only be called when the callable was previously
-         * {@code null}. So if it ever was not null and we cached that, it is being held alive by
-         * the {@code self} argument now and there cannot be a race.
-         */
-        @Specialization(guards = {"isSingleContext()", "isNoValue(type)", "cachedSelf == self"}, limit = "3")
+        Additionally, in CPython tp_descrget is not shared between classmethod_descriptor and classmethod,
+        we should investigate if we can really share the implementation
+        */
+
+        // If self.getCallable() is null, let the next @Specialization handle that
+        @Specialization(guards = {"isSingleContext()", "isNoValue(type)", "cachedSelf == self", "cachedCallable != null"}, limit = "3")
         static Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
@@ -126,10 +130,8 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
             return doGet(inliningTarget, self, getClass.execute(inliningTarget, obj), makeMethod, raiseNode);
         }
 
-        /**
-         * @see #getCached
-         */
-        @Specialization(guards = {"isSingleContext()", "!isNoValue(type)", "cachedSelf == self"}, limit = "3")
+        // If self.getCallable() is null, let the next @Specialization handle that
+        @Specialization(guards = {"isSingleContext()", "!isNoValue(type)", "cachedSelf == self", "cachedCallable != null"}, limit = "3")
         static Object getTypeCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,

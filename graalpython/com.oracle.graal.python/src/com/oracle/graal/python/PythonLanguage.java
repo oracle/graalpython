@@ -51,7 +51,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionDescriptors;
@@ -74,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.compiler.CodeUnit;
@@ -100,6 +100,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -338,6 +339,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal(dimensions = 1) private final RootCallTarget[] builtinSlotsCallTargets;
 
     /**
+     * We cannot initialize call targets in language ctor and the next suitable hook is context
+     * initialization, but that is called multiple times. We use this flag to run the language
+     * specific initialization only once.
+     */
+    private volatile boolean isLanguageInitialized;
+
+    /**
      * A map to retrieve call targets of special slot methods for a given BuiltinMethodDescriptor.
      * Used to perform uncached calls to slots. The call targets are not directly part of
      * descriptors because that would make them specific to a language instance. We want to have
@@ -467,7 +475,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void initializeContext(PythonContext context) {
+        if (!isLanguageInitialized) {
+            initializeLanguage();
+        }
         context.initialize();
+    }
+
+    private synchronized void initializeLanguage() {
+        if (!isLanguageInitialized) {
+            TpSlots.initializeBuiltinSlots(this);
+            isLanguageInitialized = true;
+        }
     }
 
     private static String optFlagsToMime(int optimize, int flags) {

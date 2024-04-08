@@ -458,12 +458,11 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object doBind(VirtualFrame frame, Node inliningTarget, Object descriptor, Object type,
-                        @Cached GetClassNode getClassNode,
                         @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached CallSlotDescrGet callGetSlot) {
             var getMethod = getSlotsNode.execute(inliningTarget, descriptor).tp_descr_get();
             if (getMethod != null) {
-                return callGetSlot.execute(frame, inliningTarget, getMethod, descriptor, PNone.NONE, type);
+                return callGetSlot.execute(frame, inliningTarget, getMethod, descriptor, NO_VALUE, type);
             }
             return descriptor;
         }
@@ -744,7 +743,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             }
             // NO_VALUE 2nd argument indicates the descriptor was found on the target object itself
             // (or a base)
-            return callSlotValueGet.executeCached(frame, getSlot, descr, PNone.NONE, type);
+            return callSlotValueGet.executeCached(frame, getSlot, descr, NO_VALUE, type);
         }
     }
 

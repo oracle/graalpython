@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -91,7 +92,6 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -383,14 +383,17 @@ public final class SuperBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.tp_descr_get, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class GetNode extends PythonTernaryBuiltinNode {
+    public abstract static class GetNode extends DescrGetBuiltinNode {
         @Specialization
         static Object doNoneOrBound(SuperObject self, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile objIsNoneProfile,
+                        @Cached InlinedConditionProfile selfObjIsNullProfile,
                         @Cached GetObjectNode getObject,
                         @Cached DoGetNode doGetNode) {
-            if (objIsNoneProfile.profile(inliningTarget, PGuards.isNone(obj)) || getObject.execute(inliningTarget, self) != null) {
+            // TODO: (GR-53092) doesn't seem to handle super subclasses like CPython
+            if (objIsNoneProfile.profile(inliningTarget, PGuards.isPNone(obj)) || //
+                            selfObjIsNullProfile.profile(inliningTarget, getObject.execute(inliningTarget, self) != null)) {
                 return self;
             }
             return doGetNode.execute(inliningTarget, self, obj);
@@ -492,7 +495,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             getObject = insert(GetObjectNodeGen.create());
                         }
-                        res = callGetSlotNode.executeCached(frame, resSlots.tp_descr_get(), res, getObject.executeCached(self) == startType ? PNone.NONE : self.getObject(), startType);
+                        res = callGetSlotNode.executeCached(frame, resSlots.tp_descr_get(), res, getObject.executeCached(self) == startType ? PNone.NO_VALUE : self.getObject(), startType);
                     }
                     return res;
                 }

@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinCallTargetRegistry;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -56,7 +55,7 @@ public class BuiltinDispatchers {
     static Object callGenericBuiltin(VirtualFrame frame, Node inliningTarget, int callTargetIndex, Object[] arguments,
                     CallContext callContext, InlinedConditionProfile isNullFrameProfile, IndirectCallNode indirectCallNode) {
         PythonLanguage language = PythonLanguage.get(inliningTarget);
-        CallTarget callTarget = TpSlotBuiltinCallTargetRegistry.getCallTarget(language, callTargetIndex);
+        CallTarget callTarget = language.getBuiltinSlotCallTarget(callTargetIndex);
         if (isNullFrameProfile.profile(inliningTarget, frame != null)) {
             callContext.prepareIndirectCall(frame, arguments, inliningTarget);
             return indirectCallNode.call(callTarget, arguments);

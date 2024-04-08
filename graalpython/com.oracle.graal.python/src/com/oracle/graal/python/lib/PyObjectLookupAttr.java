@@ -218,7 +218,7 @@ public abstract class PyObjectLookupAttr extends Node {
                 return value;
             } else {
                 try {
-                    return callGetSlot.execute(frame, inliningTarget, valueGet, value, PNone.NONE, object);
+                    return callGetSlot.execute(frame, inliningTarget, valueGet, value, PNone.NO_VALUE, object);
                 } catch (PException e) {
                     e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, errorProfile);
                     return PNone.NO_VALUE;
@@ -255,7 +255,7 @@ public abstract class PyObjectLookupAttr extends Node {
                 return value;
             } else {
                 try {
-                    return callGetSlot.execute(frame, inliningTarget, valueGet, value, PNone.NONE, object);
+                    return callGetSlot.execute(frame, inliningTarget, valueGet, value, PNone.NO_VALUE, object);
                 } catch (PException e) {
                     e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, errorProfile);
                     return PNone.NO_VALUE;

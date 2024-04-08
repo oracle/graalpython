@@ -801,6 +801,20 @@ public record TpSlots(TpSlot nb_bool, //
         }
     }
 
+    public static void initializeBuiltinSlots(PythonLanguage language) {
+        for (PythonBuiltinClassType klass : PythonBuiltinClassType.VALUES) {
+            for (TpSlotMeta slotMeta : TpSlotMeta.VALUES) {
+                TpSlot slotValue = slotMeta.getValue(klass.getDeclaredSlots());
+                if (slotValue instanceof TpSlotBuiltin<?> builtinSlot) {
+                    builtinSlot.initialize(language);
+                } else {
+                    // No other than builtin slots are allowed in builtins
+                    assert slotValue == null;
+                }
+            }
+        }
+    }
+
     private static boolean checkNoMagicOverrides(PythonBuiltinClassType type) {
         // Check that no one is trying to define magic methods directly
         // If the assertion fires: you should define @Slot instead of @Builtin

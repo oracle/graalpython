@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.DescrSetBuiltinNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
@@ -91,7 +92,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -172,7 +172,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
     @Slot(SlotKind.tp_descr_get)
     @GenerateUncached
     @GenerateNodeFactory
-    abstract static class GetNode extends PythonTernaryBuiltinNode {
+    abstract static class GetNode extends DescrGetBuiltinNode {
 
         @Specialization
         static Object doit(CFieldObject self, Object inst, @SuppressWarnings("unused") Object type,
@@ -180,7 +180,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            if (inst instanceof PNone) {
+            if (inst == PNone.NO_VALUE) {
                 return self;
             }
             if (!pyTypeCheck.isCDataObject(inliningTarget, inst)) {

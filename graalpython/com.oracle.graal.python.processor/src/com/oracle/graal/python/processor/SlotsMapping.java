@@ -60,7 +60,7 @@ public class SlotsMapping {
 
     static String getSlotNodeBaseClass(Slot s) {
         return switch (s.value()) {
-            case tp_descr_get -> "com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode";
+            case tp_descr_get -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode";
             case nb_bool -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode";
             case sq_length, mp_length, tp_get_attro ->
                 "com.oracle.graal.python.builtins.objects.type.slots." + getSlotBaseClass(s).replace(".TpSlot", ".") + "Node";

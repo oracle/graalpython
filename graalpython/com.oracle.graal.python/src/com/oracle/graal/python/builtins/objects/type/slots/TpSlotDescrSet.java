@@ -41,10 +41,12 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.builtins.objects.type.slots.BuiltinSlotWrapperSignature.J_DOLLAR_SELF;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DEL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -56,7 +58,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.TernaryToBinaryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.BinaryToTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.TernaryOrBinaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
@@ -72,6 +74,7 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -95,6 +98,8 @@ public abstract class TpSlotDescrSet {
     }
 
     public abstract static class TpSlotDescrSetBuiltin<T extends DescrSetBuiltinNode> extends TpSlotBuiltin<T> {
+        private static final BuiltinSlotWrapperSignature SET_SIGNATURE = BuiltinSlotWrapperSignature.of(J_DOLLAR_SELF, "object", "value");
+        private static final BuiltinSlotWrapperSignature GET_SIGNATURE = BuiltinSlotWrapperSignature.of(J_DOLLAR_SELF, "object");
         private final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
 
         protected TpSlotDescrSetBuiltin(NodeFactory<T> nodeFactory) {
@@ -106,17 +111,18 @@ public abstract class TpSlotDescrSet {
         }
 
         @Override
-        public PBuiltinFunction createBuiltin(Python3Core core, Object type, TruffleString tsName, PExternalFunctionWrapper wrapper) {
-            return switch (wrapper) {
-                case DESCR_SET -> TpSlotBuiltinCallTargetRegistry.registerCallTarget(core, createSetBuiltin(core, type, tsName), callTargetIndex);
-                case DESCR_DELETE -> createBuiltin(core, type, tsName, BuiltinSlotWrapperSignature.of(J_DOLLAR_SELF, "object"), PExternalFunctionWrapper.DESCR_DELETE,
-                                new TernaryToBinaryBuiltinNode.Factory(getNodeFactory()));
-                default -> null;
-            };
+        public void initialize(PythonLanguage language) {
+            RootCallTarget target = createBuiltinCallTarget(language, SET_SIGNATURE, getNodeFactory(), J___SET__);
+            language.setBuiltinSlotCallTarget(callTargetIndex, target);
         }
 
-        private PBuiltinFunction createSetBuiltin(Python3Core core, Object type, TruffleString tsName) {
-            return createBuiltin(core, type, tsName, BuiltinSlotWrapperSignature.of(J_DOLLAR_SELF, "object", "value"), PExternalFunctionWrapper.DESCR_SET, getNodeFactory());
+        @Override
+        public PBuiltinFunction createBuiltin(Python3Core core, Object type, TruffleString tsName, PExternalFunctionWrapper wrapper) {
+            return switch (wrapper) {
+                case DESCR_SET -> createBuiltin(core, type, tsName, SET_SIGNATURE, PExternalFunctionWrapper.DESCR_SET, getNodeFactory());
+                case DESCR_DELETE -> createBuiltin(core, type, tsName, GET_SIGNATURE, PExternalFunctionWrapper.DESCR_DELETE, BinaryToTernaryBuiltinNode.wrapFactory(getNodeFactory()));
+                default -> null;
+            };
         }
     }
 

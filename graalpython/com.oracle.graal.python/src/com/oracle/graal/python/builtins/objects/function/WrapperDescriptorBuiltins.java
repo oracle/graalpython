@@ -50,14 +50,13 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -83,26 +82,26 @@ public final class WrapperDescriptorBuiltins extends PythonBuiltins {
     @GenerateUncached
     @GenerateNodeFactory
     @SuppressWarnings("unused")
-    public abstract static class GetNode extends PythonTernaryBuiltinNode {
-        @Specialization(guards = {"!isPNone(instance)"})
+    public abstract static class GetNode extends DescrGetBuiltinNode {
+        @Specialization(guards = {"!isNoValue(instance)"})
         static PMethod doMethod(PFunction self, Object instance, Object klass,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createMethod(PythonBuiltinClassType.MethodWrapper, instance, self);
         }
 
-        @Specialization
-        static Object doFunction(PFunction self, PNone instance, Object klass) {
+        @Specialization(guards = "isNoValue(instance)")
+        static Object doFunction(PFunction self, Object instance, Object klass) {
             return self;
         }
 
-        @Specialization(guards = {"!isPNone(instance)"})
+        @Specialization(guards = {"!isNoValue(instance)"})
         static PBuiltinMethod doBuiltinMethod(PBuiltinFunction self, Object instance, Object klass,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createBuiltinMethod(PythonBuiltinClassType.MethodWrapper, instance, self);
         }
 
-        @Specialization
-        static Object doBuiltinFunction(PBuiltinFunction self, PNone instance, Object klass) {
+        @Specialization(guards = "isNoValue(instance)")
+        static Object doBuiltinFunction(PBuiltinFunction self, Object instance, Object klass) {
             return self;
         }
     }
