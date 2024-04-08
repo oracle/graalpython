@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 
@@ -59,8 +60,8 @@ import com.oracle.truffle.api.interop.InteropLibrary;
  * <p>
  * This wrapper does intentionally not implement {@link InteropLibrary#isPointer(Object)},
  * {@link InteropLibrary#asPointer(Object)}, and {@link InteropLibrary#toNative(Object)} because the
- * factory method {@link #getThreadState(PythonLanguage, PythonContext)} will already return the
- * appropriate pointer object that implements that.
+ * factory method {@link #getOrCreateNativeThreadState(PythonLanguage, PythonContext)} will already
+ * return the appropriate pointer object that implements that.
  * </p>
  */
 public final class PThreadState extends PythonStructNativeWrapper {
@@ -72,17 +73,25 @@ public final class PThreadState extends PythonStructNativeWrapper {
         replacement = registerReplacement(allocateCLayout(threadState), false, InteropLibrary.getUncached());
     }
 
-    public static Object getThreadState(PythonLanguage language, PythonContext context) {
-        return getThreadState(context.getThreadState(language));
+    public static Object getOrCreateNativeThreadState(PythonLanguage language, PythonContext context) {
+        return getOrCreateNativeThreadState(context.getThreadState(language));
     }
 
-    public static Object getThreadState(PythonThreadState threadState) {
+    public static Object getOrCreateNativeThreadState(PythonThreadState threadState) {
         PThreadState nativeWrapper = threadState.getNativeWrapper();
-        if (nativeWrapper == null) {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, nativeWrapper == null)) {
             nativeWrapper = new PThreadState(threadState);
             threadState.setNativeWrapper(nativeWrapper);
         }
         return nativeWrapper.replacement;
+    }
+
+    public static Object getNativeThreadState(PythonThreadState threadState) {
+        PThreadState nativeWrapper = threadState.getNativeWrapper();
+        if (nativeWrapper != null) {
+            return nativeWrapper.replacement;
+        }
+        return null;
     }
 
     public PythonThreadState getThreadState() {

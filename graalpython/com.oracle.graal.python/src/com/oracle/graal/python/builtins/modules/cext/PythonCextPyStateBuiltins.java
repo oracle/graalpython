@@ -110,7 +110,7 @@ public final class PythonCextPyStateBuiltins {
             if (!lib.isNull(tstateCurrentPtr)) {
                 pythonThreadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
             }
-            return PThreadState.getThreadState(pythonThreadState);
+            return PThreadState.getOrCreateNativeThreadState(pythonThreadState);
         }
     }
 

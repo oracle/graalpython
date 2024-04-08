@@ -162,7 +162,6 @@ PyErr_SetString(PyObject *exception, const char *string)
 }
 
 
-#if 0 // GraalPy change
 PyObject* _Py_HOT_FUNCTION
 PyErr_Occurred(void)
 {
@@ -204,7 +203,6 @@ PyErr_GivenExceptionMatches(PyObject *err, PyObject *exc)
 
     return err == exc;
 }
-#endif // GraalPy change
 
 
 int
@@ -255,19 +253,13 @@ _PyErr_Fetch(PyThreadState *tstate, PyObject **p_type, PyObject **p_value,
              PyObject **p_traceback)
 {
     // GraalPy change: different implementation
-    PyObject* result = GraalPyTruffleErr_Fetch();
-    if(result == NULL) {
-    	*p_type = NULL;
-    	*p_value = NULL;
-    	*p_traceback = NULL;
+    if (_PyErr_Occurred(tstate)) {
+        // avoid the upcall if there is no current exception
+        GraalPyTruffleErr_Fetch(p_type, p_value, p_traceback);
     } else {
-    	*p_type = PyTuple_GetItem(result, 0);
-    	*p_value = PyTuple_GetItem(result, 1);
-    	*p_traceback = PyTuple_GetItem(result, 2);
-        Py_XINCREF(*p_type);
-        Py_XINCREF(*p_value);
-        Py_XINCREF(*p_traceback);
-        Py_DecRef(result);
+        *p_type = NULL;
+        *p_value = NULL;
+        *p_traceback = NULL;
     }
 }
 

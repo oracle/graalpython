@@ -95,7 +95,7 @@ public final class PythonCextCEvalBuiltins {
         @Specialization
         static Object save(@Cached GilNode gil) {
             PythonContext context = PythonContext.get(gil);
-            Object threadState = PThreadState.getThreadState(PythonLanguage.get(gil), context);
+            Object threadState = PThreadState.getOrCreateNativeThreadState(PythonLanguage.get(gil), context);
             LOGGER.fine("C extension releases GIL");
             gil.release(context, true);
             return threadState;

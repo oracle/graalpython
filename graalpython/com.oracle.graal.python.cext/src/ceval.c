@@ -40,7 +40,10 @@
  */
 #include "capi.h"
 
+#include "pycore_abstract.h"      // _PyIndex_Check()
 #include "pycore_ceval.h"         // _PyEval_SignalAsyncExc()
+#include "pycore_pyerrors.h"      // _PyErr_Fetch()
+#include "pycore_pystate.h"       // _PyThreadState_GET()
 
 PyObject* PyEval_CallObjectWithKeywords(PyObject *func, PyObject *args, PyObject *kwargs) {
     return PyObject_Call(func, args, kwargs);
@@ -160,19 +163,23 @@ void Py_LeaveRecursiveCall(void)
    nb_index slot defined, and store in *pi.
    Silently reduce values larger than PY_SSIZE_T_MAX to PY_SSIZE_T_MAX,
    and silently boost values less than PY_SSIZE_T_MIN to PY_SSIZE_T_MIN.
-   Return 0 on error, 1 on success. */
-int _PyEval_SliceIndex(PyObject *v, Py_ssize_t *pi) {
-    if (v != Py_None) {
+   Return 0 on error, 1 on success.
+*/
+int
+_PyEval_SliceIndex(PyObject *v, Py_ssize_t *pi)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (!Py_IsNone(v)) {
         Py_ssize_t x;
-        if (PyIndex_Check(v)) {
+        if (_PyIndex_Check(v)) {
             x = PyNumber_AsSsize_t(v, NULL);
-            if (x == -1 && PyErr_Occurred())
+            if (x == -1 && _PyErr_Occurred(tstate))
                 return 0;
         }
         else {
-            PyErr_SetString(PyExc_TypeError,
-                            "slice indices must be integers or "
-                            "None or have an __index__ method");
+            _PyErr_SetString(tstate, PyExc_TypeError,
+                             "slice indices must be integers or "
+                             "None or have an __index__ method");
             return 0;
         }
         *pi = x;

@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -137,17 +138,15 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -254,17 +253,13 @@ public abstract class GraalHPyNodes {
         }
 
         public static void executeUncached(PException e) {
-            HPyTransformExceptionToNativeNodeGen.getUncached().execute(null, PythonContext.get(null).getHPyContext(), e);
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(null, null, e);
         }
 
         @Specialization
-        static void setCurrentException(Frame frame, Node inliningTarget, GraalHPyContext nativeContext, PException e,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef,
-                        @Cached GetThreadStateNode getThreadStateNode) {
-            // TODO connect f_back
-            getCurrentFrameRef.execute(frame, inliningTarget).markAsEscaped();
-            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, nativeContext.getContext());
-            threadState.setCurrentException(e);
+        static void setCurrentException(Frame frame, Node inliningTarget, @SuppressWarnings("unused") GraalHPyContext nativeContext, PException e,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            transformExceptionToNativeNode.execute(frame, inliningTarget, e);
         }
     }
 

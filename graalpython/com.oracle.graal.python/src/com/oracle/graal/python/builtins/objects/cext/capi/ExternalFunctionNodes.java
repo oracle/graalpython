@@ -55,8 +55,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION;
-import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -84,8 +82,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ClearCurrentExceptionNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -835,18 +835,18 @@ public abstract class ExternalFunctionNodes {
     @GenerateCached(false)
     @GenerateInline
     public abstract static class ExternalFunctionInvokeNode extends PNodeWithContext {
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments);
 
-        public final Object call(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable,
-                        Object... cArguments) {
-            return execute(frame, inliningTarget, ctx, threadState, timing, name, callable, cArguments);
+        public final Object call(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object... cArguments) {
+            return execute(frame, inliningTarget, threadState, timing, name, callable, cArguments);
         }
 
         @Specialization
-        static Object invoke(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
-                        @Cached(inline = false) GilNode gilNode,
+        static Object invoke(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
                         @Cached(value = "createFor(this)", uncached = "getUncached()") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "2") InteropLibrary lib) {
+
+            assert threadState.getCurrentException() == null;
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
@@ -921,7 +921,7 @@ public abstract class ExternalFunctionNodes {
                         CheckFunctionResultNode checkResultNode, CExtToJavaNode convertReturnValue, PForeignToPTypeNode fromForeign, GetThreadStateNode getThreadStateNode,
                         ExternalFunctionInvokeNode invokeNode) {
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = invokeNode.execute(frame, inliningTarget, ctx, threadState, timing, name, callable, cArguments);
+            Object result = invokeNode.execute(frame, inliningTarget, threadState, timing, name, callable, cArguments);
             result = checkResultNode.execute(threadState, name, result);
             if (convertReturnValue != null) {
                 result = convertReturnValue.execute(result);
@@ -2325,56 +2325,56 @@ public abstract class ExternalFunctionNodes {
         @Specialization
         static Object doNativeWrapper(PythonThreadState state, TruffleString name, @SuppressWarnings("unused") PythonNativeWrapper result,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
-            checkFunctionResult(inliningTarget, name, false, true, state, errOccurredProfile);
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+            transformExceptionFromNativeNode.execute(inliningTarget, state, name, false, true);
             return result;
         }
 
         @Specialization(guards = "isNoValue(result)")
         static Object doNoValue(PythonThreadState state, TruffleString name, @SuppressWarnings("unused") PNone result,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
-            checkFunctionResult(inliningTarget, name, true, true, state, errOccurredProfile);
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+            transformExceptionFromNativeNode.execute(inliningTarget, state, name, true, true);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "!isNoValue(result)")
         static Object doPythonObject(PythonThreadState state, TruffleString name, @SuppressWarnings("unused") PythonAbstractObject result,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
-            checkFunctionResult(inliningTarget, name, false, true, state, errOccurredProfile);
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+            transformExceptionFromNativeNode.execute(inliningTarget, state, name, false, true);
             return result;
         }
 
         @Specialization
         static Object doNativePointer(PythonThreadState state, TruffleString name, NativePointer result,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
-            checkFunctionResult(inliningTarget, name, result.isNull(), true, state, errOccurredProfile);
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+            transformExceptionFromNativeNode.execute(inliningTarget, state, name, result.isNull(), true);
             return result;
         }
 
         @Specialization
         static int doInteger(PythonThreadState state, TruffleString name, int result,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile indicatesErrorProfile,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
-            // If the native functions returns a primitive int, only a value '-1' indicates an
-            // error.
-            boolean indicatesError = indicatesErrorProfile.profile(inliningTarget, result == -1);
-            checkFunctionResult(inliningTarget, name, indicatesError, false, state, errOccurredProfile);
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+            /*
+             * If the native functions returns a primitive int, only a value '-1' indicates an
+             * error. However, '-1' may also be a valid return value. So, don't be strict.
+             */
+            transformExceptionFromNativeNode.execute(inliningTarget, state, name, result == -1, false);
             return result;
         }
 
         @Specialization
         static long doLong(PythonThreadState state, TruffleString name, long result,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile indicatesErrorProfile,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
-            // If the native functions returns a primitive int, only a value '-1' indicates an
-            // error.
-            boolean indicatesError = indicatesErrorProfile.profile(inliningTarget, result == -1);
-            checkFunctionResult(inliningTarget, name, indicatesError, false, state, errOccurredProfile);
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+            /*
+             * If the native functions returns a primitive long, only a value '-1' indicates an
+             * error. However, '-1' may also be a valid return value. So, don't be strict.
+             */
+            transformExceptionFromNativeNode.execute(inliningTarget, state, name, result == -1, false);
             return result;
         }
 
@@ -2387,16 +2387,10 @@ public abstract class ExternalFunctionNodes {
         @Specialization(guards = {"!isPythonNativeWrapper(result)", "!isPNone(result)"})
         static Object doForeign(PythonThreadState state, TruffleString name, Object result,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile indicatesErrorProfile,
-                        @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
-            checkFunctionResult(inliningTarget, name, indicatesErrorProfile.profile(inliningTarget, lib.isNull(result)), true, state, errOccurredProfile);
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode,
+                        @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib) {
+            transformExceptionFromNativeNode.execute(inliningTarget, state, name, lib.isNull(result), true);
             return result;
-        }
-
-        private static void checkFunctionResult(Node inliningTarget, TruffleString name, boolean indicatesError, boolean strict, PythonThreadState threadState,
-                        InlinedConditionProfile errOccurredProfile) {
-            checkFunctionResult(inliningTarget, threadState, name, indicatesError, strict, errOccurredProfile, RETURNED_NULL_WO_SETTING_EXCEPTION, RETURNED_RESULT_WITH_EXCEPTION_SET);
         }
 
         protected static boolean isPythonNativeWrapper(Object object) {
@@ -2413,7 +2407,9 @@ public abstract class ExternalFunctionNodes {
 
         @Specialization(limit = "3")
         static Object doGeneric(PythonThreadState state, @SuppressWarnings("unused") TruffleString name, Object result,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("result") InteropLibrary lib,
+                        @Cached ClearCurrentExceptionNode clearCurrentExceptionNode,
                         @Cached PRaiseNode raiseNode) {
             if (lib.isNull(result)) {
                 PException currentException = state.getCurrentException();
@@ -2421,7 +2417,7 @@ public abstract class ExternalFunctionNodes {
                 if (currentException == null) {
                     throw raiseNode.raiseStopIteration();
                 } else {
-                    throw state.reraiseCurrentException();
+                    throw clearCurrentExceptionNode.getCurrentExceptionForReraise(inliningTarget, state);
                 }
             }
             return result;
@@ -2448,10 +2444,8 @@ public abstract class ExternalFunctionNodes {
         @SuppressWarnings("unused")
         static Object doInt(PythonThreadState state, TruffleString name, int result,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile indicatesErrorProfile,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
-            boolean indicatesError = indicatesErrorProfile.profile(inliningTarget, result < 0);
-            DefaultCheckFunctionResultNode.checkFunctionResult(inliningTarget, name, indicatesError, true, state, errOccurredProfile);
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+            transformExceptionFromNativeNode.execute(inliningTarget, state, name, result < 0, true);
             return PNone.NONE;
         }
 
@@ -2460,9 +2454,8 @@ public abstract class ExternalFunctionNodes {
         @InliningCutoff
         static Object notNumber(PythonThreadState state, @SuppressWarnings("unused") TruffleString name, Object result,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile indicatesErrorProfile,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile,
-                        @CachedLibrary(limit = "2") InteropLibrary lib) {
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
             int ret = 0;
             if (lib.isNumber(result)) {
                 try {
@@ -2474,8 +2467,7 @@ public abstract class ExternalFunctionNodes {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            boolean indicatesError = indicatesErrorProfile.profile(inliningTarget, ret < 0);
-            DefaultCheckFunctionResultNode.checkFunctionResult(inliningTarget, name, indicatesError, true, state, errOccurredProfile);
+            transformExceptionFromNativeNode.execute(inliningTarget, state, name, ret < 0, true);
             return result;
         }
     }
@@ -2501,10 +2493,8 @@ public abstract class ExternalFunctionNodes {
         @Specialization
         static long doLong(PythonThreadState threadState, TruffleString name, long result,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile indicatesErrorProfile,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
-            boolean indicatesError = indicatesErrorProfile.profile(inliningTarget, result == -1);
-            DefaultCheckFunctionResultNode.checkFunctionResult(inliningTarget, name, indicatesError, false, threadState, errOccurredProfile);
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+            transformExceptionFromNativeNode.execute(inliningTarget, threadState, name, result == -1, false);
             return result;
         }
 
@@ -2512,14 +2502,12 @@ public abstract class ExternalFunctionNodes {
         @InliningCutoff
         static long doGeneric(PythonThreadState threadState, TruffleString name, Object result,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile indicatesErrorProfile,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile,
-                        @CachedLibrary(limit = "2") InteropLibrary lib) {
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
             if (lib.fitsInLong(result)) {
                 try {
                     long ret = lib.asLong(result);
-                    boolean indicatesError = indicatesErrorProfile.profile(inliningTarget, ret == -1);
-                    DefaultCheckFunctionResultNode.checkFunctionResult(inliningTarget, name, indicatesError, false, threadState, errOccurredProfile);
+                    transformExceptionFromNativeNode.execute(inliningTarget, threadState, name, ret == -1, false);
                     return ret;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
@@ -2543,10 +2531,8 @@ public abstract class ExternalFunctionNodes {
         static boolean doLong(PythonThreadState threadState, TruffleString name, long result,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile resultProfile,
-                        @Shared @Cached InlinedConditionProfile indicatesErrorProfile,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
-            boolean indicatesError = indicatesErrorProfile.profile(inliningTarget, result == -1);
-            DefaultCheckFunctionResultNode.checkFunctionResult(inliningTarget, name, indicatesError, false, threadState, errOccurredProfile);
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+            transformExceptionFromNativeNode.execute(inliningTarget, threadState, name, result == -1, false);
             return resultProfile.profile(inliningTarget, result != 0);
         }
 
@@ -2555,12 +2541,13 @@ public abstract class ExternalFunctionNodes {
         static boolean doGeneric(PythonThreadState threadState, TruffleString name, Object result,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile resultProfile,
-                        @Shared @Cached InlinedConditionProfile indicatesErrorProfile,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
             if (lib.fitsInLong(result)) {
                 try {
-                    return doLong(threadState, name, lib.asLong(result), inliningTarget, resultProfile, indicatesErrorProfile, errOccurredProfile);
+                    long lresult = lib.asLong(result);
+                    transformExceptionFromNativeNode.execute(inliningTarget, threadState, name, lresult == -1, false);
+                    return resultProfile.profile(inliningTarget, lresult != 0);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
