@@ -2087,7 +2087,7 @@ public abstract class CExtNodes {
                 // PyTypeObject slot field
                 TpSlotPython newSlot = pythonSlot.forNewType(type);
                 try {
-                    Object wrapper = context.getCApiContext().getClosureExecutable(InteropLibrary.getUncached().asPointer(callable));
+                    Object wrapper = context.getCApiContext().getClosureExecutable(lib.asPointer(callable));
                     if (wrapper instanceof TpSlotWrapper slotWrapper) {
                         TpSlotWrapper newWrapper = newSlot != pythonSlot ? slotWrapper.cloneWith(newSlot) : slotWrapper;
                         newWrapper.toNative(SignatureLibrary.getUncached());

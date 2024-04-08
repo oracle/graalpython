@@ -116,11 +116,10 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
  * Wraps fields that hold slot values, instances of {@link TpSlot}, such as {@link #tp_getattr()}.
- * This is GraalPython equivalent of the same fields in CPython's {@code PyTypeObject}.
+ * This is GraalPy equivalent of the same fields in CPython's {@code PyTypeObject}.
  * <p>
  * Summary of the interactions:
  * 
@@ -469,7 +468,6 @@ public record TpSlots(TpSlot nb_bool, //
      */
     public static TpSlots fromNative(PythonAbstractNativeObject pythonClass, PythonContext ctx) {
         var builder = TpSlots.newBuilder();
-        var signatureLib = SignatureLibrary.getUncached();
         for (TpSlotMeta def : TpSlotMeta.VALUES) {
             if (!def.hasNativeWrapperFactory()) {
                 continue;
@@ -576,7 +574,7 @@ public record TpSlots(TpSlot nb_bool, //
         Builder klassSlots = newBuilder();
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass type = mro.getItemNormalized(i);
-            TpSlots slots = GetTpSlotsNodeGen.getUncached().execute(null, type);
+            TpSlots slots = GetTpSlotsNode.executeUncached(type);
             assert slots != null || type == klass;
             if (slots != null) {
                 klassSlots.inherit(slots);

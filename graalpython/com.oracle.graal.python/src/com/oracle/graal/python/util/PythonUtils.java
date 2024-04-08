@@ -134,8 +134,6 @@ public final class PythonUtils {
      */
     public static final TruffleString.Encoding TS_ENCODING = TruffleString.Encoding.UTF_32;
 
-    public static final TruffleString EMPTY_TRUFFLESTRING = tsLiteral("");
-
     public static final String[] EMPTY_STRING_ARRAY = new String[0];
     public static final TruffleString[] EMPTY_TRUFFLESTRING_ARRAY = new TruffleString[0];
     public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
