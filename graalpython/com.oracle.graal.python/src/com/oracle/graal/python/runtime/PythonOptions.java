@@ -177,7 +177,7 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -B flag. Don't write bytecode files.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> DontWriteBytecodeFlag = new OptionKey<>(true);
 
-    @Option(category = OptionCategory.USER, help = "If this is set, GraalPython will write .pyc files in a mirror directory tree at this path, " +
+    @Option(category = OptionCategory.USER, help = "If this is set, GraalPy will write .pyc files in a mirror directory tree at this path, " +
                     "instead of in __pycache__ directories within the source tree. " +
                     "Equivalent to setting the PYTHONPYCACHEPREFIX environment variable for the standard launcher.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> PyCachePrefix = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
@@ -320,7 +320,7 @@ public final class PythonOptions {
     public static final OptionKey<TruffleString> Executable = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "<cmdPart>[" + J_STRING_LIST_SEPARATOR +
-                    "<cmdPart>]", help = "The executed command list as string joined by the executable list separator char. This must always correspond to the real, valid command list used to run GraalPython.") //
+                    "<cmdPart>]", help = "The executed command list as string joined by the executable list separator char. This must always correspond to the real, valid command list used to run GraalPy.") //
     public static final OptionKey<TruffleString> ExecutableList = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "", help = "Option used by the venvlauncher to pass on the launcher target command", stability = OptionStability.STABLE) //
@@ -365,7 +365,7 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Use the experimental panama backend for NFI.", stability = OptionStability.EXPERIMENTAL) //
     public static final OptionKey<Boolean> UsePanama = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Set by the launcher to true (false means that GraalPython is being embedded in an application).") //
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Set by the launcher to true (false means that GraalPy is being embedded in an application).") //
     public static final OptionKey<Boolean> RunViaLauncher = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Enable built-in functions on the __graalpython__ module that are useful for debugging.") //

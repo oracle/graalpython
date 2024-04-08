@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.runtime.locale;
 
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-
 import java.util.Locale;
 import java.util.Locale.Category;
 
@@ -50,7 +48,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Abstraction of the POSIX locale settings.
@@ -64,7 +61,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  *
  * <li>
  * <ul>
- * localeconv builtin, which is thin wrapped around libC's localeconv
+ * localeconv builtin, which is thin wrapper around libC's localeconv
  * </ul>
  * <ul>
  * from native code: directly locale sensitive libC functions
@@ -89,7 +86,6 @@ import com.oracle.truffle.api.strings.TruffleString;
  * current locale, but get the locale from Python context.
  */
 public final class PythonLocale {
-    public static final TruffleString T_GETDEFAULTLOCALE = tsLiteral("__getdefaultlocale");
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonLocale.class);
 
     public static final int LC_ALL = 6;
@@ -101,7 +97,7 @@ public final class PythonLocale {
     public static final int LC_TIME = 2;
 
     // We should have separate fields for each POSIX category and use them in the right places in
-    // GraalPython codebase. JVM does not recognize this many categories, but the interface of
+    // GraalPy codebase. JVM does not recognize this many categories, but the interface of
     // PythonLocale pretends that we do.
 
     private final Locale displayLocale;
