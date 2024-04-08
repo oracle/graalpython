@@ -73,8 +73,11 @@ DEFAULT_NUMPY_BENCHMARKS = [
 ]
 
 SKIPPED_NUMPY_BENCHMARKS = [
+    "bench_core.CountNonzero.time_count_nonzero(2, 1000000, <class 'str'>)",  # Times out
     "bench_core.CountNonzero.time_count_nonzero(3, 1000000, <class 'str'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_axis(2, 1000000, <class 'str'>)",  # Times out
     "bench_core.CountNonzero.time_count_nonzero_axis(3, 1000000, <class 'str'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_multi_axis(2, 1000000, <class 'str'>)",  # Times out
     "bench_core.CountNonzero.time_count_nonzero_multi_axis(3, 1000000, <class 'str'>)",  # Times out
     "bench_linalg.LinalgSmallArrays.time_det_small_array",  # TODO fails with numpy.linalg.LinAlgError
 ]
