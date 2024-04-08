@@ -2370,6 +2370,62 @@ class CharsetFilteringPariticpant:
 
 
 def mx_post_parse_cmd_line(namespace):
+    """
+    Ensure hardcoded versions everywhere match the suite version.
+    Fix and warn if they do not in CI, fail the build locally.
+    """
+    files_with_versions = {
+        "graalpython/graalpy-maven-plugin/pom.xml": {
+            r"^  <version>(\d+\.\d+(?:\.\d+)*)</version>": GRAAL_VERSION,
+            r"<graalpy.version>(\d+\.\d+(?:\.\d+)*)</graalpy.version>": GRAAL_VERSION,
+        },
+        "graalpython/com.oracle.graal.python.test.integration/pom.xml": {
+            r"<com.oracle.graal.python.test.polyglot.version>(\d+\.\d+(?:\.\d+)*)</com.oracle.graal.python.test.polyglot.version>": GRAAL_VERSION,
+        },
+        "graalpython/graalpy-archetype-polyglot-app/pom.xml": {
+            r"^  <version>(\d+\.\d+(?:\.\d+)*)</version>": GRAAL_VERSION,
+        },
+        "graalpython/graalpy-jbang/examples/hello.java": {
+            r"//DEPS org.graalvm.python:python[^:]*:(\d+\.\d+(?:\.\d+)*)": GRAAL_VERSION,
+        },
+        "graalpython/graalpy-jbang/templates/graalpy-template_local_repo.java.qute": {
+            r"//DEPS org.graalvm.python:python[^:]*:(\d+\.\d+(?:\.\d+)*)": GRAAL_VERSION,
+        },
+        "graalpython/graalpy-jbang/templates/graalpy-template.java.qute": {
+            r"//DEPS org.graalvm.python:python[^:]*:(\d+\.\d+(?:\.\d+)*)": GRAAL_VERSION,
+        },
+        "graalpython/graalpy-archetype-polyglot-app/src/main/resources/archetype-resources/pom.xml": {
+            r"<graalpy.version>(\d+\.\d+(?:\.\d+)*)</graalpy.version>": GRAAL_VERSION,
+        },
+        "graalpython/com.oracle.graal.python/src/com/oracle/graal/python/PythonLanguage.java": {
+            r"GRAALVM_MAJOR = (\d+);" : GRAAL_VERSION.split(".")[0],
+            r"GRAALVM_MINOR = (\d+);" : GRAAL_VERSION.split(".")[1],
+        },
+    }
+    replacements = set()
+    for path, patterns in files_with_versions.items():
+        full_path = os.path.join(SUITE.dir, path)
+        with open(full_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        has_replacement = False
+        for pattern, replacement in patterns.items():
+            pattern = re.compile(pattern, flags=re.M)
+            start = 0
+            while m := pattern.search(content, start):
+                group = m.group(1)
+                length_diff = len(replacement) - len(group)
+                mx.logvv(f"[{SUITE.name}] {path} with hardcoded version `{m.group()}'")
+                if group != replacement:
+                    replacements.add(path)
+                    has_replacement = True
+                    content = content[:m.start(1)] + replacement + content[m.end(1):]
+                start = m.end() + length_diff
+        if has_replacement:
+            with open(full_path, "w", encoding="utf-8") as f:
+                f.write(content)
+    for replacement in replacements:
+        mx.warn(f"Updated Graal version in {replacement}, you should check this in!")
+
     # all projects are now available at this time
     _register_vms(namespace)
     _register_bench_suites(namespace)
@@ -3418,6 +3474,7 @@ def graalpy_standalone_wrapper(args_in):
         if not mx.suite('graalpython-enterprise', fatalIfMissing=False):
             mx.abort("You must add --dynamicimports graalpython-enterprise for EE edition")
     print(graalpy_standalone(args.type, enterprise=args.edition == 'ee', build=not args.no_build))
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
