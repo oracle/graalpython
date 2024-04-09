@@ -715,7 +715,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyEval_EvalFrameEx", ret = PyObject, args = {PyFrameObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_GetFuncDesc", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_GetFuncName", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyEval_GetGlobals", ret = PyObject, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_GetLocals", ret = PyObject, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_ReleaseLock", ret = Void, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyEval_ReleaseThread", ret = Void, args = {PyThreadState}, call = NotImplemented)
