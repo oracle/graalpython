@@ -135,7 +135,7 @@ public abstract class TpSlotInquiry {
                         @Cached(inline = false) CheckInquiryResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, ctx, threadState, C_API_TIMING, T___BOOL__, slot.callable, toNativeNode.execute(self));
+            Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___BOOL__, slot.callable, toNativeNode.execute(self));
             return checkResultNode.executeBool(threadState, T___BOOL__, result);
         }
     }

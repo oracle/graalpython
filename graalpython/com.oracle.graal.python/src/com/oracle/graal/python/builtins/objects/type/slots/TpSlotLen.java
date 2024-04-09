@@ -147,7 +147,7 @@ public abstract class TpSlotLen {
                         @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, ctx, state, C_API_TIMING, T___LEN__, slot.callable, toNativeNode.execute(self));
+            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___LEN__, slot.callable, toNativeNode.execute(self));
             long l = checkResultNode.executeLong(state, T___LEN__, result);
             if (l != (int) l) {
                 throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);

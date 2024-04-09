@@ -164,7 +164,7 @@ public abstract class TpSlotDescrGet {
             // Within GraalPy we use PNone.NONE as indication that the descriptor was found on the
             // target object itself, for native code this marker is 'NULL' (NO_VALUE maps to NULL)
             Object objArg = obj == PNone.NONE ? PNone.NO_VALUE : obj;
-            Object result = externalInvokeNode.call(frame, inliningTarget, ctx, threadState, C_API_TIMING, T___GET__, slot.callable, //
+            Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GET__, slot.callable, //
                             selfToNativeNode.execute(self), //
                             objToNativeNode.execute(objArg), //
                             valueToNativeNode.execute(value));

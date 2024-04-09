@@ -2409,13 +2409,13 @@ public abstract class ExternalFunctionNodes {
     @GenerateInline(false)
     public abstract static class PyObjectCheckFunctionResultNode extends CheckFunctionResultNode {
         @Specialization(guards = "!isForeignObject.execute(inliningTarget, result)")
-        static Object doPythonObject(PythonThreadState state, TruffleString name, @SuppressWarnings("unused") Object result,
+        static Object doPythonObject(PythonThreadState state, TruffleString name, Object result,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached IsForeignObjectNode isForeignObject,
+                        @SuppressWarnings("unused") @Shared @Cached IsForeignObjectNode isForeignObject,
                         @Shared @Cached InlinedConditionProfile indicatesErrorProfile,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile) {
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
             boolean indicatesError = indicatesErrorProfile.profile(inliningTarget, PGuards.isNoValue(result));
-            DefaultCheckFunctionResultNode.checkFunctionResult(inliningTarget, name, indicatesError, true, state, errOccurredProfile);
+            transformExceptionFromNativeNode.execute(inliningTarget, state, name, indicatesError, true);
             assert !indicatesError; // otherwise we should not reach here
             return result;
         }
@@ -2423,12 +2423,12 @@ public abstract class ExternalFunctionNodes {
         @Specialization(guards = "isForeignObject.execute(inliningTarget, result)")
         static Object doForeign(PythonThreadState state, TruffleString name, Object result,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached IsForeignObjectNode isForeignObject,
+                        @SuppressWarnings("unused") @Shared @Cached IsForeignObjectNode isForeignObject,
                         @Shared @Cached InlinedConditionProfile indicatesErrorProfile,
-                        @Shared @Cached InlinedConditionProfile errOccurredProfile,
+                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             boolean indicatesError = indicatesErrorProfile.profile(inliningTarget, lib.isNull(result));
-            DefaultCheckFunctionResultNode.checkFunctionResult(inliningTarget, name, indicatesError, true, state, errOccurredProfile);
+            transformExceptionFromNativeNode.execute(inliningTarget, state, name, indicatesError, true);
             assert !indicatesError; // otherwise we should not reach here
             return result;
         }

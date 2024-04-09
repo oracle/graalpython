@@ -199,7 +199,7 @@ public abstract class TpSlotDescrSet {
                         @Cached(inline = false) InitCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, ctx, threadState, C_API_TIMING, T___SET__, slot.callable, //
+            Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___SET__, slot.callable, //
                             selfToNativeNode.execute(self), //
                             objToNativeNode.execute(obj), //
                             valueToNativeNode.execute(value));
