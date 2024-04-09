@@ -55,7 +55,10 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.JavaFileObject;
@@ -218,20 +221,39 @@ public class SlotsProcessor extends AbstractProcessor {
         for (Element e : elements) {
             log("Checking type '%s'", e);
             if (e.getKind() != ElementKind.CLASS) {
-                throw error(e, "@TpSlot annotation is applicable only to classes.");
+                throw error(e, "@%s annotation is applicable only to classes.", Slot.class.getSimpleName());
             }
             TypeElement type = (TypeElement) e;
             if (type.getEnclosingElement() == null) {
-                throw error(e, "@TpSlot annotation supports only inner classes at moment.");
+                throw error(e, "@%s annotation supports only inner classes at moment.", Slot.class.getSimpleName());
             }
 
             TypeElement enclosingType = (TypeElement) type.getEnclosingElement();
             for (Slot slotAnnotation : e.getAnnotationsByType(Slot.class)) {
+                if (!slotAnnotation.isComplex()) {
+                    verifySimpleNode(type);
+                }
                 var tpSlotDataSet = enclosingTypes.computeIfAbsent(enclosingType, k -> new HashSet<>());
                 tpSlotDataSet.add(new TpSlotData(slotAnnotation, enclosingType, type));
             }
         }
         return enclosingTypes;
+    }
+
+    private static void verifySimpleNode(TypeElement type) throws ProcessingError {
+        for (Element enclosed : type.getEnclosedElements()) {
+            if (enclosed instanceof ExecutableElement executable) {
+                if (executable.getAnnotationMirrors().stream().anyMatch(x -> x.getAnnotationType().asElement().getSimpleName().contentEquals("Specialization"))) {
+                    for (VariableElement param : executable.getParameters()) {
+                        if (param.asType() instanceof DeclaredType declType) {
+                            if (declType.asElement().getSimpleName().contentEquals("VirtualFrame")) {
+                                throw new ProcessingError(type, "Slot node has isComplex=false (the default), but seems to have methods that take VirtualFrame");
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private static String getNodeFactory(TpSlotData slot, TypeElement node) {
