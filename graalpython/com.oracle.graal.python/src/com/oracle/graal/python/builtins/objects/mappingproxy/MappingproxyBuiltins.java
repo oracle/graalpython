@@ -196,7 +196,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(SlotKind.mp_length)
+    @Slot(value = SlotKind.mp_length, isComplex = true)
     @GenerateUncached
     @GenerateNodeFactory
     public abstract static class LenNode extends LenBuiltinNode {

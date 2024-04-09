@@ -42,19 +42,22 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.slots.HPyDispatchers.UnaryHPySlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.UnaryPythonSlotDispatcherNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotSimpleBuiltinBase;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -63,11 +66,13 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -76,9 +81,11 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class TpSlotLen {
     private TpSlotLen() {
@@ -88,16 +95,44 @@ public abstract class TpSlotLen {
     // the BCI interpreter. For the time being we do what GraalPy used to do before slots were
     // introduced: raise overflow error if native code returns number larger than INT_MAX
 
-    public abstract static class TpSlotLenBuiltin<T extends LenBuiltinNode> extends TpSlotSimpleBuiltinBase<T> {
+    public abstract static sealed class TpSlotLenBuiltin<T extends LenBuiltinNode>
+                    extends TpSlotBuiltinBase<T> permits TpSlotLenBuiltinSimple, TpSlotLenBuiltinComplex {
+        static final BuiltinSlotWrapperSignature SIGNATURE = BuiltinSlotWrapperSignature.UNARY;
+
         protected TpSlotLenBuiltin(NodeFactory<T> nodeFactory) {
-            super(nodeFactory, BuiltinSlotWrapperSignature.UNARY, PExternalFunctionWrapper.LENFUNC);
+            super(nodeFactory, SIGNATURE, PExternalFunctionWrapper.LENFUNC);
         }
 
         final LenBuiltinNode createSlotNode() {
             return createNode();
         }
+    }
+
+    public abstract static non-sealed class TpSlotLenBuiltinSimple<T extends LenBuiltinNode> extends TpSlotLenBuiltin<T> {
+        protected TpSlotLenBuiltinSimple(NodeFactory<T> nodeFactory) {
+            super(nodeFactory);
+        }
 
         protected abstract int executeUncached(Object self);
+
+        @Override
+        public final void initialize(PythonLanguage language) {
+            // nop
+        }
+    }
+
+    public abstract static non-sealed class TpSlotLenBuiltinComplex<T extends LenBuiltinNode> extends TpSlotLenBuiltin<T> {
+        private final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
+
+        protected TpSlotLenBuiltinComplex(NodeFactory<T> nodeFactory) {
+            super(nodeFactory);
+        }
+
+        @Override
+        public final void initialize(PythonLanguage language) {
+            RootCallTarget callTarget = createBuiltinCallTarget(language, SIGNATURE, getNodeFactory(), J___LEN__);
+            language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
+        }
     }
 
     @GenerateInline(value = false, inherit = true)
@@ -125,12 +160,6 @@ public abstract class TpSlotLen {
             return slotNode.executeInt(frame, self);
         }
 
-        @Specialization(replaces = "callCachedBuiltin")
-        static int callGenericSimpleBuiltin(TpSlotLenBuiltin<?> slot, Object self) {
-            // Assumption: all len builtins don't need a frame and PE
-            return slot.executeUncached(self);
-        }
-
         @Specialization
         static int callPython(VirtualFrame frame, TpSlotPythonSingle slot, Object self,
                         @Cached(inline = false) CallSlotLenPythonNode callSlotNode) {
@@ -153,6 +182,22 @@ public abstract class TpSlotLen {
                 throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);
             }
             return (int) l;
+        }
+
+        @Specialization(replaces = "callCachedBuiltin")
+        static int callGenericSimpleBuiltin(TpSlotLenBuiltinSimple<?> slot, Object self) {
+            return slot.executeUncached(self);
+        }
+
+        @Specialization(replaces = "callCachedBuiltin")
+        @InliningCutoff
+        static int callGenericComplexBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotLenBuiltinComplex<?> slot, Object self,
+                        @Cached(inline = false) CallContext callContext,
+                        @Cached InlinedConditionProfile isNullFrameProfile,
+                        @Cached(inline = false) IndirectCallNode indirectCallNode) {
+            Object[] arguments = PArguments.create(1);
+            PArguments.setArgument(arguments, 0, self);
+            return (int) BuiltinDispatchers.callGenericBuiltin(frame, inliningTarget, slot.callTargetIndex, arguments, callContext, isNullFrameProfile, indirectCallNode);
         }
 
         // @Specialization(guards = "slot.isHPySlot()")

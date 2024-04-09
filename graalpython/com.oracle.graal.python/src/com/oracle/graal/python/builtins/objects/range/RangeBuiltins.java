@@ -183,8 +183,8 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(SlotKind.sq_length)
-    @Slot(SlotKind.mp_length)
+    @Slot(value = SlotKind.sq_length, isComplex = true)
+    @Slot(value = SlotKind.mp_length, isComplex = true)
     @GenerateUncached
     @GenerateNodeFactory
     public abstract static class LenNode extends LenBuiltinNode {

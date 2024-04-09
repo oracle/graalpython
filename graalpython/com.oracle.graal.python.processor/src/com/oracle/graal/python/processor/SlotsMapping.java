@@ -51,7 +51,7 @@ public class SlotsMapping {
     static String getSlotBaseClass(Slot s) {
         return switch (s.value()) {
             case nb_bool -> "TpSlotInquiry.TpSlotInquiryBuiltin";
-            case sq_length, mp_length -> "TpSlotLen.TpSlotLenBuiltin";
+            case sq_length, mp_length -> "TpSlotLen.TpSlotLenBuiltin" + getSuffix(s.isComplex());
             case tp_get_attro -> "TpSlotGetAttr.TpSlotGetAttrBuiltin";
             case tp_descr_get -> "TpSlotDescrGet.TpSlotDescrGetBuiltin" + getSuffix(s.isComplex());
             case tp_descr_set -> "TpSlotDescrSet.TpSlotDescrSetBuiltin";
@@ -62,8 +62,8 @@ public class SlotsMapping {
         return switch (s.value()) {
             case tp_descr_get -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode";
             case nb_bool -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode";
-            case sq_length, mp_length, tp_get_attro ->
-                "com.oracle.graal.python.builtins.objects.type.slots." + getSlotBaseClass(s).replace(".TpSlot", ".") + "Node";
+            case sq_length, mp_length -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode";
+            case tp_get_attro -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode";
             case tp_descr_set -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.DescrSetBuiltinNode";
         };
     }
@@ -80,8 +80,8 @@ public class SlotsMapping {
 
     static boolean supportsComplex(SlotKind s) {
         return switch (s) {
-            case nb_bool, sq_length, mp_length -> false;
-            case tp_get_attro, tp_descr_get, tp_descr_set -> true;
+            case nb_bool -> false;
+            case sq_length, mp_length, tp_get_attro, tp_descr_get, tp_descr_set -> true;
         };
     }
 
