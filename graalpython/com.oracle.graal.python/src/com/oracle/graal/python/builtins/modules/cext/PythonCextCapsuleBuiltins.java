@@ -93,7 +93,11 @@ public final class PythonCextCapsuleBuiltins {
                 throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT);
             }
             Object n = interopLibrary.isNull(name) ? null : name;
-            return factory.createCapsule(pointer, n, destructor);
+            PyCapsule capsule = factory.createCapsule(pointer, n);
+            if (!interopLibrary.isNull(destructor)) {
+                capsule.registerDestructor(destructor);
+            }
+            return capsule;
         }
     }
 
@@ -305,11 +309,12 @@ public final class PythonCextCapsuleBuiltins {
         @Specialization
         static int doCapsule(PyCapsule o, Object destructor,
                         @Bind("this") Node inliningTarget,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (o.getPointer() == null) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetDestructor");
             }
-            o.setDestructor(destructor);
+            o.registerDestructor(lib.isNull(destructor) ? null : destructor);
             return 0;
         }
 

@@ -1601,8 +1601,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(DigestObject.create(type, getShape(type), name, digest));
     }
 
-    public final PyCapsule createCapsule(Object pointer, Object name, Object destructor) {
-        return trace(new PyCapsule(getLanguage(), pointer, name, destructor));
+    public final PyCapsule createCapsule(Object pointer, Object name) {
+        return createCapsule(new PyCapsule.CapsuleData(pointer, name));
+    }
+
+    public final PyCapsule createCapsule(PyCapsule.CapsuleData data) {
+        return trace(new PyCapsule(getLanguage(), data));
     }
 
     public final MultibyteIncrementalDecoderObject createMultibyteIncrementalDecoderObject(Object type) {

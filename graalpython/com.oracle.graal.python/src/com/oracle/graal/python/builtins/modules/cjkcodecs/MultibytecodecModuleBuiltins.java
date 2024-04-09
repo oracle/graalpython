@@ -113,7 +113,7 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
             if (midx != -1) {
                 DBCSMap h = maps[midx] = new DBCSMap(name, tsName, charset, mt);
                 codec.setAttribute(toTruffleStringUncached(h.charsetMapName),
-                                factory.createCapsule(h, PyMultibyteCodec_CAPSULE_NAME, null));
+                                factory.createCapsule(h, PyMultibyteCodec_CAPSULE_NAME));
             }
         }
     }

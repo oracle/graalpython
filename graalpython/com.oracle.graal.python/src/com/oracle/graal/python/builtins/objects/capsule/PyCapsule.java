@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Capsule;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -54,66 +55,89 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PyCapsule extends PythonBuiltinObject {
-    private Object pointer;
-    private Object name;
-    private Object context;
-    private Object destructor;
+    /*
+     * This class provides indirection to all the data members. Capsule destructors take the
+     * capsule, so we use this to recreate a temporary "resurrected" capsule for the destructor
+     * call.
+     */
+    public static class CapsuleData {
+        private Object pointer;
+        private Object name;
+        private Object context;
+        private Object destructor;
+
+        public CapsuleData(Object pointer, Object name) {
+            this.pointer = pointer;
+            this.name = name;
+        }
+
+        public Object getDestructor() {
+            return destructor;
+        }
+    }
+
+    private final CapsuleData data;
 
     /**
      * (mq) We are forcing all PyCapsule objects to be of a builtin type
      * PythonBuiltinClassType.Capsule. There are, currently, no possible way to extend PyCapsule, so
      * we can relax few checks elsewhere.
      */
-    public PyCapsule(PythonLanguage lang, Object pointer, Object name, Object destructor) {
+    public PyCapsule(PythonLanguage lang, CapsuleData data) {
         super(Capsule, Capsule.getInstanceShape(lang));
-        this.pointer = pointer;
-        this.name = name;
-        this.context = null;
-        this.destructor = destructor;
+        this.data = data;
+    }
+
+    public CapsuleData getData() {
+        return data;
     }
 
     public Object getPointer() {
-        return pointer;
+        return data.pointer;
     }
 
     public void setPointer(Object pointer) {
-        this.pointer = pointer;
+        data.pointer = pointer;
     }
 
     public Object getName() {
-        return name;
+        return data.name;
     }
 
     public void setName(Object name) {
-        this.name = name;
+        data.name = name;
     }
 
     public Object getContext() {
-        return context;
+        return data.context;
     }
 
     public void setContext(Object context) {
-        this.context = context;
+        data.context = context;
     }
 
     public Object getDestructor() {
-        return destructor;
+        return data.destructor;
     }
 
-    public void setDestructor(Object destructor) {
-        this.destructor = destructor;
+    public void registerDestructor(Object destructor) {
+        assert destructor == null || !InteropLibrary.getUncached().isNull(destructor);
+        if (data.destructor == null && destructor != null) {
+            CApiTransitions.registerPyCapsuleDestructor(this);
+        }
+        data.destructor = destructor;
     }
 
     @ExportMessage
     @TruffleBoundary
     public String toDisplayString(@SuppressWarnings("unused") boolean allowSideEffects) {
         String quote, n;
-        if (name != null) {
+        if (data.name != null) {
             quote = "\"";
-            if (name instanceof TruffleString) {
+            if (data.name instanceof TruffleString) {
                 n = ((TruffleString) getName()).toJavaStringUncached();
             } else {
-                n = CastToJavaStringNode.getUncached().execute(FromCharPointerNodeGen.getUncached().execute(name, false));
+                n = CastToJavaStringNode.getUncached().execute(FromCharPointerNodeGen.getUncached().execute(data.name, false));
             }
         } else {
             quote = "";

@@ -138,7 +138,7 @@ public final class CodecsCNModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(LookupError, NO_SUCH_CODEC_IS_SUPPORTED);
             }
 
-            PyCapsule codecobj = factory.createCapsule(codec, PyMultibyteCodec_CAPSULE_NAME, null);
+            PyCapsule codecobj = factory.createCapsule(codec, PyMultibyteCodec_CAPSULE_NAME);
             return createCodec(inliningTarget, codecobj, nameMatchesNode, factory, raiseNode);
         }
     }

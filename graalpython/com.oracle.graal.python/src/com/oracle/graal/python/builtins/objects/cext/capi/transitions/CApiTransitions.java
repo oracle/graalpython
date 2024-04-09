@@ -56,6 +56,7 @@ import java.util.logging.Level;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
@@ -95,6 +96,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType;
@@ -165,6 +167,7 @@ public abstract class CApiTransitions {
         public final HandleStack nativeStubLookupFreeStack;
 
         public final Set<NativeStorageReference> nativeStorageReferences = new HashSet<>();
+        public final Set<PyCapsuleReference> pyCapsuleReferences = new HashSet<>();
 
         public final ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
 
@@ -355,6 +358,32 @@ public abstract class CApiTransitions {
         handleContext.nativeStorageReferences.add(ref);
     }
 
+    public static final class PyCapsuleReference extends IdReference<PyCapsule> {
+        private final PyCapsule.CapsuleData data;
+
+        public PyCapsuleReference(HandleContext handleContext, PyCapsule capsule) {
+            super(handleContext, capsule);
+            data = capsule.getData();
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(PythonUtils.formatJString("new %s", toString()));
+            }
+        }
+
+        @Override
+        @TruffleBoundary
+        public String toString() {
+            return String.format("PyCapsuleReference<%s>", data);
+        }
+    }
+
+    @TruffleBoundary
+    public static void registerPyCapsuleDestructor(PyCapsule capsule) {
+        assert PythonContext.get(null).ownsGil();
+        HandleContext handleContext = getContext();
+        PyCapsuleReference ref = new PyCapsuleReference(handleContext, capsule);
+        handleContext.pyCapsuleReferences.add(ref);
+    }
+
     @TruffleBoundary
     @SuppressWarnings("try")
     public static void pollReferenceQueue() {
@@ -442,6 +471,9 @@ public abstract class CApiTransitions {
                         } else if (entry instanceof NativeStorageReference reference) {
                             handleContext.nativeStorageReferences.remove(reference);
                             processNativeStorageReference(reference);
+                        } else if (entry instanceof PyCapsuleReference reference) {
+                            handleContext.pyCapsuleReferences.remove(reference);
+                            processPyCapsuleReference(reference);
                         }
                     }
                 } finally {
@@ -481,6 +513,15 @@ public abstract class CApiTransitions {
             PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_RELEASE, reference.ptr, reference.size);
         }
         freeNativeStorage(reference);
+    }
+
+    private static void processPyCapsuleReference(PyCapsuleReference reference) {
+        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
+        if (reference.data.getDestructor() != null) {
+            // Our capsule is dead, so create a temporary copy that doesn't have a reference anymore
+            PyCapsule capsule = PythonObjectFactory.getUncached().createCapsule(reference.data);
+            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TRUFFLE_CAPSULE_CALL_DESTRUCTOR, PythonToNativeNode.executeUncached(capsule), capsule.getDestructor());
+        }
     }
 
     /**

@@ -14,3 +14,7 @@ PyAPI_FUNC(PyTypeObject*) getPyCapsuleTypeReference() {
 	return &PyCapsule_Type;
 }
 
+PyAPI_FUNC(void) PyTruffleCapsule_CallDestructor(PyObject* capsule, PyCapsule_Destructor destructor) {
+    destructor(capsule);
+}
+

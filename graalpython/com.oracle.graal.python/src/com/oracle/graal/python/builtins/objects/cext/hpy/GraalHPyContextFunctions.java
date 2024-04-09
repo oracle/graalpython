@@ -3393,7 +3393,11 @@ public abstract class GraalHPyContextFunctions {
                     throw raiseNode.raise(ValueError, ErrorMessages.INVALID_HPYCAPSULE_DESTRUCTOR);
                 }
             }
-            return factory.createCapsule(pointer, namePtr, hpyDestructor);
+            PyCapsule capsule = factory.createCapsule(pointer, namePtr);
+            if (hpyDestructor != null) {
+                capsule.registerDestructor(hpyDestructor);
+            }
+            return capsule;
         }
     }
 
@@ -3469,7 +3473,7 @@ public abstract class GraalHPyContextFunctions {
                     // we may assume that the pointer is owned
                     pyCapsule.setName(fromCharPointerNode.execute(valuePtr, false));
                 }
-                case CapsuleKey.Destructor -> pyCapsule.setDestructor(valuePtr);
+                case CapsuleKey.Destructor -> pyCapsule.registerDestructor(isNullNode.execute(hpyContext, valuePtr) ? null : valuePtr);
                 default -> throw CompilerDirectives.shouldNotReachHere("invalid key");
             }
             return 0;

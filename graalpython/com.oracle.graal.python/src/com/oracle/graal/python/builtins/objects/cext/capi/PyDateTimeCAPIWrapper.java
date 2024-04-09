@@ -118,7 +118,7 @@ public abstract class PyDateTimeCAPIWrapper {
 
         Object pointerObject = allocatePyDatetimeCAPI(datetimeModule);
 
-        PyCapsule capsule = context.factory().createCapsule(pointerObject, T_PYDATETIME_CAPSULE_NAME, null);
+        PyCapsule capsule = context.factory().createCapsule(pointerObject, T_PYDATETIME_CAPSULE_NAME);
         PyObjectSetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI, capsule);
         assert PyObjectGetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI) != context.getNativeNull();
         return capsule;
