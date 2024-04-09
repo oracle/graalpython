@@ -1093,7 +1093,7 @@ def graalpytest(args):
     # if we got a binary path it's most likely CPython, so don't add graalpython args
     if not args.python:
         cmd_args += ["--experimental-options=true", "--python.EnableDebuggingBuiltins"]
-    elif args.python.endswith('graalpy') or args.python.endswith('graalpy-lt'):
+    elif 'graalpy' in os.path.basename(args.python):
         gp_args = ["--vm.ea", "--vm.esa", "--experimental-options=true", "--python.EnableDebuggingBuiltins"]
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         cmd_args += gp_args
