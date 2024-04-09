@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_COMPILE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_EVAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EXEC;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
@@ -102,7 +103,7 @@ public final class PythonCextPythonRunBuiltins {
                 throw raiseNode.get(inliningTarget).raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
             }
             Object code = callNode.execute(compileCallable, source, stype, stype);
-            Object execCallable = lookupNode.execute(null, inliningTarget, builtins, T_EXEC);
+            Object execCallable = lookupNode.execute(null, inliningTarget, builtins, type == Py_eval_input ? T_EVAL : T_EXEC);
             return callNode.execute(execCallable, code, globals, locals);
         }
 
