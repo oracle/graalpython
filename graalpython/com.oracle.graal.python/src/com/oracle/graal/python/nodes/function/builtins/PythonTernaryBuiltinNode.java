@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,9 +45,5 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class PythonTernaryBuiltinNode extends PythonBuiltinBaseNode {
 
-    public Object execute(VirtualFrame frame, Object arg, Object arg2, Object arg3) {
-        return execute1(frame, arg, arg2, arg3);
-    }
-
-    protected abstract Object execute1(VirtualFrame frame, Object arg, Object arg2, Object arg3);
+    public abstract Object execute(VirtualFrame frame, Object arg, Object arg2, Object arg3);
 }
