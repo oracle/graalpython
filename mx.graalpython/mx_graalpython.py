@@ -104,6 +104,9 @@ GRAAL_VERSION_MAJ_MIN = ".".join(GRAAL_VERSION.split(".")[:2])
 PYTHON_VERSION = SUITE.suiteDict[f'{SUITE.name}:pythonVersion']
 PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
 
+# this environment variable is used by some of our maven projects and jbang integration to build against the unreleased master version during development
+os.environ["GRAALPY_VERSION"] = GRAAL_VERSION
+
 MAIN_BRANCH = 'master'
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
 

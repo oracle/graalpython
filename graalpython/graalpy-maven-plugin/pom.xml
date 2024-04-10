@@ -56,8 +56,22 @@ SOFTWARE.
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <graalpy.version>24.1.0</graalpy.version>
+    <graalpy.version>24.0.0</graalpy.version>
   </properties>
+
+  <profiles>
+      <profile>
+          <id>Version from suite</id>
+          <activation>
+              <property>
+                  <name>env.GRAALPY_VERSION</name>
+              </property>
+          </activation>
+          <properties>
+              <graalpy.version>${env.GRAALPY_VERSION}</graalpy.version>
+          </properties>
+      </profile>
+  </profiles>
 
   <build>
     <plugins>
