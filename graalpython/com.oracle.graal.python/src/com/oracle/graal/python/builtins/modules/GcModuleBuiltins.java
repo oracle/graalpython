@@ -29,10 +29,13 @@ import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.GcModuleBuiltinsClinicProviders.SetDebugNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -46,9 +49,10 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -167,8 +171,8 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcIsEnabledNode extends PythonBuiltinNode {
         @Specialization
-        boolean isenabled() {
-            return getContext().isGcEnabled();
+        boolean doGeneric() {
+            return getContext().getGcState().isEnabled();
         }
     }
 
@@ -176,8 +180,10 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DisableNode extends PythonBuiltinNode {
         @Specialization
-        PNone disable() {
-            getContext().setGcEnabled(false);
+        @TruffleBoundary
+        static PNone disable() {
+            PythonContext context = PythonContext.get(null);
+            context.getGcState().setEnabled(false);
             return PNone.NONE;
         }
     }
@@ -186,8 +192,10 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EnableNode extends PythonBuiltinNode {
         @Specialization
-        PNone enable() {
-            getContext().setGcEnabled(true);
+        @TruffleBoundary
+        static PNone enable() {
+            PythonContext context = PythonContext.get(null);
+            context.getGcState().setEnabled(true);
             return PNone.NONE;
         }
     }
@@ -197,15 +205,24 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     abstract static class GetDebugNode extends PythonBuiltinNode {
         @Specialization
         int getDebug() {
-            return 0;
+            return getContext().getGcState().getDebug();
         }
     }
 
-    @Builtin(name = "set_debug", minNumOfPositionalArgs = 1)
+    @Builtin(name = "set_debug", minNumOfPositionalArgs = 1, parameterNames = {"flags"})
     @GenerateNodeFactory
-    abstract static class SetDebugNode extends PythonBuiltinNode {
+    @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)
+    abstract static class SetDebugNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SetDebugNodeClinicProviderGen.INSTANCE;
+        }
+
         @Specialization
-        PNone setDebug(@SuppressWarnings("unused") Object ignored) {
+        @TruffleBoundary
+        static PNone doGeneric(int flags) {
+            PythonContext context = PythonContext.get(null);
+            context.getGcState().setDebug(flags);
             return PNone.NONE;
         }
     }
@@ -215,7 +232,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     abstract static class GcCountNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public PTuple count() {
+        static PTuple count() {
             List<GarbageCollectorMXBean> garbageCollectorMXBeans = ManagementFactory.getGarbageCollectorMXBeans();
             long count = 0;
             for (GarbageCollectorMXBean gcbean : garbageCollectorMXBeans) {
@@ -224,7 +241,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                     count += cc;
                 }
             }
-            return PythonObjectFactory.getUncached().createTuple(new Object[]{count, 0, 0});
+            return PythonContext.get(null).factory().createTuple(new Object[]{count, 0, 0});
         }
     }
 
@@ -232,12 +249,12 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcIsTrackedNode extends PythonBuiltinNode {
         @Specialization
-        public boolean isTracked(@SuppressWarnings("unused") PythonNativeObject object) {
+        static boolean doNative(@SuppressWarnings("unused") PythonNativeObject object) {
             return false;
         }
 
         @Fallback
-        public boolean isTracked(@SuppressWarnings("unused") Object object) {
+        static boolean doManaged(@SuppressWarnings("unused") Object object) {
             return true;
         }
     }

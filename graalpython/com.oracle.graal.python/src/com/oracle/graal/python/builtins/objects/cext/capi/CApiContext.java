@@ -63,7 +63,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Pair;
 import org.graalvm.nativeimage.ImageInfo;
@@ -77,6 +76,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCall
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -535,10 +536,13 @@ public final class CApiContext extends CExtContext {
     /**
      * Returns or allocates (on demand) the {@code GCState}.
      */
-    Object getOrCreateGCState() {
+    public Object getOrCreateGCState() {
         CompilerAsserts.neverPartOfCompilation();
         if (gcState == null) {
-            gcState = CStructAccess.AllocateNode.allocUncached(CStructs.GCState);
+            Object ptr = CStructAccess.AllocateNode.allocUncached(CStructs.GCState);
+            CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__enabled, PInt.intValue(getContext().getGcState().isEnabled()));
+            CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__debug, getContext().getGcState().getDebug());
+            gcState = ptr;
         }
         return gcState;
     }
