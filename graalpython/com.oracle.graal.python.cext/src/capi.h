@@ -150,36 +150,38 @@ extern Py_LOCAL_SYMBOL int graalpy_finalizing;
 
 /* Flags definitions representing global (debug) options. */
 static MUST_INLINE int PyTruffle_Trace_Memory() {
-	return Py_Truffle_Options & PY_TRUFFLE_TRACE_MEM;
+    return Py_Truffle_Options & PY_TRUFFLE_TRACE_MEM;
 }
 static MUST_INLINE int PyTruffle_Log_Info() {
-	return Py_Truffle_Options & PY_TRUFFLE_LOG_INFO;
+    return Py_Truffle_Options & PY_TRUFFLE_LOG_INFO;
 }
 static MUST_INLINE int PyTruffle_Log_Config() {
-	return Py_Truffle_Options & PY_TRUFFLE_LOG_CONFIG;
+    return Py_Truffle_Options & PY_TRUFFLE_LOG_CONFIG;
 }
 static MUST_INLINE int PyTruffle_Log_Fine() {
-	return Py_Truffle_Options & PY_TRUFFLE_LOG_FINE;
+    return Py_Truffle_Options & PY_TRUFFLE_LOG_FINE;
 }
 static MUST_INLINE int PyTruffle_Log_Finer() {
-	return Py_Truffle_Options & PY_TRUFFLE_LOG_FINER;
+    return Py_Truffle_Options & PY_TRUFFLE_LOG_FINER;
 }
 static MUST_INLINE int PyTruffle_Log_Finest() {
-	return Py_Truffle_Options & PY_TRUFFLE_LOG_FINEST;
+    return Py_Truffle_Options & PY_TRUFFLE_LOG_FINEST;
 }
 static MUST_INLINE int PyTruffle_Debug_CAPI() {
-	return Py_Truffle_Options & PY_TRUFFLE_DEBUG_CAPI;
+    return Py_Truffle_Options & PY_TRUFFLE_DEBUG_CAPI;
 }
 
-static void PyTruffle_Log(int level, const char* format, ... ) {
-	if (Py_Truffle_Options & level) {
-		char buffer[1024];
-		va_list args;
-		va_start(args, format);
-		vsprintf(buffer,format, args);
-		GraalPyTruffle_LogString(level, buffer);
-		va_end(args);
-	}
+static void
+PyTruffle_Log(int level, const char *format, ...)
+{
+    if (Py_Truffle_Options & level) {
+        char buffer[1024];
+        va_list args;
+        va_start(args, format);
+        vsprintf(buffer, format, args);
+        GraalPyTruffle_LogString(level, buffer);
+        va_end(args);
+    }
 }
 
 Py_LOCAL_SYMBOL int is_builtin_type(PyTypeObject *tp);
