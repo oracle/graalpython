@@ -37,54 +37,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
-
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType
 
 __dir__ = __file__.rpartition("/")[0]
 
 
-# python_run_test_result = None
-
-def _reference_run_string(args):
-    if not isinstance(args[2], dict):
-        if sys.version_info.minor >= 6:
-            raise SystemError
-        else:
-            raise TypeError
-    if not isinstance(args[3], dict):
-        raise TypeError
-    return None
-
-
-def _run_string_compare(x, y):
-    res = unhandled_error_compare(x, y)
-    if (isinstance(x, Exception)):
-        return res
-
-    global python_run_test_result
-    pr = python_run_test_result
-    res = res and pr == 42
-    python_run_test_result = None
-    if not res:
-        assert False, "python_run_test_result is %s" % pr
-    return res
-
-
 class TestPythonRun(CPyExtTestCase):
 
-    test_PyRun_StringFlags = CPyExtFunction(
-        _reference_run_string,
-        lambda: (
-            ("globals().update({'python_run_test_result':42})", 256, globals(), locals(), 0),
-            ("globals().update({'python_run_test_result':42})", 256, 'globals()', locals(), 0),
-            ("globals().update({'python_run_test_result':42})", 256, globals(), 'locals()', 0),
-        ),
-        resultspec="O",
-        argspec='siOOk',
-        arguments=["char* source", "int type", "PyObject* globals", "PyObject* locals", "PyCompilerFlags* ignored"],
-        cmpfunc=unhandled_error_compare
-    )
+    def test_PyRun_String(self):
+        Tester = CPyExtType(
+            "PyRunStringTester",
+            code="""
+            static PyObject* call_PyRun_String(PyObject* unused, PyObject* args) {
+                int eval;
+                char *string;
+                PyObject *globals, *locals;
+                if (PyArg_ParseTuple(args, "spOO", &string, &eval, &globals, &locals) < 0)
+                    return NULL;
+                int start = eval ? Py_eval_input : Py_file_input;
+                return PyRun_String(string, start, globals, locals);
+            }
+            """,
+            tp_methods='{"call_PyRun_String", (PyCFunction)call_PyRun_String, METH_VARARGS | METH_STATIC}'
+        )
+        g = {}
+        l = {}
+        assert Tester.call_PyRun_String("a = 1", False, g, l) is None
+        assert l.get('a') == 1
+        assert 'a' not in g
+        g = {}
+        l = {}
+
+        assert Tester.call_PyRun_String("global a\na = 1", False, g, l) is None
+        assert g.get('a') == 1
+        assert 'a' not in l
+
+        assert Tester.call_PyRun_String("1 + a", True, {}, {'a': 2}) == 3
 
     test_Py_CompileString = CPyExtFunction(
         lambda args: compile(
