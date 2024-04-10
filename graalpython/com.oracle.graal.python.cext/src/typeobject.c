@@ -1124,8 +1124,10 @@ _PyType_AllocNoTrack(PyTypeObject *type, Py_ssize_t nitems)
     }
     obj = (PyObject *)(alloc + presize);
     if (presize) {
-        // GraalPy change: different header layout, no GC link
         ((PyObject **)alloc)[0] = NULL;
+        // GraalPy change: different header layout
+        // ((PyObject **)alloc)[1] = NULL;
+        _PyObject_GC_Link(obj);
     }
     memset(obj, '\0', size);
 
