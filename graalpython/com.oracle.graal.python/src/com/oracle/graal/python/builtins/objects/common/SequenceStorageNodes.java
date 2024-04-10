@@ -2074,7 +2074,6 @@ public abstract class SequenceStorageNodes {
             } else {
                 lenResult = lengthResult(lenLeft, right.length());
             }
-            SequenceStorage dest = null;
             while (true) {
                 // unbounded loop should not be a problem for PE because generalizeStore() in the
                 // catch block immediately de-opts in the first iteration, i.e. if the storages are
@@ -2082,10 +2081,10 @@ public abstract class SequenceStorageNodes {
                 // the while loop was not here at all
                 try {
                     // EnsureCapacityNode handles the overflow and raises an error
-                    dest = ensureCapacityNode.execute(inliningTarget, left, lenResult);
-                    return concatStoragesNode.execute(dest, left, right);
+                    ensureCapacityNode.execute(inliningTarget, left, lenResult);
+                    return concatStoragesNode.execute(left, left, right);
                 } catch (SequenceStoreException e) {
-                    left = generalizeStore(dest, e.getIndicationValue());
+                    left = generalizeStore(left, e.getIndicationValue());
                 }
             }
         }
@@ -2777,21 +2776,20 @@ public abstract class SequenceStorageNodes {
     @GenerateCached(false)
     public abstract static class EnsureCapacityNode extends SequenceStorageBaseNode {
 
-        public abstract SequenceStorage execute(Node inliningTarget, SequenceStorage s, int cap);
+        public abstract void execute(Node inliningTarget, SequenceStorage s, int cap);
 
         @Specialization
-        static EmptySequenceStorage doEmpty(EmptySequenceStorage s, @SuppressWarnings("unused") int cap) {
-            return s;
+        static void doEmpty(EmptySequenceStorage s, @SuppressWarnings("unused") int cap) {
+            // do nothing
         }
 
         @Specialization(limit = "MAX_BASIC_STORAGES", guards = "s.getClass() == cachedClass")
-        static BasicSequenceStorage doManaged(Node inliningTarget, BasicSequenceStorage s, int cap,
+        static void doManaged(Node inliningTarget, BasicSequenceStorage s, int cap,
                         @Cached PRaiseNode.Lazy raiseNode,
                         @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
             try {
                 BasicSequenceStorage profiled = cachedClass.cast(s);
                 profiled.ensureCapacity(cap);
-                return profiled;
             } catch (OutOfMemoryError | ArithmeticException e) {
                 throw raiseNode.get(inliningTarget).raise(MemoryError);
             }
@@ -2799,18 +2797,18 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         @InliningCutoff
-        static NativeSequenceStorage doNative(NativeSequenceStorage s, int cap,
+        static void doNative(NativeSequenceStorage s, int cap,
                         @Cached(inline = false) EnsureCapacityNativeNode helper) {
-            return helper.execute(s, cap);
+            helper.execute(s, cap);
         }
 
         @GenerateInline(false)
         @GenerateUncached
         abstract static class EnsureCapacityNativeNode extends Node {
-            abstract NativeSequenceStorage execute(NativeSequenceStorage s, int cap);
+            abstract void execute(NativeSequenceStorage s, int cap);
 
             @Specialization
-            static NativeByteSequenceStorage doNativeByte(NativeByteSequenceStorage s, int cap,
+            static void doNativeByte(NativeByteSequenceStorage s, int cap,
                             @Bind("this") Node inliningTarget,
                             @Shared @CachedLibrary(limit = "2") InteropLibrary lib,
                             @Shared @Cached CStructAccess.AllocateNode alloc,
@@ -2834,11 +2832,10 @@ public abstract class SequenceStorageNodes {
                     s.setPtr(newMem);
                     s.setCapacity(newCapacity);
                 }
-                return s;
             }
 
             @Specialization
-            static NativeObjectSequenceStorage doNativeObject(NativeObjectSequenceStorage s, int cap,
+            static void doNativeObject(NativeObjectSequenceStorage s, int cap,
                             @Bind("this") Node inliningTarget,
                             @Shared @CachedLibrary(limit = "2") InteropLibrary lib,
                             @Shared @Cached CStructAccess.AllocateNode alloc,
@@ -2863,7 +2860,6 @@ public abstract class SequenceStorageNodes {
                     s.setPtr(newMem);
                     s.setCapacity(newCapacity);
                 }
-                return s;
             }
 
             private static int computeNewCapacity(int cap) {
