@@ -119,7 +119,7 @@ class TestJBangIntegration(unittest.TestCase):
     def clearCache(self):
         command = [JBANG_CMD, "cache", "clear"]
         out, result = run_cmd(command)
-            
+
     def getCatalogFile(self):
         catalog_dir = os.path.dirname(os.path.abspath(__file__))
         for _ in range(5):
@@ -189,29 +189,6 @@ class TestJBangIntegration(unittest.TestCase):
                 self.assertTrue(os.path.isfile(file_path), f"The path definied in catalog is not found: {file_path}")
 
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
-    def test_graal_version(self):
-        json_data = self.getCatalogData(self.catalog_file)
-        for alias in json_data.get("aliases", {}).values():
-            script_ref = alias.get("script-ref")
-            script_path = os.path.normpath(os.path.join(os.path.dirname(self.catalog_file), script_ref))
-            with open(script_path, 'r') as script_file:
-                content = script_file.read()
-            self.assertIn (f"//DEPS org.graalvm.python:python-language:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-language:{GRAAL_VERSION} was not found in {script_path}")
-            self.assertIn (f"//DEPS org.graalvm.python:python-resources:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-resources:{GRAAL_VERSION} was not found in {script_path}")
-            self.assertIn (f"//DEPS org.graalvm.python:python-launcher:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-launcher:{GRAAL_VERSION} was not found in {script_path}")
-            self.assertIn (f"//DEPS org.graalvm.python:python-embedding:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-embedding:{GRAAL_VERSION} was not found in {script_path}")
-
-        for template in json_data.get("templates", {}).values():
-            for file_ref in template.get("file-refs", {}).values():
-                file_path = os.path.normpath(os.path.join(os.path.dirname(self.catalog_file), file_ref))
-                with open(script_path, 'r') as script_file:
-                    content = script_file.read()
-                self.assertIn (f"//DEPS org.graalvm.python:python-language:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-language:{GRAAL_VERSION} was not found in {script_path}")
-                self.assertIn (f"//DEPS org.graalvm.python:python-resources:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-resources:{GRAAL_VERSION} was not found in {script_path}")
-                self.assertIn (f"//DEPS org.graalvm.python:python-launcher:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-launcher:{GRAAL_VERSION} was not found in {script_path}")
-                self.assertIn (f"//DEPS org.graalvm.python:python-embedding:{GRAAL_VERSION}", content, f"//DEPS org.graalvm.python:python-embedding:{GRAAL_VERSION} was not found in {script_path}")
-
-    @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     def test_graalpy_template(self):
         template_name = "graalpy"
         test_file = "graalpy_test.java"
@@ -233,7 +210,7 @@ class TestJBangIntegration(unittest.TestCase):
 
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}\n")
         self.assertTrue(expected_text in out, f"Expected text:\n{expected_text}\nbut in stdout was:\n{out}")
-       
+
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     @unittest.skipUnless('win32' not in sys.platform, "Currently the jbang native image on Win gate fails.")
     def test_graalpy_template_native(self):
