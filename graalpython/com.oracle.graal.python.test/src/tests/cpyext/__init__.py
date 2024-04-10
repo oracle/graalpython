@@ -730,7 +730,7 @@ def CPyExtTypeDecl(name, code='', **kwargs):
     kwargs.setdefault("tp_itemsize", "0")
     kwargs.setdefault("tp_new", "PyType_GenericNew")
     kwargs.setdefault("tp_alloc", "PyType_GenericAlloc")
-    kwargs.setdefault("tp_free", "PyObject_Del")
+    # IMPORTANT: do not set 'tp_free'
     kwargs.setdefault("tp_flags", "Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE")
     kwargs.setdefault("cmembers", "")
     kwargs.setdefault("includes", "")
