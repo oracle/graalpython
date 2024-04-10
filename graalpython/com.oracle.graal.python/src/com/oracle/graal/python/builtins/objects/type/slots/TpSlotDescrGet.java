@@ -175,11 +175,6 @@ public abstract class TpSlotDescrGet {
             }
             return wrapped.execute(frame, self, obj, type);
         }
-
-        @Override
-        protected Object execute1(VirtualFrame frame, Object self, Object obj, Object type) {
-            return execute(frame, self, obj, type);
-        }
     }
 
     public abstract static class DescrGetBuiltinNode extends PythonTernaryBuiltinNode {

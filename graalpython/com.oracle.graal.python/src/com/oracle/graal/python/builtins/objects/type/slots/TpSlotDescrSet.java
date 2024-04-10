@@ -175,12 +175,6 @@ public abstract class TpSlotDescrSet {
             executeVoid(frame, arg, arg2, arg3);
             return PNone.NONE;
         }
-
-        @Override
-        protected final Object execute1(VirtualFrame frame, Object arg, Object arg2, Object arg3) {
-            executeVoid(frame, arg, arg2, arg3);
-            return PNone.NONE;
-        }
     }
 
     @GenerateInline
