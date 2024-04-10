@@ -92,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromC
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PyErrFetchNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PyErrOccurredNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.UnicodeFromFormatNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
@@ -1385,6 +1386,10 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class UnicodeFromFormatNode extends Node {
         private static Pattern pattern;
+
+        public static Object executeUncached(TruffleString format, Object vaList) {
+            return UnicodeFromFormatNodeGen.getUncached().execute(null, format, vaList);
+        }
 
         private static Matcher match(String formatStr) {
             if (pattern == null) {

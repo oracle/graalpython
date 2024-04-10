@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,4 +43,65 @@
 int PySys_Audit(const char *event, const char *argFormat, ...) {
 	// ignore for now
     return 0;
+}
+
+static void
+sys_write(int key, FILE *fp, const char *format, va_list va)
+{
+    char buffer[1001];
+    int written;
+
+    written = PyOS_vsnprintf(buffer, sizeof(buffer), format, va);
+    if (GraalPyTruffleSys_WriteStd(key, buffer) != 0) {
+        fputs(buffer, fp);
+    }
+    if (written < 0 || (size_t)written >= sizeof(buffer)) {
+        const char *truncated = "... truncated";
+        if (GraalPyTruffleSys_WriteStd(key, truncated) != 0)
+            fputs(truncated, fp);
+    }
+}
+
+void
+PySys_WriteStdout(const char *format, ...)
+{
+    va_list va;
+
+    va_start(va, format);
+    // GraalPy change: different implementation
+    sys_write(0, stdout, format, va);
+    va_end(va);
+}
+
+void
+PySys_WriteStderr(const char *format, ...)
+{
+    va_list va;
+
+    va_start(va, format);
+    // GraalPy change: different implementation
+    sys_write(1, stdout, format, va);
+    va_end(va);
+}
+
+void
+PySys_FormatStdout(const char *format, ...)
+{
+    va_list va;
+
+    va_start(va, format);
+    // GraalPy change: different implementation
+    GraalPyTruffleSys_FormatStd(0, format, &va);
+    va_end(va);
+}
+
+void
+PySys_FormatStderr(const char *format, ...)
+{
+    va_list va;
+
+    va_start(va, format);
+    // GraalPy change: different implementation
+    GraalPyTruffleSys_FormatStd(1, format, &va);
+    va_end(va);
 }
