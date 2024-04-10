@@ -340,6 +340,9 @@ public enum CFields {
     PyThreadState__small_ints(PyObjectPtr),
     PyThreadState__gc(Pointer),
 
+    GCState__enabled(Int),
+    GCState__debug(Int),
+
     PyBaseExceptionObject__dict(PyObject),
     PyBaseExceptionObject__args(PyObject),
     PyBaseExceptionObject__traceback(PyObject),

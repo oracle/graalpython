@@ -35,10 +35,18 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.GcModuleBuiltinsClinicProviders.GcCollectNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltinsClinicProviders.SetDebugNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -49,10 +57,14 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -96,23 +108,36 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "collect", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "collect", parameterNames = {"$self", "generation"}, declaresExplicitSelf = true)
+    @ArgumentClinic(name = "generation", conversion = ClinicConversion.Int, defaultValue = "2")
     @GenerateNodeFactory
-    abstract static class GcCollectNode extends PythonBuiltinNode {
+    abstract static class GcCollectNode extends PythonClinicBuiltinNode {
+        private static final NativeCAPISymbol SYMBOL = NativeCAPISymbol.FUN_GRAALPY_GC_COLLECT;
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, SYMBOL.getName());
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GcCollectNodeClinicProviderGen.INSTANCE;
+        }
+
         @Specialization
-        static PNone collect(VirtualFrame frame, PythonModule self, @SuppressWarnings("unused") Object level,
+        static long collect(VirtualFrame frame, PythonModule self, @SuppressWarnings("unused") Object level,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectGetIter getIter,
                         @Cached(neverDefault = true) PyIterNextNode next,
                         @Cached PythonObjectFactory factory,
                         @Cached CallBinaryMethodNode call,
-                        @Cached GilNode gil) {
+                        @Cached GilNode gil,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached ExternalFunctionInvokeNode invokeNode,
+                        @Cached CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode) {
             Object callbacks = getAttr.execute(frame, inliningTarget, self, CALLBACKS);
             Object iter = getIter.execute(frame, inliningTarget, callbacks);
             Object cb = next.execute(frame, iter);
             TruffleString phase = null;
             Object info = null;
+            long res = 0;
             if (cb != null) {
                 phase = START;
                 info = factory.createDict(new PKeyword[]{
@@ -125,6 +150,13 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                 } while ((cb = next.execute(frame, iter)) != null);
             }
             long freedMemory = javaCollect(inliningTarget, gil);
+            // call native 'gc_collect' if C API context is already available
+            if (PythonContext.get(inliningTarget).getCApiContext() != null) {
+                Object executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
+                PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
+                Object result = invokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, SYMBOL.getTsName(), executable, level);
+                res = checkPrimitiveFunctionResultNode.executeLong(threadState, SYMBOL.getTsName(), result);
+            }
             if (phase != null) {
                 phase = STOP;
                 info = factory.createDict(new PKeyword[]{
@@ -137,7 +169,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                     call.executeObject(frame, cb, phase, info);
                 }
             }
-            return PNone.NONE;
+            return res;
         }
 
         @TruffleBoundary
@@ -184,6 +216,10 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         static PNone disable() {
             PythonContext context = PythonContext.get(null);
             context.getGcState().setEnabled(false);
+            CApiContext cApiContext = context.getCApiContext();
+            if (cApiContext != null) {
+                CStructAccess.WriteIntNode.writeUncached(cApiContext.getOrCreateGCState(), CFields.GCState__enabled, 0);
+            }
             return PNone.NONE;
         }
     }
@@ -196,6 +232,10 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         static PNone enable() {
             PythonContext context = PythonContext.get(null);
             context.getGcState().setEnabled(true);
+            CApiContext cApiContext = context.getCApiContext();
+            if (cApiContext != null) {
+                CStructAccess.WriteIntNode.writeUncached(cApiContext.getOrCreateGCState(), CFields.GCState__enabled, 1);
+            }
             return PNone.NONE;
         }
     }
@@ -223,6 +263,10 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         static PNone doGeneric(int flags) {
             PythonContext context = PythonContext.get(null);
             context.getGcState().setDebug(flags);
+            CApiContext cApiContext = context.getCApiContext();
+            if (cApiContext != null) {
+                CStructAccess.WriteIntNode.writeUncached(cApiContext.getOrCreateGCState(), CFields.GCState__debug, flags);
+            }
             return PNone.NONE;
         }
     }

@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactor
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.FreeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.GetElementPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadI32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteIntNodeGen;
@@ -403,6 +404,10 @@ public class CStructAccess {
     @ImportStatic(PGuards.class)
     @GenerateUncached
     public abstract static class ReadI32Node extends ReadBaseNode {
+
+        public static int readUncached(Object pointer, CFields field) {
+            return ReadI32NodeGen.getUncached().read(pointer, field);
+        }
 
         abstract int execute(Object pointer, long offset);
 

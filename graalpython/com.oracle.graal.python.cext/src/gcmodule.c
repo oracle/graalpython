@@ -1055,12 +1055,14 @@ delete_garbage(PyThreadState *tstate, GCState *gcstate,
 static void
 clear_freelists(PyInterpreterState *interp)
 {
+#if 0 // GraalPy change
     _PyTuple_ClearFreeList(interp);
     _PyFloat_ClearFreeList(interp);
     _PyList_ClearFreeList(interp);
     _PyDict_ClearFreeList(interp);
     _PyAsyncGen_ClearFreeLists(interp);
     _PyContext_ClearFreeList(interp);
+#endif // GraalPy change
 }
 
 // Show stats for objects in each generations
@@ -1523,6 +1525,7 @@ gc_isenabled_impl(PyObject *module)
 {
     return PyGC_IsEnabled();
 }
+#endif // GraalPy change
 
 /*[clinic input]
 gc.collect -> Py_ssize_t
@@ -1549,7 +1552,7 @@ gc_collect_impl(PyObject *module, int generation)
         return -1;
     }
 
-    GCState *gcstate = &tstate->interp->gc;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
     Py_ssize_t n;
     if (gcstate->collecting) {
         /* already collecting, don't do anything */
@@ -1563,6 +1566,7 @@ gc_collect_impl(PyObject *module, int generation)
     return n;
 }
 
+#if 0 // GraalPy change
 /*[clinic input]
 gc.set_debug
 
@@ -2393,4 +2397,11 @@ PyObject_GC_IsFinalized(PyObject *obj)
          return 1;
     }
     return 0;
+}
+
+/* Exposes 'gc_collect_impl' such that we can call it from Java. */
+PyAPI_FUNC(Py_ssize_t)
+GraalPyGC_Collect(int generation)
+{
+    return gc_collect_impl(NULL, generation);
 }

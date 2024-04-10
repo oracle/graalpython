@@ -161,6 +161,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_TRUFFLE_CHECK_TYPE_READY("truffle_check_type_ready", ArgDescriptor.Void, PyTypeObject),
     FUN_PYOBJECT_HASH_NOT_IMPLEMENTED("PyObject_HashNotImplemented", ArgDescriptor.Py_hash_t, PyObject),
     FUN_PY_GC_COLLECT_NO_FAIL("_PyGC_CollectNoFail", Py_ssize_t, PyThreadState),
+    FUN_GRAALPY_GC_COLLECT("GraalPyGC_Collect", Py_ssize_t, Int),
 
     /* PyDateTime_CAPI */
 
