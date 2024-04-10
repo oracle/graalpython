@@ -97,9 +97,9 @@ def get_boolean_env(name, default=False):
 
 SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
-SUITE_SULONG = mx.suite("sulong")
+SUITE_TRUFFLE = mx.suite("truffle")
 
-GRAAL_VERSION = SUITE.suiteDict['version']
+GRAAL_VERSION = SUITE_TRUFFLE.suiteDict['version']
 GRAAL_VERSION_MAJ_MIN = ".".join(GRAAL_VERSION.split(".")[:2])
 PYTHON_VERSION = SUITE.suiteDict[f'{SUITE.name}:pythonVersion']
 PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
@@ -2034,6 +2034,7 @@ def update_import_cmd(args):
 
 def python_style_checks(args):
     "Check (and fix where possible) copyrights, eclipse formatting, and spotbugs"
+    warn_about_old_hardcoded_version()
     python_run_mx_filetests(args)
     python_checkcopyrights(["--fix"] if "--fix" in args else [])
     if not os.environ.get("ECLIPSE_EXE"):
@@ -2372,37 +2373,46 @@ class CharsetFilteringPariticpant:
         self.__services.pop('java.nio.charset.spi.CharsetProvider', None)
 
 
-def mx_post_parse_cmd_line(namespace):
+def warn_about_old_hardcoded_version():
     """
-    Ensure hardcoded versions everywhere match the suite version.
-    Fix and warn if they do not in CI, fail the build locally.
+    Ensure hardcoded versions everywhere are what we expect, either matching the master version
+    or one of the latest releases.
     """
+    graal_major = int(GRAAL_VERSION.split(".")[0])
+    graal_minor = int(GRAAL_VERSION.split(".")[1])
+
+    def hardcoded_ver_is_too_far_behind_master(m):
+        hardcoded_major = int(m.group(1).split(".")[0])
+        if hardcoded_major < graal_major:
+            if graal_minor > 0 or hardcoded_major < graal_minor - 1:
+                return f"Hardcoded version in `{m.group().strip()}` is too far behind {graal_major}.{graal_minor}. Update it to the latest released version."
+
+    def hardcoded_ver_is_behind_major_minor(m):
+        if m.group(1) != GRAAL_VERSION_MAJ_MIN:
+            return f"Hardcoded version in `{m.group().strip()}` should have {GRAAL_VERSION_MAJ_MIN} as <major>.<minor> version."
+
     files_with_versions = {
         "graalpython/graalpy-maven-plugin/pom.xml": {
-            r"^  <version>(\d+\.\d+(?:\.\d+)*)</version>": GRAAL_VERSION,
-            r"<graalpy.version>(\d+\.\d+(?:\.\d+)*)</graalpy.version>": GRAAL_VERSION,
+            r"^  <version>(\d+\.\d+)(?:\.\d+)*</version>" : hardcoded_ver_is_behind_major_minor,
+            r'<graalpy.version>(\d+\.\d+)(?:\.\d+)*</graalpy.version>' : hardcoded_ver_is_behind_major_minor
         },
         "graalpython/com.oracle.graal.python.test.integration/pom.xml": {
-            r"<com.oracle.graal.python.test.polyglot.version>(\d+\.\d+(?:\.\d+)*)</com.oracle.graal.python.test.polyglot.version>": GRAAL_VERSION,
+            r'<com.oracle.graal.python.test.polyglot.version>(\d+\.\d+)(?:\.\d+)*' : hardcoded_ver_is_behind_major_minor,
         },
         "graalpython/graalpy-archetype-polyglot-app/pom.xml": {
-            r"^  <version>(\d+\.\d+(?:\.\d+)*)</version>": GRAAL_VERSION,
+            r"^  <version>(\d+\.\d+)(?:\.\d+)*</version>" : hardcoded_ver_is_behind_major_minor,
         },
         "graalpython/graalpy-jbang/examples/hello.java": {
-            r"//DEPS org.graalvm.python:python[^:]*:(\d+\.\d+(?:\.\d+)*)": GRAAL_VERSION,
+            r"//DEPS org.graalvm.python:python[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_too_far_behind_master,
         },
         "graalpython/graalpy-jbang/templates/graalpy-template_local_repo.java.qute": {
-            r"//DEPS org.graalvm.python:python[^:]*:(\d+\.\d+(?:\.\d+)*)": GRAAL_VERSION,
+            r"//DEPS org.graalvm.python:python[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_too_far_behind_master,
         },
         "graalpython/graalpy-jbang/templates/graalpy-template.java.qute": {
-            r"//DEPS org.graalvm.python:python[^:]*:(\d+\.\d+(?:\.\d+)*)": GRAAL_VERSION,
+            r"//DEPS org.graalvm.python:python[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_too_far_behind_master,
         },
         "graalpython/graalpy-archetype-polyglot-app/src/main/resources/archetype-resources/pom.xml": {
-            r"<graalpy.version>(\d+\.\d+(?:\.\d+)*)</graalpy.version>": GRAAL_VERSION,
-        },
-        "graalpython/com.oracle.graal.python/src/com/oracle/graal/python/PythonLanguage.java": {
-            r"GRAALVM_MAJOR = (\d+);" : GRAAL_VERSION.split(".")[0],
-            r"GRAALVM_MINOR = (\d+);" : GRAAL_VERSION.split(".")[1],
+            r'<graalpy.version>(\d+\.\d+)(?:\.\d+)*</graalpy.version>' : hardcoded_ver_is_behind_major_minor,
         },
     }
     replacements = set()
@@ -2410,25 +2420,21 @@ def mx_post_parse_cmd_line(namespace):
         full_path = os.path.join(SUITE.dir, path)
         with open(full_path, "r", encoding="utf-8") as f:
             content = f.read()
-        has_replacement = False
-        for pattern, replacement in patterns.items():
+        for pattern, test in patterns.items():
             pattern = re.compile(pattern, flags=re.M)
             start = 0
             while m := pattern.search(content, start):
-                group = m.group(1)
-                length_diff = len(replacement) - len(group)
                 mx.logvv(f"[{SUITE.name}] {path} with hardcoded version `{m.group()}'")
-                if group != replacement:
-                    replacements.add(path)
-                    has_replacement = True
-                    content = content[:m.start(1)] + replacement + content[m.end(1):]
-                start = m.end() + length_diff
-        if has_replacement:
-            with open(full_path, "w", encoding="utf-8") as f:
-                f.write(content)
-    for replacement in replacements:
-        mx.warn(f"Updated Graal version in {replacement}, you should check this in!")
+                if msg := test(m):
+                    replacements.add((path, msg))
+                start = m.end()
+    if replacements:
+        mx.abort("\n".join([
+            ": ".join(r) for r in replacements
+        ]))
 
+
+def mx_post_parse_cmd_line(namespace):
     # all projects are now available at this time
     _register_vms(namespace)
     _register_bench_suites(namespace)
