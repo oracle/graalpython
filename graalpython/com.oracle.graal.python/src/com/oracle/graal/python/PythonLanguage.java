@@ -188,8 +188,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * a GraalVM build, but we may run from Jar files directly during development. We generate the
      * version during the build that are checked against these constants.
      */
-    public static final int GRAALVM_MAJOR = 24;
-    public static final int GRAALVM_MINOR = 1;
+    public static final int GRAALVM_MAJOR;
+    public static final int GRAALVM_MINOR;
     public static final String DEV_TAG;
 
     /**
@@ -226,12 +226,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (MICRO != (ch = is.read() - VERSION_BASE)) {
                 throw new RuntimeException("suite.py version info does not match PythonLanguage#MICRO: " + ch);
             }
-            if (GRAALVM_MAJOR != (ch = is.read() - VERSION_BASE)) {
-                throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MAJOR: " + ch);
-            }
-            if (GRAALVM_MINOR != (ch = is.read() - VERSION_BASE)) {
-                throw new RuntimeException("suite.py version info does not match PythonLanguage#GRAALVM_MINOR: " + ch);
-            }
+            GRAALVM_MAJOR = is.read() - VERSION_BASE;
+            GRAALVM_MINOR = is.read() - VERSION_BASE;
             is.read(); // skip GraalVM micro version
             // see mx.graalpython/mx_graalpython.py:dev_tag
             byte[] rev = new byte[3 /* 'dev' */ + 10 /* revision */];
