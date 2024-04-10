@@ -2562,17 +2562,33 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
-    public static final class SetCatchingFrameReference {
+    public static final class MarkExceptionAsCaught {
         @Specialization
         @InliningCutoff
         public static void doPException(VirtualFrame frame, PException ex,
                         @Bind("$root") PBytecodeDSLRootNode rootNode) {
-            ex.setCatchingFrameReference(frame, rootNode);
+            ex.markAsCaught(frame, rootNode);
         }
 
         @Fallback
         @InliningCutoff
-        public static void doNothing(VirtualFrame frame, @SuppressWarnings("unused") Object ex) {
+        public static void doNothing(@SuppressWarnings("unused") Object ex) {
+        }
+    }
+
+    @Operation
+    public static final class GetExceptionForReraise {
+        @Specialization
+        @InliningCutoff
+        public static PException doPException(PException ex,
+                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+            return ex.getExceptionForReraise(!rootNode.isInternal());
+        }
+
+        @Fallback
+        @InliningCutoff
+        public static Object doNothing(@SuppressWarnings("unused") Object ex) {
+            return ex;
         }
     }
 
