@@ -395,6 +395,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<FloatBuiltins.PowNode> NODE_FLOAT_POW = FloatBuiltins.PowNode::create;
     private static final NodeSupplier<HashingStorageFromListSequenceStorageNode> NODE_HASHING_STORAGE_FROM_SEQUENCE = HashingStorageFromListSequenceStorageNode::create;
     private static final NodeSupplier<MatchClassNode> NODE_MATCH_CLASS = MatchClassNode::create;
+    private static final IntNodeFunction<ListFromStackNode> LIST_FROM_STACK_NODE = ListFromStackNodeGen::create;
+    private static final IntNodeFunction<TupleFromStackNode> TUPLE_FROM_STACK_NODE = TupleFromStackNodeGen::create;
 
     private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
         switch (op) {
@@ -5570,13 +5572,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object res = null;
         switch (type) {
             case CollectionBits.KIND_LIST: {
-                ListFromStackNode storageFromStackNode = insertChildNodeInt(localNodes, nodeIndex, ListFromStackNodeGen.class, ListFromStackNodeGen::create, count);
+                ListFromStackNode storageFromStackNode = insertChildNodeInt(localNodes, nodeIndex, ListFromStackNodeGen.class, LIST_FROM_STACK_NODE, count);
                 SequenceStorage store = storageFromStackNode.execute(virtualFrame, stackTop - count + 1, stackTop + 1);
                 res = factory.createList(store, storageFromStackNode);
                 break;
             }
             case CollectionBits.KIND_TUPLE: {
-                TupleFromStackNode storageFromStackNode = insertChildNodeInt(localNodes, nodeIndex, TupleFromStackNodeGen.class, TupleFromStackNodeGen::create, count);
+                TupleFromStackNode storageFromStackNode = insertChildNodeInt(localNodes, nodeIndex, TupleFromStackNodeGen.class, TUPLE_FROM_STACK_NODE, count);
                 SequenceStorage store = storageFromStackNode.execute(virtualFrame, stackTop - count + 1, stackTop + 1);
                 res = factory.createTuple(store);
                 break;

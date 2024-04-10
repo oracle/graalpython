@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -250,7 +250,7 @@ public class NativeLibrary {
             throw new RuntimeException(String.format(
                             "Cannot load supporting native library '%s' because the native access is not allowed. " +
                                             "The native access should be allowed when running GraalPython via the graalpython command. " +
-                                            "If you are embedding GraalPython using the Context API, make sure to allow native access using 'allowNativeAccess(true)'. %s",
+                                            "If you are embedding GraalPy using the Context API, make sure to allow native access using 'allowNativeAccess(true)'. %s",
                             name,
                             noNativeAccessHelp));
         }
