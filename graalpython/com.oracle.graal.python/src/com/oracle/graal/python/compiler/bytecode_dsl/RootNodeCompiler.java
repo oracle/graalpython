@@ -4000,15 +4000,34 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                  *   if (uncaught_ex != null) {
                  *     save current exception
                  *     set the current exception to uncaught_ex
+                 *     markCaught(uncaught_ex)
                  *   }
                  *   try {
                  *     finally_body
-                 *   } finally {
+                 *     // (A)
+                 *     if (uncaught_ex != null) {
+                 *       uncaught_ex = getExceptionForReraise(uncaught_ex);
+                 *     }
+                 *   } finally handler_ex {
                  *     if (uncaught_ex != null) {
                  *       restore current exception
                  *     }
+                 *     // (B)
+                 *     if (handler_ex != null) {
+                 *        markCaught(handler_ex)
+                 *        handler_ex = getExceptionForReraise(handler_ex)
+                 *      }
                  *   }
                  * }
+                 *
+                 * Notes:
+                 * (A) If the try block raises an exception (uncaught_ex) and control reaches the end
+                 * of the finally block, we will rethrow uncaught_ex. It should appear as if it was
+                 * never caught by this handler. So, we replace it with an "exception for reraise",
+                 * which ensures that the finally location does not get included in the traceback.
+                 * (B) If the finally block raises an exception (handler_ex), we will rethrow it, but
+                 * unlike in (A), we want to include this location of the throw in the traceback, so
+                 * we first mark it as handled.
                  */
                 BytecodeLocal uncaughtException = b.createLocal();
                 b.beginFinallyTry(uncaughtException);
@@ -4024,13 +4043,14 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                                 emitSaveCurrentException(savedException);
                                 emitSetCurrentException(uncaughtException);
                                 // Mark this location for the stack trace.
-                                b.beginSetCatchingFrameReference();
+                                b.beginMarkExceptionAsCaught();
                                     b.emitLoadLocal(uncaughtException);
-                                b.endSetCatchingFrameReference();
+                                b.endMarkExceptionAsCaught();
                             b.endBlock();
                         b.endIfThen();
 
-                        b.beginFinallyTry(b.createLocal());
+                        BytecodeLocal handlerException = b.createLocal();
+                        b.beginFinallyTry(handlerException);
                             b.beginBlock(); // implicit finally block
                                 b.beginIfThen();
                                     b.beginNonNull();
@@ -4039,10 +4059,42 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
                                     emitSetCurrentException(savedException);
                                 b.endIfThen();
+
+                                // (B)
+                                b.beginIfThen();
+                                    b.beginNonNull();
+                                        b.emitLoadLocal(handlerException);
+                                    b.endNonNull();
+
+                                    b.beginBlock();
+                                        b.beginMarkExceptionAsCaught();
+                                            b.emitLoadLocal(handlerException);
+                                        b.endMarkExceptionAsCaught();
+
+                                        b.beginStoreLocal(handlerException);
+                                            b.beginGetExceptionForReraise();
+                                                b.emitLoadLocal(handlerException);
+                                            b.endGetExceptionForReraise();
+                                        b.endStoreLocal();
+                                    b.endBlock();
+                                b.endIfThen();
                             b.endBlock(); // implicit finally block
 
                             b.beginBlock(); // implicit try block
                                 visitSequence(node.finalBody);
+
+                                // (A)
+                                b.beginIfThen();
+                                    b.beginNonNull();
+                                        b.emitLoadLocal(uncaughtException);
+                                    b.endNonNull();
+
+                                    b.beginStoreLocal(uncaughtException);
+                                        b.beginGetExceptionForReraise();
+                                            b.emitLoadLocal(uncaughtException);
+                                        b.endGetExceptionForReraise();
+                                    b.endStoreLocal();
+                                b.endIfThen();
                             b.endBlock(); // implicit try block
                         b.endFinallyTry();
                     b.endBlock(); // finally
@@ -4086,13 +4138,16 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                  * } catch ex {
                  *   save current exception
                  *   set current exception to ex
+                 *   markCaught(ex)
                  *   try {
                  *     if (handler_1_matches(ex)) {
                  *       assign ex to handler_1_name
                  *       try {
                  *         handler_1_body
-                 *       } finally {
+                 *       } finally handler_ex {
                  *         unbind handler_1_name
+                 *         // (A)
+                 *         markCaught(handler_ex)
                  *       }
                  *       goto afterElse
                  *     }
@@ -4100,19 +4155,47 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                  *       assign ex to handler_2_name
                  *       try {
                  *         handler_2_body
-                 *       } finally {
+                 *       } finally handler_ex {
                  *         unbind handler_2_name
+                 *         // (A)
+                 *         markCaught(handler_ex)
                  *       }
                  *       goto afterElse
                  *     }
-                 *     ... // more cases
-                 *     rethrow ex // only if a handler doesn't match
-                 *   } finally {
+                 *     ... // more handlers
+                 *
+                 *     // case 1: bare except
+                 *     try {
+                 *       bare_except_body
+                 *     } finally handler_ex {
+                 *       // (A)
+                 *       markCaught(handler_ex)
+                 *     }
+                 *     goto afterElse
+                 *     // case 2: no bare except
+                 *     reraise ex
+                 *   } finally handler_ex {
                  *     restore current exception
+                 *     if (handler_ex != null) {
+                 *        // (B)
+                 *        markCaught(handler_ex)
+                 *        handler_ex = getExceptionForReraise(handler_ex)
+                 *     }
                  *   }
                  * }
                  * else_body
                  * afterElse:
+                 *
+                 * Notes:
+                 * (A) If an except block raises, we need to freeze the bci of its exception for
+                 * the stack trace. Otherwise, the bci will be overwritten when it gets reraised at
+                 * the end of the finally block.
+                 * (B) If handler_ex is set, then some handler raised an exception, which will be
+                 * re-thrown at the end of the outer finally block. It should appear as if it was
+                 * never caught by this handler. So, we replace it with an "exception for reraise".
+                 * We also mark it as caught (no-op if already marked) to handle a weird edge case
+                 * where a handler's type expression (the "foo" in "except foo as x") can raise an
+                 * exception.
                  */
                 b.beginBlock(); // outermost block
 
@@ -4130,12 +4213,35 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                         emitSaveCurrentException(savedException);
                         emitSetCurrentException(exception);
                         // Mark this location for the stack trace.
-                        b.beginSetCatchingFrameReference();
+                        b.beginMarkExceptionAsCaught();
                             b.emitLoadLocal(exception);
-                        b.endSetCatchingFrameReference();
+                        b.endMarkExceptionAsCaught();
 
-                        b.beginFinallyTry(b.createLocal());
-                            emitSetCurrentException(savedException); // finally
+                        BytecodeLocal handlerException = b.createLocal();
+
+                        b.beginFinallyTry(handlerException);
+                            b.beginBlock(); // finally
+                                emitSetCurrentException(savedException);
+
+                                b.beginIfThen();
+                                    b.beginNonNull();
+                                        b.emitLoadLocal(handlerException);
+                                    b.endNonNull();
+
+                                    // (B)
+                                    b.beginBlock();
+                                        b.beginMarkExceptionAsCaught();
+                                            b.emitLoadLocal(handlerException);
+                                        b.endMarkExceptionAsCaught();
+
+                                        b.beginStoreLocal(handlerException);
+                                            b.beginGetExceptionForReraise();
+                                                b.emitLoadLocal(handlerException);
+                                            b.endGetExceptionForReraise();
+                                        b.endStoreLocal();
+                                    b.endBlock();
+                                b.endIfThen();
+                            b.endBlock();
 
                             b.beginBlock(); // try
                                 SourceRange bareExceptRange = null;
@@ -4166,13 +4272,18 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                                             b.endUnwrapException();
                                         endStoreLocal(handler.name, b);
 
-                                        b.beginFinallyTry(b.createLocal());
+                                        b.beginFinallyTry(handlerException);
                                             b.beginBlock(); // finally
                                                 // Store None to the variable just in case the handler deleted it.
                                                 beginStoreLocal(handler.name, b);
                                                     b.emitLoadConstant(PNone.NONE);
                                                 endStoreLocal(handler.name, b);
                                                 emitDelLocal(handler.name, b);
+
+                                                // (A)
+                                                b.beginMarkExceptionAsCaught();
+                                                    b.emitLoadLocal(handlerException);
+                                                b.endMarkExceptionAsCaught();
                                             b.endBlock(); // finally
 
                                             b.beginBlock(); // try
@@ -4180,7 +4291,16 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                                             b.endBlock(); // try
                                         b.endFinallyTry();
                                     } else {
-                                        visitSequence(handler.body);
+                                        b.beginFinallyTry(handlerException);
+                                            // (A)
+                                            b.beginMarkExceptionAsCaught();
+                                                b.emitLoadLocal(handlerException);
+                                            b.endMarkExceptionAsCaught();
+
+                                            b.beginBlock();
+                                                visitSequence(handler.body);
+                                            b.endBlock();
+                                        b.endFinallyTry();
                                     }
 
                                     b.emitBranch(afterElse);
@@ -4387,9 +4507,9 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             b.endStoreLocal();
 
             // Mark this location for the stack trace.
-            b.beginSetCatchingFrameReference();
+            b.beginMarkExceptionAsCaught();
             b.emitLoadLocal(ex);
-            b.endSetCatchingFrameReference();
+            b.endMarkExceptionAsCaught();
 
             // exceptional exit
             if (async) {

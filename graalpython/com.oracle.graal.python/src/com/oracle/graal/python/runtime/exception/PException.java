@@ -289,11 +289,17 @@ public final class PException extends AbstractTruffleException {
      *
      * We thus set the catch information in two steps:
      * <ol>
-     * <li>First, we use a hook in the DSL to set the catch location immediately when an exception
-     * is thrown from the bytecode loop ({@link #setCatchLocation}).</li>
-     * <li>Then, we set the actual catching frame reference inside the handler code
-     * ({@link #setCatchingFrameReference(Frame, PBytecodeDSLRootNode)}.</li>
+     * <li>First, we use a hook in the DSL to set the catch location every time an exception is
+     * thrown from the bytecode loop ({@link #setCatchLocation}).</li>
+     * <li>Then, we mark the exception as "caught" when we reach a handler
+     * ({@link #markAsCaught(Frame, PBytecodeDSLRootNode)}. Once it's "caught", the catch location
+     * is frozen.</li>
      * </ol>
+     *
+     * (It is necessary to freeze the location after calling
+     * {@link #markAsCaught(Frame, PBytecodeDSLRootNode)} because Python-level try-except-finally
+     * blocks are implemented with multiple DSL-level throws; these throws will trigger subsequent
+     * {@link #setCatchLocation} calls that would overwrite the location.)
      *
      * Since the catch location is set unconditionally, it could refer to a location that had no
      * handler (i.e., the location is invalid). Code should not use the location unless the other
@@ -302,13 +308,22 @@ public final class PException extends AbstractTruffleException {
      */
     public void setCatchLocation(int catchBci, BytecodeNode bytecodeNode) {
         assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
-        this.catchBci = catchBci;
-        this.bytecodeNode = bytecodeNode;
+        // Overwrite the catchBci as long as no handler has been found yet.
+        if (!isCaught()) {
+            this.catchBci = catchBci;
+            this.bytecodeNode = bytecodeNode;
+        }
     }
 
-    public void setCatchingFrameReference(Frame frame, PBytecodeDSLRootNode catchLocation) {
-        this.frameInfo = PArguments.getCurrentFrameInfo(frame);
-        this.rootNode = catchLocation;
+    public void markAsCaught(Frame frame, PBytecodeDSLRootNode catchLocation) {
+        if (!isCaught()) {
+            this.frameInfo = PArguments.getCurrentFrameInfo(frame);
+            this.rootNode = catchLocation;
+        }
+    }
+
+    private boolean isCaught() {
+        return rootNode != null;
     }
 
     public void markEscaped() {
