@@ -42,6 +42,7 @@ import gc
 import os
 import shutil
 import sys
+import time
 import unittest
 from copy import deepcopy
 from io import StringIO
@@ -53,6 +54,13 @@ DIR = Path(__file__).parent.absolute()
 GRAALPYTHON = sys.implementation.name == "graalpy"
 
 IS_MANAGED_LAUNCHER = not GRAALPYTHON or __graalpython__.is_managed_launcher()
+
+
+def run_gc():
+    for i in range(3):
+        gc.collect()
+        time.sleep(0.01)
+
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False

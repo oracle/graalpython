@@ -37,13 +37,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType, run_gc
 
 __dir__ = __file__.rpartition("/")[0]
 
 
 class TestPyCapsule(CPyExtTestCase):
-
     test_PyCapsule_CheckExact = CPyExtFunction(
         lambda args: True,
         lambda: (
@@ -112,3 +111,29 @@ class TestPyCapsule(CPyExtTestCase):
         callfunction="wrap_PyCapsule_SetContext",
         cmpfunc=unhandled_error_compare
     )
+
+    def test_capsule_destructor(self):
+        Tester = CPyExtType(
+            "CapsuleDestructorTester",
+            code="""
+            static void capsule_destructor(PyObject* capsule) {
+                PyObject* contents = (PyObject*) PyCapsule_GetPointer(capsule, "capsule");
+                assert(PyDict_Check(contents));
+                PyDict_SetItemString(contents, "destructor_was_here", Py_NewRef(Py_True));
+                Py_DECREF(contents);
+            }
+            
+            static PyObject* create_capsule(PyObject* unused, PyObject* contents) {
+                return PyCapsule_New(Py_NewRef(contents), "capsule", capsule_destructor);
+            }
+            """,
+            tp_methods='{"create_capsule", (PyCFunction)create_capsule, METH_O | METH_STATIC, NULL}',
+        )
+        d = {}
+        capsule = Tester.create_capsule(d)
+        run_gc()
+        assert capsule
+        assert not d
+        del capsule
+        run_gc()
+        assert "destructor_was_here" in d
