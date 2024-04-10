@@ -377,11 +377,12 @@ public abstract class CApiTransitions {
     }
 
     @TruffleBoundary
-    public static void registerPyCapsuleDestructor(PyCapsule capsule) {
+    public static PyCapsuleReference registerPyCapsuleDestructor(PyCapsule capsule) {
         assert PythonContext.get(null).ownsGil();
         HandleContext handleContext = getContext();
         PyCapsuleReference ref = new PyCapsuleReference(handleContext, capsule);
         handleContext.pyCapsuleReferences.add(ref);
+        return ref;
     }
 
     @TruffleBoundary

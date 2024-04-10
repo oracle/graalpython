@@ -77,6 +77,7 @@ public final class PyCapsule extends PythonBuiltinObject {
     }
 
     private final CapsuleData data;
+    private CApiTransitions.PyCapsuleReference reference;
 
     /**
      * (mq) We are forcing all PyCapsule objects to be of a builtin type
@@ -122,8 +123,8 @@ public final class PyCapsule extends PythonBuiltinObject {
 
     public void registerDestructor(Object destructor) {
         assert destructor == null || !InteropLibrary.getUncached().isNull(destructor);
-        if (data.destructor == null && destructor != null) {
-            CApiTransitions.registerPyCapsuleDestructor(this);
+        if (reference == null && destructor != null) {
+            reference = CApiTransitions.registerPyCapsuleDestructor(this);
         }
         data.destructor = destructor;
     }
