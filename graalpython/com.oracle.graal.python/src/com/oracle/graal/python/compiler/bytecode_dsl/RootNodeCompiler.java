@@ -4138,11 +4138,10 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                             emitSetCurrentException(savedException); // finally
 
                             b.beginBlock(); // try
-                                boolean hasBareExcept = false;
+                                SourceRange bareExceptRange = null;
                                 for (ExceptHandlerTy h : node.handlers) {
-
-                                    if (hasBareExcept) {
-                                        // TODO: improve source location
+                                    beginNode(h);
+                                    if (bareExceptRange != null) {
                                         errorCallback.onError(ErrorType.Syntax, currentLocation, "default 'except:' must be last");
                                     }
 
@@ -4154,7 +4153,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                                                 handler.type.accept(this);
                                             b.endExceptMatch();
                                     } else {
-                                        hasBareExcept = true;
+                                        bareExceptRange = handler.getSourceRange();
                                     }
 
                                     b.beginBlock(); // handler body
@@ -4191,19 +4190,21 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                                     if (handler.type != null) {
                                         b.endIfThen();
                                     }
+
+                                    endNode();
                                 }
                             b.endBlock(); // try
 
                         b.endFinallyTry();
 
                         // Each handler branches to afterElse. If we reach this point and there was not a
-                        // bare exception, none of the handlers matched, and we should rethrow.
+                        // bare exception, none of the handlers matched, and we should reraise.
                         // Optimization: If there's a bare except clause, control will never fall through
                         // and we can omit the rethrow.
-                        if (!hasBareExcept) {
-                            b.beginThrow();
+                        if (bareExceptRange == null) {
+                            b.beginReraise();
                                 b.emitLoadLocal(exception);
-                            b.endThrow();
+                            b.endReraise();
                         }
 
                     b.endBlock(); // catch

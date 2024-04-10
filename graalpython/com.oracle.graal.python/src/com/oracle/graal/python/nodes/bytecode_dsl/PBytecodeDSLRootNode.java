@@ -820,8 +820,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class Raise {
         @Specialization
         public static void perform(VirtualFrame frame, Object typeOrExceptionObject, Object cause,
+                        @Bind("$root") PBytecodeDSLRootNode root,
                         @Cached RaiseNode raiseNode) {
-            raiseNode.execute(frame, typeOrExceptionObject, cause, true);
+            raiseNode.execute(frame, typeOrExceptionObject, cause, !root.isInternal());
         }
     }
 
@@ -2517,16 +2518,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
-    public static final class Throw {
-
-        @SuppressWarnings("unchecked")
-        private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
-            throw (E) e;
-        }
-
+    public static final class Reraise {
         @Specialization
-        public static void doThrow(Throwable ex) {
-            sneakyThrow(ex);
+        public static void doPException(PException ex,
+                        @Bind("$root") PBytecodeDSLRootNode root) {
+            throw ex.getExceptionForReraise(!root.isInternal());
         }
     }
 
