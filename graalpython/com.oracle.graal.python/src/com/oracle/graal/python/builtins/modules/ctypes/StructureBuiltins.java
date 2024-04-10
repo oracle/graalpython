@@ -40,7 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Structure;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Union;
 import static com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.T__FIELDS_;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL;
 import static com.oracle.graal.python.nodes.ErrorMessages.DUPLICATE_VALUES_FOR_FIELD_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_INITIALIZERS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
@@ -51,11 +54,14 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltinsFactory.PyTypeStgDictNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
@@ -87,6 +93,15 @@ public final class StructureBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return StructureBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+        core.getContext().registerCApiHook(() -> {
+            PCallCapiFunction.getUncached().call(FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL, PythonToNativeNode.executeUncached(Structure));
+            PCallCapiFunction.getUncached().call(FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL, PythonToNativeNode.executeUncached(Union));
+        });
     }
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
