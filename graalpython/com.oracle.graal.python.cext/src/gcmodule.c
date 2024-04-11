@@ -2332,8 +2332,10 @@ gc_alloc(size_t basicsize, size_t presize)
     if (mem == NULL) {
         return _PyErr_NoMemory(tstate);
     }
-    ((PyObject **)mem)[0] = NULL;
-    ((PyObject **)mem)[1] = NULL;
+    // GraalPy change: different header layout
+    // ((PyObject **)mem)[0] = NULL;
+    // ((PyObject **)mem)[1] = NULL;
+    memset(mem, '\0', presize);
     PyObject *op = (PyObject *)(mem + presize);
     _PyObject_GC_Link(op);
     return op;
