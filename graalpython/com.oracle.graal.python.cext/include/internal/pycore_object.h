@@ -15,9 +15,13 @@ extern "C" {
 
 #include <stdbool.h>
 #include "pycore_gc.h"            // _PyObject_GC_IS_TRACKED()
-// #include "pycore_interp.h"        // PyInterpreterState.gc
-// #include "pycore_pystate.h"       // _PyInterpreterState_GET()
-// #include "pycore_runtime.h"       // _PyRuntime
+#if 0 // GraalPy change
+#include "pycore_interp.h"        // PyInterpreterState.gc
+#endif
+#include "pycore_pystate.h"       // _PyInterpreterState_GET()
+#if 0 // GraalPy change
+#include "pycore_runtime.h"       // _PyRuntime
+#endif
 
 #define _PyObject_IMMORTAL_INIT(type) \
     { \
@@ -134,8 +138,28 @@ static inline void _PyObject_GC_TRACK(
 #endif
     PyObject *op)
 {
-    // GraalPy change
-    PyObject_GC_Track(op);
+    _PyObject_ASSERT_FROM(op, !_PyObject_GC_IS_TRACKED(op),
+                          "object already tracked by the garbage collector",
+                          filename, lineno, __func__);
+
+    PyGC_Head *gc = _Py_AS_GC(op);
+    _PyObject_ASSERT_FROM(op,
+                          (gc->_gc_prev & _PyGC_PREV_MASK_COLLECTING) == 0,
+                          "object is in generation which is garbage collected",
+                          filename, lineno, __func__);
+
+#if 0 // GraalPy change
+    PyInterpreterState *interp = _PyInterpreterState_GET();
+    PyGC_Head *generation0 = interp->gc.generation0;
+#else // GraalPy change
+    PyThreadState *tstate = _PyThreadState_GET();
+    PyGC_Head *generation0 = tstate->gc->generation0;
+#endif // GraalPy change
+    PyGC_Head *last = (PyGC_Head*)(generation0->_gc_prev);
+    _PyGCHead_SET_NEXT(last, gc);
+    _PyGCHead_SET_PREV(gc, last);
+    _PyGCHead_SET_NEXT(gc, generation0);
+    generation0->_gc_prev = (uintptr_t)gc;
 }
 
 /* Tell the GC to stop tracking this object.
@@ -155,8 +179,17 @@ static inline void _PyObject_GC_UNTRACK(
 #endif
     PyObject *op)
 {
-    // GraalPy change
-    PyObject_GC_UnTrack(op);
+    _PyObject_ASSERT_FROM(op, _PyObject_GC_IS_TRACKED(op),
+                          "object not tracked by the garbage collector",
+                          filename, lineno, __func__);
+
+    PyGC_Head *gc = _Py_AS_GC(op);
+    PyGC_Head *prev = _PyGCHead_PREV(gc);
+    PyGC_Head *next = _PyGCHead_NEXT(gc);
+    _PyGCHead_SET_NEXT(prev, next);
+    _PyGCHead_SET_PREV(next, prev);
+    gc->_gc_next = 0;
+    gc->_gc_prev &= _PyGC_PREV_MASK_FINALIZED;
 }
 
 // Macros to accept any type for the parameter, and to automatically pass

@@ -2249,18 +2249,39 @@ visit_validate(PyObject *op, void *parent_raw)
 void
 PyObject_GC_Track(void *op_raw)
 {
-    // GraalPy change: different implementation
+    // GraalPy change
     if (PyTruffle_Trace_Memory()) {
         GraalPyTruffleObject_GC_Track(op_raw);
     }
+    PyObject *op = _PyObject_CAST(op_raw);
+    if (_PyObject_GC_IS_TRACKED(op)) {
+        _PyObject_ASSERT_FAILED_MSG(op,
+                                    "object already tracked "
+                                    "by the garbage collector");
+    }
+    _PyObject_GC_TRACK(op);
+
+#ifdef Py_DEBUG
+    /* Check that the object is valid: validate objects traversed
+       by tp_traverse() */
+    traverseproc traverse = Py_TYPE(op)->tp_traverse;
+    (void)traverse(op, visit_validate, op);
+#endif
 }
 
 void
 PyObject_GC_UnTrack(void *op_raw)
 {
-    // GraalPy change: different implementation
+    // GraalPy change
     if (PyTruffle_Trace_Memory()) {
         GraalPyTruffleObject_GC_UnTrack(op_raw);
+    }
+    PyObject *op = _PyObject_CAST(op_raw);
+    /* Obscure:  the Py_TRASHCAN mechanism requires that we be able to
+     * call PyObject_GC_UnTrack twice on an object.
+     */
+    if (_PyObject_GC_IS_TRACKED(op)) {
+        _PyObject_GC_UNTRACK(op);
     }
 }
 
