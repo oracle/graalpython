@@ -40,6 +40,15 @@
 #include "pycore_pystate.h"     // _PyThreadState_GET()
 #include "pydtrace.h"
 
+#define CALL_TRAVERSE(traverse, op, visit_fun, ctx) \
+    if (!(traverse)) { \
+        PyTruffle_Log(PY_TRUFFLE_LOG_INFO, \
+                      "type '%.100s' is a GC type but tp_traverse is NULL", \
+                      Py_TYPE((op))->tp_name); \
+    } else { \
+        (void) (traverse)((op), (visitproc)(visit_decref), (ctx)); \
+    }
+
 #if 0 // GraalPy change
 typedef struct _gc_runtime_state GCState;
 #endif // GraalPy change
@@ -496,9 +505,8 @@ subtract_refs(PyGC_Head *containers)
     for (; gc != containers; gc = GC_NEXT(gc)) {
         PyObject *op = FROM_GC(gc);
         traverse = Py_TYPE(op)->tp_traverse;
-        (void) traverse(op,
-                        (visitproc)visit_decref,
-                        op);
+        // GraalPy change
+        CALL_TRAVERSE(traverse, op, visit_decref, op);
     }
 }
 
@@ -607,9 +615,8 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable)
                                       "refcount is too small");
             // NOTE: visit_reachable may change gc->_gc_next when
             // young->_gc_prev == gc.  Don't do gc = GC_NEXT(gc) before!
-            (void) traverse(op,
-                    (visitproc)visit_reachable,
-                    (void *)young);
+            // GraalPy change
+            CALL_TRAVERSE(traverse, op, visit_reachable, (void *)young)
             // relink gc_prev to prev element.
             _PyGCHead_SET_PREV(gc, prev);
             // gc is not COLLECTING state after here.
@@ -754,9 +761,8 @@ move_legacy_finalizer_reachable(PyGC_Head *finalizers)
     for (; gc != finalizers; gc = GC_NEXT(gc)) {
         /* Note that the finalizers list may grow during this. */
         traverse = Py_TYPE(FROM_GC(gc))->tp_traverse;
-        (void) traverse(FROM_GC(gc),
-                        (visitproc)visit_move,
-                        (void *)finalizers);
+        // GraalPy change
+        CALL_TRAVERSE(traverse, FROM_GC(gc), visit_move, (void *)finalizers)
     }
 }
 
