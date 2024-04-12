@@ -1,0 +1,81 @@
+diff --git a/src/c/_cffi_backend.c b/src/c/_cffi_backend.c
+index 602117e3..8a9f5bbf 100644
+--- a/src/c/_cffi_backend.c
++++ b/src/c/_cffi_backend.c
+@@ -5884,7 +5884,7 @@ static CTypeDescrObject *fb_prepare_ctype(struct funcbuilder_s *fb,
+     fb->bufferp = NULL;
+     fb->fct = NULL;
+ 
+-    pfargs = (CTypeDescrObject **)&PyTuple_GET_ITEM(fargs, 0);
++    pfargs = (CTypeDescrObject **)PySequence_Fast_ITEMS(fargs);
+     nargs = PyTuple_GET_SIZE(fargs);
+ #if defined(MS_WIN32) && !defined(_WIN64)
+     if (fabi == FFI_STDCALL)
+diff --git a/src/c/lib_obj.c b/src/c/lib_obj.c
+index bd9ba3fc..273c13a4 100644
+--- a/src/c/lib_obj.c
++++ b/src/c/lib_obj.c
+@@ -47,10 +47,10 @@ static struct CPyExtFunc_s *_cpyextfunc_get(PyObject *x)
+ 
+     fo = (PyCFunctionObject *)x;
+     lo = (LibObject *)y;
+-    if (lo->l_libname != fo->m_module)
++    if (lo->l_libname != _PyCFunction_GetModule(fo))
+         return NULL;
+ 
+-    return (struct CPyExtFunc_s *)(fo->m_ml);
++    return (struct CPyExtFunc_s *)(_PyCFunction_GetMethodDef(fo));
+ }
+ 
+ static PyObject *_cpyextfunc_type(LibObject *lib, struct CPyExtFunc_s *exf)
+diff --git a/src/c/misc_thread_common.h b/src/c/misc_thread_common.h
+index 7d29634b..bb440851 100644
+--- a/src/c/misc_thread_common.h
++++ b/src/c/misc_thread_common.h
+@@ -344,45 +344,7 @@ static PyThreadState *get_current_ts(void)
+ 
+ static PyGILState_STATE gil_ensure(void)
+ {
+-    /* Called at the start of a callback.  Replacement for
+-       PyGILState_Ensure().
+-    */
+-    PyGILState_STATE result;
+-    PyThreadState *ts = PyGILState_GetThisThreadState();
+-    //fprintf(stderr, "%p: gil_ensure(), tstate=%p, tls=%p\n", get_cffi_tls(), ts, get_cffi_tls());
+-
+-    if (ts != NULL) {
+-        ts->gilstate_counter++;
+-        if (ts != get_current_ts()) {
+-            /* common case: 'ts' is our non-current thread state and
+-               we have to make it current and acquire the GIL */
+-            PyEval_RestoreThread(ts);
+-            //fprintf(stderr, "%p: gil_ensure(), tstate=%p MADE CURRENT\n", get_cffi_tls(), ts);
+-            return PyGILState_UNLOCKED;
+-        }
+-        else {
+-            //fprintf(stderr, "%p: gil_ensure(), tstate=%p ALREADY CURRENT\n", get_cffi_tls(), ts);
+-            return PyGILState_LOCKED;
+-        }
+-    }
+-    else {
+-        /* no thread state here so far. */
+-        result = PyGILState_Ensure();
+-        assert(result == PyGILState_UNLOCKED);
+-
+-        ts = PyGILState_GetThisThreadState();
+-        //fprintf(stderr, "%p: gil_ensure(), made a new tstate=%p\n", get_cffi_tls(), ts);
+-        assert(ts != NULL);
+-        assert(ts == get_current_ts());
+-        assert(ts->gilstate_counter >= 1);
+-
+-        /* Use the ThreadCanary mechanism to keep 'ts' alive until the
+-           thread really shuts down */
+-        thread_canary_register(ts);
+-
+-        assert(ts == PyGILState_GetThisThreadState());
+-        return result;
+-    }
++    return PyGILState_Ensure();
+ }
+ 
+ static void gil_release(PyGILState_STATE oldstate)
