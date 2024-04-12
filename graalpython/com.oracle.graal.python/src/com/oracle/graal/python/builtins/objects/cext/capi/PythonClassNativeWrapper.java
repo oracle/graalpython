@@ -149,9 +149,16 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
             HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.AS_BUFFER, as_buffer);
         }
 
-        // initialize flags:
-        long flags = GetTypeFlagsNode.getUncached().execute(clazz);
-        flags |= TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
+        /*
+         * Initialize type flags: If the native type, we are wrapping, already defines 'tp_flags',
+         * we use it because those must stay consistent with slots. For example, native
+         * tp_new/tp_alloc/tp_dealloc/tp_free functions must be consistent with
+         * 'Py_TPFLAGS_HAVE_GC'.
+         */
+        long flags = readI64.read(pointer, CFields.PyTypeObject__tp_flags);
+        if (flags == 0) {
+            flags = GetTypeFlagsNode.executeUncached(clazz) | TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
+        }
         SetTypeFlagsNode.executeUncached(clazz, flags);
 
         /*
