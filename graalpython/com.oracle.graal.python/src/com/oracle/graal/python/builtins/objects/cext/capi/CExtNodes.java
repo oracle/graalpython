@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_NO_OP_CLEAR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_DEALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_FREE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GC_DEL;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TYPE_GENERIC_ALLOC;
@@ -143,6 +144,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
@@ -897,7 +899,16 @@ public abstract class CExtNodes {
             if (managedMemberName == HiddenAttr.ALLOC) {
                 symbol = FUN_PY_TYPE_GENERIC_ALLOC;
             } else if (managedMemberName == HiddenAttr.FREE) {
-                symbol = FUN_PY_OBJECT_GC_DEL;
+                /*
+                 * See 'typeobject.c: inherit_slots': A bit of magic to plug in the correct default
+                 * tp_free function when a derived class adds gc, didn't define tp_free, and the
+                 * base uses the default non-gc tp_free.
+                 */
+                if ((GetTypeFlagsNode.executeUncached(cls) & TypeFlags.HAVE_GC) != 0) {
+                    symbol = FUN_PY_OBJECT_GC_DEL;
+                } else {
+                    symbol = FUN_PY_OBJECT_FREE;
+                }
             } else if (managedMemberName == HiddenAttr.CLEAR) {
                 // This will need to be subtype_clear when we implement native GC
                 symbol = FUN_NO_OP_CLEAR;
