@@ -68,8 +68,10 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -119,10 +121,11 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"!isPTuple(instance)", "!isNone(instance)"})
-        static Object getOthers(@SuppressWarnings("unused") VirtualFrame frame, PTupleGetter self, Object instance, @SuppressWarnings("unused") Object owner,
+        @Fallback
+        @InliningCutoff
+        static Object getOthers(@SuppressWarnings("unused") VirtualFrame frame, Object self, Object instance, @SuppressWarnings("unused") Object owner,
                         @Cached PRaiseNode raiseNode) {
-            final int index = self.getIndex();
+            final int index = ((PTupleGetter) self).getIndex();
             throw raiseNode.raise(PythonBuiltinClassType.TypeError, DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P,
                             index, "tuple subclasses", instance);
         }

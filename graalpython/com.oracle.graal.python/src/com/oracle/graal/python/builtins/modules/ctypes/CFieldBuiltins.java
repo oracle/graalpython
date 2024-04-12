@@ -113,6 +113,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -177,10 +178,11 @@ public final class CFieldBuiltins extends PythonBuiltins {
         @Specialization
         static Object doit(CFieldObject self, Object inst, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile instIsNoValueProfile,
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            if (inst == PNone.NO_VALUE) {
+            if (instIsNoValueProfile.profile(inliningTarget, inst == PNone.NO_VALUE)) {
                 return self;
             }
             if (!pyTypeCheck.isCDataObject(inliningTarget, inst)) {

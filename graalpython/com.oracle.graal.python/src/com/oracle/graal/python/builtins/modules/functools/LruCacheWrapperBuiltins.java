@@ -584,8 +584,10 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getmethod(LruCacheObject self, Object obj, @SuppressWarnings("unused") Object type,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile objIsNoneProfile,
                         @Cached PythonObjectFactory factory) {
-            if (obj instanceof PNone) {
+            if (objIsNoneProfile.profile(inliningTarget, obj instanceof PNone)) {
                 return self;
             }
             return factory.createMethod(obj, self);

@@ -120,11 +120,12 @@ def slots_tester(Klass):
 # language=Python
 EXT_COMPILER = '''
 import sys
-from distutils.core import setup, Extension
 from pathlib import Path
 import warnings
 DIR = Path(__file__).parent.absolute()
 
+with warnings.catch_warnings(action="ignore"):
+    from distutils.core import setup, Extension
 
 def compile_ext(name):
     source_file = name + '.c'
@@ -304,7 +305,7 @@ def native_static_type_impl(name, mod_name, slots):
             if (PyType_Ready(&CustomType_{name}) < 0)
                 return NULL;
             Py_INCREF(&CustomType_{name});
-            return &CustomType_{name};
+            return (PyObject*) &CustomType_{name};
         }}
     ''')
 

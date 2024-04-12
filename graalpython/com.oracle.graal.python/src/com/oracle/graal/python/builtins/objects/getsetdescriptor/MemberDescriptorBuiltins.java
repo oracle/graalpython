@@ -126,7 +126,7 @@ public final class MemberDescriptorBuiltins extends PythonBuiltins {
             return descr;
         }
 
-        @Specialization(guards = "!isNone(obj)")
+        @Specialization(guards = "!isNoValue(obj)")
         static Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
                         @Cached DescriptorCheckNode descriptorCheckNode,
