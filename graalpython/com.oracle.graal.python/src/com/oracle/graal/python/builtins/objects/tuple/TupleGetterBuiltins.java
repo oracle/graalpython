@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,28 +45,33 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CANT_SET_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.TUPLE_OUT_OF_BOUNDS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELETE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET__;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.DescrSetBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -75,6 +80,8 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTupleGetter)
 public final class TupleGetterBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = TupleGetterBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TupleGetterBuiltinsFactory.getFactories();
@@ -93,9 +100,9 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.tp_descr_get, isComplex = true)
     @GenerateNodeFactory
-    abstract static class TupleGetterGetNode extends PythonTernaryBuiltinNode {
+    abstract static class TupleGetterGetNode extends DescrGetBuiltinNode {
         @Specialization()
         static Object getTuple(VirtualFrame frame, PTupleGetter self, PTuple instance, @SuppressWarnings("unused") Object owner,
                         @Bind("this") Node inliningTarget,
@@ -110,38 +117,32 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object getNone(@SuppressWarnings("unused") VirtualFrame frame, PTupleGetter self, @SuppressWarnings("unused") PNone instance, @SuppressWarnings("unused") Object owner) {
+        static Object getNone(@SuppressWarnings("unused") VirtualFrame frame, PTupleGetter self, @SuppressWarnings("unused") PNone instance, @SuppressWarnings("unused") Object owner) {
             return self;
         }
 
-        @Specialization(guards = {"!isPTuple(instance)", "!isNone(instance)"})
-        static Object getOthers(@SuppressWarnings("unused") VirtualFrame frame, PTupleGetter self, Object instance, @SuppressWarnings("unused") Object owner,
+        @Fallback
+        @InliningCutoff
+        static Object getOthers(@SuppressWarnings("unused") VirtualFrame frame, Object self, Object instance, @SuppressWarnings("unused") Object owner,
                         @Cached PRaiseNode raiseNode) {
-            final int index = self.getIndex();
+            final int index = ((PTupleGetter) self).getIndex();
             throw raiseNode.raise(PythonBuiltinClassType.TypeError, DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P,
                             index, "tuple subclasses", instance);
         }
     }
 
-    @Builtin(name = J___SET__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.tp_descr_set, isComplex = true)
     @GenerateNodeFactory
-    abstract static class TupleGetterSetNode extends PythonTernaryBuiltinNode {
+    abstract static class DescrSet extends DescrSetBuiltinNode {
         @Specialization
+        @TruffleBoundary
         @SuppressWarnings("unused")
-        static Object set(PTupleGetter self, Object instance, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, CANT_SET_ATTRIBUTE);
-        }
-    }
-
-    @Builtin(name = J___DELETE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class TupleGetterDeleteNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object delete(PTupleGetter self, Object instance,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, CANT_DELETE_ATTRIBUTE);
+        void set(PTupleGetter self, Object instance, Object value) {
+            if (PGuards.isNoValue(value)) {
+                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.AttributeError, CANT_DELETE_ATTRIBUTE);
+            } else {
+                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.AttributeError, CANT_SET_ATTRIBUTE);
+            }
         }
     }
 

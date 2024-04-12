@@ -123,7 +123,7 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
     }
 
     @Specialization
-    static int doLongExact(Node inliningTarget, long object, PythonBuiltinClassType errorClass,
+    public static int doLongExact(Node inliningTarget, long object, PythonBuiltinClassType errorClass,
                     @Cached PRaiseNode.Lazy raiseNode) {
         int converted = (int) object;
         if (object == converted) {

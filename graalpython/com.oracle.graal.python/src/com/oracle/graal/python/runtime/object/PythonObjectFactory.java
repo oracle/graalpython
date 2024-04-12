@@ -93,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -213,8 +214,10 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence.BuiltinType
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.builtins.objects.types.PGenericAliasIterator;
 import com.oracle.graal.python.builtins.objects.types.PUnionType;
@@ -574,7 +577,11 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PythonClass createPythonClassAndFixupSlots(PythonLanguage language, Object metaclass, TruffleString name, Object base, PythonAbstractClass[] bases) {
         PythonClass result = trace(new PythonClass(language, metaclass, getShape(metaclass), name, base, bases));
-        SpecialMethodSlot.initializeSpecialMethodSlots(result, GetMroStorageNode.executeUncached(result), language);
+        // Fixup tp slots
+        MroSequenceStorage mro = GetMroStorageNode.executeUncached(result);
+        SpecialMethodSlot.initializeSpecialMethodSlots(result, mro, language);
+        TpSlots.inherit(result, mro);
+        TpSlots.fixupSlotDispatchers(result);
         result.initializeMroShape(language);
         return result;
     }
@@ -665,20 +672,22 @@ public abstract class PythonObjectFactory extends Node {
                         callTarget));
     }
 
-    public final PBuiltinFunction createWrapperDescriptor(TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
+    public final PBuiltinFunction createWrapperDescriptor(TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget, TpSlot slot, PExternalFunctionWrapper slotWrapper) {
         return trace(new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(getLanguage()), name, type,
-                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget));
+                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget, slot, slotWrapper));
     }
 
-    public final PBuiltinFunction createWrapperDescriptor(TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
+    public final PBuiltinFunction createWrapperDescriptor(TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget, TpSlot slot,
+                    PExternalFunctionWrapper slotWrapper) {
         return trace(new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(getLanguage()), name, type, defaults, kw, flags,
-                        callTarget));
+                        callTarget, slot, slotWrapper));
     }
 
     public final PBuiltinFunction createBuiltinFunction(PBuiltinFunction function, Object klass) {
         PythonBuiltinClassType type = (PythonBuiltinClassType) function.getInitialPythonClass();
         return trace(new PBuiltinFunction(type, type.getInstanceShape(getLanguage()), function.getName(), klass,
-                        function.getDefaults(), function.getKwDefaults(), function.getFlags(), function.getCallTarget()));
+                        function.getDefaults(), function.getKwDefaults(), function.getFlags(), function.getCallTarget(),
+                        function.getSlot(), function.getSlotWrapper()));
     }
 
     public final GetSetDescriptor createGetSetDescriptor(Object get, Object set, TruffleString name, Object type) {

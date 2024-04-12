@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,21 +42,23 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptors;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.ForeignMethod;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -99,33 +101,23 @@ public abstract class PyObjectGetMethod extends Node {
 
     public abstract Object execute(Frame frame, Node inliningTarget, Object receiver, TruffleString name);
 
-    protected static boolean isObjectGetAttribute(Object lazyClass) {
-        Object getattributeSlot = null;
-        Object getattrSlot = null;
-        if (lazyClass instanceof PythonBuiltinClassType) {
-            PythonBuiltinClassType type = (PythonBuiltinClassType) lazyClass;
-            getattributeSlot = SpecialMethodSlot.GetAttribute.getValue(type);
-            getattrSlot = SpecialMethodSlot.GetAttr.getValue(type);
-        } else if (lazyClass instanceof PythonManagedClass) {
-            PythonManagedClass type = (PythonManagedClass) lazyClass;
-            getattributeSlot = SpecialMethodSlot.GetAttribute.getValue(type);
-            getattrSlot = SpecialMethodSlot.GetAttr.getValue(type);
-        }
-        return getattributeSlot == BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE && getattrSlot == PNone.NO_VALUE;
+    protected static boolean isObjectGetAttribute(Node inliningTarget, GetCachedTpSlotsNode getSlotsNode, Object lazyClass) {
+        TpSlots slots = getSlotsNode.execute(inliningTarget, lazyClass);
+        return slots.tp_getattro() == ObjectBuiltins.SLOTS.tp_getattro();
     }
 
-    @Specialization(guards = {"isObjectGetAttribute(lazyClass)" /* Implies not foreign */, "name == cachedName"}, limit = "1")
+    // isObjectGetAttribute implies not foreign
+    @Specialization(guards = {"isObjectGetAttribute(inliningTarget, getTypeSlotsNode, lazyClass)", "name == cachedName"}, limit = "1")
     static Object getFixedAttr(VirtualFrame frame, Node inliningTarget, Object receiver, @SuppressWarnings("unused") TruffleString name,
                     @SuppressWarnings("unused") /* Truffle bug: @Shared("getClassNode") */ @Exclusive @Cached GetClassNode getClass,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetCachedTpSlotsNode getTypeSlotsNode,
                     @Bind("getClass.execute(inliningTarget, receiver)") Object lazyClass,
                     @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,
                     @Cached("create(name)") LookupAttributeInMRONode lookupNode,
-                    /* Truffle bug: @Shared("getDescrClass") */ @Exclusive @Cached GetClassNode getDescrClass,
-                    @Shared("lookupGet") @Cached(parameters = "Get", inline = false) LookupCallableSlotInMRONode lookupGet,
-                    @Shared("lookupSet") @Cached(parameters = "Set", inline = false) LookupCallableSlotInMRONode lookupSet,
-                    @Shared("callGet") @Cached(inline = false) CallTernaryMethodNode callGet,
+                    @Exclusive @Cached GetObjectSlotsNode getSlotsNode,
+                    @Exclusive @Cached CallSlotDescrGet callGetNode,
                     @Shared("readAttr") @Cached(inline = false) ReadAttributeFromObjectNode readAttr,
-                    /* Truffle bug: @Shared("raiseNode") */ @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Cached InlinedBranchProfile hasDescr,
                     @Cached InlinedBranchProfile returnDataDescr,
                     @Cached InlinedBranchProfile returnAttr,
@@ -133,18 +125,18 @@ public abstract class PyObjectGetMethod extends Node {
                     @Cached InlinedBranchProfile returnBoundDescr) {
         boolean methodFound = false;
         Object descr = lookupNode.execute(lazyClass);
-        Object getMethod = PNone.NO_VALUE;
+        TpSlot getMethod = null;
         if (descr != PNone.NO_VALUE) {
             hasDescr.enter(inliningTarget);
             if (MaybeBindDescriptorNode.isMethodDescriptor(descr)) {
                 methodFound = true;
             } else {
                 // lookupGet acts as branch profile for this branch
-                Object descrType = getDescrClass.execute(inliningTarget, descr);
-                getMethod = lookupGet.execute(descrType);
-                if (getMethod != PNone.NO_VALUE && lookupSet.execute(descrType) != PNone.NO_VALUE) {
+                var descrSlots = getSlotsNode.execute(inliningTarget, descr);
+                getMethod = descrSlots.tp_descr_get();
+                if (getMethod != null && TpSlotDescrSet.PyDescr_IsData(descrSlots)) {
                     returnDataDescr.enter(inliningTarget);
-                    return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
+                    return new BoundDescriptor(callGetNode.execute(frame, inliningTarget, getMethod, descr, receiver, lazyClass));
                 }
             }
         }
@@ -160,10 +152,10 @@ public abstract class PyObjectGetMethod extends Node {
             returnUnboundMethod.enter(inliningTarget);
             return descr;
         }
-        if (getMethod != PNone.NO_VALUE) {
+        if (getMethod != null) {
             // callGet is used twice, and cannot act as the profile here
             returnBoundDescr.enter(inliningTarget);
-            return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
+            return new BoundDescriptor(callGetNode.execute(frame, inliningTarget, getMethod, descr, receiver, lazyClass));
         }
         if (descr != PNone.NO_VALUE) {
             return new BoundDescriptor(descr);
@@ -172,29 +164,29 @@ public abstract class PyObjectGetMethod extends Node {
     }
 
     // No explicit branch profiling when we're looking up multiple things
-    @Specialization(guards = "isObjectGetAttribute(lazyClass)" /* Implies not foreign */, replaces = "getFixedAttr", limit = "1")
+    // isObjectGetAttribute implies not foreign
+    @Specialization(guards = "isObjectGetAttribute(inliningTarget, getTypeSlotsNode, lazyClass)", replaces = "getFixedAttr", limit = "1")
     @InliningCutoff
     static Object getDynamicAttr(Frame frame, Node inliningTarget, Object receiver, TruffleString name,
-                    @SuppressWarnings("unused") /* Truffle bug: @Shared("getClassNode") */ @Exclusive @Cached GetClassNode getClass,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClass,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetCachedTpSlotsNode getTypeSlotsNode,
                     @Bind("getClass.execute(inliningTarget, receiver)") Object lazyClass,
                     @Cached(inline = false) LookupAttributeInMRONode.Dynamic lookupNode,
-                    /* Truffle bug: @Shared("getDescrClass") */ @Exclusive @Cached GetClassNode getDescrClass,
-                    @Shared("lookupGet") @Cached(parameters = "Get", inline = false) LookupCallableSlotInMRONode lookupGet,
-                    @Shared("lookupSet") @Cached(parameters = "Set", inline = false) LookupCallableSlotInMRONode lookupSet,
-                    @Shared("callGet") @Cached(inline = false) CallTernaryMethodNode callGet,
+                    @Exclusive @Cached GetObjectSlotsNode getSlotsNode,
+                    @Exclusive @Cached CallSlotDescrGet callGetNode,
                     @Shared("readAttr") @Cached(inline = false) ReadAttributeFromObjectNode readAttr,
                     /* Truffle bug: @Shared("raiseNode") */ @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
         boolean methodFound = false;
         Object descr = lookupNode.execute(lazyClass, name);
-        Object getMethod = PNone.NO_VALUE;
+        TpSlot getMethod = null;
         if (descr != PNone.NO_VALUE) {
             if (MaybeBindDescriptorNode.isMethodDescriptor(descr)) {
                 methodFound = true;
             } else {
-                Object descrType = getDescrClass.execute(inliningTarget, descr);
-                getMethod = lookupGet.execute(descrType);
-                if (getMethod != PNone.NO_VALUE && lookupSet.execute(descrType) != PNone.NO_VALUE) {
-                    return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
+                var descrSlots = getSlotsNode.execute(inliningTarget, descr);
+                getMethod = descrSlots.tp_descr_get();
+                if (getMethod != null && TpSlotDescrSet.PyDescr_IsData(descrSlots)) {
+                    return new BoundDescriptor(callGetNode.execute((VirtualFrame) frame, inliningTarget, getMethod, descr, receiver, lazyClass));
                 }
             }
         }
@@ -207,8 +199,8 @@ public abstract class PyObjectGetMethod extends Node {
         if (methodFound) {
             return descr;
         }
-        if (getMethod != PNone.NO_VALUE) {
-            return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
+        if (getMethod != null) {
+            return new BoundDescriptor(callGetNode.execute((VirtualFrame) frame, inliningTarget, getMethod, descr, receiver, lazyClass));
         }
         if (descr != PNone.NO_VALUE) {
             return new BoundDescriptor(descr);

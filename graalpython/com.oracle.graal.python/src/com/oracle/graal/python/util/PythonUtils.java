@@ -1025,4 +1025,10 @@ public final class PythonUtils {
             }
         }
     }
+
+    public static InteropLibrary getUncachedInterop(InteropLibrary existing, Object obj) {
+        // TODO: have a simple LRU cache of "uncached" pointer InteropLibrary in context?
+        // "accepts" should be fast and saves us the concurrent hash map lookup in getUncached
+        return existing != null && existing.accepts(obj) ? existing : InteropLibrary.getUncached(obj);
+    }
 }

@@ -45,14 +45,14 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SELF_CLASS
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SELF__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___THISCLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -70,28 +70,28 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -119,6 +119,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.Super)
 public final class SuperBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = SuperBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SuperBuiltinsFactory.getFactories();
@@ -194,7 +196,7 @@ public final class SuperBuiltins extends PythonBuiltins {
     public abstract static class SuperInitNode extends PythonVarargsBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode;
         @Child private GetClassNode getClassNode;
-        @Child private LookupAndCallBinaryNode getAttrNode;
+        @Child private PyObjectLookupAttr getAttrNode;
         @Child private TypeNodes.IsTypeNode isTypeNode;
 
         @Override
@@ -329,10 +331,10 @@ public final class SuperBuiltins extends PythonBuiltins {
             return isTypeNode;
         }
 
-        private LookupAndCallBinaryNode getGetAttr() {
+        private PyObjectLookupAttr getGetAttr() {
             if (getAttrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getAttrNode = insert(LookupAndCallBinaryNode.create(SpecialMethodSlot.GetAttribute));
+                getAttrNode = insert(PyObjectLookupAttr.create());
             }
             return getAttrNode;
         }
@@ -364,7 +366,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 return objectType;
             } else {
                 try {
-                    Object classObject = getGetAttr().executeObject(frame, object, SpecialAttributeNames.T___CLASS__);
+                    Object classObject = getGetAttr().executeCached(frame, object, SpecialAttributeNames.T___CLASS__);
                     if (ensureIsTypeNode().executeCached(classObject)) {
                         if (getIsSubtype().execute(frame, classObject, cls)) {
                             return classObject;
@@ -379,16 +381,19 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, parameterNames = {"self", "obj", "type"})
+    @Slot(value = SlotKind.tp_descr_get, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class GetNode extends PythonTernaryBuiltinNode {
+    public abstract static class GetNode extends DescrGetBuiltinNode {
         @Specialization
-        static Object doNoneOrBound(SuperObject self, Object obj, Object type,
+        static Object doNoneOrBound(SuperObject self, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile objIsNoneProfile,
+                        @Cached InlinedConditionProfile selfObjIsNullProfile,
                         @Cached GetObjectNode getObject,
                         @Cached DoGetNode doGetNode) {
-            if (objIsNoneProfile.profile(inliningTarget, PGuards.isNone(obj)) || getObject.execute(inliningTarget, self) != null) {
+            // TODO: (GR-53092) doesn't seem to handle super subclasses like CPython
+            if (objIsNoneProfile.profile(inliningTarget, PGuards.isPNone(obj)) || //
+                            selfObjIsNullProfile.profile(inliningTarget, getObject.execute(inliningTarget, self) != null)) {
                 return self;
             }
             return doGetNode.execute(inliningTarget, self, obj);
@@ -412,14 +417,13 @@ public final class SuperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETATTRIBUTE__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetattributeNode extends GetAttrBuiltinNode {
         @Child private ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.createForceType();
-        @Child private LookupInheritedSlotNode readGet = LookupInheritedSlotNode.create(SpecialMethodSlot.Get);
+        @Child private CallSlotDescrGet callGetSlotNode;
         @Child private GetTypeNode getType;
         @Child private GetObjectNode getObject;
-        @Child private CallTernaryMethodNode callGet;
         @Child private ObjectBuiltins.GetAttributeNode objectGetattributeNode;
         @Child private GetMroNode getMroNode;
         @Child private IsSameTypeNode isSameTypeNode;
@@ -435,6 +439,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Specialization
         Object get(VirtualFrame frame, SuperObject self, Object attr,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached GetObjectTypeNode getObjectType,
                         @Cached CastToTruffleStringCheckedNode castToTruffleStringNode) {
@@ -476,18 +481,21 @@ public final class SuperBuiltins extends PythonBuiltins {
                 PythonAbstractClass tmp = mro[i];
                 Object res = readFromDict.execute(tmp, stringAttr);
                 if (res != PNone.NO_VALUE) {
-                    Object get = readGet.execute(res);
-                    if (get != PNone.NO_VALUE) {
+                    TpSlots resSlots = getSlotsNode.execute(inliningTarget, res);
+                    if (resSlots.tp_descr_get() != null) {
                         /*
                          * Only pass 'obj' param if this is instance-mode super (See SF ID #743627)
                          */
                         // acts as a branch profile
-                        if (callGet == null) {
+                        if (callGetSlotNode == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            callGetSlotNode = insert(CallSlotDescrGet.create());
+                        }
+                        if (getObject == null) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             getObject = insert(GetObjectNodeGen.create());
-                            callGet = insert(CallTernaryMethodNode.create());
                         }
-                        res = callGet.execute(frame, get, res, getObject.executeCached(self) == startType ? PNone.NONE : self.getObject(), startType);
+                        res = callGetSlotNode.executeCached(frame, resSlots.tp_descr_get(), res, getObject.executeCached(self) == startType ? PNone.NO_VALUE : self.getObject(), startType);
                     }
                     return res;
                 }

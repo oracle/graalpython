@@ -41,25 +41,29 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_MRO;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptors;
+import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallSlotGetAttrNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -92,46 +96,36 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateCached
 @ImportStatic({SpecialMethodSlot.class, SpecialMethodNames.class, PGuards.class})
 public abstract class PyObjectLookupAttr extends Node {
-    public static Object executeUncached(Object receiver, Object name) {
+    public static Object executeUncached(Object receiver, TruffleString name) {
         return PyObjectLookupAttrNodeGen.getUncached().execute(null, null, receiver, name);
     }
 
-    public final Object executeCached(Frame frame, Object receiver, Object name) {
+    public final Object executeCached(Frame frame, Object receiver, TruffleString name) {
         return execute(frame, this, receiver, name);
     }
 
-    public abstract Object execute(Frame frame, Node inliningTarget, Object receiver, Object name);
+    public abstract Object execute(Frame frame, Node inliningTarget, Object receiver, TruffleString name);
 
     protected static boolean hasNoGetAttr(Object lazyClass) {
-        Object slotValue = null;
-        if (lazyClass instanceof PythonBuiltinClassType) {
-            slotValue = SpecialMethodSlot.GetAttr.getValue((PythonBuiltinClassType) lazyClass);
-        } else if (lazyClass instanceof PythonManagedClass) {
-            slotValue = SpecialMethodSlot.GetAttr.getValue((PythonManagedClass) lazyClass);
-        }
-        return slotValue == PNone.NO_VALUE;
+        // only used in asserts
+        return LookupAttributeInMRONode.Dynamic.getUncached().execute(lazyClass, T___GETATTR__) == PNone.NO_VALUE;
     }
 
-    protected static boolean getAttributeIs(Object lazyClass, BuiltinMethodDescriptor expected) {
-        Object slotValue = null;
-        if (lazyClass instanceof PythonBuiltinClassType) {
-            slotValue = SpecialMethodSlot.GetAttribute.getValue((PythonBuiltinClassType) lazyClass);
-        } else if (lazyClass instanceof PythonManagedClass) {
-            slotValue = SpecialMethodSlot.GetAttribute.getValue((PythonManagedClass) lazyClass);
-        }
-        return slotValue == expected;
+    protected static boolean getAttributeIs(Node inliningTarget, GetCachedTpSlotsNode getSlotsNode, Object lazyClass, TpSlot slot) {
+        TpSlots slots = getSlotsNode.execute(inliningTarget, lazyClass);
+        return slots.tp_getattro() == slot;
     }
 
-    protected static boolean isObjectGetAttribute(Object lazyClass) {
-        return getAttributeIs(lazyClass, BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE);
+    protected static boolean isObjectGetAttribute(Node inliningTarget, GetCachedTpSlotsNode getSlotsNode, Object lazyClass) {
+        return getAttributeIs(inliningTarget, getSlotsNode, lazyClass, ObjectBuiltins.SLOTS.tp_getattro());
     }
 
-    protected static boolean isModuleGetAttribute(Object lazyClass) {
-        return getAttributeIs(lazyClass, BuiltinMethodDescriptors.MODULE_GET_ATTRIBUTE);
+    protected static boolean isModuleGetAttribute(Node inliningTarget, GetCachedTpSlotsNode getSlotsNode, Object lazyClass) {
+        return getAttributeIs(inliningTarget, getSlotsNode, lazyClass, ModuleBuiltins.SLOTS.tp_getattro());
     }
 
-    protected static boolean isTypeGetAttribute(Object lazyClass) {
-        return getAttributeIs(lazyClass, BuiltinMethodDescriptors.TYPE_GET_ATTRIBUTE);
+    protected static boolean isTypeGetAttribute(Node inliningTarget, GetCachedTpSlotsNode getSlotsNode, Object lazyClass) {
+        return getAttributeIs(inliningTarget, getSlotsNode, lazyClass, TypeBuiltins.SLOTS.tp_getattro());
     }
 
     protected static boolean isBuiltinTypeType(Object type) {
@@ -139,19 +133,25 @@ public abstract class PyObjectLookupAttr extends Node {
     }
 
     protected static boolean isTypeSlot(TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        return SpecialMethodSlot.canBeSpecial(name, codePointLengthNode, codePointAtIndexNode) || name.equalsUncached(T_MRO, TS_ENCODING);
+        return SpecialMethodSlot.canBeSpecial(name, codePointLengthNode, codePointAtIndexNode) || //
+                        TpSlots.canBeSpecialMethod(name, codePointLengthNode, codePointAtIndexNode) || //
+                        name.equalsUncached(T_MRO, TS_ENCODING);
     }
 
     // simple version that needs no calls and only reads from the object directly
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isObjectGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "3")
+    @Specialization(guards = {"isObjectGetAttribute(inliningTarget, getSlotsNode, type)", "name == cachedName", "isNoValue(descr)"}, limit = "3")
     static Object doBuiltinObject(VirtualFrame frame, Node inliningTarget, Object object, TruffleString name,
                     @Cached("name") TruffleString cachedName,
                     /* GR-44836 @Shared */ @Exclusive @Cached GetClassNode getClass,
+                    @Exclusive @Cached GetCachedTpSlotsNode getSlotsNode,
                     @Bind("getClass.execute(inliningTarget, object)") Object type,
                     @Cached("create(name)") LookupAttributeInMRONode lookupName,
                     @Bind("lookupName.execute(type)") Object descr,
                     @Shared @Cached(inline = false) ReadAttributeFromObjectNode readNode) {
+        // It should not have __getattr__, because otherwise it would not have builtin
+        // object#tp_getattro, but slot wrapper dispatching to __getattribute__ or __getattr__
+        assert hasNoGetAttr(type);
         return readNode.execute(object, cachedName);
     }
 
@@ -159,10 +159,11 @@ public abstract class PyObjectLookupAttr extends Node {
     // difference for module.__getattribute__ over object.__getattribute__ is that it looks for a
     // module-level __getattr__ as well
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isModuleGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1")
+    @Specialization(guards = {"isModuleGetAttribute(inliningTarget, getSlotsNode, type)", "name == cachedName", "isNoValue(descr)"}, limit = "1")
     static Object doBuiltinModule(VirtualFrame frame, Node inliningTarget, Object object, TruffleString name,
                     @Cached("name") TruffleString cachedName,
                     /* GR-44836 @Shared */ @Exclusive @Cached GetClassNode getClass,
+                    @Exclusive @Cached GetCachedTpSlotsNode getSlotsNode,
                     @Bind("getClass.execute(inliningTarget, object)") Object type,
                     @Cached("create(name)") LookupAttributeInMRONode lookupName,
                     @Bind("lookupName.execute(type)") Object descr,
@@ -171,6 +172,7 @@ public abstract class PyObjectLookupAttr extends Node {
                     /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                     @Exclusive @Cached InlinedConditionProfile noValueFound,
                     @Cached(inline = false) CallNode callGetattr) {
+        assert hasNoGetAttr(type);
         Object value = readNode.execute(object, cachedName);
         if (noValueFound.profile(inliningTarget, value == PNone.NO_VALUE)) {
             Object getAttr = readGetattr.execute(object, SpecialMethodNames.T___GETATTR__);
@@ -195,26 +197,28 @@ public abstract class PyObjectLookupAttr extends Node {
     // attributes via metaclass inheritance. For all non-type-slot attributes it therefore
     // suffices to only check for inheritance via super classes.
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isTypeGetAttribute(type)", "isBuiltinTypeType(type)", "!isTypeSlot(name, codePointLengthNode, codePointAtIndexNode)"}, limit = "1")
+    @Specialization(guards = {"isTypeGetAttribute(inliningTarget, getTypeSlotsNode, type)", "isBuiltinTypeType(type)", "!isTypeSlot(name, codePointLengthNode, codePointAtIndexNode)"}, limit = "1")
     static Object doBuiltinTypeType(VirtualFrame frame, Node inliningTarget, Object object, TruffleString name,
                     /* GR-44836 @Shared */ @Exclusive @Cached GetClassNode getClass,
+                    @Exclusive @Cached GetCachedTpSlotsNode getTypeSlotsNode,
+                    @SuppressWarnings("unused") @Exclusive @Cached GetObjectSlotsNode getSlotsNode,
                     @Bind("getClass.execute(inliningTarget, object)") Object type,
                     @Cached(inline = false) LookupAttributeInMRONode.Dynamic readNode,
                     @Exclusive @Cached InlinedConditionProfile valueFound,
-                    @Shared @Cached(value = "create(Get)", inline = false) LookupInheritedSlotNode lookupValueGet,
                     @Exclusive @Cached InlinedConditionProfile noGetMethod,
-                    @Shared @Cached(inline = false) CallTernaryMethodNode invokeValueGet,
+                    @Exclusive @Cached CallSlotDescrGet callGetSlot,
                     /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
                     @Shared @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         Object value = readNode.execute(object, name);
         if (valueFound.profile(inliningTarget, value != PNone.NO_VALUE)) {
-            Object valueGet = lookupValueGet.execute(value);
-            if (noGetMethod.profile(inliningTarget, valueGet == PNone.NO_VALUE)) {
+            var valueSlots = getSlotsNode.execute(inliningTarget, value);
+            var valueGet = valueSlots.tp_descr_get();
+            if (noGetMethod.profile(inliningTarget, valueGet == null)) {
                 return value;
-            } else if (PGuards.isCallableOrDescriptor(valueGet)) {
+            } else {
                 try {
-                    return invokeValueGet.execute(frame, valueGet, value, PNone.NONE, object);
+                    return callGetSlot.execute(frame, inliningTarget, valueGet, value, PNone.NO_VALUE, object);
                 } catch (PException e) {
                     e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, errorProfile);
                     return PNone.NO_VALUE;
@@ -228,27 +232,30 @@ public abstract class PyObjectLookupAttr extends Node {
     // itself. the only difference for type.__getattribute__ over object.__getattribute__
     // is that it looks for a __get__ method on the value and invokes it if it is callable.
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isTypeGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(metaClassDescr)"}, replaces = "doBuiltinTypeType", limit = "1")
+    @Specialization(guards = {"isTypeGetAttribute(inliningTarget, getTypeSlotsNode, type)", "name == cachedName", "isNoValue(metaClassDescr)"}, replaces = "doBuiltinTypeType", limit = "1")
     static Object doBuiltinType(VirtualFrame frame, Node inliningTarget, Object object, TruffleString name,
                     @Cached("name") TruffleString cachedName,
+                    @Exclusive @Cached GetCachedTpSlotsNode getTypeSlotsNode,
                     /* GR-44836 @Shared */ @Exclusive @Cached GetClassNode getClass,
+                    @Exclusive @Cached GetObjectSlotsNode getSlotsNode,
                     @Bind("getClass.execute(inliningTarget, object)") Object type,
                     @Cached(value = "create(name)", inline = false) LookupAttributeInMRONode lookupInMetaclassHierachy,
                     @Bind("lookupInMetaclassHierachy.execute(type)") Object metaClassDescr,
                     @Cached(value = "create(name)", inline = false) LookupAttributeInMRONode readNode,
                     @Exclusive @Cached InlinedConditionProfile valueFound,
-                    @Shared @Cached(value = "create(Get)", inline = false) LookupInheritedSlotNode lookupValueGet,
                     @Exclusive @Cached InlinedConditionProfile noGetMethod,
-                    @Shared @Cached(inline = false) CallTernaryMethodNode invokeValueGet,
+                    @Exclusive @Cached CallSlotDescrGet callGetSlot,
                     /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile) {
+        assert hasNoGetAttr(type);
         Object value = readNode.execute(object);
         if (valueFound.profile(inliningTarget, value != PNone.NO_VALUE)) {
-            Object valueGet = lookupValueGet.execute(value);
-            if (noGetMethod.profile(inliningTarget, valueGet == PNone.NO_VALUE)) {
+            var valueSlots = getSlotsNode.execute(inliningTarget, value);
+            var valueGet = valueSlots.tp_descr_get();
+            if (noGetMethod.profile(inliningTarget, valueGet == null)) {
                 return value;
-            } else if (PGuards.isCallableOrDescriptor(valueGet)) {
+            } else {
                 try {
-                    return invokeValueGet.execute(frame, valueGet, value, PNone.NONE, object);
+                    return callGetSlot.execute(frame, inliningTarget, valueGet, value, PNone.NO_VALUE, object);
                 } catch (PException e) {
                     e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, errorProfile);
                     return PNone.NO_VALUE;
@@ -259,50 +266,27 @@ public abstract class PyObjectLookupAttr extends Node {
     }
 
     @Specialization(replaces = {"doBuiltinObject", "doBuiltinModule", "doBuiltinType"})
-    static Object getDynamicAttr(Frame frame, Node inliningTarget, Object receiver, Object name,
+    static Object getDynamicAttr(Frame frame, Node inliningTarget, Object receiver, TruffleString name,
                     /* GR-44836 @Shared */ @Exclusive @Cached GetClassNode getClass,
-                    @Cached(parameters = "GetAttribute", inline = false) LookupSpecialMethodSlotNode lookupGetattribute,
-                    @Cached(parameters = "GetAttr", inline = false) LookupSpecialMethodSlotNode lookupGetattr,
-                    @Cached(inline = false) CallBinaryMethodNode callGetattribute,
-                    @Cached(inline = false) CallBinaryMethodNode callGetattr,
+                    @Exclusive @Cached GetCachedTpSlotsNode getSlotsNode,
+                    @Exclusive @Cached CallSlotGetAttrNode callGetattribute,
                     /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
                     @Shared @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         Object type = getClass.execute(inliningTarget, receiver);
-        Object getattribute = lookupGetattribute.execute(frame, type, receiver);
-        if (!callGetattr.isAdoptable()) {
-            // It pays to try this in the uncached case, avoiding a full call to __getattribute__
-            Object result = readAttributeQuickly(type, getattribute, receiver, name, codePointLengthNode, codePointAtIndexNode);
+        TpSlots slots = getSlotsNode.execute(inliningTarget, type);
+        if (!codePointLengthNode.isAdoptable()) {
+            // It pays to try this in the uncached case, avoiding a full call to tp_getattr(o)
+            Object result = readAttributeQuickly(type, slots, receiver, name, codePointLengthNode, codePointAtIndexNode);
             if (result != null) {
-                if (result == PNone.NO_VALUE) {
-                    Object getattr = lookupGetattr.execute(frame, type, receiver);
-                    if (getattr != PNone.NO_VALUE) {
-                        try {
-                            return callGetattr.executeObject(frame, getattr, receiver, name);
-                        } catch (PException e) {
-                            e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, errorProfile);
-                            return PNone.NO_VALUE;
-                        }
-                    } else {
-                        return PNone.NO_VALUE;
-                    }
-                } else {
-                    return result;
-                }
+                return result;
             }
+            // Otherwise fallback to tp_getattr(o)
         }
         try {
-            return callGetattribute.executeObject(frame, getattribute, receiver, name);
+            return callGetattribute.execute((VirtualFrame) frame, inliningTarget, slots, receiver, name);
         } catch (PException e) {
             e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, errorProfile);
-        }
-        Object getattr = lookupGetattr.execute(frame, type, receiver);
-        if (getattr != PNone.NO_VALUE) {
-            try {
-                return callGetattr.executeObject(frame, getattr, receiver, name);
-            } catch (PException e) {
-                e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, errorProfile);
-            }
         }
         return PNone.NO_VALUE;
     }
@@ -331,43 +315,38 @@ public abstract class PyObjectLookupAttr extends Node {
      * ModuleBuiltins.GetAttributeNode}. This method returns {@code PNone.NO_VALUE} when the
      * attribute is not found and the original would've raised an AttributeError. It returns {@code
      * null} when no shortcut was applicable. If {@code PNone.NO_VALUE} was returned, name is
-     * guaranteed to be a {@code java.lang.TruffleString}. Note it is often necessary to call
-     * {@code __getattr__} if this returns {@code PNone.NO_VALUE}.
+     * guaranteed to be a {@code java.lang.TruffleString}.
      */
-    static Object readAttributeQuickly(Object type, Object getattribute, Object receiver, Object name, TruffleString.CodePointLengthNode codePointLengthNode,
+    static Object readAttributeQuickly(Object type, TpSlots slots, Object receiver, TruffleString stringName, TruffleString.CodePointLengthNode codePointLengthNode,
                     TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        if (name instanceof TruffleString) {
-            if (getattribute == BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE && type instanceof PythonManagedClass) {
-                TruffleString stringName = (TruffleString) name;
-                PythonAbstractClass[] bases = ((PythonManagedClass) type).getBaseClasses();
-                if (bases.length == 1) {
-                    PythonAbstractClass base = bases[0];
-                    if (base instanceof PythonBuiltinClass &&
-                                    ((PythonBuiltinClass) base).getType() == PythonBuiltinClassType.PythonObject) {
-                        if (!(codePointAtIndexNode.execute(stringName, 0, TS_ENCODING) == '_' && codePointAtIndexNode.execute(stringName, 1, TS_ENCODING) == '_')) {
-                            // not a special name, so this attribute cannot be inherited, and can
-                            // only be on the type or the object. If it's on the type, return to
-                            // the generic code.
-                            ReadAttributeFromObjectNode readUncached = ReadAttributeFromObjectNode.getUncached();
-                            Object descr = readUncached.execute(type, stringName);
-                            if (descr == PNone.NO_VALUE) {
-                                return readUncached.execute(receiver, stringName);
-                            }
+        if (slots.tp_getattro() == ObjectBuiltins.SLOTS.tp_getattro() && type instanceof PythonManagedClass) {
+            PythonAbstractClass[] bases = ((PythonManagedClass) type).getBaseClasses();
+            if (bases.length == 1) {
+                PythonAbstractClass base = bases[0];
+                if (base instanceof PythonBuiltinClass &&
+                                ((PythonBuiltinClass) base).getType() == PythonBuiltinClassType.PythonObject) {
+                    if (!(codePointAtIndexNode.execute(stringName, 0, TS_ENCODING) == '_' && codePointAtIndexNode.execute(stringName, 1, TS_ENCODING) == '_')) {
+                        // not a special name, so this attribute cannot be inherited, and can
+                        // only be on the type or the object. If it's on the type, return to
+                        // the generic code.
+                        ReadAttributeFromObjectNode readUncached = ReadAttributeFromObjectNode.getUncached();
+                        Object descr = readUncached.execute(type, stringName);
+                        if (descr == PNone.NO_VALUE) {
+                            return readUncached.execute(receiver, stringName);
                         }
                     }
                 }
-            } else if (getattribute == BuiltinMethodDescriptors.MODULE_GET_ATTRIBUTE && type == PythonBuiltinClassType.PythonModule) {
-                // this is slightly simpler than the previous case, since we don't need to check
-                // the type. There may be a module-level __getattr__, however. Since that would be
-                // a call anyway, we return to the generic code in that case
-                TruffleString stringName = (TruffleString) name;
-                if (!SpecialMethodSlot.canBeSpecial(stringName, codePointLengthNode, codePointAtIndexNode)) {
-                    // not a special name, so this attribute cannot be on the module class
-                    ReadAttributeFromObjectNode readUncached = ReadAttributeFromObjectNode.getUncached();
-                    Object result = readUncached.execute(receiver, stringName);
-                    if (result != PNone.NO_VALUE) {
-                        return result;
-                    }
+            }
+        } else if (slots.tp_getattro() == ModuleBuiltins.SLOTS.tp_getattro() && type == PythonBuiltinClassType.PythonModule) {
+            // this is slightly simpler than the previous case, since we don't need to check
+            // the type. There may be a module-level __getattr__, however. Since that would be
+            // a call anyway, we return to the generic code in that case
+            if (!SpecialMethodSlot.canBeSpecial(stringName, codePointLengthNode, codePointAtIndexNode)) {
+                // not a special name, so this attribute cannot be on the module class
+                ReadAttributeFromObjectNode readUncached = ReadAttributeFromObjectNode.getUncached();
+                Object result = readUncached.execute(receiver, stringName);
+                if (result != PNone.NO_VALUE) {
+                    return result;
                 }
             }
         }

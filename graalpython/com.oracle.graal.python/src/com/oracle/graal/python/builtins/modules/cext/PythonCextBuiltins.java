@@ -156,6 +156,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -1033,6 +1034,10 @@ public final class PythonCextBuiltins {
          * custom slots at a time where the C API is not yet loaded. So we need to check if any of
          * the base classes defines custom slots and adapt the basicsize to allocate space for the
          * slots and add the native member slot descriptors.
+         * 
+         * Additionally, at this point the native slots have been inherited on the native side, here
+         * we transfer the result of that inheritance process to the slots mirror on the managed
+         * side.
          */
         @TruffleBoundary
         @Specialization
@@ -1047,6 +1052,8 @@ public final class PythonCextBuiltins {
                         @Cached PyTruffleType_AddGetSet addGetSet,
                         @Cached PyTruffleType_AddMember addMember,
                         @Cached GetMroStorageNode getMroStorageNode) {
+            pythonClass.setTpSlots(TpSlots.fromNative(pythonClass, getCApiContext(inliningTarget).getContext()));
+
             Object[] getsets = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_GETSETS);
             Object[] members = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_MEMBERS);
 

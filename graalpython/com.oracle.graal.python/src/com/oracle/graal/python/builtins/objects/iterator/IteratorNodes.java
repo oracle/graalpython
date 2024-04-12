@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.iterator;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIterator;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.ArrayList;
@@ -63,6 +62,9 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -72,7 +74,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -177,10 +178,11 @@ public abstract class IteratorNodes {
                         @Cached IsForeignObjectNode isForeignObjectNode,
                         @Cached(inline = false) GetLengthForeign getLengthForeign,
                         @Cached GetClassNode getClassNode,
+                        @Cached GetCachedTpSlotsNode getSlotsNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached(value = "create(Len)", inline = false) LookupCallableSlotInMRONode lenNode,
                         @Cached(value = "create(LengthHint)", inline = false) LookupSpecialMethodSlotNode lenHintNode,
+                        @Cached CallSlotLenNode callSlotLenNode,
                         @Cached(inline = false) CallUnaryMethodNode dispatchLenOrLenHint,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached InlinedConditionProfile hasLenProfile,
@@ -193,26 +195,19 @@ public abstract class IteratorNodes {
                 }
             }
             Object clazz = getClassNode.execute(inliningTarget, iterable);
-            Object attrLenObj = lenNode.execute(clazz);
-            if (hasLenProfile.profile(inliningTarget, attrLenObj != PNone.NO_VALUE)) {
-                Object len = null;
+            TpSlots slots = getSlotsNode.execute(inliningTarget, clazz);
+            if (hasLenProfile.profile(inliningTarget, slots.combined_sq_mp_length() != null)) {
                 try {
-                    len = dispatchLenOrLenHint.executeObject(frame, attrLenObj, iterable);
+                    return callSlotLenNode.execute(frame, inliningTarget, slots.combined_sq_mp_length(), iterable);
                 } catch (PException e) {
+                    // This is done (maybe aside other things) because of ProxyType.__len__ calls
+                    // len builtin, which may raise this for objects that do not have len slot. This
+                    // can be maybe avoided by intrinsifying ProxyType
                     e.expect(inliningTarget, TypeError, errorProfile);
                 }
-                if (len != null && len != PNotImplemented.NOT_IMPLEMENTED) {
-                    if (indexCheckNode.execute(inliningTarget, len)) {
-                        int intLen = asSizeNode.executeExact(frame, inliningTarget, len);
-                        if (intLen < 0) {
-                            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.LEN_SHOULD_RETURN_GT_ZERO);
-                        }
-                        return intLen;
-                    } else {
-                        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, T___LEN__, len);
-                    }
-                }
             }
+            // TODO: __len_hint__ is not a slot, but it is resolved using _PyObject_LookupSpecial,
+            // so looked up only on type, so we can cache it in slots
             Object attrLenHintObj = lenHintNode.execute(frame, clazz, iterable);
             if (hasLengthHintProfile.profile(inliningTarget, attrLenHintObj != PNone.NO_VALUE)) {
                 Object len = null;

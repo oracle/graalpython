@@ -35,11 +35,13 @@ import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -63,7 +65,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * <li>{@code method_descriptor} - Used for unbound methods on a type. Example:
  * {@code str.startswith}
  * <li>{@code wrapper_descriptor} - Used for unbound slot methods on a type. Example:
- * {@code str.__str__}
+ * {@code str.__str__}.
  * </ul>
  */
 @ExportLibrary(InteropLibrary.class)
@@ -75,11 +77,14 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final RootCallTarget callTarget;
     private final Signature signature;
     private final int flags;
+    private final TpSlot slot;
+    private final PExternalFunctionWrapper slotWrapper;
     private BuiltinMethodDescriptor descriptor;
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget,
+                    TpSlot slot, PExternalFunctionWrapper slotWrapper) {
         super(cls, shape);
         this.name = PythonUtils.toPString(name);
         if (enclosingType != null) {
@@ -93,6 +98,12 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         this.flags = flags;
         this.defaults = defaults;
         this.kwDefaults = kwDefaults != null ? kwDefaults : generateKwDefaults(signature);
+        this.slot = slot;
+        this.slotWrapper = slotWrapper;
+    }
+
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, callTarget, null, null);
     }
 
     private static PKeyword[] generateKwDefaults(Signature signature) {
@@ -121,10 +132,26 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return callTarget.getRootNode();
     }
 
+    /**
+     * Wrapped slot value ({@code d_wrapped} in CPython). Valid only if this object represents
+     * {@code wrapper_descriptor}.
+     */
+    public TpSlot getSlot() {
+        return slot;
+    }
+
+    /**
+     * Slot wrapper ({@code d_base#wrapper} in CPython). Valid only if this object represents
+     * {@code wrapper_descriptor}.
+     */
+    public PExternalFunctionWrapper getSlotWrapper() {
+        return slotWrapper;
+    }
+
     public NodeFactory<? extends PythonBuiltinBaseNode> getBuiltinNodeFactory() {
         RootNode functionRootNode = getFunctionRootNode();
-        if (functionRootNode instanceof BuiltinFunctionRootNode) {
-            return ((BuiltinFunctionRootNode) functionRootNode).getFactory();
+        if (functionRootNode instanceof BuiltinFunctionRootNode builtinRoot) {
+            return builtinRoot.getFactory();
         } else {
             return null;
         }

@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -674,14 +675,10 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             private static final Signature SIGNATURE = new Signature(1, false, -1, false, tsArray("supplierClass"), KEYWORDS_HIDDEN_RECEIVER);
             private static final TruffleString MODULE_POLYGLOT = tsLiteral("polyglot");
             @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
-            @Child private PRaiseNode.Lazy raiseNode = PRaiseNode.Lazy.getUncached();
+            @Child private PRaiseNode raiseNode = PRaiseNode.create();
             @Child private TypeBuiltins.DirNode dirNode = TypeBuiltins.DirNode.create();
             @Child private PyObjectGetAttr getAttr = PyObjectGetAttr.create();
-            @Child private CastToTruffleStringNode toTruffleString = CastToTruffleStringNode.create();
             @Child private CallVarargsMethodNode callVarargsMethod = CallVarargsMethodNode.create();
-            @Child private HashingStorageNodes.HashingStorageGetIterator getIterator = HashingStorageNodes.HashingStorageGetIterator.create();
-            @Child private HashingStorageNodes.HashingStorageIteratorNext iteratorNext = HashingStorageNodes.HashingStorageIteratorNext.create();
-            @Child private HashingStorageNodes.HashingStorageIteratorKey iteratorKey = HashingStorageNodes.HashingStorageIteratorKey.create();
 
             protected RegisterWrapperRootNode(TruffleLanguage<?> language) {
                 super(language);
@@ -700,11 +697,11 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                         PSet names = dirNode.execute(frame, klass);
                         PKeyword[] kwargs = getFunctionsAsKwArgs(names.getDictStorage(), supplierClass);
                         PythonModule polyglotModule = PythonContext.get(this).lookupBuiltinModule(MODULE_POLYGLOT);
-                        Object register = getAttr.execute(this, polyglotModule, T_REGISTER_INTEROP_BEHAVIOR);
+                        Object register = getAttr.executeCached(frame, polyglotModule, T_REGISTER_INTEROP_BEHAVIOR);
                         callVarargsMethod.execute(frame, register, new Object[]{receiver}, kwargs);
                         return klass;
                     }
-                    throw raiseNode.get(this).raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a python class", supplierClass);
+                    throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a python class", supplierClass);
                 } finally {
                     calleeContext.exit(frame, this);
                 }
@@ -713,12 +710,12 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             @TruffleBoundary
             private PKeyword[] getFunctionsAsKwArgs(HashingStorage namesStorage, Object supplierClass) {
                 ArrayList<PKeyword> functions = new ArrayList<>();
-                HashingStorageNodes.HashingStorageIterator iterator = getIterator.execute(this, namesStorage);
-                while (iteratorNext.execute(this, namesStorage, iterator)) {
-                    Object name = iteratorKey.execute(this, namesStorage, iterator);
-                    Object value = getAttr.execute(this, supplierClass, name);
+                HashingStorageNodes.HashingStorageIterator iterator = HashingStorageNodes.HashingStorageGetIterator.executeUncached(namesStorage);
+                while (HashingStorageNodes.HashingStorageIteratorNext.executeUncached(namesStorage, iterator)) {
+                    Object name = HashingStorageNodes.HashingStorageIteratorKey.executeUncached(namesStorage, iterator);
+                    Object value = PyObjectGetAttrO.executeUncached(supplierClass, name);
                     if (value instanceof PFunction function) {
-                        functions.add(new PKeyword(toTruffleString.execute(this, name), function));
+                        functions.add(new PKeyword(CastToTruffleStringNode.executeUncached(name), function));
                     }
                 }
                 return functions.toArray(PKeyword.EMPTY_KEYWORDS);

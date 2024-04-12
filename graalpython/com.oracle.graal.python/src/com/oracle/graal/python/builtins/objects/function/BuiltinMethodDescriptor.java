@@ -42,12 +42,15 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 
+import java.lang.annotation.Annotation;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -87,7 +90,7 @@ public abstract class BuiltinMethodDescriptor {
             return null;
         }
         Builtin builtinAnnotation = findBuiltinAnnotation(function.getName().toJavaStringUncached(), factory);
-        if (builtinAnnotation.needsFrame()) {
+        if (builtinAnnotation == null || builtinAnnotation.needsFrame()) {
             return null;
         }
 
@@ -106,7 +109,143 @@ public abstract class BuiltinMethodDescriptor {
 
     static BuiltinMethodDescriptor get(String name, NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
         Builtin builtinAnnotation = findBuiltinAnnotation(name, factory);
-        assert !builtinAnnotation.needsFrame();
+        if (builtinAnnotation == null) {
+            // New slots HACK: to be removed. This is only used for comparing with existing slot
+            // found at runtime, the dummy value will not match anything
+            return new UnaryBuiltinDescriptor(name, null, PythonBuiltinClassType.PythonObject, new Builtin() {
+
+                @Override
+                public Class<? extends Annotation> annotationType() {
+                    return Builtin.class;
+                }
+
+                @Override
+                public String name() {
+                    return name;
+                }
+
+                @Override
+                public String doc() {
+                    return null;
+                }
+
+                @Override
+                public PythonOS os() {
+                    return null;
+                }
+
+                @Override
+                public PythonBuiltinClassType constructsClass() {
+                    return null;
+                }
+
+                @Override
+                public PythonBuiltinClassType[] base() {
+                    return new PythonBuiltinClassType[0];
+                }
+
+                @Override
+                public int minNumOfPositionalArgs() {
+                    return 0;
+                }
+
+                @Override
+                public int maxNumOfPositionalArgs() {
+                    return 0;
+                }
+
+                @Override
+                public int numOfPositionalOnlyArgs() {
+                    return 0;
+                }
+
+                @Override
+                public boolean isGetter() {
+                    return false;
+                }
+
+                @Override
+                public boolean isSetter() {
+                    return false;
+                }
+
+                @Override
+                public boolean allowsDelete() {
+                    return false;
+                }
+
+                @Override
+                public boolean takesVarArgs() {
+                    return false;
+                }
+
+                @Override
+                public boolean varArgsMarker() {
+                    return false;
+                }
+
+                @Override
+                public boolean takesVarKeywordArgs() {
+                    return false;
+                }
+
+                @Override
+                public String[] parameterNames() {
+                    return new String[0];
+                }
+
+                @Override
+                public String[] keywordOnlyNames() {
+                    return new String[0];
+                }
+
+                @Override
+                public boolean isPublic() {
+                    return false;
+                }
+
+                @Override
+                public boolean isClassmethod() {
+                    return false;
+                }
+
+                @Override
+                public boolean isStaticmethod() {
+                    return false;
+                }
+
+                @Override
+                public boolean needsFrame() {
+                    return false;
+                }
+
+                @Override
+                public boolean alwaysNeedsCallerFrame() {
+                    return false;
+                }
+
+                @Override
+                public boolean declaresExplicitSelf() {
+                    return false;
+                }
+
+                @Override
+                public boolean reverseOperation() {
+                    return false;
+                }
+
+                @Override
+                public String raiseErrorName() {
+                    return null;
+                }
+
+                @Override
+                public boolean forceSplitDirectCalls() {
+                    return false;
+                }
+            });
+        }
+        assert builtinAnnotation != null && !builtinAnnotation.needsFrame();
         return get(name, factory, type, builtinAnnotation);
     }
 
@@ -135,6 +274,10 @@ public abstract class BuiltinMethodDescriptor {
     }
 
     private static Builtin findBuiltinAnnotation(String name, NodeFactory<? extends PythonBuiltinBaseNode> factory) {
+        // Temporary hack until new slots fully replace "special method slots" and these descriptors
+        if (TpSlotBuiltin.isSlotFactory(factory)) {
+            return null;
+        }
         for (Builtin builtin : factory.getNodeClass().getAnnotationsByType(Builtin.class)) {
             if (builtin.name().equals(name)) {
                 return builtin;

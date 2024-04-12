@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.call.special;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_D_ARGS;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -53,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -100,25 +102,54 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
             return null; // see for example MethodDescriptorRoot and subclasses
         }
         Class<? extends PythonBuiltinBaseNode> nodeClass = builtinNodeFactory.getNodeClass();
-        if (!(PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass) ||
-                        PythonQuaternaryBuiltinNode.class.isAssignableFrom(nodeClass))) {
+        int builtinNodeArity = getBuiltinNodeArity(nodeClass);
+        if (builtinNodeArity == -1 || builtinNodeArity < nargs) {
             return null;
         }
-        Builtin[] builtinAnnotations = nodeClass.getAnnotationsByType(Builtin.class);
-        assert builtinAnnotations.length > 0 : "PBuiltinFunction " + func + " is expected to have a Builtin annotated node.";
-        Builtin builtinAnnotation = builtinAnnotations[0];
-        if (builtinAnnotation.needsFrame() && frame == null) {
-            return null;
-        }
-        int maxArgs = Math.max(Math.max(builtinAnnotation.maxNumOfPositionalArgs(), builtinAnnotation.minNumOfPositionalArgs()), builtinAnnotation.parameterNames().length);
-        if (nargs < builtinAnnotation.minNumOfPositionalArgs() || nargs > maxArgs) {
-            return null;
+        SlotSignature slotSignature = nodeClass.getAnnotation(SlotSignature.class);
+        if (slotSignature != null) {
+            if (slotSignature.needsFrame() || nargs < slotSignature.minNumOfPositionalArgs()) {
+                return null;
+            }
+            int maxArgs = Math.max(slotSignature.minNumOfPositionalArgs(), slotSignature.parameterNames().length);
+            if (nargs > maxArgs) {
+                return null;
+            }
+
+        } else {
+            Builtin[] builtinAnnotations = nodeClass.getAnnotationsByType(Builtin.class);
+            if (builtinAnnotations.length > 0) {
+                Builtin builtinAnnotation = builtinAnnotations[0];
+                if (builtinAnnotation.needsFrame() && frame == null) {
+                    return null;
+                }
+                int maxArgs = Math.max(Math.max(builtinAnnotation.maxNumOfPositionalArgs(), builtinAnnotation.minNumOfPositionalArgs()), builtinAnnotation.parameterNames().length);
+                if (nargs < builtinAnnotation.minNumOfPositionalArgs() || nargs > maxArgs) {
+                    return null;
+                }
+            } else {
+                // for slots without SlotSignature the max args is implied by the node class
+                assert TpSlotBuiltin.isSlotFactory(builtinNodeFactory) : nodeClass.getName();
+            }
         }
         PythonBuiltinBaseNode builtinNode = builtinNodeFactory.createNode();
         if (!callerExceedsMaxSize(builtinNode)) {
             return builtinNode;
         }
         return null;
+    }
+
+    private static int getBuiltinNodeArity(Class<? extends PythonBuiltinBaseNode> nodeClass) {
+        if (PythonQuaternaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            return 4;
+        } else if (PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            return 3;
+        } else if (PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            return 2;
+        } else if (PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            return 1;
+        }
+        return -1;
     }
 
     public PythonUnaryBuiltinNode getBuiltin(UnaryBuiltinDescriptor descriptor) {

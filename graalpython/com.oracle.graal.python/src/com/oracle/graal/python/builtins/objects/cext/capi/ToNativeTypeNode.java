@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WritePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -75,6 +76,9 @@ import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNode;
@@ -126,22 +130,34 @@ public abstract class ToNativeTypeNode {
         return mem;
     }
 
-    private static Object allocatePyMappingMethods(PythonManagedClass obj) {
+    private static void writeGroupSlots(CFields groupField, TpSlots slots, WritePointerNode writePointerNode, Object groupPointer, Object nullValue) {
+        for (TpSlotMeta def : TpSlotMeta.VALUES) {
+            if (def.getNativeGroupOrField() == groupField) {
+                writePointerNode.write(groupPointer, def.getNativeField(), def.getNativeValue(slots, nullValue));
+            }
+        }
+    }
+
+    private static Object allocatePyMappingMethods(PythonManagedClass obj, TpSlots slots, Object nullValue) {
         Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyMappingMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
-        writePointerNode.write(mem, CFields.PyMappingMethods__mp_length, getSlot(obj, SlotMethodDef.MP_LENGTH));
+
+        writeGroupSlots(CFields.PyTypeObject__tp_as_mapping, slots, writePointerNode, mem, nullValue);
+
         writePointerNode.write(mem, CFields.PyMappingMethods__mp_subscript, getSlot(obj, SlotMethodDef.MP_SUBSCRIPT));
         writePointerNode.write(mem, CFields.PyMappingMethods__mp_ass_subscript, getSlot(obj, SlotMethodDef.MP_ASS_SUBSCRIPT));
         return mem;
     }
 
-    private static Object allocatePyNumberMethods(PythonManagedClass obj, Object nullValue) {
+    private static Object allocatePyNumberMethods(PythonManagedClass obj, TpSlots slots, Object nullValue) {
         Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyNumberMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
+
+        writeGroupSlots(CFields.PyTypeObject__tp_as_number, slots, writePointerNode, mem, nullValue);
+
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_absolute, getSlot(obj, SlotMethodDef.NB_ABSOLUTE));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_add, getSlot(obj, SlotMethodDef.NB_ADD));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_and, getSlot(obj, SlotMethodDef.NB_AND));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_bool, getSlot(obj, SlotMethodDef.NB_BOOL));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_divmod, getSlot(obj, SlotMethodDef.NB_DIVMOD));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_float, getSlot(obj, SlotMethodDef.NB_FLOAT));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_floor_divide, getSlot(obj, SlotMethodDef.NB_FLOOR_DIVIDE));
@@ -177,10 +193,14 @@ public abstract class ToNativeTypeNode {
         return mem;
     }
 
-    private static Object allocatePySequenceMethods(PythonManagedClass obj, Object nullValue) {
+    private static Object allocatePySequenceMethods(PythonManagedClass obj, TpSlots slots, Object nullValue) {
         Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyNumberMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
-        writePointerNode.write(mem, CFields.PySequenceMethods__sq_length, getSlot(obj, SlotMethodDef.SQ_LENGTH));
+
+        writeGroupSlots(CFields.PyTypeObject__tp_as_sequence, slots, writePointerNode, mem, nullValue);
+
+        // TODO: Heap types defining __add__/__mul__ have sq_concat/sq_repeat == NULL in CPython, so
+        // this may have unintended effects
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_concat, getSlot(obj, SlotMethodDef.SQ_CONCAT));
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_repeat, getSlot(obj, SlotMethodDef.SQ_REPEAT));
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_item, getSlot(obj, SlotMethodDef.SQ_ITEM));
@@ -216,6 +236,7 @@ public abstract class ToNativeTypeNode {
         CompilerAsserts.neverPartOfCompilation();
 
         PythonManagedClass clazz = (PythonManagedClass) obj.getDelegate();
+        TpSlots slots = GetTpSlotsNode.executeUncached(clazz);
         boolean isType = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
 
         PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
@@ -272,9 +293,9 @@ public abstract class ToNativeTypeNode {
             weaklistoffset = lookupNativeI64MemberInMRO(clazz, PyTypeObject__tp_weaklistoffset, SpecialAttributeNames.T___WEAKLISTOFFSET__);
         }
         Object asAsync = hasAsyncMethods(clazz) ? allocatePyAsyncMethods(clazz, nullValue) : nullValue;
-        Object asNumber = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, nullValue);
-        Object asSequence = hasSequenceMethods(clazz) ? allocatePySequenceMethods(clazz, nullValue) : nullValue;
-        Object asMapping = hasMappingMethods(clazz) ? allocatePyMappingMethods(clazz) : nullValue;
+        Object asNumber = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, slots, nullValue);
+        Object asSequence = (slots.hasSequenceGroup() || hasSequenceMethods(clazz)) ? allocatePySequenceMethods(clazz, slots, nullValue) : nullValue;
+        Object asMapping = (slots.hasMappingGroup() || hasMappingMethods(clazz)) ? allocatePyMappingMethods(clazz, slots, nullValue) : nullValue;
         Object asBuffer = lookup(clazz, PyTypeObject__tp_as_buffer, HiddenAttr.AS_BUFFER);
         writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, HiddenAttr.DEALLOC));
@@ -289,7 +310,6 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_hash, lookup(clazz, SlotMethodDef.TP_HASH));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_call, lookup(clazz, SlotMethodDef.TP_CALL));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_str, lookup(clazz, SlotMethodDef.TP_STR));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_getattro, LookupNativeSlotNode.executeUncachedGetattroSlot(clazz));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_setattro, lookup(clazz, SlotMethodDef.TP_SETATTRO));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_buffer, asBuffer);
         writeI64Node.write(mem, CFields.PyTypeObject__tp_flags, flags);
@@ -330,8 +350,12 @@ public abstract class ToNativeTypeNode {
             }
         }
         writePtrNode.write(mem, CFields.PyTypeObject__tp_dict, toNative.execute(dict));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_descr_get, lookup(clazz, SlotMethodDef.TP_DESCR_GET));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_descr_set, lookup(clazz, SlotMethodDef.TP_DESCR_SET));
+
+        for (TpSlotMeta def : TpSlotMeta.VALUES) {
+            if (!def.hasGroup() && def.hasNativeWrapperFactory()) {
+                writePtrNode.write(mem, def.getNativeGroupOrField(), def.getNativeValue(slots, nullValue));
+            }
+        }
 
         // TODO properly implement 'tp_dictoffset' for builtin classes
         writeI64Node.write(mem, CFields.PyTypeObject__tp_dictoffset, GetDictOffsetNodeGen.getUncached().execute(null, clazz));
@@ -374,8 +398,8 @@ public abstract class ToNativeTypeNode {
             writePtrNode.write(mem, CFields.PyHeapTypeObject__ht_name, toNativeNewRef.execute(clazz.getName()));
             writePtrNode.write(mem, CFields.PyHeapTypeObject__ht_qualname, toNativeNewRef.execute(clazz.getQualName()));
             writePtrNode.write(mem, CFields.PyHeapTypeObject__ht_module, nullValue);
-            Object slots = clazz.getAttribute(SpecialAttributeNames.T___SLOTS__);
-            writePtrNode.write(mem, CFields.PyHeapTypeObject__ht_slots, slots != PNone.NO_VALUE ? toNativeNewRef.execute(slots) : nullValue);
+            Object dunderSlots = clazz.getAttribute(SpecialAttributeNames.T___SLOTS__);
+            writePtrNode.write(mem, CFields.PyHeapTypeObject__ht_slots, dunderSlots != PNone.NO_VALUE ? toNativeNewRef.execute(dunderSlots) : nullValue);
         }
     }
 }

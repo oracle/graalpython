@@ -96,8 +96,6 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
 
     public abstract int execute(Frame frame, Node inliningTarget, PTuple object);
 
-    protected abstract Object executeObject(Frame frame, Node inliningTarget, Object object);
-
     // Note: these fast-paths are duplicated in IteratorNodes$GetLength, because there is no simple
     // way to share them effectively without unnecessary indirections and overhead in the
     // interpreter

@@ -199,6 +199,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
+import com.oracle.graal.python.lib.PySequenceSizeNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -267,7 +268,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
@@ -1014,26 +1014,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached("create(Reversed)") LookupSpecialMethodSlotNode lookupReversed,
                         @Cached CallUnaryMethodNode callReversed,
-                        @Cached("create(Len)") LookupAndCallUnaryNode lookupLen,
+                        @Cached PySequenceSizeNode pySequenceSizeNode,
                         @Cached("create(GetItem)") LookupSpecialMethodSlotNode getItemNode,
                         @Cached InlinedConditionProfile noReversedProfile,
-                        @Cached InlinedConditionProfile noGetItemProfile,
+                        @Cached PySequenceCheckNode pySequenceCheck,
                         @Shared @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object sequenceKlass = getClassNode.execute(inliningTarget, sequence);
             Object reversed = lookupReversed.execute(frame, sequenceKlass, sequence);
             if (noReversedProfile.profile(inliningTarget, reversed == PNone.NO_VALUE)) {
-                Object getItem = getItemNode.execute(frame, sequenceKlass, sequence);
-                if (noGetItemProfile.profile(inliningTarget, getItem == PNone.NO_VALUE)) {
+                if (!pySequenceCheck.execute(inliningTarget, sequence)) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_ISNT_REVERSIBLE, sequence);
                 } else {
-                    Object h = lookupLen.executeObject(frame, sequence);
-                    int lengthHint;
-                    try {
-                        lengthHint = PGuards.expectInt(h);
-                    } catch (UnexpectedResultException | OverflowException e) {
-                        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, h);
-                    }
+                    int lengthHint = pySequenceSizeNode.execute(frame, inliningTarget, sequence);
                     return factory.createSequenceReverseIterator(cls, sequence, lengthHint);
                 }
             } else {

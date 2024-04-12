@@ -54,6 +54,8 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.CodePointAtIndexNode;
+import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
 
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
     @CompilationFinal private Object base;
@@ -75,6 +77,9 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
      * @see SpecialMethodSlot
      */
     Object[] specialMethodSlots;
+
+    private TpSlots tpSlots;
+
     @CompilationFinal protected long methodsFlags = 0L;
 
     /** {@code true} if the MRO contains a native class. */
@@ -85,18 +90,19 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     public PTuple basesTuple;
 
     @TruffleBoundary
-    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, Object base, PythonAbstractClass[] baseClasses) {
-        this(lang, typeClass, classShape, instanceShape, name, true, true, base, baseClasses);
+    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, Object base, PythonAbstractClass[] baseClasses, TpSlots slots) {
+        this(lang, typeClass, classShape, instanceShape, name, true, true, base, baseClasses, slots);
     }
 
     @TruffleBoundary
     @SuppressWarnings("this-escape")
     protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, boolean invokeMro, boolean initDocAttr,
-                    Object base, PythonAbstractClass[] baseClasses) {
+                    Object base, PythonAbstractClass[] baseClasses, TpSlots slots) {
         super(typeClass, classShape);
         this.name = name;
         this.qualName = name;
         this.base = base;
+        this.tpSlots = slots;
 
         this.methodResolutionOrder = new MroSequenceStorage(name, 0);
 
@@ -159,6 +165,14 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                 subclass.lookupChanged();
             }
         }
+    }
+
+    public final TpSlots getTpSlots() {
+        return tpSlots;
+    }
+
+    public final void setTpSlots(TpSlots tpSlots) {
+        this.tpSlots = tpSlots;
     }
 
     public final Shape getInstanceShape() {
@@ -237,9 +251,17 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @TruffleBoundary
     public void onAttributeUpdate(TruffleString key, Object value) {
         methodResolutionOrder.invalidateAttributeInMROFinalAssumptions(key);
-        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlotUncached(key);
-        if (slot != null) {
-            SpecialMethodSlot.fixupSpecialMethodSlot(this, slot, value);
+        if (TpSlots.canBeSpecialMethod(key, CodePointLengthNode.getUncached(), CodePointAtIndexNode.getUncached())) {
+            if (this.tpSlots != null) {
+                // This is called during type instantiation from copyDictSlots when the tp slots are
+                // not initialized yet
+                TpSlots.updateSlot(this, key);
+            }
+            // TODO: will be removed:
+            SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlotUncached(key);
+            if (slot != null) {
+                SpecialMethodSlot.fixupSpecialMethodSlot(this, slot, value);
+            }
         }
     }
 

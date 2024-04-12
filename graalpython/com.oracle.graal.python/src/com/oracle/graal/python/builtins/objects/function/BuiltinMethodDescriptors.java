@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,25 +41,16 @@
 package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.get;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory;
 
 /**
  * Enum-like class with some useful well known descriptors. Because of initialization order issues,
  * these constants cannot be places in {@link BuiltinMethodDescriptor} class.
  */
 public abstract class BuiltinMethodDescriptors {
-
-    public static final BuiltinMethodDescriptor OBJ_GET_ATTRIBUTE = get(J___GETATTRIBUTE__, ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject);
-    public static final BuiltinMethodDescriptor MODULE_GET_ATTRIBUTE = get(J___GETATTRIBUTE__, ModuleBuiltinsFactory.ModuleGetattritbuteNodeFactory.getInstance(), PythonBuiltinClassType.PythonModule);
-    public static final BuiltinMethodDescriptor TYPE_GET_ATTRIBUTE = get(J___GETATTRIBUTE__, TypeBuiltinsFactory.GetattributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonClass);
-
     public static final BuiltinMethodDescriptor DICT_ITER = get(J___ITER__, DictBuiltinsFactory.IterNodeFactory.getInstance(), PythonBuiltinClassType.PDict);
 
     private BuiltinMethodDescriptors() {

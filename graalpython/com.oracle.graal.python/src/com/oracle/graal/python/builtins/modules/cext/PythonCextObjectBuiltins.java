@@ -108,10 +108,12 @@ import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectDir;
+import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
@@ -119,7 +121,6 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -271,10 +272,10 @@ public abstract class PythonCextObjectBuiltins {
                         @Cached GetNextVaArgNode getVaArgs,
                         @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
-                        @Cached GetAnyAttributeNode getAnyAttributeNode,
+                        @Cached PyObjectGetAttrO getAnyAttributeNode,
                         @Cached NativeToPythonNode toJavaNode) {
 
-            Object method = getAnyAttributeNode.executeObject(null, receiver, methodName);
+            Object method = getAnyAttributeNode.execute(null, inliningTarget, receiver, methodName);
             return PyTruffleObject_CallFunctionObjArgs.callFunction(inliningTarget, method, vaList, getVaArgs, argLib, callNode, toJavaNode);
         }
     }
@@ -458,7 +459,7 @@ public abstract class PythonCextObjectBuiltins {
         @Specialization
         static int hasAttr(Object obj, Object attr,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached PyObjectLookupAttrO lookupAttrNode,
                         @Cached InlinedBranchProfile exceptioBranchProfile) {
             try {
                 return lookupAttrNode.execute(null, inliningTarget, obj, attr) != PNone.NO_VALUE ? 1 : 0;

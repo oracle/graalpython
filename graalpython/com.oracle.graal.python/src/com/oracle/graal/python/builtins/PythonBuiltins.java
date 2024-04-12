@@ -193,7 +193,10 @@ public abstract class PythonBuiltins {
             } else {
                 PBuiltinFunction function;
                 if (isSlotMethod(builtin)) {
-                    function = core.factory().createWrapperDescriptor(tsName, null, numDefaults(builtin), flags, callTarget);
+                    // HACK: TODO: we should not see any slots here anymore once all are converted
+                    // to slots, then we can make the slot field in PBuiltinFunction final, for now,
+                    // we patch it in TpSlots#wrapBuiltinSlots
+                    function = core.factory().createWrapperDescriptor(tsName, null, numDefaults(builtin), flags, callTarget, null, null);
                 } else {
                     function = core.factory().createBuiltinFunction(tsName, null, numDefaults(builtin), flags, callTarget);
                 }
@@ -303,6 +306,10 @@ public abstract class PythonBuiltins {
     }
 
     void addFunctionsToModuleObject(PythonObject obj, PythonObjectSlowPathFactory factory) {
+        addFunctionsToModuleObject(builtinFunctions, obj, factory);
+    }
+
+    static void addFunctionsToModuleObject(Map<TruffleString, BoundBuiltinCallable<?>> builtinFunctions, PythonObject obj, PythonObjectSlowPathFactory factory) {
         for (Entry<TruffleString, BoundBuiltinCallable<?>> entry : builtinFunctions.entrySet()) {
             Object value;
             assert obj instanceof PythonModule || obj instanceof PythonBuiltinClass : "unexpected object while adding builtins";

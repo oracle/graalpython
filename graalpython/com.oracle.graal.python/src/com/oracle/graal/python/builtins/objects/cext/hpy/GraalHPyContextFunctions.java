@@ -313,11 +313,13 @@ import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
@@ -2088,8 +2090,8 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object key,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttributeNode) {
-            return getAttributeNode.execute(inliningTarget, receiver, key);
+                        @Cached PyObjectGetAttrO getAttributeNode) {
+            return getAttributeNode.execute(null, inliningTarget, receiver, key);
         }
     }
 
@@ -2126,9 +2128,9 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object key,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttributeNode) {
+                        @Cached PyObjectGetAttrO getAttributeNode) {
             try {
-                Object attr = getAttributeNode.execute(inliningTarget, receiver, key);
+                Object attr = getAttributeNode.execute(null, inliningTarget, receiver, key);
                 return PInt.intValue(attr != PNone.NO_VALUE);
             } catch (PException e) {
                 return 0;
@@ -2161,11 +2163,11 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object receiver, Object key, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectSetAttr setAttrNode) {
+                        @Cached PyObjectSetAttrO setAttrNode) {
             if (value == NULL_HANDLE_DELEGATE) {
-                setAttrNode.execute(inliningTarget, receiver, key, null);
+                setAttrNode.execute(null, inliningTarget, receiver, key, null);
             } else {
-                setAttrNode.execute(inliningTarget, receiver, key, value);
+                setAttrNode.execute(null, inliningTarget, receiver, key, value);
             }
             return 0;
         }

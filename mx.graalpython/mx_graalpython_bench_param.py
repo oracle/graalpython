@@ -120,6 +120,9 @@ MICRO_BENCHMARKS = {
 
 MICRO_BENCHMARKS_SMALL = {
     'arith-modulo-sized': ITER_6 + WARMUP_2 + ['1'],
+    'if-generic': ITER_10 + WARMUP_2 + ['500000'],
+    'if-generic-non-builtin': ITER_10 + WARMUP_2 + ['500000'],
+    'if-polymorph': ITER_10 + WARMUP_2 + ['1000000'],
     'attribute-access-polymorphic': ITER_6 + WARMUP_2 + ['20'],
     'attribute-access': ITER_6 + WARMUP_2 + ['100'],
     'attribute-access-super': ITER_6 + WARMUP_2 + ['40'],

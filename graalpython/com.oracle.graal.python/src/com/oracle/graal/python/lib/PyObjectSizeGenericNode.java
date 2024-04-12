@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,18 +42,14 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -61,7 +57,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 // Note: this has to be a top-level class because of bug/restriction in Truffle DSL
 @GenerateUncached
@@ -70,45 +65,16 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 abstract class PyObjectSizeGenericNode extends Node {
     abstract int execute(Frame frame, Object object);
 
-    protected abstract Object executeObject(Frame frame, Object object);
-
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    static int doInt(VirtualFrame frame, Object object,
+    @Specialization
+    static int doIt(VirtualFrame frame, Object object,
                     @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
-                    @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
-                    @Shared("callLen") @Cached CallUnaryMethodNode callLen,
-                    @Shared("index") @Cached PyNumberIndexNode indexNode,
-                    @Shared("castLossy") @Cached CastToJavaIntLossyNode castLossy,
-                    @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
-                    @Shared("raise") @Cached PRaiseNode raiseNode) throws UnexpectedResultException {
-        Object lenDescr = lookupLen.execute(frame, getClassNode.execute(inliningTarget, object), object);
-        if (lenDescr == PNone.NO_VALUE) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_HAS_NO_LEN, object);
+                    @Cached GetObjectSlotsNode getTpSlotsNode,
+                    @Cached TpSlotLen.CallSlotLenNode callSlotLenNode,
+                    @Cached PRaiseNode.Lazy raiseNode) {
+        TpSlots slots = getTpSlotsNode.execute(inliningTarget, object);
+        if (slots.combined_sq_mp_length() != null) {
+            return callSlotLenNode.execute(frame, inliningTarget, slots.combined_sq_mp_length(), object);
         }
-        try {
-            return PyObjectSizeNode.checkLen(raiseNode, PGuards.expectInteger(callLen.executeObject(frame, lenDescr, object)));
-        } catch (UnexpectedResultException e) {
-            int len = PyObjectSizeNode.convertAndCheckLen(frame, inliningTarget, e.getResult(), indexNode, castLossy, asSizeNode, raiseNode);
-            throw new UnexpectedResultException(len);
-        }
-    }
-
-    @Specialization(replaces = "doInt")
-    static int doObject(VirtualFrame frame, Object object,
-                    @Bind("this") Node inliningTarget,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
-                    @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
-                    @Shared("callLen") @Cached CallUnaryMethodNode callLen,
-                    @Shared("index") @Cached PyNumberIndexNode indexNode,
-                    @Shared("castLossy") @Cached CastToJavaIntLossyNode castLossy,
-                    @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
-                    @Shared("raise") @Cached PRaiseNode raiseNode) {
-        Object lenDescr = lookupLen.execute(frame, getClassNode.execute(inliningTarget, object), object);
-        if (lenDescr == PNone.NO_VALUE) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_HAS_NO_LEN, object);
-        }
-        Object result = callLen.executeObject(frame, lenDescr, object);
-        return PyObjectSizeNode.convertAndCheckLen(frame, inliningTarget, result, indexNode, castLossy, asSizeNode, raiseNode);
+        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_HAS_NO_LEN, object);
     }
 }

@@ -107,6 +107,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -380,6 +381,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
     // corresponds to PyCData_get
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     @ImportStatic(FieldGet.class)
     protected abstract static class PyCDataGetNode extends Node {
         protected abstract Object execute(Node inliningTarget, Object type, FieldGet getfunc, CDataObject src, int index, int size, Pointer adr);

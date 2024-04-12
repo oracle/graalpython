@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -28,13 +28,13 @@ package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELATTR__;
@@ -43,7 +43,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
@@ -51,7 +50,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
@@ -84,6 +82,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -94,9 +94,15 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -115,6 +121,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -123,6 +130,8 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -132,7 +141,10 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -153,15 +165,17 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
 public final class ForeignObjectBuiltins extends PythonBuiltins {
+    public static TpSlots SLOTS = ForeignObjectBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ForeignObjectBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___BOOL__, minNumOfPositionalArgs = 1)
+    @Slot(SlotKind.nb_bool)
+    @GenerateUncached
     @GenerateNodeFactory
-    abstract static class BoolNode extends PythonUnaryBuiltinNode {
+    abstract static class BoolNode extends NbBoolBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         static boolean bool(Object receiver,
                         @CachedLibrary("receiver") InteropLibrary lib,
@@ -224,30 +238,40 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         return null;
     }
 
-    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
+    @Slot(SlotKind.sq_length)
+    @Slot(SlotKind.mp_length)
+    @GenerateUncached
     @GenerateNodeFactory
-    abstract static class LenNode extends PythonUnaryBuiltinNode {
+    abstract static class LenNode extends LenBuiltinNode {
         @Specialization
-        static long len(Object self,
+        static int len(Object self,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil,
                         @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
+            long result = 0;
+            boolean hasResult = false;
             try {
                 if (lib.hasArrayElements(self)) {
-                    return lib.getArraySize(self);
+                    result = lib.getArraySize(self);
+                    hasResult = true;
                 } else if (lib.isIterator(self) || lib.hasIterator(self)) {
                     return 0; // a value signifying it has a length, but it's unknown
                 } else if (lib.hasHashEntries(self)) {
-                    return lib.getHashSize(self);
+                    result = lib.getHashSize(self);
+                    hasResult = true;
                 }
             } catch (UnsupportedMessageException e) {
                 // fall through
             } finally {
                 gil.acquire();
             }
-            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___LEN__);
+            if (hasResult) {
+                return PyNumberAsSizeNode.doLongExact(inliningTarget, result, OverflowError, raiseNode);
+            } else {
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___LEN__);
+            }
         }
     }
 
@@ -961,17 +985,38 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETATTR__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
     @GenerateNodeFactory
-    abstract static class GetattrNode extends PythonBinaryBuiltinNode {
+    abstract static class GetAttributeNode extends GetAttrBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object self, Object name,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Cached IsBuiltinObjectProfile isAttrError,
+                        @Cached ForeignGetattrNode foreignGetattrNode) {
+            try {
+                // We want the default Python way __getattribute__, but fallback to reading through
+                // interop library in what would be __getattr__
+                return objectGetattrNode.execute(frame, self, name);
+            } catch (PException e) {
+                e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, isAttrError);
+                return foreignGetattrNode.execute(inliningTarget, self, name);
+            }
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(PythonOptions.class)
+    abstract static class ForeignGetattrNode extends Node {
+        abstract Object execute(Node inliningTarget, Object object, Object name);
 
         @Specialization
-        static Object doIt(Object object, Object memberObj,
-                        @Bind("this") Node inliningTarget,
+        static Object doIt(Node inliningTarget, Object object, Object memberObj,
                         @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read,
-                        @Cached CastToJavaStringNode castToString,
-                        @Cached GilNode gil,
-                        @Cached PForeignToPTypeNode toPythonNode,
+                        @Cached(inline = false) CastToJavaStringNode castToString,
+                        @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) PForeignToPTypeNode toPythonNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {

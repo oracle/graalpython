@@ -67,14 +67,15 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -135,17 +136,9 @@ public final class DescriptorBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     abstract static class DescriptorCheckNode extends Node {
-
-        public void execute(Node inliningTarget, Object descrType, TruffleString name, Object obj) {
-            executeInternal(inliningTarget, descrType, name, obj);
-        }
-
-        public void execute(Node inliningTarget, Object descrType, HiddenAttr name, Object obj) {
-            executeInternal(inliningTarget, descrType, name, obj);
-        }
-
-        abstract void executeInternal(Node inliningTarget, Object descrType, Object nameObj, Object obj);
+        public abstract void execute(Node inliningTarget, Object descrType, Object nameObj, Object obj);
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
         @Specialization
@@ -160,41 +153,51 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class DescrGetNode extends AbstractDescrNode {
+    @GenerateUncached
+    @GenerateInline(value = false)
+    public abstract static class DescrGetNode extends Node {
         public abstract Object execute(VirtualFrame frame, Object descr, Object obj);
 
         @Specialization
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached GetNameNode getNameNode,
                         @Cached CallUnaryMethodNode callNode) {
             if (descr.getGet() != null) {
                 return callNode.executeObject(frame, descr.getGet(), obj);
             } else {
-                throw getRaiseNode().raise(AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_READABLE, descr.getName(), getTypeName(descr.getType()));
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_READABLE, descr.getName(), getNameNode.execute(inliningTarget, descr.getType()));
             }
         }
 
         @Specialization
         Object doHiddenAttrDescriptor(HiddenAttrDescriptor descr, PythonAbstractObject obj,
                         @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                         @Cached HiddenAttr.ReadNode readNode) {
             Object val = readNode.execute(inliningTarget, obj, descr.getAttr(), PNone.NO_VALUE);
             if (val != PNone.NO_VALUE) {
                 return val;
             }
-            throw getRaiseNode().raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, descr.getType(), descr.getAttr().getName());
+            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, descr.getType(), descr.getAttr().getName());
         }
     }
 
-    public abstract static class DescrSetNode extends AbstractDescrNode {
+    @GenerateInline(value = false)
+    public abstract static class DescrSetNode extends Node {
         public abstract Object execute(VirtualFrame frame, Object descr, Object obj, Object value);
 
         @Specialization
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetNameNode getNameNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
                         @Cached CallBinaryMethodNode callNode) {
             if (descr.getSet() != null) {
                 return callNode.executeObject(frame, descr.getSet(), obj, value);
             } else {
-                throw getRaiseNode().raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, descr.getName(), getTypeName(descr.getType()));
+                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, descr.getName(), getNameNode.execute(inliningTarget, descr.getType()));
             }
         }
 
@@ -207,12 +210,15 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class DescrDeleteNode extends AbstractDescrNode {
+    @GenerateInline(value = false)
+    public abstract static class DescrDeleteNode extends Node {
         public abstract Object execute(VirtualFrame frame, Object descr, Object obj);
 
         @Specialization
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj,
                         @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached GetNameNode getNameNode,
                         @Cached CallBinaryMethodNode callNode,
                         @Cached InlinedBranchProfile branchProfile) {
             if (descr.allowsDelete()) {
@@ -223,11 +229,11 @@ public final class DescriptorBuiltins extends PythonBuiltins {
                     if (descr.getName().equalsUncached(T__CHUNK_SIZE, TS_ENCODING)) {
                         // This is a special error message case. see
                         // Modules/_io/textio.c:textiowrapper_chunk_size_set
-                        throw getRaiseNode().raise(AttributeError, ErrorMessages.CANNOT_DELETE);
+                        throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.CANNOT_DELETE);
                     }
-                    throw getRaiseNode().raise(TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getTypeName(descr.getType()), descr.getName());
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getNameNode.execute(inliningTarget, descr.getType()), descr.getName());
                 } else {
-                    throw getRaiseNode().raise(AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, descr.getName(), obj);
+                    throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, descr.getName(), obj);
                 }
             }
         }
@@ -235,6 +241,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         @Specialization
         Object doHiddenAttrDescriptor(HiddenAttrDescriptor descr, PythonAbstractObject obj,
                         @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                         @Cached HiddenAttr.WriteNode writeNode,
                         @Cached HiddenAttr.ReadNode readNode,
                         @Cached InlinedConditionProfile profile) {
@@ -243,28 +250,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
                 writeNode.execute(inliningTarget, obj, descr.getAttr(), PNone.NO_VALUE);
                 return PNone.NONE;
             }
-            throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.S, descr.getAttr().getName());
-        }
-    }
-
-    private abstract static class AbstractDescrNode extends Node {
-        @Child private GetNameNode getNameNode;
-        @Child private PRaiseNode raiseNode;
-
-        protected Object getTypeName(Object descrType) {
-            if (getNameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getNameNode = insert(GetNameNode.create());
-            }
-            return getNameNode.executeCached(descrType);
-        }
-
-        protected PRaiseNode getRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError, ErrorMessages.S, descr.getAttr().getName());
         }
     }
 }

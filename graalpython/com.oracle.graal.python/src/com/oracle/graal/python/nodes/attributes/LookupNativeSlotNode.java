@@ -42,13 +42,11 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.SlotMethodDef;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -156,17 +154,5 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
     @Override
     public boolean isAdoptable() {
         return false;
-    }
-
-    public static Object executeUncachedGetattroSlot(PythonManagedClass type) {
-        var lookupGetattr = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.GetAttr);
-        Object getattr = lookupGetattr.execute(type);
-        if (getattr == PNone.NO_VALUE) {
-            return LookupNativeSlotNode.executeUncached(type, SlotMethodDef.TP_GETATTRO);
-        } else {
-            var lookupGetattribute = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.GetAttribute);
-            Object getattribute = lookupGetattribute.execute(type);
-            return PythonContext.get(null).getCApiContext().getOrCreateProcWrapper(type, SlotMethodDef.TP_GETATTRO, () -> new PyProcsWrapper.GetAttrCombinedWrapper(getattribute, getattr));
-        }
     }
 }

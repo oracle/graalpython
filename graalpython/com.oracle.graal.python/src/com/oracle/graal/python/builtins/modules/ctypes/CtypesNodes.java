@@ -300,6 +300,7 @@ public class CtypesNodes {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class PyCDataFromBaseObjNode extends Node {
         public abstract CDataObject execute(Node inliningTarget, Object type, CDataObject base, int index, Pointer adr);
 
@@ -329,6 +330,7 @@ public class CtypesNodes {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class CreateCDataObjectNode extends Node {
         public abstract CDataObject execute(Node inliningTarget, Object type, Pointer pointer, int size, boolean needsfree);
 
@@ -351,6 +353,7 @@ public class CtypesNodes {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class PyCDataMallocBufferNode extends Node {
         public abstract CDataObject execute(Node inliningTarget, Object type, StgDictObject dict);
 

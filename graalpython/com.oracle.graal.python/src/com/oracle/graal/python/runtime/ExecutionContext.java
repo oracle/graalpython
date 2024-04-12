@@ -280,6 +280,7 @@ public abstract class ExecutionContext {
             return materializeNode;
         }
 
+        @NeverDefault
         public static CalleeContext create() {
             return new CalleeContext();
         }

@@ -82,9 +82,9 @@ import com.oracle.truffle.api.strings.TruffleString;
  * execute method we want and cares about swapping arguments back if needed.
  */
 public final class BuiltinFunctionRootNode extends PRootNode {
+    public static final TruffleString T_DOLLAR_SELF = tsLiteral("$self");
     public static final TruffleString T_DOLLAR_DECL_TYPE = tsLiteral("$decl_type");
     private static final TruffleString T_DOLLAR_CLS = tsLiteral("$cls");
-    private static final TruffleString T_DOLLAR_SELF = tsLiteral("$self");
 
     private final Signature signature;
     private final Builtin builtin;

@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -49,23 +47,17 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CallSlotNbBoolNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -75,7 +67,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -154,13 +147,20 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
         return lenNode.execute(inliningTarget, object.getDictStorage()) != 0;
     }
 
-    @Fallback
+    // Intentionally not a fallback. We replace specializations with complex guards to avoid them in
+    // the fallback guard. Possible improvement: check if not replacing the other fast-paths pay
+    // off, because in the no-fast-path case, these extra typechecks have some measurable overhead
+    // in micro benchmarks (if-polymorphic)
+    @Specialization(guards = {"!isBoolean(object)", "!isPNone(object)", "!isInt(object)", "!isLong(object)", "!isDouble(object)", "!isTruffleString(object)"}, //
+                    replaces = {"doList", "doTuple", "doDict", "doSet"})
     @InliningCutoff
     static boolean doOthers(Frame frame, Object object,
                     @Cached(inline = false) PyObjectIsTrueNodeGeneric internalNode) {
         // Cached PyObjectItTrue nodes used in PBytecodeRootNode are significant contributors to
         // footprint, so we use indirection to save all the fields for the nodes used in the generic
-        // variant
+        // variant + this is one polymorphic dispatch to the execute method. Inside the cached
+        // execute method, the hosted inlining can then inline cached nodes, unlike if we inlined to
+        // logic here
         return internalNode.execute(frame, object);
     }
 
@@ -171,74 +171,25 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
 
         protected abstract Object executeObject(Frame frame, Object object);
 
-        @Specialization(guards = {"!isBoolean(object)", "!isPNone(object)", "!isInteger(object)", "!isDouble(object)"}, rewriteOn = UnexpectedResultException.class)
-        static boolean doObjectUnboxed(VirtualFrame frame, Object object,
+        @Specialization
+        static boolean doIt(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
-                        @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared("lookupBool") @Cached(parameters = "Bool") LookupSpecialMethodSlotNode lookupBool,
-                        @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
-                        @Shared("callBool") @Cached CallUnaryMethodNode callBool,
-                        @Shared("callLen") @Cached CallUnaryMethodNode callLen,
-                        @Shared("cast") @Cached CastToJavaBooleanNode cast,
-                        @Shared("index") @Cached PyNumberIndexNode indexNode,
-                        @Shared("castLossy") @Cached CastToJavaIntLossyNode castLossy,
-                        @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared("raise") @Cached PRaiseNode.Lazy raiseNode) throws UnexpectedResultException {
-            Object type = getClassNode.execute(inliningTarget, object);
-            Object boolDescr = lookupBool.execute(frame, type, object);
-            if (boolDescr != PNone.NO_VALUE) {
-                try {
-                    return PGuards.expectBoolean(callBool.executeObject(frame, boolDescr, object));
-                } catch (UnexpectedResultException e) {
-                    throw new UnexpectedResultException(checkBoolResult(inliningTarget, cast, raiseNode.get(inliningTarget), e.getResult()));
-                }
+                        @Cached GetObjectSlotsNode getTpSlotsNode,
+                        @Cached CallSlotNbBoolNode callBoolNode,
+                        @Cached InlinedBranchProfile lenLookupBranch,
+                        @Cached InlinedConditionProfile hasLenProfile,
+                        @Cached CallSlotLenNode callLenNode) {
+            // Full transcript of CPython:PyObject_IsTrue logic
+            TpSlots slots = getTpSlotsNode.execute(inliningTarget, object);
+            if (slots.nb_bool() != null) {
+                return callBoolNode.execute(frame, inliningTarget, slots.nb_bool(), object);
             }
-            Object lenDescr = lookupLen.execute(frame, type, object);
-            if (lenDescr != PNone.NO_VALUE) {
-                try {
-                    return PyObjectSizeNode.checkLen(raiseNode.get(inliningTarget), PGuards.expectInteger(callLen.executeObject(frame, lenDescr, object))) != 0;
-                } catch (UnexpectedResultException e) {
-                    int len = PyObjectSizeNode.convertAndCheckLen(frame, inliningTarget, e.getResult(), indexNode, castLossy, asSizeNode, raiseNode.get(inliningTarget));
-                    throw new UnexpectedResultException(len != 0);
-                }
+            lenLookupBranch.enter(inliningTarget);
+            TpSlot lenSlot = slots.combined_mp_sq_length();
+            if (hasLenProfile.profile(inliningTarget, lenSlot != null)) {
+                return callLenNode.execute(frame, inliningTarget, lenSlot, object) != 0;
             }
             return true;
-        }
-
-        @Specialization(guards = {"!isBoolean(object)", "!isPNone(object)", "!isInteger(object)", "!isDouble(object)"}, replaces = "doObjectUnboxed")
-        static boolean doObject(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared("lookupBool") @Cached(parameters = "Bool") LookupSpecialMethodSlotNode lookupBool,
-                        @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
-                        @Shared("callBool") @Cached CallUnaryMethodNode callBool,
-                        @Shared("callLen") @Cached CallUnaryMethodNode callLen,
-                        @Shared("cast") @Cached CastToJavaBooleanNode cast,
-                        @Shared("index") @Cached PyNumberIndexNode indexNode,
-                        @Shared("castLossy") @Cached CastToJavaIntLossyNode castLossy,
-                        @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared("raise") @Cached PRaiseNode.Lazy raiseNode) {
-            Object type = getClassNode.execute(inliningTarget, object);
-            Object boolDescr = lookupBool.execute(frame, type, object);
-            if (boolDescr != PNone.NO_VALUE) {
-                Object result = callBool.executeObject(frame, boolDescr, object);
-                return checkBoolResult(inliningTarget, cast, raiseNode.get(inliningTarget), result);
-            }
-            Object lenDescr = lookupLen.execute(frame, type, object);
-            if (lenDescr != PNone.NO_VALUE) {
-                Object result = callLen.executeObject(frame, lenDescr, object);
-                int len = PyObjectSizeNode.convertAndCheckLen(frame, inliningTarget, result, indexNode, castLossy, asSizeNode, raiseNode.get(inliningTarget));
-                return len != 0;
-            }
-            return true;
-        }
-    }
-
-    private static boolean checkBoolResult(Node inliningTarget, CastToJavaBooleanNode cast, PRaiseNode raiseNode, Object result) {
-        try {
-            return cast.execute(inliningTarget, result);
-        } catch (CannotCastException e) {
-            throw raiseNode.raise(TypeError, ErrorMessages.BOOL_SHOULD_RETURN_BOOL, result);
         }
     }
 

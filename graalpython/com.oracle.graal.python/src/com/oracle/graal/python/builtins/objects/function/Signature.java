@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -97,7 +97,7 @@ public final class Signature {
     /**
      *
      * @return The index to the positional only argument marker ('/'). Which means that all
-     *         positional only argument have index smaller then this.
+     *         positional only argument have index smaller than this.
      */
     public final int getPositionalOnlyArgIndex() {
         return positionalOnlyArgIndex;

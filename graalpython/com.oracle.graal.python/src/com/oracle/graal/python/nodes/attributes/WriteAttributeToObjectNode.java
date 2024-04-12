@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -381,10 +382,18 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                 }
                 throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
             } finally {
-                if (SpecialMethodSlot.canBeSpecial(key, codePointLengthNode, codePointAtIndexNode)) {
+                if (TpSlots.canBeSpecialMethod(key, codePointLengthNode, codePointAtIndexNode)) {
                     canBeSpecialSlot.enter(inliningTarget);
+                    // In theory, we should do this only in type's default tp_setattr(o) slots,
+                    // one could probably bypass that by using different metaclass and
+                    // overriding tp_setattr and delegate to object's tp_setattr that does not
+                    // have this hook
+                    if (isTypeNode.execute(inliningTarget, object)) {
+                        TpSlots.updateSlot(object, key);
+                    }
+                    // TODO: will be removed:
                     SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key, codePointLengthNode, codePointAtIndexNode, equalNode);
-                    if (slot != null && isTypeNode.execute(inliningTarget, object)) {
+                    if (slot != null) {
                         SpecialMethodSlot.fixupSpecialMethodSlot(object, slot, value);
                     }
                 }
