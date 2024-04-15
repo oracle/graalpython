@@ -123,6 +123,36 @@ index bee0ae6..ee0e3ea 100644
              "actor_method_names": json.dumps(list(actor_method_names)),
          }
  
+diff --git a/python/ray/_private/resource_spec.py b/python/ray/_private/resource_spec.py
+index 69780aade9..3be8cbbc4c 100644
+--- a/python/ray/_private/resource_spec.py
++++ b/python/ray/_private/resource_spec.py
+@@ -160,9 +160,22 @@ class ResourceSpec(
+         if is_head:
+             resources[HEAD_NODE_RESOURCE_NAME] = 1.0
+ 
+-        num_cpus = self.num_cpus
+-        if num_cpus is None:
+-            num_cpus = ray._private.utils.get_num_cpus()
++        try:
++            system_num_cpus = __graalpython__.get_max_process_count()
++            factor = min(system_num_cpus, 4)
++            num_cpus = system_num_cpus // factor
++            if self.num_cpus:
++                num_cpus = min(self.num_cpus, num_cpus)
++                if num_cpus != self.num_cpus:
++                    logger.warning(
++                        f"GraalPy: user requested {self.num_cpus} for number"
++                        "of CPUs, but GraalPy can only support up to {num_cpus} CPUs"
++                    )
++        except:
++            # We are not running on GraalPy
++            num_cpus = self.num_cpus
++            if num_cpus is None:
++                num_cpus = ray._private.utils.get_num_cpus()
+ 
+         num_gpus = 0
+         for (
 diff --git a/python/ray/_private/services.py b/python/ray/_private/services.py
 index 867b748..40b3fb2 100644
 --- a/python/ray/_private/services.py
@@ -272,10 +302,10 @@ index a34a39c..51a1a17 100644
      if BAZEL_ARGS:
 diff --git a/ray_build_backend.py b/ray_build_backend.py
 new file mode 100644
-index 0000000..9e7f3fd
+index 0000000000..10f532ae9e
 --- /dev/null
 +++ b/ray_build_backend.py
-@@ -0,0 +1,117 @@
+@@ -0,0 +1,125 @@
 +# We need a whole custom build backend just because the setup.py is in a subdir
 +import os
 +import re
@@ -385,6 +415,14 @@ index 0000000..9e7f3fd
 +    env = os.environ.copy()
 +    env['SKIP_THIRDPARTY_INSTALL'] = 'true'
 +    try:
++        system_num_cpus = __graalpython__.get_max_process_count()
++        env['BAZEL_LIMIT_CPUS'] = '%d' % system_num_cpus
++    except:
++        # do not limit bazel
++        pass
++    try:
++        if os.path.isdir(Path('dist')):
++            shutil.rmtree(Path('dist'))
 +        subprocess.run([sys.executable, 'setup.py', 'bdist_wheel'], env=env, check=True)
 +        wheels = list(Path('dist').glob('*.whl'))
 +        assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -110,7 +110,7 @@ int PyTruffle_AllocMemory(size_t size) {
 
 void PyTruffle_FreeMemory(size_t size) {
     if (PyTruffle_AllocatedMemory < size) {
-        PyTruffle_Log(PY_TRUFFLE_LOG_INFO, "PyTruffle_FreeMemory: freed memory size (%lu) is larger than allocated memory size (%lu)\n", size, PyTruffle_AllocMemory);
+        PyTruffle_Log(PY_TRUFFLE_LOG_INFO, "PyTruffle_FreeMemory: freed memory size (%lu) is larger than allocated memory size (%lu)\n", size, PyTruffle_AllocatedMemory);
         PyTruffle_AllocatedMemory = size;
     }
     PyTruffle_AllocatedMemory -= size;

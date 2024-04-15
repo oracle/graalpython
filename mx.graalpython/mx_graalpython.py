@@ -2128,7 +2128,7 @@ def _python_checkpatchfiles():
             # Puts whole license into the field. It's BSD 3-Clause
             'pythran-0.12.0.patch',
             'pythran-0.13.patch',
-            # Puts whole license into the field. It's BSD 3-Clause
+            'pyzmq.patch',
             'jupyter_server.patch',
             # Empty license field. It's BSD-3-Clause
             'prompt_toolkit.patch',

@@ -342,6 +342,8 @@ PY_TRUFFLE_TYPE(UnionType_Type, 		"_ctypes.UnionType",		&PyType_Type, sizeof(PyO
 PY_TRUFFLE_TYPE(PyCPointerType_Type,	"PyCPointerType", 		    &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyCArrayType_Type,		"PyCArrayType", 			&PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyCoro_Type, 			"coroutine", 				&PyType_Type, sizeof(PyCoroObject)) \
+/* PyPickleBufferObject (PyObject_HEAD + Py_buffer + PyObject*) is defined within Objects/picklebufobject.c, so its not exposed. */ \
+PY_TRUFFLE_TYPE(PyPickleBuffer_Type, 	"_pickle.PickleBuffer",     &PyType_Type, sizeof(PyPickleBufferObject)) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAIterWrapper_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAsyncGenASend_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAsyncGenAThrow_Type) \
@@ -385,7 +387,6 @@ PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyODictItems_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyODictIter_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyODictKeys_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyODictValues_Type) \
-PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyPickleBuffer_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyRangeIter_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PySetIter_Type) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(PySortWrapper_Type) \
