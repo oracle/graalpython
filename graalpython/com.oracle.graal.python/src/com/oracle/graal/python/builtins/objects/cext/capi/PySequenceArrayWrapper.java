@@ -83,7 +83,7 @@ public final class PySequenceArrayWrapper {
         }
 
         @Specialization(guards = {"!isNative(s)", "!isEmptySequenceStorage(s)", "!isMroSequenceStorage(s)"})
-        static NativeSequenceStorage doManaged(Node inliningTarget, SequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
+        static NativeSequenceStorage doManaged(Node inliningTarget, SequenceStorage s, boolean isBytesLike,
                         @Cached InlinedConditionProfile isObjectArrayProfile,
                         @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
                         @Cached SequenceStorageNodes.GetInternalArrayNode getInternalArrayNode) {
@@ -127,10 +127,9 @@ public final class PySequenceArrayWrapper {
         }
 
         @Specialization
-        static NativeSequenceStorage doEmptyStorage(Node inliningTarget, @SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
+        static NativeSequenceStorage doEmptyStorage(Node inliningTarget, @SuppressWarnings("unused") EmptySequenceStorage s, boolean isBytesLike,
                         @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
-            // TODO(fa): not sure if that completely reflects semantics
-            return storageToNativeNode.execute(inliningTarget, PythonUtils.EMPTY_BYTE_ARRAY, 0);
+            return storageToNativeNode.execute(inliningTarget, isBytesLike ? PythonUtils.EMPTY_BYTE_ARRAY : PythonUtils.EMPTY_OBJECT_ARRAY, 0);
         }
 
         static boolean isNative(SequenceStorage s) {
