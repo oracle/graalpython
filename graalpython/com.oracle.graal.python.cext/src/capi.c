@@ -96,6 +96,14 @@ typedef struct {
     PyObject *mapping;
 } mappingproxyobject;
 
+typedef struct {
+    PyObject_HEAD
+    /* The view exported by the original object */
+    Py_buffer view;
+    PyObject *weakreflist;
+} PyPickleBufferObject;
+
+
 static void object_dealloc(PyObject *self) {
     Py_TYPE(self)->tp_free(self);
 }
@@ -278,6 +286,16 @@ void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view);
 int memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags);
 void memory_releasebuf(PyMemoryViewObject *self, Py_buffer *view);
 
+/* PICKLEBUFFER */
+static int
+picklebuf_getbuf(PyPickleBufferObject *self, Py_buffer *view, int flags)
+{
+    PyObject *self_view_obj = GraalPyTruffle_PickleBuffer_viewobj(self);
+    return PyObject_GetBuffer(self_view_obj, view, flags);
+}
+
+static void empty_releasebuf(PyObject *self, Py_buffer *view) {}
+
 static void initialize_bufferprocs() {
     static PyBufferProcs bytes_as_buffer = {
         (getbufferproc)bytes_buffer_getbuffer,       /* bf_getbuffer */
@@ -305,6 +323,12 @@ static void initialize_bufferprocs() {
     array_as_buffer.bf_releasebuffer = GraalPyTruffle_Array_releasebuffer,
     Arraytype.tp_as_buffer = &array_as_buffer;
     GraalPy_set_PyTypeObject_tp_as_buffer(&Arraytype, &array_as_buffer);
+
+    static PyBufferProcs picklebuf_as_buffer;
+    picklebuf_as_buffer.bf_getbuffer = (getbufferproc)picklebuf_getbuf,
+    picklebuf_as_buffer.bf_releasebuffer = empty_releasebuf,
+    PyPickleBuffer_Type.tp_as_buffer = &picklebuf_as_buffer;
+    GraalPy_set_PyTypeObject_tp_as_buffer(&PyPickleBuffer_Type, &picklebuf_as_buffer);
 }
 
 int is_builtin_type(PyTypeObject *tp) {

@@ -582,6 +582,45 @@ class ObjectTests(unittest.TestCase):
         self.assertRaises(ValueError, bytes, TestType())
         self.assertRaises(ValueError, bytearray, TestType())
 
+    def test_tp_as_buffer_pickle(self):
+        TestAsBufferPickle = CPyExtType(
+            "TestAsBufferPickle",
+            """
+            static PyObject* get_bytes(PyObject* self, PyObject *obj) {
+                Py_buffer view;
+                if (PyObject_GetBuffer(obj, &view, PyBUF_FULL_RO) != 0)
+                    return NULL;
+                PyObject* bytes = PyBytes_FromStringAndSize(view.buf, view.len);
+                PyBuffer_Release(&view);
+                return bytes;
+            }
+            """,
+            tp_methods='{"get_bytes", (PyCFunction)get_bytes, METH_O | METH_CLASS, ""}',
+        )
+        TestType = CPyExtType(
+            "TestMemoryViewBufferPickle",
+            """
+            char buf[] = {1,2,3,4};
+            int getbuffer(TestMemoryViewBufferPickleObject *self, Py_buffer *view, int flags) {
+                return PyBuffer_FillInfo(view, (PyObject*)self, buf, 4, 1, flags);
+            }
+            void releasebuffer(TestMemoryViewBufferPickleObject *self, Py_buffer *view) {}
+            
+            static PyBufferProcs as_buffer = {
+                (getbufferproc)getbuffer,
+                (releasebufferproc)releasebuffer,
+            };
+            """,
+            tp_as_buffer='&as_buffer',
+        )
+        obj = TestType()
+        b = bytes([1,2,3,4]) # same as `buf[] = {1,2,3,4};`
+        import pickle
+        b2 = TestAsBufferPickle.get_bytes(pickle.PickleBuffer(memoryview(obj)))
+        b1 = TestAsBufferPickle.get_bytes(pickle.PickleBuffer(bytearray([1,2,3,4])))
+        assert b == b1
+        assert b == b2
+
 
 class TestNativeSubclass(unittest.TestCase):
     def test_builtins(self):
