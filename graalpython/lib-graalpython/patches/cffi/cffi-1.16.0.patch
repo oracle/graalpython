@@ -1,8 +1,7 @@
-diff --git a/c/misc_thread_common.h b/c/misc_thread_common.h
-index 66e2835..b48fd85 100644
---- a/c/misc_thread_common.h
-+++ b/c/misc_thread_common.h
-@@ -329,40 +329,7 @@ static PyThreadState *get_current_ts(void)
+index 7d29634b..bb440851 100644
+--- a/src/c/misc_thread_common.h
++++ b/src/c/misc_thread_common.h
+@@ -344,45 +344,7 @@ static PyThreadState *get_current_ts(void)
  
  static PyGILState_STATE gil_ensure(void)
  {
@@ -11,6 +10,7 @@ index 66e2835..b48fd85 100644
 -    */
 -    PyGILState_STATE result;
 -    PyThreadState *ts = PyGILState_GetThisThreadState();
+-    //fprintf(stderr, "%p: gil_ensure(), tstate=%p, tls=%p\n", get_cffi_tls(), ts, get_cffi_tls());
 -
 -    if (ts != NULL) {
 -        ts->gilstate_counter++;
@@ -18,9 +18,11 @@ index 66e2835..b48fd85 100644
 -            /* common case: 'ts' is our non-current thread state and
 -               we have to make it current and acquire the GIL */
 -            PyEval_RestoreThread(ts);
+-            //fprintf(stderr, "%p: gil_ensure(), tstate=%p MADE CURRENT\n", get_cffi_tls(), ts);
 -            return PyGILState_UNLOCKED;
 -        }
 -        else {
+-            //fprintf(stderr, "%p: gil_ensure(), tstate=%p ALREADY CURRENT\n", get_cffi_tls(), ts);
 -            return PyGILState_LOCKED;
 -        }
 -    }
@@ -30,6 +32,7 @@ index 66e2835..b48fd85 100644
 -        assert(result == PyGILState_UNLOCKED);
 -
 -        ts = PyGILState_GetThisThreadState();
+-        //fprintf(stderr, "%p: gil_ensure(), made a new tstate=%p\n", get_cffi_tls(), ts);
 -        assert(ts != NULL);
 -        assert(ts == get_current_ts());
 -        assert(ts->gilstate_counter >= 1);
@@ -38,6 +41,7 @@ index 66e2835..b48fd85 100644
 -           thread really shuts down */
 -        thread_canary_register(ts);
 -
+-        assert(ts == PyGILState_GetThisThreadState());
 -        return result;
 -    }
 +    return PyGILState_Ensure();

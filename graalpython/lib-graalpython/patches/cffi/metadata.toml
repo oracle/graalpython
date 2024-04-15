@@ -1,3 +1,7 @@
 [[rules]]
 version = '== 1.15.1'
 patch = 'cffi-1.15.1.patch'
+
+[[rules]]
+version = '== 1.16.0'
+patch = 'cffi-1.16.0.patch'

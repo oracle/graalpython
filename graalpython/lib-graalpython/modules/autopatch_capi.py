@@ -44,15 +44,15 @@ import sys
 
 
 def simple_replace(contents, match, replacement, assignment):
-    "replaces the indexes in 'contents' described by the tuple 'group' with replacement"
-    
+    "replaces the indexes in 'contents' described by the tuple 'group' with replacement, which may have backrefs"
+
     start, end = match.span(1)
-    return contents[:start] + replacement + contents[end:]
+    return contents[:start] + match.expand(replacement) + contents[end:]
 
 
 def replace_pre(contents, match, replacement, assignment):
     "replaces a pre-increment/decrement"
-    
+
     start, end = match.span(1)
     replacement = replacement.replace('%receiver', contents[start: end])
     start, end = match.span()
@@ -61,24 +61,24 @@ def replace_pre(contents, match, replacement, assignment):
 
 def replace_field_access(contents, match, replacement, assignment):
     "replaces a field access, scanning backwards to determine the receiver"
-    
+
     start, end = match.span(1)
     level = 0
-    
+
     def consume_whitespace_backwards(idx):
         while idx > 0 and contents[idx].isspace():
             idx -= 1
         return idx
-    
+
     def consume_whitespace_forward(idx):
         while idx < len(contents) and contents[idx].isspace():
             idx += 1
         return idx
-    
+
     start = consume_whitespace_backwards(start - 1)
     if start < 1 or contents[start - 1: start + 1] != '->':
         return contents
-    
+
     # scan backwards to capture the whole receiver
     idx = consume_whitespace_backwards(start - 2)
     empty = True
@@ -110,12 +110,12 @@ def replace_field_access(contents, match, replacement, assignment):
             else:
                 idx += 1
                 break
-    
+
     receiver_start = consume_whitespace_forward(idx)
     receiver_string = contents[receiver_start: start - 1]
-        
+
     if assignment is not None:
-        
+
         # scan forwards to see if there's an assignment
         idx = consume_whitespace_forward(end)
         if contents[idx] == '=' and contents[idx+1] != '=':
@@ -139,11 +139,11 @@ def replace_field_access(contents, match, replacement, assignment):
                         idx += 2
                     else:
                         idx += 1
-            
+
             value_string = contents[value_start:idx]
-            
+
             return contents[:receiver_start] + assignment.replace('%receiver', receiver_string).replace("%value", value_string) + contents[idx:]
-    
+
     return contents[:receiver_start] + replacement.replace('%receiver', receiver_string) + contents[end:]
 
 
@@ -157,13 +157,16 @@ auto_replacements = {
                     r'\W(ob_item)\W': (replace_field_access, 'PySequence_Fast_ITEMS((PyObject*)%receiver)'),
                     r'^\s*()(std::)?free\((const_cast<char \*>)?\(?\w+->m_ml->ml_doc\)?\);': (simple_replace, '//'),
                     r'\W(m_ml\s*->\s*ml_doc)\W': (replace_field_access, 'PyObject_GetDoc((PyObject*)(%receiver))', 'PyObject_SetDoc((PyObject*)(%receiver), %value)'),
+                    r'\W(m_ml)\W': (replace_field_access, '_PyCFunction_GetMethodDef((PyObject*)(%receiver))'),
+                    r'\W(m_module)\W': (replace_field_access, '_PyCFunction_GetModule((PyObject*)(%receiver))'),
+                    r'(&PyTuple_GET_ITEM\(([\(\w](?:\w|->|\.|\(|\))*), 0\))': (simple_replace, r'PySequence_Fast_ITEMS(\2)'),
                     # already defined by GraalPy:
                     r'^\s*()#\s*define\s+Py_SET_TYPE\W': (simple_replace, '//'),
                     r'^\s*()#\s*define\s+Py_SET_SIZE\W': (simple_replace, '//'),
                     r'^\s*()#\s*define\s+Py_SET_REFCNT\W': (simple_replace, '//'),
 }
 
-   
+
 def auto_patch(path, dryrun):
     "reads the given file, applies all replacements, and writes back the result if there were changes"
 
@@ -172,7 +175,7 @@ def auto_patch(path, dryrun):
             contents = f.read()
         except UnicodeDecodeError:
              return  # may happen for binary files
-         
+
     original = contents
     import re
     for pattern, (*ops,) in auto_replacements.items():
