@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -108,7 +108,8 @@ public class ListTests {
     @Test
     public void reverse() {
         String source = "llist = [1,2,3,4,5]\n" + //
-                        "print(llist.reverse())\n";
+                        "llist.reverse()\n" + //
+                        "print(llist)\n";
 
         assertPrints("[5, 4, 3, 2, 1]\n", source);
     }
