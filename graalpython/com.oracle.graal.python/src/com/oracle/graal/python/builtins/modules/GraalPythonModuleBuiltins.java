@@ -825,14 +825,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "storage_to_native", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class StorageToNative extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        Object toNative(PBytesLike bytes) {
-            CApiContext.ensureCapiWasLoaded();
-            NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(bytes.getSequenceStorage(), true);
-            bytes.setSequenceStorage(newStorage);
-            return bytes;
-        }
 
         @Specialization
         @TruffleBoundary
@@ -847,7 +839,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object toNative(PSequence sequence) {
             CApiContext.ensureCapiWasLoaded();
-            NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(sequence.getSequenceStorage(), false);
+            NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(sequence.getSequenceStorage(), sequence instanceof PBytesLike);
             sequence.setSequenceStorage(newStorage);
             return sequence;
         }
