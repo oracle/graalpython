@@ -73,8 +73,6 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
 
     protected abstract void increaseCapacityExactWithCopy(int newCapacity);
 
-    protected abstract void increaseCapacityExact(int newCapacity);
-
     public void minimizeCapacity() {
         capacity = length;
     }

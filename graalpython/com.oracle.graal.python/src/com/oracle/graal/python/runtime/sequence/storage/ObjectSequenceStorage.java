@@ -122,12 +122,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public void increaseCapacityExact(int newCapacity) {
-        values = new Object[newCapacity];
-        capacity = values.length;
-    }
-
-    @Override
     public void reverse() {
         if (length > 0) {
             int head = 0;

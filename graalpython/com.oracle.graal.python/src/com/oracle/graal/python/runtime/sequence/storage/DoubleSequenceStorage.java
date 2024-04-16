@@ -62,12 +62,6 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    protected void increaseCapacityExact(int newCapacity) {
-        values = new double[newCapacity];
-        capacity = values.length;
-    }
-
-    @Override
     public SequenceStorage copy() {
         return new DoubleSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
@@ -79,7 +73,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public Object[] getInternalArray() {
-        /**
+        /*
          * Have to box and copy.
          */
         Object[] boxed = new Object[length];

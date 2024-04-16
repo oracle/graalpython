@@ -168,12 +168,6 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
 
     @SuppressWarnings("unused")
     @Override
-    public void increaseCapacityExact(int newCapacity) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @SuppressWarnings("unused")
-    @Override
     public void reverse() {
         throw CompilerDirectives.shouldNotReachHere();
     }

@@ -64,12 +64,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    protected void increaseCapacityExact(int newCapacity) {
-        values = new long[newCapacity];
-        capacity = values.length;
-    }
-
-    @Override
     public SequenceStorage copy() {
         return new LongSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
@@ -81,7 +75,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public Object[] getInternalArray() {
-        /**
+        /*
          * Have to box and copy.
          */
         Object[] boxed = new Object[length];
