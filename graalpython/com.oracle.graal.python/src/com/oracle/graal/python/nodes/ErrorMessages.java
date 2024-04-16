@@ -443,7 +443,6 @@ public abstract class ErrorMessages {
     public static final TruffleString LIBRARY_VERSION_MISMATCH = tsLiteral("library version mismatch");
     public static final TruffleString LIST_ASSIGMENT_INDEX_OUT_OF_RANGE = tsLiteral("list assignment index out of range");
     public static final TruffleString LIST_INDEX_OUT_OF_RANGE = tsLiteral("list index out of range");
-    public static final TruffleString LIST_LENGTH_OUT_OF_RANGE = tsLiteral("list length out of range");
     public static final TruffleString LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT = tsLiteral("local variable '%s' referenced before assignment");
     public static final TruffleString UNBOUNDFREEVAR = tsLiteral("cannot access free variable '%s' where it is not associated with a value in enclosing scope");
     public static final TruffleString LOCALS_MUST_BE_MAPPING = tsLiteral("%s() locals must be a mapping or None, not %p");

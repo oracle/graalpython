@@ -529,14 +529,6 @@ PyAPI_FUNC(void) PyTruffle_ObjectArrayRelease(PyObject** array, int32_t size) {
     }
 }
 
-PyAPI_FUNC(void) PyTruffle_SetStorageItem(PyObject** ptr, int32_t index, PyObject* newitem) {
-    Py_XSETREF(ptr[index], newitem);
-}
-
-PyAPI_FUNC(void) PyTruffle_InitializeStorageItem(PyObject** ptr, int32_t index, PyObject* newitem) {
-    ptr[index] = newitem;
-}
-
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + offset))[0]
 
 PyAPI_FUNC(int) ReadShortMember(void* object, Py_ssize_t offset) {

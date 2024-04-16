@@ -63,8 +63,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ReleaseNativeWrapperNodeGen;
@@ -73,13 +71,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ExternalFunctionInvokeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeSequenceStorageNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ClearCurrentExceptionNode;
@@ -2233,24 +2229,14 @@ public abstract class ExternalFunctionNodes {
         @Specialization(guards = {"storage.length() == cachedLen", "cachedLen <= 8"}, limit = "1")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
         static void doObjectCachedLen(NativeObjectSequenceStorage storage,
+                        @Bind("this") Node inliningTarget,
                         @Cached("storage.length()") int cachedLen,
-                        @Cached(value = "createConditionProfiles(cachedLen)", dimensions = 1) ConditionProfile[] objectWrapperProfiles,
-                        @Cached(value = "createConditionProfiles(cachedLen)", dimensions = 1) ConditionProfile[] nativeObjectProfiles,
                         @Shared @Cached CStructAccess.ReadPointerNode readNode,
-                        @Shared @Cached ToPythonWrapperNode toPythonWrapperNode,
-                        @Shared @Cached PCallCapiFunction callDecrefNode,
+                        @Shared @Cached CExtNodes.DecRefPointerNode decRefPointerNode,
                         @Shared @Cached CStructAccess.FreeNode freeNode) {
             for (int i = 0; i < cachedLen; i++) {
                 Object elementPointer = readNode.readArrayElement(storage.getPtr(), i);
-                PythonNativeWrapper pythonNativeWrapper = toPythonWrapperNode.executeWrapper(elementPointer, false);
-                if (objectWrapperProfiles[i].profile(pythonNativeWrapper instanceof PythonAbstractObjectNativeWrapper)) {
-                    ((PythonAbstractObjectNativeWrapper) pythonNativeWrapper).decRef();
-                } else if (nativeObjectProfiles[i].profile(pythonNativeWrapper == null)) {
-                    assert NativeToPythonNode.executeUncached(elementPointer) instanceof PythonAbstractNativeObject;
-                    callDecrefNode.call(NativeCAPISymbol.FUN_DECREF, elementPointer);
-                } else {
-                    throw CompilerDirectives.shouldNotReachHere("NativeObjectSequenceStorage contains non-object element");
-                }
+                decRefPointerNode.execute(inliningTarget, elementPointer);
             }
             // in this case, the runtime still exclusively owns the memory
             freeNode.free(storage.getPtr());
@@ -2258,21 +2244,13 @@ public abstract class ExternalFunctionNodes {
 
         @Specialization(replaces = "doObjectCachedLen")
         static void doObjectGeneric(NativeObjectSequenceStorage storage,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached CStructAccess.ReadPointerNode readNode,
-                        @Shared @Cached ToPythonWrapperNode toPythonWrapperNode,
-                        @Shared @Cached PCallCapiFunction callDecrefNode,
+                        @Shared @Cached CExtNodes.DecRefPointerNode decRefPointerNode,
                         @Shared @Cached CStructAccess.FreeNode freeNode) {
             for (int i = 0; i < storage.length(); i++) {
                 Object elementPointer = readNode.readArrayElement(storage.getPtr(), i);
-                PythonNativeWrapper pythonNativeWrapper = toPythonWrapperNode.executeWrapper(elementPointer, false);
-                if (pythonNativeWrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                    objectNativeWrapper.decRef();
-                } else if (pythonNativeWrapper == null) {
-                    assert NativeToPythonNode.executeUncached(elementPointer) instanceof PythonAbstractNativeObject;
-                    callDecrefNode.call(NativeCAPISymbol.FUN_DECREF, elementPointer);
-                } else {
-                    throw CompilerDirectives.shouldNotReachHere("NativeObjectSequenceStorage contains non-object element");
-                }
+                decRefPointerNode.execute(inliningTarget, elementPointer);
             }
             // in this case, the runtime still exclusively owns the memory
             freeNode.free(storage.getPtr());

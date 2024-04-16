@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -75,21 +75,11 @@ public abstract class SequenceStorage {
         return length;
     }
 
-    public void setNewLength(int length) {
-        this.length = length;
-    }
-
-    protected final void incLength() {
-        this.length++;
-    }
-
     public final int getCapacity() {
         return capacity;
     }
 
     public abstract SequenceStorage copy();
-
-    public abstract SequenceStorage createEmpty(int newCapacity);
 
     /**
      * Get internal array object without copying. Note: The length must be taken from the sequence

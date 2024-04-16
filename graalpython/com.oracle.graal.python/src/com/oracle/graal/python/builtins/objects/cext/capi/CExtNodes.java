@@ -43,9 +43,11 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_DEALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GC_DEL;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TYPE_GENERIC_ALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CConstants.PYLONG_BITS_IN_DIGIT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_doc;
@@ -58,6 +60,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMo
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_methods;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_size;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_slots;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_buffer;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
@@ -83,7 +86,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AddRefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
@@ -113,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Tran
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -200,6 +203,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -1132,51 +1136,56 @@ public abstract class CExtNodes {
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
-    @ImportStatic(CApiGuards.class)
-    public abstract static class AddRefCntNode extends PNodeWithContext {
+    public abstract static class DecRefPointerNode extends PNodeWithContext {
 
-        public static Object executeUncached(Object object, long value) {
-            return AddRefCntNodeGen.getUncached().execute(null, object, value);
+        public static void executeUncached(Object pointer) {
+            CExtNodesFactory.DecRefPointerNodeGen.getUncached().execute(null, pointer);
         }
 
-        public abstract Object execute(Node inliningTarget, Object object, long value);
+        public abstract void execute(Node inliningTarget, Object pointer);
 
-        @Specialization(guards = "value == 1")
-        static PythonAbstractObjectNativeWrapper doNativeWrapperIncByOne(Node inliningTarget, PythonAbstractObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") long value,
-                        @Shared @Cached InlinedConditionProfile isNativeProfile) {
-            if (nativeWrapper.isNative(inliningTarget, isNativeProfile)) {
-                nativeWrapper.incRef();
-            }
-            return nativeWrapper;
-        }
-
-        @Specialization(replaces = "doNativeWrapperIncByOne")
-        static PythonAbstractObjectNativeWrapper doNativeWrapper(Node inliningTarget, PythonAbstractObjectNativeWrapper nativeWrapper, long value,
-                        @Shared @Cached InlinedConditionProfile isNativeProfile,
-                        @Exclusive @Cached InlinedConditionProfile hasRefProfile) {
-            assert value >= 0 : "adding negative reference count; dealloc might not happen";
-            if (nativeWrapper.isNative(inliningTarget, isNativeProfile)) {
-                nativeWrapper.setRefCount(inliningTarget, nativeWrapper.getRefCount() + value, hasRefProfile);
-            }
-            return nativeWrapper;
-        }
-
-        @Specialization(guards = "!isNativeWrapper(object)", limit = "2")
-        static Object doNativeObject(Object object, long value,
-                        @CachedLibrary("object") InteropLibrary lib) {
-            CApiContext cApiContext = PythonContext.get(lib).getCApiContext();
-            if (cApiContext != null && !lib.isNull(object)) {
-                assert value >= 0 : "adding negative reference count; dealloc might not happen";
-                try {
-                    long pointer = lib.asPointer(object);
-                    cApiContext.checkAccess(object, lib);
-                    long refCount = CApiTransitions.readNativeRefCount(pointer);
-                    CApiTransitions.writeNativeRefCount(pointer, refCount + value);
-                } catch (UnsupportedMessageException e) {
-                    throw shouldNotReachHere(e);
+        @Specialization
+        static void doDecref(Node inliningTarget, Object pointerObj,
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached(inline = false) CApiTransitions.ToPythonWrapperNode toPythonWrapperNode,
+                        @Cached InlinedBranchProfile isWrapperProfile,
+                        @Cached InlinedBranchProfile isNativeObject,
+                        @Cached(inline = false) CStructAccess.ReadI64Node readRefcount,
+                        @Cached(inline = false) CStructAccess.WriteLongNode writeRefcount,
+                        @Cached(inline = false) PCallCapiFunction callDealloc) {
+            long pointer;
+            if (pointerObj instanceof Long longPointer) {
+                pointer = longPointer;
+            } else {
+                if (lib.isPointer(pointerObj)) {
+                    try {
+                        pointer = lib.asPointer(pointerObj);
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere();
+                    }
+                } else {
+                    // No refcounting in managed mode
+                    return;
                 }
             }
-            return object;
+            PythonNativeWrapper wrapper = toPythonWrapperNode.executeWrapper(pointer, false);
+            if (wrapper instanceof PythonAbstractObjectNativeWrapper objectWrapper) {
+                isWrapperProfile.enter(inliningTarget);
+                objectWrapper.decRef();
+            } else if (wrapper == null) {
+                isNativeObject.enter(inliningTarget);
+                assert NativeToPythonNode.executeUncached(new NativePointer(pointer)) instanceof PythonAbstractNativeObject;
+                long refcount = readRefcount.read(pointer, PyObject__ob_refcnt);
+                if (refcount != IMMORTAL_REFCNT) {
+                    refcount--;
+                    writeRefcount.write(pointer, PyObject__ob_refcnt, refcount);
+                    if (refcount == 0) {
+                        callDealloc.call(FUN_PY_DEALLOC, pointer);
+                    }
+                }
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("Cannot DECREF non-object");
+            }
         }
     }
 
