@@ -38,6 +38,8 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
 
     public abstract void reverse();
 
+    public abstract SequenceStorage copy();
+
     public abstract Object getCopyOfInternalArrayObject();
 
     public abstract void setInternalArrayObject(Object arrayObject);
@@ -63,7 +65,6 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
      * Ensure that the current capacity is big enough. If not, we increase capacity to the next
      * designated size (not necessarily the requested one).
      */
-    @Override
     public final void ensureCapacity(int newCapacity) throws ArithmeticException {
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, newCapacity > capacity)) {
             increaseCapacityExactWithCopy(capacityFor(newCapacity));

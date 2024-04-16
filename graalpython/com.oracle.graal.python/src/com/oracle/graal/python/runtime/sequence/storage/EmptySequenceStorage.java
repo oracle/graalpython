@@ -25,16 +25,11 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-
 import java.nio.ByteOrder;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -78,11 +73,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public SequenceStorage copy() {
-        return this;
-    }
-
-    @Override
     public Object[] getInternalArray() {
         return PythonUtils.EMPTY_OBJECT_ARRAY;
     }
@@ -101,11 +91,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
     @Override
     public boolean equals(SequenceStorage other) {
         return other == EmptySequenceStorage.INSTANCE;
-    }
-
-    @Override
-    public void ensureCapacity(int newCapacity) {
-
     }
 
     @Override

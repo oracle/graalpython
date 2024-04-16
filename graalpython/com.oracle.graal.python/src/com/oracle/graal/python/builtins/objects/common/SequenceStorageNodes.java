@@ -2871,9 +2871,18 @@ public abstract class SequenceStorageNodes {
 
         public abstract SequenceStorage execute(Node node, SequenceStorage s);
 
-        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = {"s.getClass() == cachedClass", "!isNativeStorage(s)"})
-        static SequenceStorage doSpecial(SequenceStorage s,
-                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
+        public static SequenceStorage executeUncached(SequenceStorage s) {
+            return SequenceStorageNodesFactory.CopyNodeGen.getUncached().execute(null, s);
+        }
+
+        @Specialization
+        static SequenceStorage doEmpty(EmptySequenceStorage s) {
+            return s;
+        }
+
+        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
+        static SequenceStorage doSpecial(BasicSequenceStorage s,
+                        @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
             return CompilerDirectives.castExact(CompilerDirectives.castExact(s, cachedClass).copy(), cachedClass);
         }
 
@@ -2895,16 +2904,6 @@ public abstract class SequenceStorageNodes {
                 objects[i] = getItem.execute(s, i);
             }
             return new ObjectSequenceStorage(objects);
-        }
-
-        @Specialization(guards = "!isNativeStorage(s)", replaces = "doSpecial")
-        @TruffleBoundary
-        static SequenceStorage doGeneric(SequenceStorage s) {
-            return s.copy();
-        }
-
-        protected static boolean isNativeStorage(SequenceStorage storage) {
-            return storage instanceof NativeSequenceStorage;
         }
     }
 
@@ -3893,12 +3892,11 @@ public abstract class SequenceStorageNodes {
 
             @TruffleBoundary
             private static SequenceStorage executeImpl(Object iterator, int len) {
-                if (iterator instanceof PBuiltinIterator) {
-                    PBuiltinIterator pbi = (PBuiltinIterator) iterator;
+                if (iterator instanceof PBuiltinIterator pbi) {
                     if (GetPythonObjectClassNode.executeUncached(pbi) == PythonBuiltinClassType.PIterator && pbi.index == 0 && !pbi.isExhausted()) {
                         SequenceStorage s = GetInternalIteratorSequenceStorage.executeUncached(pbi);
                         if (s != null) {
-                            return s.copy();
+                            return SequenceStorageNodes.CopyNode.executeUncached(s);
                         }
                     }
                 }

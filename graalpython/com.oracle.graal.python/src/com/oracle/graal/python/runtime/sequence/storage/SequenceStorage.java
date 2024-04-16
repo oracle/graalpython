@@ -77,8 +77,6 @@ public abstract class SequenceStorage {
         return capacity;
     }
 
-    public abstract SequenceStorage copy();
-
     /**
      * Get internal array object without copying. Note: The length must be taken from the sequence
      * storage object.
@@ -98,6 +96,4 @@ public abstract class SequenceStorage {
     public abstract SequenceStorage generalizeFor(Object value, SequenceStorage other);
 
     public abstract Object getIndicativeValue();
-
-    public abstract void ensureCapacity(int newCapacity);
 }
