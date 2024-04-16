@@ -12,7 +12,7 @@ index d4b73eb..af90a68 100644
       * On PyPy, dictionary keys do not always preserve object identity.
       * Fall back to comparison by value.
 diff --git a/numpy/core/src/multiarray/compiled_base.c b/numpy/core/src/multiarray/compiled_base.c
-index 63cb6be..dc423fe 100644
+index 0842477..4e3647f 100644
 --- a/numpy/core/src/multiarray/compiled_base.c
 +++ b/numpy/core/src/multiarray/compiled_base.c
 @@ -1406,6 +1406,7 @@ fail:
