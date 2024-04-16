@@ -3992,115 +3992,71 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                  * being thrown. For such a scenario, we have to be careful to restore the "current"
                  * exception using a try-finally.
                  *
-                 * In pseudocode, this looks like:
+                 * In pseudocode, the implementation looks like:
                  * @formatter:off
                  * try {
                  *   try_catch_else
-                 * } finally uncaught_ex {
-                 *   if (uncaught_ex != null) {
-                 *     save current exception
-                 *     set the current exception to uncaught_ex
-                 *     markCaught(uncaught_ex)
-                 *   }
+                 * } finally {
+                 *   finally_body
+                 * } catch uncaught_ex {
+                 *   save current exception
+                 *   set the current exception to uncaught_ex
+                 *   markCaught(uncaught_ex)
                  *   try {
                  *     finally_body
-                 *     // (A)
-                 *     if (uncaught_ex != null) {
-                 *       uncaught_ex = getExceptionForReraise(uncaught_ex);
-                 *     }
-                 *   } finally handler_ex {
-                 *     if (uncaught_ex != null) {
-                 *       restore current exception
-                 *     }
-                 *     // (B)
-                 *     if (handler_ex != null) {
-                 *        markCaught(handler_ex)
-                 *        handler_ex = getExceptionForReraise(handler_ex)
-                 *      }
+                 *   } finally {
+                 *     restore current exception
+                 *   } catch handler_ex {
+                 *     restore current exception
+                 *     markCaught(handler_ex)
+                 *     reraise handler_ex
                  *   }
+                 *   reraise uncaught_ex
                  * }
-                 *
-                 * Notes:
-                 * (A) If the try block raises an exception (uncaught_ex) and control reaches the end
-                 * of the finally block, we will rethrow uncaught_ex. It should appear as if it was
-                 * never caught by this handler. So, we replace it with an "exception for reraise",
-                 * which ensures that the finally location does not get included in the traceback.
-                 * (B) If the finally block raises an exception (handler_ex), we will rethrow it, but
-                 * unlike in (A), we want to include this location of the throw in the traceback, so
-                 * we first mark it as handled.
                  */
                 BytecodeLocal uncaughtException = b.createLocal();
-                b.beginFinallyTry(uncaughtException);
+                BytecodeLocal handlerException = b.createLocal();
+                b.beginFinallyTryCatch(uncaughtException);
                     b.beginBlock(); // finally
-                        BytecodeLocal savedException = b.createLocal();
-
-                        b.beginIfThen();
-                            b.beginNonNull();
-                                b.emitLoadLocal(uncaughtException);
-                            b.endNonNull();
-
-                            b.beginBlock();
-                                emitSaveCurrentException(savedException);
-                                emitSetCurrentException(uncaughtException);
-                                // Mark this location for the stack trace.
-                                b.beginMarkExceptionAsCaught();
-                                    b.emitLoadLocal(uncaughtException);
-                                b.endMarkExceptionAsCaught();
-                            b.endBlock();
-                        b.endIfThen();
-
-                        BytecodeLocal handlerException = b.createLocal();
-                        b.beginFinallyTry(handlerException);
-                            b.beginBlock(); // implicit finally block
-                                b.beginIfThen();
-                                    b.beginNonNull();
-                                        b.emitLoadLocal(uncaughtException);
-                                    b.endNonNull();
-
-                                    emitSetCurrentException(savedException);
-                                b.endIfThen();
-
-                                // (B)
-                                b.beginIfThen();
-                                    b.beginNonNull();
-                                        b.emitLoadLocal(handlerException);
-                                    b.endNonNull();
-
-                                    b.beginBlock();
-                                        b.beginMarkExceptionAsCaught();
-                                            b.emitLoadLocal(handlerException);
-                                        b.endMarkExceptionAsCaught();
-
-                                        b.beginStoreLocal(handlerException);
-                                            b.beginGetExceptionForReraise();
-                                                b.emitLoadLocal(handlerException);
-                                            b.endGetExceptionForReraise();
-                                        b.endStoreLocal();
-                                    b.endBlock();
-                                b.endIfThen();
-                            b.endBlock(); // implicit finally block
-
-                            b.beginBlock(); // implicit try block
-                                visitSequence(node.finalBody);
-
-                                // (A)
-                                b.beginIfThen();
-                                    b.beginNonNull();
-                                        b.emitLoadLocal(uncaughtException);
-                                    b.endNonNull();
-
-                                    b.beginStoreLocal(uncaughtException);
-                                        b.beginGetExceptionForReraise();
-                                            b.emitLoadLocal(uncaughtException);
-                                        b.endGetExceptionForReraise();
-                                    b.endStoreLocal();
-                                b.endIfThen();
-                            b.endBlock(); // implicit try block
-                        b.endFinallyTry();
+                        visitSequence(node.finalBody);
                     b.endBlock(); // finally
 
                     emitTryExceptElse(node); // try
-                b.endFinallyTry();
+
+                    b.beginBlock(); // catch
+                        BytecodeLocal savedException = b.createLocal();
+                        emitSaveCurrentException(savedException);
+                        emitSetCurrentException(uncaughtException);
+                        // Mark this location for the stack trace.
+                        b.beginMarkExceptionAsCaught();
+                            b.emitLoadLocal(uncaughtException);
+                        b.endMarkExceptionAsCaught();
+
+                        b.beginFinallyTryCatch(handlerException);
+                            emitSetCurrentException(savedException); // finally
+
+                            b.beginBlock(); // try
+                                visitSequence(node.finalBody);
+                            b.endBlock(); // try
+
+                            b.beginBlock(); // catch
+                                emitSetCurrentException(savedException);
+
+                                b.beginMarkExceptionAsCaught();
+                                    b.emitLoadLocal(handlerException);
+                                b.endMarkExceptionAsCaught();
+
+                                b.beginReraise();
+                                    b.emitLoadLocal(handlerException);
+                                b.endReraise();
+                            b.endBlock(); // catch
+                        b.endFinallyTryCatch();
+
+                        b.beginReraise();
+                            b.emitLoadLocal(uncaughtException);
+                        b.endReraise();
+                    b.endBlock(); // catch
+                b.endFinallyTryCatch();
                 // @formatter:on
             } else {
                 emitTryExceptElse(node);
@@ -4144,58 +4100,35 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                  *       assign ex to handler_1_name
                  *       try {
                  *         handler_1_body
-                 *       } finally handler_ex {
+                 *       } finally {
                  *         unbind handler_1_name
-                 *         // (A)
+                 *       } catch handler_ex {
+                 *         unbind handler_1_name
+                 *         // Freeze the bci before it gets rethrown.
                  *         markCaught(handler_ex)
-                 *       }
-                 *       goto afterElse
-                 *     }
-                 *     if (handler_2_matches(ex)) {
-                 *       assign ex to handler_2_name
-                 *       try {
-                 *         handler_2_body
-                 *       } finally handler_ex {
-                 *         unbind handler_2_name
-                 *         // (A)
-                 *         markCaught(handler_ex)
+                 *         throw handler_ex
                  *       }
                  *       goto afterElse
                  *     }
                  *     ... // more handlers
                  *
                  *     // case 1: bare except
-                 *     try {
-                 *       bare_except_body
-                 *     } finally handler_ex {
-                 *       // (A)
-                 *       markCaught(handler_ex)
-                 *     }
+                 *     bare_except_body
                  *     goto afterElse
-                 *     // case 2: no bare except
-                 *     reraise ex
-                 *   } finally handler_ex {
+                 *   } finally {
+                 *     // Exception handled. Restore the exception state.
                  *     restore current exception
-                 *     if (handler_ex != null) {
-                 *        // (B)
-                 *        markCaught(handler_ex)
-                 *        handler_ex = getExceptionForReraise(handler_ex)
-                 *     }
+                 *   } catch handler_ex {
+                 *     // A handler raised or no handler was found. Restore exception state and reraise.
+                 *     restore current exception
+                 *     markCaught(handler_ex) // (no-op if handler_ex is the original exception)
+                 *     reraise handler_ex
                  *   }
+                 *   // case 2: no bare except (we only reach this point if no handler matched/threw)
+                 *   reraise ex
                  * }
                  * else_body
                  * afterElse:
-                 *
-                 * Notes:
-                 * (A) If an except block raises, we need to freeze the bci of its exception for
-                 * the stack trace. Otherwise, the bci will be overwritten when it gets reraised at
-                 * the end of the finally block.
-                 * (B) If handler_ex is set, then some handler raised an exception, which will be
-                 * re-thrown at the end of the outer finally block. It should appear as if it was
-                 * never caught by this handler. So, we replace it with an "exception for reraise".
-                 * We also mark it as caught (no-op if already marked) to handle a weird edge case
-                 * where a handler's type expression (the "foo" in "except foo as x") can raise an
-                 * exception.
                  */
                 b.beginBlock(); // outermost block
 
@@ -4218,30 +4151,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                         b.endMarkExceptionAsCaught();
 
                         BytecodeLocal handlerException = b.createLocal();
-
-                        b.beginFinallyTry(handlerException);
-                            b.beginBlock(); // finally
-                                emitSetCurrentException(savedException);
-
-                                b.beginIfThen();
-                                    b.beginNonNull();
-                                        b.emitLoadLocal(handlerException);
-                                    b.endNonNull();
-
-                                    // (B)
-                                    b.beginBlock();
-                                        b.beginMarkExceptionAsCaught();
-                                            b.emitLoadLocal(handlerException);
-                                        b.endMarkExceptionAsCaught();
-
-                                        b.beginStoreLocal(handlerException);
-                                            b.beginGetExceptionForReraise();
-                                                b.emitLoadLocal(handlerException);
-                                            b.endGetExceptionForReraise();
-                                        b.endStoreLocal();
-                                    b.endBlock();
-                                b.endIfThen();
-                            b.endBlock();
+                        b.beginFinallyTryCatch(handlerException);
+                            emitSetCurrentException(savedException); // finally
 
                             b.beginBlock(); // try
                                 SourceRange bareExceptRange = null;
@@ -4272,35 +4183,29 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                                             b.endUnwrapException();
                                         endStoreLocal(handler.name, b);
 
-                                        b.beginFinallyTry(handlerException);
-                                            b.beginBlock(); // finally
-                                                // Store None to the variable just in case the handler deleted it.
-                                                beginStoreLocal(handler.name, b);
-                                                    b.emitLoadConstant(PNone.NONE);
-                                                endStoreLocal(handler.name, b);
-                                                emitDelLocal(handler.name, b);
-
-                                                // (A)
-                                                b.beginMarkExceptionAsCaught();
-                                                    b.emitLoadLocal(handlerException);
-                                                b.endMarkExceptionAsCaught();
-                                            b.endBlock(); // finally
+                                        b.beginFinallyTryCatch(handlerException);
+                                            emitUnbindHandlerVariable(handler); // finally
 
                                             b.beginBlock(); // try
                                                 visitSequence(handler.body);
                                             b.endBlock(); // try
-                                        b.endFinallyTry();
-                                    } else {
-                                        b.beginFinallyTry(handlerException);
-                                            // (A)
-                                            b.beginMarkExceptionAsCaught();
-                                                b.emitLoadLocal(handlerException);
-                                            b.endMarkExceptionAsCaught();
 
-                                            b.beginBlock();
-                                                visitSequence(handler.body);
-                                            b.endBlock();
-                                        b.endFinallyTry();
+                                            b.beginBlock(); // catch
+                                                emitUnbindHandlerVariable(handler);
+
+                                                b.beginMarkExceptionAsCaught();
+                                                    b.emitLoadLocal(handlerException);
+                                                b.endMarkExceptionAsCaught();
+
+                                                b.beginThrow();
+                                                    b.emitLoadLocal(handlerException);
+                                                b.endThrow();
+                                            b.endBlock(); // catch
+                                        b.endFinallyTryCatch();
+                                    } else { // bare except
+                                        b.beginBlock();
+                                            visitSequence(handler.body);
+                                        b.endBlock();
                                     }
 
                                     b.emitBranch(afterElse);
@@ -4315,12 +4220,25 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                                 }
                             b.endBlock(); // try
 
-                        b.endFinallyTry();
+                            b.beginBlock(); // catch
+                                emitSetCurrentException(savedException);
 
-                        // Each handler branches to afterElse. If we reach this point and there was not a
-                        // bare exception, none of the handlers matched, and we should reraise.
-                        // Optimization: If there's a bare except clause, control will never fall through
-                        // and we can omit the rethrow.
+                                b.beginMarkExceptionAsCaught();
+                                    b.emitLoadLocal(handlerException);
+                                b.endMarkExceptionAsCaught();
+
+                                b.beginReraise();
+                                    b.emitLoadLocal(handlerException);
+                                b.endReraise();
+                            b.endBlock(); // catch
+                        b.endFinallyTryCatch();
+
+                        /**
+                         * Each handler branches to afterElse. If we reach this point and there was not a
+                         * bare exception, none of the handlers matched, and we should reraise.
+                         * Optimization: If there's a bare except clause, control will never fall through
+                         * and we can omit the rethrow.
+                         */
                         if (bareExceptRange == null) {
                             b.beginReraise();
                                 b.emitLoadLocal(exception);
@@ -4357,6 +4275,16 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             b.beginSetCurrentException();
             b.emitLoadLocal(newException);
             b.endSetCurrentException();
+        }
+
+        private void emitUnbindHandlerVariable(ExceptHandlerTy.ExceptHandler handler) {
+            b.beginBlock();
+            // Store None to the variable just in case the handler deleted it.
+            beginStoreLocal(handler.name, b);
+            b.emitLoadConstant(PNone.NONE);
+            endStoreLocal(handler.name, b);
+            emitDelLocal(handler.name, b);
+            b.endBlock();
         }
 
         @Override
