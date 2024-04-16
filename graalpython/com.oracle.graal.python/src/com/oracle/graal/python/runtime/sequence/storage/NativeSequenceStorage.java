@@ -98,16 +98,6 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public final Object[] getInternalArray() {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final Object[] getCopyOfInternalArray() {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
     public final SequenceStorage getSliceInBound(int start, int stop, int step, int len) {
         throw CompilerDirectives.shouldNotReachHere();
     }

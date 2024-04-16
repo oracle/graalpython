@@ -78,7 +78,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -104,6 +103,7 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
@@ -144,6 +144,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
@@ -359,14 +360,13 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             Object importer = null;
             Object pathHooks = sysModule.getAttribute(T_PATH_HOOKS);
             Object pathImporterCache = sysModule.getAttribute(T_PATH_IMPORTER_CACHE);
-            if (pathHooks instanceof PList && pathImporterCache instanceof PDict) {
-                PDict pathImporterCacheDict = (PDict) pathImporterCache;
+            if (pathHooks instanceof PList pathHooksList && pathImporterCache instanceof PDict pathImporterCacheDict) {
                 importer = pathImporterCacheDict.getItem(inputFilePath);
                 if (importer == null) {
                     /* set path_importer_cache[p] to None to avoid recursion */
                     pathImporterCacheDict.setItem(inputFilePath, PNone.NONE);
-                    SequenceStorage storage = ((PList) pathHooks).getSequenceStorage();
-                    Object[] hooks = storage.getInternalArray();
+                    SequenceStorage storage = pathHooksList.getSequenceStorage();
+                    Object[] hooks = SequenceStorageNodes.GetInternalObjectArrayNode.executeUncached(storage);
                     int numHooks = storage.length();
                     for (int i = 0; i < numHooks; i++) {
                         try {

@@ -73,16 +73,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public Object[] getInternalArray() {
-        return PythonUtils.EMPTY_OBJECT_ARRAY;
-    }
-
-    @Override
-    public Object[] getCopyOfInternalArray() {
-        return PythonUtils.EMPTY_OBJECT_ARRAY;
-    }
-
-    @Override
     public SequenceStorage getSliceInBound(int start, int stop, int step, int len) {
         assert start == stop && stop == 0;
         return this;

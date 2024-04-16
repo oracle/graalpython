@@ -152,6 +152,7 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.CharsetMapping.NormalizeEncodingNameNode;
@@ -1082,7 +1083,9 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object forget(VirtualFrame frame, PBytesLike encoding,
                         @Cached AsciiDecodeNode asciiDecodeNode) {
-            forget((TruffleString) ((PTuple) asciiDecodeNode.execute(frame, encoding, PNone.NO_VALUE)).getSequenceStorage().getInternalArray()[0]);
+            PTuple decodeResult = (PTuple) asciiDecodeNode.execute(frame, encoding, PNone.NO_VALUE);
+            ObjectSequenceStorage resultStorage = (ObjectSequenceStorage) decodeResult.getSequenceStorage();
+            forget((TruffleString) resultStorage.getItemNormalized(0));
             return PNone.NONE;
         }
 

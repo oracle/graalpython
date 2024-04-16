@@ -79,10 +79,6 @@ public abstract class SequenceStorage {
 
     public abstract ListStorageType getElementType();
 
-    public abstract Object[] getInternalArray();
-
-    public abstract Object[] getCopyOfInternalArray();
-
     public abstract SequenceStorage getSliceInBound(int start, int stop, int step, int len);
 
     public abstract SequenceStorage generalizeFor(Object value, SequenceStorage other);

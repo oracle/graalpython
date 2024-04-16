@@ -2621,27 +2621,19 @@ public abstract class SequenceStorageNodes {
             return s;
         }
 
-        @Specialization(guards = "isAssignCompatibleNode.execute(inliningTarget, s, indicationStorage)")
-        static TypedSequenceStorage doTyped(@SuppressWarnings("unused") Node inliningTarget, TypedSequenceStorage s, @SuppressWarnings("unused") SequenceStorage indicationStorage,
-                        // dummy profile, so that we can @Share it to generate better code
-                        @Shared @Cached InlinedExactClassProfile selfProfile,
-                        @Shared("isAssignCompatibleNode") @Cached @SuppressWarnings("unused") IsAssignCompatibleNode isAssignCompatibleNode) {
-            return s;
-        }
-
-        @Specialization(guards = "isFallbackCase(inliningTarget, s, value, isAssignCompatibleNode)")
-        static ObjectSequenceStorage doTyped(Node inliningTarget, SequenceStorage s, @SuppressWarnings("unused") Object value,
-                        @Shared @Cached InlinedExactClassProfile selfProfile,
-                        @Shared("isAssignCompatibleNode") @Cached @SuppressWarnings("unused") IsAssignCompatibleNode isAssignCompatibleNode) {
-            SequenceStorage profiled = selfProfile.profile(inliningTarget, s);
-            if (profiled instanceof BasicSequenceStorage) {
-                return new ObjectSequenceStorage(profiled.getInternalArray());
+        @Specialization(guards = "isFallbackCase(s, value)")
+        static SequenceStorage doGeneric(Node inliningTarget, SequenceStorage s, Object value,
+                        @Cached GetInternalObjectArrayNode getInternalObjectArrayNode,
+                        @Cached IsAssignCompatibleNode isAssignCompatibleNode) {
+            if (value instanceof SequenceStorage other) {
+                if (isAssignCompatibleNode.execute(inliningTarget, s, other)) {
+                    return s;
+                }
             }
-            // TODO copy all values
-            return new ObjectSequenceStorage(DEFAULT_CAPACITY);
+            return new ObjectSequenceStorage(getInternalObjectArrayNode.execute(inliningTarget, s));
         }
 
-        protected static boolean isFallbackCase(Node inliningTarget, SequenceStorage s, Object value, IsAssignCompatibleNode isAssignCompatibleNode) {
+        protected static boolean isFallbackCase(SequenceStorage s, Object value) {
             // there are explicit specializations for all cases with EmptySequenceStorage
             if (s instanceof EmptySequenceStorage || s instanceof ObjectSequenceStorage || s instanceof NativeSequenceStorage) {
                 return false;
@@ -2650,7 +2642,7 @@ public abstract class SequenceStorageNodes {
                             (value instanceof Byte || value instanceof Integer || value instanceof Long)) {
                 return false;
             }
-            return !(value instanceof SequenceStorage) || !isAssignCompatibleNode.execute(inliningTarget, s, (SequenceStorage) value);
+            return true;
         }
 
         public static ListGeneralizationNode create() {
@@ -2898,30 +2890,24 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
-        static Object[] doTyped(TypedSequenceStorage s,
-                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
-            return cachedClass.cast(s).getInternalArray();
-        }
-
-        @Specialization(replaces = "doTyped")
-        @TruffleBoundary
-        static Object[] doTypedUncached(TypedSequenceStorage s) {
-            return s.getInternalArray();
+        static Object[] doTyped(BasicSequenceStorage s,
+                        @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
+            return cachedClass.cast(s).getCopyOfInternalArray();
         }
 
         @Specialization
-        static Object[] doEmpty(EmptySequenceStorage s) {
-            return s.getCopyOfInternalArray();
+        static Object[] doEmpty(@SuppressWarnings("unused") EmptySequenceStorage s) {
+            return PythonUtils.EMPTY_OBJECT_ARRAY;
         }
 
         @Specialization
-        static Object[] doNative(NativeSequenceStorage s) {
-            return s.getCopyOfInternalArray();
-        }
-
-        @Specialization
-        static Object[] doGeneric(ObjectSequenceStorage s) {
-            return s.getCopyOfInternalArray();
+        static Object[] doNative(NativeSequenceStorage s,
+                        @Cached GetNativeItemScalarNode getNativeItemScalarNode) {
+            Object[] result = new Object[s.length()];
+            for (int i = 0; i < s.length(); i++) {
+                result[i] = getNativeItemScalarNode.execute(s, i);
+            }
+            return result;
         }
     }
 
@@ -3312,8 +3298,8 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static Object[] doEmptySequenceStorage(EmptySequenceStorage s) {
-            return s.getInternalArray();
+        static Object[] doEmptySequenceStorage(@SuppressWarnings("unused") EmptySequenceStorage s) {
+            return PythonUtils.EMPTY_OBJECT_ARRAY;
         }
 
         @Specialization(replaces = {"doObjectSequenceStorage", "doTypedSequenceStorage", "doNativeObject", "doEmptySequenceStorage"})

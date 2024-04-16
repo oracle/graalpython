@@ -58,7 +58,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -85,7 +85,7 @@ public final class PySequenceArrayWrapper {
 
         @Specialization(guards = "!isMroSequenceStorage(s)")
         static NativeSequenceStorage doManaged(Node inliningTarget, BasicSequenceStorage s, boolean isBytesLike,
-                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
+                        @Exclusive @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
             Object array;
             if (isBytesLike) {
@@ -124,7 +124,7 @@ public final class PySequenceArrayWrapper {
 
         @Specialization
         static NativeSequenceStorage doEmptyStorage(Node inliningTarget, @SuppressWarnings("unused") EmptySequenceStorage s, boolean isBytesLike,
-                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
+                        @Exclusive @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
             return storageToNativeNode.execute(inliningTarget, isBytesLike ? PythonUtils.EMPTY_BYTE_ARRAY : PythonUtils.EMPTY_OBJECT_ARRAY, 0);
         }
 
