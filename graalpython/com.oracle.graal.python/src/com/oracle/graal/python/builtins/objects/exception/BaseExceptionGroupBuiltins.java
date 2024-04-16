@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -229,7 +230,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         if (value instanceof PTuple tuple && PyTupleCheckExactNode.executeUncached(tuple)) {
             SequenceStorage storage = tuple.getSequenceStorage();
             for (int i = 0; i < storage.length(); i++) {
-                Object elem = storage.getItemNormalized(i);
+                Object elem = SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i);
                 if (!isExceptionTypeUncached(elem)) {
                     throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.EXPECTED_A_FUNCTION_EXCEPTION_TYPE_OR_TUPLE_OF_EXCEPTION_TYPES);
                 }

@@ -251,7 +251,7 @@ public class PBaseException extends PythonObject {
             return typeName;
         } else if (args.getSequenceStorage().length() == 1) {
             SequenceStorage store = args.getSequenceStorage();
-            Object item = store instanceof BasicSequenceStorage ? store.getItemNormalized(0) : "<unknown>";
+            Object item = store instanceof BasicSequenceStorage basicStorage ? basicStorage.getItemNormalized(0) : "<unknown>";
             return typeName + ": " + item.toString();
         } else {
             return typeName + ": " + args.toString();

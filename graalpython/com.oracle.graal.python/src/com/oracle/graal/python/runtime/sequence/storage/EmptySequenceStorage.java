@@ -93,12 +93,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public Object getItemNormalized(int idx) {
-        CompilerDirectives.transferToInterpreter();
-        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
-    }
-
-    @Override
     public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
         CompilerDirectives.transferToInterpreter();
         throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_ASSIGMENT_INDEX_OUT_OF_RANGE);

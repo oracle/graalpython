@@ -2426,7 +2426,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 SequenceStorage storage = newBaseTuple.getSequenceStorage();
                 for (int j = 0; j < storage.length(); j++) {
-                    newBases.add(storage.getItemNormalized(j));
+                    newBases.add(SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, j));
                 }
             }
             if (newBases == null) {
@@ -2460,7 +2460,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             int nbases = storage.length();
             Object winner = metatype;
             for (int i = 0; i < nbases; i++) {
-                Object tmp = storage.getItemNormalized(i);
+                Object tmp = SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i);
                 Object tmpType = getClass.execute(inliningTarget, tmp);
                 if (isSubType.execute(winner, tmpType)) {
                     // nothing to do
@@ -2564,7 +2564,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             meta = PythonContext.get(update).lookupType(PythonBuiltinClassType.PythonClass);
                         } else {
                             // else get the type of the first base
-                            meta = getClass.execute(inliningTarget, bases.getSequenceStorage().getItemNormalized(0));
+                            meta = getClass.execute(inliningTarget, SequenceStorageNodes.GetItemScalarNode.executeUncached(bases.getSequenceStorage(), 0));
                         }
                         isClass = true;  // meta is really a class
                     }

@@ -30,6 +30,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 
 public abstract class BasicSequenceStorage extends SequenceStorage {
 
+    public abstract Object getItemNormalized(int idx);
+
     public abstract Object getCopyOfInternalArrayObject();
 
     public abstract void setInternalArrayObject(Object arrayObject);

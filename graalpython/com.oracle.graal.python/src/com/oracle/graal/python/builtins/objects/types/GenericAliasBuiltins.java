@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -225,7 +226,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
                 if (i > 0) {
                     sb.appendStringUncached(SEPARATOR);
                 }
-                reprItem(sb, argsStorage.getItemNormalized(i));
+                reprItem(sb, SequenceStorageNodes.GetItemScalarNode.executeUncached(argsStorage, i));
             }
             if (argsStorage.length() == 0) {
                 // for something like tuple[()] we should print a "()"

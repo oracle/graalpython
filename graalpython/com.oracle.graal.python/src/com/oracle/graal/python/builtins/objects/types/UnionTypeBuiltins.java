@@ -157,7 +157,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                 if (i > 0) {
                     sb.appendStringUncached(SEPARATOR);
                 }
-                reprItem(sb, argsStorage.getItemNormalized(i));
+                reprItem(sb, SequenceStorageNodes.GetItemScalarNode.executeUncached(argsStorage, i));
             }
             return sb.toStringUncached();
         }

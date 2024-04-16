@@ -124,11 +124,6 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public final Object getItemNormalized(int idx) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
     public final void setItemNormalized(int idx, Object value) throws SequenceStoreException {
         throw CompilerDirectives.shouldNotReachHere();
     }

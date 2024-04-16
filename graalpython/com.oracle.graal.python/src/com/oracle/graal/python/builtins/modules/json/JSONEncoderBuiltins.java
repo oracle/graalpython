@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -273,12 +274,12 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                     e.expectStopIteration(null, IsBuiltinObjectProfile.getUncached());
                     break;
                 }
-                if (!(item instanceof PTuple) || ((PTuple) item).getSequenceStorage().length() != 2) {
+                if (!(item instanceof PTuple itemTuple) || itemTuple.getSequenceStorage().length() != 2) {
                     throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
                 }
-                SequenceStorage sequenceStorage = ((PTuple) item).getSequenceStorage();
-                Object key = sequenceStorage.getItemNormalized(0);
-                Object value = sequenceStorage.getItemNormalized(1);
+                SequenceStorage sequenceStorage = itemTuple.getSequenceStorage();
+                Object key = SequenceStorageNodes.GetItemScalarNode.executeUncached(sequenceStorage, 0);
+                Object value = SequenceStorageNodes.GetItemScalarNode.executeUncached(sequenceStorage, 1);
                 first = appendDictEntry(encoder, builder, first, key, value);
             }
         }
@@ -319,7 +320,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                         if (i > 0) {
                             builder.appendStringUncached(encoder.itemSeparator);
                         }
-                        appendListObj(encoder, builder, storage.getItemNormalized(i));
+                        appendListObj(encoder, builder, SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i));
                     }
                 } else {
                     appendListSlowPath(encoder, builder, list);

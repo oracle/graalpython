@@ -55,6 +55,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -101,6 +102,11 @@ public abstract class GenericTypeNodes {
     public static final String J___TYPING_PREPARE_SUBST__ = "__typing_prepare_subst__";
     public static final TruffleString T___TYPING_PREPARE_SUBST__ = tsLiteral(J___TYPING_PREPARE_SUBST__);
 
+    @TruffleBoundary
+    private static Object getItemUncached(SequenceStorage storage, int i) {
+        return SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i);
+    }
+
     static void reprItem(TruffleStringBuilder sb, Object obj) {
         PyObjectLookupAttr lookup = PyObjectLookupAttr.getUncached();
         PyObjectStrAsTruffleStringNode str = PyObjectStrAsTruffleStringNode.getUncached();
@@ -137,11 +143,11 @@ public abstract class GenericTypeNodes {
     @TruffleBoundary
     static Object[] makeParameters(PTuple args) {
         PyObjectLookupAttr lookup = PyObjectLookupAttr.getUncached();
-        SequenceStorage storage = args.getSequenceStorage();
-        int nargs = storage.length();
+        SequenceStorage argsStorage = args.getSequenceStorage();
+        int nargs = argsStorage.length();
         List<Object> parameters = new ArrayList<>(nargs);
         for (int iarg = 0; iarg < nargs; iarg++) {
-            Object t = storage.getItemNormalized(iarg);
+            Object t = getItemUncached(argsStorage, iarg);
             // We don't want __parameters__ descriptor of a bare Python class
             if (TypeNodes.IsTypeNode.executeUncached(t)) {
                 continue;
@@ -152,10 +158,10 @@ public abstract class GenericTypeNodes {
                 listAdd(parameters, t);
             } else {
                 Object subparams = lookup.execute(null, null, t, T___PARAMETERS__);
-                if (subparams instanceof PTuple) {
-                    SequenceStorage storage2 = ((PTuple) subparams).getSequenceStorage();
-                    for (int j = 0; j < storage2.length(); j++) {
-                        listAdd(parameters, storage2.getItemNormalized(j));
+                if (subparams instanceof PTuple subparamsTuple) {
+                    SequenceStorage subparamsStorage = subparamsTuple.getSequenceStorage();
+                    for (int j = 0; j < subparamsStorage.length(); j++) {
+                        listAdd(parameters, getItemUncached(subparamsStorage, j));
                     }
                 }
             }
@@ -186,7 +192,7 @@ public abstract class GenericTypeNodes {
     private static int tupleIndex(PTuple tuple, Object obj) {
         SequenceStorage storage = tuple.getSequenceStorage();
         for (int i = 0; i < storage.length(); i++) {
-            if (storage.getItemNormalized(i) == obj) {
+            if (getItemUncached(storage, i) == obj) {
                 return i;
             }
         }
@@ -198,7 +204,7 @@ public abstract class GenericTypeNodes {
     private static void listExtend(List<Object> list, PTuple tuple) {
         SequenceStorage storage = tuple.getSequenceStorage();
         for (int i = 0; i < storage.length(); i++) {
-            list.add(storage.getItemNormalized(i));
+            list.add(SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i));
         }
     }
 
@@ -231,7 +237,7 @@ public abstract class GenericTypeNodes {
         if (item instanceof PTuple tuple) {
             SequenceStorage storage = tuple.getSequenceStorage();
             for (int i = 0; i < storage.length(); i++) {
-                unpackArgsInner(newargs, storage.getItemNormalized(i));
+                unpackArgsInner(newargs, getItemUncached(storage, i));
             }
         } else {
             unpackArgsInner(newargs, item);
@@ -244,9 +250,9 @@ public abstract class GenericTypeNodes {
             Object subargs = unpackedTupleArgs(item);
             if (subargs instanceof PTuple tuple) {
                 SequenceStorage storage = tuple.getSequenceStorage();
-                if (!(storage.length() > 0 && storage.getItemNormalized(storage.length() - 1) == PEllipsis.INSTANCE)) {
+                if (!(storage.length() > 0 && getItemUncached(storage, storage.length() - 1) == PEllipsis.INSTANCE)) {
                     for (int i = 0; i < storage.length(); i++) {
-                        newargs.add(storage.getItemNormalized(i));
+                        newargs.add(getItemUncached(storage, i));
                     }
                     return;
                 }
@@ -265,7 +271,7 @@ public abstract class GenericTypeNodes {
         }
         Object[] argitems = unpackArgs(item);
         for (int i = 0; i < nparams; i++) {
-            Object param = paramsStorage.getItemNormalized(i);
+            Object param = getItemUncached(paramsStorage, i);
             Object prepare = PyObjectLookupAttr.executeUncached(param, T___TYPING_PREPARE_SUBST__);
             if (!(prepare instanceof PNone)) {
                 Object itemarg = item instanceof PTuple ? item : PythonContext.get(node).factory().createTuple(new Object[]{item});
@@ -280,7 +286,7 @@ public abstract class GenericTypeNodes {
         SequenceStorage argsStorage = args.getSequenceStorage();
         List<Object> newargs = new ArrayList<>(argsStorage.length());
         for (int iarg = 0; iarg < argsStorage.length(); iarg++) {
-            Object arg = argsStorage.getItemNormalized(iarg);
+            Object arg = getItemUncached(argsStorage, iarg);
             if (TypeNodes.IsTypeNode.executeUncached(arg)) {
                 newargs.add(arg);
                 continue;
@@ -310,7 +316,7 @@ public abstract class GenericTypeNodes {
             SequenceStorage subparamsStorage = tuple.getSequenceStorage();
             List<Object> subargs = new ArrayList<>(subparamsStorage.length());
             for (int i = 0; i < subparamsStorage.length(); i++) {
-                Object arg = subparamsStorage.getItemNormalized(i);
+                Object arg = getItemUncached(subparamsStorage, i);
                 int foundIndex = tupleIndex(parameters, arg);
                 if (foundIndex >= 0) {
                     Object param = arg;
@@ -405,7 +411,7 @@ public abstract class GenericTypeNodes {
             if (args[i] instanceof PUnionType) {
                 SequenceStorage storage = ((PUnionType) args[i]).getArgs().getSequenceStorage();
                 for (int j = 0; j < storage.length(); j++) {
-                    flattenedArgs[pos++] = storage.getItemNormalized(j);
+                    flattenedArgs[pos++] = getItemUncached(storage, j);
                 }
             } else {
                 flattenedArgs[pos++] = args[i] == PNone.NONE ? PythonBuiltinClassType.PNone : args[i];

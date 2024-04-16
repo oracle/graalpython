@@ -55,10 +55,6 @@ public final class PBytes extends PBytesLike {
         super(cls, instanceShape, store);
     }
 
-    public Object getItemNormalized(int index) {
-        return store.getItemNormalized(index);
-    }
-
     @Override
     public String toString() {
         // TODO(fa) really required ?
