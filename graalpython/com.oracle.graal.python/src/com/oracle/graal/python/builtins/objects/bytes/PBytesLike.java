@@ -67,6 +67,7 @@ public abstract class PBytesLike extends PSequence {
 
     public PBytesLike(Object cls, Shape instanceShape, SequenceStorage store) {
         super(cls, instanceShape);
+        assert store instanceof ByteSequenceStorage || store instanceof NativeByteSequenceStorage;
         this.store = store;
     }
 

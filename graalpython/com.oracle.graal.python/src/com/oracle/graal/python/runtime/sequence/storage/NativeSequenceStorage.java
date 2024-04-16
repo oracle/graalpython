@@ -46,7 +46,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeStorageReference;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 
 public abstract class NativeSequenceStorage extends SequenceStorage {
@@ -95,16 +94,6 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
         if (reference != null) {
             reference.setSize(length);
         }
-    }
-
-    @Override
-    public final SequenceStorage getSliceInBound(int start, int stop, int step, int len) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final SequenceStorage generalizeFor(Object value, SequenceStorage other) {
-        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override

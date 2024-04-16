@@ -79,9 +79,5 @@ public abstract class SequenceStorage {
 
     public abstract ListStorageType getElementType();
 
-    public abstract SequenceStorage getSliceInBound(int start, int stop, int step, int len);
-
-    public abstract SequenceStorage generalizeFor(Object value, SequenceStorage other);
-
     public abstract Object getIndicativeValue();
 }

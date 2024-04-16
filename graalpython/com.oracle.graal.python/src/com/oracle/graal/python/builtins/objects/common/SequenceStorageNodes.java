@@ -2902,7 +2902,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static Object[] doNative(NativeSequenceStorage s,
-                        @Cached GetNativeItemScalarNode getNativeItemScalarNode) {
+                        @Cached(inline = false) GetNativeItemScalarNode getNativeItemScalarNode) {
             Object[] result = new Object[s.length()];
             for (int i = 0; i < s.length(); i++) {
                 result[i] = getNativeItemScalarNode.execute(s, i);
