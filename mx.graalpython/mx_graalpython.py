@@ -2076,6 +2076,8 @@ def _python_checkpatchfiles():
             'safetensors-0.3.3.patch',
             'tensorflow-io-0.34.0.patch',
             'tensorflow-io-gcs-filesystem-0.34.0.patch',
+            # Whole license in the field. It's BSD-3-Clause
+            'pyzmq.patch',
         }
         allowed_licenses = [
             "MIT",
