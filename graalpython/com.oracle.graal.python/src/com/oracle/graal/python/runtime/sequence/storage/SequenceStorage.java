@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.truffle.api.CompilerAsserts;
-
 public abstract class SequenceStorage {
 
     public enum ListStorageType {
@@ -112,24 +110,4 @@ public abstract class SequenceStorage {
     public abstract void ensureCapacity(int newCapacity);
 
     public abstract void copyItem(int idxTo, int idxFrom);
-
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        return getClass().getSimpleName() + toString(true);
-    }
-
-    public String toString(boolean isList) {
-        CompilerAsserts.neverPartOfCompilation();
-        StringBuilder str = new StringBuilder(isList ? "[" : "(");
-        int len = length > 10 ? 10 : length;
-        for (int i = 0; i < len; i++) {
-            str.append(i == 0 ? "" : ", ");
-            str.append(getItemNormalized(i));
-        }
-        if (length > 10) {
-            str.append("...").append('(').append(length).append(')');
-        }
-        return str.append(isList ? ']' : ')').toString();
-    }
 }

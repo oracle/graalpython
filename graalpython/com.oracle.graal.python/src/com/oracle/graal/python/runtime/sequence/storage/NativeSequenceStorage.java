@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeStorageReference;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -170,5 +171,10 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
     @Override
     public final Object getInternalArrayObject() {
         return ptr;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(ptr=" + CApiContext.asHex(ptr) + ", length=" + length + ", capacity=" + capacity + ", ownsMemory=" + hasReference() + ")";
     }
 }
