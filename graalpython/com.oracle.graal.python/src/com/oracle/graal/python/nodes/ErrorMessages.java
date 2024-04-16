@@ -970,6 +970,7 @@ public abstract class ErrorMessages {
     public static final TruffleString COPYREG_SLOTNAMES_DIDN_T_RETURN_A_LIST_OR_NONE = tsLiteral("copyreg._slotnames didn't return a list or None");
     public static final TruffleString CASTING_A_NATIVE_INT_OBJECT_IS_NOT_IMPLEMENTED_YET = tsLiteral("casting a native int object is not implemented yet");
     public static final TruffleString PUTTING_NON_MODULE_OBJECTS_IN_SYS_MODULES_IS_NOT_SUPPORTED = tsLiteral("Putting non-module objects in sys.modules is not supported");
+    public static final TruffleString GETTING_POLYGLOT_STORAGE_FOR_NATIVE_STORAGE_NOT_IMPLEMENTED = tsLiteral("Getting polyglot storage for native storage not implemented");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");

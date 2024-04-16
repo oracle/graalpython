@@ -128,11 +128,6 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public final Object getInternalArrayObject() {
-        return ptr;
-    }
-
-    @Override
     public String toString() {
         return getClass().getSimpleName() + "(ptr=" + CApiContext.asHex(ptr) + ", length=" + length + ", capacity=" + capacity + ", ownsMemory=" + hasReference() + ")";
     }

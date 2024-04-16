@@ -40,6 +40,12 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
 
     public abstract SequenceStorage copy();
 
+    /**
+     * Get internal array object without copying. Note: The length must be taken from the sequence
+     * storage object.
+     */
+    public abstract Object getInternalArrayObject();
+
     public abstract Object getCopyOfInternalArrayObject();
 
     public abstract void setInternalArrayObject(Object arrayObject);

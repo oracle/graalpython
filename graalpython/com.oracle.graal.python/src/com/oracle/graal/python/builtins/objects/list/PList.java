@@ -80,9 +80,9 @@ public final class PList extends PSequence {
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return store.toString();
+        return String.format("list(%s)", store);
     }
 
     @Ignore

@@ -1701,9 +1701,8 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = "isByteSequenceStorage(bytes)")
-        static byte[] doBytes(Node inliningTarget, PBytesLike bytes,
-                        @Cached SequenceStorageNodes.GetInternalArrayNode internalArray) {
-            return (byte[]) internalArray.execute(inliningTarget, bytes.getSequenceStorage());
+        static byte[] doBytes(PBytesLike bytes) {
+            return ((ByteSequenceStorage) bytes.getSequenceStorage()).getInternalByteArray();
         }
 
         @Specialization(guards = "!isSimple(bytes)")
@@ -1838,10 +1837,10 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = {"dest == left", "left.getClass() == right.getClass()", "cachedClass == left.getClass()"}, limit = "1")
         static SequenceStorage doManagedManagedSameTypeInplace(@SuppressWarnings("unused") BasicSequenceStorage dest, BasicSequenceStorage left, BasicSequenceStorage right,
                         @Bind("this") Node inliningTarget,
-                        @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass,
+                        @Cached("left.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
                         @Shared @Cached SetLenNode setLenNode) {
-            SequenceStorage leftProfiled = cachedClass.cast(left);
-            SequenceStorage rightProfiled = cachedClass.cast(right);
+            BasicSequenceStorage leftProfiled = cachedClass.cast(left);
+            BasicSequenceStorage rightProfiled = cachedClass.cast(right);
             Object arr1 = leftProfiled.getInternalArrayObject();
             int len1 = leftProfiled.length();
             Object arr2 = rightProfiled.getInternalArrayObject();
@@ -1854,11 +1853,11 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = {"dest != left", "dest.getClass() == left.getClass()", "left.getClass() == right.getClass()", "cachedClass == dest.getClass()"}, limit = "1")
         static SequenceStorage doManagedManagedSameType(BasicSequenceStorage dest, BasicSequenceStorage left, BasicSequenceStorage right,
                         @Bind("this") Node inliningTarget,
-                        @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass,
+                        @Cached("left.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
                         @Shared @Cached SetLenNode setLenNode) {
-            SequenceStorage destProfiled = cachedClass.cast(dest);
-            SequenceStorage leftProfiled = cachedClass.cast(left);
-            SequenceStorage rightProfiled = cachedClass.cast(right);
+            BasicSequenceStorage destProfiled = cachedClass.cast(dest);
+            BasicSequenceStorage leftProfiled = cachedClass.cast(left);
+            BasicSequenceStorage rightProfiled = cachedClass.cast(right);
             Object arr1 = leftProfiled.getInternalArrayObject();
             int len1 = leftProfiled.length();
             Object arr2 = rightProfiled.getInternalArrayObject();
@@ -1871,10 +1870,10 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = {"dest.getClass() == right.getClass()", "cachedClass == dest.getClass()"}, limit = "1")
         static SequenceStorage doEmptyManagedSameType(BasicSequenceStorage dest, @SuppressWarnings("unused") EmptySequenceStorage left, BasicSequenceStorage right,
                         @Bind("this") Node inliningTarget,
-                        @Cached("dest.getClass()") Class<? extends SequenceStorage> cachedClass,
+                        @Cached("dest.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
                         @Shared @Cached SetLenNode setLenNode) {
-            SequenceStorage destProfiled = cachedClass.cast(dest);
-            SequenceStorage rightProfiled = cachedClass.cast(right);
+            BasicSequenceStorage destProfiled = cachedClass.cast(dest);
+            BasicSequenceStorage rightProfiled = cachedClass.cast(right);
             Object arr2 = rightProfiled.getInternalArrayObject();
             int len2 = rightProfiled.length();
             PythonUtils.arraycopy(arr2, 0, destProfiled.getInternalArrayObject(), 0, len2);
@@ -1885,10 +1884,10 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = {"dest.getClass() == left.getClass()", "cachedClass == dest.getClass()"}, limit = "1")
         static SequenceStorage doManagedEmptySameType(BasicSequenceStorage dest, BasicSequenceStorage left, @SuppressWarnings("unused") EmptySequenceStorage right,
                         @Bind("this") Node inliningTarget,
-                        @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass,
+                        @Cached("left.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
                         @Shared @Cached SetLenNode setLenNode) {
-            SequenceStorage destProfiled = cachedClass.cast(dest);
-            SequenceStorage leftProfiled = cachedClass.cast(left);
+            BasicSequenceStorage destProfiled = cachedClass.cast(dest);
+            BasicSequenceStorage leftProfiled = cachedClass.cast(left);
             Object arr1 = leftProfiled.getInternalArrayObject();
             int len1 = leftProfiled.length();
             PythonUtils.arraycopy(arr1, 0, destProfiled.getInternalArrayObject(), 0, len1);
@@ -2839,27 +2838,6 @@ public abstract class SequenceStorageNodes {
                 s.setCapacity(newCapacity);
             }
             return s;
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    @ImportStatic(SequenceStorageBaseNode.class)
-    public abstract static class GetInternalArrayNode extends Node {
-
-        public abstract Object execute(Node inliningTarget, SequenceStorage s);
-
-        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
-        static Object doSpecial(SequenceStorage s,
-                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
-            return cachedClass.cast(s).getInternalArrayObject();
-        }
-
-        @Specialization(replaces = "doSpecial")
-        @TruffleBoundary
-        static Object doGeneric(SequenceStorage s) {
-            return s.getInternalArrayObject();
         }
     }
 

@@ -77,12 +77,6 @@ public abstract class SequenceStorage {
         return capacity;
     }
 
-    /**
-     * Get internal array object without copying. Note: The length must be taken from the sequence
-     * storage object.
-     */
-    public abstract Object getInternalArrayObject();
-
     public abstract ListStorageType getElementType();
 
     public abstract Object[] getInternalArray();

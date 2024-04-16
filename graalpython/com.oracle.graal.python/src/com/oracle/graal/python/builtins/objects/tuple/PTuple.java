@@ -61,27 +61,7 @@ public final class PTuple extends PSequence {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        if (store instanceof ObjectSequenceStorage) {
-            StringBuilder buf = new StringBuilder("(");
-            Object[] array = store.getInternalArray();
-            for (int i = 0; i < array.length - 1; i++) {
-                buf.append(array[i]);
-                buf.append(", ");
-            }
-
-            if (array.length > 0) {
-                buf.append(array[array.length - 1]);
-            }
-
-            if (array.length == 1) {
-                buf.append(",");
-            }
-
-            buf.append(")");
-            return buf.toString();
-        } else {
-            return String.format("tuple(%s)", store);
-        }
+        return String.format("tuple(%s)", store);
     }
 
     @Override
