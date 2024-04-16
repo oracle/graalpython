@@ -43,6 +43,21 @@
 static int
 _list_clear(PyListObject *a)
 {
+    int64_t i;
+    PyObject **item;
+
+    /* Because XDECREF can recursively invoke operations on
+       this list, we make it empty first. */
+    i = GraalPyTruffleList_ClearManagedOrGetItems(a, &item);
+    if (i > 0) {
+        assert(item != NULL);
+        while (--i >= 0) {
+            Py_XDECREF(item[i]);
+        }
+        /* CPython calls 'PyMem_Free(item)' here but in our case, this will be
+           done by the NativeStorageReference. Since we already set the length
+           to zero, the items won't be decref'd again. */
+    }
     /* Never fails; the return value can be ignored.
        Note that there is no guarantee that the list is actually empty
        at this point, because XDECREF may have populated it again! */
@@ -52,6 +67,12 @@ _list_clear(PyListObject *a)
 static int
 list_traverse(PyListObject *o, visitproc visit, void *arg)
 {
+    int64_t size, i;
+    PyObject **ob_item;
+
+    size = GraalPyTruffleList_TraverseManagedOrGetItems(o, &ob_item, visit, arg);
+    for (i = size; --i >= 0; )
+        Py_VISIT(ob_item[i]);
     return 0;
 }
 

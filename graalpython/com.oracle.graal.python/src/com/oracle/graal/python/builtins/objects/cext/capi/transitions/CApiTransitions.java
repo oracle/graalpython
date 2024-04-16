@@ -512,9 +512,14 @@ public abstract class CApiTransitions {
      * storage, then they will be freed by calling the element object's destructor.
      */
     private static void processNativeStorageReference(NativeStorageReference reference) {
-        if (reference.type == StorageType.Generic) {
+        /*
+         * Note: 'reference.size' may be zero if the storage has already been cleared by the Python
+         * GC.
+         */
+        if (reference.type == StorageType.Generic && reference.size > 0) {
             PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_RELEASE, reference.ptr, reference.size);
         }
+        assert !InteropLibrary.getUncached().isNull(reference.ptr);
         freeNativeStorage(reference);
     }
 

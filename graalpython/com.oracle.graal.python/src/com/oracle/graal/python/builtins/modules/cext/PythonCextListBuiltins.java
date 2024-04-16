@@ -43,13 +43,17 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyListObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 
 import java.util.Arrays;
 
@@ -61,6 +65,11 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.XDecRefPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
@@ -74,19 +83,35 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public final class PythonCextListBuiltins {
 
-    ///////////// list /////////////
     @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
     abstract static class PyList_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = "size < 0")
@@ -285,6 +310,116 @@ public final class PythonCextListBuiltins {
                         @Cached ListBuiltins.ListReverseNode reverseNode) {
             reverseNode.execute(null, self);
             return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
+    abstract static class PyTruffleList_ClearManagedOrGetItems extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static long doGeneric(PList self, Object outItems,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
+                        @Cached XDecRefPointerNode xDecRefPointerNode) {
+            SequenceStorage sequenceStorage = self.getSequenceStorage();
+            if (sequenceStorage instanceof NativeObjectSequenceStorage nativeStorage) {
+                writePointerNode.write(outItems, nativeStorage.getPtr());
+                int length = nativeStorage.length();
+                nativeStorage.setNewLength(0);
+                return length;
+            } else {
+                assert sequenceStorage instanceof ObjectSequenceStorage;
+                ObjectSequenceStorage objectStorage = (ObjectSequenceStorage) sequenceStorage;
+
+                for (int i = objectStorage.length(); --i >= 0;) {
+                    Object item = objectStorage.getItemNormalized(i);
+                    if (item instanceof PythonAbstractNativeObject nativeObject) {
+                        xDecRefPointerNode.execute(inliningTarget, nativeObject.getPtr());
+                        // replace the item to avoid re-visiting
+                        objectStorage.setItemNormalized(i, PNone.NONE);
+                    }
+                }
+            }
+            return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer, Pointer, Pointer}, call = Ignored)
+    abstract static class PyTruffleList_TraverseManagedOrGetItems extends CApiQuaternaryBuiltinNode {
+        // int (*visitproc)(PyObject *, void *);
+        private static final String NFI_SRC_VISIT = "(POINTER, POINTER):SINT32";
+        private static final Source NFI_LIBFFI_VISIT = Source.newBuilder(J_NFI_LANGUAGE, NFI_SRC_VISIT, "visit").internal(true).build();
+        private static final Source NFI_PANAMA_VISIT = Source.newBuilder(J_NFI_LANGUAGE, "with panama " + NFI_SRC_VISIT, "visit").internal(true).build();
+
+        @Specialization
+        static long doGeneric(PList self, Object outItems, Object visitFun, Object arg,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
+                        @CachedLibrary(limit = "2") InteropLibrary interopLib,
+                        @CachedLibrary(limit = "1") InteropLibrary resultLib,
+                        @Cached("createSig()") CallTarget nfiSignatureFactory,
+                        @CachedLibrary(limit = "1") SignatureLibrary signatureLib,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
+                        @Cached PythonToNativeNode toNativeNode) {
+            SequenceStorage sequenceStorage = self.getSequenceStorage();
+            if (sequenceStorage instanceof NativeObjectSequenceStorage nativeStorage) {
+                writePointerNode.write(outItems, nativeStorage.getPtr());
+                return nativeStorage.length();
+            } else if (sequenceStorage instanceof ObjectSequenceStorage || sequenceStorage instanceof MroSequenceStorage) {
+                BasicSequenceStorage basicStorage = (BasicSequenceStorage) sequenceStorage;
+
+                Object visitExecutable;
+                if (!interopLib.isExecutable(visitFun)) {
+                    visitExecutable = signatureLib.bind(nfiSignatureFactory.call(), visitFun);
+                } else {
+                    visitExecutable = visitFun;
+                }
+
+                assert interopLib.isExecutable(visitExecutable);
+                for (int i = basicStorage.length(); --i >= 0;) {
+                    Object item = getItemScalarNode.execute(inliningTarget, basicStorage, i);
+                    if (item instanceof PythonAbstractNativeObject) {
+                        Object ret;
+                        try {
+                            ret = interopLib.execute(visitExecutable, toNativeNode.execute(item), arg);
+                        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                            throw CompilerDirectives.shouldNotReachHere(e);
+                        }
+                        if (ensureInt(ret, resultLib) != 0) {
+                            return -1;
+                        }
+                    }
+                }
+            }
+            /*
+             * Since 'tp_traverse' is meant to be used from Python GC, we do not traverse other
+             * storages because then we would need to materialize them. This is safe because long,
+             * float, and unicode objects do not participate in GC anyway (i.e. they don't have type
+             * flag 'HAVE_GC' set).
+             */
+            return 0;
+        }
+
+        private static int ensureInt(Object object, InteropLibrary lib) {
+            if (object instanceof Integer i) {
+                return i;
+            }
+            if (lib.fitsInInt(object)) {
+                try {
+                    return lib.asInt(object);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere("result of visitproc must be int");
+        }
+
+        @NeverDefault
+        static CallTarget createSig() {
+            CompilerAsserts.neverPartOfCompilation();
+            PythonContext pythonContext = PythonContext.get(null);
+            boolean usePanama = pythonContext.getOption(PythonOptions.UsePanama);
+            return pythonContext.getEnv().parseInternal(usePanama ? NFI_PANAMA_VISIT : NFI_LIBFFI_VISIT);
         }
     }
 }
