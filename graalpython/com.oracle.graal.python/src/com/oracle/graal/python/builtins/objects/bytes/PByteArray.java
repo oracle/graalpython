@@ -84,10 +84,6 @@ public final class PByteArray extends PBytesLike {
         }
     }
 
-    public final void reverse() {
-        store.reverse();
-    }
-
     public long getExports() {
         return exports;
     }

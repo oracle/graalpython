@@ -36,9 +36,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import sys
 
 from array import array
+
+from tests.util import storage_to_native
 
 
 def assert_raises(err, fn, *args, **kwargs):
@@ -102,9 +103,7 @@ def test_add_int_to_long_array():
 
 def test_array_native_storage():
     a = array('l', [1, 2, 3])
-    if sys.implementation.name == 'graalpy':
-        assert hasattr(__graalpython__, 'storage_to_native'), "Needs to be run with --python.EnableDebuggingBuiltins"
-        __graalpython__.storage_to_native(a)
+    storage_to_native(a)
     assert a[1] == 2
     a[1] = 3
     assert a == array('l', [1, 3, 3])

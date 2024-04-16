@@ -99,10 +99,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void reverse() {
-    }
-
-    @Override
     public boolean equals(SequenceStorage other) {
         return other == EmptySequenceStorage.INSTANCE;
     }

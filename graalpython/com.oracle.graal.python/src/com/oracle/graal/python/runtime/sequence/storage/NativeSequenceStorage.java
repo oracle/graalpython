@@ -129,11 +129,6 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public final void reverse() {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
     public final boolean equals(SequenceStorage other) {
         throw CompilerDirectives.shouldNotReachHere();
     }

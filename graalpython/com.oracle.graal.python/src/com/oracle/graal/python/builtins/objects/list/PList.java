@@ -85,10 +85,6 @@ public final class PList extends PSequence {
         return store.toString();
     }
 
-    public final void reverse() {
-        store.reverse();
-    }
-
     @Ignore
     @Override
     public final boolean equals(Object other) {

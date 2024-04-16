@@ -1236,6 +1236,77 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(SequenceStorageBaseNode.class)
+    public abstract static class ReverseNode extends Node {
+
+        public abstract void execute(Node inliningTarget, SequenceStorage storage);
+
+        @Specialization
+        static void doEmpty(@SuppressWarnings("unused") EmptySequenceStorage storage) {
+        }
+
+        @Specialization(limit = "MAX_ARRAY_STORAGES", guards = "storage.getClass() == cachedClass")
+        static void doBasic(BasicSequenceStorage storage,
+                        @Cached("storage.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
+            cachedClass.cast(storage).reverse();
+        }
+
+        @Specialization
+        @InliningCutoff
+        static void doNative(NativeSequenceStorage storage,
+                        @Cached(inline = false) ReverseNativeNode reverseNativeNode) {
+            reverseNativeNode.execute(storage);
+        }
+
+        @GenerateUncached
+        @GenerateInline(false)
+        abstract static class ReverseNativeNode extends Node {
+
+            abstract void execute(NativeSequenceStorage storage);
+
+            @Specialization
+            static void doNativeByte(NativeByteSequenceStorage storage,
+                            @Cached CStructAccess.ReadByteNode readByteNode,
+                            @Cached CStructAccess.WriteByteNode writeByteNode) {
+                int length = storage.length();
+                if (length > 0) {
+                    int head = 0;
+                    int tail = length - 1;
+                    int middle = (length - 1) / 2;
+                    Object ptr = storage.getPtr();
+
+                    for (; head <= middle; head++, tail--) {
+                        byte temp = readByteNode.readArrayElement(ptr, head);
+                        writeByteNode.writeArrayElement(ptr, head, readByteNode.readArrayElement(ptr, tail));
+                        writeByteNode.writeArrayElement(ptr, tail, temp);
+                    }
+                }
+            }
+
+            @Specialization
+            static void doNativeObject(NativeObjectSequenceStorage storage,
+                            @Cached CStructAccess.ReadPointerNode readPointerNode,
+                            @Cached CStructAccess.WritePointerNode writePointerNode) {
+                int length = storage.length();
+                if (length > 0) {
+                    int head = 0;
+                    int tail = length - 1;
+                    int middle = (length - 1) / 2;
+                    Object ptr = storage.getPtr();
+
+                    for (; head <= middle; head++, tail--) {
+                        Object temp = readPointerNode.readArrayElement(ptr, head);
+                        writePointerNode.writeArrayElement(ptr, head, readPointerNode.readArrayElement(ptr, tail));
+                        writePointerNode.writeArrayElement(ptr, tail, temp);
+                    }
+                }
+            }
+        }
+    }
+
+    @GenerateUncached
     @ImportStatic(SequenceStorageBaseNode.class)
     @SuppressWarnings("truffle-inlining")       // footprint reduction 92 -> 75
     abstract static class SetStorageSliceNode extends Node {
