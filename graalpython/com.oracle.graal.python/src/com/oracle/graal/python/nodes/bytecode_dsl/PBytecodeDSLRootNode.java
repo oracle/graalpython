@@ -817,16 +817,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
-    public static final class Raise {
-        @Specialization
-        public static void perform(VirtualFrame frame, Object typeOrExceptionObject, Object cause,
-                        @Bind("$root") PBytecodeDSLRootNode root,
-                        @Cached RaiseNode raiseNode) {
-            raiseNode.execute(frame, typeOrExceptionObject, cause, !root.isInternal());
-        }
-    }
-
-    @Operation
     public static final class IAdd {
 
         @Specialization(rewriteOn = ArithmeticException.class)
@@ -2518,11 +2508,38 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    public static final class Raise {
+        @Specialization
+        public static void perform(VirtualFrame frame, Object typeOrExceptionObject, Object cause,
+                        @Bind("$root") PBytecodeDSLRootNode root,
+                        @Cached RaiseNode raiseNode) {
+            raiseNode.execute(frame, typeOrExceptionObject, cause, !root.isInternal());
+        }
+    }
+
+    @Operation
     public static final class Reraise {
         @Specialization
         public static void doPException(PException ex,
                         @Bind("$root") PBytecodeDSLRootNode root) {
             throw ex.getExceptionForReraise(!root.isInternal());
+        }
+
+        @Specialization
+        public static void doAbstractTruffleException(AbstractTruffleException ex) {
+            throw ex;
+        }
+    }
+
+    /**
+     * Throw is used internally for our try-catch-finally implementation when we need to throw an
+     * exception and catch it elsewhere. We don't need to do any of the work done by RaiseNode.
+     */
+    @Operation
+    public static final class Throw {
+        @Specialization
+        public static void doAbstractTruffleException(AbstractTruffleException ex) {
+            throw ex;
         }
     }
 
