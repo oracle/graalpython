@@ -80,6 +80,8 @@ public final class HiddenAttr {
     public static final HiddenAttr DEALLOC = new HiddenAttr("__dealloc__");
     public static final HiddenAttr DEL = new HiddenAttr("__del__");
     public static final HiddenAttr FREE = new HiddenAttr("__free__");
+    public static final HiddenAttr TRAVERSE = new HiddenAttr("tp_traverse");
+    public static final HiddenAttr IS_GC = new HiddenAttr("tp_is_gc");
     public static final HiddenAttr CLEAR = new HiddenAttr("__clear__");
     public static final HiddenAttr AS_BUFFER = new HiddenAttr("__tp_as_buffer__");
     public static final HiddenAttr FLAGS = new HiddenAttr(J___FLAGS__);

@@ -50,6 +50,8 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dealloc;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_del;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_free;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_is_gc;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_traverse;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_vectorcall_offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
 
@@ -314,8 +316,14 @@ public abstract class ToNativeTypeNode {
             docObj = ctx.getNativeNull();
         }
         writePtrNode.write(mem, CFields.PyTypeObject__tp_doc, docObj);
-        // TODO: return a proper traverse function, or at least a dummy
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, nullValue);
+        if ((flags & TypeFlags.HAVE_GC) != 0) {
+            // TODO: return a proper traverse function, or at least a dummy
+            writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, lookup(clazz, PyTypeObject__tp_traverse, HiddenAttr.TRAVERSE));
+            writePtrNode.write(mem, CFields.PyTypeObject__tp_is_gc, lookup(clazz, PyTypeObject__tp_is_gc, HiddenAttr.IS_GC));
+        } else {
+            writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, nullValue);
+            writePtrNode.write(mem, CFields.PyTypeObject__tp_is_gc, nullValue);
+        }
         writePtrNode.write(mem, CFields.PyTypeObject__tp_richcompare, lookup(clazz, SlotMethodDef.TP_RICHCOMPARE));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_iter, lookup(clazz, SlotMethodDef.TP_ITER));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_iternext, lookup(clazz, SlotMethodDef.TP_ITERNEXT));
@@ -361,7 +369,6 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_new, ManagedMethodWrappers.createKeywords(newFunction));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_free, lookup(clazz, PyTypeObject__tp_free, HiddenAttr.FREE));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_clear, lookup(clazz, PyTypeObject__tp_clear, HiddenAttr.CLEAR));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_is_gc, nullValue);
         if (clazz.basesTuple == null) {
             clazz.basesTuple = factory.createTuple(GetBaseClassesNode.executeUncached(clazz));
         }

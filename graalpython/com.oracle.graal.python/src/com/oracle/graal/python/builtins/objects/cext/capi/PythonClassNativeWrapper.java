@@ -140,6 +140,14 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
         if (!PGuards.isNullOrZero(free_fun, lib)) {
             HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.FREE, free_fun);
         }
+        Object traverse_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_traverse);
+        if (!PGuards.isNullOrZero(traverse_fun, lib)) {
+            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.TRAVERSE, traverse_fun);
+        }
+        Object is_gc_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_is_gc);
+        if (!PGuards.isNullOrZero(is_gc_fun, lib)) {
+            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.IS_GC, is_gc_fun);
+        }
         Object clear_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_clear);
         if (!PGuards.isNullOrZero(clear_fun, lib)) {
             HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.CLEAR, clear_fun);
