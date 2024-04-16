@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.statement.AbstractImportNode.importModule;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -106,7 +107,6 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -391,7 +391,7 @@ public final class PicklerNodes {
 
         protected Object escapeDecode(VirtualFrame frame, PythonObjectFactory factory, byte[] data, int offset, int len) {
             if (len == 0) {
-                return factory.createBytes(EmptySequenceStorage.INSTANCE);
+                return factory.createBytes(EMPTY_BYTE_ARRAY);
             }
             return escapeDecode(frame, PythonUtils.arrayCopyOfRange(data, offset, offset + len));
         }
