@@ -159,11 +159,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void copyItem(int idxTo, int idxFrom) {
-        values[idxTo] = values[idxFrom];
-    }
-
-    @Override
     public ByteSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         byte[] newArray = new byte[sliceLength];
 

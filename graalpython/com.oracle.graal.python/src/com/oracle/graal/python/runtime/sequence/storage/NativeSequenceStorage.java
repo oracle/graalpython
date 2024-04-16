@@ -149,11 +149,6 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public final void copyItem(int idxTo, int idxFrom) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
     public final Object getInternalArrayObject() {
         return ptr;
     }

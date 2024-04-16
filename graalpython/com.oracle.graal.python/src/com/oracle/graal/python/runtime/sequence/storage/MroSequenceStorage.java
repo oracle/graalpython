@@ -122,12 +122,6 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    @SuppressWarnings("unused")
-    public void copyItem(int idxTo, int idxFrom) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
     public MroSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         PythonAbstractClass[] newArray = new PythonAbstractClass[sliceLength];
 

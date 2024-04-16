@@ -149,11 +149,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void copyItem(int idxTo, int idxFrom) {
-        values[idxTo] = values[idxFrom];
-    }
-
-    @Override
     public LongSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         long[] newArray = new long[sliceLength];
 

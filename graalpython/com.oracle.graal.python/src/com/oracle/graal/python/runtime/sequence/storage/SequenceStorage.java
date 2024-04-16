@@ -102,6 +102,4 @@ public abstract class SequenceStorage {
     public abstract Object getIndicativeValue();
 
     public abstract void ensureCapacity(int newCapacity);
-
-    public abstract void copyItem(int idxTo, int idxFrom);
 }

@@ -93,10 +93,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void copyItem(int idxTo, int idxFrom) {
-    }
-
-    @Override
     public SequenceStorage getSliceInBound(int start, int stop, int step, int len) {
         assert start == stop && stop == 0;
         return this;
