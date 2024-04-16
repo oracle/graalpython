@@ -849,6 +849,12 @@ class ListCompareTest(CompareTest):
         storage_to_native(l)
         l.reverse()
         self.assertEqual([1, 2, 3], l)
+        l.append(4)
+        l.reverse()
+        self.assertEqual([4, 3, 2, 1], l)
+        del l[:-1]
+        l.reverse()
+        self.assertEqual([1], l)
 
 
 if __name__ == '__main__':
