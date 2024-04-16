@@ -311,7 +311,7 @@ PY_TRUFFLE_TYPE(PyFunction_Type, 		"function", 				&PyType_Type, sizeof(PyFuncti
 PY_TRUFFLE_TYPE(PyGen_Type, 			"generator", 				&PyType_Type, sizeof(PyGenObject)) \
 PY_TRUFFLE_TYPE(PyGetSetDescr_Type, 	"getset_descriptor", 		&PyType_Type, sizeof(PyGetSetDescrObject)) \
 PY_TRUFFLE_TYPE(PyInstanceMethod_Type, 	"instancemethod", 	    	&PyType_Type, sizeof(PyInstanceMethodObject)) \
-PY_TRUFFLE_TYPE(PyList_Type, 			"list", 					&PyType_Type, sizeof(PyListObject)) \
+PY_TRUFFLE_TYPE_EXTERN(PyList_Type, 	"list"  					) \
 PY_TRUFFLE_TYPE(PyMap_Type, 			"map", 				    	&PyType_Type, sizeof(mapobject)) \
 PY_TRUFFLE_TYPE(PyMemberDescr_Type, 	"member_descriptor", 		&PyType_Type, sizeof(PyMemberDescrObject)) \
 PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyMemoryView_Type, "memoryview",      &PyType_Type, offsetof(PyMemoryViewObject, ob_array), sizeof(Py_ssize_t)) \

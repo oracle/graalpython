@@ -196,11 +196,13 @@ PyTypeObject GLOBAL_NAME = {\
     0,                                          /* tp_is_gc */\
 };
 
+#define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, NAME)
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) PyTypeObject GLOBAL_NAME;
 
 PY_TYPE_OBJECTS
 
 #undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_EXTERN
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 
 
@@ -223,9 +225,11 @@ static void initialize_builtin_types_and_structs() {
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs...");
 	static int64_t builtin_types[] = {
 #define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) &GLOBAL_NAME, __TYPE_NAME__,
+#define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, __TYPE_NAME__) &GLOBAL_NAME, __TYPE_NAME__,
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
     PY_TYPE_OBJECTS
 #undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_EXTERN
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
         NULL, NULL
 	};
@@ -354,9 +358,11 @@ static void initialize_bufferprocs() {
 
 int is_builtin_type(PyTypeObject *tp) {
 #define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) (tp == &GLOBAL_NAME) ||
+#define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, __TYPE_NAME__) PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, 0, 0, 0, 0, 0, 0, 0)
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
     return PY_TYPE_OBJECTS 0;
 #undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_EXTERN
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 }
 
