@@ -61,7 +61,7 @@ public final class NativeObjectSequenceStorage extends NativeSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Generic;
+    public StorageType getElementType() {
+        return StorageType.Generic;
     }
 }

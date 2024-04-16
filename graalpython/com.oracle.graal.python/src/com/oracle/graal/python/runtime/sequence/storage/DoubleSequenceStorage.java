@@ -199,7 +199,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Double;
+    public StorageType getElementType() {
+        return StorageType.Double;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,7 +70,7 @@ import com.oracle.truffle.api.source.SourceSection;
 
 abstract class SequenceFromStackNode extends PNodeWithContext {
     @CompilationFinal protected final int length;
-    @CompilationFinal protected SequenceStorage.ListStorageType type = SequenceStorage.ListStorageType.Uninitialized;
+    @CompilationFinal protected SequenceStorage.StorageType type = SequenceStorage.StorageType.Uninitialized;
 
     SequenceFromStackNode(int length) {
         this.length = length;
@@ -82,7 +82,7 @@ abstract class SequenceFromStackNode extends PNodeWithContext {
         CompilerAsserts.partialEvaluationConstant(stop);
 
         SequenceStorage storage;
-        if (type == SequenceStorage.ListStorageType.Uninitialized) {
+        if (type == SequenceStorage.StorageType.Uninitialized) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             try {
                 Object[] elements = new Object[length];
@@ -95,7 +95,7 @@ abstract class SequenceFromStackNode extends PNodeWithContext {
             } catch (Throwable t) {
                 // we do not want to repeatedly deopt if a value execution
                 // always raises, for example
-                type = SequenceStorage.ListStorageType.Generic;
+                type = SequenceStorage.StorageType.Generic;
                 throw t;
             }
         } else {
@@ -188,7 +188,7 @@ abstract class SequenceFromStackNode extends PNodeWithContext {
     }
 
     private SequenceStorage genericFallback(VirtualFrame frame, Object array, int start, int stop, int count, Object result) {
-        type = SequenceStorage.ListStorageType.Generic;
+        type = SequenceStorage.StorageType.Generic;
         Object[] elements = new Object[getCapacityEstimate()];
         int j = 0;
         for (; j < count; j++) {

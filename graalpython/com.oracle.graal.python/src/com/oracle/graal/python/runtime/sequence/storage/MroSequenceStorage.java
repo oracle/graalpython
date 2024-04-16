@@ -195,8 +195,8 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Generic;
+    public StorageType getElementType() {
+        return StorageType.Generic;
     }
 
     public Assumption getLookupStableAssumption() {

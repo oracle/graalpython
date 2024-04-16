@@ -187,7 +187,7 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Boolean;
+    public StorageType getElementType() {
+        return StorageType.Boolean;
     }
 }

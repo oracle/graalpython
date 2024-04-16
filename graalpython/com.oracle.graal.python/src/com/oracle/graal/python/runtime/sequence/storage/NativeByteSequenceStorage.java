@@ -67,8 +67,8 @@ public final class NativeByteSequenceStorage extends NativeSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Byte;
+    public StorageType getElementType() {
+        return StorageType.Byte;
     }
 
     @ExportMessage

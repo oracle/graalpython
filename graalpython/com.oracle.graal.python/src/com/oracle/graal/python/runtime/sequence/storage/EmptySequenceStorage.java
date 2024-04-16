@@ -66,8 +66,8 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Empty;
+    public StorageType getElementType() {
+        return StorageType.Empty;
     }
 
     @Override

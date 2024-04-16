@@ -27,7 +27,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 public abstract class SequenceStorage {
 
-    public enum ListStorageType {
+    public enum StorageType {
         Uninitialized,
         Empty,
         Boolean,
@@ -37,7 +37,7 @@ public abstract class SequenceStorage {
         Double,
         Generic;
 
-        public boolean generalizesFrom(ListStorageType other) {
+        public boolean generalizesFrom(StorageType other) {
             switch (this) {
                 case Uninitialized:
                 case Empty:
@@ -77,7 +77,7 @@ public abstract class SequenceStorage {
         return capacity;
     }
 
-    public abstract ListStorageType getElementType();
+    public abstract StorageType getElementType();
 
     public abstract Object getIndicativeValue();
 }

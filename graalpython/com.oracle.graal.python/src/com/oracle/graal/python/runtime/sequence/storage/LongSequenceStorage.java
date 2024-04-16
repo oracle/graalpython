@@ -209,7 +209,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Long;
+    public StorageType getElementType() {
+        return StorageType.Long;
     }
 }

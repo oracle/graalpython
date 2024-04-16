@@ -220,8 +220,8 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Byte;
+    public StorageType getElementType() {
+        return StorageType.Byte;
     }
 
     @ExportMessage

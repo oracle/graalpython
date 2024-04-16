@@ -199,7 +199,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Int;
+    public StorageType getElementType() {
+        return StorageType.Int;
     }
 }
