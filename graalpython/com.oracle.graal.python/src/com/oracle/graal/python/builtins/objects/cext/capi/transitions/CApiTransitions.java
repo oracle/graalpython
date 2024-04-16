@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCTrackNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeN
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
@@ -860,7 +862,7 @@ public abstract class CApiTransitions {
             } else {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-            long taggedPointer = allocateNativeObjectStubNode.execute(inliningTarget, wrapper, type, ctype, immortal);
+            long taggedPointer = allocateNativeObjectStubNode.execute(inliningTarget, wrapper, type, ctype, immortal, false);
 
             // allocate a native stub object (C type: GraalPy*Object)
             if (isFloat) {
@@ -876,6 +878,7 @@ public abstract class CApiTransitions {
                         @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
                         @Shared @Cached(inline = false) CStructAccess.WriteDoubleNode writeDoubleNode,
                         @Exclusive @Cached InlinedConditionProfile isVarObjectProfile,
+                        @Exclusive @Cached InlinedConditionProfile isGcProfile,
                         @Shared @Cached InlinedConditionProfile isFloatObjectProfile,
                         @Cached GetClassNode getClassNode,
                         @Shared @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
@@ -886,16 +889,20 @@ public abstract class CApiTransitions {
             Object delegate = wrapper.getDelegate();
             Object type = getClassNode.execute(inliningTarget, delegate);
 
+            boolean gc = false;
             CStructs ctype;
             if (isVarObjectProfile.profile(inliningTarget, delegate instanceof PTuple)) {
                 ctype = CStructs.GraalPyVarObject;
             } else if (isFloatObjectProfile.profile(inliningTarget, delegate instanceof Double || delegate instanceof PFloat)) {
                 ctype = CStructs.GraalPyFloatObject;
+            } else if (isGcProfile.profile(inliningTarget, delegate instanceof PList)) {
+                ctype = CStructs.GraalPyObject;
+                gc = true;
             } else {
                 ctype = CStructs.GraalPyObject;
             }
 
-            long taggedPointer = allocateNativeObjectStubNode.execute(inliningTarget, wrapper, type, ctype, immortal);
+            long taggedPointer = allocateNativeObjectStubNode.execute(inliningTarget, wrapper, type, ctype, immortal, gc);
 
             // allocate a native stub object (C type: GraalPy*Object)
             if (ctype == CStructs.GraalPyVarObject) {
@@ -929,28 +936,42 @@ public abstract class CApiTransitions {
     @GenerateCached(false)
     abstract static class AllocateNativeObjectStubNode extends Node {
 
-        abstract long execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, Object type, CStructs ctype, boolean immortal);
+        abstract long execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, Object type, CStructs ctype, boolean immortal, boolean gc);
 
         @Specialization
-        static long doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, Object type, CStructs ctype, boolean immortal,
+        static long doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, Object type, CStructs ctype, boolean immortal, boolean gc,
                         @Cached(inline = false) GilNode gil,
                         @Cached(inline = false) CStructAccess.AllocateNode allocateNode,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
                         @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNode,
                         @Cached(inline = false) CStructAccess.WriteIntNode writeIntNode,
-                        @Cached CoerceNativePointerToLongNode coerceToLongNode) {
+                        @Cached CoerceNativePointerToLongNode coerceToLongNode,
+                        @Cached PyObjectGCTrackNode gcTrackNode) {
 
             log(wrapper);
             pollReferenceQueue();
 
             long initialRefCount = immortal ? IMMORTAL_REFCNT : MANAGED_REFCNT;
 
-            // allocate a native stub object (C type: GraalPy*Object)
-            Object nativeObjectStub = allocateNode.alloc(ctype);
+            /*
+             * Allocate a native stub object (C type: GraalPy*Object). For types that participate in
+             * Python's GC, we will also allocate space for 'PyGC_Head'.
+             */
+            long presize = gc ? CStructs.PyGC_Head.size() : 0;
+            Object nativeObjectStub = allocateNode.alloc(ctype.size() + presize);
 
             HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
             long stubPointer = coerceToLongNode.execute(inliningTarget, nativeObjectStub);
             long taggedPointer = HandlePointerConverter.stubToPointer(stubPointer);
+
+            if (gc) {
+                // register native stub to Python GC; use tagged pointer to PyGC_Head
+                gcTrackNode.execute(inliningTarget, taggedPointer);
+
+                // same as in 'gcmodule.c: gc_alloc': PyObject *op = (PyObject *)(mem + presize);
+                stubPointer += presize;
+                taggedPointer += presize;
+            }
 
             writeLongNode.write(stubPointer, CFields.PyObject__ob_refcnt, initialRefCount);
 
