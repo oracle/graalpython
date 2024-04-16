@@ -132,7 +132,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
             }
             int n = asSizeNode.executeExact(frame, inliningTarget, res, ValueError);
             if (n == 0) {
-                return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                return factory.createEmptyBytes();
             }
             byte[] bytes = toBytes.execute(b);
             if (n < size) {

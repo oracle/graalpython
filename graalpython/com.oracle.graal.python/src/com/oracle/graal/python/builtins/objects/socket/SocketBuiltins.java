@@ -592,7 +592,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             }
             checkSelectable(inliningTarget, raiseNode, socket);
             if (recvlen == 0) {
-                return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                return factory.createEmptyBytes();
             }
 
             byte[] bytes;
@@ -607,7 +607,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                                 (p, s) -> p.recv(s, socket.getFd(), bytes, 0, bytes.length, flags),
                                 false, false);
                 if (outlen == 0) {
-                    return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                    return factory.createEmptyBytes();
                 }
                 // TODO maybe resize if much smaller?
                 return factory.createBytes(bytes, outlen);
@@ -655,7 +655,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                                 false, false);
                 PBytes resultBytes;
                 if (result.readBytes == 0) {
-                    resultBytes = factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                    resultBytes = factory.createEmptyBytes();
                 } else {
                     // TODO maybe resize if much smaller?
                     resultBytes = factory.createBytes(bytes, result.readBytes);

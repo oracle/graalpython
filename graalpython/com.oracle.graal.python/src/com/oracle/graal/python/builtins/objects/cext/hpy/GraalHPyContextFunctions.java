@@ -2064,7 +2064,7 @@ public abstract class GraalHPyContextFunctions {
                 throw raiseNode.raise(SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
             }
             if (lsize == 0) {
-                return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                return factory.createEmptyBytes();
             }
             byte[] bytes = readI8ArrayNode.execute(hpyContext, charPtr, 0, lsize);
             return factory.createBytes(bytes);

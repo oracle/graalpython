@@ -205,7 +205,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                     PythonBufferAccessLibrary bufferLib,
                     PythonObjectFactory factory) {
         if (size == 0) {
-            return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+            return factory.createEmptyBytes();
         }
 
         assert (size <= self.getStringSize());

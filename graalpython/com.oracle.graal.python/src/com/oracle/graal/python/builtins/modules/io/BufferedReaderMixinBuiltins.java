@@ -252,7 +252,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         Object empty(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
                         @Shared @Cached PythonObjectFactory factory) {
             checkIsClosedNode.execute(frame, self);
-            return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+            return factory.createEmptyBytes();
         }
 
         /*
@@ -501,7 +501,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
             }
 
             if (n == 0) {
-                return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                return factory.createEmptyBytes();
             }
             /*- Return up to n bytes.  If at least one byte is buffered, we
                only return buffered bytes.  Otherwise, we do one raw read. */

@@ -273,7 +273,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
                 byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
 
                 if (slicelen <= 0) {
-                    return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                    return factory.createEmptyBytes();
                 }
                 if (sliceInfo.step == 1) {
                     return factory.createBytes(ptr, sliceInfo.start, slicelen);

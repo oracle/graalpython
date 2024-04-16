@@ -83,7 +83,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -286,7 +285,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.hasDecoder()")
         static Object noDecoder(PNLDecoder self,
                         @Shared @Cached PythonObjectFactory factory) {
-            PBytes buffer = factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+            PBytes buffer = factory.createEmptyBytes();
             int flag = self.isPendingCR() ? 1 : 0;
             return factory.createTuple(new Object[]{buffer, flag});
         }

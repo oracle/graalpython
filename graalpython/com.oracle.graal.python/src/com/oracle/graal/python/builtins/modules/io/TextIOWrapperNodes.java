@@ -101,7 +101,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -659,7 +658,7 @@ public abstract class TextIOWrapperNodes {
         @Specialization(guards = {"self.hasDecoder()", "!isAtInit(cookie)"})
         static void decoderSetstate(VirtualFrame frame, Node inliningTarget, PTextIO self, PTextIO.CookieType cookie, PythonObjectFactory factory,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodSetState) {
-            PTuple tuple = factory.createTuple(new Object[]{factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY), cookie.decFlags});
+            PTuple tuple = factory.createTuple(new Object[]{factory.createEmptyBytes(), cookie.decFlags});
             callMethodSetState.execute(frame, inliningTarget, self.getDecoder(), T_SETSTATE, tuple);
 
         }

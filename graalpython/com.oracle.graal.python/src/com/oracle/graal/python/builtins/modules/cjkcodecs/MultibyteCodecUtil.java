@@ -66,7 +66,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeE
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeDecodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -427,7 +426,7 @@ public class MultibyteCodecUtil {
     protected static PBytes encodeEmptyInput(int len, int flags,
                     PythonObjectFactory factory) {
         if (len == 0 && (flags & MBENC_RESET) == 0) {
-            return factory.createBytes(EMPTY_BYTE_ARRAY);
+            return factory.createEmptyBytes();
         }
         return null;
     }

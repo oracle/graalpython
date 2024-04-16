@@ -54,7 +54,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.statement.AbstractImportNode.importModule;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -391,7 +390,7 @@ public final class PicklerNodes {
 
         protected Object escapeDecode(VirtualFrame frame, PythonObjectFactory factory, byte[] data, int offset, int len) {
             if (len == 0) {
-                return factory.createBytes(EMPTY_BYTE_ARRAY);
+                return factory.createEmptyBytes();
             }
             return escapeDecode(frame, PythonUtils.arrayCopyOfRange(data, offset, offset + len));
         }

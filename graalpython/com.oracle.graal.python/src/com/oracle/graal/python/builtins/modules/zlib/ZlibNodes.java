@@ -611,7 +611,7 @@ public class ZlibNodes {
             byte[] tail = PythonUtils.arrayCopyOfRange(data, length - unusedLen, length);
             if (self.isEof()) {
                 if (unconsumedTailLen > 0) {
-                    self.setUnconsumedTail(factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY));
+                    self.setUnconsumedTail(factory.createEmptyBytes());
                 }
                 if (unusedDataBytes.length > 0 && tail.length > 0) {
                     byte[] newUnusedData = new byte[unusedDataBytes.length + tail.length];
