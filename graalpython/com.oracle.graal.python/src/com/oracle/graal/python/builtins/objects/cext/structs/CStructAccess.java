@@ -251,13 +251,12 @@ public class CStructAccess {
         }
 
         @Specialization
-        static Object getLong(long pointer, long offset) {
-            assert offset >= 0;
+        static long getLong(long pointer, long offset) {
             return pointer + offset;
         }
 
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
-        static Object getPointer(Object pointer, long offset,
+        static long getPointer(Object pointer, long offset,
                         @CachedLibrary("pointer") InteropLibrary lib) {
             return getLong(asPointer(pointer, lib), offset);
         }

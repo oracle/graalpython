@@ -91,7 +91,8 @@ public enum CStructs {
     wchar_t,
     long__long,
     Py_ssize_t,
-    GCState;
+    GCState,
+    PyGC_Head;
 
     @CompilationFinal(dimensions = 1) public static final CStructs[] VALUES = values();
 

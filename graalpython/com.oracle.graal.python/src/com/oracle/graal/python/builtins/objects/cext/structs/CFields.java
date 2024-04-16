@@ -64,6 +64,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_buffer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.WCHAR_T_PTR;
@@ -342,6 +343,10 @@ public enum CFields {
 
     GCState__enabled(Int),
     GCState__debug(Int),
+    GCState__generation0(Pointer),
+
+    PyGC_Head___gc_prev(UINTPTR_T),
+    PyGC_Head___gc_next(UINTPTR_T),
 
     PyBaseExceptionObject__dict(PyObject),
     PyBaseExceptionObject__args(PyObject),
