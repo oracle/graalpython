@@ -124,16 +124,6 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public final void setItemNormalized(int idx, Object value) throws SequenceStoreException {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final void insertItem(int idx, Object value) throws SequenceStoreException {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
     public final SequenceStorage getSliceInBound(int start, int stop, int step, int len) {
         throw CompilerDirectives.shouldNotReachHere();
     }

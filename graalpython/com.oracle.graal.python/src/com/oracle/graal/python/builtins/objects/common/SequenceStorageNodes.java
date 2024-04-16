@@ -3348,7 +3348,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"storage.getClass() == cachedClass"})
         protected static SequenceStorage doStorage(BasicSequenceStorage storage, int index, Object value, boolean recursive,
                         @Shared @Cached(inline = false) InsertItemNode recursiveNode,
-                        @Cached("storage.getClass()") Class<? extends SequenceStorage> cachedClass) {
+                        @Cached("storage.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
             try {
                 cachedClass.cast(storage).insertItem(index, value);
                 return storage;

@@ -32,6 +32,10 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
 
     public abstract Object getItemNormalized(int idx);
 
+    public abstract void setItemNormalized(int idx, Object value) throws SequenceStoreException;
+
+    public abstract void insertItem(int idx, Object value) throws SequenceStoreException;
+
     public abstract Object getCopyOfInternalArrayObject();
 
     public abstract void setInternalArrayObject(Object arrayObject);

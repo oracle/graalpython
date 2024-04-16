@@ -91,10 +91,6 @@ public abstract class SequenceStorage {
 
     public abstract Object[] getCopyOfInternalArray();
 
-    public abstract void setItemNormalized(int idx, Object value) throws SequenceStoreException;
-
-    public abstract void insertItem(int idx, Object value) throws SequenceStoreException;
-
     public abstract SequenceStorage getSliceInBound(int start, int stop, int step, int len);
 
     public abstract void reverse();
