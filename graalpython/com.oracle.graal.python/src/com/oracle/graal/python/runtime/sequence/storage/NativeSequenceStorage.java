@@ -113,11 +113,6 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public final boolean equals(SequenceStorage other) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
     public final SequenceStorage generalizeFor(Object value, SequenceStorage other) {
         throw CompilerDirectives.shouldNotReachHere();
     }

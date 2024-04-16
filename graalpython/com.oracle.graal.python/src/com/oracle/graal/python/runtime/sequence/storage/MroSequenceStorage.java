@@ -178,12 +178,6 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public boolean equals(SequenceStorage other) {
-        Object[] otherArray = other.getInternalArray();
-        return Arrays.equals(values, otherArray);
-    }
-
-    @Override
     public Object getInternalArrayObject() {
         return values;
     }

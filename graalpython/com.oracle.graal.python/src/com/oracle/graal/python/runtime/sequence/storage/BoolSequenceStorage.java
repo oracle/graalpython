@@ -167,22 +167,6 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public boolean equals(SequenceStorage other) {
-        if (other.length() != length() || !(other instanceof BoolSequenceStorage)) {
-            return false;
-        }
-
-        boolean[] otherArray = ((BoolSequenceStorage) other).getInternalBoolArray();
-        for (int i = 0; i < length(); i++) {
-            if (values[i] != otherArray[i]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    @Override
     public Object getInternalArrayObject() {
         return values;
     }

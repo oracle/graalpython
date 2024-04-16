@@ -200,22 +200,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public boolean equals(SequenceStorage other) {
-        if (other.length() != length() || !(other instanceof ByteSequenceStorage)) {
-            return false;
-        }
-
-        byte[] otherArray = ((ByteSequenceStorage) other).getInternalByteArray();
-        for (int i = 0; i < length(); i++) {
-            if (values[i] != otherArray[i]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    @Override
     public Object getInternalArrayObject() {
         return values;
     }

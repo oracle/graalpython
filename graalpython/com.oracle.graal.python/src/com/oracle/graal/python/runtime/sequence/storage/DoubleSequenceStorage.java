@@ -179,22 +179,6 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public boolean equals(SequenceStorage other) {
-        if (other.length() != length()) {
-            return false;
-        }
-
-        double[] otherArray = ((DoubleSequenceStorage) other).getInternalDoubleArray();
-        for (int i = 0; i < length(); i++) {
-            if (values[i] != otherArray[i]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    @Override
     public Object getInternalArrayObject() {
         return values;
     }

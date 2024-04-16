@@ -147,12 +147,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public boolean equals(SequenceStorage other) {
-        Object[] otherArray = other.getInternalArray();
-        return Arrays.equals(values, otherArray);
-    }
-
-    @Override
     public Object getInternalArrayObject() {
         return values;
     }

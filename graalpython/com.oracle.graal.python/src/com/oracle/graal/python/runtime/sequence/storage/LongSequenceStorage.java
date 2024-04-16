@@ -189,22 +189,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public boolean equals(SequenceStorage other) {
-        if (other.length() != length() || !(other instanceof LongSequenceStorage)) {
-            return false;
-        }
-
-        long[] otherArray = ((LongSequenceStorage) other).getInternalLongArray();
-        for (int i = 0; i < length(); i++) {
-            if (values[i] != otherArray[i]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    @Override
     public Object getInternalArrayObject() {
         return values;
     }

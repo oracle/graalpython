@@ -89,11 +89,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public boolean equals(SequenceStorage other) {
-        return other == EmptySequenceStorage.INSTANCE;
-    }
-
-    @Override
     public ListStorageType getElementType() {
         return ListStorageType.Empty;
     }

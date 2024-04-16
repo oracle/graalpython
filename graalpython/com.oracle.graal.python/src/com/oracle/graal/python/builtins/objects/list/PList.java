@@ -38,6 +38,8 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -46,7 +48,6 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
@@ -70,12 +71,12 @@ public final class PList extends PSequence {
     }
 
     @Override
-    public final SequenceStorage getSequenceStorage() {
+    public SequenceStorage getSequenceStorage() {
         return store;
     }
 
     @Override
-    public final void setSequenceStorage(SequenceStorage newStorage) {
+    public void setSequenceStorage(SequenceStorage newStorage) {
         this.store = newStorage;
     }
 
@@ -83,25 +84,6 @@ public final class PList extends PSequence {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return String.format("list(%s)", store);
-    }
-
-    @Ignore
-    @Override
-    public final boolean equals(Object other) {
-        if (!(other instanceof PList)) {
-            return false;
-        }
-        if (this == other) {
-            return true;
-        }
-        PList otherList = (PList) other;
-        SequenceStorage otherStore = otherList.getSequenceStorage();
-        return store.equals(otherStore);
-    }
-
-    @Override
-    public final int hashCode() {
-        return super.hashCode();
     }
 
     public ListOrigin getOrigin() {
@@ -230,12 +212,12 @@ public final class PList extends PSequence {
          * to reach a size one larger than the current estimate to increase the estimate for new
          * lists.
          */
-        @CompilerDirectives.ValueType
-        public static final class SizeEstimate {
+        @ValueType
+        final class SizeEstimate {
             private static final int NUM_DIGITS = 3;
             private static final int NUM_DIGITS_POW2 = 1 << NUM_DIGITS;
 
-            @CompilerDirectives.CompilationFinal private int shiftedStorageSizeEstimate;
+            @CompilationFinal private int shiftedStorageSizeEstimate;
 
             public SizeEstimate(int storageSizeEstimate) {
                 assert storageSizeEstimate >= 0;

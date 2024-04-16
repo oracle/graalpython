@@ -25,15 +25,11 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -75,36 +71,12 @@ public final class PTuple extends PSequence {
         this.store = store;
     }
 
-    @Override
-    @ExportMessage.Ignore
-    public boolean equals(Object other) {
-        CompilerAsserts.neverPartOfCompilation();
-        if (!(other instanceof PTuple)) {
-            return false;
-        }
-
-        PTuple otherTuple = (PTuple) other;
-        return store.equals(otherTuple.store);
-    }
-
-    @Override
-    public int hashCode() {
-        CompilerAsserts.neverPartOfCompilation();
-        return super.hashCode();
-    }
-
     public long getHash() {
         return hash;
     }
 
     public void setHash(long hash) {
         this.hash = hash;
-    }
-
-    @SuppressWarnings({"static-method", "unused"})
-    public static void setItem(int idx, Object value) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.PTuple, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT);
     }
 
     @ExportMessage

@@ -85,8 +85,6 @@ public abstract class SequenceStorage {
 
     public abstract SequenceStorage getSliceInBound(int start, int stop, int step, int len);
 
-    public abstract boolean equals(SequenceStorage other);
-
     public abstract SequenceStorage generalizeFor(Object value, SequenceStorage other);
 
     public abstract Object getIndicativeValue();
