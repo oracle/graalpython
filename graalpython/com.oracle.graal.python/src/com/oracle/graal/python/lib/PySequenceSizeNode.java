@@ -44,10 +44,10 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNod
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -72,7 +73,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -106,16 +106,16 @@ public abstract class PySequenceSizeNode extends Node {
         return object.getSequenceStorage().length();
     }
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
-    static int doDict(Node inliningTarget, PDict object,
-                    @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
-        return lenNode.execute(inliningTarget, object.getDictStorage());
+    @Specialization(guards = "!isAnySet(object)")
+    static int doPHashingCollection(Node inliningTarget, PHashingCollection object,
+                    @Exclusive @Cached PRaiseNode.Lazy raise) {
+        throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, object);
     }
 
     @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
-    static int doSet(Node inliningTarget, PSet object,
+    static int doSet(Node inliningTarget, PBaseSet object,
                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
-                    @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
+                    @Cached HashingStorageNodes.HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage());
     }
 
@@ -137,8 +137,7 @@ public abstract class PySequenceSizeNode extends Node {
     static int doOthers(Frame frame, Node inliningTarget, Object object,
                     @Cached GetObjectSlotsNode getTpSlotsNode,
                     @Cached TpSlotLen.CallSlotLenNode callSlotLenNode,
-                    @Cached InlinedBranchProfile hasNoSqLenBranch,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
         TpSlots slots = getTpSlotsNode.execute(inliningTarget, object);
         if (slots.sq_length() != null) {
             return callSlotLenNode.execute((VirtualFrame) frame, inliningTarget, slots.sq_length(), object);

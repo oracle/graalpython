@@ -1015,7 +1015,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached("create(Reversed)") LookupSpecialMethodSlotNode lookupReversed,
                         @Cached CallUnaryMethodNode callReversed,
                         @Cached PySequenceSizeNode pySequenceSizeNode,
-                        @Cached("create(GetItem)") LookupSpecialMethodSlotNode getItemNode,
                         @Cached InlinedConditionProfile noReversedProfile,
                         @Cached PySequenceCheckNode pySequenceCheck,
                         @Shared @Cached PythonObjectFactory factory,
