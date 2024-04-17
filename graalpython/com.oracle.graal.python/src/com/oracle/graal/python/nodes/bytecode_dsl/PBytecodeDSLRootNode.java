@@ -18,6 +18,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -65,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
@@ -178,6 +180,7 @@ import com.oracle.truffle.api.bytecode.BytecodeRootNode;
 import com.oracle.truffle.api.bytecode.EpilogExceptional;
 import com.oracle.truffle.api.bytecode.EpilogReturn;
 import com.oracle.truffle.api.bytecode.GenerateBytecode;
+import com.oracle.truffle.api.bytecode.Instruction;
 import com.oracle.truffle.api.bytecode.LocalSetter;
 import com.oracle.truffle.api.bytecode.LocalSetterRange;
 import com.oracle.truffle.api.bytecode.Operation;
@@ -438,6 +441,43 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         return sourceSection;
+    }
+
+    public static int bciToLasti(int bci, BytecodeNode bytecodeNode) {
+        if (bci <= 0) {
+            return bci;
+        }
+        int number = 0;
+        for (Instruction instruction : bytecodeNode.getInstructions()) {
+            if (instruction.isInstrumentation()) {
+                continue;
+            }
+            if (instruction.getBytecodeIndex() >= bci) {
+                return number;
+            }
+            // Emulate CPython's fixed 2-word instructions.
+            number += 2;
+        }
+        return -1;
+    }
+
+    public static int lastiToBci(int lasti, BytecodeNode bytecodeNode) {
+        if (lasti < 0) {
+            return 0;
+        }
+        Iterator<Instruction> iter = bytecodeNode.getInstructions().iterator();
+        assert iter.hasNext();
+
+        int nexti = 0;
+        Instruction result;
+        do {
+            result = iter.next();
+            if (result.isInstrumentation()) {
+                continue;
+            }
+            nexti += 2;
+        } while (nexti <= lasti && iter.hasNext());
+        return result.getBytecodeIndex();
     }
 
     @Override

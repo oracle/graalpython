@@ -58,6 +58,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
+import com.oracle.truffle.api.bytecode.Instruction;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -331,8 +332,7 @@ public final class PFrame extends PythonBuiltinObject {
     public static int bciToLasti(int bci, Node location) {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
             if (bci >= 0 && location instanceof BytecodeNode bytecodeNode) {
-                // Emulate CPython's fixed 2-word instructions.
-                return bytecodeNode.getBytecodeLocation(bci).getInstructionIndex() * 2;
+                return PBytecodeDSLRootNode.bciToLasti(bci, bytecodeNode);
             }
         } else {
             if (location instanceof PBytecodeRootNode bytecodeRootNode) {
