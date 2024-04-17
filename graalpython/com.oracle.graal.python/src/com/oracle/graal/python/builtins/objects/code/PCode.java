@@ -485,9 +485,7 @@ public final class PCode extends PythonBuiltinObject {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
             if (funcRootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
                 BytecodeNode bytecodeNode = bytecodeDSLRootNode.getBytecodeNode();
-                // Emulate CPython's fixed 2-word instructions.
-                BytecodeLocation location = bytecodeNode.getBytecodeLocationFromInstructionIndex(lasti / 2);
-                return location.getSourceLocation().getStartLine();
+                return bytecodeDSLRootNode.bciToLine(PBytecodeDSLRootNode.lastiToBci(lasti, bytecodeNode), bytecodeNode);
             }
         } else if (funcRootNode instanceof PBytecodeRootNode bytecodeRootNode) {
             return bytecodeRootNode.bciToLine(bytecodeRootNode.lastiToBci(lasti));
