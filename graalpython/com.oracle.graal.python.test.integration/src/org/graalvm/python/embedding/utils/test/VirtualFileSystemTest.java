@@ -72,8 +72,27 @@ public class VirtualFileSystemTest {
         VirtualFileSystem vfs = VirtualFileSystem.create();
         VirtualFileSystem vfs2 = VirtualFileSystem.newBuilder().build();
 
-        assertEquals(vfs.getPrefix(), vfs2.getPrefix());
-        assertEquals(vfs.getFileListPath(), vfs2.getFileListPath());
+        assertEquals(vfs.getMountPoint(), vfs2.getMountPoint());
+        assertEquals(vfs.vfsHomePath(), vfs2.vfsHomePath());
+        assertEquals(vfs.vfsProjPath(), vfs2.vfsProjPath());
+        assertEquals(vfs.vfsVenvPath(), vfs2.vfsVenvPath());
+
+        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs" : "/graalpy_vfs", vfs.getMountPoint());
+        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs\\home" : "/graalpy_vfs/home", vfs.vfsHomePath());
+        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs\\proj" : "/graalpy_vfs/proj", vfs.vfsProjPath());
+        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs\\venv" : "/graalpy_vfs/venv", vfs.vfsVenvPath());
+    }
+
+    @Test
+    public void mountPoints() throws Exception {
+        VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
+                        unixMountPoint(VFS_MOUNT_POINT).//
+                        windowsMountPoint(VFS_WIN_MOUNT_POINT).build();
+
+        assertEquals(VFS_MOUNT_POINT, vfs.getMountPoint());
+        assertEquals(IS_WINDOWS ? VFS_WIN_MOUNT_POINT + "\\home" : VFS_UNIX_MOUNT_POINT + "/home", vfs.vfsHomePath());
+        assertEquals(IS_WINDOWS ? VFS_WIN_MOUNT_POINT + "\\proj" : VFS_UNIX_MOUNT_POINT + "/proj", vfs.vfsProjPath());
+        assertEquals(IS_WINDOWS ? VFS_WIN_MOUNT_POINT + "\\venv" : VFS_UNIX_MOUNT_POINT + "/venv", vfs.vfsVenvPath());
     }
 
     @Test
@@ -393,7 +412,6 @@ public class VirtualFileSystemTest {
             return cachedContext;
         }
         VirtualFileSystem.Builder builder = VirtualFileSystem.newBuilder().//
-// vfsPrefix(VFS_PREFIX).//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         resourceLoadingClass(VirtualFileSystemTest.class);

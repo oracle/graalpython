@@ -132,7 +132,11 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
         /**
          * The mount point for the virtual filesystem on Windows. This mount point shadows any real
-         * filesystem, so should be chosen to avoid clashes with the users machine.
+         * filesystem, so should be chosen to avoid clashes with the users machine, e.g. if set to
+         * "X:\graalpy_vfs", then a resource with path /org.graalvm.python.vfs/xyz/abc is visible as
+         * "X:\graalpy_vfs\xyz\abc". This needs to be an absolute path with platform-specific
+         * separators without any trailing separator. If that file or directory actually exists, it
+         * will not be accessible.
          */
         public Builder windowsMountPoint(String s) {
             windowsMountPoint = s;
@@ -141,7 +145,11 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
         /**
          * The mount point for the virtual filesystem on Unices. This mount point shadows any real
-         * filesystem, so should be chosen to avoid clashes with the users machine.
+         * filesystem, so should be chosen to avoid clashes with the users machine, e.g. if set to
+         * "/graalpy_vfs", then a resource with path /org.graalvm.python.vfs/xyz/abc is visible as
+         * "/graalpy_vfs/xyz/abc". This needs to be an absolute path with platform-specific
+         * separators without any trailing separator. If that file or directory actually exists, it
+         * will not be accessible.
          */
         public Builder unixMountPoint(String s) {
             unixMountPoint = s;
@@ -259,7 +267,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     /*
      * Determines where the virtual filesystem lives in the real filesystem, e.g. if set to
-     * "X:\graalpy_vfs", then a resource with path /vfs/xyz/abc is visible as
+     * "X:\graalpy_vfs", then a resource with path /org.graalvm.python.vfs/xyz/abc is visible as
      * "X:\graalpy_vfs\xyz\abc". This needs to be an absolute path with platform-specific separators
      * without any trailing separator. If that file or directory actually exists, it will not be
      * accessible.
@@ -493,12 +501,14 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         return vfsEntries.get(toCaseComparable(path.toString()));
     }
 
-    public String getPrefix() {
-        return this.vfsPrefix;
-    }
-
-    public String getFileListPath() {
-        return this.filesListPath;
+    /**
+     * The mount point for the virtual filesystem.
+     *
+     * @see Builder#windowsMountPoint(String)
+     * @see Builder#unixMountPoint(String)
+     */
+    public String getMountPoint() {
+        return this.mountPoint.toString();
     }
 
     private boolean pathIsInVfs(Path path) {
@@ -514,8 +524,8 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     /**
      * Extracts a file or directory from the resource to the temporary directory and returns the
-     * path to the extracted file. Inexisting parent directories will also be created (recursively).
-     * If the extracted file or directory already exists, nothing will be done.
+     * path to the extracted file. Nonexistent parent directories will also be created
+     * (recursively). If the extracted file or directory already exists, nothing will be done.
      */
     private Path getExtractedPath(Path path) {
         assert extractDir != null;
