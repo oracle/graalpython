@@ -279,7 +279,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                     @Cached GetObjectSlotsNode getSlotsNode,
-                    @Cached PySequenceCheckNode sequenceCheck,
+                    @Exclusive @Cached PySequenceCheckNode sequenceCheck,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -386,6 +386,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
+                    @Exclusive @Cached PySequenceCheckNode sequenceCheck,
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaLongExactNode toLongNode,
                     // GR-44020: make shared:
@@ -398,6 +399,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeLong(inliningTarget, behavior, method, toLongNode, raiseNode, this);
             } else {
+                if (!sequenceCheck.execute(inliningTarget, this)) {
+                    throw UnsupportedMessageException.create();
+                }
                 try {
                     return sequenceSizeNode.execute(null, inliningTarget, this);
                 } catch (PException pe) {

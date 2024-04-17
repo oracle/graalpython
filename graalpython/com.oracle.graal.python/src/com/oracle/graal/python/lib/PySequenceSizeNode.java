@@ -44,8 +44,10 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -104,12 +106,17 @@ public abstract class PySequenceSizeNode extends Node {
         return object.getSequenceStorage().length();
     }
 
-    @Specialization
+    @Specialization(guards = "!isAnySet(object)")
     static int doPHashingCollection(Node inliningTarget, PHashingCollection object,
                     @Exclusive @Cached PRaiseNode.Lazy raise) {
         throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, object);
     }
-
+    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    static int doSet(Node inliningTarget, PBaseSet object,
+                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                     @Cached HashingStorageNodes.HashingStorageLen lenNode) {
+        return lenNode.execute(inliningTarget, object.getDictStorage());
+    }
     @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     @InliningCutoff
     static int doPString(Node inliningTarget, PString object,
