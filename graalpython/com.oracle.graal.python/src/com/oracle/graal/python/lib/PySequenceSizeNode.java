@@ -111,12 +111,14 @@ public abstract class PySequenceSizeNode extends Node {
                     @Exclusive @Cached PRaiseNode.Lazy raise) {
         throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, object);
     }
+
     @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     static int doSet(Node inliningTarget, PBaseSet object,
-                     @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
-                     @Cached HashingStorageNodes.HashingStorageLen lenNode) {
+                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+                    @Cached HashingStorageNodes.HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage());
     }
+
     @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
     @InliningCutoff
     static int doPString(Node inliningTarget, PString object,
