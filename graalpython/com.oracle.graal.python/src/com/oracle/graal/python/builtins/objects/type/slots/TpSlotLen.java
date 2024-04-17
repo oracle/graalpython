@@ -167,7 +167,6 @@ public abstract class TpSlotLen {
         }
 
         @Specialization// (guards = "!slot.isHPySlot()")
-        @InliningCutoff
         static int callNative(VirtualFrame frame, Node inliningTarget, TpSlotNative slot, Object self,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
@@ -178,10 +177,15 @@ public abstract class TpSlotLen {
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___LEN__, slot.callable, toNativeNode.execute(self));
             long l = checkResultNode.executeLong(state, T___LEN__, result);
-            if (l != (int) l) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);
+            if (!PInt.isIntRange(l)) {
+                raiseOverflow(inliningTarget, raiseNode, l);
             }
             return (int) l;
+        }
+
+        @InliningCutoff
+        private static void raiseOverflow(Node inliningTarget, Lazy raiseNode, long l) {
+            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);
         }
 
         @Specialization(replaces = "callCachedBuiltin")
@@ -213,7 +217,7 @@ public abstract class TpSlotLen {
             Object result = hpyDispatcher.execute(frame, inliningTarget, ctx, state, slot.callable, self);
             long l = checkResultNode.executeLong(state, T___LEN__, result);
             if (!PInt.isIntRange(l)) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);
+                raiseOverflow(inliningTarget, raiseNode, l);
             }
             return (int) l;
         }
