@@ -2786,7 +2786,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(limit = "MAX_BASIC_STORAGES", guards = "s.getClass() == cachedClass")
         static BasicSequenceStorage doManaged(Node inliningTarget, BasicSequenceStorage s, int cap,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
                         @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
             try {
                 BasicSequenceStorage profiled = cachedClass.cast(s);
@@ -2799,37 +2799,82 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         @InliningCutoff
-        static NativeSequenceStorage doNativeByte(Node inliningTarget, NativeSequenceStorage s, int cap,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached(inline = false) CStructAccess.AllocateNode alloc,
-                        @Cached(inline = false) CStructAccess.ReadByteNode read,
-                        @Cached(inline = false) CStructAccess.WriteByteNode write,
-                        @Cached(inline = false) CStructAccess.FreeNode free,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            int capacity = s.getCapacity();
-            if (cap > capacity) {
+        static NativeSequenceStorage doNative(NativeSequenceStorage s, int cap,
+                        @Cached(inline = false) EnsureCapacityNativeNode helper) {
+            return helper.execute(s, cap);
+        }
+
+        @GenerateInline(false)
+        @GenerateUncached
+        abstract static class EnsureCapacityNativeNode extends Node {
+            abstract NativeSequenceStorage execute(NativeSequenceStorage s, int cap);
+
+            @Specialization
+            static NativeByteSequenceStorage doNativeByte(NativeByteSequenceStorage s, int cap,
+                            @Bind("this") Node inliningTarget,
+                            @Shared @CachedLibrary(limit = "2") InteropLibrary lib,
+                            @Shared @Cached CStructAccess.AllocateNode alloc,
+                            @Shared @Cached CStructAccess.FreeNode free,
+                            @Shared @Cached PRaiseNode.Lazy raiseNode,
+                            @Cached CStructAccess.ReadByteNode read,
+                            @Cached CStructAccess.WriteByteNode write) {
+                int oldCapacity = s.getCapacity();
+                if (cap > oldCapacity) {
+                    int newCapacity = computeNewCapacity(cap);
+                    Object oldMem = s.getPtr();
+                    Object newMem = alloc.alloc(newCapacity);
+                    if (lib.isNull(newMem)) {
+                        throw raiseNode.get(inliningTarget).raise(MemoryError);
+                    }
+                    // TODO: turn this into a memcpy
+                    for (long i = 0; i < oldCapacity; i++) {
+                        write.writeArrayElement(newMem, i, read.readArrayElement(oldMem, i));
+                    }
+                    free.free(oldMem);
+                    s.setPtr(newMem);
+                    s.setCapacity(newCapacity);
+                }
+                return s;
+            }
+
+            @Specialization
+            static NativeObjectSequenceStorage doNativeObject(NativeObjectSequenceStorage s, int cap,
+                            @Bind("this") Node inliningTarget,
+                            @Shared @CachedLibrary(limit = "2") InteropLibrary lib,
+                            @Shared @Cached CStructAccess.AllocateNode alloc,
+                            @Shared @Cached CStructAccess.FreeNode free,
+                            @Shared @Cached PRaiseNode.Lazy raiseNode,
+                            @Cached CStructAccess.ReadPointerNode read,
+                            @Cached CStructAccess.WritePointerNode write) {
+                int oldCapacity = s.getCapacity();
+                if (cap > oldCapacity) {
+                    int newCapacity = computeNewCapacity(cap);
+                    Object oldMem = s.getPtr();
+                    long bytes = newCapacity * 8;
+                    Object newMem = alloc.alloc(bytes);
+                    if (lib.isNull(newMem)) {
+                        throw raiseNode.get(inliningTarget).raise(MemoryError);
+                    }
+                    // TODO: turn this into a memcpy
+                    for (long i = 0; i < oldCapacity; i++) {
+                        write.writeArrayElement(newMem, i, read.readArrayElement(oldMem, i));
+                    }
+                    free.free(oldMem);
+                    s.setPtr(newMem);
+                    s.setCapacity(newCapacity);
+                }
+                return s;
+            }
+
+            private static int computeNewCapacity(int cap) {
                 int newCapacity;
                 try {
                     newCapacity = Math.max(16, PythonUtils.multiplyExact(cap, 2));
                 } catch (OverflowException e) {
                     newCapacity = cap;
                 }
-                Object mem = s.getPtr();
-                long elementSize = s instanceof NativeByteSequenceStorage ? 1 : CStructAccess.POINTER_SIZE;
-                long bytes = elementSize * newCapacity;
-                Object newMem = alloc.alloc(bytes);
-                if (lib.isNull(newMem)) {
-                    throw raiseNode.get(inliningTarget).raise(MemoryError);
-                }
-                // TODO: turn this into a memcpy
-                for (long i = 0; i < capacity * elementSize; i++) {
-                    write.writeArrayElement(newMem, i, read.readArrayElement(mem, i));
-                }
-                free.free(mem);
-                s.setPtr(newMem);
-                s.setCapacity(newCapacity);
+                return newCapacity;
             }
-            return s;
         }
     }
 
