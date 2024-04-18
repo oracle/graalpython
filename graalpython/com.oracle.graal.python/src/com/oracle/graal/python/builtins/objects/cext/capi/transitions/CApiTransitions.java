@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
@@ -85,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeN
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -92,6 +94,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType;
@@ -355,69 +358,99 @@ public abstract class CApiTransitions {
     @TruffleBoundary
     @SuppressWarnings("try")
     public static void pollReferenceQueue() {
-        HandleContext context = getContext();
-        if (!context.referenceQueuePollActive) {
+        PythonContext context = PythonContext.get(null);
+        HandleContext handleContext = context.nativeContext;
+        if (!handleContext.referenceQueuePollActive) {
             try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
-                ReferenceQueue<Object> queue = context.referenceQueue;
+                ReferenceQueue<Object> queue = handleContext.referenceQueue;
                 int count = 0;
                 long start = 0;
-                NativeObjectReferenceArrayWrapper referencesToBeFreed = context.referencesToBeFreed;
-                while (true) {
-                    Object entry = queue.poll();
-                    if (entry == null) {
-                        if (count > 0) {
-                            assert context.referenceQueuePollActive;
-                            releaseNativeObjects(referencesToBeFreed);
-                            context.referenceQueuePollActive = false;
-                            LOGGER.fine("collected " + count + " references from native reference queue in " + ((System.nanoTime() - start) / 1000000) + "ms");
-                        }
-                        return;
+                NativeObjectReferenceArrayWrapper referencesToBeFreed = handleContext.referencesToBeFreed;
+                PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage());
+                /*
+                 * There can be an active exception. Since we might be calling arbitary python, we
+                 * need to stash it.
+                 */
+                PException savedException = null;
+                LazyTraceback savedTraceback = null;
+                Object savedNativeException = null;
+                if (threadState.getCurrentException() != null) {
+                    savedException = threadState.getCurrentException();
+                    savedTraceback = threadState.getCurrentTraceback();
+                    threadState.clearCurrentException();
+                    Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
+                    if (nativeThreadState != null) {
+                        savedNativeException = CStructAccess.ReadPointerNode.getUncached().read(nativeThreadState, CFields.PyThreadState__curexc_type);
+                        CStructAccess.WritePointerNode.getUncached().write(nativeThreadState, CFields.PyThreadState__curexc_type, 0L);
                     }
-                    if (count == 0) {
-                        assert !context.referenceQueuePollActive;
-                        context.referenceQueuePollActive = true;
-                        start = System.nanoTime();
-                    } else {
-                        assert context.referenceQueuePollActive;
-                    }
-                    count++;
-                    if (entry instanceof PythonObjectReference reference) {
-                        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
-                        if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer)) {
-                            assert nativeStubLookupGet(context, reference.pointer, reference.handleTableIndex) != null : Long.toHexString(reference.pointer);
-                            nativeStubLookupRemove(context, reference);
-                            /*
-                             * We may only free native object stubs if their reference count is
-                             * zero. We cannot free other structs (e.g. PyDateTime_CAPI) because we
-                             * don't know if they are still used from native code. Those must be
-                             * free'd at context finalization.
-                             */
-                            long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
-                            if (subNativeRefCount(stubPointer, MANAGED_REFCNT) == 0) {
-                                freeNativeStub(stubPointer);
-                            } else {
-                                /*
-                                 * In this case, the object is no longer referenced from managed but
-                                 * still from native code (since the reference count is greater 0).
-                                 * We therefore need to overwrite the 'CFields.GraalPyObject__id'
-                                 * field because there may be referenced from managed in the future
-                                 * and then we would incorrectly reuse the ID.
-                                 */
-                                CStructAccess.WriteIntNode.writeUncached(reference.pointer, CFields.GraalPyObject__handle_table_index, 0);
+                }
+                try {
+                    while (true) {
+                        Object entry = queue.poll();
+                        if (entry == null) {
+                            if (count > 0) {
+                                assert handleContext.referenceQueuePollActive;
+                                releaseNativeObjects(referencesToBeFreed);
+                                handleContext.referenceQueuePollActive = false;
+                                LOGGER.fine("collected " + count + " references from native reference queue in " + ((System.nanoTime() - start) / 1000000) + "ms");
                             }
+                            return;
+                        }
+                        if (count == 0) {
+                            assert !handleContext.referenceQueuePollActive;
+                            handleContext.referenceQueuePollActive = true;
+                            start = System.nanoTime();
                         } else {
-                            assert nativeLookupGet(context, reference.pointer) != null : Long.toHexString(reference.pointer);
-                            nativeLookupRemove(context, reference.pointer);
-                            if (reference.freeAtCollection) {
-                                freeNativeStruct(reference);
-                            }
+                            assert handleContext.referenceQueuePollActive;
                         }
-                    } else if (entry instanceof NativeObjectReference reference) {
-                        nativeLookupRemove(context, reference.pointer);
-                        processNativeObjectReference(reference, referencesToBeFreed);
-                    } else if (entry instanceof NativeStorageReference reference) {
-                        context.nativeStorageReferences.remove(reference);
-                        processNativeStorageReference(reference);
+                        count++;
+                        if (entry instanceof PythonObjectReference reference) {
+                            LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
+                            if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer)) {
+                                assert nativeStubLookupGet(handleContext, reference.pointer, reference.handleTableIndex) != null : Long.toHexString(reference.pointer);
+                                nativeStubLookupRemove(handleContext, reference);
+                                /*
+                                 * We may only free native object stubs if their reference count is
+                                 * zero. We cannot free other structs (e.g. PyDateTime_CAPI) because
+                                 * we don't know if they are still used from native code. Those must
+                                 * be free'd at context finalization.
+                                 */
+                                long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
+                                if (subNativeRefCount(stubPointer, MANAGED_REFCNT) == 0) {
+                                    freeNativeStub(stubPointer);
+                                } else {
+                                    /*
+                                     * In this case, the object is no longer referenced from managed
+                                     * but still from native code (since the reference count is
+                                     * greater 0). We therefore need to overwrite the
+                                     * 'CFields.GraalPyObject__id' field because there may be
+                                     * referenced from managed in the future and then we would
+                                     * incorrectly reuse the ID.
+                                     */
+                                    CStructAccess.WriteIntNode.writeUncached(reference.pointer, CFields.GraalPyObject__handle_table_index, 0);
+                                }
+                            } else {
+                                assert nativeLookupGet(handleContext, reference.pointer) != null : Long.toHexString(reference.pointer);
+                                nativeLookupRemove(handleContext, reference.pointer);
+                                if (reference.freeAtCollection) {
+                                    freeNativeStruct(reference);
+                                }
+                            }
+                        } else if (entry instanceof NativeObjectReference reference) {
+                            nativeLookupRemove(handleContext, reference.pointer);
+                            processNativeObjectReference(reference, referencesToBeFreed);
+                        } else if (entry instanceof NativeStorageReference reference) {
+                            handleContext.nativeStorageReferences.remove(reference);
+                            processNativeStorageReference(reference);
+                        }
+                    }
+                } finally {
+                    if (savedException != null) {
+                        threadState.setCurrentException(savedException, savedTraceback);
+                        Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
+                        if (nativeThreadState != null) {
+                            CStructAccess.WritePointerNode.getUncached().write(nativeThreadState, CFields.PyThreadState__curexc_type, savedNativeException);
+                        }
                     }
                 }
             }
