@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,9 +37,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import socket
-import sys
 import threading
 import unittest
+
+from tests.util import storage_to_native
 
 
 def test_inet_aton():
@@ -90,9 +91,7 @@ def test_recv_into():
         buffer = memoryview(b)[1:]
         sock.recv_into(buffer, 1)
         assert b == b'12a'
-        if sys.implementation.name == 'graalpy':
-            assert hasattr(__graalpython__, 'storage_to_native'), "Needs to be run with --python.EnableDebuggingBuiltins"
-            __graalpython__.storage_to_native(b)
+        storage_to_native(b)
         # Native buffer, no internal array
         buffer = memoryview(buffer)[1:]
         sock.recv_into(buffer, 1)

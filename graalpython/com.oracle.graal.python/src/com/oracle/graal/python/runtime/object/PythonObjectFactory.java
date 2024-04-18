@@ -243,6 +243,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
@@ -438,6 +439,14 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PString createString(Object cls, NativeCharSequence string) {
         return trace(new PString(cls, getShape(cls), string));
+    }
+
+    public final PBytes createEmptyBytes() {
+        if (CompilerDirectives.inInterpreter()) {
+            return createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+        } else {
+            return createBytes(new byte[0]);
+        }
     }
 
     public final PBytes createBytes(byte[] array) {

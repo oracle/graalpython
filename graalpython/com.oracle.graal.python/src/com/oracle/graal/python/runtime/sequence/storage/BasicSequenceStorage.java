@@ -25,9 +25,34 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public abstract class BasicSequenceStorage extends SequenceStorage {
+
+    public abstract Object getItemNormalized(int idx);
+
+    public abstract void setItemNormalized(int idx, Object value) throws SequenceStoreException;
+
+    public abstract void insertItem(int idx, Object value) throws SequenceStoreException;
+
+    public abstract void reverse();
+
+    public abstract SequenceStorage copy();
+
+    public abstract SequenceStorage getSliceInBound(int start, int stop, int step, int len);
+
+    public abstract SequenceStorage generalizeFor(Object value, SequenceStorage other);
+
+    public abstract Object[] getInternalArray();
+
+    public abstract Object[] getCopyOfInternalArray();
+
+    /**
+     * Get internal array object without copying. Note: The length must be taken from the sequence
+     * storage object.
+     */
+    public abstract Object getInternalArrayObject();
 
     public abstract Object getCopyOfInternalArrayObject();
 
@@ -54,7 +79,6 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
      * Ensure that the current capacity is big enough. If not, we increase capacity to the next
      * designated size (not necessarily the requested one).
      */
-    @Override
     public final void ensureCapacity(int newCapacity) throws ArithmeticException {
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, newCapacity > capacity)) {
             increaseCapacityExactWithCopy(capacityFor(newCapacity));
@@ -63,10 +87,22 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
 
     protected abstract void increaseCapacityExactWithCopy(int newCapacity);
 
-    protected abstract void increaseCapacityExact(int newCapacity);
-
     public void minimizeCapacity() {
         capacity = length;
     }
 
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        StringBuilder str = new StringBuilder(getClass().getSimpleName()).append('[');
+        int len = length > 10 ? 10 : length;
+        for (int i = 0; i < len; i++) {
+            str.append(i == 0 ? "" : ", ");
+            str.append(getItemNormalized(i));
+        }
+        if (length > 10) {
+            str.append("...").append('(').append(length).append(')');
+        }
+        return str.append(']').toString();
+    }
 }

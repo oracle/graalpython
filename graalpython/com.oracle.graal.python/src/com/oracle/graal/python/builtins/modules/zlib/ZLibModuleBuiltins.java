@@ -776,8 +776,8 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
             }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             ZLibCompObject obj = factory.createJavaZLibCompObject(ZlibDecompress, inflater, wbits, zdict);
-            obj.setUnusedData(factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY));
-            obj.setUnconsumedTail(factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY));
+            obj.setUnusedData(factory.createEmptyBytes());
+            obj.setUnconsumedTail(factory.createEmptyBytes());
             return obj;
         }
 

@@ -686,8 +686,10 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class ReverseNode extends PythonBuiltinNode {
 
         @Specialization
-        static PNone reverse(PByteArray byteArray) {
-            byteArray.reverse();
+        static PNone reverse(PByteArray byteArray,
+                        @Bind("this") Node inliningTarget,
+                        @Cached SequenceStorageNodes.ReverseNode reverseNode) {
+            reverseNode.execute(inliningTarget, byteArray.getSequenceStorage());
             return PNone.NONE;
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFd;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -341,8 +342,8 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     private String callAndExpectPathEx(String script, boolean wasBufferLike) {
         PTuple o = (PTuple) evalValue(script);
-        Object arg = o.getSequenceStorage().getItemNormalized(0);
-        Object orig = o.getSequenceStorage().getItemNormalized(1);
+        Object arg = SequenceStorageNodes.GetItemScalarNode.executeUncached(o.getSequenceStorage(), 0);
+        Object orig = SequenceStorageNodes.GetItemScalarNode.executeUncached(o.getSequenceStorage(), 1);
         return callAndExpectPath(true, true, arg, orig, wasBufferLike);
     }
 

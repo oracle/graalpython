@@ -1586,8 +1586,8 @@ public abstract class TypeNodes {
                 Object mroMeth = LookupAttributeInMRONode.Dynamic.getUncached().execute(type, T_MRO);
                 if (mroMeth instanceof PFunction) {
                     Object mroObj = CallUnaryMethodNode.getUncached().executeObject(mroMeth, cls);
-                    if (mroObj instanceof PSequence) {
-                        return mroCheck(cls, ((PSequence) mroObj).getSequenceStorage().getInternalArray());
+                    if (mroObj instanceof PSequence mroSequence) {
+                        return mroCheck(cls, GetInternalObjectArrayNode.executeUncached(mroSequence.getSequenceStorage()));
                     }
                     throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, cls);
                 }
@@ -2470,7 +2470,7 @@ public abstract class TypeNodes {
         private static PTuple copySlots(Node inliningTarget, TypeNewContext ctx, TruffleString className, SequenceStorage slotList, int slotlen, PDict namespace,
                         PythonObjectFactory factory) {
             int nslots = slotlen - PInt.intValue(ctx.addDict) - PInt.intValue(ctx.addWeak);
-            SequenceStorage newSlots = new ObjectSequenceStorage(nslots);
+            ObjectSequenceStorage newSlots = new ObjectSequenceStorage(nslots);
             int j = 0;
             for (int i = 0; i < slotlen; i++) {
                 // the cast is ensured by the previous loop

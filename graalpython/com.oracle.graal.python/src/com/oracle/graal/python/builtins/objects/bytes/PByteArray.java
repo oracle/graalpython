@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -82,10 +82,6 @@ public final class PByteArray extends PBytesLike {
         } else {
             return String.format("%s(%s)", typeName, getSequenceStorage());
         }
-    }
-
-    public final void reverse() {
-        store.reverse();
     }
 
     public long getExports() {

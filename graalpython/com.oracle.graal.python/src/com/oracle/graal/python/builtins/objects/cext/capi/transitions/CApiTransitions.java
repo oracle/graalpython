@@ -94,7 +94,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -300,7 +300,7 @@ public abstract class CApiTransitions {
     }
 
     public static final class NativeStorageReference extends IdReference<NativeSequenceStorage> {
-        private final ListStorageType type;
+        private final SequenceStorage.StorageType type;
         private Object ptr;
         private int size;
 
@@ -444,7 +444,7 @@ public abstract class CApiTransitions {
      * storage, then they will be freed by calling the element object's destructor.
      */
     private static void processNativeStorageReference(NativeStorageReference reference) {
-        if (reference.type == ListStorageType.Generic) {
+        if (reference.type == StorageType.Generic) {
             PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_RELEASE, reference.ptr, reference.size);
         }
         freeNativeStorage(reference);

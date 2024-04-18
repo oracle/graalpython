@@ -80,11 +80,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public void copyItem(int idxTo, int idxFrom) {
-        values[idxTo] = values[idxFrom];
-    }
-
-    @Override
     public ObjectSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         Object[] newArray = new Object[sliceLength];
 
@@ -127,12 +122,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public void increaseCapacityExact(int newCapacity) {
-        values = new Object[newCapacity];
-        capacity = values.length;
-    }
-
-    @Override
     public void reverse() {
         if (length > 0) {
             int head = 0;
@@ -158,12 +147,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public boolean equals(SequenceStorage other) {
-        Object[] otherArray = other.getInternalArray();
-        return Arrays.equals(values, otherArray);
-    }
-
-    @Override
     public Object getInternalArrayObject() {
         return values;
     }
@@ -181,7 +164,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Generic;
+    public StorageType getElementType() {
+        return StorageType.Generic;
     }
 }

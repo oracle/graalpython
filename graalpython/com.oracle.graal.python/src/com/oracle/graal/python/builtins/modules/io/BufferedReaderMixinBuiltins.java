@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -252,7 +252,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         Object empty(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
                         @Shared @Cached PythonObjectFactory factory) {
             checkIsClosedNode.execute(frame, self);
-            return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+            return factory.createEmptyBytes();
         }
 
         /*
@@ -501,7 +501,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
             }
 
             if (n == 0) {
-                return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                return factory.createEmptyBytes();
             }
             /*- Return up to n bytes.  If at least one byte is buffered, we
                only return buffered bytes.  Otherwise, we do one raw read. */

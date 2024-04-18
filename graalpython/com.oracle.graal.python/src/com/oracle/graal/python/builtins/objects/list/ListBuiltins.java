@@ -805,9 +805,11 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class ListReverseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static PList reverse(PList list) {
-            list.reverse();
-            return list;
+        static PNone reverse(PList list,
+                        @Bind("this") Node inliningTarget,
+                        @Cached SequenceStorageNodes.ReverseNode reverseNode) {
+            reverseNode.execute(inliningTarget, list.getSequenceStorage());
+            return PNone.NONE;
         }
 
     }

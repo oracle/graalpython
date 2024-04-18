@@ -90,7 +90,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -355,7 +354,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                 byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
 
                 if (len <= 0) {
-                    return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                    return factory.createEmptyBytes();
                 }
                 if (step == 1) {
                     return factory.createBytes(ptr, start, len);

@@ -116,7 +116,6 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -142,14 +141,6 @@ public final class MMapBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return MMapBuiltinsFactory.getFactories();
-    }
-
-    private static PBytes createEmptyBytes(PythonObjectFactory factory) {
-        if (CompilerDirectives.inInterpreter()) {
-            return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
-        } else {
-            return factory.createBytes(new byte[0]);
-        }
     }
 
     private static byte[] readBytes(VirtualFrame frame, Node inliningTarget, PMMap self, PosixSupportLibrary posixLib, Object posixSupport, long pos, int len,
@@ -204,7 +195,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 SliceInfo info = compute.execute(frame, sliceCast.execute(inliningTarget, idx), PInt.intValueExact(self.getLength()));
                 int len = sliceLenNode.len(inliningTarget, info);
                 if (emptyProfile.profile(inliningTarget, len == 0)) {
-                    return createEmptyBytes(factory);
+                    return factory.createEmptyBytes();
                 }
                 byte[] result = readBytes(frame, inliningTarget, self, posixSupportLib, PosixSupport.get(inliningTarget), info.start, len, constructAndRaiseNode);
                 return factory.createBytes(result);
@@ -425,7 +416,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 }
             }
             if (emptyProfile.profile(inliningTarget, nread == 0)) {
-                return createEmptyBytes(factory);
+                return factory.createEmptyBytes();
             }
             try {
                 byte[] buffer = MMapBuiltins.readBytes(frame, inliningTarget, self, posixLib, PosixSupport.get(inliningTarget), self.getPos(), PythonUtils.toIntExact(nread), constructAndRaiseNode);

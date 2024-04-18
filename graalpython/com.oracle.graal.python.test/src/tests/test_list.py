@@ -1,11 +1,13 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 
-import seq_tests
 import sys
 import unittest
+
+from tests.util import storage_to_native
+
 # import pickle
 
 LONG_NUMBER = 6227020800;
@@ -839,6 +841,20 @@ class ListCompareTest(CompareTest):
         l = [1]
         l += [0x100000000, 'a']
         self.assertEqual([1, 0x100000000, 'a'], l)
+
+    def test_reverse(self):
+        l = [1, 2, 3]
+        self.assertEqual(None, l.reverse())
+        self.assertEqual([3, 2, 1], l)
+        storage_to_native(l)
+        l.reverse()
+        self.assertEqual([1, 2, 3], l)
+        l.append(4)
+        l.reverse()
+        self.assertEqual([4, 3, 2, 1], l)
+        del l[:-1]
+        l.reverse()
+        self.assertEqual([1], l)
 
 
 if __name__ == '__main__':

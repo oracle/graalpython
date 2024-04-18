@@ -64,12 +64,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    protected void increaseCapacityExact(int newCapacity) {
-        values = new long[newCapacity];
-        capacity = values.length;
-    }
-
-    @Override
     public SequenceStorage copy() {
         return new LongSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
@@ -81,7 +75,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public Object[] getInternalArray() {
-        /**
+        /*
          * Have to box and copy.
          */
         Object[] boxed = new Object[length];
@@ -149,11 +143,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void copyItem(int idxTo, int idxFrom) {
-        values[idxTo] = values[idxFrom];
-    }
-
-    @Override
     public LongSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         long[] newArray = new long[sliceLength];
 
@@ -200,22 +189,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public boolean equals(SequenceStorage other) {
-        if (other.length() != length() || !(other instanceof LongSequenceStorage)) {
-            return false;
-        }
-
-        long[] otherArray = ((LongSequenceStorage) other).getInternalLongArray();
-        for (int i = 0; i < length(); i++) {
-            if (values[i] != otherArray[i]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    @Override
     public Object getInternalArrayObject() {
         return values;
     }
@@ -236,7 +209,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Long;
+    public StorageType getElementType() {
+        return StorageType.Long;
     }
 }

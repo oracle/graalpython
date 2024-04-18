@@ -238,7 +238,7 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
         @Specialization(guards = "mode == Z_NO_FLUSH")
         static PBytes empty(ZLibCompObject self, int mode,
                         @Shared @Cached PythonObjectFactory factory) {
-            return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+            return factory.createEmptyBytes();
         }
 
         @Specialization(guards = {"mode != Z_NO_FLUSH", "self.isInitialized()"})

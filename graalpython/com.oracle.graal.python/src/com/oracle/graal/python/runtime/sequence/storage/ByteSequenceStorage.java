@@ -28,7 +28,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
@@ -36,7 +35,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -68,12 +66,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    protected void increaseCapacityExact(int newCapacity) {
-        values = new byte[newCapacity];
-        capacity = values.length;
-    }
-
-    @Override
     public SequenceStorage copy() {
         return new ByteSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
@@ -85,7 +77,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public Object[] getInternalArray() {
-        /**
+        /*
          * Have to box and copy.
          */
         Object[] boxed = new Object[length];
@@ -97,19 +89,12 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return boxed;
     }
 
-    @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
-    public ByteBuffer getBufferView() {
-        ByteBuffer view = ByteBuffer.wrap(values);
-        view.limit(values.length);
-        return view;
-    }
-
     @Override
     public Object getItemNormalized(int idx) {
         return getIntItemNormalized(idx);
     }
 
-    public final byte getByteItemNormalized(int idx) {
+    public byte getByteItemNormalized(int idx) {
         return values[idx];
     }
 
@@ -156,11 +141,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
 
         values[idx] = value;
         length++;
-    }
-
-    @Override
-    public void copyItem(int idxTo, int idxFrom) {
-        values[idxTo] = values[idxFrom];
     }
 
     @Override
@@ -220,22 +200,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public boolean equals(SequenceStorage other) {
-        if (other.length() != length() || !(other instanceof ByteSequenceStorage)) {
-            return false;
-        }
-
-        byte[] otherArray = ((ByteSequenceStorage) other).getInternalByteArray();
-        for (int i = 0; i < length(); i++) {
-            if (values[i] != otherArray[i]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    @Override
     public Object getInternalArrayObject() {
         return values;
     }
@@ -256,8 +220,8 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Byte;
+    public StorageType getElementType() {
+        return StorageType.Byte;
     }
 
     @ExportMessage

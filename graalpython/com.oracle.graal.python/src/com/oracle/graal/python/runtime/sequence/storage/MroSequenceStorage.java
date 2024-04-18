@@ -122,12 +122,6 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    @SuppressWarnings("unused")
-    public void copyItem(int idxTo, int idxFrom) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
     public MroSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         PythonAbstractClass[] newArray = new PythonAbstractClass[sliceLength];
 
@@ -174,12 +168,6 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
 
     @SuppressWarnings("unused")
     @Override
-    public void increaseCapacityExact(int newCapacity) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @SuppressWarnings("unused")
-    @Override
     public void reverse() {
         throw CompilerDirectives.shouldNotReachHere();
     }
@@ -187,12 +175,6 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     @Override
     public Object getIndicativeValue() {
         return null;
-    }
-
-    @Override
-    public boolean equals(SequenceStorage other) {
-        Object[] otherArray = other.getInternalArray();
-        return Arrays.equals(values, otherArray);
     }
 
     @Override
@@ -213,8 +195,8 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Generic;
+    public StorageType getElementType() {
+        return StorageType.Generic;
     }
 
     public Assumption getLookupStableAssumption() {

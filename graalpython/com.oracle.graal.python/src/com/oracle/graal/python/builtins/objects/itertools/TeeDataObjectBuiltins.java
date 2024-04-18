@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.LenNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -128,7 +128,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         static Object init(VirtualFrame frame, PTeeDataObject self, Object it, PList values, Object nxt,
                         @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,
-                        @Cached GetSequenceStorageNode getStorageNode,
+                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode,
                         @Cached InlinedBranchProfile numreadLCProfile,
                         @Cached PRaiseNode.Lazy raiseNode) {
             int numread = (int) lenNode.execute(frame, values);
@@ -143,7 +143,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(ValueError, TDATAOBJECT_SHOULDNT_HAVE_NEXT);
             }
             self.setIt(it);
-            Object[] valuesArray = getStorageNode.execute(inliningTarget, values).getInternalArray();
+            Object[] valuesArray = getInternalObjectArrayNode.execute(inliningTarget, values.getSequenceStorage());
             Object[] obj = new Object[LINKCELLS];
             PythonUtils.arraycopy(valuesArray, 0, obj, 0, numread);
             self.setValues(obj);

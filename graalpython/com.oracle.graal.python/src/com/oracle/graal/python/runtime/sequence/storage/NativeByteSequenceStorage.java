@@ -43,7 +43,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -68,14 +67,8 @@ public final class NativeByteSequenceStorage extends NativeSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Byte;
-    }
-
-    @Override
-    public String toString(boolean isList) {
-        CompilerAsserts.neverPartOfCompilation();
-        return String.format("%s(len=%d, cap=%d) at %s%s", isList ? "[" : "(", length, capacity, getPtr(), isList ? "]" : ")");
+    public StorageType getElementType() {
+        return StorageType.Byte;
     }
 
     @ExportMessage

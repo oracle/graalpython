@@ -64,6 +64,8 @@ import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelper
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -81,9 +83,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -121,6 +123,8 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1142,11 +1146,19 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StorageNode extends PythonUnaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         static Object doSequence(PSequence seq,
-                        @Bind("this") Node inliningTarget,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode) {
-            SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, seq);
-            return PythonContext.get(inliningTarget).getEnv().asGuestValue(storage.getInternalArrayObject());
+                        @Bind("this") Node inliningTarget) {
+            SequenceStorage storage = seq.getSequenceStorage();
+            Object arrayObject;
+            if (storage instanceof EmptySequenceStorage) {
+                arrayObject = seq instanceof PBytesLike ? EMPTY_BYTE_ARRAY : EMPTY_OBJECT_ARRAY;
+            } else if (storage instanceof BasicSequenceStorage basicStorage) {
+                arrayObject = basicStorage.getInternalArrayObject();
+            } else {
+                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.NotImplementedError, ErrorMessages.GETTING_POLYGLOT_STORAGE_FOR_NATIVE_STORAGE_NOT_IMPLEMENTED);
+            }
+            return PythonContext.get(inliningTarget).getEnv().asGuestValue(arrayObject);
         }
 
         @Fallback

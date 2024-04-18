@@ -43,10 +43,9 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeStorageReference;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 
 public abstract class NativeSequenceStorage extends SequenceStorage {
@@ -61,13 +60,8 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
         super(length, capacity);
         this.ptr = ptr;
         if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.fine(PythonUtils.formatJString("new %s", toJString()));
+            LOGGER.fine(PythonUtils.formatJString("new %s", this));
         }
-    }
-
-    @TruffleBoundary
-    private String toJString() {
-        return toString();
     }
 
     public final Object getPtr() {
@@ -103,72 +97,12 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public final void ensureCapacity(int newCapacity) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final SequenceStorage copy() {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final Object[] getInternalArray() {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final Object[] getCopyOfInternalArray() {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final Object getItemNormalized(int idx) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final void setItemNormalized(int idx, Object value) throws SequenceStoreException {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final void insertItem(int idx, Object value) throws SequenceStoreException {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final SequenceStorage getSliceInBound(int start, int stop, int step, int len) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final void reverse() {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final boolean equals(SequenceStorage other) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final SequenceStorage generalizeFor(Object value, SequenceStorage other) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
     public final Object getIndicativeValue() {
         return null;
     }
 
     @Override
-    public final void copyItem(int idxTo, int idxFrom) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public final Object getInternalArrayObject() {
-        return ptr;
+    public String toString() {
+        return getClass().getSimpleName() + "(ptr=" + CApiContext.asHex(ptr) + ", length=" + length + ", capacity=" + capacity + ", ownsMemory=" + hasReference() + ")";
     }
 }

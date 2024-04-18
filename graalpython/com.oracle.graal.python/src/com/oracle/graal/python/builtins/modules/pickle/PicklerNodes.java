@@ -106,7 +106,6 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -391,7 +390,7 @@ public final class PicklerNodes {
 
         protected Object escapeDecode(VirtualFrame frame, PythonObjectFactory factory, byte[] data, int offset, int len) {
             if (len == 0) {
-                return factory.createBytes(EmptySequenceStorage.INSTANCE);
+                return factory.createEmptyBytes();
             }
             return escapeDecode(frame, PythonUtils.arrayCopyOfRange(data, offset, offset + len));
         }

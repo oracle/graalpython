@@ -285,14 +285,14 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         static PBytes empty(ZLibCompObject.JavaZlibCompObject self, int length,
                         @Shared @Cached PythonObjectFactory factory) {
             self.setUninitialized();
-            return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+            return factory.createEmptyBytes();
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"length > 0", "self.isEof() || !self.isInitialized()"})
         static PBytes empty(ZLibCompObject.NativeZlibCompObject self, int length,
                         @Shared @Cached PythonObjectFactory factory) {
-            return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+            return factory.createEmptyBytes();
         }
 
         @SuppressWarnings("unused")

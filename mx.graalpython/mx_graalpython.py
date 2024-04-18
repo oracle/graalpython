@@ -2132,6 +2132,8 @@ def _python_checkpatchfiles():
             'jupyter_server.patch',
             # Empty license field. It's BSD-3-Clause
             'prompt_toolkit.patch',
+            # Whole license in the field. It's BSD-3-Clause
+            'pyzmq.patch',
         }
         allowed_licenses = [
             "MIT",

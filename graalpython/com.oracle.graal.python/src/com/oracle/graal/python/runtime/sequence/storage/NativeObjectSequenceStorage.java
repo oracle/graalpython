@@ -41,7 +41,6 @@
 package com.oracle.graal.python.runtime.sequence.storage;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.truffle.api.CompilerAsserts;
 
 public final class NativeObjectSequenceStorage extends NativeSequenceStorage {
 
@@ -62,13 +61,7 @@ public final class NativeObjectSequenceStorage extends NativeSequenceStorage {
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Generic;
-    }
-
-    @Override
-    public String toString(boolean isList) {
-        CompilerAsserts.neverPartOfCompilation();
-        return String.format("%s(len=%d, cap=%d) at %s%s", isList ? "[" : "(", length, capacity, getPtr(), isList ? "]" : ")");
+    public StorageType getElementType() {
+        return StorageType.Generic;
     }
 }

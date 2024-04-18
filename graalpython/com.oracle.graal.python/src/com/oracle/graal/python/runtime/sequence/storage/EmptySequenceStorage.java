@@ -25,24 +25,13 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-
-import java.nio.ByteOrder;
-
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.CompilerAsserts;
 
-@ExportLibrary(PythonBufferAccessLibrary.class)
 public final class EmptySequenceStorage extends SequenceStorage {
 
     public static final EmptySequenceStorage INSTANCE = new EmptySequenceStorage();
 
-    @Override
     public SequenceStorage generalizeFor(Object value, SequenceStorage target) {
         final SequenceStorage generalized;
 
@@ -77,117 +66,13 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public SequenceStorage copy() {
-        return this;
+    public StorageType getElementType() {
+        return StorageType.Empty;
     }
 
     @Override
-    public Object[] getInternalArray() {
-        return PythonUtils.EMPTY_OBJECT_ARRAY;
-    }
-
-    @Override
-    public Object[] getCopyOfInternalArray() {
-        return PythonUtils.EMPTY_OBJECT_ARRAY;
-    }
-
-    @Override
-    public Object getItemNormalized(int idx) {
-        CompilerDirectives.transferToInterpreter();
-        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
-    }
-
-    @Override
-    public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
-        CompilerDirectives.transferToInterpreter();
-        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_ASSIGMENT_INDEX_OUT_OF_RANGE);
-    }
-
-    @Override
-    public void insertItem(int idx, Object value) throws SequenceStoreException {
-        assert idx == 0;
-        throw new SequenceStoreException(value);
-    }
-
-    @Override
-    public void copyItem(int idxTo, int idxFrom) {
-    }
-
-    @Override
-    public SequenceStorage getSliceInBound(int start, int stop, int step, int len) {
-        assert start == stop && stop == 0;
-        return this;
-    }
-
-    @Override
-    public void reverse() {
-    }
-
-    @Override
-    public boolean equals(SequenceStorage other) {
-        return other == EmptySequenceStorage.INSTANCE;
-    }
-
-    @Override
-    public void ensureCapacity(int newCapacity) {
-
-    }
-
-    @Override
-    public Object getInternalArrayObject() {
-        return null;
-    }
-
-    @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Empty;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isBuffer() {
-        return true;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    int getBufferLength() {
-        return 0;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    byte readByte(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
-        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    short readShortByteOrder(int byteOffset, ByteOrder byteOrder) throws IndexOutOfBoundsException {
-        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    int readIntByteOrder(int byteOffset, ByteOrder byteOrder) throws IndexOutOfBoundsException {
-        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    long readLongByteOrder(int byteOffset, ByteOrder byteOrder) throws IndexOutOfBoundsException {
-        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    float readFloatByteOrder(int byteOffset, ByteOrder byteOrder) throws IndexOutOfBoundsException {
-        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    double readDoubleByteOrder(int byteOffset, ByteOrder byteOrder) throws IndexOutOfBoundsException {
-        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        return "EmptySequenceStorage[]";
     }
 }

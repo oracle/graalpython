@@ -32,7 +32,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.objectArrayToTruffleStringArray;
 
@@ -282,7 +281,7 @@ public final class CodeBuiltins extends PythonBuiltins {
         static Object get(PCode self,
                         @Cached PythonObjectFactory factory) {
             // We store our exception table together with the bytecode, not in this field
-            return factory.createBytes(EMPTY_BYTE_ARRAY);
+            return factory.createEmptyBytes();
         }
     }
 

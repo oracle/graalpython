@@ -25,11 +25,9 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.truffle.api.CompilerAsserts;
-
 public abstract class SequenceStorage {
 
-    public enum ListStorageType {
+    public enum StorageType {
         Uninitialized,
         Empty,
         Boolean,
@@ -39,7 +37,7 @@ public abstract class SequenceStorage {
         Double,
         Generic;
 
-        public boolean generalizesFrom(ListStorageType other) {
+        public boolean generalizesFrom(StorageType other) {
             switch (this) {
                 case Uninitialized:
                 case Empty:
@@ -79,57 +77,7 @@ public abstract class SequenceStorage {
         return capacity;
     }
 
-    public abstract SequenceStorage copy();
-
-    /**
-     * Get internal array object without copying. Note: The length must be taken from the sequence
-     * storage object.
-     */
-    public abstract Object getInternalArrayObject();
-
-    public abstract ListStorageType getElementType();
-
-    public abstract Object[] getInternalArray();
-
-    public abstract Object[] getCopyOfInternalArray();
-
-    public abstract Object getItemNormalized(int idx);
-
-    public abstract void setItemNormalized(int idx, Object value) throws SequenceStoreException;
-
-    public abstract void insertItem(int idx, Object value) throws SequenceStoreException;
-
-    public abstract SequenceStorage getSliceInBound(int start, int stop, int step, int len);
-
-    public abstract void reverse();
-
-    public abstract boolean equals(SequenceStorage other);
-
-    public abstract SequenceStorage generalizeFor(Object value, SequenceStorage other);
+    public abstract StorageType getElementType();
 
     public abstract Object getIndicativeValue();
-
-    public abstract void ensureCapacity(int newCapacity);
-
-    public abstract void copyItem(int idxTo, int idxFrom);
-
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        return getClass().getSimpleName() + toString(true);
-    }
-
-    public String toString(boolean isList) {
-        CompilerAsserts.neverPartOfCompilation();
-        StringBuilder str = new StringBuilder(isList ? "[" : "(");
-        int len = length > 10 ? 10 : length;
-        for (int i = 0; i < len; i++) {
-            str.append(i == 0 ? "" : ", ");
-            str.append(getItemNormalized(i));
-        }
-        if (length > 10) {
-            str.append("...").append('(').append(length).append(')');
-        }
-        return str.append(isList ? ']' : ')').toString();
-    }
 }

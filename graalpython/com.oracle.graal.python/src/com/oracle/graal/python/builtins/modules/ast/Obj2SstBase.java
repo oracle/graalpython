@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -168,7 +169,7 @@ abstract class Obj2SstBase {
         SequenceStorage seq = ((PList) tmp).getSequenceStorage();
         T[] result = arrayFactory.apply(seq.length());
         for (int i = 0; i < result.length; ++i) {
-            tmp = seq.getItemNormalized(i);
+            tmp = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, i);
             // Py_EnterRecursiveCall(" while traversing '%s' node")
             result[i] = conversion.convert(tmp);
             if (result.length != seq.length()) {

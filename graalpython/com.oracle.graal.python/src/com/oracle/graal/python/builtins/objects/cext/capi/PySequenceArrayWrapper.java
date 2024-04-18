@@ -48,6 +48,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -56,13 +58,12 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
  * Wraps a sequence object (like a list) such that it behaves like a bare C array.
@@ -82,16 +83,16 @@ public final class PySequenceArrayWrapper {
             return ToNativeStorageNodeGen.getUncached().execute(null, object, isBytesLike);
         }
 
-        @Specialization(guards = {"!isNative(s)", "!isEmptySequenceStorage(s)", "!isMroSequenceStorage(s)"})
-        static NativeSequenceStorage doManaged(Node inliningTarget, SequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
-                        @Cached InlinedConditionProfile isObjectArrayProfile,
-                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
-                        @Cached SequenceStorageNodes.GetInternalArrayNode getInternalArrayNode) {
-            Object array = getInternalArrayNode.execute(inliningTarget, s);
+        @Specialization(guards = "!isMroSequenceStorage(s)")
+        static NativeSequenceStorage doManaged(Node inliningTarget, BasicSequenceStorage s, boolean isBytesLike,
+                        @Exclusive @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
+                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
+            Object array;
             if (isBytesLike) {
-                assert array instanceof byte[];
-            } else if (!isObjectArrayProfile.profile(inliningTarget, array instanceof Object[])) {
-                array = generalize(s);
+                ByteSequenceStorage byteStorage = (ByteSequenceStorage) s;
+                array = byteStorage.getInternalByteArray();
+            } else {
+                array = getInternalArrayNode.execute(inliningTarget, s);
             }
             return storageToNativeNode.execute(inliningTarget, array, s.length());
         }
@@ -116,21 +117,15 @@ public final class PySequenceArrayWrapper {
             }
         }
 
-        @TruffleBoundary
-        private static Object generalize(SequenceStorage s) {
-            return s.getInternalArray();
-        }
-
         @Specialization
         static NativeSequenceStorage doNative(NativeSequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike) {
             return s;
         }
 
         @Specialization
-        static NativeSequenceStorage doEmptyStorage(Node inliningTarget, @SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") boolean isBytesLike,
-                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
-            // TODO(fa): not sure if that completely reflects semantics
-            return storageToNativeNode.execute(inliningTarget, PythonUtils.EMPTY_BYTE_ARRAY, 0);
+        static NativeSequenceStorage doEmptyStorage(Node inliningTarget, @SuppressWarnings("unused") EmptySequenceStorage s, boolean isBytesLike,
+                        @Exclusive @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
+            return storageToNativeNode.execute(inliningTarget, isBytesLike ? PythonUtils.EMPTY_BYTE_ARRAY : PythonUtils.EMPTY_OBJECT_ARRAY, 0);
         }
 
         static boolean isNative(SequenceStorage s) {
