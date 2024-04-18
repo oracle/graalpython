@@ -2986,13 +2986,16 @@ public abstract class SequenceStorageNodes {
         @InliningCutoff
         static void doShrink(NativeObjectSequenceStorage s, int len,
                         @Bind("this") Node inliningTarget,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached CStructAccess.ReadPointerNode readNode,
                         @Cached CExtNodes.DecRefPointerNode decRefPointerNode) {
             if (len < s.length()) {
                 // When shrinking, we need to decref the items that are now past the end
                 for (int i = len; i < s.length(); i++) {
                     Object elementPointer = readNode.readArrayElement(s.getPtr(), i);
-                    decRefPointerNode.execute(inliningTarget, elementPointer);
+                    if (!lib.isNull(elementPointer)) {
+                        decRefPointerNode.execute(inliningTarget, elementPointer);
+                    }
                 }
             }
             s.setNewLength(len);
