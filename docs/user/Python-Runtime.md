@@ -89,7 +89,7 @@ Alternatively, you can download a compressed GraalPy installation file from [Git
 1. Find the download that matches the pattern _graalpy-XX.Y.Z-linux-amd64.tar.gz_ or _graalpy-XX.Y.Z-linux-aarch64.tar.gz_ (depending on your platform) and download.
 2. Uncompress the file and update your `PATH` environment variable to include to the _graalpy-XX.Y.Z-linux-amd64/bin_ (or _graalpy-XX.Y.Z-linux-aarch64/bin_) directory.
 
-> Note: On Oracle Linux 9, additionally install the dependency on the [`libxcrypt` library](https://github.com/besser82/libxcrypt) that is required for the GraalPy native runtime: `yum install libxcrypt-compat`.
+> Note: On Oracle Linux 9, additionally install the [`libxcrypt` library](https://github.com/besser82/libxcrypt) that is required for the GraalPy native runtime: `yum install libxcrypt-compat`.
 
 ### macOS
 
