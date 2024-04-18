@@ -67,8 +67,8 @@ SOFTWARE.
             <version>${micronaut.version}</version>
         </dependency>
         <dependency>
-            <!-- adding this only to maven-compiler-plugin/annotationProcessorPaths
-            isn't enough with mvn < 3.9.0 -->
+            <!-- with mvn < 3.9.0 we also need to declare the dependency on micronaut-inject-java
+            having in only in maven-compiler-plugin/annotationProcessorPaths isn't enough -->
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-inject-java</artifactId>
             <version>${micronaut.version}</version>
