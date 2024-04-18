@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZeroDivisionError;
@@ -4645,12 +4644,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (PythonLanguage.get(this).getEngineOption(PythonOptions.CatchAllExceptions) && (e instanceof Exception || e instanceof AssertionError)) {
             return ExceptionUtils.wrapJavaException(e, this, factory.createBaseException(SystemError, ErrorMessages.M, new Object[]{e}));
         }
-        if (e instanceof StackOverflowError) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            PythonContext.get(this).reacquireGilAfterStackOverflow();
-            return ExceptionUtils.wrapJavaException(e, this, factory.createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{}));
-        }
-        return null;
+        return ExceptionUtils.wrapJavaExceptionIfApplicable(this, e, factory);
     }
 
     @ExplodeLoop

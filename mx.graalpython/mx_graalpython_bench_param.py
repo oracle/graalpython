@@ -116,6 +116,7 @@ MICRO_BENCHMARKS = {
     'regexp-universal-match': ITER_10,
     'regexp-char-class-match': ITER_10,
     'regexp-char-class-no-match': ITER_10,
+    'virtualize-in-try-catch-oom': ITER_10,
 }
 
 MICRO_BENCHMARKS_SMALL = {

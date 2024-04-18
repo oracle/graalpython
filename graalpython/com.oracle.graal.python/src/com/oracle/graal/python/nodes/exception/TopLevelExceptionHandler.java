@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.exception;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.runtime.exception.ExceptionUtils.printToStdErr;
@@ -58,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -73,6 +71,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -151,13 +150,6 @@ public final class TopLevelExceptionHandler extends RootNode {
                         return handleChildContextExit(managedException);
                     }
                     throw handlePythonException(e);
-                } catch (StackOverflowError e) {
-                    CompilerDirectives.transferToInterpreter();
-                    PythonContext context = getContext();
-                    context.reacquireGilAfterStackOverflow();
-                    PBaseException newException = context.factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{});
-                    PException pe = ExceptionUtils.wrapJavaException(e, this, newException);
-                    throw handlePythonException(pe);
                 } catch (ThreadDeath e) {
                     // do not handle, result of TruffleContext.closeCancelled()
                     throw e;
@@ -218,6 +210,10 @@ public final class TopLevelExceptionHandler extends RootNode {
 
     @TruffleBoundary
     private void handleJavaException(Throwable e) {
+        PException pe = ExceptionUtils.wrapJavaExceptionIfApplicable(this, e, PythonObjectFactory.getUncached());
+        if (pe != null) {
+            throw handlePythonException(pe);
+        }
         try {
             boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;
             if (!exitException) {

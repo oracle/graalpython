@@ -1,11 +1,13 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
-
+import os
 import unittest
 import sys
 import errno
+
+GRAALPYTHON = sys.implementation.name == "graalpy"
 
 def fun0(test_obj, expected_error):
     typ, val, tb = sys.exc_info()
@@ -673,3 +675,16 @@ class ExceptionTests(unittest.TestCase):
         assert list(Iter2()) == []
         sentinel = object()
         assert getattr(Obj1(), 'does_not_exist', sentinel) is sentinel
+
+
+# There is no simple way to restrict memory for CPython process
+@unittest.skipUnless(GRAALPYTHON)
+def test_memory_error():
+    import subprocess
+    file = os.path.join(os.path.dirname(__file__), 'memoryerror.py')
+    result = subprocess.check_output([sys.executable, '-S', '--experimental-options',
+                                      '--engine.MultiTier=false', '--engine.BackgroundCompilation=false',
+                                      '--engine.CompileImmediately', '--engine.CompileOnly=alloc',
+                                      '--vm.Xmx400m', file], text=True)
+    assert 'ERROR' not in result, result
+    assert 'DONE' in result, result

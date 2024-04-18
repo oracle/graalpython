@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime.exception;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 
 import java.io.IOException;
@@ -54,15 +56,18 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTrace;
@@ -262,5 +267,19 @@ public final class ExceptionUtils {
 
     public static PException wrapJavaException(Throwable e, Node node, PBaseException pythonException) {
         return PException.fromObject(pythonException, node, e);
+    }
+
+    @InliningCutoff
+    public static PException wrapJavaExceptionIfApplicable(Node location, Throwable e, PythonObjectFactory factory) {
+        if (e instanceof StackOverflowError) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            PythonContext.get(null).reacquireGilAfterStackOverflow();
+            return ExceptionUtils.wrapJavaException(e, location, factory.createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{}));
+        }
+        if (e instanceof OutOfMemoryError) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            return ExceptionUtils.wrapJavaException(e, location, factory.createBaseException(MemoryError));
+        }
+        return null;
     }
 }
