@@ -438,8 +438,8 @@ public class ManageResourcesMojo extends AbstractMojo {
     }
 
     private static boolean isPythonArtifact(Artifact a) {
-        return POLYGLOT_GROUP_ID.equals(a.getGroupId()) &&
-                (PYTHON_COMMUNITY_ARTIFACT_ID.equals(a.getArtifactId()) || PYTHON_ARTIFACT_ID.equals(a.getArtifactId()));
+        return (POLYGLOT_GROUP_ID.equals(a.getGroupId()) || GRAALPY_GROUP_ID.equals(a.getGroupId())) &&
+               (PYTHON_COMMUNITY_ARTIFACT_ID.equals(a.getArtifactId()) || PYTHON_ARTIFACT_ID.equals(a.getArtifactId()));
     }
 
     private static Collection<Artifact> resolveProjectDependencies(MavenProject project) {

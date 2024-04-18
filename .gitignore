@@ -88,5 +88,5 @@ graalpython/com.oracle.graal.python.test/src/tests/patched_package/src/patched_p
 graalpython/com.oracle.graal.python.test.integration/target
 graalpython/graalpy-maven-plugin/target
 graalpython/graalpy-archetype-polyglot-app/target
-graalpython/graalpy-archetype-polyglot-app/target
+graalpython/graalpy-micronaut-embedding/target
 pom-mx.xml
