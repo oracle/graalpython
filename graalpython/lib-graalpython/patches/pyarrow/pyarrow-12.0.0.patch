@@ -1,9 +1,9 @@
 diff --git a/pyarrow_build_backend.py b/pyarrow_build_backend.py
 new file mode 100644
-index 0000000..9046e34
+index 0000000..525bb34
 --- /dev/null
 +++ b/pyarrow_build_backend.py
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,95 @@
 +import os
 +import re
 +import sys
@@ -65,6 +65,12 @@ index 0000000..9046e34
 +            '-DARROW_PARQUET=ON',
 +            '-DPARQUET_REQUIRE_ENCRYPTION=ON',
 +            '-DARROW_GANDIVA=ON',
++            '-DARROW_WITH_BZ2=ON',
++            '-DARROW_WITH_ZLIB=ON',
++            '-DARROW_WITH_ZSTD=ON',
++            '-DARROW_WITH_LZ4=ON',
++            '-DARROW_WITH_SNAPPY=ON',
++            '-DARROW_WITH_BROTLI=ON',
 +        ])
 +        subprocess.check_call([
 +            'cmake', '--build', str(build_dir), '--parallel',
