@@ -190,7 +190,7 @@ public abstract class MaterializeFrameNode extends Node {
             } else {
                 BytecodeNode bytecodeNode = BytecodeNode.get(location);
                 assert bytecodeNode != null;
-                pyFrame.setBci(bytecodeNode.getBytecodeLocation(frameToMaterialize, location).getBytecodeIndex());
+                pyFrame.setBci(bytecodeNode.getBytecodeIndex(frameToMaterialize));
                 pyFrame.setLocation(bytecodeNode);
             }
         } else {
