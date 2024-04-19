@@ -1339,7 +1339,7 @@ public final class PythonCextBuiltins {
             return 0;
         }
 
-        @Specialization(replaces = "doCachedDomainIdx", limit = "3")
+        @Specialization(replaces = "doCachedDomainIdx")
         static int doGeneric(int domain, long ptrVal, long size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
@@ -1425,22 +1425,18 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class PyTruffleObject_GC_UnTrack extends PyTruffleGcTracingNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleObject_GC_UnTrack.class);
-
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            LOGGER.finer(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
+            CApiContext.GC_LOGGER.finer(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().untrackObject(ptr, ref, className);
         }
     }
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class PyTruffleObject_GC_Track extends PyTruffleGcTracingNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleObject_GC_Track.class);
-
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            LOGGER.finer(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
+            CApiContext.GC_LOGGER.finer(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().trackObject(ptr, ref, className);
         }
     }

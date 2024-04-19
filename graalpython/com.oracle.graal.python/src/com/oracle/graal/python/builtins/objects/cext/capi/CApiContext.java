@@ -168,6 +168,7 @@ public final class CApiContext extends CExtContext {
      */
     public static final int DEFAULT_RECURSION_LIMIT = 1000;
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
+    public static final TruffleLogger GC_LOGGER = PythonLanguage.getLogger(CApiContext.LOGGER_CAPI_NAME + ".gc");
 
     /* a random number between 1 and 20 */
     private static final int MAX_COLLECTION_RETRIES = 17;
