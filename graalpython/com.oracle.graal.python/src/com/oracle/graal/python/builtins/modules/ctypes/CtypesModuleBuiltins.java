@@ -1715,7 +1715,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         static Object doGeneric(Object arg) {
             CApiContext.ensureCapiWasLoaded();
             Object nativePointer = CApiTransitions.PythonToNativeNode.executeUncached(arg);
-            CExtNodes.DecRefPointerNode.executeUncached(nativePointer);
+            CExtNodes.XDecRefPointerNode.executeUncached(nativePointer);
             return arg;
         }
     }

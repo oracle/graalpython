@@ -1136,10 +1136,10 @@ public abstract class CExtNodes {
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
-    public abstract static class DecRefPointerNode extends PNodeWithContext {
+    public abstract static class XDecRefPointerNode extends PNodeWithContext {
 
         public static void executeUncached(Object pointer) {
-            CExtNodesFactory.DecRefPointerNodeGen.getUncached().execute(null, pointer);
+            CExtNodesFactory.XDecRefPointerNodeGen.getUncached().execute(null, pointer);
         }
 
         public abstract void execute(Node inliningTarget, Object pointer);
@@ -1167,6 +1167,9 @@ public abstract class CExtNodes {
                     // No refcounting in managed mode
                     return;
                 }
+            }
+            if (pointer == 0) {
+                return;
             }
             PythonNativeWrapper wrapper = toPythonWrapperNode.executeWrapper(pointer, false);
             if (wrapper instanceof PythonAbstractObjectNativeWrapper objectWrapper) {

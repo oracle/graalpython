@@ -1109,7 +1109,7 @@ public abstract class SequenceStorageNodes {
                         @Cached PythonToNativeNewRefNode toNative,
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached CStructAccess.WritePointerNode writePointerNode,
-                        @Cached CExtNodes.DecRefPointerNode decRefPointerNode) {
+                        @Cached CExtNodes.XDecRefPointerNode decRefPointerNode) {
             Object old = readPointerNode.readArrayElement(storage.getPtr(), idx);
             writePointerNode.writeArrayElement(storage.getPtr(), idx, toNative.execute(value));
             decRefPointerNode.execute(inliningTarget, old);
@@ -2986,16 +2986,13 @@ public abstract class SequenceStorageNodes {
         @InliningCutoff
         static void doShrink(NativeObjectSequenceStorage s, int len,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached CStructAccess.ReadPointerNode readNode,
-                        @Cached CExtNodes.DecRefPointerNode decRefPointerNode) {
+                        @Cached CExtNodes.XDecRefPointerNode decRefPointerNode) {
             if (len < s.length()) {
                 // When shrinking, we need to decref the items that are now past the end
                 for (int i = len; i < s.length(); i++) {
                     Object elementPointer = readNode.readArrayElement(s.getPtr(), i);
-                    if (!lib.isNull(elementPointer)) {
-                        decRefPointerNode.execute(inliningTarget, elementPointer);
-                    }
+                    decRefPointerNode.execute(inliningTarget, elementPointer);
                 }
             }
             s.setNewLength(len);
