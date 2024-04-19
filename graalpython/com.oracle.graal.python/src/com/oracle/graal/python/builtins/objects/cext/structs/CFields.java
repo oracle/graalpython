@@ -347,6 +347,8 @@ public enum CFields {
 
     PyGC_Head___gc_prev(UINTPTR_T),
     PyGC_Head___gc_next(UINTPTR_T),
+    GraalPyGC_CycleNode__item(PyObject),
+    GraalPyGC_CycleNode__next(Pointer),
 
     PyBaseExceptionObject__dict(PyObject),
     PyBaseExceptionObject__args(PyObject),

@@ -56,6 +56,8 @@ call_traverse(traverseproc traverse, PyObject *op, visitproc visit, void *arg)
 
 #define CALL_TRAVERSE(traverse, op, visit_fun, ctx) ((void) call_traverse((traverse), (op), (visit_fun), (ctx)))
 
+#define is_managed points_to_py_handle_space
+
 #if 0 // GraalPy change
 typedef struct _gc_runtime_state GCState;
 #endif // GraalPy change
@@ -450,6 +452,135 @@ validate_list(PyGC_Head *head, enum flagstates flags)
 
 /*** end of list stuff ***/
 
+/* GraalPy change: additions start */
+
+/* A traversal callback for collect_cycle_objects. */
+static int
+visit_collect_cycle_objects(PyObject *op, GraalPyGC_Cycle *cycle)
+{
+    PyGC_Head *gc;
+    // We're only interested in objects in the generation being collected.
+    if (_PyObject_IS_GC(op) && gc_is_collecting(gc = AS_GC(op))) {
+        GraalPyGC_CycleNode *n = (GraalPyGC_CycleNode *)malloc(sizeof(GraalPyGC_CycleNode));
+        if (n == NULL) {
+            return -1;
+        }
+        n->item = op;
+        n->next = cycle->head;
+        cycle->head = n;
+        cycle->n++;
+
+        /* Clear collection flag to indicate that this object was already
+         * visited. This avoids infinite recursion.
+         */
+        gc_clear_collecting(gc);
+
+        // we need to determine the whole object graph :-(
+        traverseproc traverse = Py_TYPE(op)->tp_traverse;
+        return call_traverse(traverse, op, visit_collect_cycle_objects, (void *)cycle);
+    }
+    return 0;
+}
+
+/* Collect the objects of a reference cycle into a single linked list.
+ *
+ * Collections is done by using 'tp_traverse' of the root object. The root
+ * object is usually a managed object but can be any object of a cycle.
+ *
+ * This will temporarily clear PREV_MASK_COLLECTING to mark visited objects.
+ */
+static void
+collect_cycle_objects(PyObject *op)
+{
+    GraalPyGC_Cycle cycle = { NULL, 0 };
+    GraalPyGC_CycleNode *n, *next;
+    Py_ssize_t i;
+    _PyObject_ASSERT_WITH_MSG(op, is_managed(op),
+            "reference cycle root object must be managed");
+
+    /* If collection fails, it is most likely because we could not allocate more
+     * nodes for the linked list. This is not fatal but we will (for now)
+     * certainly leak those objects. However, a later GC round may be successful.
+     */
+    if (visit_collect_cycle_objects(op, &cycle) == 0) {
+        GraalPyTruffleObject_GC_EnsureWeak(op, cycle.head, cycle.n);
+    }
+
+    // make managed references weak, destroy list, and reset collection flag
+    for (n = cycle.head; n != NULL; n = next) {
+        PyObject *item = n->item;
+        assert (_PyObject_IS_GC(item));
+        PyGC_Head *gc = AS_GC(item);
+        // rescue 'next'
+        next = n->next;
+        // free current node
+        free(n);
+
+        /* Reset collection flag. Function 'visit_collect_cycle_objects' clears
+         * it to determine if some object was already visited to avoid infinite
+         * recursion.
+         */
+        assert (!gc_is_collecting(gc));
+        UNTAG(gc)->_gc_prev |= PREV_MASK_COLLECTING;
+    }
+}
+
+/* Breaks a reference cycle that involves managed objects. This is done by
+ * making the handle table reference of the managed object weak.
+ *
+ * This is necessary because if a native object references a managed object, the
+ * reference count of the native object stub will be increased such that it is
+ * larger than MANAGED_REFCNT and the corresponding handle table reference will
+ * be strong. It is then impossible to collect the managed object because we
+ * don't know if it is only referenced from native objects (via the handle
+ * table) or if there is another reference somewhere in the interpreter from
+ * managed code.
+ *
+ * Making the handle table reference weak is dangerous. This is best explained
+ * by an example: Assume we have a managed list 'l' and a native object 'n'
+ * in a reference cycle:
+ *
+ *   l -> n -> l
+ *
+ * This is how it is implemented:
+ *
+ *   handle_table -> (ptr(l), l)
+ *   l -> n -> ptr(l)
+ *
+ * If managed code still references 'l', it can indirectly access 'n' and create
+ * a strong reference to it. This would make 'l' again reachable via the handle
+ * table but since it only weakly references 'l', the list may be collected by
+ * the Java GC leading to dangling pointer.
+ *
+ * We solve this by "transferring" the last collection to the Java GC. More
+ * specifically, we determine the objects of a reference cycle and store them in
+ * a Java array that is then referenced from each wrapper of native objects in
+ * the reference cycle. Therefore, if a native object of the cycle is then again
+ * used in managed code, it will keep all objects of the cycle alive.
+ */
+static void
+break_cycles_with_managed_objects(PyGC_Head *young)
+{
+    // previous elem in the young list, used for restore gc_prev.
+    PyGC_Head *gc = GC_NEXT(young);
+
+    /* Invariant:  all objects that are part of a reference cycle have either
+     * 'refcount == 0' if it is a native object or 'refcount == MANAGED_REFCNT'
+     * if it is managed object.
+     */
+    while (gc != young) {
+        PyObject *op = FROM_GC(gc);
+        if (is_managed(op) && gc_get_refs(gc) == MANAGED_REFCNT) {
+            _PyObject_ASSERT_WITH_MSG(op, Py_REFCNT(op) == gc_get_refs(gc) + 1,
+                                      "unexpected ob_refcnt");
+            traverseproc traverse = Py_TYPE(op)->tp_traverse;
+            collect_cycle_objects(op);
+        }
+        gc = (PyGC_Head*)UNTAG(gc)->_gc_next;
+    }
+}
+
+/* GraalPy change: additions end */
 
 /* Set all gc_refs = ob_refcnt.  After this, gc_refs is > 0 and
  * PREV_MASK_COLLECTING bit is set for all objects in containers.
@@ -598,6 +729,7 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable)
     // previous elem in the young list, used for restore gc_prev.
     PyGC_Head *prev = young;
     PyGC_Head *gc = GC_NEXT(young);
+    Py_ssize_t gc_refcnt;
 
     /* Invariants:  all objects "to the left" of us in young are reachable
      * (directly or indirectly) from outside the young list as it was at entry.
@@ -609,7 +741,8 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable)
      */
 
     while (gc != young) {
-        if (gc_get_refs(gc)) {
+        gc_refcnt = gc_get_refs(gc);
+        if (gc_refcnt) {
             /* gc is definitely reachable from outside the
              * original 'young'.  Mark it as such, and traverse
              * its pointers to find any other objects that may
@@ -1136,6 +1269,7 @@ deduce_unreachable(PyGC_Head *base, PyGC_Head *unreachable) {
      */
     update_refs(base);  // gc_prev is used for gc_refs
     subtract_refs(base);
+    break_cycles_with_managed_objects(base); // GraalPy change
 
     /* Leave everything reachable from outside base in base, and move
      * everything else (in base) to unreachable.

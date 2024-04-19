@@ -232,26 +232,28 @@ public abstract class CApiTransitions {
          * {@code false} if the class wraps a static type.
          */
         private final boolean freeAtCollection;
+        private final boolean gc;
 
-        private PythonObjectReference(HandleContext handleContext, PythonNativeWrapper referent, boolean strong, long pointer, int handleTableIndex, boolean freeAtCollection) {
+        private PythonObjectReference(HandleContext handleContext, PythonNativeWrapper referent, boolean strong, long pointer, int handleTableIndex, boolean freeAtCollection, boolean gc) {
             super(handleContext, referent);
             this.pointer = pointer;
             this.strongReference = strong ? referent : null;
             referent.ref = this;
             this.handleTableIndex = handleTableIndex;
             this.freeAtCollection = freeAtCollection;
+            this.gc = gc;
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.fine(PythonUtils.formatJString("new %s", toString()));
             }
         }
 
-        static PythonObjectReference create(HandleContext handleContext, PythonAbstractObjectNativeWrapper referent, boolean strong, long pointer, int idx) {
+        static PythonObjectReference create(HandleContext handleContext, PythonAbstractObjectNativeWrapper referent, boolean strong, long pointer, int idx, boolean gc) {
             assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
-            return new PythonObjectReference(handleContext, referent, strong, pointer, idx, true);
+            return new PythonObjectReference(handleContext, referent, strong, pointer, idx, true, gc);
         }
 
         static PythonObjectReference create(HandleContext handleContext, PythonNativeWrapper referent, long pointer, boolean freeAtCollection) {
-            return new PythonObjectReference(handleContext, referent, true, pointer, -1, freeAtCollection);
+            return new PythonObjectReference(handleContext, referent, true, pointer, -1, freeAtCollection, false);
         }
 
         public boolean isStrongReference() {
@@ -295,8 +297,17 @@ public abstract class CApiTransitions {
             referent.ref = this;
             assert (pointer & 7) == 0;
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(PythonUtils.formatJString("new %s", toString()));
+                logNew();
             }
+        }
+
+        /*
+         * Only use from a thread with attached context!
+         */
+        @TruffleBoundary
+        private void logNew() {
+            PythonAbstractNativeObject referent = get();
+            LOGGER.fine(String.format("NativeObjectReference<0x%x,%s>", pointer, referent != null ? referent.toStringWithContext() : "freed"));
         }
 
         @Override
@@ -449,17 +460,17 @@ public abstract class CApiTransitions {
                                  */
                                 long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
                                 if (subNativeRefCount(stubPointer, MANAGED_REFCNT) == 0) {
-                                    freeNativeStub(stubPointer);
+                                    freeNativeStub(stubPointer, reference.gc);
                                 } else {
                                     /*
                                      * In this case, the object is no longer referenced from managed
                                      * but still from native code (since the reference count is
-                                     * greater 0). We therefore need to overwrite the
-                                     * 'CFields.GraalPyObject__id' field because there may be
-                                     * referenced from managed in the future and then we would
-                                     * incorrectly reuse the ID.
+                                     * greater 0). This case is possible if there are reference
+                                     * cycles that include managed objects. We overwrite field
+                                     * 'CFields.GraalPyObject__id' to avoid incorrect reuse of the
+                                     * ID which could resolve to another object.
                                      */
-                                    CStructAccess.WriteIntNode.writeUncached(reference.pointer, CFields.GraalPyObject__handle_table_index, 0);
+                                    CStructAccess.WriteIntNode.writeUncached(stubPointer, CFields.GraalPyObject__handle_table_index, 0);
                                 }
                             } else {
                                 assert nativeLookupGet(handleContext, reference.pointer) != null : Long.toHexString(reference.pointer);
@@ -576,19 +587,21 @@ public abstract class CApiTransitions {
         handleContext.referenceQueuePollActive = true;
     }
 
-    private static void freeNativeStub(long stubPointer) {
-        LOGGER.fine(() -> PythonUtils.formatJString("releasing native object stub 0x%x", stubPointer));
-        FreeNode.executeUncached(stubPointer);
+    private static void freeNativeStub(long stubPointer, boolean gc) {
+        long rawPointer = gc ? stubPointer - CStructs.PyGC_Head.size() : stubPointer;
+        LOGGER.fine(() -> PythonUtils.formatJString("releasing native object stub 0x%x", rawPointer));
+        FreeNode.executeUncached(rawPointer);
     }
 
     private static void freeNativeStub(PythonObjectReference ref) {
         assert HandlePointerConverter.pointsToPyHandleSpace(ref.pointer);
-        freeNativeStub(HandlePointerConverter.pointerToStub(ref.pointer));
+        freeNativeStub(HandlePointerConverter.pointerToStub(ref.pointer), ref.gc);
     }
 
     private static void freeNativeStruct(PythonObjectReference ref) {
         assert ref.handleTableIndex == -1;
         assert ref.freeAtCollection;
+        assert !ref.gc;
         LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref.toString()));
         FreeNode.executeUncached(ref.pointer);
     }
@@ -989,7 +1002,7 @@ public abstract class CApiTransitions {
                 // accidentally maps to some valid object.
                 assert idx > 0;
                 writeIntNode.write(stubPointer, CFields.GraalPyObject__handle_table_index, idx);
-                PythonObjectReference ref = PythonObjectReference.create(handleContext, wrapper, immortal, taggedPointer, idx);
+                PythonObjectReference ref = PythonObjectReference.create(handleContext, wrapper, immortal, taggedPointer, idx, gc);
                 nativeStubLookupPut(handleContext, ref);
             } catch (OverflowException e) {
                 /*

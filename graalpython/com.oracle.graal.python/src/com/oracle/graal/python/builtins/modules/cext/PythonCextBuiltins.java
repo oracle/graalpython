@@ -54,6 +54,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectWrapper;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectTransfer;
@@ -62,6 +63,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.GraalPyGC_CycleNode__item;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.GraalPyGC_CycleNode__next;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyGetSetDef__closure;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyGetSetDef__doc;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyGetSetDef__get;
@@ -122,6 +125,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromC
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -1438,6 +1442,38 @@ public final class PythonCextBuiltins {
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
             CApiContext.GC_LOGGER.finer(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().trackObject(ptr, ref, className);
+        }
+    }
+
+    /**
+     * Ensures that the
+     * {@link com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference}
+     * to the given wrapper is weak. This is used to break reference cycles that involve managed
+     * objects.
+     */
+    @CApiBuiltin(ret = Void, args = {PyObjectWrapper, Pointer, Int}, call = Ignored)
+    abstract static class PyTruffleObject_GC_EnsureWeak extends CApiTernaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(PythonAbstractObjectNativeWrapper wrapper, Object listHead, int n,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CStructAccess.ReadObjectNode readObjectNode,
+                        @Cached CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached InlinedConditionProfile hasRefProfile) {
+            if (CApiContext.GC_LOGGER.isLoggable(Level.INFO)) {
+                CApiContext.GC_LOGGER.info(PythonUtils.formatJString("Breaking reference cycle for %s", wrapper));
+            }
+            Object[] cycleObjects = new Object[n];
+            Object cur = listHead;
+            for (int i = 0; i < n; i++) {
+                Object item = readObjectNode.read(cur, GraalPyGC_CycleNode__item);
+                cycleObjects[i] = item;
+                if (item instanceof PythonAbstractNativeObject nativeObject) {
+                    nativeObject.setRefCycle(cycleObjects);
+                }
+                cur = readPointerNode.read(cur, GraalPyGC_CycleNode__next);
+            }
+            wrapper.updateRef(inliningTarget, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT, hasRefProfile);
+            return PNone.NO_VALUE;
         }
     }
 

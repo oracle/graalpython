@@ -76,16 +76,27 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.TriState;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
+    /**
+     * A reference to the native object. This usually is a pointer object (i.e. responds to
+     * {@link InteropLibrary#isPointer(Object)} with {@code true}) but can also be something the
+     * emulates native memory.
+     */
     public final Object object;
     public TpSlots slots;
     public NativeObjectReference ref;
+
+    /**
+     * An array of objects that are together with this object in a reference cycle. For an
+     * explanation of why this is necessary, see function
+     * {@code gcmodule.c: break_cycles_with_managed_objects}.
+     */
+    private Object[] refCycle;
 
     public PythonAbstractNativeObject(Object object) {
         // GR-50245
@@ -96,13 +107,19 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         this.object = object;
     }
 
+    @Override
     public int compareTo(Object o) {
         return 0;
     }
 
+    @Override
     public void lookupChanged() {
         // TODO invalidate cached native MRO
         throw CompilerDirectives.shouldNotReachHere("not yet implemented");
+    }
+
+    public void setRefCycle(Object[] refCycle) {
+        this.refCycle = refCycle;
     }
 
     @Override
@@ -130,21 +147,15 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         return Objects.equals(object, other.object);
     }
 
-    public boolean equalsProfiled(Object obj, ValueProfile profile) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        PythonAbstractNativeObject other = (PythonAbstractNativeObject) obj;
-        return Objects.equals(profile.profile(object), profile.profile(other.object));
+    @TruffleBoundary
+    public String toStringWithContext() {
+        return "PythonAbstractNativeObject(" + PythonUtils.formatPointer(object) + ')';
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonUtils.formatJString("PythonAbstractNativeObject(%s)", object);
+        return "PythonAbstractNativeObject(" + object + ')';
     }
 
     @ExportMessage

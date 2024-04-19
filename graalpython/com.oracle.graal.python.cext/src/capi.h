@@ -130,6 +130,18 @@ typedef struct {
     double ob_fval;
 } GraalPyFloatObject;
 
+/* GraalPy GC support */
+
+typedef struct _cycle_node {
+    PyObject *item;
+    struct _cycle_node *next;
+} GraalPyGC_CycleNode;
+
+typedef struct {
+    GraalPyGC_CycleNode *head;
+    int32_t n;
+} GraalPyGC_Cycle;
+
 // {{start CAPI_BUILTINS}}
 #include "capi.gen.h"
 
