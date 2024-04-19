@@ -1,4 +1,6 @@
 [[rules]]
+# 26+ needs Cython 3
+version = '< 26'
 # The patch just makes it re-cythonize to pick up our cython changes
 patch = 'pyzmq.patch'
 dist-type = 'sdist'

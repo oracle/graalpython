@@ -12,7 +12,7 @@ index e2e1f694..870ef417 100644
  option(BUILD_DOCS "Build Caffe2 documentation" OFF)
  option(BUILD_CUSTOM_PROTOBUF "Build and use Caffe2's own protobuf under third_party" ON)
 diff --git a/functorch/csrc/dim/dim.cpp b/functorch/csrc/dim/dim.cpp
-index abdebc24..4f235d66 100644
+index 9bab33b6..4f235d66 100644
 --- a/functorch/csrc/dim/dim.cpp
 +++ b/functorch/csrc/dim/dim.cpp
 @@ -6,7 +6,7 @@
@@ -24,15 +24,6 @@ index abdebc24..4f235d66 100644
  #include <utility>
  #include <new>
  #include <iostream>
-@@ -1304,7 +1304,7 @@ static py::object __torch_function__(Arena &A, py::handle orig, py::vector_args
- }
- 
- py::vector_args as_vector_args(Arena& A, py::handle args, py::handle kwargs) {
--    auto pos_args = (py::handle*) &PyTuple_GET_ITEM(args.ptr(), 0);
-+    auto pos_args = (py::handle*) PySequence_Fast_ITEMS(args.ptr());
-     auto pos_n = PyTuple_GET_SIZE(args.ptr());
-     if (!kwargs.ptr()) {
-         return py::vector_args(pos_args, pos_n, nullptr);
 @@ -1421,6 +1421,7 @@ PyTypeObject Tensor::Type = {
  
  // dim() --------------------
@@ -307,10 +298,10 @@ index b847129d..3219d1e1 100644
      def clone(self):
          return self.__class__(self.mode)
 diff --git a/torch/csrc/Module.cpp b/torch/csrc/Module.cpp
-index 8e1ca3b1..b150ac3f 100644
+index 3af2e723..df857f31 100644
 --- a/torch/csrc/Module.cpp
 +++ b/torch/csrc/Module.cpp
-@@ -257,50 +257,14 @@ PyObject* THPModule_addDocStr(PyObject* _unused, PyObject* args) {
+@@ -257,50 +257,16 @@ PyObject* THPModule_addDocStr(PyObject* _unused, PyObject* args) {
      doc_str = all_docs.back().c_str();
    }
  
@@ -320,7 +311,7 @@ index 8e1ca3b1..b150ac3f 100644
 -      return PyErr_Format(
 -          PyExc_RuntimeError,
 -          "function '%s' already has a docstring",
--          f->m_ml->ml_name);
+-          _PyCFunction_GetMethodDef((PyObject*)(f))->ml_name);
 -    }
 -    PyObject_SetDoc((PyObject*)(f), doc_str);
 -  } else if (strcmp(Py_TYPE(obj)->tp_name, "method_descriptor") == 0) {
@@ -354,6 +345,7 @@ index 8e1ca3b1..b150ac3f 100644
 -    }
 -    t->tp_doc = doc_str;
 -  } else {
++  // GraalPy change
 +  if (PyObject_GetDoc(obj)) {
      return PyErr_Format(
 -        PyExc_TypeError,
@@ -363,6 +355,7 @@ index 8e1ca3b1..b150ac3f 100644
 +        "object '%100R' already has a docstring",
 +        obj);
 +  }
++  // GraalPy change
 +  if (PyObject_SetDoc(obj, doc_str) < 0) {
 +      return NULL;
    }

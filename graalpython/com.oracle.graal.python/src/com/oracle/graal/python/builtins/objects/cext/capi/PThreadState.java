@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -113,6 +114,11 @@ public final class PThreadState extends PythonStructNativeWrapper {
         writePtrNode.write(ptr, CFields.PyThreadState__dict, toNative.execute(threadStateDict));
         CApiContext cApiContext = PythonContext.get(null).getCApiContext();
         writePtrNode.write(ptr, CFields.PyThreadState__small_ints, cApiContext.getOrCreateSmallInts());
+        if (threadState.getCurrentException() != null) {
+            // See TransformExceptionToNativeNode
+            Object exceptionType = GetClassNode.executeUncached(threadState.getCurrentException().getUnreifiedException());
+            CStructAccess.WritePointerNode.getUncached().write(ptr, CFields.PyThreadState__curexc_type, PythonToNativeNode.getUncached().execute(exceptionType));
+        }
         return ptr;
     }
 }

@@ -480,6 +480,12 @@ public abstract class CExtCommonNodes {
                         @Cached GetClassNode getClassNode,
                         @Cached(inline = false) PythonToNativeNode pythonToNativeNode,
                         @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode) {
+            /*
+             * Run the ToNative conversion early so that nothing interrups the code between setting
+             * the managed and native states
+             */
+            Object exceptionType = getClassNode.execute(inliningTarget, e.getUnreifiedException());
+            Object exceptionTypeNative = pythonToNativeNode.execute(exceptionType);
             // TODO connect f_back
             getCurrentFrameRef.execute(frame, inliningTarget).markAsEscaped();
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
@@ -497,12 +503,11 @@ public abstract class CExtCommonNodes {
              */
             Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
             if (nativeThreadState != null) {
-                Object exceptionType = getClassNode.execute(inliningTarget, e.getUnreifiedException());
                 /*
                  * Write a borrowed ref to the native mirror because we need to keep that in sync
                  * anyway.
                  */
-                writePointerNode.write(nativeThreadState, CFields.PyThreadState__curexc_type, pythonToNativeNode.execute(exceptionType));
+                writePointerNode.write(nativeThreadState, CFields.PyThreadState__curexc_type, exceptionTypeNative);
             }
         }
     }

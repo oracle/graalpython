@@ -677,6 +677,10 @@ public class CStructAccess {
             return execute(pointer, field.offset());
         }
 
+        public static Object readUncached(Object pointer, CFields field) {
+            return getUncached().read(pointer, field);
+        }
+
         public final Object readFromObj(PythonNativeObject self, CFields field) {
             return read(self.getPtr(), field);
         }

@@ -2232,7 +2232,7 @@ public abstract class ExternalFunctionNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached("storage.length()") int cachedLen,
                         @Shared @Cached CStructAccess.ReadPointerNode readNode,
-                        @Shared @Cached CExtNodes.DecRefPointerNode decRefPointerNode,
+                        @Shared @Cached CExtNodes.XDecRefPointerNode decRefPointerNode,
                         @Shared @Cached CStructAccess.FreeNode freeNode) {
             for (int i = 0; i < cachedLen; i++) {
                 Object elementPointer = readNode.readArrayElement(storage.getPtr(), i);
@@ -2246,7 +2246,7 @@ public abstract class ExternalFunctionNodes {
         static void doObjectGeneric(NativeObjectSequenceStorage storage,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CStructAccess.ReadPointerNode readNode,
-                        @Shared @Cached CExtNodes.DecRefPointerNode decRefPointerNode,
+                        @Shared @Cached CExtNodes.XDecRefPointerNode decRefPointerNode,
                         @Shared @Cached CStructAccess.FreeNode freeNode) {
             for (int i = 0; i < storage.length(); i++) {
                 Object elementPointer = readNode.readArrayElement(storage.getPtr(), i);
