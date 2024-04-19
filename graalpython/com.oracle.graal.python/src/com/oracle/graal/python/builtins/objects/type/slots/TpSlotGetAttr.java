@@ -47,8 +47,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Attribut
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
@@ -64,12 +66,9 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -82,9 +81,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -232,6 +228,8 @@ public class TpSlotGetAttr {
     @GenerateInline(false) // Used lazily
     @GenerateUncached
     abstract static class CallNativeSlotGetAttrNode extends Node {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "tp_getattr");
+
         abstract Object execute(VirtualFrame frame, TpSlots slots, TpSlotNative tp_get_attro_attr, Object self, Object name);
 
         @Specialization
@@ -241,30 +239,23 @@ public class TpSlotGetAttr {
                         @Cached InlinedConditionProfile isGetAttrProfile,
                         @Cached AsCharPointerNode asCharPointerNode,
                         @Cached FreeNode freeNode,
-                        @Cached("createFor(inliningTarget)") IndirectCallData callData,
-                        @Cached PythonToNativeNode toNativeNode,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached PythonToNativeNode nameToNativeNode,
+                        @Cached PythonToNativeNode selfToNativeNode,
                         @Cached NativeToPythonTransferNode toPythonNode,
+                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached PyObjectCheckFunctionResultNode checkResultNode) {
-            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, null);
             boolean isGetAttr = isGetAttrProfile.profile(inliningTarget, slots.tp_getattr() == slot);
             Object nameArg;
             if (isGetAttr) {
                 nameArg = asCharPointerNode.execute(name);
             } else {
-                nameArg = toNativeNode.execute(name);
+                nameArg = nameToNativeNode.execute(name);
             }
-            Object state = IndirectCallContext.enter(frame, threadState, callData);
             Object result;
+            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, null);
             try {
-                result = lib.execute(slot.callable, toNativeNode.execute(self), nameArg);
-            } catch (InteropException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
+                result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GETATTR__, slot.callable, selfToNativeNode.execute(self), nameArg);
             } finally {
-                if (frame != null) {
-                    PArguments.setException(frame, threadState.getCaughtException());
-                }
-                IndirectCallContext.exit(frame, threadState, state);
                 if (isGetAttr) {
                     freeNode.free(nameArg);
                 }
