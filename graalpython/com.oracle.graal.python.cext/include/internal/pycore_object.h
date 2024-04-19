@@ -230,7 +230,12 @@ _PyObject_IS_GC(PyObject *obj)
 {
     return (PyType_IS_GC(Py_TYPE(obj))
             && (Py_TYPE(obj)->tp_is_gc == NULL
-                || Py_TYPE(obj)->tp_is_gc(obj)));
+                || Py_TYPE(obj)->tp_is_gc(obj))
+            /* GraalPy change: our built-in types do not yet consistently
+               declare the HAVE_GC flag. So, also check if 'tp_traverse'
+               is there. */
+            && (!points_to_py_handle_space(obj)
+                || Py_TYPE(obj)->tp_traverse != NULL));
 }
 
 // Fast inlined version of PyType_IS_GC()
