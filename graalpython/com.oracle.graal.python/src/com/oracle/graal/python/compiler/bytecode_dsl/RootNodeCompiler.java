@@ -4336,19 +4336,15 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
              *   contextManager = foo
              *   resolve __enter__ and __exit__
              *   value = __enter__()
-             *   exceptionHit = False
-             *   try:
-             *     try:
-             *       x = value
-             *       bar
-             *     except ex:
-             *       exceptionHit = True
-             *       if not __exit__(...):
-             *         raise
-             *   finally_noexcept:
-             *     if not exceptionHit:
-             *       call __exit__(None, None, None)
-
+             *   try {
+             *     x = value
+             *     bar
+             *   } finally {
+             *     call __exit__(None, None, None)
+             *   } catch ex {
+             *     if not __exit__(...):
+             *       raise
+             *   }
              * @formatter:on
              *
              * When there are multiple context managers, they are recursively generated (where "bar"
@@ -4378,19 +4374,9 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endContextManagerEnter();
             }
 
-            BytecodeLocal exceptionHit = b.createLocal();
-            b.beginStoreLocal(exceptionHit);
-            b.emitLoadConstant(false);
-            b.endStoreLocal();
-
-            b.beginFinallyTryNoExcept();
+            BytecodeLocal ex = b.createLocal();
+            b.beginFinallyTryCatch(ex);
             b.beginBlock(); // finally
-            b.beginIfThen();
-
-            b.beginNot();
-            b.emitLoadLocal(exceptionHit);
-            b.endNot();
-
             // regular exit
             if (async) {
                 // call and await __aexit__
@@ -4409,30 +4395,20 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.emitLoadLocal(contextManager);
                 b.endContextManagerExit();
             }
-
-            b.endIfThen();
             b.endBlock(); // finally
 
             b.beginBlock(); // try
-            BytecodeLocal ex = b.createLocal();
-            b.beginTryCatch(ex);
-
-            b.beginBlock(); // try-catch body
             if (item.optionalVars != null) {
                 item.optionalVars.accept(new StoreVisitor(() -> b.emitLoadLocal(value)));
             }
-
             if (index < items.length - 1) {
                 visitWithRecurse(items, index + 1, body, async);
             } else {
                 visitSequence(body);
             }
-            b.endBlock(); // try-catch body
+            b.endBlock(); // try
 
-            b.beginBlock(); // try-catch handler
-            b.beginStoreLocal(exceptionHit);
-            b.emitLoadConstant(true);
-            b.endStoreLocal();
+            b.beginBlock(); // catch
 
             // Mark this location for the stack trace.
             b.beginMarkExceptionAsCaught();
@@ -4460,12 +4436,9 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.emitLoadLocal(contextManager);
                 b.endContextManagerExit();
             }
-            b.endBlock(); // try-catch handler
+            b.endBlock(); // catch
 
-            b.endTryCatch();
-            b.endBlock(); // try
-
-            b.endFinallyTryNoExcept();
+            b.endFinallyTryCatch();
             endNode();
         }
 
