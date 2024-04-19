@@ -1,9 +1,22 @@
+diff --git a/pyarrow/error.pxi b/pyarrow/error.pxi
+index 46ea021..58a3fb5 100644
+--- a/pyarrow/error.pxi
++++ b/pyarrow/error.pxi
+@@ -232,7 +232,7 @@ cdef class SignalStopHandler:
+             if exc_value.signum:
+                 # Re-emit the exact same signal. We restored the Python signal
+                 # handler above, so it should receive it.
+-                if os.name == 'nt':
++                if os.name == 'nt' or sys.implementation.name == 'graalpy':
+                     SendSignal(exc_value.signum)
+                 else:
+                     SendSignalToThread(exc_value.signum,
 diff --git a/pyarrow_build_backend.py b/pyarrow_build_backend.py
 new file mode 100644
-index 0000000..525bb34
+index 0000000..c9826ce
 --- /dev/null
 +++ b/pyarrow_build_backend.py
-@@ -0,0 +1,95 @@
+@@ -0,0 +1,93 @@
 +import os
 +import re
 +import sys
@@ -87,14 +100,12 @@ index 0000000..525bb34
 +        env['PYARROW_WITH_GANDIVA'] = '1'
 +        env['PYARROW_BUNDLE_ARROW_CPP'] = '1'
 +        env['PYARROW_BUNDLE_CYTHON_CPP'] = '1'
-+        pyarrow_dir = arrow_dir / 'python'
 +        subprocess.run(
 +            [sys.executable, 'setup.py', 'bdist_wheel'],
 +            env=env,
-+            cwd=pyarrow_dir,
 +            check=True,
 +        )
-+        wheels = list((pyarrow_dir / 'dist').glob('*.whl'))
++        wheels = list(Path('dist').glob('*.whl'))
 +        assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
 +        wheel = wheels[0]
 +        shutil.copyfile(wheel, wheel_directory / wheel.name)
