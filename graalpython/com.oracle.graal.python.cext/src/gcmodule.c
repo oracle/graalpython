@@ -40,14 +40,21 @@
 #include "pycore_pystate.h"     // _PyThreadState_GET()
 #include "pydtrace.h"
 
-#define CALL_TRAVERSE(traverse, op, visit_fun, ctx) \
-    if (!(traverse)) { \
-        PyTruffle_Log(PY_TRUFFLE_LOG_INFO, \
-                      "type '%.100s' is a GC type but tp_traverse is NULL", \
-                      Py_TYPE((op))->tp_name); \
-    } else { \
-        (void) (traverse)((op), (visitproc)(visit_decref), (ctx)); \
+static inline int
+call_traverse(traverseproc traverse, PyObject *op, visitproc visit, void *arg)
+{
+    if (!traverse) {
+        PyTruffle_Log(PY_TRUFFLE_LOG_INFO,
+                      "type '%.100s' is a GC type but tp_traverse is NULL",
+                      Py_TYPE((op))->tp_name);
+        return 0;
+    } else {
+        return traverse(op, (visitproc)visit, arg);
     }
+
+}
+
+#define CALL_TRAVERSE(traverse, op, visit_fun, ctx) ((void) call_traverse((traverse), (op), (visit_fun), (ctx)))
 
 #if 0 // GraalPy change
 typedef struct _gc_runtime_state GCState;
@@ -618,7 +625,7 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable)
             // NOTE: visit_reachable may change gc->_gc_next when
             // young->_gc_prev == gc.  Don't do gc = GC_NEXT(gc) before!
             // GraalPy change
-            CALL_TRAVERSE(traverse, op, visit_reachable, (void *)young)
+            CALL_TRAVERSE(traverse, op, visit_reachable, (void *)young);
             // relink gc_prev to prev element.
             _PyGCHead_SET_PREV(gc, prev);
             // gc is not COLLECTING state after here.
@@ -764,7 +771,7 @@ move_legacy_finalizer_reachable(PyGC_Head *finalizers)
         /* Note that the finalizers list may grow during this. */
         traverse = Py_TYPE(FROM_GC(gc))->tp_traverse;
         // GraalPy change
-        CALL_TRAVERSE(traverse, FROM_GC(gc), visit_move, (void *)finalizers)
+        CALL_TRAVERSE(traverse, FROM_GC(gc), visit_move, (void *)finalizers);
     }
 }
 
