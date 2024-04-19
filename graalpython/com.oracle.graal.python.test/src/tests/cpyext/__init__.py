@@ -36,6 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import textwrap
 from importlib import invalidate_caches
 
 import gc
@@ -551,7 +552,7 @@ def CPyExtType(name, code='', **kwargs):
     # We set tp_base later, because MSVC doesn't see the usual &PySomething_Type expressions as constants
     if tp_base := kwargs.get('tp_base'):
         kwargs['set_base_code'] = f'{name}Type.tp_base = {tp_base};'
-    mod_template = """
+    mod_template = textwrap.dedent("""
     static PyModuleDef {name}module = {{
         PyModuleDef_HEAD_INIT,
         "{name}",
@@ -578,7 +579,7 @@ def CPyExtType(name, code='', **kwargs):
         PyModule_AddObject(m, "{name}", (PyObject *)&{name}Type);
         return m;
     }}
-    """
+    """)
     type_decl = CPyExtTypeDecl(name, code, **kwargs)
 
     kwargs["name"] = name
@@ -591,7 +592,7 @@ def CPyExtType(name, code='', **kwargs):
 
 
 def CPyExtTypeDecl(name, code='', **kwargs):
-    template = """
+    template = textwrap.dedent("""
     #include "Python.h"
     /* structmember.h is not included by default in Python.h */
     #include "structmember.h"
@@ -721,11 +722,10 @@ def CPyExtTypeDecl(name, code='', **kwargs):
         {tp_alloc},                 /* tp_alloc */
         {tp_new},                   /* tp_new */
         {tp_free},                  /* tp_free */
-    }};
-    """
+    }};""")
 
     kwargs["name"] = name
-    kwargs["code"] = code
+    kwargs["code"] = textwrap.dedent(code)
     kwargs.setdefault("tp_name", f"{name}.{name}")
     kwargs.setdefault("tp_itemsize", "0")
     kwargs.setdefault("tp_new", "PyType_GenericNew")
@@ -743,7 +743,7 @@ def CPyExtHeapType(name, bases=(object), code='', slots=None, **kwargs):
     :param bases: tuple of baseclasses to be used for PyType_FromSpecWithBases
     :param slots: array of slots as strings in format "{Py_sq_length, &my_sq_len}"
     '''
-    template = """
+    template = textwrap.dedent("""
     #include "Python.h"
     /* structmember.h is not included by default in Python.h */
     #include "structmember.h"
@@ -800,7 +800,7 @@ def CPyExtHeapType(name, bases=(object), code='', slots=None, **kwargs):
             return NULL;
         return m;
     }}
-    """
+    """)
     kwargs["name"] = name
     kwargs["code"] = code
     kwargs["slots"] = '{0}' if slots is None else ',\n'.join(slots + ['{0}'])
