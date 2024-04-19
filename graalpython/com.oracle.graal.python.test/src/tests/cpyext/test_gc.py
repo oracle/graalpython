@@ -175,3 +175,244 @@ class TestGC1():
 #         arguments=("PyObject* o", ),
 #         callfunction="wrap_simple",
 #     )
+
+
+class TestGCRefCycles:
+    def _trigger_gc(self):
+        gc.collect()
+        for i in range(4 if GRAALPYTHON_NATIVE else 1):
+            time.sleep(0.5)
+            gc.collect()
+
+    def test_cycle_with_native_objects(self):
+        TestCycle0 = CPyExtType("TestCycle0",
+                                '''
+                                #define N 16
+                                static int freed[N];
+
+                                static int tc0_init(TestCycle0Object* self, PyObject* args, PyObject *kwargs) {
+                                    if (!PyArg_ParseTuple(args, "i", &self->idx)) {
+                                        return -1;
+                                    }
+                                    if (self->idx < 0 || self->idx >= N) {
+                                        PyErr_Format(PyExc_ValueError, "invalid index; must be between 0 and %d", N);
+                                        return -1;
+                                    }
+                                    freed[self->idx] = 0;
+                                    return 0;
+                                }
+
+                                static void tc0_clear(TestCycle0Object* self) {
+                                    printf("clear of %d called\\n", self->idx);
+                                    Py_CLEAR(self->other);
+                                }
+
+                                static void tc0_dealloc(TestCycle0Object* self) {
+                                    printf("dealloc of %d called\\n", self->idx);
+                                    PyObject_GC_UnTrack(self);
+                                    tc0_clear(self);
+                                    freed[self->idx] = 1;
+                                    PyObject_GC_Del(self);
+                                }
+
+                                static int tc0_traverse(TestCycle0Object* self, visitproc visit, void* arg) {
+                                    printf("traverse of %d called -- refcnt = %zd\\n", self->idx, Py_REFCNT(self));
+                                    if (self->other) {
+                                        Py_VISIT(self->other);
+                                    }
+                                    return 0;
+                                }
+
+                                static PyObject* tc0_set_obj(TestCycle0Object* self, PyObject* arg) {
+                                    self->other = Py_NewRef(arg);
+                                    return Py_NewRef(Py_None);
+                                }
+
+                                static PyObject* tc0_get_obj(TestCycle0Object* self) {
+                                    return Py_NewRef(self->other);
+                                }
+
+                                static PyObject* tc0_is_freed(PyObject* unused, PyObject* idx) {
+                                    long l = PyLong_AsLong(idx);
+                                    if (l < 0 || l >= N) {
+                                        PyErr_Format(PyExc_ValueError, "invalid index; must be between 0 and %d", N);
+                                        return NULL;
+                                    }
+                                    return PyBool_FromLong(freed[l]);
+                                }
+                                ''',
+                                includes='#include <stdio.h>',
+                                cmembers="""int idx;
+                                            PyObject *other;""",
+                                tp_init='(initproc)tc0_init',
+                                tp_methods="""
+                                {"set_obj", (PyCFunction)tc0_set_obj, METH_O, ""},
+                                {"get_obj", (PyCFunction)tc0_get_obj, METH_NOARGS, ""},
+                                {"is_freed", (PyCFunction)tc0_is_freed, METH_O | METH_CLASS, ""}
+                                """,
+                                tp_flags='Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC',
+                                tp_traverse='(traverseproc)tc0_traverse',
+                                tp_clear='(inquiry)tc0_clear',
+                                tp_dealloc='(destructor)tc0_dealloc',
+        )
+        obj0 = TestCycle0(0)
+        obj1 = TestCycle0(1)
+
+        # establish cycle: obj0 -> obj1 -> obj0
+        obj0.set_obj(obj1)
+        obj1.set_obj(obj0)
+
+        assert not TestCycle0.is_freed(0)
+        assert not TestCycle0.is_freed(1)
+
+        del obj1
+        self._trigger_gc()
+        assert not TestCycle0.is_freed(0)
+        assert not TestCycle0.is_freed(1)
+
+        del obj0
+        self._trigger_gc()
+        assert TestCycle0.is_freed(0)
+        assert TestCycle0.is_freed(1)
+
+        obj2 = TestCycle0(0)
+        obj3 = TestCycle0(1)
+        obj4 = TestCycle0(2)
+        obj5 = TestCycle0(3)
+
+        # establish cycle: obj2 -> obj3 -> l -> obj2
+        obj2.set_obj(obj3)
+        l = [obj2]
+        obj3.set_obj(l)
+
+        # establish cycle: obj4 -> obj5 -> l1 -> obj4
+        obj4.set_obj(obj5)
+        l1 = [obj4]
+        obj5.set_obj(l1)
+
+        assert not TestCycle0.is_freed(0)
+        assert not TestCycle0.is_freed(1)
+        assert not TestCycle0.is_freed(2)
+        assert not TestCycle0.is_freed(3)
+        del obj2, l, obj3
+        del obj4, obj5
+        self._trigger_gc()
+        assert TestCycle0.is_freed(0)
+        assert TestCycle0.is_freed(1)
+        # because l1 is still alive
+        assert not TestCycle0.is_freed(2)
+        assert not TestCycle0.is_freed(3)
+
+        rescued_obj4 = l1[0]
+        del l1
+        self._trigger_gc()
+        # still reachable
+        assert not TestCycle0.is_freed(2)
+        assert not TestCycle0.is_freed(3)
+        assert rescued_obj4.get_obj().get_obj()[0] is rescued_obj4
+
+        del rescued_obj4
+
+        # establish cycles: obj4 -> l2 -> obj5 -> l3 -> obj4 ;; l2 -> obj5 -> l3 -> l2
+        obj4 = TestCycle0(4)
+        obj5 = TestCycle0(5)
+        l2 = [obj5]
+        l3 = [obj4, l2]
+        obj4.set_obj(l2)
+        obj5.set_obj(l3)
+        assert not TestCycle0.is_freed(4)
+        assert not TestCycle0.is_freed(5)
+        del obj4, obj5, l2, l3
+        self._trigger_gc()
+        assert TestCycle0.is_freed(2)
+        assert TestCycle0.is_freed(3)
+        assert TestCycle0.is_freed(4)
+        assert TestCycle0.is_freed(5)
+
+
+    def test_cycle_with_lists(self):
+        TestCycle = CPyExtType("TestCycle",
+                               '''
+                               #define N 2
+                               static int freed[N];
+
+                               static void tc_dealloc(TestCycleObject* self) {
+                                   freed[self->idx] = 1;
+                                   PyObject_Free(self);
+                               }
+
+                               static int tc_check_index(long l) {
+                                    if (l < 0 || l >= N) {
+                                        PyErr_Format(PyExc_ValueError, "invalid index; must be between 0 and %d", N);
+                                        return -1;
+                                    }
+                                    return 0;
+                                }
+
+                                static int tc_init(TestCycleObject* self, PyObject* args, PyObject *kwargs) {
+                                    long l; 
+                                    if (!PyArg_ParseTuple(args, "l", &l)) {
+                                        return -1;
+                                    }
+                                    if (tc_check_index(l) < 0) {
+                                        return -1;
+                                    }
+                                    self->idx = l;
+                                    freed[l] = 0;
+                                    return 0;
+                                }
+
+                               static PyObject* tc_set_list_item(PyObject* class, PyObject* arg) {
+                                   long l = PyLong_AsLong(arg);
+                                   if (tc_check_index(l) < 0) {
+                                       return NULL;
+                                   }
+                                   PyObject *container0 = PyList_New(2);
+                                   PyObject *container1 = PyList_New(1);
+                                   TestCycleObject *obj = PyObject_New(TestCycleObject, (PyTypeObject *)class);
+                                   obj->idx = l;
+                                   freed[l] = 0;
+                                   PyList_SET_ITEM(container0, 0, container1);
+                                   PyList_SET_ITEM(container0, 1, obj);
+                                   PyList_SET_ITEM(container1, 0, container0);
+                                   return Py_BuildValue("(OO)", container0, container1);
+                               }
+
+                               static PyObject* tc_is_freed(PyObject* unused, PyObject* idx) {
+                                   long l = PyLong_AsLong(idx);
+                                   if (tc_check_index(l) < 0) {
+                                       return NULL;
+                                   }
+                                   return PyBool_FromLong(freed[l]);
+                               }
+                               ''',
+                               cmembers="int idx;",
+                               tp_init='(initproc)tc_init',
+                               tp_methods="""
+                               {"set_list_item", (PyCFunction)tc_set_list_item, METH_O | METH_CLASS, ""},
+                               {"is_freed", (PyCFunction)tc_is_freed, METH_O | METH_CLASS, ""}
+                               """,
+                               tp_flags='Py_TPFLAGS_DEFAULT',
+                               tp_dealloc='(destructor)tc_dealloc',
+                               )
+        l0, l1 = TestCycle.set_list_item(0)
+
+        ml0, ml1 = list(), list()
+        ml0.append(ml1)
+        ml0.append(TestCycle(1))
+        ml1.append(ml0)
+
+        assert not TestCycle.is_freed(0)
+        assert not TestCycle.is_freed(1)
+        assert l0[0] == l1
+        assert l1[0] == l0
+        assert ml0[0] == ml1
+        assert ml1[0] == ml0
+
+        del l0
+        del l1
+        del ml0
+        del ml1
+        self._trigger_gc()
+        assert TestCycle.is_freed(0)
+        assert TestCycle.is_freed(1)
