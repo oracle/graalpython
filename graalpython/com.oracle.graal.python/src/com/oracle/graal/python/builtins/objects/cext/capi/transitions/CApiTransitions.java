@@ -380,8 +380,8 @@ public abstract class CApiTransitions {
                     threadState.clearCurrentException();
                     Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
                     if (nativeThreadState != null) {
-                        savedNativeException = CStructAccess.ReadPointerNode.getUncached().read(nativeThreadState, CFields.PyThreadState__curexc_type);
-                        CStructAccess.WritePointerNode.getUncached().write(nativeThreadState, CFields.PyThreadState__curexc_type, 0L);
+                        savedNativeException = CStructAccess.ReadPointerNode.readUncached(nativeThreadState, CFields.PyThreadState__curexc_type);
+                        CStructAccess.WritePointerNode.writeUncached(nativeThreadState, CFields.PyThreadState__curexc_type, 0L);
                     }
                 }
                 try {
@@ -449,7 +449,7 @@ public abstract class CApiTransitions {
                         threadState.setCurrentException(savedException, savedTraceback);
                         Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
                         if (nativeThreadState != null) {
-                            CStructAccess.WritePointerNode.getUncached().write(nativeThreadState, CFields.PyThreadState__curexc_type, savedNativeException);
+                            CStructAccess.WritePointerNode.writeUncached(nativeThreadState, CFields.PyThreadState__curexc_type, savedNativeException);
                         }
                     }
                 }
