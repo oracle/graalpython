@@ -118,18 +118,15 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -1280,41 +1277,23 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     @ImportStatic(CApiGuards.class)
-    abstract static class PyTruffle_Object_Free extends CApiUnaryBuiltinNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffle_Object_Free.class);
+    abstract static class PyTruffleObject_GC_Del extends CApiUnaryBuiltinNode {
 
-        @Specialization(guards = "!isCArrayWrapper(nativeWrapper)")
-        static PNone doNativeWrapper(PythonNativeWrapper nativeWrapper,
+        @Specialization(limit = "3")
+        static PNone doObject(Object ptr,
                         @Bind("this") Node inliningTarget,
-                        @Cached ClearNativeWrapperNode clearNativeWrapperNode,
-                        @Cached PyTruffleObjectFree freeNode) {
-            // if (nativeWrapper.getRefCount() > 0) {
-            // CompilerDirectives.transferToInterpreterAndInvalidate();
-            // throw new IllegalStateException("deallocating native object with refcnt > 0");
-            // }
-
-            // clear native wrapper
-            Object delegate = nativeWrapper.getDelegate();
-            clearNativeWrapperNode.execute(inliningTarget, delegate, nativeWrapper);
-
-            freeNode.execute(inliningTarget, nativeWrapper);
+                        @Cached PyObjectGCDelNode pyObjectGCDelNode,
+                        @CachedLibrary("ptr") InteropLibrary lib) {
+            // we expect a pointer object here because this is called from native
+            assert CApiTransitions.isBackendPointerObject(ptr);
+            if (lib.isPointer(ptr)) {
+                try {
+                    pyObjectGCDelNode.execute(inliningTarget, lib.asPointer(ptr));
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
             return PNone.NO_VALUE;
-        }
-
-        @Specialization
-        static PNone arrayWrapper(@SuppressWarnings("unused") CArrayWrapper object) {
-            // It's a pointer to a managed object but doesn't need special handling, so we just
-            // ignore it.
-            return PNone.NO_VALUE;
-        }
-
-        @Specialization(guards = "!isNativeWrapper(object)")
-        static PNone doOther(@SuppressWarnings("unused") Object object) {
-            throw CompilerDirectives.shouldNotReachHere("Attempted to free a managed object");
-        }
-
-        protected static boolean isCArrayWrapper(Object obj) {
-            return obj instanceof CArrayWrapper;
         }
     }
 

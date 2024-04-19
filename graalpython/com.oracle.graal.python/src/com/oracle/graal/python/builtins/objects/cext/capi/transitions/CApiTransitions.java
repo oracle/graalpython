@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCTrackNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -460,7 +461,7 @@ public abstract class CApiTransitions {
                                  */
                                 long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
                                 if (subNativeRefCount(stubPointer, MANAGED_REFCNT) == 0) {
-                                    freeNativeStub(stubPointer, reference.gc);
+                                    freeNativeStub(reference);
                                 } else {
                                     /*
                                      * In this case, the object is no longer referenced from managed
@@ -587,15 +588,15 @@ public abstract class CApiTransitions {
         handleContext.referenceQueuePollActive = true;
     }
 
-    private static void freeNativeStub(long stubPointer, boolean gc) {
-        long rawPointer = gc ? stubPointer - CStructs.PyGC_Head.size() : stubPointer;
-        LOGGER.fine(() -> PythonUtils.formatJString("releasing native object stub 0x%x", rawPointer));
-        FreeNode.executeUncached(rawPointer);
-    }
-
     private static void freeNativeStub(PythonObjectReference ref) {
         assert HandlePointerConverter.pointsToPyHandleSpace(ref.pointer);
-        freeNativeStub(HandlePointerConverter.pointerToStub(ref.pointer), ref.gc);
+        if (ref.gc) {
+            PyObjectGCDelNode.executeUncached(ref.pointer);
+        } else {
+            long rawPointer = HandlePointerConverter.pointerToStub(ref.pointer);
+            LOGGER.fine(() -> PythonUtils.formatJString("releasing native object stub 0x%x", rawPointer));
+            FreeNode.executeUncached(rawPointer);
+        }
     }
 
     private static void freeNativeStruct(PythonObjectReference ref) {
@@ -983,6 +984,10 @@ public abstract class CApiTransitions {
             long taggedPointer = HandlePointerConverter.stubToPointer(stubPointer);
 
             if (gc) {
+                // TODO(fa): adjust allocation count of generation
+                // gcstate->generations[0].count++;
+
+                // similar to 'typeobject.c: PyType_GenericAlloc':
                 // register native stub to Python GC; use tagged pointer to PyGC_Head
                 gcTrackNode.execute(inliningTarget, taggedPointer);
 

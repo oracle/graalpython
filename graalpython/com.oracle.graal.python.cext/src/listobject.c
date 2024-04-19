@@ -117,7 +117,7 @@ PyTypeObject PyList_Type = {
     0,                                          /* tp_init */ // GraalPy change: nulled
     PyType_GenericAlloc,                        /* tp_alloc */
     PyType_GenericNew,                          /* tp_new */
-    PyObject_GC_Del,                            /* tp_free */
+    GraalPyObject_GC_Del,                       /* tp_free */
     .tp_vectorcall = 0, // GraalPy change: nulled
 };
 

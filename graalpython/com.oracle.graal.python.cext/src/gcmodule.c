@@ -2574,6 +2574,17 @@ PyObject_GC_IsFinalized(PyObject *obj)
     return 0;
 }
 
+
+void
+GraalPyObject_GC_Del(void *op)
+{
+    if (is_managed(op)) {
+        GraalPyTruffleObject_GC_Del(op);
+    } else {
+        PyObject_GC_Del(op);
+    }
+}
+
 /* Exposes 'gc_collect_impl' such that we can call it from Java. */
 PyAPI_FUNC(Py_ssize_t)
 GraalPyGC_Collect(int generation)

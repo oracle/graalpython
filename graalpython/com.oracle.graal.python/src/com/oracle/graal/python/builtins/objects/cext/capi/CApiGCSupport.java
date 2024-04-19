@@ -40,12 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import java.util.logging.Level;
+
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupportFactory.PyObjectGCDelNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -117,6 +122,77 @@ public abstract class CApiGCSupport {
 
             // generation0->_gc_prev = (uintptr_t)gc;
             writeLongNode.write(gen0, CFields.PyGC_Head___gc_prev, gc);
+        }
+    }
+
+    /**
+     * Implements the logic of {@code gcmodule.c: PyObject_GC_Del} without downcalls but to be used
+     * for native object stubs.
+     */
+    @GenerateInline
+    @GenerateUncached
+    @GenerateCached(false)
+    public abstract static class PyObjectGCDelNode extends Node {
+
+        public static void executeUncached(long op) {
+            PyObjectGCDelNodeGen.getUncached().execute(null, op);
+        }
+
+        public abstract void execute(Node inliningTarget, long op);
+
+        @Specialization
+        static void doGeneric(long op,
+                        @Cached(inline = false) CStructAccess.ReadI64Node readI64Node,
+                        @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode) {
+            if (CApiContext.GC_LOGGER.isLoggable(Level.FINE)) {
+                CApiContext.GC_LOGGER.fine(PythonUtils.formatJString("releasing native object stub 0x%x", op));
+            }
+
+            /*
+             * We expect a tagged pointer here because otherwise, the native 'PyObject_GC_Del'
+             * function should be used.
+             */
+            assert HandlePointerConverter.pointsToPyHandleSpace(op) : "expected tagged pointer";
+
+            long opUntagged = HandlePointerConverter.pointerToStub(op);
+            long gcUntagged = opUntagged - CStructs.PyGC_Head.size();
+
+            /*
+             * The following implements the section of 'PyObject_GC_Del' that removes the node from
+             * the GC generation if it was tracked by the GC.
+             */
+
+            // #define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)
+            long gcNext = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_prev);
+            // if (_PyObject_GC_IS_TRACKED(op))
+            if (gcNext != 0) {
+                // gc_list_remove
+
+                // PyGC_Head *prev = GC_PREV(gc)
+                long prev = maskPrevValue(readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_prev));
+
+                // PyGC_Head *next = GC_NEXT(gc)
+                long next = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next);
+
+                // _PyGCHead_SET_NEXT(prev, next)
+                writeLongNode.write(HandlePointerConverter.pointerToStub(prev), CFields.PyGC_Head___gc_next, next);
+
+                // _PyGCHead_SET_PREV(next, prev)
+                long curNextPrev = readI64Node.read(HandlePointerConverter.pointerToStub(next), CFields.PyGC_Head___gc_prev);
+                writeLongNode.write(HandlePointerConverter.pointerToStub(next), CFields.PyGC_Head___gc_prev, computePrevValue(curNextPrev, prev));
+
+                // UNTAG(gc)->_gc_next = 0
+                writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_next, 0);
+            }
+
+            // TODO(fa): adjust allocation count of generation
+            // GCState *gcstate = get_gc_state();
+            // if (gcstate->generations[0].count > 0) {
+            // gcstate->generations[0].count--;
+            // }
+
+            // PyObject_Free(((char *)op)-presize)
+            FreeNode.executeUncached(gcUntagged);
         }
     }
 }
