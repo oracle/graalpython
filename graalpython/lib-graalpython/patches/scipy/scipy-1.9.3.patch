@@ -103,7 +103,7 @@ diff --git a/pyproject.toml b/pyproject.toml
 index 6dc1d407..da3e4e6d 100644
 --- a/pyproject.toml
 +++ b/pyproject.toml
-@@ -8,7 +8,9 @@
+@@ -8,54 +8,19 @@
  #     "pybind11>=2.4.3,<2.5.0",
  
  [build-system]
@@ -114,7 +114,9 @@ index 6dc1d407..da3e4e6d 100644
  requires = [
      "meson-python>=0.9.0",  # we need more fixes in meson-python, so no upper bound now
      "Cython>=0.29.32,<3.0",
-@@ -17,45 +19,8 @@ requires = [
+     "pybind11>=2.4.3,<2.11.0",
+-    "pythran>=0.9.12,<0.13.0",
++    "pythran>=0.13.0",
      # `wheel` is needed for non-isolated builds, given that `meson-python`
      # doesn't list it as a runtime requirement (at least in 0.5.0)
      "wheel<0.38.0",
