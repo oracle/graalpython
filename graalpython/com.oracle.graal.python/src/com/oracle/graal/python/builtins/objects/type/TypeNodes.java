@@ -266,16 +266,16 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        long doBuiltinClassType(PythonBuiltinClassType clazz,
+        static long doBuiltinClassType(PythonBuiltinClassType clazz,
                         @Bind("this") Node inliningTarget,
                         @Shared("read") @Cached HiddenAttr.ReadNode readHiddenFlagsNode,
                         @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode,
                         @Shared("profile") @Cached InlinedCountingConditionProfile profile) {
-            return doManaged(PythonContext.get(this).getCore().lookupType(clazz), inliningTarget, readHiddenFlagsNode, writeHiddenFlagsNode, profile);
+            return doManaged(PythonContext.get(inliningTarget).getCore().lookupType(clazz), inliningTarget, readHiddenFlagsNode, writeHiddenFlagsNode, profile);
         }
 
         @Specialization
-        long doManaged(PythonManagedClass clazz,
+        static long doManaged(PythonManagedClass clazz,
                         @Bind("this") Node inliningTarget,
                         @Shared("read") @Cached HiddenAttr.ReadNode readHiddenFlagsNode,
                         @Shared("write") @Cached HiddenAttr.WriteNode writeHiddenFlagsNode,
@@ -299,7 +299,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private long computeFlags(PythonManagedClass clazz) {
+        private static long computeFlags(PythonManagedClass clazz) {
             if (clazz instanceof PythonBuiltinClass) {
                 return defaultBuiltinFlags(((PythonBuiltinClass) clazz).getType());
             }
@@ -316,7 +316,7 @@ public abstract class TypeNodes {
                 result |= MANAGED_DICT;
             }
 
-            PythonContext context = PythonContext.get(this);
+            PythonContext context = PythonContext.get(null);
             // flags are inherited
             MroSequenceStorage mroStorage = GetMroStorageNode.executeUncached(clazz);
             int n = mroStorage.length();
