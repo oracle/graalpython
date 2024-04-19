@@ -97,6 +97,7 @@ public @interface Slot {
         mp_length,
         tp_descr_get,
         tp_get_attro,
-        tp_descr_set
+        tp_descr_set,
+        tp_set_attro,
     }
 }

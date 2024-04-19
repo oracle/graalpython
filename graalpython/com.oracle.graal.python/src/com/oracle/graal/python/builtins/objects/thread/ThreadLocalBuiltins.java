@@ -41,9 +41,7 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
 import java.util.List;
@@ -55,36 +53,31 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GenericSetAttrWithDictNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.CallSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -127,7 +120,6 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetAttributeNode extends GetAttrBuiltinNode {
         @Child private CallSlotDescrGet callGetNode;
-        @Child private GetClassNode getDescClassNode;
 
         @Specialization
         Object doIt(VirtualFrame frame, PThreadLocal object, Object keyObj,
@@ -185,134 +177,34 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
             }
             return callGetNode.executeCached(frame, get, descr, object, type);
         }
-
-        private Object getDescClass(Object desc) {
-            if (getDescClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDescClassNode = insert(GetClassNode.create());
-            }
-            return getDescClassNode.executeCached(desc);
-        }
-
-        public static ObjectBuiltins.GetAttributeNode create() {
-            return ObjectBuiltinsFactory.GetAttributeNodeFactory.create();
-        }
     }
 
     @ImportStatic(PGuards.class)
-    @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.tp_set_attro, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
-        @Child private CallSlotDescrSet callSetNode;
-        @Child private HashingStorageSetItem setHashingStorageItem;
-        @CompilationFinal private boolean changedStorage;
-
+    public abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization
-        protected PNone doStringKey(VirtualFrame frame, PThreadLocal object, Object keyObject, Object value,
+        static void doStringKey(VirtualFrame frame, PThreadLocal object, TruffleString key, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetObjectSlotsNode getDescrSlotsNode,
-                        @Cached LookupAttributeInMRONode.Dynamic getExisting,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
+                        @Exclusive @Cached GenericSetAttrWithDictNode setAttrWithDictNode) {
             // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);
-            TruffleString key;
-            try {
-                key = castKeyToStringNode.execute(inliningTarget, keyObject);
-            } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
-            }
-            Object type = getClassNode.execute(inliningTarget, object);
-            Object descr = getExisting.execute(type, key);
-            if (descr != PNone.NO_VALUE) {
-                TpSlots descrSlots = getDescrSlotsNode.execute(inliningTarget, descr);
-                if (descrSlots.tp_descr_set() != null) {
-                    ensureCallSetNode().executeCached(frame, descrSlots.tp_descr_set(), descr, object, value);
-                    return PNone.NONE;
-                }
-            }
-            writeAttribute(frame, localDict, key, value);
-            return PNone.NONE;
+            setAttrWithDictNode.execute(inliningTarget, frame, object, key, value, localDict);
         }
-
-        private CallSlotDescrSet ensureCallSetNode() {
-            if (callSetNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callSetNode = insert(CallSlotDescrSet.create());
-            }
-            return callSetNode;
-        }
-
-        private void writeAttribute(VirtualFrame frame, PDict dict, Object key, Object value) {
-            if (setHashingStorageItem == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setHashingStorageItem = insert(HashingStorageSetItem.create());
-            }
-            HashingStorage storage = dict.getDictStorage();
-            HashingStorage newStorage = setHashingStorageItem.executeCached(frame, storage, key, value);
-            if (storage != newStorage) {
-                if (!changedStorage) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    changedStorage = true;
-                }
-                dict.setDictStorage(newStorage);
-            }
-        }
-    }
-
-    @Builtin(name = J___DELATTR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
-        @Child private GetClassNode getDescClassNode;
 
         @Specialization
-        PNone doIt(VirtualFrame frame, PThreadLocal object, Object keyObj,
+        @InliningCutoff
+        static void doGeneric(VirtualFrame frame, PThreadLocal object, Object keyObject, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
-                        @Cached LookupAttributeInMRONode.Dynamic getExisting,
-                        @Cached GetClassNode getClassNode,
-                        @Cached("create(T___DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
-                        @Cached CallBinaryMethodNode callDelete,
-                        @Cached HashingStorageDelItem delHashingStorageItem,
+                        @Exclusive @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached GenericSetAttrWithDictNode setAttrWithDictNode) {
             // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);
-            TruffleString key;
-            try {
-                key = castKeyToStringNode.execute(inliningTarget, keyObj);
-            } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
-            }
-            Object type = getClassNode.execute(inliningTarget, object);
-            Object descr = getExisting.execute(type, key);
-            if (descr != PNone.NO_VALUE) {
-                Object dataDescClass = getDescClass(descr);
-                Object delete = lookupDeleteNode.execute(dataDescClass);
-                if (PGuards.isCallable(delete)) {
-                    callDelete.executeObject(frame, delete, descr, object);
-                    return PNone.NONE;
-                }
-            }
-            Object found = delHashingStorageItem.executePop(inliningTarget, localDict.getDictStorage(), key, localDict);
-            if (found != null) {
-                return PNone.NONE;
-            }
-            if (descr != PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
-            } else {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
-            }
-        }
-
-        private Object getDescClass(Object desc) {
-            if (getDescClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDescClassNode = insert(GetClassNode.create());
-            }
-            return getDescClassNode.executeCached(desc);
+            TruffleString key = ObjectNodes.GenericSetAttrNode.castAttributeKey(inliningTarget, keyObject, castKeyToStringNode, raiseNode);
+            setAttrWithDictNode.execute(inliningTarget, frame, object, key, value, localDict);
         }
     }
 }

@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -130,6 +131,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
@@ -141,6 +143,7 @@ import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -155,6 +158,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -825,24 +829,62 @@ public abstract class ObjectNodes {
     @GenerateCached(false)
     @GenerateUncached
     public abstract static class GenericSetAttrNode extends Node {
+        /**
+         * If {@code value} argument may be {@link PNone#NO_VALUE}, which indicates that we want to
+         * delete the attribute.
+         */
+        public abstract void execute(Node inliningTarget, VirtualFrame frame, Object object, TruffleString key, Object value, WriteAttributeToObjectNode writeNode);
+
         public abstract void execute(Node inliningTarget, VirtualFrame frame, Object object, Object key, Object value, WriteAttributeToObjectNode writeNode);
 
         @Specialization
-        static void doIt(Node inliningTarget, VirtualFrame frame, Object object, Object keyObject, Object value, WriteAttributeToObjectNode writeNode,
-                        @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached InlinedConditionProfile hasDescriptor,
-                        @Cached GetObjectSlotsNode getDescrSlotsNode,
-                        @Cached CallSlotDescrSet callSetNode,
-                        @Cached(inline = false) LookupAttributeInMRONode.Dynamic getExisting,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            TruffleString key;
+        static void doStringKey(Node inliningTarget, VirtualFrame frame, Object object, TruffleString key, Object value, WriteAttributeToObjectNode writeNode,
+                        @SuppressWarnings("unused") @Shared @Cached CastToTruffleStringNode castKeyToStringNode,
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached InlinedConditionProfile hasDescriptor,
+                        @Shared @Cached GetObjectSlotsNode getDescrSlotsNode,
+                        @Shared @Cached CallSlotDescrSet callSetNode,
+                        @Shared @Cached(inline = false) LookupAttributeInMRONode.Dynamic getExisting,
+                        @Shared @Cached(inline = false) ReadAttributeFromObjectNode attrRead,
+                        @Shared @Cached InlinedBranchProfile deleteNonExistingBranchProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            setAttr(inliningTarget, frame, object, key, value, writeNode, getClassNode, hasDescriptor,
+                            getDescrSlotsNode, callSetNode, getExisting, attrRead, deleteNonExistingBranchProfile,
+                            raiseNode);
+        }
+
+        @Specialization
+        @InliningCutoff
+        static void doGeneric(Node inliningTarget, VirtualFrame frame, Object object, Object keyObject, Object value, WriteAttributeToObjectNode writeNode,
+                        @Shared @Cached CastToTruffleStringNode castKeyToStringNode,
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached InlinedConditionProfile hasDescriptor,
+                        @Shared @Cached GetObjectSlotsNode getDescrSlotsNode,
+                        @Shared @Cached CallSlotDescrSet callSetNode,
+                        @Shared @Cached(inline = false) LookupAttributeInMRONode.Dynamic getExisting,
+                        @Shared @Cached(inline = false) ReadAttributeFromObjectNode attrRead,
+                        @Shared @Cached InlinedBranchProfile deleteNonExistingBranchProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            TruffleString key = castAttributeKey(inliningTarget, keyObject, castKeyToStringNode, raiseNode);
+            setAttr(inliningTarget, frame, object, key, value, writeNode, getClassNode, hasDescriptor,
+                            getDescrSlotsNode, callSetNode, getExisting, attrRead, deleteNonExistingBranchProfile,
+                            raiseNode);
+        }
+
+        public static TruffleString castAttributeKey(Node inliningTarget, Object keyObject, CastToTruffleStringNode castKeyToStringNode, PRaiseNode.Lazy raiseNode) {
             try {
-                key = castKeyToStringNode.execute(inliningTarget, keyObject);
+                return castKeyToStringNode.execute(inliningTarget, keyObject);
             } catch (CannotCastException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, keyObject);
             }
+        }
 
+        private static void setAttr(Node inliningTarget, VirtualFrame frame, Object object, TruffleString key,
+                        Object value, WriteAttributeToObjectNode writeNode, GetClassNode getClassNode,
+                        InlinedConditionProfile hasDescriptor, GetObjectSlotsNode getDescrSlotsNode,
+                        CallSlotDescrSet callSetNode, LookupAttributeInMRONode.Dynamic getExisting,
+                        ReadAttributeFromObjectNode attrRead, InlinedBranchProfile deleteNonExistingBranchProfile,
+                        PRaiseNode.Lazy raiseNode) {
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = getExisting.execute(type, key);
             if (hasDescriptor.profile(inliningTarget, !PGuards.isNoValue(descr))) {
@@ -853,14 +895,110 @@ public abstract class ObjectNodes {
                 }
             }
 
-            boolean wroteAttr = writeNode.execute(object, key, value);
-            if (wroteAttr) {
-                return;
+            boolean writeValue = true;
+            if (value == PNone.NO_VALUE) {
+                Object currentValue = attrRead.execute(object, key);
+                if (currentValue == PNone.NO_VALUE) {
+                    deleteNonExistingBranchProfile.enter(inliningTarget);
+                    writeValue = false;
+                }
             }
+
+            if (writeValue) {
+                boolean wroteAttr = writeNode.execute(object, key, value);
+                if (wroteAttr) {
+                    return;
+                }
+            }
+
             if (descr != PNone.NO_VALUE) {
                 throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
             } else {
                 throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
+            }
+        }
+
+        public static GenericSetAttrNode getUncached() {
+            return ObjectNodesFactory.GenericSetAttrNodeGen.getUncached();
+        }
+    }
+
+    /**
+     * Equivalent of {@code _PyObject_GenericSetAttrWithDict}, but only for non-null dict parameter.
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class GenericSetAttrWithDictNode extends Node {
+        /**
+         * If {@code value} argument may be {@link PNone#NO_VALUE}, which indicates that we want to
+         * delete the attribute.
+         */
+        public abstract void execute(Node inliningTarget, VirtualFrame frame, Object object, TruffleString key, Object value, PDict dict);
+
+        @Specialization
+        static void doIt(Node inliningTarget, VirtualFrame frame, Object object, TruffleString key, Object value, PDict dict,
+                        @Cached GetClassNode getClassNode,
+                        @Cached InlinedConditionProfile hasDescriptor,
+                        @Cached GetObjectSlotsNode getDescrSlotsNode,
+                        @Cached CallSlotDescrSet callSetNode,
+                        @Cached(inline = false) LookupAttributeInMRONode.Dynamic getExisting,
+                        @Cached HashingStorageDelItem delHashingStorageItem,
+                        @Cached HashingStorageSetItem setHashingStorageItem,
+                        @Cached InlinedConditionProfile isDeleteProfile,
+                        @Cached InlinedBranchProfile changedStorageProfile,
+                        @Cached(inline = false) RaiseAttributeErrorNode raiseAttributeErrorNode) {
+            Object type = getClassNode.execute(inliningTarget, object);
+            Object descr = getExisting.execute(type, key);
+            if (hasDescriptor.profile(inliningTarget, !PGuards.isNoValue(descr))) {
+                var slots = getDescrSlotsNode.execute(inliningTarget, descr);
+                if (slots.tp_descr_set() != null) {
+                    callSetNode.execute(frame, inliningTarget, slots.tp_descr_set(), descr, object, value);
+                    return;
+                }
+            }
+
+            if (isDeleteProfile.profile(inliningTarget, value == PNone.NO_VALUE)) {
+                Object found = delHashingStorageItem.executePop(frame, inliningTarget, dict.getDictStorage(), key, dict);
+                if (found == null) {
+                    raiseAttributeError(object, key, raiseAttributeErrorNode, type);
+                }
+            } else {
+                HashingStorage storage = dict.getDictStorage();
+                HashingStorage newStorage = setHashingStorageItem.execute(frame, inliningTarget, storage, key, value);
+                if (storage != newStorage) {
+                    changedStorageProfile.enter(inliningTarget);
+                    dict.setDictStorage(newStorage);
+                }
+            }
+        }
+
+        @InliningCutoff
+        private static void raiseAttributeError(Object object, TruffleString key, RaiseAttributeErrorNode raiseAttributeErrorNode, Object type) {
+            raiseAttributeErrorNode.execute(object, key, type);
+        }
+
+        @GenerateInline(false) // used lazily
+        @GenerateUncached
+        public abstract static class RaiseAttributeErrorNode extends Node {
+            public abstract void execute(Object object, Object key, Object type);
+
+            @Specialization
+            static void doIt(Object object, Object key, Object type,
+                            @Bind("this") Node inliningTarget,
+                            @Cached PRaiseNode raiseNode,
+                            @Cached IsSubtypeNode isSubtypeNode,
+                            @Cached TypeNodes.GetNameNode getTypeName) {
+                TruffleString message;
+                Object firstArg;
+                if (isSubtypeNode.execute(type, PythonBuiltinClassType.PythonClass)) {
+                    message = ErrorMessages.TYPE_S_HAS_NO_ATTR;
+                    firstArg = getTypeName.execute(inliningTarget, object);
+                } else {
+                    message = ErrorMessages.HAS_NO_ATTR;
+                    firstArg = object;
+                }
+                raiseNode.raise(PythonBuiltinClassType.AttributeError, message, firstArg, key);
             }
         }
 

@@ -66,7 +66,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
@@ -102,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -1035,11 +1035,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.tp_set_attro, isComplex = true)
     @GenerateNodeFactory
-    abstract static class SetattrNode extends PythonTernaryBuiltinNode {
+    abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization
-        static PNone doIt(Object object, Object key, Object value,
+        static void doIt(Object object, Object key, Object value,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CastToJavaStringNode castToString,
@@ -1055,7 +1055,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            return PNone.NONE;
         }
     }
 

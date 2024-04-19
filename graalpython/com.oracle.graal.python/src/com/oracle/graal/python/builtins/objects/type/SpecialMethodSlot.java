@@ -131,7 +131,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET_NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
@@ -207,7 +206,6 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
  * initialized.
  */
 public enum SpecialMethodSlot {
-    SetAttr(T___SETATTR__),
     DelAttr(T___DELATTR__),
 
     Dict(T___DICT__),
@@ -857,9 +855,6 @@ public enum SpecialMethodSlot {
                 }
                 break;
             case 's' * 26 + 'e':    // se
-                if (eqNode.execute(name, T___SETATTR__, TS_ENCODING)) {
-                    return SetAttr;
-                }
                 if (eqNode.execute(name, T___SET_NAME__, TS_ENCODING)) {
                     return SetName;
                 }

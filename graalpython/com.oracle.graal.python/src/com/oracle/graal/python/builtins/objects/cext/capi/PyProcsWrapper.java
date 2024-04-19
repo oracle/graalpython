@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.CallSl
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallManagedSlotGetAttrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CallSlotNbBoolNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallManagedSlotSetAttrNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -64,7 +65,6 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -186,59 +186,6 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new GetAttrWrapper(slot);
-        }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GetAttrCombinedWrapper extends PyProcsWrapper {
-
-        private final Object getattr;
-
-        public GetAttrCombinedWrapper(Object getattro, Object getattr) {
-            super(getattro);
-            this.getattr = getattr;
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind("$node") Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallBinaryMethodNode executeNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length != 2) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(2, 2, arguments.length);
-                }
-                try {
-                    Object object = toJavaNode.execute(arguments[0]);
-                    Object key = toJavaNode.execute(arguments[1]);
-                    try {
-                        return toNativeNode.execute(executeNode.executeObject(null, getDelegate(), object, key));
-                    } catch (PException e) {
-                        e.expectAttributeError(inliningTarget, errorProfile);
-                    }
-                    return toNativeNode.execute(executeNode.executeObject(null, getattr, object, key));
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "GetAttrWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull();
-            } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER):POINTER";
         }
     }
 
@@ -415,6 +362,53 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         @Override
         protected String getSignature() {
             return "(POINTER,POINTER,POINTER):SINT32";
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class SetattrWrapper extends TpSlotWrapper {
+        public SetattrWrapper(TpSlotManaged delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage
+        int execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached CallManagedSlotSetAttrNode callSlotNode,
+                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached InlinedConditionProfile arityProfile,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
+            try {
+                if (arityProfile.profile(inliningTarget, arguments.length < 3)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(3, -1, arguments.length);
+                }
+                try {
+                    callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]), toJavaNode.execute(arguments[2]));
+                    return 0;
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "ObjobjargWrapper", getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(inliningTarget, e);
+                return -1;
+            } finally {
+                CApiTiming.exit(timing);
+                gil.release(mustRelease);
+            }
+        }
+
+        @Override
+        protected String getSignature() {
+            return "(POINTER,POINTER,POINTER):SINT32";
+        }
+
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new SetattrWrapper(slot);
         }
     }
 

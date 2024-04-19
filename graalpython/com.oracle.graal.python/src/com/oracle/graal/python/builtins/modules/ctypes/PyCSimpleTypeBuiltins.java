@@ -146,7 +146,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttrType,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
-                        @Cached SetAttributeNode.Dynamic setAttrString,
+                        @Cached SetAttributeNode.DynamicStringKey setAttrString,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached TruffleString.IndexOfStringNode indexOfStringNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,

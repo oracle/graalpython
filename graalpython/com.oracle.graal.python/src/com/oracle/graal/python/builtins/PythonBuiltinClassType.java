@@ -118,6 +118,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCStructTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.SimpleCDataBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
@@ -406,8 +407,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     CArgObject("CArgObject", Flags.PUBLIC_BASE_WODICT),
     CThunkObject("CThunkObject", J__CTYPES, Flags.PUBLIC_BASE_WODICT),
     StgDict("StgDict", Flags.PRIVATE_DERIVED_WODICT, DICT_M_FLAGS, StgDictBuiltins.SLOTS),
-    PyCStructType("PyCStructType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCSTRUCTTYPE_M_FLAGS),
-    UnionType("UnionType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, UNIONTYPE_M_FLAGS),
+    PyCStructType("PyCStructType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCSTRUCTTYPE_M_FLAGS, PyCStructTypeBuiltins.SLOTS),
+    UnionType("UnionType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, UNIONTYPE_M_FLAGS, com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins.SLOTS),
     PyCPointerType("PyCPointerType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCPOINTERTYPE_M_FLAGS),
     PyCArrayType("PyCArrayType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCARRAYTYPE_M_FLAGS),
     PyCSimpleType("PyCSimpleType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCSIMPLETYPE_M_FLAGS),

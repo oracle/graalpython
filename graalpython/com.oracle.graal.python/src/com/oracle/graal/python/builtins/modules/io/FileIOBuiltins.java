@@ -320,7 +320,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached(inline = false) IONodes.CastOpenNameNode castOpenNameNode,
                         @Cached(inline = false) PosixModuleBuiltins.CloseNode posixClose,
-                        @Cached(inline = false) SetAttributeNode.Dynamic setAttr,
+                        @Cached(inline = false) SetAttributeNode.DynamicStringKey setAttr,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached InlinedBranchProfile exceptionProfile,
                         @Cached InlinedBranchProfile exceptionProfile1,

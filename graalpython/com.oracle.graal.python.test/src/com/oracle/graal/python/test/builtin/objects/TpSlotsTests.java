@@ -66,6 +66,7 @@ public class TpSlotsTests {
         checkSlotValue(TpSlotMeta.SQ_LENGTH, slots.combined_sq_mp_length());
         checkSlotValue(TpSlotMeta.MP_LENGTH, slots.combined_mp_sq_length());
         checkSlotValue(TpSlotMeta.TP_GET_ATTRO, slots.combined_tp_getattro_getattr());
+        checkSlotValue(TpSlotMeta.TP_SET_ATTRO, slots.combined_tp_setattro_setattr());
     }
 
     @Test
@@ -73,13 +74,15 @@ public class TpSlotsTests {
         Builder builder = TpSlots.newBuilder();
         builder.set(TpSlotMeta.MP_LENGTH, new TpSlotNative(TpSlotMeta.MP_LENGTH));
         builder.set(TpSlotMeta.TP_GET_ATTR, new TpSlotNative(TpSlotMeta.TP_GET_ATTR));
+        builder.set(TpSlotMeta.TP_SET_ATTR, new TpSlotNative(TpSlotMeta.TP_SET_ATTR));
 
         TpSlots slots = builder.build();
-        verifySlots(slots, def -> def == TpSlotMeta.MP_LENGTH || def == TpSlotMeta.TP_GET_ATTR);
+        verifySlots(slots, def -> def == TpSlotMeta.MP_LENGTH || def == TpSlotMeta.TP_GET_ATTR || def == TpSlotMeta.TP_SET_ATTR);
 
         checkSlotValue(TpSlotMeta.MP_LENGTH, slots.combined_sq_mp_length());
         checkSlotValue(TpSlotMeta.MP_LENGTH, slots.combined_mp_sq_length());
         checkSlotValue(TpSlotMeta.TP_GET_ATTR, slots.combined_tp_getattro_getattr());
+        checkSlotValue(TpSlotMeta.TP_SET_ATTR, slots.combined_tp_setattro_setattr());
     }
 
     @Test

@@ -270,9 +270,9 @@ public class TpSlotGetAttr {
     @ImportStatic(PGuards.class)
     @SuppressWarnings("rawtypes")
     public abstract static class CallManagedSlotGetAttrNode extends Node {
-        public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object name);
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlotManaged slot, Object self, Object name);
 
-        public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, TruffleString name);
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlotManaged slot, Object self, TruffleString name);
 
         @Specialization(guards = "slot == cachedSlot", limit = "3")
         static Object callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotGetAttrBuiltin slot, Object self, TruffleString name,

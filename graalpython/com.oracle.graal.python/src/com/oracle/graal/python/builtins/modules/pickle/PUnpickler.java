@@ -707,7 +707,7 @@ public class PUnpickler extends PythonBuiltinObject {
         protected void setAttribute(VirtualFrame frame, Object object, Object key, Object value) {
             if (setAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                setAttributeNode = insert(new SetAttributeNode.Dynamic());
+                setAttributeNode = insert(SetAttributeNode.Dynamic.create());
             }
             setAttributeNode.execute(frame, object, key, value);
         }

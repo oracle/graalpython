@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,27 +40,59 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallSlotSetAttrNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallSlotSetAttrONode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.nodes.attributes.SetAttributeNodeGen.DynamicNodeGen;
+import com.oracle.graal.python.nodes.attributes.SetAttributeNodeGen.DynamicStringKeyNodeGen;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class SetAttributeNode extends PNodeWithContext {
 
-    public static final class Dynamic extends PNodeWithContext {
-        @Child private LookupAndCallTernaryNode call = LookupAndCallTernaryNode.create(SpecialMethodSlot.SetAttr);
+    @GenerateInline(value = false)
+    public abstract static class Dynamic extends PNodeWithContext {
 
-        public void execute(VirtualFrame frame, Object object, Object key, Object value) {
-            call.execute(frame, object, key, value);
+        public abstract void execute(VirtualFrame frame, Object object, Object key, Object value);
+
+        public abstract void execute(VirtualFrame frame, Object object, TruffleString key, Object value);
+
+        @Specialization
+        protected void doIt(VirtualFrame frame, Object object, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetObjectSlotsNode getSlotsNode,
+                        @Cached CallSlotSetAttrONode call) {
+            call.execute(frame, inliningTarget, getSlotsNode.execute(inliningTarget, object), object, key, value);
         }
 
         @NeverDefault
         public static Dynamic create() {
-            return new Dynamic();
+            return DynamicNodeGen.create();
+        }
+    }
+
+    @GenerateInline(value = false)
+    public abstract static class DynamicStringKey extends PNodeWithContext {
+        public abstract void execute(VirtualFrame frame, Object object, TruffleString key, Object value);
+
+        @Specialization
+        protected void doIt(VirtualFrame frame, Object object, TruffleString key, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetObjectSlotsNode getSlotsNode,
+                        @Cached CallSlotSetAttrNode call) {
+            call.execute(frame, inliningTarget, getSlotsNode.execute(inliningTarget, object), object, key, value);
+        }
+
+        @NeverDefault
+        public static DynamicStringKey create() {
+            return DynamicStringKeyNodeGen.create();
         }
     }
 
@@ -83,7 +115,9 @@ public abstract class SetAttributeNode extends PNodeWithContext {
 
     @Specialization
     protected void doIt(VirtualFrame frame, Object object, Object value,
-                    @Cached("create(SetAttr)") LookupAndCallTernaryNode call) {
-        call.execute(frame, object, key, value);
+                    @Bind("this") Node inliningTarget,
+                    @Cached GetObjectSlotsNode getSlotsNode,
+                    @Cached CallSlotSetAttrNode call) {
+        call.execute(frame, inliningTarget, getSlotsNode.execute(inliningTarget, object), object, key, value);
     }
 }
