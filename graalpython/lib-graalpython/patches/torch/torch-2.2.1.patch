@@ -1,5 +1,5 @@
 diff --git a/functorch/csrc/dim/dim.cpp b/functorch/csrc/dim/dim.cpp
-index 4cc02750..ab2497c5 100644
+index 21f0a166..ab2497c5 100644
 --- a/functorch/csrc/dim/dim.cpp
 +++ b/functorch/csrc/dim/dim.cpp
 @@ -22,7 +22,10 @@ PyObject* Dim_init() {
@@ -27,15 +27,6 @@ index 4cc02750..ab2497c5 100644
  
  // C++ API functions for objects to
  // * construct the object, returning a ref-counted handle
-@@ -1350,7 +1355,7 @@ mpy::object __torch_function__(Arena &A, mpy::handle orig, mpy::vector_args args
- }
- 
- mpy::vector_args as_vector_args(Arena& A, mpy::handle args, mpy::handle kwargs) {
--    auto pos_args = (mpy::handle*) &PyTuple_GET_ITEM(args.ptr(), 0);
-+    auto pos_args = (mpy::handle*) PySequence_Fast_ITEMS(args.ptr());
-     auto pos_n = PyTuple_GET_SIZE(args.ptr());
-     if (!kwargs.ptr()) {
-         return mpy::vector_args(pos_args, pos_n, nullptr);
 @@ -1468,6 +1473,7 @@ PyTypeObject Tensor::Type = {
  
  // dim() --------------------
@@ -356,7 +347,7 @@ index 1293a0fd..dfb4385a 100644
 +            torch._C._DisableFuncTorch():
          return _str_intern(self, tensor_contents=tensor_contents)
 diff --git a/torch/csrc/Module.cpp b/torch/csrc/Module.cpp
-index a8bf9903..0168b101 100644
+index b85e94d2..0168b101 100644
 --- a/torch/csrc/Module.cpp
 +++ b/torch/csrc/Module.cpp
 @@ -341,46 +341,16 @@ PyObject* THPModule_addDocStr(PyObject* _unused, PyObject* args) {
@@ -369,7 +360,7 @@ index a8bf9903..0168b101 100644
 -      return PyErr_Format(
 -          PyExc_RuntimeError,
 -          "function '%s' already has a docstring",
--          f->m_ml->ml_name);
+-          _PyCFunction_GetMethodDef((PyObject*)(f))->ml_name);
 -    }
 -    PyObject_SetDoc((PyObject*)(f), doc_str);
 -  } else if (strcmp(Py_TYPE(obj)->tp_name, "method_descriptor") == 0) {
