@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -47,6 +48,8 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.lib.PyObjectTypeCheck;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -58,6 +61,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
@@ -102,6 +106,31 @@ public class CDataObject extends PythonBuiltinObject {
     @ExportMessage
     int getBufferLength() {
         return b_size;
+    }
+
+    @ExportMessage
+    TruffleString getFormatString(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached StgDictBuiltins.PyTypeStgDictNode stgDictNode) {
+        Object itemType = getClassNode.execute(inliningTarget, this);
+        StgDictObject dict = stgDictNode.execute(inliningTarget, itemType);
+        return dict.format;
+    }
+
+    @ExportMessage
+    int getItemSize(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached StgDictBuiltins.PyTypeStgDictNode stgDictNode,
+                    @Cached PyObjectTypeCheck typeCheck) {
+        Object itemType = getClassNode.execute(inliningTarget, this);
+        while (typeCheck.execute(inliningTarget, itemType, PythonBuiltinClassType.PyCArrayType)) {
+            StgDictObject stgDict = stgDictNode.execute(inliningTarget, itemType);
+            itemType = stgDict.proto;
+        }
+        StgDictObject itemDict = stgDictNode.execute(inliningTarget, itemType);
+        return itemDict.size;
     }
 
     @ExportMessage
