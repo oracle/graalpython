@@ -433,11 +433,7 @@ public class CtypesNodes {
             writePointerNode.write(view, CFields.Py_buffer__format, formatPtr);
             writeIntNode.write(view, CFields.Py_buffer__ndim, dict.ndim);
             Object shapePtr = allocateNode.alloc(dict.shape.length * Long.BYTES);
-            long[] shapeArray = new long[dict.shape.length];
-            for (int i = 0; i < dict.shape.length; i++) {
-                shapeArray[i] = dict.shape[i];
-            }
-            writeLongNode.writeLongArray(shapePtr, shapeArray);
+            writeLongNode.writeIntArray(shapePtr, dict.shape);
             writePointerNode.write(view, CFields.Py_buffer__shape, shapePtr);
             writeLongNode.write(view, CFields.Py_buffer__itemsize, itemDict.size);
             writePointerNode.write(view, CFields.Py_buffer__strides, nativeNull);
