@@ -157,8 +157,10 @@ auto_replacements = {
                     r'\W(ob_item)\W': (replace_field_access, 'PySequence_Fast_ITEMS((PyObject*)%receiver)'),
                     r'^\s*()(std::)?free\((const_cast<char \*>)?\(?\w+->m_ml->ml_doc\)?\);': (simple_replace, '//'),
                     r'\W(m_ml\s*->\s*ml_doc)\W': (replace_field_access, 'PyObject_GetDoc((PyObject*)(%receiver))', 'PyObject_SetDoc((PyObject*)(%receiver), %value)'),
-                    r'\W(m_ml)\W': (replace_field_access, '_PyCFunction_GetMethodDef((PyObject*)(%receiver))'),
-                    r'\W(m_module)\W': (replace_field_access, '_PyCFunction_GetModule((PyObject*)(%receiver))'),
+                    # Py_CLEAR/Py_VISIT on a function's module is skipped for us, Java GC takes care of it
+                    r'(Py_(?:CLEAR|VISIT)\((?:(?:\(?\([a-zA-Z0-9_]|[a-zA-Z0-9_])(?:[a-zA-Z0-9_]|\)|\*\)|->)*)->m_module\);)': (simple_replace, ''),
+                    r'\W(m_ml)\W': (replace_field_access, '_PyCFunction_GetMethodDef((PyObject*)(%receiver))', '_PyCFunction_SetMethodDef((PyObject*)(%receiver), %value)'),
+                    r'\W(m_module)\W': (replace_field_access, '_PyCFunction_GetModule((PyObject*)(%receiver))', '_PyCFunction_SetModule((PyObject*)(%receiver), %value)'),
                     r'(&PyTuple_GET_ITEM\(([\(\w](?:\w|->|\.|\(|\))*), 0\))': (simple_replace, r'PySequence_Fast_ITEMS(\2)'),
                     # already defined by GraalPy:
                     r'^\s*()#\s*define\s+Py_SET_TYPE\W': (simple_replace, '//'),

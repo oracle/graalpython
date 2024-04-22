@@ -537,6 +537,9 @@ class TestPyCFunction:
             // CPython and other don't have this function; so define it
             #ifndef GRAALVM_PYTHON
             #define _PyCFunction_GetMethodDef(OBJ) (((PyCFunctionObject*) (OBJ))->m_ml)
+            #define _PyCFunction_SetMethodDef(OBJ, VAL) (((PyCFunctionObject*) (OBJ))->m_ml = (VAL))
+            #define _PyCFunction_GetModule(OBJ) (((PyCFunctionObject*) (OBJ))->m_module)
+            #define _PyCFunction_SetModule(OBJ, VAL) (((PyCFunctionObject*) (OBJ))->m_module = (VAL))
             #define PyMethodDescrObject_GetMethod(OBJ) (((PyMethodDescrObject *) (OBJ))->d_method)
             #endif
 
@@ -680,6 +683,32 @@ class TestPyCFunction:
                 return PyUnicode_FromString(def->ml_doc);
             }
 
+            static PyObject *set_def(PyObject *self, PyObject *arg) {
+                if (!PyCFunction_Check(arg)) {
+                    PyErr_SetString(PyExc_TypeError, "<callable> is not a PyCFunction (i.e. builtin_method_or_function)");
+                    return NULL;
+                }
+                PyMethodDef *def = _PyCFunction_GetMethodDef(arg);
+                _PyCFunction_SetMethodDef(arg, def);
+                return PyUnicode_FromString(_PyCFunction_GetMethodDef(arg)->ml_doc);
+            }
+
+            static PyObject *get_set_module(PyObject *self, PyObject *arg) {
+                if (!PyCFunction_Check(arg)) {
+                    PyErr_SetString(PyExc_TypeError, "<callable> is not a PyCFunction (i.e. builtin_method_or_function)");
+                    return NULL;
+                }
+                PyObject *module = _PyCFunction_GetModule(arg);
+                Py_XINCREF(self);
+                _PyCFunction_SetModule(arg, self);
+                if (_PyCFunction_GetModule(arg) != self) {
+                    PyErr_SetString(PyExc_TypeError, "module of function is not self");
+                    return NULL;
+                }
+                Py_XINCREF(self);
+                return self;
+            }
+
             static PyObject *new_meth(PyObject *self, PyObject *args) {
                 PyObject *callable_type = NULL, *callable_self, *callable;
                 if (!PyArg_ParseTuple(args, "OO:new_meth",
@@ -711,7 +740,9 @@ class TestPyCFunction:
             {"call_meth", (PyCFunction)call_meth, METH_VARARGS, ""},
             {"call_meth_descr", (PyCFunction)call_meth_descr, METH_VARARGS, ""},
             {"get_doc", (PyCFunction)get_doc, METH_O, ""},
-            {"new_meth", (PyCFunction)new_meth, METH_VARARGS, ""}
+            {"new_meth", (PyCFunction)new_meth, METH_VARARGS, ""},
+            {"set_def", (PyCFunction)set_def, METH_O, ""},
+            {"get_set_module", (PyCFunction)get_set_module, METH_O, ""}
             ''',
             post_ready_code='''
             PyModule_AddIntMacro(m, METH_NOARGS);
@@ -738,6 +769,8 @@ class TestPyCFunction:
         assert tester.get_flags(tester.native_meth_keywords) == m.METH_VARARGS | m.METH_KEYWORDS
         assert tester.get_doc(tester.native_meth_keywords) == "doc keywords"
         assert tester.call_meth(tester.native_meth_keywords, (1, 2), {"hello": "world"}) == ((1, 2), {"hello": "world"})
+        assert tester.set_def(tester.native_meth_keywords) == "doc keywords"
+        assert tester.get_set_module(tester.get_set_module) == tester
 
         # built-in functions
 

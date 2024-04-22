@@ -94,3 +94,11 @@ PyObject* _PyCFunction_GetModule(PyObject *func) {
 PyMethodDef* _PyCFunction_GetMethodDef(PyObject *func) {
     return PyCFunctionObject_m_ml(func);
 }
+
+void _PyCFunction_SetModule(PyObject *func, PyObject *mod) {
+    set_PyCFunctionObject_m_module(func, mod);
+}
+
+void _PyCFunction_SetMethodDef(PyObject *func, PyMethodDef *def) {
+    set_PyCFunctionObject_m_ml(func, def);
+}

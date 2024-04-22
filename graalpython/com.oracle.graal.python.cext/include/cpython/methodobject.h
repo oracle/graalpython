@@ -71,9 +71,10 @@ static inline PyTypeObject* PyCFunction_GET_CLASS(PyObject *func_obj) {
 #endif
 
 /*
- * XXX These functions are GraalPy-only. We need them to replace field access in our patches.
- * Currently used by (at least) cffi patch.
+ * XXX These functions are GraalPy-only. We need them to replace field access.
+ * Currently inserted by our autopatch_capi.py
  */
 PyAPI_FUNC(PyObject*) _PyCFunction_GetModule(PyObject* a);
 PyAPI_FUNC(PyMethodDef*) _PyCFunction_GetMethodDef(PyObject* a);
-
+PyAPI_FUNC(void) _PyCFunction_SetModule(PyObject* a, PyObject* b);
+PyAPI_FUNC(void) _PyCFunction_SetMethodDef(PyObject* a, PyMethodDef *b);

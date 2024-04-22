@@ -541,6 +541,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyBytes_Resize", ret = Int, args = {PyObjectPtr, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "_PyCFunction_GetMethodDef", ret = PyMethodDef, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyCFunction_GetModule", ret = PyObject, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "_PyCFunction_SetMethodDef", ret = Void, args = {PyObject, PyMethodDef}, call = CImpl)
+    @CApiBuiltin(name = "_PyCFunction_SetModule", ret = Void, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_ContainsId", ret = Int, args = {PyObject, _PY_IDENTIFIER_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItemIdWithError", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItemStringWithError", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
