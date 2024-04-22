@@ -36,9 +36,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import ctypes
 import struct
+import sys
 
 from tests.cpyext import CPyExtTestCase, CPyExtType
 
@@ -115,6 +115,9 @@ BufferTester = CPyExtType(
 
 class TestCDataBuffer(CPyExtTestCase):
     def test_buffer(self):
+        if sys.implementation.name == 'graalpy' and __graalpython__.get_platform_id() == 'managed':
+            # TODO we don't support converting ctypes arrays to native memory in managed
+            return
         int_format = struct.Struct(">i")
         inner_type = ctypes.c_int.__ctype_be__ * 2
         outer_type = inner_type * 2
