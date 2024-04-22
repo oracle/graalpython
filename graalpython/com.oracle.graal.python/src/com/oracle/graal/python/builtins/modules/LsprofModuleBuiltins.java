@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,7 +69,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.InstrumentInfo;
-import com.oracle.truffle.api.TruffleContext;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -282,9 +281,8 @@ class ProfilerBuiltins extends PythonBuiltins {
         static PList doit(Profiler self) {
             double avgSampleSeconds = self.sampler.getPeriod() / 1000D;
             List<PTuple> entries = new ArrayList<>();
-            Map<TruffleContext, CPUSamplerData> data = self.sampler.getData();
-            for (TruffleContext context : data.keySet()) {
-                Map<Thread, Collection<ProfilerNode<Payload>>> threads = data.get(context).getThreadData();
+            for (CPUSamplerData data : self.sampler.getDataList()) {
+                Map<Thread, Collection<ProfilerNode<Payload>>> threads = data.getThreadData();
                 for (Thread thread : threads.keySet()) {
                     for (ProfilerNode<Payload> node : threads.get(thread)) {
                         countNode(entries, node, avgSampleSeconds);
