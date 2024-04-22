@@ -78,11 +78,24 @@ BufferTester = CPyExtType(
     }
     
     static PyObject* buffer_tester_itemsize(BufferTesterObject* self) {
-        return PyLong_FromLong(self->buffer.itemsize);
+        return PyLong_FromSsize_t(self->buffer.itemsize);
     }
     
     static PyObject* buffer_tester_format(BufferTesterObject* self) {
         return PyBytes_FromString(self->buffer.format);
+    }
+    
+    static PyObject* buffer_tester_shape(BufferTesterObject* self) {
+        PyObject* tuple = PyTuple_New(self->buffer.ndim);
+        if (!tuple)
+            return NULL;
+        for (int i = 0; i < self->buffer.ndim; i++) {
+            PyObject* value = PyLong_FromSsize_t(self->buffer.shape[i]);
+            if (!value)
+                return NULL;
+            PyTuple_SET_ITEM(tuple, i, value);
+        }
+        return tuple;
     }
     ''',
     tp_new='buffer_tester_new',
@@ -94,17 +107,22 @@ BufferTester = CPyExtType(
     {"obj", (getter)buffer_tester_obj, NULL, NULL, NULL},
     {"bytes", (getter)buffer_tester_bytes, NULL, NULL, NULL},
     {"itemsize", (getter)buffer_tester_itemsize, NULL, NULL, NULL},
-    {"format", (getter)buffer_tester_format, NULL, NULL, NULL}
+    {"format", (getter)buffer_tester_format, NULL, NULL, NULL},
+    {"shape", (getter)buffer_tester_shape, NULL, NULL, NULL}
     ''',
 )
 
 
 class TestCDataBuffer(CPyExtTestCase):
     def test_buffer(self):
-        numbers = [1, 2, 3, 4]
-        array = (ctypes.c_int * 4)(*numbers)
+        int_format = struct.Struct(">i")
+        inner_type = ctypes.c_int.__ctype_be__ * 2
+        outer_type = inner_type * 2
+        array = outer_type(inner_type(1, 2), inner_type(3, 4))
         with BufferTester(array) as buffer:
             assert buffer.obj is array
-            assert buffer.bytes == b''.join(struct.pack("i", n) for n in numbers)
-            assert buffer.itemsize == 4
-            assert buffer.format == b'<i'
+            assert buffer.bytes == b''.join(int_format.pack(n) for n in [1, 2, 3, 4])
+            assert buffer.itemsize == int_format.size
+            assert buffer.format.startswith(b'>')
+            assert struct.Struct(buffer.format).size == int_format.size
+            assert buffer.shape == (2, 2)
