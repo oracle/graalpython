@@ -110,7 +110,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         PythonModule astModule = core.lookupBuiltinModule(T__AST);
         AstTypeFactory astTypeFactory = new AstTypeFactory(core.getLanguage(), core.factory(), astModule);
         AstState state = new AstState(astTypeFactory, core.lookupType(PythonBuiltinClassType.AST));
-        astModule.setInternalAttributes(state);
+        astModule.setModuleState(state);
     }
 
     @Builtin(name = "AST", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.AST)
@@ -132,7 +132,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
     }
 
     private static AstState getAstState(PythonContext context) {
-        return context.lookupBuiltinModule(T__AST).getInternalAttributes();
+        return context.lookupBuiltinModule(T__AST).getModuleState();
     }
 
     @TruffleBoundary

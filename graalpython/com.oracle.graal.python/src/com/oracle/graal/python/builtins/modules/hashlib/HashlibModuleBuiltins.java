@@ -162,7 +162,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         EconomicMapStorage storage = EconomicMapStorage.create();
         addBuiltinConstant(J_CONSTRUCTORS, core.factory().createMappingproxy(core.factory().createDict(storage)));
-        core.lookupBuiltinModule(T_HASHLIB).setInternalAttributes(storage);
+        core.lookupBuiltinModule(T_HASHLIB).setModuleState(storage);
         super.initialize(core);
     }
 
@@ -180,7 +180,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         PythonModule self = core.lookupBuiltinModule(T_HASHLIB);
         ReadAttributeFromPythonObjectNode readNode = ReadAttributeFromPythonObjectNode.getUncached();
-        EconomicMapStorage storage = self.getInternalAttributes();
+        EconomicMapStorage storage = self.getModuleState();
         PythonModule sha3module = AbstractImportNode.importModule(T_SHA3);
         for (int i = 0; i < DIGEST_ALIASES.length; i += 2) {
             String module = DIGEST_ALIASES[i + 1];
@@ -286,7 +286,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached PythonObjectFactory factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             // cast guaranteed in our initialize
-            EconomicMapStorage constructors = self.getInternalAttributes();
+            EconomicMapStorage constructors = self.getModuleState();
             Object name = getItemNode.execute(frame, inliningTarget, constructors, digestmod);
             if (name != null) {
                 assert name instanceof TruffleString; // guaranteed in our initialize

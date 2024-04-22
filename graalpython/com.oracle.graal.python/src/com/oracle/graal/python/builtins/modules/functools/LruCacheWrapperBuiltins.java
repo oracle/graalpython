@@ -187,7 +187,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
             obj.misses = obj.hits = 0;
             obj.maxsize = maxsize;
 
-            obj.kwdMark = PythonContext.get(inliningTarget).lookupBuiltinModule(T_FUNCTOOLS).getInternalAttributes();
+            obj.kwdMark = PythonContext.get(inliningTarget).lookupBuiltinModule(T_FUNCTOOLS).getModuleState();
 
             obj.cacheInfoType = cache_info_type;
             // obj.dict = null;

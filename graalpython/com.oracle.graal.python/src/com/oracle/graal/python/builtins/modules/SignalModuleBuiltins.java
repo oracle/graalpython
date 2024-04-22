@@ -135,7 +135,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
 
         PythonModule signalModule = core.lookupBuiltinModule(T__SIGNAL);
         ModuleData moduleData = new ModuleData();
-        signalModule.setInternalAttributes(moduleData);
+        signalModule.setModuleState(moduleData);
 
         core.getContext().registerAsyncAction(() -> {
             SignalTriggerAction poll = moduleData.signalQueue.poll();
@@ -160,7 +160,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     }
 
     public static void resetSignalHandlers(PythonModule mod) {
-        ModuleData data = mod.getInternalAttributes();
+        ModuleData data = mod.getModuleState();
         if (data != null) {
             for (Map.Entry<Integer, SignalHandler> entry : data.defaultSignalHandlers.entrySet()) {
                 Signals.setSignalHandler(entry.getKey(), entry.getValue());
@@ -227,7 +227,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         int alarm(PythonModule module, int seconds) {
             int remaining = 0;
-            ModuleData data = module.getInternalAttributes();
+            ModuleData data = module.getModuleState();
             Signals.Alarm currentAlarm = data.currentAlarm;
             if (currentAlarm != null) {
                 if (currentAlarm.isRunning()) {
@@ -277,7 +277,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object getsignal(PythonModule mod, int signum) {
-            ModuleData data = mod.getInternalAttributes();
+            ModuleData data = mod.getModuleState();
             return handlerToPython(Signals.getCurrentSignalHandler(signum), signum, data);
         }
 
@@ -305,7 +305,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object signalHandler(PythonModule self, Object signal, Object handler,
                         @Bind("this") Node inliningTarget) {
-            ModuleData data = self.getInternalAttributes();
+            ModuleData data = self.getModuleState();
             int signum = PyNumberAsSizeNode.executeExactUncached(signal);
             if (PyCallableCheckNode.executeUncached(handler)) {
                 return signal(inliningTarget, signum, handler, data);
@@ -424,7 +424,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                         @Cached PyTimeFromObjectNode timeFromObjectNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PythonObjectFactory factory) {
-            ModuleData moduleData = self.getInternalAttributes();
+            ModuleData moduleData = self.getModuleState();
             long usDelay = toMicroseconds(frame, inliningTarget, seconds, timeFromObjectNode);
             long usInterval = toMicroseconds(frame, inliningTarget, interval, timeFromObjectNode);
             if (which != ITIMER_REAL) {
@@ -492,7 +492,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PythonObjectFactory factory) {
-            ModuleData moduleData = self.getInternalAttributes();
+            ModuleData moduleData = self.getModuleState();
             if (which != ITIMER_REAL) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
             }

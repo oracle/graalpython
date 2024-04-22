@@ -182,12 +182,12 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("_onceregistry", onceregistry);
         PList filters = initFilters(core.factory());
         addBuiltinConstant("filters", filters);
-        ModuleData data = new ModuleData();
-        data.filtersVersion = 0L;
-        data.filters = filters;
-        data.onceRegistry = onceregistry;
-        data.defaultAction = T_DEFAULT;
-        core.lookupBuiltinModule(T__WARNINGS).setInternalAttributes(data);
+        ModuleState moduleState = new ModuleState();
+        moduleState.filtersVersion = 0L;
+        moduleState.filters = filters;
+        moduleState.onceRegistry = onceregistry;
+        moduleState.defaultAction = T_DEFAULT;
+        core.lookupBuiltinModule(T__WARNINGS).setModuleState(moduleState);
         super.initialize(core);
     }
 
@@ -445,32 +445,28 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          * uncached.
          */
         private static long getStateFiltersVersion(PythonModule warningsModule) {
-            ModuleData data = warningsModule.getInternalAttributes();
-            return data.filtersVersion;
+            return warningsModule.<ModuleState> getModuleState().filtersVersion;
         }
 
         /**
          * On fast path.
          */
         private Object getStateFilters(PythonModule warningsModule) {
-            ModuleData data = warningsModule.getInternalAttributes();
-            return data.filters;
+            return warningsModule.<ModuleState> getModuleState().filters;
         }
 
         /**
          * On slow path.
          */
         private static Object getStateOnceRegistry(PythonModule warningsModule) {
-            ModuleData data = warningsModule.getInternalAttributes();
-            return data.onceRegistry;
+            return warningsModule.<ModuleState> getModuleState().onceRegistry;
         }
 
         /**
          * On fast path.
          */
         private Object getStateDefaultAction(PythonModule warningsModule) {
-            ModuleData data = warningsModule.getInternalAttributes();
-            return data.defaultAction;
+            return warningsModule.<ModuleState> getModuleState().defaultAction;
         }
 
         /**
@@ -576,8 +572,8 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         private TruffleString getFilter(VirtualFrame frame, PythonModule _warnings, Object category, Object text, int lineno, Object module, Object[] item) {
             Object filters = getWarningsAttr(frame, T_FILTERS);
             if (filters != null) {
-                ModuleData data = _warnings.getInternalAttributes();
-                data.filters = filters;
+                ModuleState moduleState = _warnings.getModuleState();
+                moduleState.filters = filters;
             } else {
                 filters = getStateFilters(_warnings);
             }
@@ -1071,8 +1067,8 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
     abstract static class FiltersMutated extends PythonBuiltinNode {
         @Specialization
         static PNone mutate(PythonModule self) {
-            ModuleData data = self.getInternalAttributes();
-            data.filtersVersion++;
+            ModuleState moduleState = self.getModuleState();
+            moduleState.filtersVersion++;
             return PNone.NONE;
         }
     }
@@ -1192,7 +1188,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static class ModuleData {
+    private static class ModuleState {
         long filtersVersion;
         Object filters;
         TruffleString defaultAction;

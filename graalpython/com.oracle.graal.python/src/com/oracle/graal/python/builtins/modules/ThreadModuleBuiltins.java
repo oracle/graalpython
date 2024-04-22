@@ -106,7 +106,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         addBuiltinConstant("error", core.lookupType(PythonBuiltinClassType.RuntimeError));
         addBuiltinConstant("TIMEOUT_MAX", TIMEOUT_MAX);
-        core.lookupBuiltinModule(T__THREAD).setInternalAttributes(0);
+        core.lookupBuiltinModule(T__THREAD).setModuleState(0);
         super.initialize(core);
     }
 
@@ -177,7 +177,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         long getCount(PythonModule self) {
-            return (int) self.getInternalAttributes();
+            return self.<Integer> getModuleState();
         }
     }
 
@@ -230,8 +230,8 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
             TruffleThreadBuilder threadBuilder = env.newTruffleThreadBuilder(() -> {
                 try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
                     // the increment is protected by the gil
-                    int curCount = threadModule.getInternalAttributes();
-                    threadModule.setInternalAttributes(curCount + 1);
+                    int curCount = threadModule.getModuleState();
+                    threadModule.setModuleState(curCount + 1);
                     try {
                         // n.b.: It is important to pass 'null' frame here because each thread has
                         // its own stack and if we would pass the current frame, this would be
@@ -246,8 +246,8 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         }
                         // SystemExit is silently ignored (see _threadmodule.c: thread_run)
                     } finally {
-                        curCount = threadModule.getInternalAttributes();
-                        threadModule.setInternalAttributes(curCount - 1);
+                        curCount = threadModule.getModuleState();
+                        threadModule.setModuleState(curCount - 1);
                     }
                 }
             }).context(env.getContext()).threadGroup(context.getThreadGroup());

@@ -188,7 +188,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         PythonModule module = core.lookupBuiltinModule(T__SOCKET);
-        module.setInternalAttributes(-1L);
+        module.setModuleState(-1L);
         if (PosixSupportLibrary.getUncached().getBackend(core.getContext().getPosixSupport()).toJavaStringUncached().equals("java")) {
             module.setAttribute(toTruffleStringUncached(PosixConstants.AF_UNIX.name), PNone.NO_VALUE);
         }
@@ -231,7 +231,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     public abstract static class GetDefaultTimeoutNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PythonModule module) {
-            long timeout = module.getInternalAttributes();
+            long timeout = module.getModuleState();
             return timeout < 0 ? PNone.NONE : TimeUtils.pyTimeAsSecondsDouble(timeout);
         }
     }
@@ -244,7 +244,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode) {
             long timeout = parseTimeoutNode.execute(frame, inliningTarget, value);
-            module.setInternalAttributes(timeout);
+            module.setModuleState(timeout);
             return PNone.NONE;
         }
     }
