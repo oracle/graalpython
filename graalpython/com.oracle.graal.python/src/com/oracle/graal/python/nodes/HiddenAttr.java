@@ -53,7 +53,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKLISTOF
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ALLOC__;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.ReadNodeGen;
@@ -95,25 +94,11 @@ public final class HiddenAttr {
     public static final HiddenAttr WEAK_REF_QUEUE = new HiddenAttr("weakRefQueue");     // _weakref
     public static final HiddenAttr ENCODER_OBJECT = new HiddenAttr("encoder_object");   // cjkcodecs
     public static final HiddenAttr DECODER_OBJECT = new HiddenAttr("decoder_object");   // cjkcodecs
-    public static final HiddenAttr KWD_MARK = new HiddenAttr("kwd_mark");               // functools
-    public static final HiddenAttr ORIGINAL_CONSTRUCTORS = new HiddenAttr(HashlibModuleBuiltins.J_CONSTRUCTORS);    // hashlib
     public static final HiddenAttr PICKLE_STATE = new HiddenAttr("state");              // pickle
     public static final HiddenAttr NEXT_ELEMENT = new HiddenAttr("next_element");       // PythonAbstractObject
     public static final HiddenAttr INTERNED = new HiddenAttr("_interned");              // PString
-    public static final HiddenAttr AST_STATE = new HiddenAttr("ast_state");             // _ast
     public static final HiddenAttr HOST_INTEROP_BEHAVIOR = new HiddenAttr(J___GRAALPYTHON_INTEROP_BEHAVIOR__);      // polyglot
-    public static final HiddenAttr DATA = new HiddenAttr("__data__");                   // readline
-    public static final HiddenAttr SIGNAL_MODULE_DATA = new HiddenAttr("signalModuleData"); // _signal
-    public static final HiddenAttr CURRENT_ALARM = new HiddenAttr("current_alarm");     // _signal
-    public static final HiddenAttr DEFAULT_TIMEOUT = new HiddenAttr("default_timeout"); // _socket
     public static final HiddenAttr TREGEX_CACHE = new HiddenAttr("tregex_cache");       // _sre
-    public static final HiddenAttr THREAD_COUNT = new HiddenAttr("thread_count");       // _thread
-    public static final HiddenAttr CURRENT_ZONE_ID = new HiddenAttr("currentZoneID");   // time
-    public static final HiddenAttr TIME_SLEPT = new HiddenAttr("timeSlept");            // time
-    public static final HiddenAttr FILTERS_VERSION = new HiddenAttr("filters_version"); // _warnings
-    public static final HiddenAttr FILTERS = new HiddenAttr("filters");                 // _warnings
-    public static final HiddenAttr DEFAULTACTION = new HiddenAttr("_defaultaction");    // _warnings
-    public static final HiddenAttr ONCEREGISTRY = new HiddenAttr("_onceregistry");      // _warnings
     public static final HiddenAttr METHOD_DEF_PTR = new HiddenAttr("method_def_ptr");   // PythonCextMethodBuiltins
     public static final HiddenAttr PROMOTED_START = new HiddenAttr("promoted_start");   // PythonCextSlotBuiltins
     public static final HiddenAttr PROMOTED_STEP = new HiddenAttr("promoted_step");     // PythonCextSlotBuiltins

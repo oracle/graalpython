@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.functools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PythonObject;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FUNCTOOLS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_FUNCTOOLS;
 import static com.oracle.graal.python.nodes.ErrorMessages.REDUCE_EMPTY_SEQ;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_N_MUST_SUPPORT_ITERATION;
 import static com.oracle.truffle.api.nodes.LoopNode.reportLoopCount;
@@ -55,7 +56,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -100,7 +100,7 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
                                         "\n" + //
                                         "cache_info_type:    namedtuple class with the fields:\n" + //
                                         "                        hits misses currsize maxsize\n");
-        addBuiltinConstant(HiddenAttr.KWD_MARK, core.factory().createPythonObject(PythonObject));
+        core.lookupBuiltinModule(T_FUNCTOOLS).setInternalAttributes(core.factory().createPythonObject(PythonObject));
     }
 
     // functools.reduce(function, iterable[, initializer])

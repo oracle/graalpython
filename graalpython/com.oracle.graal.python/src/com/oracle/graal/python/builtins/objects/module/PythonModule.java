@@ -56,6 +56,7 @@ public final class PythonModule extends PythonObject {
     private Object nativeModuleState;
 
     private PythonBuiltins builtins;
+    private Object internalAttributes;
 
     public PythonModule(Object clazz, Shape instanceShape) {
         super(clazz, instanceShape);
@@ -101,6 +102,15 @@ public final class PythonModule extends PythonObject {
 
     public void setBuiltins(PythonBuiltins builtins) {
         this.builtins = builtins;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T getInternalAttributes() {
+        return (T) internalAttributes;
+    }
+
+    public void setInternalAttributes(Object internalAttributes) {
+        this.internalAttributes = internalAttributes;
     }
 
     @Override

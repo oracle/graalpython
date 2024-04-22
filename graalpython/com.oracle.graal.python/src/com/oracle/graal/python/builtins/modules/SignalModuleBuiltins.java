@@ -41,8 +41,6 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
-import static com.oracle.graal.python.nodes.HiddenAttr.CURRENT_ALARM;
-import static com.oracle.graal.python.nodes.HiddenAttr.SIGNAL_MODULE_DATA;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.TimeUtils.SEC_TO_US;
 
@@ -72,7 +70,6 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -138,7 +135,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
 
         PythonModule signalModule = core.lookupBuiltinModule(T__SIGNAL);
         ModuleData moduleData = new ModuleData();
-        HiddenAttr.WriteNode.executeUncached(signalModule, SIGNAL_MODULE_DATA, moduleData);
+        signalModule.setInternalAttributes(moduleData);
 
         core.getContext().registerAsyncAction(() -> {
             SignalTriggerAction poll = moduleData.signalQueue.poll();
@@ -163,8 +160,8 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     }
 
     public static void resetSignalHandlers(PythonModule mod) {
-        Object obj = HiddenAttr.ReadNode.executeUncached(mod, SIGNAL_MODULE_DATA, null);
-        if (obj instanceof ModuleData data) {
+        ModuleData data = mod.getInternalAttributes();
+        if (data != null) {
             for (Map.Entry<Integer, SignalHandler> entry : data.defaultSignalHandlers.entrySet()) {
                 Signals.setSignalHandler(entry.getKey(), entry.getValue());
             }
@@ -230,8 +227,9 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         int alarm(PythonModule module, int seconds) {
             int remaining = 0;
-            Object currentAlarmObj = HiddenAttr.ReadNode.executeUncached(module, CURRENT_ALARM, null);
-            if (currentAlarmObj instanceof Signals.Alarm currentAlarm) {
+            ModuleData data = module.getInternalAttributes();
+            Signals.Alarm currentAlarm = data.currentAlarm;
+            if (currentAlarm != null) {
                 if (currentAlarm.isRunning()) {
                     remaining = currentAlarm.getRemainingSeconds();
                     if (remaining < 0) {
@@ -242,7 +240,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             }
             if (seconds > 0) {
                 Signals.Alarm newAlarm = new Signals.Alarm(seconds);
-                HiddenAttr.WriteNode.executeUncached(module, CURRENT_ALARM, newAlarm);
+                data.currentAlarm = newAlarm;
                 newAlarm.start();
             }
             return remaining;
@@ -279,7 +277,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object getsignal(PythonModule mod, int signum) {
-            ModuleData data = (ModuleData) HiddenAttr.ReadNode.executeUncached(mod, SIGNAL_MODULE_DATA, null);
+            ModuleData data = mod.getInternalAttributes();
             return handlerToPython(Signals.getCurrentSignalHandler(signum), signum, data);
         }
 
@@ -307,7 +305,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object signalHandler(PythonModule self, Object signal, Object handler,
                         @Bind("this") Node inliningTarget) {
-            ModuleData data = getModuleDataUncached(self);
+            ModuleData data = self.getInternalAttributes();
             int signum = PyNumberAsSizeNode.executeExactUncached(signal);
             if (PyCallableCheckNode.executeUncached(handler)) {
                 return signal(inliningTarget, signum, handler, data);
@@ -423,11 +421,10 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doIt(VirtualFrame frame, PythonModule self, int which, Object seconds, Object interval,
                         @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readModuleDataNode,
                         @Cached PyTimeFromObjectNode timeFromObjectNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PythonObjectFactory factory) {
-            ModuleData moduleData = getModuleData(self, inliningTarget, readModuleDataNode);
+            ModuleData moduleData = self.getInternalAttributes();
             long usDelay = toMicroseconds(frame, inliningTarget, seconds, timeFromObjectNode);
             long usInterval = toMicroseconds(frame, inliningTarget, interval, timeFromObjectNode);
             if (which != ITIMER_REAL) {
@@ -493,10 +490,9 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doIt(VirtualFrame frame, PythonModule self, int which,
                         @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readModuleDataNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PythonObjectFactory factory) {
-            ModuleData moduleData = getModuleData(self, inliningTarget, readModuleDataNode);
+            ModuleData moduleData = self.getInternalAttributes();
             if (which != ITIMER_REAL) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
             }
@@ -522,24 +518,6 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static ModuleData getModuleDataUncached(PythonModule mod) {
-        Object obj = HiddenAttr.ReadNode.executeUncached(mod, SIGNAL_MODULE_DATA, null);
-        if (obj instanceof ModuleData) {
-            return (ModuleData) obj;
-        } else {
-            throw new IllegalStateException("the signal module was not initialized properly!");
-        }
-    }
-
-    private static ModuleData getModuleData(PythonModule mod, Node inliningTarget, HiddenAttr.ReadNode readNode) {
-        Object obj = readNode.execute(inliningTarget, mod, SIGNAL_MODULE_DATA, null);
-        if (obj instanceof ModuleData) {
-            return (ModuleData) obj;
-        } else {
-            throw new IllegalStateException("the signal module was not initialized properly!");
-        }
-    }
-
     private static class ModuleData {
         final ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
         final ConcurrentHashMap<Integer, SignalHandler> defaultSignalHandlers = new ConcurrentHashMap<>();
@@ -548,6 +526,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         ScheduledExecutorService itimerService;
         ScheduledFuture<?> itimerFuture;
         long itimerInterval;
+        Signals.Alarm currentAlarm;
     }
 
 }

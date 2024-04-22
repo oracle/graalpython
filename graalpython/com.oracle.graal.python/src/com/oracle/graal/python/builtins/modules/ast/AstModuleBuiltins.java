@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.pegparser.InputType;
@@ -111,7 +110,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         PythonModule astModule = core.lookupBuiltinModule(T__AST);
         AstTypeFactory astTypeFactory = new AstTypeFactory(core.getLanguage(), core.factory(), astModule);
         AstState state = new AstState(astTypeFactory, core.lookupType(PythonBuiltinClassType.AST));
-        HiddenAttr.WriteNode.executeUncached(astModule, HiddenAttr.AST_STATE, state);
+        astModule.setInternalAttributes(state);
     }
 
     @Builtin(name = "AST", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.AST)
@@ -133,7 +132,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
     }
 
     private static AstState getAstState(PythonContext context) {
-        return (AstState) HiddenAttr.ReadNode.executeUncached(context.lookupBuiltinModule(T__AST), HiddenAttr.AST_STATE, null);
+        return context.lookupBuiltinModule(T__AST).getInternalAttributes();
     }
 
     @TruffleBoundary
