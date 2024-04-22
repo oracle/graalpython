@@ -162,6 +162,28 @@ public class JavaInteropTest {
         }
 
         @Test
+        public void importingJavaLangStringConvertsEagerly() {
+            try (Context c = Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).build()) {
+                c.getPolyglotBindings().putMember("b", "hello world");
+                c.eval("python", "import polyglot; xyz = polyglot.import_value('b'); assert isinstance(xyz, str)");
+                // should not fail
+            }
+        }
+
+        @Test
+        public void evalWithSyntaxErrorThrows() {
+            try (Context c = Context.newBuilder().build()) {
+                c.eval("python", "var d=5/0");
+            } catch (PolyglotException t) {
+                assertTrue(t.isSyntaxError());
+                assertFalse(t.isIncompleteSource());
+                return;
+            }
+
+            fail();
+        }
+
+        @Test
         public void truffleMethodExport() {
             String source = "import polyglot\n" +
                             "@polyglot.export_value\n" +

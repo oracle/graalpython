@@ -114,6 +114,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.InteropBehavior;
 import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -196,7 +197,8 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class ImportNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object importSymbol(TruffleString name) {
+        Object importSymbol(TruffleString name,
+                        @Cached PForeignToPTypeNode convert) {
             Env env = getContext().getEnv();
             if (!env.isPolyglotBindingsAccessAllowed()) {
                 throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
@@ -205,7 +207,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             if (object == null) {
                 return PNone.NONE;
             }
-            return object;
+            return convert.executeConvert(object);
         }
     }
 
@@ -214,7 +216,8 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     abstract static class EvalInteropNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object evalString(@SuppressWarnings("unused") PNone path, TruffleString tvalue, TruffleString tlangOrMimeType) {
+        Object evalString(@SuppressWarnings("unused") PNone path, TruffleString tvalue, TruffleString tlangOrMimeType,
+                        @Shared @Cached PForeignToPTypeNode convert) {
             Env env = getContext().getEnv();
             if (!env.isPolyglotEvalAllowed()) {
                 throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
@@ -229,7 +232,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 if (mimeType) {
                     newBuilder = newBuilder.mimeType(langOrMimeType);
                 }
-                return env.parsePublic(newBuilder.build()).call();
+                return convert.executeConvert(env.parsePublic(newBuilder.build()).call());
             } catch (RuntimeException e) {
                 throw PRaiseNode.raiseUncached(this, NotImplementedError, e);
             }
@@ -244,7 +247,8 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization
-        Object evalFile(TruffleString tpath, @SuppressWarnings("unused") PNone string, TruffleString tlangOrMimeType) {
+        Object evalFile(TruffleString tpath, @SuppressWarnings("unused") PNone string, TruffleString tlangOrMimeType,
+                        @Shared @Cached PForeignToPTypeNode convert) {
             Env env = getContext().getEnv();
             if (!env.isPolyglotEvalAllowed()) {
                 throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
@@ -259,7 +263,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 if (mimeType) {
                     newBuilder = newBuilder.mimeType(langOrMimeType);
                 }
-                return getContext().getEnv().parsePublic(newBuilder.name(path).build()).call();
+                return convert.executeConvert(getContext().getEnv().parsePublic(newBuilder.name(path).build()).call());
             } catch (IOException e) {
                 throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.S, e);
             } catch (RuntimeException e) {
@@ -269,14 +273,15 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization
-        Object evalFile(TruffleString tpath, @SuppressWarnings("unused") PNone string, @SuppressWarnings("unused") PNone lang) {
+        Object evalFile(TruffleString tpath, @SuppressWarnings("unused") PNone string, @SuppressWarnings("unused") PNone lang,
+                        @Shared @Cached PForeignToPTypeNode convert) {
             Env env = getContext().getEnv();
             if (!env.isPolyglotEvalAllowed()) {
                 throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
             }
             try {
                 String path = tpath.toJavaStringUncached();
-                return getContext().getEnv().parsePublic(Source.newBuilder(PythonLanguage.ID, env.getPublicTruffleFile(path)).name(path).build()).call();
+                return convert.executeConvert(getContext().getEnv().parsePublic(Source.newBuilder(PythonLanguage.ID, env.getPublicTruffleFile(path)).name(path).build()).call());
             } catch (IOException e) {
                 throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.S, e);
             } catch (RuntimeException e) {
