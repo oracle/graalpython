@@ -165,7 +165,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        core.getContext().registerCApiHook(() -> PCallCapiFunction.getUncached().call(FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL, PythonToNativeNode.executeUncached(PyCFuncPtr)));
+        core.getContext().registerCApiHook(() -> PCallCapiFunction.callUncached(FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL, PythonToNativeNode.executeUncached(PyCFuncPtr)));
     }
 
     /*

@@ -648,7 +648,7 @@ public abstract class CExtNodes {
 
     @TruffleBoundary
     public static Object pointerAdd(Object pointer, long offset) {
-        return PCallCapiFunction.getUncached().call(FUN_PTR_ADD, pointer, offset);
+        return PCallCapiFunction.callUncached(FUN_PTR_ADD, pointer, offset);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

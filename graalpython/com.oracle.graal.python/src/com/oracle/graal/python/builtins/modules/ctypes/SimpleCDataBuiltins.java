@@ -106,7 +106,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        core.getContext().registerCApiHook(() -> PCallCapiFunction.getUncached().call(FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL, PythonToNativeNode.executeUncached(SimpleCData)));
+        core.getContext().registerCApiHook(() -> PCallCapiFunction.callUncached(FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL, PythonToNativeNode.executeUncached(SimpleCData)));
     }
 
     static void Simple_set_value(VirtualFrame frame, Node inliningTarget, CDataObject self, Object value,

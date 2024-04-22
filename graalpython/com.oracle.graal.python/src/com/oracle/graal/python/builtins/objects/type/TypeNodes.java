@@ -644,7 +644,7 @@ public abstract class TypeNodes {
             CompilerDirectives.transferToInterpreter();
 
             // call 'PyType_Ready' on the type
-            int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TYPE_READY, PythonToNativeNodeGen.getUncached().execute(obj));
+            int res = (int) PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TYPE_READY, PythonToNativeNodeGen.getUncached().execute(obj));
             if (res < 0) {
                 PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.executeUncached(obj));
             }
