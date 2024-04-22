@@ -36,8 +36,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import gc
+import time
 
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType, run_gc
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -131,9 +133,12 @@ class TestPyCapsule(CPyExtTestCase):
         )
         d = {}
         capsule = Tester.create_capsule(d)
-        run_gc()
         assert capsule
         assert not d
         del capsule
-        run_gc()
-        assert "destructor_was_here" in d
+        start = time.time()
+        while "destructor_was_here" not in d:
+            if time.time() - start > 60:
+                raise AssertionError("Capsule destructor didn't execute within timeout")
+            gc.collect()
+            time.sleep(0.01)
