@@ -14,6 +14,7 @@ Go [here](Python-Runtime.md) to get started with GraalPy as CPython replacement.
 
 You can use GraalPy with GraalVM JDK, Oracle JDK, or OpenJDK.
 You can easily add GraalPy to your Java application using Maven or Gradle build tools as shown below.
+Other build systems (Ant, Make, CMake, ...) can also be used with a bit more manual work.
 
 ## Maven
 
@@ -43,9 +44,32 @@ The project uses the [GraalVM SDK Polyglot API](https://www.graalvm.org/sdk/java
 The Java code and the _pom.xml_ file are heavily documented and the generated code describes available features.
 (If you do not wish to use Maven, the archetype Java code also provides guidance to create a custom embedding.)
 
+### Creating Cross-platform JARs with Native Python Packages
+
+The generated project uses the GraalPy Maven plugin, which makes it easy to add Python dependencies.
+However, Python packages may have native components that are specific to the build system.
+In order to distribute the resulting application for other systems, follow these steps:
+
+1. Build the project on each deployment platform.
+   Rename JAR files so they each have a platform-specific name and move them to a temporary directory on the same machine.
+
+2. Unzip each of the JAR files (substituting the correct names for the JAR files).
+   A special file, _vfs/fileslist.txt_ needs to be concatenated from each JAR file.
+   Finally, create a new _combined.jar_ from the combination of all files and with the concatenated _fileslist.txt_.
+
+    ```bash
+    unzip linux.jar -d combined
+    mv combined/vfs/fileslist.txt fileslist-linux.txt
+    unzip windows.jar -d combined
+    mv combined/vfs/fileslist.txt fileslist-windows.txt
+    cat fileslist-linux.txt fileslist-windows.txt > combined/vfs/fileslist.txt
+    cd combined
+    zip -r ../combined.jar *
+    ```
+
 ## Gradle
 
-1. Create a Java application with Gradle using the provided command and follow the prompts (select a build script language, select a test framework, etc.):
+1. Create a Java application with Gradle using the command below and follow the prompts (select a build script language, select a test framework, and so on):
     ```bash
     gradle init --type java-application \
                 --project-name interop  \
@@ -115,6 +139,53 @@ The Java code and the _pom.xml_ file are heavily documented and the generated co
     The application prints "Hello Python!" to the console.
 
 > Note: The performance of the GraalPy runtime depends on the JDK in which you embed it. For more information, see [Runtime Optimization Support](https://www.graalvm.org/latest/reference-manual/embed-languages/#runtime-optimization-support).
+
+## Ant, CMake, Makefile or Other Build Systems Without Direct Support for Maven Dependencies
+
+Some (often older) projects may be using Ant, Makefiles, CMake, or other build systems that do not directly support Maven dependencies.
+Projects such as [Apache Ivy&trade;](https://ant.apache.org/ivy/history/master/tutorial/start.html) enable such build systems to resolve Maven dependencies, but developers may have reasons not to use them.
+GraalPy comes with a tool to obtain the required JAR files from Maven.
+
+1. Assuming there is some directory where third-party dependencies are stored for the project and that the build system is set up to put any JAR files there on the classpath, the project directory tree might look similar to this:
+
+    ```
+    ├───lib
+    │   └─── ... *.jar dependencies are here
+    └───src
+        └─── ... *.java files and resources are here
+    ```
+
+2. [Install GraalPy](Python-Runtime.md#installing-graalpy) for your system and ensure you have `graalpy` on your `PATH`.
+   Open a command-line interface and enter your project directory.
+   Then, as appropriate for your system, run one of the following commands:
+
+    In a POSIX shell:
+    ```bash
+    export GRAALPY_HOME=$(graalpy -c 'print(__graalpython__.home)')
+    "${GRAALPY_HOME}/libexec/graalpy-polyglot-get" -a python -o lib -v "24.0.0"
+    ```
+
+    In PowerShell:
+    ```
+    $GRAALPY_HOME = graalpy -c "print(__graalpython__.home)"
+    & "$GRAALPY_HOME/libexec/graalpy-polyglot-get" -a python -o lib -v "24.0.0"
+    ```
+
+    These commands download all GraalPy dependencies into the _lib_ directory.
+
+3. Provided that your build system is set up to pick up the JAR files from _lib_, the GraalPy embedding code below should work if put in an appropriate place in the project to run as the main class.
+
+    ```java
+    import org.graalvm.polyglot.*;
+
+    public class Hello {
+        public static void main(String[] args) {
+            try (var context = Context.newBuilder().option("engine.WarnInterpreterOnly", "false").build()) {
+                System.out.println(context.eval("python", "'Hello Python!'").asString());
+            }
+        }
+    }
+    ```
 
 #### Related Documentation
 
