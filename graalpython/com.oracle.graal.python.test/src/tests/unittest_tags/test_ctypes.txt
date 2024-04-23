@@ -306,6 +306,7 @@
 *ctypes.test.test_struct_fields.StructFieldsTestCase.test___get__
 *ctypes.test.test_struct_fields.StructFieldsTestCase.test___set__
 *ctypes.test.test_structures.PointerMemberTestCase.test
+*ctypes.test.test_structures.PointerMemberTestCase.test_none_to_pointer_fields
 *ctypes.test.test_structures.StructureTestCase.test_38368
 *ctypes.test.test_structures.StructureTestCase.test_abstract_class
 *ctypes.test.test_structures.StructureTestCase.test_bitfield_by_value

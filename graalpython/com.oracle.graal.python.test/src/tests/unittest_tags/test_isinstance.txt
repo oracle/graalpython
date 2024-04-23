@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_isinstance.TestIsInstanceExceptions.test_mask_attribute_error
 *graalpython.lib-python.3.test.test_isinstance.TestIsInstanceIsSubclass.test_infinite_cycle_in_bases
 *graalpython.lib-python.3.test.test_isinstance.TestIsInstanceIsSubclass.test_infinite_recursion_in_bases
+*graalpython.lib-python.3.test.test_isinstance.TestIsInstanceIsSubclass.test_infinitely_many_bases
 *graalpython.lib-python.3.test.test_isinstance.TestIsInstanceIsSubclass.test_isinstance_abstract
 *graalpython.lib-python.3.test.test_isinstance.TestIsInstanceIsSubclass.test_isinstance_normal
 *graalpython.lib-python.3.test.test_isinstance.TestIsInstanceIsSubclass.test_isinstance_recursion_limit

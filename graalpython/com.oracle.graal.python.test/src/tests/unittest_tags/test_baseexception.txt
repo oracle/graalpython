@@ -3,6 +3,7 @@
 *graalpython.lib-python.3.test.test_baseexception.ExceptionClassTests.test_interface_multi_arg
 *graalpython.lib-python.3.test.test_baseexception.ExceptionClassTests.test_interface_no_arg
 *graalpython.lib-python.3.test.test_baseexception.ExceptionClassTests.test_interface_single_arg
+*graalpython.lib-python.3.test.test_baseexception.ExceptionClassTests.test_setstate_refcount_no_crash
 *graalpython.lib-python.3.test.test_baseexception.UsageTests.test_catch_BaseException_instance
 *graalpython.lib-python.3.test.test_baseexception.UsageTests.test_catch_non_BaseException
 *graalpython.lib-python.3.test.test_baseexception.UsageTests.test_catch_string
