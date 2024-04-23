@@ -54,7 +54,7 @@ call_traverse(traverseproc traverse, PyObject *op, visitproc visit, void *arg)
 
 }
 
-#define CALL_TRAVERSE(traverse, op, visit_fun, ctx) ((void) call_traverse((traverse), (op), (visit_fun), (ctx)))
+#define CALL_TRAVERSE(traverse, op, visit_fun, ctx) ((void) call_traverse((traverse), (op), (visitproc)(visit_fun), (ctx)))
 
 #define is_managed points_to_py_handle_space
 
@@ -477,7 +477,7 @@ visit_collect_cycle_objects(PyObject *op, GraalPyGC_Cycle *cycle)
 
         // we need to determine the whole object graph :-(
         traverseproc traverse = Py_TYPE(op)->tp_traverse;
-        return call_traverse(traverse, op, visit_collect_cycle_objects, (void *)cycle);
+        return call_traverse(traverse, op, (visitproc)visit_collect_cycle_objects, (void *)cycle);
     }
     return 0;
 }
