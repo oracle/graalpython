@@ -284,8 +284,7 @@ static inline PyDictValues **_PyObject_ValuesPointer(PyObject *obj)
 static inline PyObject **_PyObject_ManagedDictPointer(PyObject *obj)
 {
     assert(Py_TYPE(obj)->tp_flags & Py_TPFLAGS_MANAGED_DICT);
-    // GraalPy change: ours is at a different offset
-    return ((PyObject **)obj)-1;
+    return ((PyObject **)obj)-3;
 }
 
 #define MANAGED_DICT_OFFSET (((int)sizeof(PyObject *))*-3)
