@@ -445,28 +445,28 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          * uncached.
          */
         private static long getStateFiltersVersion(PythonModule warningsModule) {
-            return warningsModule.<ModuleState> getModuleState().filtersVersion;
+            return warningsModule.getModuleState(ModuleState.class).filtersVersion;
         }
 
         /**
          * On fast path.
          */
         private Object getStateFilters(PythonModule warningsModule) {
-            return warningsModule.<ModuleState> getModuleState().filters;
+            return warningsModule.getModuleState(ModuleState.class).filters;
         }
 
         /**
          * On slow path.
          */
         private static Object getStateOnceRegistry(PythonModule warningsModule) {
-            return warningsModule.<ModuleState> getModuleState().onceRegistry;
+            return warningsModule.getModuleState(ModuleState.class).onceRegistry;
         }
 
         /**
          * On fast path.
          */
         private Object getStateDefaultAction(PythonModule warningsModule) {
-            return warningsModule.<ModuleState> getModuleState().defaultAction;
+            return warningsModule.getModuleState(ModuleState.class).defaultAction;
         }
 
         /**
@@ -572,8 +572,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         private TruffleString getFilter(VirtualFrame frame, PythonModule _warnings, Object category, Object text, int lineno, Object module, Object[] item) {
             Object filters = getWarningsAttr(frame, T_FILTERS);
             if (filters != null) {
-                ModuleState moduleState = _warnings.getModuleState();
-                moduleState.filters = filters;
+                _warnings.getModuleState(ModuleState.class).filters = filters;
             } else {
                 filters = getStateFilters(_warnings);
             }
@@ -1067,7 +1066,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
     abstract static class FiltersMutated extends PythonBuiltinNode {
         @Specialization
         static PNone mutate(PythonModule self) {
-            ModuleState moduleState = self.getModuleState();
+            ModuleState moduleState = self.getModuleState(ModuleState.class);
             moduleState.filtersVersion++;
             return PNone.NONE;
         }

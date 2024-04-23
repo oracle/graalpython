@@ -177,7 +177,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         long getCount(PythonModule self) {
-            return self.<Integer> getModuleState();
+            return self.getModuleState(Integer.class);
         }
     }
 
@@ -230,7 +230,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
             TruffleThreadBuilder threadBuilder = env.newTruffleThreadBuilder(() -> {
                 try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
                     // the increment is protected by the gil
-                    int curCount = threadModule.getModuleState();
+                    int curCount = threadModule.getModuleState(Integer.class);
                     threadModule.setModuleState(curCount + 1);
                     try {
                         // n.b.: It is important to pass 'null' frame here because each thread has
@@ -246,7 +246,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         }
                         // SystemExit is silently ignored (see _threadmodule.c: thread_run)
                     } finally {
-                        curCount = threadModule.getModuleState();
+                        curCount = threadModule.getModuleState(Integer.class);
                         threadModule.setModuleState(curCount - 1);
                     }
                 }

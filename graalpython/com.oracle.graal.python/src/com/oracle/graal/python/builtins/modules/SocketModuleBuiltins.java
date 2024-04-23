@@ -231,7 +231,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     public abstract static class GetDefaultTimeoutNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PythonModule module) {
-            long timeout = module.getModuleState();
+            long timeout = module.getModuleState(Long.class);
             return timeout < 0 ? PNone.NONE : TimeUtils.pyTimeAsSecondsDouble(timeout);
         }
     }

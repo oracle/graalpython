@@ -104,9 +104,8 @@ public final class PythonModule extends PythonObject {
         this.builtins = builtins;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> T getModuleState() {
-        return (T) moduleState;
+    public <T> T getModuleState(Class<T> clazz) {
+        return clazz.cast(moduleState);
     }
 
     public void setModuleState(Object moduleState) {

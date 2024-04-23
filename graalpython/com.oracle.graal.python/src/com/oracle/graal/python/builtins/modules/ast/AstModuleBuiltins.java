@@ -132,7 +132,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
     }
 
     private static AstState getAstState(PythonContext context) {
-        return context.lookupBuiltinModule(T__AST).getModuleState();
+        return context.lookupBuiltinModule(T__AST).getModuleState(AstState.class);
     }
 
     @TruffleBoundary

@@ -339,7 +339,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ToLongTime toLongTime,
                         @Cached PythonObjectFactory factory) {
-            ModuleState moduleState = module.getModuleState();
+            ModuleState moduleState = module.getModuleState(ModuleState.class);
             return factory.createStructSeq(STRUCT_TIME_DESC, getTimeStruct(moduleState.currentZoneId, toLongTime.execute(frame, inliningTarget, seconds)));
         }
     }
@@ -440,7 +440,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getProcesTime(PythonModule self) {
-            ModuleState moduleState = self.getModuleState();
+            ModuleState moduleState = self.getModuleState(ModuleState.class);
             return (System.nanoTime() - PythonContext.get(this).getPerfCounterStart() - moduleState.timeSlept) / 1000_000_000.0;
         }
     }
@@ -452,7 +452,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getProcesNsTime(PythonModule self) {
-            ModuleState moduleState = self.getModuleState();
+            ModuleState moduleState = self.getModuleState(ModuleState.class);
             return (System.nanoTime() - PythonContext.get(this).getPerfCounterStart() - moduleState.timeSlept);
         }
     }
@@ -497,7 +497,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 doSleep(this, seconds, deadline);
             } finally {
                 gil.acquire();
-                ModuleState moduleState = self.getModuleState();
+                ModuleState moduleState = self.getModuleState(ModuleState.class);
                 moduleState.timeSlept = nanoTime() - t + moduleState.timeSlept;
             }
             PythonContext.triggerAsyncActions(this);
@@ -521,7 +521,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 doSleep(this, seconds, deadline);
             } finally {
                 gil.acquire();
-                ModuleState moduleState = self.getModuleState();
+                ModuleState moduleState = self.getModuleState(ModuleState.class);
                 moduleState.timeSlept = nanoTime() - t + moduleState.timeSlept;
             }
             PythonContext.triggerAsyncActions(this);
@@ -933,7 +933,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             if (byteIndexOfCodePointNode.execute(format, 0, 0, format.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
             }
-            ModuleState moduleState = module.getModuleState();
+            ModuleState moduleState = module.getModuleState(ModuleState.class);
             return format(toJavaStringNode.execute(format), getIntLocalTimeStruct(moduleState.currentZoneId, (long) timeSeconds()), fromJavaStringNode);
         }
 
@@ -985,7 +985,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < ELEMENT_COUNT; i++) {
                 integers[i] = asSizeNode.executeExact(frame, inliningTarget, items[i]);
             }
-            ModuleState moduleState = module.getModuleState();
+            ModuleState moduleState = module.getModuleState(ModuleState.class);
             return op(moduleState.currentZoneId, integers);
         }
 
@@ -1006,7 +1006,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ToLongTime toLongTime,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            ModuleState moduleState = module.getModuleState();
+            ModuleState moduleState = module.getModuleState(ModuleState.class);
             int[] tm = getIntLocalTimeStruct(moduleState.currentZoneId, toLongTime.execute(frame, inliningTarget, seconds));
             return format(tm, fromJavaStringNode);
         }
@@ -1032,7 +1032,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString localtime(PythonModule module, @SuppressWarnings("unused") PNone time,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            ModuleState moduleState = module.getModuleState();
+            ModuleState moduleState = module.getModuleState(ModuleState.class);
             return format(getIntLocalTimeStruct(moduleState.currentZoneId, (long) timeSeconds()), fromJavaStringNode);
         }
 
