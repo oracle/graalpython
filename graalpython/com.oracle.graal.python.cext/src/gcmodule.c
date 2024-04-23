@@ -497,12 +497,20 @@ collect_cycle_objects(PyObject *op)
     Py_ssize_t i;
     _PyObject_ASSERT_WITH_MSG(op, is_managed(op),
             "reference cycle root object must be managed");
+    _PyObject_ASSERT_WITH_MSG(op, Py_REFCNT(op) == gc_get_refs(AS_GC(op)) + 1,
+            "unexpected ob_refcnt");
 
     /* If collection fails, it is most likely because we could not allocate more
      * nodes for the linked list. This is not fatal but we will (for now)
      * certainly leak those objects. However, a later GC round may be successful.
      */
     if (visit_collect_cycle_objects(op, &cycle) == 0) {
+        /* We don't want to process managed objects that are not part of a
+         * reference cycle (i.e. 'cycle.n <= 1') because that is just wasted
+         * effort.
+         */
+        _PyObject_ASSERT_WITH_MSG(op, cycle.n > 1, "unexpected ob_refcnt");
+
         GraalPyTruffleObject_GC_EnsureWeak(op, cycle.head, cycle.n);
     }
 
@@ -565,14 +573,13 @@ break_cycles_with_managed_objects(PyGC_Head *young)
     PyGC_Head *gc = GC_NEXT(young);
 
     /* Invariant:  all objects that are part of a reference cycle have either
-     * 'refcount == 0' if it is a native object or 'refcount == MANAGED_REFCNT'
+     * 'gc_refs == 0' if it is a native object or 'gc_refs == MANAGED_REFCNT'
      * if it is managed object.
      */
     while (gc != young) {
         PyObject *op = FROM_GC(gc);
-        if (is_managed(op) && gc_get_refs(gc) == MANAGED_REFCNT) {
-            _PyObject_ASSERT_WITH_MSG(op, Py_REFCNT(op) == gc_get_refs(gc) + 1,
-                                      "unexpected ob_refcnt");
+        if (is_managed(op) && gc_get_refs(gc) == MANAGED_REFCNT
+                && Py_REFCNT(op) > MANAGED_REFCNT) {
             traverseproc traverse = Py_TYPE(op)->tp_traverse;
             collect_cycle_objects(op);
         }
