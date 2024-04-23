@@ -4072,7 +4072,6 @@ type_setattro(PyTypeObject *type, PyObject *name, PyObject *value)
 extern void
 _PyDictKeys_DecRef(PyDictKeysObject *keys);
 
-
 static void
 type_dealloc_common(PyTypeObject *type)
 {
@@ -4112,6 +4111,7 @@ _PyStaticType_Dealloc(PyTypeObject *type)
     type->tp_flags &= ~Py_TPFLAGS_VALID_VERSION_TAG;
     type->tp_version_tag = 0;
 }
+#endif // GraalPy change
 
 
 static void
@@ -4122,7 +4122,9 @@ type_dealloc(PyTypeObject *type)
 
     _PyObject_GC_UNTRACK(type);
 
+#if 0 // GraalPy change
     type_dealloc_common(type);
+#endif // GraalPy change
 
     // PyObject_ClearWeakRefs() raises an exception if Py_REFCNT() != 0
     assert(Py_REFCNT(type) == 0);
@@ -4144,15 +4146,18 @@ type_dealloc(PyTypeObject *type)
     Py_XDECREF(et->ht_name);
     Py_XDECREF(et->ht_qualname);
     Py_XDECREF(et->ht_slots);
+#if 0 // GraalPy change
     if (et->ht_cached_keys) {
         _PyDictKeys_DecRef(et->ht_cached_keys);
     }
+#endif // GraalPy change
     Py_XDECREF(et->ht_module);
     PyMem_Free(et->_ht_tpname);
     Py_TYPE(type)->tp_free((PyObject *)type);
 }
 
 
+#if 0 // GraalPy change
 PyObject*
 _PyType_GetSubclasses(PyTypeObject *self)
 {
@@ -4333,6 +4338,7 @@ static PyMethodDef type_methods[] = {
 PyDoc_STRVAR(type_doc,
 "type(object) -> the object's type\n"
 "type(name, bases, dict, **kwds) -> a new type");
+#endif // GraalPy change
 
 static int
 type_traverse(PyTypeObject *type, visitproc visit, void *arg)
@@ -4366,6 +4372,12 @@ type_traverse(PyTypeObject *type, visitproc visit, void *arg)
 static int
 type_clear(PyTypeObject *type)
 {
+    /* Our 'type_clear' is empty because when mirroring types to native, we
+     * never increase the refcount of the objects since the managed PythonClass
+     * holds a reference to the appropriate object already. This means, we must
+     * not clear those fields in native code.
+     */
+#if 0 // GraalPy change
     /* Because of type_is_gc(), the collector only calls this
        for heaptypes. */
     _PyObject_ASSERT((PyObject *)type, type->tp_flags & Py_TPFLAGS_HEAPTYPE);
@@ -4406,6 +4418,7 @@ type_clear(PyTypeObject *type)
     Py_CLEAR(((PyHeapTypeObject *)type)->ht_module);
 
     Py_CLEAR(type->tp_mro);
+#endif // GraalPy change
 
     return 0;
 }
@@ -4413,13 +4426,16 @@ type_clear(PyTypeObject *type)
 static int
 type_is_gc(PyTypeObject *type)
 {
+    // GraalPy change: we don't traverse types for now
     return type->tp_flags & Py_TPFLAGS_HEAPTYPE;
 }
 
 
+#if 0 // GraalPy change
 static PyNumberMethods type_as_number = {
         .nb_or = _Py_union_type_or, // Add __or__ function
 };
+#endif // GraalPy change
 
 PyTypeObject PyType_Type = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
@@ -4427,47 +4443,55 @@ PyTypeObject PyType_Type = {
     sizeof(PyHeapTypeObject),                   /* tp_basicsize */
     sizeof(PyMemberDef),                        /* tp_itemsize */
     (destructor)type_dealloc,                   /* tp_dealloc */
-    offsetof(PyTypeObject, tp_vectorcall),      /* tp_vectorcall_offset */
+    0,                                          /* tp_vectorcall_offset */ // GraalPy change: nulled
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
     0,                                          /* tp_as_async */
-    (reprfunc)type_repr,                        /* tp_repr */
-    &type_as_number,                            /* tp_as_number */
+    0,                                          /* tp_repr */ // GraalPy change: nulled
+    0,                                          /* tp_as_number */ // GraalPy change: nulled
     0,                                          /* tp_as_sequence */
     0,                                          /* tp_as_mapping */
     0,                                          /* tp_hash */
-    (ternaryfunc)type_call,                     /* tp_call */
+    0,                                          /* tp_call */ // GraalPy change: nulled
     0,                                          /* tp_str */
-    (getattrofunc)type_getattro,                /* tp_getattro */
-    (setattrofunc)type_setattro,                /* tp_setattro */
+    0,                                          /* tp_getattro */ // GraalPy change: nulled
+    0,                                          /* tp_setattro */ // GraalPy change: nulled
     0,                                          /* tp_as_buffer */
+#if 0 // GraalPy change: removed 'Py_TPFLAGS_HAVE_VECTORCALL'
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
     Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TYPE_SUBCLASS |
     Py_TPFLAGS_HAVE_VECTORCALL,                 /* tp_flags */
-    type_doc,                                   /* tp_doc */
+#else
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
+    Py_TPFLAGS_BASETYPE |
+    Py_TPFLAGS_TYPE_SUBCLASS,                   /* tp_flags */
+#endif // GraalPy change
+    0,                                          /* tp_doc */ // GraalPy change: nulled
     (traverseproc)type_traverse,                /* tp_traverse */
     (inquiry)type_clear,                        /* tp_clear */
     0,                                          /* tp_richcompare */
-    offsetof(PyTypeObject, tp_weaklist),        /* tp_weaklistoffset */
+    0,                                          /* tp_weaklistoffset */ // GraalPy change: nulled
     0,                                          /* tp_iter */
     0,                                          /* tp_iternext */
-    type_methods,                               /* tp_methods */
-    type_members,                               /* tp_members */
-    type_getsets,                               /* tp_getset */
+    0,                                          /* tp_methods */ // GraalPy change: nulled
+    0,                                          /* tp_members */ // GraalPy change: nulled
+    0,                                          /* tp_getset */ // GraalPy change: nulled
     0,                                          /* tp_base */
     0,                                          /* tp_dict */
     0,                                          /* tp_descr_get */
     0,                                          /* tp_descr_set */
-    offsetof(PyTypeObject, tp_dict),            /* tp_dictoffset */
-    type_init,                                  /* tp_init */
-    0,                                          /* tp_alloc */
-    type_new,                                   /* tp_new */
-    PyObject_GC_Del,                            /* tp_free */
+    0,                                          /* tp_dictoffset */ // GraalPy change: nulled
+    0,                                          /* tp_init */ // GraalPy change: nulled
+    PyType_GenericAlloc,                        /* tp_alloc */ // GraalPy change: added 'PyType_GenericAlloc'
+    0,                                          /* tp_new */ // GraalPy change: nulled
+    PyObject_GC_Del,                            /* tp_free */ // GraalPy change: nulled
     (inquiry)type_is_gc,                        /* tp_is_gc */
+#if 0 // GraalPy change
     .tp_vectorcall = type_vectorcall,
+#endif // GraalPy change
 };
 
-
+#if 0 // GraalPy change
 /* The base type of all types (eventually)... except itself. */
 
 /* You may wonder why object.__new__() only complains about arguments

@@ -290,7 +290,7 @@ PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *, PyObject *,
  */
 #define PY_TYPE_OBJECTS \
 PY_TRUFFLE_TYPE_WITH_ALLOC(PyBaseObject_Type,    "object",                     &PyType_Type, sizeof(PyObject), PyType_GenericAlloc, object_dealloc, PyObject_Del) \
-PY_TRUFFLE_TYPE_GENERIC(PyType_Type,             "type",                       &PyType_Type, sizeof(PyHeapTypeObject), sizeof(PyMemberDef), PyType_GenericAlloc, object_dealloc, PyObject_GC_Del, 0) \
+PY_TRUFFLE_TYPE_EXTERN(PyType_Type,              "type"                        ) \
 PY_TRUFFLE_TYPE(PyCFunction_Type,                "builtin_function_or_method", &PyType_Type, sizeof(PyCFunctionObject)) \
 PY_TRUFFLE_TYPE(_PyBytesIOBuffer_Type,           "_BytesIOBuffer",             &PyType_Type, 0) \
 PY_TRUFFLE_TYPE(_PyExc_BaseException,            "BaseException",              &PyType_Type, sizeof(PyBaseExceptionObject)) \
