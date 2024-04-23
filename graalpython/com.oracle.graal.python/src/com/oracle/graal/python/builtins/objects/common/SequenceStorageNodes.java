@@ -109,6 +109,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -1180,8 +1181,8 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(limit = "MAX_BASIC_STORAGES", guards = {"length > 0", "storage.getClass() == cachedClass"})
-        protected static void doMove(BasicSequenceStorage storage, int distPos, int srcPos, int length,
-                        @Cached("storage.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
+        protected static void doArrayBasedMove(ArrayBasedSequenceStorage storage, int distPos, int srcPos, int length,
+                        @Cached("storage.getClass()") Class<? extends ArrayBasedSequenceStorage> cachedClass) {
             Object array = cachedClass.cast(storage).getInternalArrayObject();
             PythonUtils.arraycopy(array, srcPos, array, distPos, length);
         }
@@ -1214,8 +1215,8 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(limit = "MAX_BASIC_STORAGES", guards = {"length > 0", "dist.getClass() == cachedClass", "src.getClass() == dist.getClass()"})
-        protected static void doCopy(BasicSequenceStorage dist, int distPos, BasicSequenceStorage src, int srcPos, int length,
-                        @Cached("dist.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
+        protected static void doArrayBasedCopy(ArrayBasedSequenceStorage dist, int distPos, ArrayBasedSequenceStorage src, int srcPos, int length,
+                        @Cached("dist.getClass()") Class<? extends ArrayBasedSequenceStorage> cachedClass) {
             Object distArray = cachedClass.cast(dist).getInternalArrayObject();
             Object srcArray = cachedClass.cast(src).getInternalArrayObject();
             PythonUtils.arraycopy(srcArray, srcPos, distArray, distPos, length);
@@ -1314,10 +1315,10 @@ public abstract class SequenceStorageNodes {
         public abstract void execute(SequenceStorage s, SliceInfo info, SequenceStorage iterable, boolean canGeneralize);
 
         @Specialization(limit = "MAX_BASIC_STORAGES", guards = {"self.getClass() == cachedClass", "self.getClass() == sequence.getClass()", "replacesWholeSequence(cachedClass, self, info)"})
-        static void doWholeSequence(BasicSequenceStorage self, @SuppressWarnings("unused") SliceInfo info, BasicSequenceStorage sequence, @SuppressWarnings("unused") boolean canGeneralize,
-                        @Cached("self.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
-            BasicSequenceStorage selfProfiled = cachedClass.cast(self);
-            BasicSequenceStorage otherProfiled = cachedClass.cast(sequence);
+        static void doWholeSequence(ArrayBasedSequenceStorage self, @SuppressWarnings("unused") SliceInfo info, ArrayBasedSequenceStorage sequence, @SuppressWarnings("unused") boolean canGeneralize,
+                        @Cached("self.getClass()") Class<? extends ArrayBasedSequenceStorage> cachedClass) {
+            ArrayBasedSequenceStorage selfProfiled = cachedClass.cast(self);
+            ArrayBasedSequenceStorage otherProfiled = cachedClass.cast(sequence);
             selfProfiled.setInternalArrayObject(otherProfiled.getCopyOfInternalArrayObject());
             selfProfiled.setNewLength(otherProfiled.length());
             selfProfiled.minimizeCapacity();
@@ -1835,12 +1836,12 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = {"dest == left", "left.getClass() == right.getClass()", "cachedClass == left.getClass()"}, limit = "1")
-        static SequenceStorage doManagedManagedSameTypeInplace(@SuppressWarnings("unused") BasicSequenceStorage dest, BasicSequenceStorage left, BasicSequenceStorage right,
+        static SequenceStorage doArrayBasedManagedManagedSameTypeInplace(@SuppressWarnings("unused") ArrayBasedSequenceStorage dest, ArrayBasedSequenceStorage left, ArrayBasedSequenceStorage right,
                         @Bind("this") Node inliningTarget,
-                        @Cached("left.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
+                        @Cached("left.getClass()") Class<? extends ArrayBasedSequenceStorage> cachedClass,
                         @Shared @Cached SetLenNode setLenNode) {
-            BasicSequenceStorage leftProfiled = cachedClass.cast(left);
-            BasicSequenceStorage rightProfiled = cachedClass.cast(right);
+            ArrayBasedSequenceStorage leftProfiled = cachedClass.cast(left);
+            ArrayBasedSequenceStorage rightProfiled = cachedClass.cast(right);
             Object arr1 = leftProfiled.getInternalArrayObject();
             int len1 = leftProfiled.length();
             Object arr2 = rightProfiled.getInternalArrayObject();
@@ -1851,13 +1852,13 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = {"dest != left", "dest.getClass() == left.getClass()", "left.getClass() == right.getClass()", "cachedClass == dest.getClass()"}, limit = "1")
-        static SequenceStorage doManagedManagedSameType(BasicSequenceStorage dest, BasicSequenceStorage left, BasicSequenceStorage right,
+        static SequenceStorage doArrayBasedManagedManagedSameType(ArrayBasedSequenceStorage dest, ArrayBasedSequenceStorage left, ArrayBasedSequenceStorage right,
                         @Bind("this") Node inliningTarget,
-                        @Cached("left.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
+                        @Cached("left.getClass()") Class<? extends ArrayBasedSequenceStorage> cachedClass,
                         @Shared @Cached SetLenNode setLenNode) {
-            BasicSequenceStorage destProfiled = cachedClass.cast(dest);
-            BasicSequenceStorage leftProfiled = cachedClass.cast(left);
-            BasicSequenceStorage rightProfiled = cachedClass.cast(right);
+            ArrayBasedSequenceStorage destProfiled = cachedClass.cast(dest);
+            ArrayBasedSequenceStorage leftProfiled = cachedClass.cast(left);
+            ArrayBasedSequenceStorage rightProfiled = cachedClass.cast(right);
             Object arr1 = leftProfiled.getInternalArrayObject();
             int len1 = leftProfiled.length();
             Object arr2 = rightProfiled.getInternalArrayObject();
@@ -1868,12 +1869,12 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = {"dest.getClass() == right.getClass()", "cachedClass == dest.getClass()"}, limit = "1")
-        static SequenceStorage doEmptyManagedSameType(BasicSequenceStorage dest, @SuppressWarnings("unused") EmptySequenceStorage left, BasicSequenceStorage right,
+        static SequenceStorage doArrayBasedEmptyManagedSameType(ArrayBasedSequenceStorage dest, @SuppressWarnings("unused") EmptySequenceStorage left, ArrayBasedSequenceStorage right,
                         @Bind("this") Node inliningTarget,
-                        @Cached("dest.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
+                        @Cached("dest.getClass()") Class<? extends ArrayBasedSequenceStorage> cachedClass,
                         @Shared @Cached SetLenNode setLenNode) {
-            BasicSequenceStorage destProfiled = cachedClass.cast(dest);
-            BasicSequenceStorage rightProfiled = cachedClass.cast(right);
+            ArrayBasedSequenceStorage destProfiled = cachedClass.cast(dest);
+            ArrayBasedSequenceStorage rightProfiled = cachedClass.cast(right);
             Object arr2 = rightProfiled.getInternalArrayObject();
             int len2 = rightProfiled.length();
             PythonUtils.arraycopy(arr2, 0, destProfiled.getInternalArrayObject(), 0, len2);
@@ -1882,12 +1883,12 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = {"dest.getClass() == left.getClass()", "cachedClass == dest.getClass()"}, limit = "1")
-        static SequenceStorage doManagedEmptySameType(BasicSequenceStorage dest, BasicSequenceStorage left, @SuppressWarnings("unused") EmptySequenceStorage right,
+        static SequenceStorage doArrayBasedManagedEmptySameType(ArrayBasedSequenceStorage dest, ArrayBasedSequenceStorage left, @SuppressWarnings("unused") EmptySequenceStorage right,
                         @Bind("this") Node inliningTarget,
-                        @Cached("left.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
+                        @Cached("left.getClass()") Class<? extends ArrayBasedSequenceStorage> cachedClass,
                         @Shared @Cached SetLenNode setLenNode) {
-            BasicSequenceStorage destProfiled = cachedClass.cast(dest);
-            BasicSequenceStorage leftProfiled = cachedClass.cast(left);
+            ArrayBasedSequenceStorage destProfiled = cachedClass.cast(dest);
+            ArrayBasedSequenceStorage leftProfiled = cachedClass.cast(left);
             Object arr1 = leftProfiled.getInternalArrayObject();
             int len1 = leftProfiled.length();
             PythonUtils.arraycopy(arr1, 0, destProfiled.getInternalArrayObject(), 0, len1);
@@ -2259,15 +2260,15 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(limit = "MAX_BASIC_STORAGES", guards = {"times > 0", "!isNative(s)", "s.getClass() == cachedClass"})
-        SequenceStorage doManaged(BasicSequenceStorage s, int times,
+        SequenceStorage doArrayBasedManaged(ArrayBasedSequenceStorage s, int times,
                         @Shared @Cached PRaiseNode raiseNode,
-                        @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
+                        @Cached("s.getClass()") Class<? extends ArrayBasedSequenceStorage> cachedClass) {
             try {
-                BasicSequenceStorage profiled = cachedClass.cast(s);
+                ArrayBasedSequenceStorage profiled = cachedClass.cast(s);
                 Object arr1 = profiled.getInternalArrayObject();
                 int len = profiled.length();
                 int newLength = PythonUtils.multiplyExact(len, times);
-                BasicSequenceStorage repeated = profiled.createEmpty(newLength);
+                ArrayBasedSequenceStorage repeated = profiled.createEmpty(newLength);
                 Object destArr = repeated.getInternalArrayObject();
                 repeat(destArr, arr1, len, times);
                 repeated.setNewLength(newLength);
@@ -2279,7 +2280,7 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(replaces = "doManaged", guards = "times > 0")
+        @Specialization(replaces = "doArrayBasedManaged", guards = "times > 0")
         @SuppressWarnings("truffle-static-method")
         SequenceStorage doGeneric(SequenceStorage s, int times,
                         @Bind("this") Node inliningTarget,
@@ -2935,8 +2936,8 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(limit = "MAX_BASIC_STORAGES", guards = "s.getClass() == cachedClass")
-        static Object[] doTyped(BasicSequenceStorage s,
-                        @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
+        static Object[] doArrayBased(ArrayBasedSequenceStorage s,
+                        @Cached("s.getClass()") Class<? extends ArrayBasedSequenceStorage> cachedClass) {
             return cachedClass.cast(s).getCopyOfInternalArray();
         }
 

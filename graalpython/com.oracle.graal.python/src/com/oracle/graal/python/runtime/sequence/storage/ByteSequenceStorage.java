@@ -71,7 +71,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public BasicSequenceStorage createEmpty(int newCapacity) {
+    public ByteSequenceStorage createEmpty(int newCapacity) {
         return new ByteSequenceStorage(newCapacity);
     }
 

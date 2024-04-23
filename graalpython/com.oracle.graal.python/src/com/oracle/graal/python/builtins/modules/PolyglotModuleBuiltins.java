@@ -124,7 +124,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -1158,7 +1158,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             Object arrayObject;
             if (storage instanceof EmptySequenceStorage) {
                 arrayObject = seq instanceof PBytesLike ? EMPTY_BYTE_ARRAY : EMPTY_OBJECT_ARRAY;
-            } else if (storage instanceof BasicSequenceStorage basicStorage) {
+            } else if (storage instanceof ArrayBasedSequenceStorage basicStorage) {
                 arrayObject = basicStorage.getInternalArrayObject();
             } else {
                 throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.NotImplementedError, ErrorMessages.GETTING_POLYGLOT_STORAGE_FOR_NATIVE_STORAGE_NOT_IMPLEMENTED);

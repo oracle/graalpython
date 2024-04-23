@@ -67,7 +67,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public BasicSequenceStorage createEmpty(int newCapacity) {
+    public ArrayBasedSequenceStorage createEmpty(int newCapacity) {
         return new DoubleSequenceStorage(newCapacity);
     }
 

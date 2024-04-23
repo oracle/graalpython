@@ -65,7 +65,7 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public BasicSequenceStorage createEmpty(int newLength) {
+    public BoolSequenceStorage createEmpty(int newLength) {
         return new BoolSequenceStorage(newLength);
     }
 
