@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 // skip GIL
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.nodes.StringLiterals.J_DEFAULT;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
@@ -91,8 +92,11 @@ import java.util.logging.Level;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
@@ -297,7 +301,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_sem_trywait("(pointer):sint32"),
         call_sem_timedwait("(pointer, sint64):sint32"),
 
-        call_crypt("([sint8], [sint8], [sint32]):sint64");
+        crypt("([sint8], [sint8]):sint64");
 
         private final String signature;
 
@@ -377,20 +381,8 @@ public final class NFIPosixSupport extends PosixSupport {
         @TruffleBoundary
         private static void loadLibrary(NFIPosixSupport posix) {
             String path = getLibPath(posix.context);
-            String backend = posix.nfiBackend.toJavaStringUncached();
-            Env env = posix.context.getEnv();
-
-            posix.context.ensureNFILanguage(null, "PosixModuleBackend", "native");
-
-            String withClause = backend.equals(J_NATIVE) ? "" : "with " + backend;
-            String src = String.format("%sload (RTLD_LOCAL) \"%s\"", withClause, path);
-            Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src, "load:" + SUPPORTING_NATIVE_LIB_NAME).internal(true).build();
-
-            if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(String.format("Loading native library: %s", src));
-            }
             try {
-                posix.nfiLibrary = env.parseInternal(loadSrc).call();
+                posix.nfiLibrary = loadLibrary(posix, path);
             } catch (Throwable e) {
                 throw new UnsupportedOperationException(String.format("""
                                 Could not load posix support library from path '%s'. Troubleshooting:\s
@@ -398,6 +390,28 @@ public final class NFIPosixSupport extends PosixSupport {
                                 Missing runtime Maven dependency 'org.graalvm.truffle:truffle-nfi-libffi' (should be a dependency of `org.graalvm.polyglot:python{-community}`)?""",
                                 path));
             }
+        }
+
+        @TruffleBoundary
+        private static Object loadLibrary(NFIPosixSupport posix, String path) {
+            String backend = posix.nfiBackend.toJavaStringUncached();
+            Env env = posix.context.getEnv();
+
+            posix.context.ensureNFILanguage(null, "PosixModuleBackend", "native");
+
+            Source loadSrc;
+            if (path != null) {
+                String withClause = backend.equals(J_NATIVE) ? "" : "with " + backend;
+                String src = String.format("%sload (RTLD_LOCAL) \"%s\"", withClause, path);
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    LOGGER.fine(String.format("Loading native library: %s", src));
+                }
+                loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src, "load:" + SUPPORTING_NATIVE_LIB_NAME).internal(true).build();
+            } else {
+                loadSrc = Source.newBuilder(J_NFI_LANGUAGE, J_DEFAULT, J_DEFAULT).internal(true).build();
+            }
+
+            return env.parseInternal(loadSrc).call();
         }
 
         @TruffleBoundary
@@ -430,6 +444,7 @@ public final class NFIPosixSupport extends PosixSupport {
     private final PythonContext context;
     private final TruffleString nfiBackend;
     private volatile Object nfiLibrary;
+    private volatile Object cryptLibrary;
     private final AtomicReferenceArray<Object> cachedFunctions;
     @CompilationFinal(dimensions = 1) private long[] constantValues;
 
@@ -1848,7 +1863,24 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("tsCopyBytes") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                     @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                     @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
-        int[] lenArray = new int[1];
+        /*
+         * We don't want to link the posix library with libcrypt, because it might not be available
+         * on the target system and would make the whole posix library fail to load. So we load it
+         * dynamically on demand.
+         */
+        if (injectBranchProbability(SLOWPATH_PROBABILITY, cryptLibrary == null)) {
+            try {
+                cryptLibrary = InvokeNativeFunction.loadLibrary(this, PythonOS.getPythonOS() != PythonOS.PLATFORM_DARWIN ? "libcrypt.so" : null);
+            } catch (Throwable e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.raiseUncached(invokeNode, PythonBuiltinClassType.SystemError, ErrorMessages.UNABLE_TO_LOAD_LIBCRYPT);
+            }
+        }
+        PosixNativeFunction function = PosixNativeFunction.crypt;
+        if (injectBranchProbability(SLOWPATH_PROBABILITY, cachedFunctions.get(function.ordinal()) == null)) {
+            InvokeNativeFunction.loadFunction(this, cryptLibrary, function);
+        }
+        Object funObject = cachedFunctions.get(function.ordinal());
         /*
          * From the manpage: Upon successful completion, crypt returns a pointer to a string which
          * encodes both the hashed passphrase, and the settings that were used to encode it. See
@@ -1857,15 +1889,26 @@ public final class NFIPosixSupport extends PosixSupport {
          * safe to call crypt from multiple threads simultaneously. Upon error, it may return a NULL
          * pointer or a pointer to an invalid hash, depending on the implementation.
          */
-        // Note GIL is not enough as crypt is using global memory so we need a really global lock
+        // Note GIL is not enough as crypt is using global memory, so we need a really global lock
         synchronized (CRYPT_LOCK) {
-            long resultPtr = invokeNode.callLong(this, PosixNativeFunction.call_crypt, stringToUTF8CString(word, switchEncodingToUtf8Node, copyToByteArrayNode),
-                            stringToUTF8CString(salt, switchEncodingToUtf8Node, copyToByteArrayNode), wrap(lenArray));
+            long resultPtr;
+            Object[] args = new Object[]{
+                            stringToUTF8CString(word, switchEncodingToUtf8Node, copyToByteArrayNode),
+                            stringToUTF8CString(salt, switchEncodingToUtf8Node, copyToByteArrayNode)};
+            try {
+                Object interopResult = invokeNode.functionInterop.execute(funObject, args);
+                resultPtr = invokeNode.getResultInterop().asLong(interopResult);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
             // CPython doesn't handle the case of "invalid hash" return specially and neither do we
             if (resultPtr == 0) {
                 throw getErrnoAndThrowPosixException(invokeNode);
             }
-            int len = lenArray[0];
+            int len = 0;
+            while (UNSAFE.getByte(resultPtr + len) != 0) {
+                len++;
+            }
             byte[] resultBytes = new byte[len];
             UNSAFE.copyMemory(null, resultPtr, resultBytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, len);
             return createString(resultBytes, 0, resultBytes.length, false, fromByteArrayNode, switchEncodingFromUtf8Node);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -894,15 +894,6 @@ int32_t get_addrinfo_members(int64_t ptr, int32_t *intData, int64_t *longData, i
         intData[6] = len;
     }
     return 0;
-}
-
-int64_t call_crypt(const char *word, const char *salt, int32_t *len) {
-    const char *result = crypt(word, salt);
-    if (result == NULL) {
-        return 0;
-    }
-    *len = strlen(result);
-    return (int64_t)(uintptr_t)result;
 }
 
 sem_t* call_sem_open(const char *name, int32_t openFlags, int32_t mode, int32_t value) {

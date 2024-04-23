@@ -852,7 +852,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "ldlibs": ["-lutil", "-lcrypt"],
+                        "ldlibs": ["-lutil"],
                         "defaultBuild": True,
                     },
                 },
