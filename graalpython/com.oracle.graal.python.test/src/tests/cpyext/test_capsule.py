@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import gc
+import os
 import time
 
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType
@@ -114,31 +115,32 @@ class TestPyCapsule(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    def test_capsule_destructor(self):
-        Tester = CPyExtType(
-            "CapsuleDestructorTester",
-            code="""
-            static void capsule_destructor(PyObject* capsule) {
-                PyObject* contents = (PyObject*) PyCapsule_GetPointer(capsule, "capsule");
-                assert(PyDict_Check(contents));
-                PyDict_SetItemString(contents, "destructor_was_here", Py_NewRef(Py_True));
-                Py_DECREF(contents);
-            }
-            
-            static PyObject* create_capsule(PyObject* unused, PyObject* contents) {
-                return PyCapsule_New(Py_NewRef(contents), "capsule", capsule_destructor);
-            }
-            """,
-            tp_methods='{"create_capsule", (PyCFunction)create_capsule, METH_O | METH_STATIC, NULL}',
-        )
-        d = {}
-        capsule = Tester.create_capsule(d)
-        assert capsule
-        assert not d
-        del capsule
-        start = time.time()
-        while "destructor_was_here" not in d:
-            if time.time() - start > 60:
-                raise AssertionError("Capsule destructor didn't execute within timeout")
-            gc.collect()
-            time.sleep(0.01)
+    if os.environ.get('GRAALPYTEST_RUN_GC_TESTS'):
+        def test_capsule_destructor(self):
+            Tester = CPyExtType(
+                "CapsuleDestructorTester",
+                code="""
+                static void capsule_destructor(PyObject* capsule) {
+                    PyObject* contents = (PyObject*) PyCapsule_GetPointer(capsule, "capsule");
+                    assert(PyDict_Check(contents));
+                    PyDict_SetItemString(contents, "destructor_was_here", Py_NewRef(Py_True));
+                    Py_DECREF(contents);
+                }
+                
+                static PyObject* create_capsule(PyObject* unused, PyObject* contents) {
+                    return PyCapsule_New(Py_NewRef(contents), "capsule", capsule_destructor);
+                }
+                """,
+                tp_methods='{"create_capsule", (PyCFunction)create_capsule, METH_O | METH_STATIC, NULL}',
+            )
+            d = {}
+            capsule = Tester.create_capsule(d)
+            assert capsule
+            assert not d
+            del capsule
+            start = time.time()
+            while "destructor_was_here" not in d:
+                if time.time() - start > 60:
+                    raise AssertionError("Capsule destructor didn't execute within timeout")
+                gc.collect()
+                time.sleep(0.01)
