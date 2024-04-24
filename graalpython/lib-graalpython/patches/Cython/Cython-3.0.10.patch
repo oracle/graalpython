@@ -1,0 +1,360 @@
+diff --git a/Cython/Build/Dependencies.py b/Cython/Build/Dependencies.py
+index 7de4065..e1589cd 100644
+--- a/Cython/Build/Dependencies.py
++++ b/Cython/Build/Dependencies.py
+@@ -1127,6 +1127,8 @@ def cythonize(module_list, exclude=None, nthreads=0, aliases=None, quiet=False,
+         progress = progress_fmt.format(i+1, N)
+         to_compile[i] = to_compile[i][1:] + (progress,)
+ 
++    nthreads = 0 # GraalVM: we don't want to spawn
++
+     if N <= 1:
+         nthreads = 0
+     if nthreads:
+diff --git a/Cython/Compiler/Builtin.py b/Cython/Compiler/Builtin.py
+index 46dea92..12c0616 100644
+--- a/Cython/Compiler/Builtin.py
++++ b/Cython/Compiler/Builtin.py
+@@ -53,11 +53,12 @@ class _BuiltinOverride(object):
+ 
+ 
+ class BuiltinAttribute(object):
+-    def __init__(self, py_name, cname=None, field_type=None, field_type_name=None):
++    def __init__(self, py_name, cname=None, field_type=None, field_type_name=None, getter=None):
+         self.py_name = py_name
+         self.cname = cname or py_name
+         self.field_type_name = field_type_name  # can't do the lookup before the type is declared!
+         self.field_type = field_type
++        self.getter = getter
+ 
+     def declare_in_type(self, self_type):
+         if self.field_type_name is not None:
+@@ -65,7 +66,7 @@ class BuiltinAttribute(object):
+             field_type = builtin_scope.lookup(self.field_type_name).type
+         else:
+             field_type = self.field_type or PyrexTypes.py_object_type
+-        entry = self_type.scope.declare(self.py_name, self.cname, field_type, None, 'private')
++        entry = self_type.scope.declare(self.py_name, self.cname, field_type, None, 'private', getter=self.getter)
+         entry.is_variable = True
+ 
+ 
+@@ -354,10 +355,11 @@ builtin_types_table = [
+                                                   utility_code=UtilityCode.load("py_dict_clear", "Optimize.c")),
+                                     BuiltinMethod("copy",   "T",   "T", "PyDict_Copy")]),
+ 
+-    ("slice",   "PySlice_Type",    [BuiltinAttribute('start'),
+-                                    BuiltinAttribute('stop'),
+-                                    BuiltinAttribute('step'),
++    ("slice",   "PySlice_Type",    [BuiltinAttribute('start', getter="PySlice_Start"),
++                                    BuiltinAttribute('stop', getter="PySlice_Stop"),
++                                    BuiltinAttribute('step', getter="PySlice_Step"),
+                                     ]),
++
+ #    ("file",    "PyFile_Type",     []),  # not in Py3
+ 
+     ("set",       "PySet_Type",    [BuiltinMethod("clear",   "T",  "r", "PySet_Clear"),
+diff --git a/Cython/Compiler/ExprNodes.py b/Cython/Compiler/ExprNodes.py
+index 455d8b6..2d66296 100644
+--- a/Cython/Compiler/ExprNodes.py
++++ b/Cython/Compiler/ExprNodes.py
+@@ -7740,6 +7740,16 @@ class AttributeNode(ExprNode):
+             if obj.type.is_builtin_type and self.entry and self.entry.is_variable:
+                 # accessing a field of a builtin type, need to cast better than result_as() does
+                 obj_code = obj.type.cast_code(obj.result(), to_object_struct = True)
++            # GraalPy change: add getter functions for builtins
++            if obj.type.is_builtin_type and self.entry and self.entry.getter:
++                return "%s(%s)" % (self.entry.getter, obj_code)
++            # GraalPy change: add a getter for array.data
++            if (
++                self.entry.name == 'data' and
++                getattr(self.type, 'name', None) == '__data_union' and
++                getattr(self.obj.type, 'name') == 'array'
++            ):
++                return self.type.cast_code("_PyArray_Data((PyObject*)%s)" % obj_code)
+             return "%s%s%s" % (obj_code, self.op, self.member)
+ 
+     def generate_result_code(self, code):
+diff --git a/Cython/Compiler/Symtab.py b/Cython/Compiler/Symtab.py
+index 5f088dd..a258bdc 100644
+--- a/Cython/Compiler/Symtab.py
++++ b/Cython/Compiler/Symtab.py
+@@ -243,6 +243,7 @@ class Entry(object):
+     pytyping_modifiers = None
+     enum_int_value = None
+     vtable_type = None
++    getter = None
+ 
+     def __init__(self, name, cname, type, pos = None, init = None):
+         self.name = name
+@@ -510,7 +511,7 @@ class Scope(object):
+         yield
+         self.in_c_type_context = old_c_type_context
+ 
+-    def declare(self, name, cname, type, pos, visibility, shadow = 0, is_type = 0, create_wrapper = 0):
++    def declare(self, name, cname, type, pos, visibility, shadow = 0, is_type = 0, create_wrapper = 0, getter = 0):
+         # Create new entry, and add to dictionary if
+         # name is not None. Reports a warning if already
+         # declared.
+@@ -550,6 +551,7 @@ class Scope(object):
+                 error(pos, "'%s' redeclared " % name)
+                 entries[name].already_declared_here()
+         entry = Entry(name, cname, type, pos = pos)
++        entry.getter = getter
+         entry.in_cinclude = self.in_cinclude
+         entry.create_wrapper = create_wrapper
+         if name:
+diff --git a/Cython/Includes/cpython/datetime.pxd b/Cython/Includes/cpython/datetime.pxd
+index 3dce395..77f8356 100644
+--- a/Cython/Includes/cpython/datetime.pxd
++++ b/Cython/Includes/cpython/datetime.pxd
+@@ -404,15 +404,15 @@ cdef inline int datetime_fold(object o) noexcept:
+ 
+ # Get days of timedelta
+ cdef inline int timedelta_days(object o) noexcept:
+-    return (<PyDateTime_Delta*>o).days
++    return PyDateTime_DELTA_GET_DAYS(o)
+ 
+ # Get seconds of timedelta
+ cdef inline int timedelta_seconds(object o) noexcept:
+-    return (<PyDateTime_Delta*>o).seconds
++    return PyDateTime_DELTA_GET_SECONDS(o)
+ 
+ # Get microseconds of timedelta
+ cdef inline int timedelta_microseconds(object o) noexcept:
+-    return (<PyDateTime_Delta*>o).microseconds
++    return PyDateTime_DELTA_GET_MICROSECONDS(o)
+ 
+ cdef inline double total_seconds(timedelta obj) noexcept:
+     # Mirrors the "timedelta.total_seconds()" method.
+diff --git a/Cython/Includes/cpython/slice.pxd b/Cython/Includes/cpython/slice.pxd
+index 202dea7..1e83e66 100644
+--- a/Cython/Includes/cpython/slice.pxd
++++ b/Cython/Includes/cpython/slice.pxd
+@@ -48,6 +48,13 @@ cdef extern from "Python.h":
+ 
+     int PySlice_Unpack(object slice, Py_ssize_t *start, Py_ssize_t *stop,
+                        Py_ssize_t *step) except -1
++
++    object PySlice_Start(object slice)
++
++    object PySlice_Stop(object slice)
++
++    object PySlice_Step(object slice)
++
+     # Extract the start, stop and step data members from a slice object as C
+     # integers. Silently reduce values larger than PY_SSIZE_T_MAX to
+     # PY_SSIZE_T_MAX, silently boost the start and stop values less than
+diff --git a/Cython/Utility/Complex.c b/Cython/Utility/Complex.c
+index c95511d..a68a884 100644
+--- a/Cython/Utility/Complex.c
++++ b/Cython/Utility/Complex.c
+@@ -134,7 +134,7 @@ static {{type}} __Pyx_PyComplex_As_{{type_name}}(PyObject*);
+ 
+ static {{type}} __Pyx_PyComplex_As_{{type_name}}(PyObject* o) {
+     Py_complex cval;
+-#if !CYTHON_COMPILING_IN_PYPY
++#if !CYTHON_COMPILING_IN_PYPY && !CYTHON_COMPILING_IN_GRAAL
+     if (PyComplex_CheckExact(o))
+         cval = ((PyComplexObject *)o)->cval;
+     else
+diff --git a/Cython/Utility/Coroutine.c b/Cython/Utility/Coroutine.c
+index 35f2e88..30b2d75 100644
+--- a/Cython/Utility/Coroutine.c
++++ b/Cython/Utility/Coroutine.c
+@@ -539,8 +539,7 @@ static int __Pyx_PyGen__FetchStopIterationValue(PyThreadState *$local_tstate_cna
+         }
+ #if PY_VERSION_HEX >= 0x030300A0
+         else if (likely(__Pyx_IS_TYPE(ev, (PyTypeObject*)PyExc_StopIteration))) {
+-            value = ((PyStopIterationObject *)ev)->value;
+-            Py_INCREF(value);
++            value = PyObject_GetAttrString(ev, "value");
+             Py_DECREF(ev);
+         }
+ #endif
+@@ -585,8 +584,7 @@ static int __Pyx_PyGen__FetchStopIterationValue(PyThreadState *$local_tstate_cna
+     Py_XDECREF(tb);
+     Py_DECREF(et);
+ #if PY_VERSION_HEX >= 0x030300A0
+-    value = ((PyStopIterationObject *)ev)->value;
+-    Py_INCREF(value);
++    value = PyObject_GetAttrString(ev, "value");
+     Py_DECREF(ev);
+ #else
+     {
+diff --git a/Cython/Utility/CythonFunction.c b/Cython/Utility/CythonFunction.c
+index 3ea60f5..18d1842 100644
+--- a/Cython/Utility/CythonFunction.c
++++ b/Cython/Utility/CythonFunction.c
+@@ -1789,9 +1789,9 @@ static PyObject* __Pyx_Method_ClassMethod(PyObject *method) {
+         #if PY_VERSION_HEX < 0x03020000
+         PyTypeObject *d_type = descr->d_type;
+         #else
+-        PyTypeObject *d_type = descr->d_common.d_type;
++        PyTypeObject *d_type = PyDescrObject_GetType(method);
+         #endif
+-        return PyDescr_NewClassMethod(d_type, descr->d_method);
++        return PyDescr_NewClassMethod(d_type, PyMethodDescrObject_GetMethod(method));
+     }
+ #endif
+     else if (PyMethod_Check(method)) {
+diff --git a/Cython/Utility/ModuleSetupCode.c b/Cython/Utility/ModuleSetupCode.c
+index d8f60a4..8ede926 100644
+--- a/Cython/Utility/ModuleSetupCode.c
++++ b/Cython/Utility/ModuleSetupCode.c
+@@ -995,7 +995,7 @@ static CYTHON_INLINE int __Pyx__IsSameCFunction(PyObject *func, void *cfunc) {
+   #define __Pyx_PyFrame_SetLineNumber(frame, lineno)
+ #else
+   #define __Pyx_PyCode_HasFreeVars(co)  (PyCode_GetNumFree(co) > 0)
+-  #define __Pyx_PyFrame_SetLineNumber(frame, lineno)  (frame)->f_lineno = (lineno)
++  #define __Pyx_PyFrame_SetLineNumber(frame, lineno) _PyFrame_SetLineNumber((frame), (lineno))
+ #endif
+ 
+ #if CYTHON_COMPILING_IN_LIMITED_API
+@@ -1413,11 +1413,7 @@ static CYTHON_INLINE PyObject * __Pyx_PyDict_GetItemStrWithError(PyObject *dict,
+   #define __Pyx_PyType_AsAsync(obj) NULL
+ #endif
+ #ifndef __Pyx_PyAsyncMethodsStruct
+-    typedef struct {
+-        unaryfunc am_await;
+-        unaryfunc am_aiter;
+-        unaryfunc am_anext;
+-    } __Pyx_PyAsyncMethodsStruct;
++  #define __Pyx_PyAsyncMethodsStruct PyAsyncMethods
+ #endif
+ 
+ 
+@@ -1678,7 +1674,7 @@ PyEval_InitThreads();
+ static CYTHON_SMALL_CODE int __Pyx_check_single_interpreter(void) {
+     #if PY_VERSION_HEX >= 0x030700A1
+     static PY_INT64_T main_interpreter_id = -1;
+-    PY_INT64_T current_id = PyInterpreterState_GetID(PyThreadState_Get()->interp);
++    PY_INT64_T current_id = PyInterpreterState_GetIDFromThreadState(PyThreadState_Get());
+     if (main_interpreter_id == -1) {
+         main_interpreter_id = current_id;
+         return (unlikely(current_id == -1)) ? -1 : 0;
+diff --git a/Cython/Utility/ObjectHandling.c b/Cython/Utility/ObjectHandling.c
+index 1021edf..6139fd2 100644
+--- a/Cython/Utility/ObjectHandling.c
++++ b/Cython/Utility/ObjectHandling.c
+@@ -2034,8 +2034,8 @@ static int __Pyx_TryUnpackUnboundCMethod(__Pyx_CachedCFunction* target) {
+     #endif
+     {
+         PyMethodDescrObject *descr = (PyMethodDescrObject*) method;
+-        target->func = descr->d_method->ml_meth;
+-        target->flag = descr->d_method->ml_flags & ~(METH_CLASS | METH_STATIC | METH_COEXIST | METH_STACKLESS);
++        target->func = PyMethodDescrObject_GetMethod(method)->ml_meth;
++        target->flag = PyMethodDescrObject_GetMethod(method)->ml_flags & ~(METH_CLASS | METH_STATIC | METH_COEXIST | METH_STACKLESS);
+     } else
+ #endif
+     // bound classmethods need special treatment
+diff --git a/Cython/Utility/StringTools.c b/Cython/Utility/StringTools.c
+index 0a50bc5..f93b3cc 100644
+--- a/Cython/Utility/StringTools.c
++++ b/Cython/Utility/StringTools.c
+@@ -234,7 +234,7 @@ static CYTHON_INLINE int __Pyx_PyUnicode_Equals(PyObject* s1, PyObject* s2, int
+ //@requires: BytesEquals
+ 
+ static CYTHON_INLINE int __Pyx_PyUnicode_Equals(PyObject* s1, PyObject* s2, int equals) {
+-#if CYTHON_COMPILING_IN_PYPY || CYTHON_COMPILING_IN_LIMITED_API
++#if CYTHON_COMPILING_IN_PYPY || CYTHON_COMPILING_IN_GRAAL || CYTHON_COMPILING_IN_LIMITED_API
+     return PyObject_RichCompareBool(s1, s2, equals);
+ #else
+ #if PY_MAJOR_VERSION < 3
+@@ -345,7 +345,7 @@ static CYTHON_INLINE int __Pyx_PyBytes_Equals(PyObject* s1, PyObject* s2, int eq
+ //@requires: IncludeStringH
+ 
+ static CYTHON_INLINE int __Pyx_PyBytes_Equals(PyObject* s1, PyObject* s2, int equals) {
+-#if CYTHON_COMPILING_IN_PYPY || CYTHON_COMPILING_IN_LIMITED_API
++#if CYTHON_COMPILING_IN_PYPY || CYTHON_COMPILING_IN_GRAAL || CYTHON_COMPILING_IN_LIMITED_API
+     return PyObject_RichCompareBool(s1, s2, equals);
+ #else
+     if (s1 == s2) {
+diff --git a/Cython/Utility/arrayarray.h b/Cython/Utility/arrayarray.h
+index a9e4923..cf704c9 100644
+--- a/Cython/Utility/arrayarray.h
++++ b/Cython/Utility/arrayarray.h
+@@ -32,30 +32,31 @@ typedef struct arraydescr {
+ #endif
+ } arraydescr;
+ 
++typedef union {
++    char *ob_item;
++    float *as_floats;
++    double *as_doubles;
++    int *as_ints;
++    unsigned int *as_uints;
++    unsigned char *as_uchars;
++    signed char *as_schars;
++    char *as_chars;
++    unsigned long *as_ulongs;
++    long *as_longs;
++#if PY_MAJOR_VERSION >= 3
++    unsigned long long *as_ulonglongs;
++    long long *as_longlongs;
++#endif
++    short *as_shorts;
++    unsigned short *as_ushorts;
++    Py_UNICODE *as_pyunicodes;
++    void *as_voidptr;
++} __data_union
+ 
+ struct arrayobject {
+     PyObject_HEAD
+     Py_ssize_t ob_size;
+-    union {
+-        char *ob_item;
+-        float *as_floats;
+-        double *as_doubles;
+-        int *as_ints;
+-        unsigned int *as_uints;
+-        unsigned char *as_uchars;
+-        signed char *as_schars;
+-        char *as_chars;
+-        unsigned long *as_ulongs;
+-        long *as_longs;
+-#if PY_MAJOR_VERSION >= 3
+-        unsigned long long *as_ulonglongs;
+-        long long *as_longlongs;
+-#endif
+-        short *as_shorts;
+-        unsigned short *as_ushorts;
+-        Py_UNICODE *as_pyunicodes;
+-        void *as_voidptr;
+-    } data;
++    __data_union data;
+     Py_ssize_t allocated;
+     struct arraydescr *ob_descr;
+     PyObject *weakreflist; /* List of weak references */
+@@ -109,6 +110,9 @@ PyObject* newarrayobject(PyTypeObject *type, Py_ssize_t size,
+ // fast resize (reallocation to the point)
+ // not designed for filing small increments (but for fast opaque array apps)
+ static CYTHON_INLINE int resize(arrayobject *self, Py_ssize_t n) {
++#ifdef CYTHON_COMPILING_IN_GRAAL
++    return _PyArray_Resize((PyObject*)self, n);
++#else
+     void *items = (void*) self->data.ob_item;
+     PyMem_Resize(items, char, (size_t)(n * self->ob_descr->itemsize));
+     if (items == NULL) {
+@@ -119,10 +123,14 @@ static CYTHON_INLINE int resize(arrayobject *self, Py_ssize_t n) {
+     __Pyx_SET_SIZE(self, n);
+     self->allocated = n;
+     return 0;
++#endif
+ }
+ 
+ // suitable for small increments; over allocation 50% ;
+ static CYTHON_INLINE int resize_smart(arrayobject *self, Py_ssize_t n) {
++#ifdef CYTHON_COMPILING_IN_GRAAL
++    return _PyArray_Resize((PyObject*)self, n);
++#else
+     void *items = (void*) self->data.ob_item;
+     Py_ssize_t newsize;
+     if (n < self->allocated && n*4 > self->allocated) {
+@@ -143,6 +151,7 @@ static CYTHON_INLINE int resize_smart(arrayobject *self, Py_ssize_t n) {
+     __Pyx_SET_SIZE(self, n);
+     self->allocated = newsize;
+     return 0;
++#endif
+ }
+ 
+ #endif
