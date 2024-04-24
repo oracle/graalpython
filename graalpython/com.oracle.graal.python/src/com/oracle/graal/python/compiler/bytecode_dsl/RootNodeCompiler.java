@@ -384,10 +384,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
     // -------------- sources --------------
 
-    void beginRootNode(SSTNode node, Builder b) {
+    void beginRootNode(SSTNode node, ArgumentsTy args, Builder b) {
         b.beginSource(ctx.source);
         beginSourceSection(node, b);
         b.beginRoot(ctx.language);
+
+        checkForbiddenArgs(args);
+        setUpFrame(args, b);
     }
 
     void endRootNode(Builder b) {
@@ -432,9 +435,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
     @Override
     public BytecodeDSLCompilerResult visit(ModTy.Module node) {
         return compileRootNode("<module>", ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
-            beginRootNode(node, b);
+            beginRootNode(node, null, b);
 
-            setUpFrame(null, b);
             visitModuleBody(node.body, b);
 
             endRootNode(b);
@@ -444,9 +446,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
     @Override
     public BytecodeDSLCompilerResult visit(ModTy.Expression node) {
         return compileRootNode("<module>", ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
-            beginRootNode(node, b);
-
-            setUpFrame(null, b);
+            beginRootNode(node, null, b);
 
             b.beginReturn();
             new StatementCompiler(b).visitNode(node.body);
@@ -459,9 +459,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
     @Override
     public BytecodeDSLCompilerResult visit(ModTy.Interactive node) {
         return compileRootNode("<interactive>", ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
-            beginRootNode(node, b);
-
-            setUpFrame(null, b);
+            beginRootNode(node, null, b);
 
             visitModuleBody(node.body, b);
 
@@ -571,10 +569,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
     }
 
     private void emitFunctionDef(SSTNode node, ArgumentsTy args, SSTNode[] body, Builder b, Object docstring, boolean isRegularLambda) {
-        beginRootNode(node, b);
-
-        checkForbiddenArgs(args);
-        setUpFrame(args, b);
+        beginRootNode(node, args, b);
 
         int i = 0;
         if (docstring != null) {
@@ -611,13 +606,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
     @Override
     public BytecodeDSLCompilerResult visit(StmtTy.ClassDef node) {
         return compileRootNode(node.name, ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
-            beginRootNode(node, b);
-
-            if (containsAnnotations(node.body)) {
-                b.emitSetupAnnotations();
-            }
-
-            setUpFrame(null, b);
+            beginRootNode(node, null, b);
 
             beginStoreLocal("__module__", b);
             emitReadLocal("__name__", b);
@@ -626,6 +615,10 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             beginStoreLocal("__qualname__", b);
             emitPythonConstant(toTruffleStringUncached(ctx.getQualifiedName(scope)), b);
             endStoreLocal("__qualname__", b);
+
+            if (containsAnnotations(node.body)) {
+                b.emitSetupAnnotations();
+            }
 
             int i = 0;
             TruffleString docstring = getDocstring(node.body);
@@ -711,14 +704,10 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     Consumer<StatementCompiler> emptyCollectionProducer,
                     BiConsumer<StatementCompiler, BytecodeLocal> accumulateProducer) {
         return compileRootNode(name, new ArgumentInfo(1, 0, 0, false, false), node.getSourceRange(), b -> {
+            beginRootNode(node, null, b);
+
             StatementCompiler statementCompiler = new StatementCompiler(b);
-
-            beginRootNode(node, b);
-
-            setUpFrame(null, b);
-
             boolean isGenerator = emptyCollectionProducer == null;
-
             BytecodeLocal collectionLocal = null;
             if (!isGenerator) {
                 collectionLocal = b.createLocal();
