@@ -47,6 +47,7 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
@@ -186,24 +187,38 @@ public abstract class GetFrameLocalsNode extends Node {
     /**
      * Equivalent of CPython's {@code PyFrame_LocalsToFast}
      */
-    public static void syncLocalsBackToFrame(CodeUnit co, PFrame pyFrame, Frame localFrame) {
+    public static void syncLocalsBackToFrame(CodeUnit co, PRootNode root, PFrame pyFrame, Frame localFrame) {
         if (!pyFrame.hasCustomLocals()) {
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
-            copyLocalsArray(localFrame, localsDict, co.varnames, 0, false);
-            copyLocalsArray(localFrame, localsDict, co.cellvars, co.varnames.length, true);
-            copyLocalsArray(localFrame, localsDict, co.freevars, co.varnames.length + co.cellvars.length, true);
+            copyLocalsArray(localFrame, root, localsDict, co.varnames, 0, false);
+            copyLocalsArray(localFrame, root, localsDict, co.cellvars, co.varnames.length, true);
+            copyLocalsArray(localFrame, root, localsDict, co.freevars, co.varnames.length + co.cellvars.length, true);
         }
     }
 
-    private static void copyLocalsArray(Frame localFrame, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
-        for (int i = 0; i < namesArray.length; i++) {
-            TruffleString varname = namesArray[i];
-            Object value = PyDictGetItem.executeUncached(localsDict, varname);
-            if (deref) {
-                PCell cell = (PCell) localFrame.getObject(offset + i);
-                cell.setRef(value);
-            } else {
-                localFrame.setObject(offset + i, value);
+    private static void copyLocalsArray(Frame localFrame, PRootNode root, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            PBytecodeDSLRootNode bytecodeDSLRootNode = (PBytecodeDSLRootNode) root;
+            for (int i = 0; i < namesArray.length; i++) {
+                TruffleString varname = namesArray[i];
+                Object value = PyDictGetItem.executeUncached(localsDict, varname);
+                if (deref) {
+                    PCell cell = (PCell) bytecodeDSLRootNode.getLocal(localFrame, offset + i);
+                    cell.setRef(value);
+                } else {
+                    bytecodeDSLRootNode.setLocal(localFrame, offset + i, value);
+                }
+            }
+        } else {
+            for (int i = 0; i < namesArray.length; i++) {
+                TruffleString varname = namesArray[i];
+                Object value = PyDictGetItem.executeUncached(localsDict, varname);
+                if (deref) {
+                    PCell cell = (PCell) localFrame.getObject(offset + i);
+                    cell.setRef(value);
+                } else {
+                    localFrame.setObject(offset + i, value);
+                }
             }
         }
     }

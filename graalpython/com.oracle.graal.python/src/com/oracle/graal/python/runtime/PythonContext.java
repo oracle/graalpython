@@ -150,6 +150,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
@@ -175,6 +176,7 @@ import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleContext;
 import com.oracle.truffle.api.TruffleContext.Builder;
 import com.oracle.truffle.api.TruffleFile;
@@ -512,13 +514,31 @@ public final class PythonContext extends Python3Core {
             }
         }
 
+        private static void invalidateNoTracingOrProfilingAssumption(PythonLanguage language) {
+            if (language.noTracingOrProfilingAssumption.isValid()) {
+                language.noTracingOrProfilingAssumption.invalidate();
+
+                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                    // Ensure tracing + profiling are enabled for each method on the stack.
+                    Truffle.getRuntime().iterateFrames((frameInstance) -> {
+                        if (frameInstance.getCallTarget() instanceof RootCallTarget c && c.getRootNode() instanceof PBytecodeDSLRootNode r) {
+                            if (r.needsTraceAndProfileInstrumentation()) {
+                                r.reparseWithTraceAndProfile();
+                            }
+                        }
+                        return null;
+                    });
+                }
+            }
+        }
+
         public Object getTraceFun() {
             return traceFun;
         }
 
         public void setTraceFun(Object traceFun, PythonLanguage language) {
             if (this.traceFun != traceFun) {
-                language.noTracingOrProfilingAssumption.invalidate();
+                invalidateNoTracingOrProfilingAssumption(language);
                 this.traceFun = traceFun;
             }
         }
@@ -547,7 +567,7 @@ public final class PythonContext extends Python3Core {
 
         public void setProfileFun(Object profileFun, PythonLanguage language) {
             if (this.profileFun != profileFun) {
-                language.noTracingOrProfilingAssumption.invalidate();
+                invalidateNoTracingOrProfilingAssumption(language);
                 this.profileFun = profileFun;
             }
         }

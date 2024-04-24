@@ -139,6 +139,8 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic.InvertNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic.NegNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic.PosNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
+import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadFromLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadNameNode;
@@ -151,6 +153,8 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.PythonContext.ProfileEvent;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -174,6 +178,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.bytecode.BytecodeConfig;
 import com.oracle.truffle.api.bytecode.BytecodeLocation;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.BytecodeRootNode;
@@ -181,6 +186,7 @@ import com.oracle.truffle.api.bytecode.EpilogExceptional;
 import com.oracle.truffle.api.bytecode.EpilogReturn;
 import com.oracle.truffle.api.bytecode.GenerateBytecode;
 import com.oracle.truffle.api.bytecode.Instruction;
+import com.oracle.truffle.api.bytecode.Instrumentation;
 import com.oracle.truffle.api.bytecode.LocalSetter;
 import com.oracle.truffle.api.bytecode.LocalSetterRange;
 import com.oracle.truffle.api.bytecode.Operation;
@@ -197,6 +203,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
@@ -257,10 +264,12 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 @SuppressWarnings("unused")
 public abstract class PBytecodeDSLRootNode extends PRootNode implements BytecodeRootNode {
     private static final int EXPLODE_LOOP_THRESHOLD = 32;
+    @CompilationFinal private static transient BytecodeConfig TRACE_AND_PROFILE_CONFIG = null;
 
     @Child protected transient PythonObjectFactory factory = PythonObjectFactory.create();
     @Child private transient CalleeContext calleeContext = CalleeContext.create();
     @Child private transient ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
+    @Child private transient MaterializeFrameNode traceMaterializeFrameNode = null;
     @Child private transient ChainExceptionsNode chainExceptionsNode;
 
     // These fields are effectively final, but can only be set after construction.
@@ -333,18 +342,168 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @EpilogExceptional
     public static final class ExitCalleeContextExceptional {
         @Specialization
-        public static void doPException(VirtualFrame frame, PException pe,
+        public static void doExit(VirtualFrame frame, AbstractTruffleException ate,
                         @Bind("$root") PBytecodeDSLRootNode root,
                         @Bind("this") Node location) {
-            pe.notifyAddedTracebackFrame(!root.isPythonInternal());
+
+            if (ate instanceof PException pe) {
+                pe.notifyAddedTracebackFrame(!root.isPythonInternal());
+            }
+
+            if (root.needsTraceAndProfileInstrumentation()) {
+                root.traceOrProfileReturn(frame, location, null);
+            }
+
             root.calleeContext.exit(frame, root, location);
         }
+    }
 
+    private static final BytecodeConfig getTraceAndProfileConfig() {
+        if (TRACE_AND_PROFILE_CONFIG == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            TRACE_AND_PROFILE_CONFIG = PBytecodeDSLRootNodeGen.newConfigBuilder() //
+                            .addInstrumentation(TraceOrProfileCall.class) //
+                            .addInstrumentation(TraceLine.class) //
+                            .addInstrumentation(TraceOrProfileReturn.class) //
+                            .addInstrumentation(TraceException.class) //
+                            .build();
+        }
+        return TRACE_AND_PROFILE_CONFIG;
+    }
+
+    @NonIdempotent
+    public boolean needsTraceAndProfileInstrumentation() {
+        // We need instrumentation only if the assumption is invalid and the root node is visible.
+        return !PythonLanguage.get(this).noTracingOrProfilingAssumption.isValid() && !isInternal();
+    }
+
+    @NonIdempotent
+    protected PythonThreadState getThreadState() {
+        return PythonContext.get(this).getThreadState(PythonLanguage.get(this));
+    }
+
+    /**
+     * Reparses with instrumentations for settrace and setprofile enabled.
+     */
+    public void reparseWithTraceAndProfile() {
+        assert !isInternal();
+        getRootNodes().update(getTraceAndProfileConfig());
+    }
+
+    /**
+     * This operation is emitted at the beginning of a function; it runs after the prolog and tag
+     * events. It ensures that the root node has been parsed with trace/profile instrumentations, if
+     * required.
+     */
+    @Operation
+    public static final class CheckTraceAndProfileAssumption {
+        @Specialization(guards = {"!root.needsTraceAndProfileInstrumentation()"})
+        public static void doNothing(@Bind("$root") PBytecodeDSLRootNode root) {
+            // do nothing
+        }
+
+        @Specialization(replaces = "doNothing")
+        public static void ensureInstrumented(@Bind("$root") PBytecodeDSLRootNode root) {
+            root.reparseWithTraceAndProfile();
+        }
+    }
+
+    private PFrame ensurePyFrame(VirtualFrame frame, Node location) {
+        if (traceMaterializeFrameNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            traceMaterializeFrameNode = insert(MaterializeFrameNode.create());
+        }
+        return traceMaterializeFrameNode.execute(frame, location, true, true);
+    }
+
+    private void syncLocalsBackToFrame(VirtualFrame frame, PFrame pyFrame) {
+        Frame localFrame = frame;
+        if (co.isGeneratorOrCoroutine()) {
+            localFrame = PArguments.getGeneratorFrame(frame);
+        }
+        GetFrameLocalsNode.syncLocalsBackToFrame(co, this, pyFrame, localFrame);
+    }
+
+    @InliningCutoff
+    private void invokeProfileFunction(VirtualFrame virtualFrame, Node location, Object profileFun, PythonContext.PythonThreadState threadState, PythonContext.ProfileEvent event, Object arg) {
+        if (threadState.isProfiling()) {
+            return;
+        }
+        threadState.profilingStart();
+        PFrame pyFrame = ensurePyFrame(virtualFrame, location);
+        try {
+            // Force locals dict sync, so that we can sync them back later
+            GetFrameLocalsNode.executeUncached(pyFrame);
+            Object result = CallTernaryMethodNode.getUncached().execute(null, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
+            syncLocalsBackToFrame(virtualFrame, pyFrame);
+            Object realResult = result == PNone.NONE ? null : result;
+            pyFrame.setLocalTraceFun(realResult);
+        } catch (Throwable e) {
+            threadState.setProfileFun(null, PythonLanguage.get(this));
+            throw e;
+        } finally {
+            threadState.profilingStop();
+        }
+    }
+
+    private final void traceOrProfileCall(VirtualFrame frame, Node location) {
+        PythonThreadState threadState = getThreadState();
+        Object traceFun = threadState.getTraceFun();
+        if (traceFun != null) {
+            throw new UnsupportedOperationException("trace call not implemented");
+        }
+        Object profileFun = threadState.getProfileFun();
+        if (profileFun != null) {
+            invokeProfileFunction(frame, location, profileFun, threadState, ProfileEvent.CALL, null);
+        }
+    }
+
+    private final void traceOrProfileReturn(VirtualFrame frame, Node location, Object value) {
+        PythonThreadState threadState = getThreadState();
+        Object traceFun = threadState.getTraceFun();
+        if (traceFun != null) {
+            throw new UnsupportedOperationException("trace return not implemented");
+        }
+        Object profileFun = threadState.getProfileFun();
+        if (profileFun != null) {
+            invokeProfileFunction(frame, location, profileFun, threadState, ProfileEvent.RETURN, value);
+        }
+    }
+
+    @Instrumentation
+    public static final class TraceOrProfileCall {
         @Specialization
-        public static void doOther(VirtualFrame frame, AbstractTruffleException ate,
-                        @Bind("$root") PBytecodeDSLRootNode root,
-                        @Bind("this") Node location) {
-            root.calleeContext.exit(frame, root, location);
+        public static void perform(VirtualFrame frame,
+                        @Bind("this") Node location,
+                        @Bind("$root") PBytecodeDSLRootNode root) {
+            root.traceOrProfileCall(frame, location);
+        }
+    }
+
+    @Instrumentation
+    public static final class TraceLine {
+        @Specialization
+        public static void perform() {
+            throw new UnsupportedOperationException("trace line not implemented");
+        }
+    }
+
+    @Instrumentation
+    public static final class TraceOrProfileReturn {
+        @Specialization
+        public static Object perform(VirtualFrame frame, Object value,
+                        @Bind("this") Node location,
+                        @Bind("$root") PBytecodeDSLRootNode root) {
+            root.traceOrProfileReturn(frame, location, value);
+            return value;
+        }
+    }
+
+    @Instrumentation
+    public static final class TraceException {
+        @Specialization
+        public static void perform() {
+            throw new UnsupportedOperationException("trace exception not implemented");
         }
     }
 
@@ -3500,6 +3659,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class ResumeYield {
         @Specialization
         public static Object doObject(VirtualFrame frame, Object sendValue,
+                        @Bind("this") Node location,
+                        @Bind("$root") PBytecodeDSLRootNode root,
                         @Cached GetSendValueNode getSendValue) {
             /**
              * This operation resumes execution after a yield. Most of the resumption work is done
@@ -3510,6 +3671,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             if (currentException != null) {
                 PArguments.setException(frame, currentException);
             }
+
+            if (root.needsTraceAndProfileInstrumentation()) {
+                // We may not have reparsed the root with instrumentation yet.
+                root.reparseWithTraceAndProfile();
+                root.traceOrProfileCall(frame, location);
+            }
+
             return getSendValue.execute(sendValue);
         }
     }
