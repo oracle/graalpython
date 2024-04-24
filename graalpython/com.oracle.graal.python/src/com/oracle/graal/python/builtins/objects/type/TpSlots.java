@@ -116,6 +116,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -955,19 +956,26 @@ public record TpSlots(TpSlot nb_bool, //
         }
 
         @Specialization
-        static TpSlots doNative(PythonAbstractNativeObject nativeKlass) {
+        static TpSlots doNative(Node inliningTarget, PythonAbstractNativeObject nativeKlass,
+                        @Cached InlinedBranchProfile slotsNotInitializedProfile) {
             TpSlots tpSlots = nativeKlass.getTpSlots();
-            if (tpSlots == null) {
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, tpSlots == null)) {
                 /*
                  * This happens when we try to get slots of a type that didn't go through
                  * PyType_Ready yet. Specifically, numpy has a "fortran" type (defined in
                  * `fortranobject.c`) that they never ready and just expect it to work because it's
                  * simple. So just do the minimum to make the slots available.
                  */
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                tpSlots = TpSlots.fromNative(nativeKlass, PythonContext.get(null));
-                nativeKlass.setTpSlots(tpSlots);
+                slotsNotInitializedProfile.enter(inliningTarget);
+                tpSlots = initializeNativeSlots(nativeKlass);
             }
+            return tpSlots;
+        }
+
+        @TruffleBoundary
+        private static TpSlots initializeNativeSlots(PythonAbstractNativeObject nativeKlass) {
+            TpSlots tpSlots = TpSlots.fromNative(nativeKlass, PythonContext.get(null));
+            nativeKlass.setTpSlots(tpSlots);
             return tpSlots;
         }
     }
