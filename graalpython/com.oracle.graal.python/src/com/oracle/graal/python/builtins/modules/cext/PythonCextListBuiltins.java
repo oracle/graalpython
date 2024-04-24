@@ -67,7 +67,9 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteB
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.XDecRefPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
@@ -346,10 +348,6 @@ public final class PythonCextListBuiltins {
 
     @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer, Pointer, Pointer}, call = Ignored)
     abstract static class PyTruffleList_TraverseManagedOrGetItems extends CApiQuaternaryBuiltinNode {
-        // int (*visitproc)(PyObject *, void *);
-        private static final String NFI_SRC_VISIT = "(POINTER, POINTER):SINT32";
-        private static final Source NFI_LIBFFI_VISIT = Source.newBuilder(J_NFI_LANGUAGE, NFI_SRC_VISIT, "visit").internal(true).build();
-        private static final Source NFI_PANAMA_VISIT = Source.newBuilder(J_NFI_LANGUAGE, "with panama " + NFI_SRC_VISIT, "visit").internal(true).build();
 
         @Specialization
         static long doGeneric(PList self, Object outItems, Object visitFun, Object arg,
@@ -357,8 +355,7 @@ public final class PythonCextListBuiltins {
                         @Cached CStructAccess.WritePointerNode writePointerNode,
                         @CachedLibrary(limit = "2") InteropLibrary interopLib,
                         @CachedLibrary(limit = "1") InteropLibrary resultLib,
-                        @Cached("createSig()") CallTarget nfiSignatureFactory,
-                        @CachedLibrary(limit = "1") SignatureLibrary signatureLib,
+                        @Cached EnsureExecutableNode ensureExecutableNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached PythonToNativeNode toNativeNode) {
             SequenceStorage sequenceStorage = self.getSequenceStorage();
@@ -368,14 +365,9 @@ public final class PythonCextListBuiltins {
             } else if (sequenceStorage instanceof ObjectSequenceStorage || sequenceStorage instanceof MroSequenceStorage) {
                 BasicSequenceStorage basicStorage = (BasicSequenceStorage) sequenceStorage;
 
-                Object visitExecutable;
-                if (!interopLib.isExecutable(visitFun)) {
-                    visitExecutable = signatureLib.bind(nfiSignatureFactory.call(), visitFun);
-                } else {
-                    visitExecutable = visitFun;
-                }
-
+                Object visitExecutable = ensureExecutableNode.execute(inliningTarget, visitFun, PExternalFunctionWrapper.VISITPROC);
                 assert interopLib.isExecutable(visitExecutable);
+
                 for (int i = basicStorage.length(); --i >= 0;) {
                     Object item = getItemScalarNode.execute(inliningTarget, basicStorage, i);
                     if (item instanceof PythonAbstractNativeObject) {
@@ -412,14 +404,6 @@ public final class PythonCextListBuiltins {
                 }
             }
             throw CompilerDirectives.shouldNotReachHere("result of visitproc must be int");
-        }
-
-        @NeverDefault
-        static CallTarget createSig() {
-            CompilerAsserts.neverPartOfCompilation();
-            PythonContext pythonContext = PythonContext.get(null);
-            boolean usePanama = pythonContext.getOption(PythonOptions.UsePanama);
-            return pythonContext.getEnv().parseInternal(usePanama ? NFI_PANAMA_VISIT : NFI_LIBFFI_VISIT);
         }
     }
 }
