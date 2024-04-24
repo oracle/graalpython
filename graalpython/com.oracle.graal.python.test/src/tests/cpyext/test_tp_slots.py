@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import sys
-from . import CPyExtType, CPyExtHeapType
+from . import CPyExtType, CPyExtHeapType, compile_module_from_string
 
 SlotsGetter = CPyExtType("SlotsGetter",
                          """
@@ -245,3 +245,43 @@ def test_incompatible_slots_assignment():
         # assert SlotsGetter.get_tp_descr_get(HackySlotsWithManaged()) == SlotsGetter.get_tp_attro(ManagedAttrO())
     finally:
         sys.modules.pop("test_incompatible_slots_assignment_managed", None)
+
+
+def test_type_not_ready():
+    module = compile_module_from_string("""
+        #define PY_SSIZE_T_CLEAN
+        #include <Python.h>
+        
+        static PyObject* my_getattro(PyObject* self, PyObject* key) {
+            return Py_NewRef(key);
+        }
+        
+        static PyTypeObject NotReadyType = {
+            PyVarObject_HEAD_INIT(NULL, 0)
+            .tp_name = "NotReadyType",
+            .tp_basicsize = sizeof(PyObject),
+            .tp_dealloc = (destructor)PyObject_Del,
+            .tp_getattro = my_getattro
+        };
+        
+        static PyObject* create_not_ready(PyObject* module, PyObject* unused) {
+            return PyObject_New(PyObject, &NotReadyType);
+        }
+        
+        static PyMethodDef module_methods[] = {
+            {"create_not_ready", _PyCFunction_CAST(create_not_ready), METH_NOARGS, ""},
+            {NULL}
+        };
+        
+        static PyModuleDef NotReadyTypeModule = {
+            PyModuleDef_HEAD_INIT, "NotReadyType", "", -1, module_methods
+        };
+    
+        PyMODINIT_FUNC
+        PyInit_NotReadyType(void)
+        {
+            return PyModule_Create(&NotReadyTypeModule);
+        }
+    """, "NotReadyType")
+    not_ready = module.create_not_ready()
+    assert not_ready.foo == 'foo'

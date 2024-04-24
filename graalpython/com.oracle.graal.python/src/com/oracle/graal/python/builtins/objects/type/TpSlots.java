@@ -103,6 +103,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.InlineWeakValueProfile;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -115,6 +116,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -954,8 +956,27 @@ public record TpSlots(TpSlot nb_bool, //
         }
 
         @Specialization
-        static TpSlots doNative(PythonAbstractNativeObject nativeKlass) {
-            return nativeKlass.getTpSlots();
+        static TpSlots doNative(Node inliningTarget, PythonAbstractNativeObject nativeKlass,
+                        @Cached InlinedBranchProfile slotsNotInitializedProfile) {
+            TpSlots tpSlots = nativeKlass.getTpSlots();
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, tpSlots == null)) {
+                /*
+                 * This happens when we try to get slots of a type that didn't go through
+                 * PyType_Ready yet. Specifically, numpy has a "fortran" type (defined in
+                 * `fortranobject.c`) that they never ready and just expect it to work because it's
+                 * simple. So just do the minimum to make the slots available.
+                 */
+                slotsNotInitializedProfile.enter(inliningTarget);
+                tpSlots = initializeNativeSlots(nativeKlass);
+            }
+            return tpSlots;
+        }
+
+        @TruffleBoundary
+        private static TpSlots initializeNativeSlots(PythonAbstractNativeObject nativeKlass) {
+            TpSlots tpSlots = TpSlots.fromNative(nativeKlass, PythonContext.get(null));
+            nativeKlass.setTpSlots(tpSlots);
+            return tpSlots;
         }
     }
 
