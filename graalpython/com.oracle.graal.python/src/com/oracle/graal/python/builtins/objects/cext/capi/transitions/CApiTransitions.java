@@ -1560,7 +1560,7 @@ public abstract class CApiTransitions {
                     Object ref = lookup.get();
                     if (createNativeProfile.profile(inliningTarget, ref == null)) {
                         LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
-                        return createAbstractNativeObject(nativeContext, pointer, stealing, pointer);
+                        return createAbstractNativeObject(nativeContext, new NativePointer(pointer), stealing, pointer);
                     }
                     if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
                         wrapper = (PythonNativeWrapper) ref;
@@ -1572,7 +1572,7 @@ public abstract class CApiTransitions {
                         return result;
                     }
                 } else {
-                    return createAbstractNativeObject(nativeContext, pointer, stealing, pointer);
+                    return createAbstractNativeObject(nativeContext, new NativePointer(pointer), stealing, pointer);
                 }
             }
             return NativeToPythonNode.handleWrapper(inliningTarget, wrapperProfile, stealing, wrapper);
