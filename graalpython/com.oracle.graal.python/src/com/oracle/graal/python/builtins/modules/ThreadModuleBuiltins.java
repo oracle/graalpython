@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
-import static com.oracle.graal.python.nodes.HiddenAttr.THREAD_COUNT;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.lang.ref.WeakReference;
@@ -64,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -108,7 +106,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         addBuiltinConstant("error", core.lookupType(PythonBuiltinClassType.RuntimeError));
         addBuiltinConstant("TIMEOUT_MAX", TIMEOUT_MAX);
-        addBuiltinConstant(THREAD_COUNT, 0);
+        core.lookupBuiltinModule(T__THREAD).setModuleState(0);
         super.initialize(core);
     }
 
@@ -179,7 +177,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         long getCount(PythonModule self) {
-            return (int) HiddenAttr.ReadNode.executeUncached(self, THREAD_COUNT, 0);
+            return self.getModuleState(Integer.class);
         }
     }
 
@@ -232,8 +230,8 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
             TruffleThreadBuilder threadBuilder = env.newTruffleThreadBuilder(() -> {
                 try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
                     // the increment is protected by the gil
-                    int curCount = (int) HiddenAttr.ReadNode.executeUncached(threadModule, THREAD_COUNT, 0);
-                    HiddenAttr.WriteNode.executeUncached(threadModule, THREAD_COUNT, curCount + 1);
+                    int curCount = threadModule.getModuleState(Integer.class);
+                    threadModule.setModuleState(curCount + 1);
                     try {
                         // n.b.: It is important to pass 'null' frame here because each thread has
                         // its own stack and if we would pass the current frame, this would be
@@ -248,8 +246,8 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         }
                         // SystemExit is silently ignored (see _threadmodule.c: thread_run)
                     } finally {
-                        curCount = (int) HiddenAttr.ReadNode.executeUncached(threadModule, THREAD_COUNT, 1);
-                        HiddenAttr.WriteNode.executeUncached(threadModule, THREAD_COUNT, curCount - 1);
+                        curCount = threadModule.getModuleState(Integer.class);
+                        threadModule.setModuleState(curCount - 1);
                     }
                 }
             }).context(env.getContext()).threadGroup(context.getThreadGroup());

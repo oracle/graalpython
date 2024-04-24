@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -163,7 +162,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         EconomicMapStorage storage = EconomicMapStorage.create();
         addBuiltinConstant(J_CONSTRUCTORS, core.factory().createMappingproxy(core.factory().createDict(storage)));
-        addBuiltinConstant(HiddenAttr.ORIGINAL_CONSTRUCTORS, storage);
+        core.lookupBuiltinModule(T_HASHLIB).setModuleState(storage);
         super.initialize(core);
     }
 
@@ -181,7 +180,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         PythonModule self = core.lookupBuiltinModule(T_HASHLIB);
         ReadAttributeFromPythonObjectNode readNode = ReadAttributeFromPythonObjectNode.getUncached();
-        EconomicMapStorage storage = (EconomicMapStorage) HiddenAttr.ReadNode.executeUncached(self, HiddenAttr.ORIGINAL_CONSTRUCTORS, NO_VALUE);
+        EconomicMapStorage storage = self.getModuleState(EconomicMapStorage.class);
         PythonModule sha3module = AbstractImportNode.importModule(T_SHA3);
         for (int i = 0; i < DIGEST_ALIASES.length; i += 2) {
             String module = DIGEST_ALIASES[i + 1];
@@ -278,7 +277,6 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isString(digestmod)")
         static Object hmacNewFromFunction(VirtualFrame frame, PythonModule self, Object key, Object msg, Object digestmod,
                         @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readHiddenAttrNode,
                         @Cached HashingStorageNodes.HashingStorageGetItem getItemNode,
                         @Exclusive @Cached CastToTruffleStringNode castStr,
                         @Exclusive @Cached CastToJavaStringNode castJStr,
@@ -288,7 +286,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached PythonObjectFactory factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             // cast guaranteed in our initialize
-            EconomicMapStorage constructors = (EconomicMapStorage) readHiddenAttrNode.execute(inliningTarget, self, HiddenAttr.ORIGINAL_CONSTRUCTORS, NO_VALUE);
+            EconomicMapStorage constructors = self.getModuleState(EconomicMapStorage.class);
             Object name = getItemNode.execute(frame, inliningTarget, constructors, digestmod);
             if (name != null) {
                 assert name instanceof TruffleString; // guaranteed in our initialize

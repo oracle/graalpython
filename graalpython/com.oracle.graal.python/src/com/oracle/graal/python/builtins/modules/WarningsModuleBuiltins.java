@@ -47,10 +47,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
-import static com.oracle.graal.python.nodes.HiddenAttr.DEFAULTACTION;
-import static com.oracle.graal.python.nodes.HiddenAttr.FILTERS;
-import static com.oracle.graal.python.nodes.HiddenAttr.FILTERS_VERSION;
-import static com.oracle.graal.python.nodes.HiddenAttr.ONCEREGISTRY;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_CLEAR;
@@ -104,7 +100,6 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
@@ -183,14 +178,16 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         // we need to copy the attrs, since they must still be available even if the user `del`s the
         // attrs
         addBuiltinConstant("_defaultaction", T_DEFAULT);
-        addBuiltinConstant(DEFAULTACTION, T_DEFAULT);
         PDict onceregistry = core.factory().createDict();
         addBuiltinConstant("_onceregistry", onceregistry);
-        addBuiltinConstant(ONCEREGISTRY, onceregistry);
         PList filters = initFilters(core.factory());
         addBuiltinConstant("filters", filters);
-        addBuiltinConstant(FILTERS, filters);
-        addBuiltinConstant(FILTERS_VERSION, 0L);
+        ModuleState moduleState = new ModuleState();
+        moduleState.filtersVersion = 0L;
+        moduleState.filters = filters;
+        moduleState.onceRegistry = onceregistry;
+        moduleState.defaultAction = T_DEFAULT;
+        core.lookupBuiltinModule(T__WARNINGS).setModuleState(moduleState);
         super.initialize(core);
     }
 
@@ -209,8 +206,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
     }
 
     static final class WarningsModuleNode extends Node {
-        @Child HiddenAttr.ReadNode readHiddenAttrNode;
-        @Child HiddenAttr.WriteNode writeHiddenAttrNode;
         @Child CastToTruffleStringNode castStr;
         @Child PRaiseNode raiseNode;
         @Child PyObjectRichCompareBool.EqNode eqNode;
@@ -250,22 +245,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
 
         private PythonContext getContext() {
             return PythonContext.get(this);
-        }
-
-        private HiddenAttr.ReadNode getReadHiddenAttrNode() {
-            if (readHiddenAttrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readHiddenAttrNode = insert(HiddenAttr.ReadNode.create());
-            }
-            return readHiddenAttrNode;
-        }
-
-        private HiddenAttr.WriteNode getWriteHiddenAttrNode() {
-            if (writeHiddenAttrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeHiddenAttrNode = insert(HiddenAttr.WriteNode.create());
-            }
-            return writeHiddenAttrNode;
         }
 
         private PyObjectRichCompareBool.EqNode getEqNode() {
@@ -465,29 +444,29 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          * May be on the fast path, depending on the passed node, which must be either cached or
          * uncached.
          */
-        private static long getStateFiltersVersion(PythonModule warningsModule, HiddenAttr.ReadNode readHiddenAttrNode) {
-            return (long) readHiddenAttrNode.executeCached(warningsModule, FILTERS_VERSION, 0L);
+        private static long getStateFiltersVersion(PythonModule warningsModule) {
+            return warningsModule.getModuleState(ModuleState.class).filtersVersion;
         }
 
         /**
          * On fast path.
          */
         private Object getStateFilters(PythonModule warningsModule) {
-            return getReadHiddenAttrNode().executeCached(warningsModule, FILTERS, null);
+            return warningsModule.getModuleState(ModuleState.class).filters;
         }
 
         /**
          * On slow path.
          */
         private static Object getStateOnceRegistry(PythonModule warningsModule) {
-            return HiddenAttr.ReadNode.executeUncached(warningsModule, ONCEREGISTRY, null);
+            return warningsModule.getModuleState(ModuleState.class).onceRegistry;
         }
 
         /**
          * On fast path.
          */
         private Object getStateDefaultAction(PythonModule warningsModule) {
-            return getReadHiddenAttrNode().executeCached(warningsModule, DEFAULTACTION, null);
+            return warningsModule.getModuleState(ModuleState.class).defaultAction;
         }
 
         /**
@@ -593,7 +572,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         private TruffleString getFilter(VirtualFrame frame, PythonModule _warnings, Object category, Object text, int lineno, Object module, Object[] item) {
             Object filters = getWarningsAttr(frame, T_FILTERS);
             if (filters != null) {
-                getWriteHiddenAttrNode().executeCached(_warnings, FILTERS, filters);
+                _warnings.getModuleState(ModuleState.class).filters = filters;
             } else {
                 filters = getStateFilters(_warnings);
             }
@@ -649,7 +628,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          * The variant of alreadyWarned that should not set and that must be on the fast path.
          */
         private boolean alreadyWarnedShouldNotSet(VirtualFrame frame, PythonModule _warnings, PDict registry, Object key) {
-            return alreadyWarned(frame, _warnings, registry, key, false, getEqNode(), getCallMethodNode(), getDictGetItemNode(), getSetItemNode(), getIsTrueNode(), getReadHiddenAttrNode());
+            return alreadyWarned(frame, _warnings, registry, key, false, getEqNode(), getCallMethodNode(), getDictGetItemNode(), getSetItemNode(), getIsTrueNode());
         }
 
         /**
@@ -658,17 +637,16 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          */
         private static boolean alreadyWarnedShouldSet(PythonModule _warnings, PDict registry, Object key) {
             return alreadyWarned(null, _warnings, registry, key, true, PyObjectRichCompareBool.EqNode.getUncached(), PyObjectCallMethodObjArgs.getUncached(), PyDictGetItem.getUncached(),
-                            PyObjectSetItem.getUncached(), PyObjectIsTrueNode.getUncached(), HiddenAttr.ReadNode.getUncached());
+                            PyObjectSetItem.getUncached(), PyObjectIsTrueNode.getUncached());
         }
 
         /**
          * Used on both fast and slow path.
          */
         private static boolean alreadyWarned(VirtualFrame frame, PythonModule _warnings, PDict registry, Object key, boolean shouldSet, PyObjectRichCompareBool.EqNode eqNode,
-                        PyObjectCallMethodObjArgs callMethod, PyDictGetItem getItem, PyObjectSetItem setItem, PyObjectIsTrueNode isTrueNode,
-                        HiddenAttr.ReadNode readHiddenAttrNode) {
+                        PyObjectCallMethodObjArgs callMethod, PyDictGetItem getItem, PyObjectSetItem setItem, PyObjectIsTrueNode isTrueNode) {
             Object versionObj = getItem.executeCached(frame, registry, T_VERSION);
-            long stateFiltersVersion = getStateFiltersVersion(_warnings, readHiddenAttrNode);
+            long stateFiltersVersion = getStateFiltersVersion(_warnings);
             if (versionObj == null || !eqNode.compareCached(frame, stateFiltersVersion, versionObj)) {
                 callMethod.executeCached(frame, registry, T_CLEAR);
                 setItem.executeCached(frame, registry, T_VERSION, stateFiltersVersion);
@@ -1087,12 +1065,9 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FiltersMutated extends PythonBuiltinNode {
         @Specialization
-        static PNone mutate(PythonModule self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readHiddenAttrNode,
-                        @Cached HiddenAttr.WriteNode writeHiddenAttrNode) {
-            long version = (long) readHiddenAttrNode.execute(inliningTarget, self, FILTERS_VERSION, 0L);
-            writeHiddenAttrNode.execute(inliningTarget, self, FILTERS_VERSION, version + 1);
+        static PNone mutate(PythonModule self) {
+            ModuleState moduleState = self.getModuleState(ModuleState.class);
+            moduleState.filtersVersion++;
             return PNone.NONE;
         }
     }
@@ -1210,5 +1185,12 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 CallNode.getUncached().execute(warn, message, category, stackLevel, source);
             }
         }
+    }
+
+    private static class ModuleState {
+        long filtersVersion;
+        Object filters;
+        TruffleString defaultAction;
+        PDict onceRegistry;
     }
 }

@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules.functools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_FUNCTOOLS;
 import static com.oracle.graal.python.nodes.ErrorMessages.MAXSIZE_SHOULD_BE_INTEGER_OR_NONE;
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_FIRST_ARGUMENT_MUST_BE_CALLABLE;
@@ -81,7 +80,6 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
@@ -146,7 +144,6 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
         static Object lruCacheNew(VirtualFrame frame, Object type,
                         Object func, Object maxsize_O, int typed, Object cache_info_type,
                         @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readHiddenAttrNode,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached PyIndexCheckNode indexCheck,
                         @Cached PyNumberAsSizeNode numberAsSize,
@@ -190,7 +187,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
             obj.misses = obj.hits = 0;
             obj.maxsize = maxsize;
 
-            obj.kwdMark = readHiddenAttrNode.execute(inliningTarget, PythonContext.get(inliningTarget).lookupBuiltinModule(T_FUNCTOOLS), HiddenAttr.KWD_MARK, NO_VALUE);
+            obj.kwdMark = PythonContext.get(inliningTarget).lookupBuiltinModule(T_FUNCTOOLS).getModuleState(Object.class);
 
             obj.cacheInfoType = cache_info_type;
             // obj.dict = null;

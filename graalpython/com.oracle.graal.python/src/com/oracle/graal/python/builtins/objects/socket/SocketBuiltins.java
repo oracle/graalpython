@@ -51,7 +51,6 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EIS
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOTSOCK;
 import static com.oracle.graal.python.builtins.objects.socket.PSocket.INVALID_FD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SOCKET;
-import static com.oracle.graal.python.nodes.HiddenAttr.DEFAULT_TIMEOUT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
@@ -248,7 +247,7 @@ public final class SocketBuiltins extends PythonBuiltins {
             // TODO remove SOCK_CLOEXEC and SOCK_NONBLOCK
             self.setType(type);
             self.setProto(proto);
-            long defaultTimeout = (long) readNode.execute(inliningTarget, context.lookupBuiltinModule(T__SOCKET), DEFAULT_TIMEOUT, null);
+            long defaultTimeout = context.lookupBuiltinModule(T__SOCKET).getModuleState(Long.class);
             self.setTimeoutNs(defaultTimeout);
             if (defaultTimeout >= 0) {
                 posixLib.setBlocking(context.getPosixSupport(), fd, false);

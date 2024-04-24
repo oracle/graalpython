@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_READLINE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_READLINE;
-import static com.oracle.graal.python.nodes.HiddenAttr.DATA;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.BufferedReader;
@@ -62,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -100,17 +98,15 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        HiddenAttr.WriteNode.executeUncached(core.lookupBuiltinModule(T_READLINE), DATA, new LocalData());
+        core.lookupBuiltinModule(T_READLINE).setModuleState(new LocalData());
     }
 
     @Builtin(name = "get_completer", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class GetCompleterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object getCompleter(PythonModule self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readNode) {
-            LocalData data = (LocalData) readNode.execute(inliningTarget, self, DATA, null);
+        static Object getCompleter(PythonModule self) {
+            LocalData data = self.getModuleState(LocalData.class);
             if (data.completer != null) {
                 return data.completer;
             } else {
@@ -123,10 +119,8 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetCompleterNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PNone setCompleter(PythonModule self, Object callable,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readNode) {
-            LocalData data = (LocalData) readNode.execute(inliningTarget, self, DATA, null);
+        PNone setCompleter(PythonModule self, Object callable) {
+            LocalData data = self.getModuleState(LocalData.class);
             data.completer = callable;
             return PNone.NONE;
         }
@@ -140,7 +134,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
         PNone setCompleter(PythonModule self, TruffleString tspec) {
             String spec = tspec.toJavaStringUncached();
             if (spec.startsWith("tab:")) {
-                LocalData data = (LocalData) HiddenAttr.ReadNode.executeUncached(self, DATA, null);
+                LocalData data = self.getModuleState(LocalData.class);
                 data.bindings.put("tab", spec.split(":")[1].trim());
                 return PNone.NONE;
             } else {
@@ -165,7 +159,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         int setCompleter(PythonModule self) {
-            LocalData data = (LocalData) HiddenAttr.ReadNode.executeUncached(self, DATA, null);
+            LocalData data = self.getModuleState(LocalData.class);
             return data.history.size();
         }
     }
@@ -176,7 +170,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         TruffleString setCompleter(PythonModule self, int index) {
-            LocalData data = (LocalData) HiddenAttr.ReadNode.executeUncached(self, DATA, null);
+            LocalData data = self.getModuleState(LocalData.class);
             try {
                 return data.history.get(index);
             } catch (IndexOutOfBoundsException e) {
@@ -198,7 +192,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         TruffleString setCompleter(PythonModule self, int index, TruffleString string) {
-            LocalData data = (LocalData) HiddenAttr.ReadNode.executeUncached(self, DATA, null);
+            LocalData data = self.getModuleState(LocalData.class);
             try {
                 return data.history.set(index, string);
             } catch (IndexOutOfBoundsException e) {
@@ -213,7 +207,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         TruffleString setCompleter(PythonModule self, int index) {
-            LocalData data = (LocalData) HiddenAttr.ReadNode.executeUncached(self, DATA, null);
+            LocalData data = self.getModuleState(LocalData.class);
             try {
                 return data.history.remove(index);
             } catch (IndexOutOfBoundsException e) {
@@ -235,7 +229,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static PNone addHistory(PythonModule self, TruffleString item) {
-            LocalData data = (LocalData) HiddenAttr.ReadNode.executeUncached(self, DATA, null);
+            LocalData data = self.getModuleState(LocalData.class);
             data.history.add(item);
             return PNone.NONE;
         }
@@ -255,7 +249,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @SuppressWarnings("try")
         PNone setCompleter(PythonModule self, TruffleString path) {
-            LocalData data = (LocalData) HiddenAttr.ReadNode.executeUncached(self, DATA, null);
+            LocalData data = self.getModuleState(LocalData.class);
             try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
                 BufferedReader reader = getContext().getEnv().getPublicTruffleFile(path.toJavaStringUncached()).newBufferedReader();
                 String line;
@@ -283,7 +277,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         PNone setCompleter(PythonModule self, TruffleString path) {
-            LocalData data = (LocalData) HiddenAttr.ReadNode.executeUncached(self, DATA, null);
+            LocalData data = self.getModuleState(LocalData.class);
             try {
                 BufferedWriter writer = getContext().getEnv().getPublicTruffleFile(path.toJavaStringUncached()).newBufferedWriter(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
                 for (TruffleString l : data.history) {
@@ -304,7 +298,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static PNone setCompleter(PythonModule self) {
-            LocalData data = (LocalData) HiddenAttr.ReadNode.executeUncached(self, DATA, null);
+            LocalData data = self.getModuleState(LocalData.class);
             data.history.clear();
             return PNone.NONE;
         }
@@ -314,7 +308,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InsertTextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone setCompleter(@SuppressWarnings("unused") Object text) {
+        static PNone setCompleter(@SuppressWarnings("unused") Object text) {
             return PNone.NONE;
         }
     }
@@ -323,7 +317,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RedisplayNode extends PythonBuiltinNode {
         @Specialization
-        PNone setCompleter() {
+        static PNone setCompleter() {
             return PNone.NONE;
         }
     }
@@ -332,10 +326,8 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetAutoHistoryNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean setCompleter(PythonModule self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readNode) {
-            LocalData data = (LocalData) readNode.execute(inliningTarget, self, DATA, null);
+        static boolean setCompleter(PythonModule self) {
+            LocalData data = self.getModuleState(LocalData.class);
             return data.autoHistory;
         }
     }
@@ -344,10 +336,8 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetAutoHistoryNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PNone setCompleter(PythonModule self, boolean enabled,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readNode) {
-            LocalData data = (LocalData) readNode.execute(inliningTarget, self, DATA, null);
+        static PNone setCompleter(PythonModule self, boolean enabled) {
+            LocalData data = self.getModuleState(LocalData.class);
             data.autoHistory = enabled;
             return PNone.NONE;
         }
@@ -357,10 +347,8 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetCompleterDelimsNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PNone setCompleterDelims(PythonModule self, TruffleString completerDelims,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readNode) {
-            LocalData data = (LocalData) readNode.execute(inliningTarget, self, DATA, null);
+        static PNone setCompleterDelims(PythonModule self, TruffleString completerDelims) {
+            LocalData data = self.getModuleState(LocalData.class);
             data.completerDelims = completerDelims;
             return PNone.NONE;
         }
@@ -370,10 +358,8 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetCompleterDelimsNode extends PythonBuiltinNode {
         @Specialization
-        Object getCompleterDelims(PythonModule self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readNode) {
-            LocalData data = (LocalData) readNode.execute(inliningTarget, self, DATA, null);
+        static Object getCompleterDelims(PythonModule self) {
+            LocalData data = self.getModuleState(LocalData.class);
             return (data.completerDelims != null) ? data.completerDelims : PNone.NONE;
         }
     }

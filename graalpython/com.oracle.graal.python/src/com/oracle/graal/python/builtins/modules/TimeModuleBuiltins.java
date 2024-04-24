@@ -28,8 +28,6 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TIMESTAMP_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_CLOCK;
-import static com.oracle.graal.python.nodes.HiddenAttr.CURRENT_ZONE_ID;
-import static com.oracle.graal.python.nodes.HiddenAttr.TIME_SLEPT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -51,7 +49,6 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
 
-import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -77,7 +74,6 @@ import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
@@ -94,6 +90,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -162,7 +159,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
         // Should we read TZ env variable?
         ZoneId defaultZoneId = core.getContext().getEnv().getTimeZone();
-        HiddenAttr.WriteNode.executeUncached(core.lookupBuiltinModule(T_TIME), CURRENT_ZONE_ID, defaultZoneId);
+        ModuleState moduleState = new ModuleState();
+        moduleState.currentZoneId = defaultZoneId;
+        moduleState.timeSlept = 0;
+        core.lookupBuiltinModule(T_TIME).setModuleState(moduleState);
 
         TimeZone defaultTimeZone = TimeZone.getTimeZone(defaultZoneId);
         TruffleString noDaylightSavingZone = toTruffleStringUncached(defaultTimeZone.getDisplayName(false, TimeZone.SHORT));
@@ -337,11 +337,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PTuple localtime(VirtualFrame frame, PythonModule module, Object seconds,
                         @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readZoneId,
                         @Cached ToLongTime toLongTime,
                         @Cached PythonObjectFactory factory) {
-            ZoneId zoneId = (ZoneId) readZoneId.execute(inliningTarget, module, CURRENT_ZONE_ID, null);
-            return factory.createStructSeq(STRUCT_TIME_DESC, getTimeStruct(zoneId, toLongTime.execute(frame, inliningTarget, seconds)));
+            ModuleState moduleState = module.getModuleState(ModuleState.class);
+            return factory.createStructSeq(STRUCT_TIME_DESC, getTimeStruct(moduleState.currentZoneId, toLongTime.execute(frame, inliningTarget, seconds)));
         }
     }
 
@@ -441,7 +440,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getProcesTime(PythonModule self) {
-            return (System.nanoTime() - PythonContext.get(this).getPerfCounterStart() - timeSlept(self)) / 1000_000_000.0;
+            ModuleState moduleState = self.getModuleState(ModuleState.class);
+            return (System.nanoTime() - PythonContext.get(this).getPerfCounterStart() - moduleState.timeSlept) / 1000_000_000.0;
         }
     }
 
@@ -452,12 +452,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getProcesNsTime(PythonModule self) {
-            return (System.nanoTime() - PythonContext.get(this).getPerfCounterStart() - timeSlept(self));
+            ModuleState moduleState = self.getModuleState(ModuleState.class);
+            return (System.nanoTime() - PythonContext.get(this).getPerfCounterStart() - moduleState.timeSlept);
         }
-    }
-
-    private static long timeSlept(PythonModule self) {
-        return (long) HiddenAttr.ReadNode.executeUncached(self, TIME_SLEPT, 0L);
     }
 
     @Builtin(name = "thread_time")
@@ -492,9 +489,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isPositive(seconds)")
         Object sleep(PythonModule self, long seconds,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GilNode gil,
-                        @Shared @Cached HiddenAttr.WriteNode writeHiddenAttrNode) {
+                        @Shared @Cached GilNode gil) {
             long t = nanoTime();
             long deadline = (long) timeSeconds() + seconds;
             gil.release(true);
@@ -502,7 +497,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 doSleep(this, seconds, deadline);
             } finally {
                 gil.acquire();
-                writeHiddenAttrNode.execute(inliningTarget, self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
+                ModuleState moduleState = self.getModuleState(ModuleState.class);
+                moduleState.timeSlept = nanoTime() - t + moduleState.timeSlept;
             }
             PythonContext.triggerAsyncActions(this);
             return PNone.NONE;
@@ -517,9 +513,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isPositive(seconds)")
         Object sleep(PythonModule self, double seconds,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached GilNode gil,
-                        @Shared @Cached HiddenAttr.WriteNode writeHiddenAttrNode) {
+                        @Shared @Cached GilNode gil) {
             long t = nanoTime();
             double deadline = timeSeconds() + seconds;
             gil.release(true);
@@ -527,7 +521,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 doSleep(this, seconds, deadline);
             } finally {
                 gil.acquire();
-                writeHiddenAttrNode.execute(inliningTarget, self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
+                ModuleState moduleState = self.getModuleState(ModuleState.class);
+                moduleState.timeSlept = nanoTime() - t + moduleState.timeSlept;
             }
             PythonContext.triggerAsyncActions(this);
             return PNone.NONE;
@@ -931,7 +926,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString formatTime(PythonModule module, TruffleString format, @SuppressWarnings("unused") PNone time,
                         @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readZoneId,
                         @Shared("byteIndexOfCp") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
@@ -939,8 +933,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             if (byteIndexOfCodePointNode.execute(format, 0, 0, format.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
             }
-            ZoneId zoneId = (ZoneId) readZoneId.execute(inliningTarget, module, CURRENT_ZONE_ID, null);
-            return format(toJavaStringNode.execute(format), getIntLocalTimeStruct(zoneId, (long) timeSeconds()), fromJavaStringNode);
+            ModuleState moduleState = module.getModuleState(ModuleState.class);
+            return format(toJavaStringNode.execute(format), getIntLocalTimeStruct(moduleState.currentZoneId, (long) timeSeconds()), fromJavaStringNode);
         }
 
         @Specialization
@@ -982,7 +976,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Cached HiddenAttr.ReadNode readZoneId,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object[] items = getObjectArrayNode.execute(inliningTarget, tuple);
             if (items.length != ELEMENT_COUNT) {
@@ -992,8 +985,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < ELEMENT_COUNT; i++) {
                 integers[i] = asSizeNode.executeExact(frame, inliningTarget, items[i]);
             }
-            ZoneId zoneId = (ZoneId) readZoneId.execute(inliningTarget, module, CURRENT_ZONE_ID, null);
-            return op(zoneId, integers);
+            ModuleState moduleState = module.getModuleState(ModuleState.class);
+            return op(moduleState.currentZoneId, integers);
         }
 
         @TruffleBoundary
@@ -1011,11 +1004,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         public static TruffleString localtime(VirtualFrame frame, PythonModule module, Object seconds,
                         @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readZoneId,
                         @Cached ToLongTime toLongTime,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            ZoneId zoneId = (ZoneId) readZoneId.execute(inliningTarget, module, CURRENT_ZONE_ID, null);
-            int[] tm = getIntLocalTimeStruct(zoneId, toLongTime.execute(frame, inliningTarget, seconds));
+            ModuleState moduleState = module.getModuleState(ModuleState.class);
+            int[] tm = getIntLocalTimeStruct(moduleState.currentZoneId, toLongTime.execute(frame, inliningTarget, seconds));
             return format(tm, fromJavaStringNode);
         }
 
@@ -1039,11 +1031,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString localtime(PythonModule module, @SuppressWarnings("unused") PNone time,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readZoneId,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            ZoneId zoneId = (ZoneId) readZoneId.execute(inliningTarget, module, CURRENT_ZONE_ID, null);
-            return format(getIntLocalTimeStruct(zoneId, (long) timeSeconds()), fromJavaStringNode);
+            ModuleState moduleState = module.getModuleState(ModuleState.class);
+            return format(getIntLocalTimeStruct(moduleState.currentZoneId, (long) timeSeconds()), fromJavaStringNode);
         }
 
         @Specialization
@@ -1161,5 +1151,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             final Object module = importNode.execute(frame, inliningTarget, T_MOD_STRPTIME);
             return callNode.execute(frame, inliningTarget, module, T_FUNC_STRPTIME_TIME, dataString, format);
         }
+    }
+
+    private static class ModuleState {
+        ZoneId currentZoneId;
+        long timeSlept;
     }
 }

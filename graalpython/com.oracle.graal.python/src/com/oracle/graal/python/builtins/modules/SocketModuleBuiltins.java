@@ -49,7 +49,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SOCKET;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SOCKET;
-import static com.oracle.graal.python.nodes.HiddenAttr.DEFAULT_TIMEOUT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ZERO;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
@@ -90,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -190,7 +188,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         PythonModule module = core.lookupBuiltinModule(T__SOCKET);
-        HiddenAttr.WriteNode.executeUncached(module, DEFAULT_TIMEOUT, -1L);
+        module.setModuleState(-1L);
         if (PosixSupportLibrary.getUncached().getBackend(core.getContext().getPosixSupport()).toJavaStringUncached().equals("java")) {
             module.setAttribute(toTruffleStringUncached(PosixConstants.AF_UNIX.name), PNone.NO_VALUE);
         }
@@ -232,10 +230,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetDefaultTimeoutNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object get(PythonModule module,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readNode) {
-            long timeout = (long) readNode.execute(inliningTarget, module, DEFAULT_TIMEOUT, null);
+        static Object get(PythonModule module) {
+            long timeout = module.getModuleState(Long.class);
             return timeout < 0 ? PNone.NONE : TimeUtils.pyTimeAsSecondsDouble(timeout);
         }
     }
@@ -246,10 +242,9 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object set(VirtualFrame frame, PythonModule module, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode,
-                        @Cached HiddenAttr.WriteNode writeNode) {
+                        @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode) {
             long timeout = parseTimeoutNode.execute(frame, inliningTarget, value);
-            writeNode.execute(inliningTarget, module, DEFAULT_TIMEOUT, timeout);
+            module.setModuleState(timeout);
             return PNone.NONE;
         }
     }
