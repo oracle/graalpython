@@ -145,6 +145,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -313,6 +314,26 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = PyMethodDef, args = {PyCFunctionObject, PyMethodDef}, call = Ignored)
+    abstract static class Py_set_PyCFunctionObject_m_ml extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object get(PythonBuiltinObject object, Object methodDefPtr,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HiddenAttr.WriteNode writeNode) {
+            PBuiltinFunction resolved;
+            if (object instanceof PBuiltinMethod builtinMethod) {
+                resolved = builtinMethod.getBuiltinFunction();
+            } else if (object instanceof PBuiltinFunction builtinFunction) {
+                resolved = builtinFunction;
+            } else {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw CompilerDirectives.shouldNotReachHere("writing PyMethodDef for an incompatible function/method type: " + object.getClass().getSimpleName());
+            }
+            writeNode.execute(inliningTarget, resolved, METHOD_DEF_PTR, methodDefPtr);
+            return PNone.NO_VALUE;
+        }
+    }
+
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyCFunctionObject}, call = Ignored)
     abstract static class Py_get_PyCFunctionObject_m_module extends CApiUnaryBuiltinNode {
         @Specialization
@@ -321,6 +342,17 @@ public final class PythonCextSlotBuiltins {
                         @Cached PyObjectLookupAttr lookup) {
             Object module = lookup.execute(null, inliningTarget, object, T___MODULE__);
             return module != PNone.NO_VALUE ? module : getNativeNull();
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {PyCFunctionObject, PyObjectBorrowed}, call = Ignored)
+    abstract static class Py_set_PyCFunctionObject_m_module extends CApiBinaryBuiltinNode {
+        @Specialization
+        Object set(Object object, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectSetAttr setattr) {
+            setattr.execute(null, inliningTarget, object, T___MODULE__, value);
+            return PNone.NO_VALUE;
         }
     }
 
