@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -59,7 +58,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 public abstract class ArrayNodes {
     @GenerateInline
@@ -108,15 +106,10 @@ public abstract class ArrayNodes {
 
         @Specialization
         static void ensure(Node inliningTarget, PArray array, int newCapacity,
-                        @Cached SequenceStorageNodes.EnsureCapacityNode ensureCapacityNode,
-                        @Cached InlinedBranchProfile updateProfile) {
+                        @Cached SequenceStorageNodes.EnsureCapacityNode ensureCapacityNode) {
             try {
                 int internalCapacity = PythonUtils.multiplyExact(newCapacity, array.getItemSize());
-                SequenceStorage newStorage = ensureCapacityNode.execute(inliningTarget, array.getSequenceStorage(), internalCapacity);
-                if (array.getSequenceStorage() != newStorage) {
-                    updateProfile.enter(inliningTarget);
-                    array.setSequenceStorage(newStorage);
-                }
+                ensureCapacityNode.execute(inliningTarget, array.getSequenceStorage(), internalCapacity);
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.MemoryError);
