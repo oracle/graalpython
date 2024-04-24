@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.list;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
@@ -146,11 +145,6 @@ public final class ListBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        addBuiltinConstant(T___DOC__, //
-                        "Built-in mutable sequence.\n" + //
-                                        "\n" + //
-                                        "If no argument is given, the constructor creates a new empty list.\n" + //
-                                        "The argument must be an iterable if specified.");
         this.addBuiltinConstant(T___HASH__, PNone.NONE);
     }
 
