@@ -3124,7 +3124,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (co.isGeneratorOrCoroutine()) {
             localFrame = PArguments.getGeneratorFrame(virtualFrame);
         }
-        GetFrameLocalsNode.syncLocalsBackToFrame(co, pyFrame, localFrame);
+        GetFrameLocalsNode.syncLocalsBackToFrame(co, this, pyFrame, localFrame);
     }
 
     private void profileCEvent(VirtualFrame virtualFrame, Object callable, PythonContext.ProfileEvent event, MutableLoopData mutableData, byte tracingOrProfilingEnabled) {
