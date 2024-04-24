@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -143,9 +143,11 @@ public class AttributeTests {
 
     @Test
     public void complexHasDoc() {
-        PythonTests.assertPrints("complex(real[, imag]) -> complex number\n\n" +
-                        "Create a complex number from a real part and an optional imaginary part.\n" +
-                        "This is equivalent to (real + imag*1j) where imag defaults to 0.\n",
+        PythonTests.assertPrints("""
+                        Create a complex number from a real part and an optional imaginary part.
+
+                        This is equivalent to (real + imag*1j) where imag defaults to 0.
+                        """,
                         "print(complex.__doc__)");
     }
 }
