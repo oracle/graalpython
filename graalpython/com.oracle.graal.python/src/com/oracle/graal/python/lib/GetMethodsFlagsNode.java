@@ -80,7 +80,7 @@ public abstract class GetMethodsFlagsNode extends Node {
 
     @TruffleBoundary
     private static long populateMethodsFlags(PythonAbstractNativeObject cls) {
-        Long flags = (Long) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_GET_METHODS_FLAGS, cls.getPtr());
+        Long flags = (Long) PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_GET_METHODS_FLAGS, cls.getPtr());
         HiddenAttr.WriteNode.executeUncached(cls, METHODS_FLAGS, flags);
         return flags;
     }

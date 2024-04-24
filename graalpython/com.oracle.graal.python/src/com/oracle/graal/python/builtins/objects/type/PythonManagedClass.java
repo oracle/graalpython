@@ -296,7 +296,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             if (base != null) {
                 if (PGuards.isNativeClass(base)) {
                     Object nativeBase = PythonToNativeNodeGen.getUncached().execute(base);
-                    PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_TRUFFLE_CHECK_TYPE_READY, nativeBase);
+                    PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TRUFFLE_CHECK_TYPE_READY, nativeBase);
                 }
                 GetSubclassesNode.unsafeAddSubclass(base, this);
             }

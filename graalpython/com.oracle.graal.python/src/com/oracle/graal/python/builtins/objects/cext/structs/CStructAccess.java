@@ -296,7 +296,7 @@ public class CStructAccess {
             return readByteArray(pointer, elements, 0);
         }
 
-        public final byte[] readByteArray(Object pointer, int elements, int sourceOffset) {
+        public final byte[] readByteArray(Object pointer, int elements, long sourceOffset) {
             byte[] result = new byte[elements];
             for (int i = 0; i < result.length; i++) {
                 result[i] = (byte) execute(pointer, (i + sourceOffset) * Byte.BYTES);
@@ -304,7 +304,7 @@ public class CStructAccess {
             return result;
         }
 
-        public final void readByteArray(Object pointer, byte[] target, int length, int sourceOffset, int targetOffset) {
+        public final void readByteArray(Object pointer, byte[] target, int length, long sourceOffset, int targetOffset) {
             for (int i = 0; i < length; i++) {
                 target[i + targetOffset] = (byte) execute(pointer, (i + sourceOffset) * Byte.BYTES);
             }
@@ -1054,7 +1054,7 @@ public class CStructAccess {
             writeArray(pointer, values, values.length, 0, 0);
         }
 
-        public final void writeArray(Object pointer, int[] values, int length, int sourceOffset, int targetOffset) {
+        public final void writeArray(Object pointer, int[] values, int length, int sourceOffset, long targetOffset) {
             for (int i = 0; i < length; i++) {
                 execute(pointer, (i + targetOffset) * Integer.BYTES, values[i + sourceOffset]);
             }
@@ -1112,7 +1112,7 @@ public class CStructAccess {
             writeLongArray(pointer, values, values.length, 0, 0);
         }
 
-        public final void writeLongArray(Object pointer, long[] values, int length, int sourceOffset, int targetOffset) {
+        public final void writeLongArray(Object pointer, long[] values, int length, int sourceOffset, long targetOffset) {
             for (int i = 0; i < length; i++) {
                 execute(pointer, (i + targetOffset) * Long.BYTES, values[i + sourceOffset]);
             }
@@ -1122,9 +1122,9 @@ public class CStructAccess {
             writeIntArray(pointer, values, values.length, 0, 0);
         }
 
-        public final void writeIntArray(Object pointer, int[] values, int length, int sourceOffset, int targetOffset) {
+        public final void writeIntArray(Object pointer, int[] values, int length, int sourceOffset, long targetOffset) {
             for (int i = 0; i < length; i++) {
-                execute(pointer, (long) (i + targetOffset) * Long.BYTES, values[i + sourceOffset]);
+                execute(pointer, (i + targetOffset) * Long.BYTES, values[i + sourceOffset]);
             }
         }
 
@@ -1192,7 +1192,7 @@ public class CStructAccess {
             execute(pointer, element * POINTER_SIZE, value);
         }
 
-        public final void writePointerArray(Object pointer, long[] values, int length, int sourceOffset, int targetOffset) {
+        public final void writePointerArray(Object pointer, long[] values, int length, int sourceOffset, long targetOffset) {
             for (int i = 0; i < length; i++) {
                 execute(pointer, (i + targetOffset) * POINTER_SIZE, values[i + sourceOffset]);
             }
@@ -1250,7 +1250,7 @@ public class CStructAccess {
             return desc.isPyObject();
         }
 
-        public final void writeArray(Object pointer, Object[] values, int length, int sourceOffset, int targetOffset) {
+        public final void writeArray(Object pointer, Object[] values, int length, int sourceOffset, long targetOffset) {
             if (length > values.length) {
                 throw CompilerDirectives.shouldNotReachHere();
             }

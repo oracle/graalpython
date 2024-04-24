@@ -753,7 +753,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
         private static TruffleString CTYPES_CFIELD_CAPSULE_NAME_PYMEM = tsLiteral("_ctypes/cfield.c pymem");
 
         private static PyCapsule createPyMemCapsule(Pointer pointer, PythonObjectFactory factory) {
-            PyCapsule capsule = factory.createCapsule(pointer, CTYPES_CFIELD_CAPSULE_NAME_PYMEM, null);
+            PyCapsule capsule = factory.createCapsule(pointer, CTYPES_CFIELD_CAPSULE_NAME_PYMEM);
             new PointerReference(capsule, pointer, PythonContext.get(factory).getSharedFinalizer());
             return capsule;
         }

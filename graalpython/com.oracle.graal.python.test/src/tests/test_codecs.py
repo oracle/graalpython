@@ -875,5 +875,11 @@ class MultibyteCodecTest(unittest.TestCase):
         self.assertRaises(UnicodeEncodeError, codec.encode, '\xffff')
 
 
+class UTF32Test(unittest.TestCase):
+    def test_utf32_surrogate_error(self):
+        with self.assertRaisesRegex(UnicodeDecodeError, "codec can't decode bytes in position 4-7"):
+            b'a\x00\x00\x00\x00\xd8\x00\x00z\x00\x00\x00'.decode('utf-32')
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TypeNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.SetFuncNode;
@@ -368,6 +369,8 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
         /* The standard-size code is the same as the ctypes one */
         char pep_code = code;
 
+        boolean longIs32Bit = PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32;
+
         switch (code) {
             // #if SIZEOF_INT == 2
             // case 'i': pep_code = 'h'; break;
@@ -387,10 +390,10 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
             // case 'L': pep_code = 'L'; break;
             // #elif SIZEOF_LONG == 8
             case 'l':
-                pep_code = 'q';
+                pep_code = longIs32Bit ? 'l' : 'q';
                 break;
             case 'L':
-                pep_code = 'Q';
+                pep_code = longIs32Bit ? 'L' : 'Q';
                 break;
             // #if SIZEOF__BOOL == 1
             case '?':

@@ -249,8 +249,25 @@ PyAPI_FUNC(void) mmap_init_bufferprotocol(PyObject* mmap_type) {
 	    (getbufferproc)mmap_getbuffer,
 	    (releasebufferproc)NULL,
 	};
-	set_PyTypeObject_tp_as_buffer(mmap_type, &mmap_as_buffer);
+	GraalPy_set_PyTypeObject_tp_as_buffer(mmap_type, &mmap_as_buffer);
 	((PyTypeObject*) mmap_type)->tp_as_buffer = &mmap_as_buffer;
+}
+
+static int cdata_getbuffer(PyObject* type, Py_buffer* view, int flags) {
+    return GraalPyTruffleCData_NewGetBuffer(type, view, flags);
+}
+
+static void cdata_releasebuffer(PyObject* obj, Py_buffer* view) {
+    return GraalPyTruffleCData_ReleaseBuffer(obj, view);
+}
+
+PyAPI_FUNC(void) PyTruffleCData_InitBufferProtocol(PyObject* type) {
+    static PyBufferProcs cdata_as_buffer = {
+        cdata_getbuffer,
+        cdata_releasebuffer,
+    };
+    GraalPy_set_PyTypeObject_tp_as_buffer(type, &cdata_as_buffer);
+    ((PyTypeObject*) type)->tp_as_buffer = &cdata_as_buffer;
 }
 
 struct _longobject* _Py_FalseStructReference;

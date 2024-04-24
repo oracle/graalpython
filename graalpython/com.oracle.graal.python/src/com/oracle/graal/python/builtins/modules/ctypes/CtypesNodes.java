@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,14 +55,20 @@ import static com.oracle.graal.python.builtins.modules.ctypes.StgDictObject.DICT
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.truffle.api.strings.TruffleString.Encoding.US_ASCII;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerReference;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -76,6 +82,7 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class CtypesNodes {
@@ -377,6 +384,75 @@ public class CtypesNodes {
             obj.b_length = dict.length;
             dict.flags |= DICTFLAG_FINAL;
             return obj;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class CDataGetBufferNode extends Node {
+        public abstract void execute(Node inliningTarget, CDataObject self, Object view, int flags);
+
+        @Specialization
+        static void getBuffer(Node inliningTarget, CDataObject self, Object view, @SuppressWarnings("unused") int flags,
+                        @Cached PointerNodes.GetPointerValueAsObjectNode getPointerValue,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PyObjectTypeCheck typeCheck,
+                        @Cached StgDictBuiltins.PyTypeStgDictNode stgDictNode,
+                        @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached(inline = false) TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Cached(inline = false) CStructAccess.AllocateNode allocateNode,
+                        @Cached(inline = false) CStructAccess.WriteByteNode writeByteNode,
+                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
+                        @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNewRefNode,
+                        @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
+                        @Cached(inline = false) CStructAccess.WriteIntNode writeIntNode) {
+            Object itemType = getClassNode.execute(inliningTarget, self);
+            StgDictObject dict = stgDictNode.execute(inliningTarget, itemType);
+            while (typeCheck.execute(inliningTarget, itemType, PythonBuiltinClassType.PyCArrayType)) {
+                StgDictObject stgDict = stgDictNode.execute(inliningTarget, itemType);
+                itemType = stgDict.proto;
+            }
+            StgDictObject itemDict = stgDictNode.execute(inliningTarget, itemType);
+
+            NativePointer nativeNull = PythonContext.get(inliningTarget).getNativeNull();
+
+            writePointerNode.write(view, CFields.Py_buffer__buf, getPointerValue.execute(inliningTarget, self.b_ptr));
+            writeLongNode.write(view, CFields.Py_buffer__len, self.b_size);
+            writeObjectNewRefNode.write(view, CFields.Py_buffer__obj, self);
+            writeIntNode.write(view, CFields.Py_buffer__readonly, 0);
+
+            Object formatPtr;
+            if (dict.format != null) {
+                InternalByteArray formatArray = getInternalByteArrayNode.execute(switchEncodingNode.execute(dict.format, US_ASCII), US_ASCII);
+                formatPtr = allocateNode.alloc(formatArray.getLength() + 1);
+                writeByteNode.writeByteArray(formatPtr, formatArray.getArray(), formatArray.getLength(), formatArray.getOffset(), 0);
+            } else {
+                formatPtr = allocateNode.alloc(2);
+                writeByteNode.write(formatPtr, (byte) 'B');
+            }
+            writePointerNode.write(view, CFields.Py_buffer__format, formatPtr);
+            writeIntNode.write(view, CFields.Py_buffer__ndim, dict.ndim);
+            Object shapePtr = allocateNode.alloc(dict.shape.length * Long.BYTES);
+            writeLongNode.writeIntArray(shapePtr, dict.shape);
+            writePointerNode.write(view, CFields.Py_buffer__shape, shapePtr);
+            writeLongNode.write(view, CFields.Py_buffer__itemsize, itemDict.size);
+            writePointerNode.write(view, CFields.Py_buffer__strides, nativeNull);
+            writePointerNode.write(view, CFields.Py_buffer__suboffsets, nativeNull);
+            writePointerNode.write(view, CFields.Py_buffer__internal, nativeNull);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class CDataReleaseBufferNode extends Node {
+        public abstract void execute(Node inliningTarget, Object view);
+
+        @Specialization
+        static void getBuffer(Object view,
+                        @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached(inline = false) CStructAccess.FreeNode freeNode) {
+            freeNode.free(readPointerNode.read(view, CFields.Py_buffer__format));
+            freeNode.free(readPointerNode.read(view, CFields.Py_buffer__shape));
         }
     }
 }

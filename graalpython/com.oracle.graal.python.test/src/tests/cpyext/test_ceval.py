@@ -37,16 +37,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType
 
 __dir__ = __file__.rpartition("/")[0]
 
+
 class TestCeval(CPyExtTestCase):
-
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestCeval, self).compile_module(name)
-
     test_Py_EnterLeaveRecursiveCall = CPyExtFunction(
         # We don't know the exact limit on CPython since it uses the counter in
         # the interpreter as well.
@@ -81,3 +77,15 @@ class TestCeval(CPyExtTestCase):
         arguments=["int n", "char* where"],
         cmpfunc=unhandled_error_compare
     )
+
+    def test_PyEval_GetGlobals(self):
+        Tester = CPyExtType(
+            "GetGlobalsTester",
+            code="""
+            static PyObject* get_globals(PyObject* unused) {
+                return Py_NewRef(PyEval_GetGlobals());
+            }
+            """,
+            tp_methods='{"get_globals", (PyCFunction)get_globals, METH_NOARGS | METH_STATIC, NULL}',
+        )
+        assert Tester.get_globals() is globals()

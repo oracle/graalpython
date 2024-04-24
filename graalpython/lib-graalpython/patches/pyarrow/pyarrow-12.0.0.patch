@@ -11,6 +11,20 @@ index 46ea021..58a3fb5 100644
                      SendSignal(exc_value.signum)
                  else:
                      SendSignalToThread(exc_value.signum,
+diff --git a/pyarrow/tests/test_memory.py b/pyarrow/tests/test_memory.py
+index 092c50d..931b3fa 100644
+--- a/pyarrow/tests/test_memory.py
++++ b/pyarrow/tests/test_memory.py
+@@ -44,6 +44,9 @@ def allocate_bytes(pool, nbytes):
+     """
+     Temporarily allocate *nbytes* from the given *pool*.
+     """
++    # GraalPy change: the buffers don't maintain a python reference to their
++    # pool, so they may get destroyed after their pool, which segfaults
++    raise RuntimeError("GraalPy: destructors segfault")
+     arr = pa.array([b"x" * nbytes], type=pa.binary(), memory_pool=pool)
+     # Fetch the values buffer from the varbinary array and release the rest,
+     # to get the desired allocation amount
 diff --git a/pyarrow_build_backend.py b/pyarrow_build_backend.py
 new file mode 100644
 index 0000000..c9826ce

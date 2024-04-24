@@ -196,4 +196,17 @@ public final class PythonCextCEvalBuiltins {
             return invokeNode.execute(rootCallTarget, pArguments);
         }
     }
+
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
+    abstract static class PyEval_GetGlobals extends CApiNullaryBuiltinNode {
+        @Specialization
+        Object get(
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetCurrentFrameRef getCurrentFrameRef,
+                        @Cached ReadCallerFrameNode readCallerFrameNode) {
+            PFrame.Reference frameRef = getCurrentFrameRef.execute(null, inliningTarget);
+            PFrame pFrame = readCallerFrameNode.executeWith(frameRef, 0);
+            return pFrame.getGlobals();
+        }
+    }
 }

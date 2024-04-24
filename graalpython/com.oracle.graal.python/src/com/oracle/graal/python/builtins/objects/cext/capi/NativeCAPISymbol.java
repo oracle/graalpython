@@ -142,6 +142,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_TRUFFLE_ADD_SUBOFFSET("truffle_add_suboffset", Pointer, Pointer, Py_ssize_t, Py_ssize_t),
     FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT("PyTruffle_MemoryViewFromObject", PyObjectTransfer, PyObject, Int),
     FUN_PY_TRUFFLE_RELEASE_BUFFER("PyTruffle_ReleaseBuffer", ArgDescriptor.Void, Pointer),
+    FUN_PY_TRUFFLE_CAPSULE_CALL_DESTRUCTOR("PyTruffleCapsule_CallDestructor", ArgDescriptor.Void, PyObject, ArgDescriptor.PY_CAPSULE_DESTRUCTOR),
     FUN_PY_SEQUENCE_CHECK("PySequence_Check", Int, PyObject),
     FUN_PY_SEQUENCE_SIZE("PySequence_Size", Py_ssize_t, PyObject),
     FUN_PY_SEQUENCE_GET_ITEM("PySequence_GetItem", PyObjectTransfer, PyObject, Py_ssize_t),
@@ -158,6 +159,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_UNICODE_SUBTYPE_NEW("unicode_subtype_new", PyObjectTransfer, PyTypeObject, PyObject),
     FUN_CHECK_BASESIZE_FOR_GETSTATE("tuffle_check_basesize_for_getstate", Int, PyTypeObject, Int),
     FUN_MMAP_INIT_BUFFERPROTOCOL("mmap_init_bufferprotocol", ArgDescriptor.Void, PyTypeObject),
+    FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL("PyTruffleCData_InitBufferProtocol", ArgDescriptor.Void, PyTypeObject),
     FUN_TRUFFLE_CHECK_TYPE_READY("truffle_check_type_ready", ArgDescriptor.Void, PyTypeObject),
 
     /* PyDateTime_CAPI */
