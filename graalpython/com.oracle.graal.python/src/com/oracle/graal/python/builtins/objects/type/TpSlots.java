@@ -103,6 +103,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.InlineWeakValueProfile;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -955,7 +956,19 @@ public record TpSlots(TpSlot nb_bool, //
 
         @Specialization
         static TpSlots doNative(PythonAbstractNativeObject nativeKlass) {
-            return nativeKlass.getTpSlots();
+            TpSlots tpSlots = nativeKlass.getTpSlots();
+            if (tpSlots == null) {
+                /*
+                 * This happens when we try to get slots of a type that didn't go through
+                 * PyType_Ready yet. Specifically, numpy has a "fortran" type (defined in
+                 * `fortranobject.c`) that they never ready and just expect it to work because it's
+                 * simple. So just do the minimum to make the slots available.
+                 */
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                tpSlots = TpSlots.fromNative(nativeKlass, PythonContext.get(null));
+                nativeKlass.setTpSlots(tpSlots);
+            }
+            return tpSlots;
         }
     }
 
