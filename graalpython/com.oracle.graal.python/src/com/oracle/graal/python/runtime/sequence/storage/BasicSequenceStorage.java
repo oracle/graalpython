@@ -44,20 +44,10 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
 
     public abstract SequenceStorage generalizeFor(Object value, SequenceStorage other);
 
-    public abstract Object[] getInternalArray();
-
-    public abstract Object[] getCopyOfInternalArray();
-
     /**
      * Get internal array object without copying. Note: The length must be taken from the sequence
      * storage object.
      */
-    public abstract Object getInternalArrayObject();
-
-    public abstract Object getCopyOfInternalArrayObject();
-
-    public abstract void setInternalArrayObject(Object arrayObject);
-
     public final void setNewLength(int length) {
         this.length = length;
     }

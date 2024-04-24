@@ -69,7 +69,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public BasicSequenceStorage createEmpty(int newCapacity) {
+    public LongSequenceStorage createEmpty(int newCapacity) {
         return new LongSequenceStorage(newCapacity);
     }
 

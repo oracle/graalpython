@@ -32,7 +32,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.util.PythonUtils;
 
-public final class ObjectSequenceStorage extends BasicSequenceStorage {
+public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
 
     private Object[] values;
 
@@ -101,7 +101,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public BasicSequenceStorage createEmpty(int newCapacity) {
+    public ArrayBasedSequenceStorage createEmpty(int newCapacity) {
         return new ObjectSequenceStorage(newCapacity);
     }
 

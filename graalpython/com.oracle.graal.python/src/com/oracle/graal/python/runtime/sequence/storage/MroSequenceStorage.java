@@ -147,7 +147,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public BasicSequenceStorage createEmpty(int newCapacity) {
+    public MroSequenceStorage createEmpty(int newCapacity) {
         return new MroSequenceStorage(getClassName(), newCapacity);
     }
 
