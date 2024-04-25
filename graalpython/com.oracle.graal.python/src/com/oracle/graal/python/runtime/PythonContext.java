@@ -524,7 +524,7 @@ public final class PythonContext extends Python3Core {
                     Truffle.getRuntime().iterateFrames((frameInstance) -> {
                         if (frameInstance.getCallTarget() instanceof RootCallTarget c && c.getRootNode() instanceof PBytecodeDSLRootNode r) {
                             if (r.needsTraceAndProfileInstrumentation()) {
-                                r.reparseWithTraceAndProfile();
+                                r.ensureTraceAndProfileEnabled();
                             }
                         }
                         return null;

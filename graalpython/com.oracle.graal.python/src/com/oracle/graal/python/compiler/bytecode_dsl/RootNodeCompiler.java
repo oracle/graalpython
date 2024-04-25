@@ -392,7 +392,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         checkForbiddenArgs(args);
         setUpFrame(args, b);
 
-        b.emitCheckTraceAndProfileAssumption();
         b.emitTraceOrProfileCall();
     }
 
