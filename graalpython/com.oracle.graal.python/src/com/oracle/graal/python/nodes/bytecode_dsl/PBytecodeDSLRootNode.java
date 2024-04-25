@@ -155,6 +155,7 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext.ProfileEvent;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.PythonContext.TraceEvent;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -424,11 +425,57 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
+    @InliningCutoff
+    private void invokeTraceFunction(VirtualFrame virtualFrame, Node location, Object traceFun, PythonContext.PythonThreadState threadState, PythonContext.TraceEvent event, Object arg,
+                    boolean useLocalFn) {
+        if (threadState.isTracing()) {
+            return;
+        }
+        assert event != PythonContext.TraceEvent.DISABLED;
+        threadState.tracingStart(event);
+        PFrame pyFrame = ensurePyFrame(virtualFrame, location);
+        Object traceFn = useLocalFn ? pyFrame.getLocalTraceFun() : traceFun;
+        if (traceFn == null) {
+            threadState.tracingStop();
+            return;
+        }
+        Object nonNullArg = arg == null ? PNone.NONE : arg;
+        try {
+// TODO
+// if (line != -1) {
+// pyFrame.setLineLock(line);
+// }
+
+// Force locals dict sync, so that we can sync them back later
+            GetFrameLocalsNode.executeUncached(pyFrame);
+            Object result = CallTernaryMethodNode.getUncached().execute(null, traceFn, pyFrame, event.pythonName, nonNullArg);
+            syncLocalsBackToFrame(virtualFrame, pyFrame);
+            // https://github.com/python/cpython/issues/104232
+            if (useLocalFn) {
+                Object realResult = result == PNone.NONE ? traceFn : result;
+                pyFrame.setLocalTraceFun(realResult);
+            } else if (result != PNone.NONE) {
+                pyFrame.setLocalTraceFun(result);
+            } else {
+                pyFrame.setLocalTraceFun(null);
+            }
+        } catch (Throwable e) {
+            threadState.setTraceFun(null, PythonLanguage.get(this));
+            throw e;
+        } finally {
+// TODO
+// if (line != -1) {
+// pyFrame.lineUnlock();
+// }
+            threadState.tracingStop();
+        }
+    }
+
     private final void traceOrProfileCall(VirtualFrame frame, Node location) {
         PythonThreadState threadState = getThreadState();
         Object traceFun = threadState.getTraceFun();
         if (traceFun != null) {
-            throw new UnsupportedOperationException("trace call not implemented");
+            invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.CALL, null, false);
         }
         Object profileFun = threadState.getProfileFun();
         if (profileFun != null) {
@@ -440,7 +487,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         PythonThreadState threadState = getThreadState();
         Object traceFun = threadState.getTraceFun();
         if (traceFun != null) {
-            throw new UnsupportedOperationException("trace return not implemented");
+            invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.RETURN, value, true);
         }
         Object profileFun = threadState.getProfileFun();
         if (profileFun != null) {
