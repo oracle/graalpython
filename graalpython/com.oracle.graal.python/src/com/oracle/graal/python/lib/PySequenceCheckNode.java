@@ -98,9 +98,13 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
 
     @Fallback
     static boolean doGeneric(Node inliningTarget, Object object,
+                    @Cached PyDictCheckNode dictCheckNode,
                     @Cached GetClassNode getClassNode,
                     @Cached GetMethodsFlagsNode getMethodsFlagsNode,
                     @Cached LazyInteropLibrary lazyLib) {
+        if (dictCheckNode.execute(inliningTarget, object)) {
+            return false;
+        }
         Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             return lazyLib.get(inliningTarget).hasArrayElements(object);

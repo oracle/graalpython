@@ -44,11 +44,13 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline
 @GenerateCached(false)
+@GenerateUncached
 public abstract class PyDictCheckNode extends Node {
     public abstract boolean execute(Node inliningTarget, Object object);
 
