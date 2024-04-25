@@ -53,7 +53,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 
 import java.util.Arrays;
 
@@ -66,7 +65,10 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.XDecRefPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
@@ -83,10 +85,11 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -94,23 +97,13 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStor
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public final class PythonCextListBuiltins {
 
@@ -353,11 +346,12 @@ public final class PythonCextListBuiltins {
         static long doGeneric(PList self, Object outItems, Object visitFun, Object arg,
                         @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.WritePointerNode writePointerNode,
-                        @CachedLibrary(limit = "2") InteropLibrary interopLib,
-                        @CachedLibrary(limit = "1") InteropLibrary resultLib,
+                        @Cached GetThreadStateNode getThreadStateNode,
                         @Cached EnsureExecutableNode ensureExecutableNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Cached PythonToNativeNode toNativeNode) {
+                        @Cached PythonToNativeNode toNativeNode,
+                        @Cached ExternalFunctionInvokeNode externalFunctionInvokeNode,
+                        @Cached(inline = false) CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode) {
             SequenceStorage sequenceStorage = self.getSequenceStorage();
             if (sequenceStorage instanceof NativeObjectSequenceStorage nativeStorage) {
                 writePointerNode.write(outItems, nativeStorage.getPtr());
@@ -366,18 +360,16 @@ public final class PythonCextListBuiltins {
                 BasicSequenceStorage basicStorage = (BasicSequenceStorage) sequenceStorage;
 
                 Object visitExecutable = ensureExecutableNode.execute(inliningTarget, visitFun, PExternalFunctionWrapper.VISITPROC);
-                assert interopLib.isExecutable(visitExecutable);
+                assert InteropLibrary.getUncached().isExecutable(visitExecutable);
 
+                PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
                 for (int i = basicStorage.length(); --i >= 0;) {
                     Object item = getItemScalarNode.execute(inliningTarget, basicStorage, i);
                     if (item instanceof PythonAbstractNativeObject) {
-                        Object ret;
-                        try {
-                            ret = interopLib.execute(visitExecutable, toNativeNode.execute(item), arg);
-                        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                            throw CompilerDirectives.shouldNotReachHere(e);
-                        }
-                        if (ensureInt(ret, resultLib) != 0) {
+                        Object result = externalFunctionInvokeNode.call(null, inliningTarget, threadState, CApiGCSupport.VISIT_TIMING, StringLiterals.T_VISIT, visitExecutable,
+                                        toNativeNode.execute(item), arg);
+                        int iresult = (int) checkPrimitiveFunctionResultNode.executeLong(threadState, StringLiterals.T_VISIT, result);
+                        if (iresult != 0) {
                             return -1;
                         }
                     }
@@ -390,20 +382,6 @@ public final class PythonCextListBuiltins {
              * flag 'HAVE_GC' set).
              */
             return 0;
-        }
-
-        private static int ensureInt(Object object, InteropLibrary lib) {
-            if (object instanceof Integer i) {
-                return i;
-            }
-            if (lib.fitsInInt(object)) {
-                try {
-                    return lib.asInt(object);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere("result of visitproc must be int");
         }
     }
 }
