@@ -153,6 +153,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                     -> 144;
             case PickleBuffer -> 96; // _pickle.PickleBuffer
             case PTextIOWrapper -> 176; // _io.TextIOWrapper
+            case POrderedDict -> 104;
             default -> 0;
             // @formatter:on
         };
