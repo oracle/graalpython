@@ -2742,49 +2742,49 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("unused")
     long semOpen(Object name, int openFlags, int mode, int value) throws PosixException {
-        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+        throw posixException(OSErrorEnum.EINVAL);
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
     void semClose(long handle) throws PosixException {
-        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+        throw posixException(OSErrorEnum.EINVAL);
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
     void semUnlink(Object name) throws PosixException {
-        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+        throw posixException(OSErrorEnum.ENOENT);
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
     int semGetValue(long handle) throws PosixException {
-        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+        throw posixException(OSErrorEnum.EINVAL);
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
     void semPost(long handle) throws PosixException {
-        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+        throw posixException(OSErrorEnum.EINVAL);
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
     void semWait(long handle) throws PosixException {
-        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+        throw posixException(OSErrorEnum.EINVAL);
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
     boolean semTryWait(long handle) throws PosixException {
-        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+        throw posixException(OSErrorEnum.EINVAL);
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
     boolean semTimedWait(long handle, long deadlineNs) throws PosixException {
-        throw new UnsupportedPosixFeatureException("semaphore operations not supported");
+        throw posixException(OSErrorEnum.EINVAL);
     }
 
     @ExportMessage
