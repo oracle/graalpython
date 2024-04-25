@@ -264,7 +264,12 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 @SuppressWarnings("unused")
 public abstract class PBytecodeDSLRootNode extends PRootNode implements BytecodeRootNode {
     private static final int EXPLODE_LOOP_THRESHOLD = 32;
-    @CompilationFinal private static transient BytecodeConfig TRACE_AND_PROFILE_CONFIG = null;
+    private static final BytecodeConfig TRACE_AND_PROFILE_CONFIG = PBytecodeDSLRootNodeGen.newConfigBuilder() //
+                    .addInstrumentation(TraceOrProfileCall.class) //
+                    .addInstrumentation(TraceLine.class) //
+                    .addInstrumentation(TraceOrProfileReturn.class) //
+                    .addInstrumentation(TraceException.class) //
+                    .build();
 
     @Child protected transient PythonObjectFactory factory = PythonObjectFactory.create();
     @Child private transient CalleeContext calleeContext = CalleeContext.create();
@@ -325,6 +330,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static void doEnter(VirtualFrame frame,
                         @Bind("$root") PBytecodeDSLRootNode root) {
             root.calleeContext.enter(frame);
+
+            if (root.needsTraceAndProfileInstrumentation()) {
+                root.ensureTraceAndProfileEnabled();
+            }
         }
     }
 
@@ -358,19 +367,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    private static final BytecodeConfig getTraceAndProfileConfig() {
-        if (TRACE_AND_PROFILE_CONFIG == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            TRACE_AND_PROFILE_CONFIG = PBytecodeDSLRootNodeGen.newConfigBuilder() //
-                            .addInstrumentation(TraceOrProfileCall.class) //
-                            .addInstrumentation(TraceLine.class) //
-                            .addInstrumentation(TraceOrProfileReturn.class) //
-                            .addInstrumentation(TraceException.class) //
-                            .build();
-        }
-        return TRACE_AND_PROFILE_CONFIG;
-    }
-
     @NonIdempotent
     public boolean needsTraceAndProfileInstrumentation() {
         // We need instrumentation only if the assumption is invalid and the root node is visible.
@@ -385,27 +381,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     /**
      * Reparses with instrumentations for settrace and setprofile enabled.
      */
-    public void reparseWithTraceAndProfile() {
+    public void ensureTraceAndProfileEnabled() {
         assert !isInternal();
-        getRootNodes().update(getTraceAndProfileConfig());
-    }
-
-    /**
-     * This operation is emitted at the beginning of a function; it runs after the prolog and tag
-     * events. It ensures that the root node has been parsed with trace/profile instrumentations, if
-     * required.
-     */
-    @Operation
-    public static final class CheckTraceAndProfileAssumption {
-        @Specialization(guards = {"!root.needsTraceAndProfileInstrumentation()"})
-        public static void doNothing(@Bind("$root") PBytecodeDSLRootNode root) {
-            // do nothing
-        }
-
-        @Specialization(replaces = "doNothing")
-        public static void ensureInstrumented(@Bind("$root") PBytecodeDSLRootNode root) {
-            root.reparseWithTraceAndProfile();
-        }
+        getRootNodes().update(TRACE_AND_PROFILE_CONFIG);
     }
 
     private PFrame ensurePyFrame(VirtualFrame frame, Node location) {
@@ -3674,7 +3652,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
             if (root.needsTraceAndProfileInstrumentation()) {
                 // We may not have reparsed the root with instrumentation yet.
-                root.reparseWithTraceAndProfile();
+                root.ensureTraceAndProfileEnabled();
                 root.traceOrProfileCall(frame, location);
             }
 
