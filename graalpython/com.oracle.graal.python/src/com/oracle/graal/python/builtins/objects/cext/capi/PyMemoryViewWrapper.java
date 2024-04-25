@@ -60,10 +60,13 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequence
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.SetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -114,17 +117,20 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
 
         Object buf;
         if (object.getBufferPointer() == null) {
-            NativeSequenceStorage nativeStorage;
+            Object pointer;
             if (object.getOwner() instanceof PSequence owner) {
-                nativeStorage = ToNativeStorageNode.executeUncached(GetSequenceStorageNode.executeUncached(owner), owner instanceof PBytesLike);
+                NativeSequenceStorage nativeStorage = ToNativeStorageNode.executeUncached(GetSequenceStorageNode.executeUncached(owner), owner instanceof PBytesLike);
                 SetSequenceStorageNode.executeUncached(owner, nativeStorage);
+                pointer = nativeStorage.getPtr();
             } else if (object.getOwner() instanceof PArray owner) {
-                nativeStorage = ToNativeStorageNode.executeUncached(owner.getSequenceStorage(), true);
+                NativeSequenceStorage nativeStorage = ToNativeStorageNode.executeUncached(owner.getSequenceStorage(), true);
                 owner.setSequenceStorage(nativeStorage);
+                pointer = nativeStorage.getPtr();
+            } else if (object.getOwner() instanceof PMMap owner) {
+                pointer = PosixSupportLibrary.getUncached().mmapGetPointer(PythonContext.get(null).getPosixSupport(), owner.getPosixSupportHandle());
             } else {
                 throw shouldNotReachHere("Cannot convert managed object to native storage");
             }
-            Object pointer = nativeStorage.getPtr();
             if (object.getOffset() == 0) {
                 buf = pointer;
             } else {

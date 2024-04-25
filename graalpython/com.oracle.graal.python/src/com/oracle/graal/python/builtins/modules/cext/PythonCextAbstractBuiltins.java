@@ -55,7 +55,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SEND;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_ISNT_MAPPING;
-import static com.oracle.graal.python.nodes.ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
@@ -63,7 +62,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
@@ -96,7 +94,6 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
@@ -107,15 +104,16 @@ import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.PySequenceDelItemNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
 import com.oracle.graal.python.lib.PySequenceIterSearchNode;
+import com.oracle.graal.python.lib.PySequenceSetItemNode;
+import com.oracle.graal.python.lib.PySequenceSizeNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -149,7 +147,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextAbstractBuiltins {
@@ -501,29 +498,15 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObject}, call = Ignored)
     public abstract static class PyTruffleSequence_SetItem extends CApiTernaryBuiltinNode {
-        @Specialization(guards = "checkNode.execute(inliningTarget, obj)", limit = "1")
-        static Object setItem(Object obj, Object key, Object value,
+        @Specialization
+        static Object setItem(Object obj, long key, Object value,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached InlinedConditionProfile hasSetItem,
-                        @Cached CallNode callNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            Object setItemCallable = lookupAttrNode.execute(null, inliningTarget, obj, T___SETITEM__);
-            if (hasSetItem.profile(inliningTarget, setItemCallable == PNone.NO_VALUE)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, obj);
-            } else {
-                callNode.execute(setItemCallable, key, value);
-                return 0;
+                        @Cached PySequenceSetItemNode setItemNode) {
+            if ((int) key != key) {
+                throw PRaiseNode.raiseUncached(inliningTarget, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, key);
             }
-        }
-
-        @Specialization(guards = "!checkNode.execute(inliningTarget, obj)", limit = "1")
-        static Object setItem(Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
+            setItemNode.execute(obj, (int) key, value);
+            return 0;
         }
     }
 
@@ -673,10 +656,13 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Ignored)
     abstract static class PyTruffleSequence_DelItem extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object run(Object o, Object i,
+        static Object run(Object o, long i,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectDelItem delItemNode) {
-            delItemNode.execute(null, inliningTarget, o, i);
+                        @Cached PySequenceDelItemNode delItemNode) {
+            if ((int) i != i) {
+                throw PRaiseNode.raiseUncached(inliningTarget, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, i);
+            }
+            delItemNode.execute(o, (int) i);
             return 0;
         }
     }
@@ -684,10 +670,11 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
     abstract static class PyTruffleSequence_GetItem extends CApiBinaryBuiltinNode {
         @Specialization
-        Object doManaged(Object delegate, long position,
+        static Object doManaged(Object delegate, long position,
+                        @Bind("this") Node inliningTarget,
                         @Cached PySequenceGetItemNode getItemNode) {
             if ((int) position != position) {
-                throw PRaiseNode.raiseUncached(this, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, position);
+                throw PRaiseNode.raiseUncached(inliningTarget, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, position);
             }
             return getItemNode.execute(null, delegate, (int) position);
         }
@@ -696,21 +683,11 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Ignored)
     abstract static class PyTruffleSequence_Size extends CApiUnaryBuiltinNode {
 
-        // cant use PySequence_Size: PySequence_Size returns the __len__ value also for
-        // subclasses of types not accepted by PySequence_Check as long they have an overriden
-        // __len__ method
         @Specialization
-        static Object doSequence(Object obj,
+        static int doSequence(Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached IsSameTypeNode isSameType,
-                        @Cached GetClassNode getClassNode,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            if (obj instanceof PMappingproxy || isSameType.execute(inliningTarget, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PDict)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, obj);
-            } else {
-                return sizeNode.execute(null, inliningTarget, obj);
-            }
+                        @Cached PySequenceSizeNode sizeNode) {
+            return sizeNode.execute(null, inliningTarget, obj);
         }
     }
 

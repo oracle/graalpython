@@ -812,3 +812,19 @@ class TestNativeExceptionSubclass:
         e = ExceptionSubclass()
         e1 = g.throw(e)
         assert e1 is e
+
+    def test_tp_clear(self):
+        # psycopg2 calls ((PyTypeObject *)PyExc_Exception)->tp_clear from their exception subclass's dealloc
+        # We need to make sure it doesn't segfault
+        Tester = CPyExtType(
+            "TpClearTester",
+            code="""
+            static PyObject* test(PyObject* unused, PyObject* unused2) {
+                PyBaseExceptionObject o = {0};
+                ((PyTypeObject *)PyExc_Exception)->tp_clear((PyObject*)&o);
+                Py_RETURN_NONE;
+            }
+            """,
+            tp_methods='{"test", (PyCFunction)test, METH_NOARGS | METH_STATIC, ""}',
+        )
+        Tester.test()

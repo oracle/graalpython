@@ -280,6 +280,15 @@ class DummyDequeLen(set):
     def __len__(self):
         return 42
 
+
+class DictSubclassWithSequenceMethods(dict):
+    def __getitem__(self, key):
+        return key
+
+    def __setitem__(self, key, value):
+        pass
+
+
 def _default_bin_arith_args():
     return (
         (0, 0),
@@ -374,7 +383,8 @@ def _size_and_check_args():
             (DummyDeque(),),  
             (DummyDeque([1,2,3]),),  
             (DummyDequeLen(),),  
-            (DummyDequeLen([1,2,3]),),              
+            (DummyDequeLen([1,2,3]),),
+            (DictSubclassWithSequenceMethods(),),
         )
         
 class TestAbstractWithNative(object):
@@ -1164,6 +1174,7 @@ class TestAbstract(CPyExtTestCase):
             ({'a', 'b'}, 0),
             (DummyListSubclass(), 1),
             ('hello', 1),
+            (DictSubclassWithSequenceMethods(), 1),
         ),
         resultspec="O",
         argspec='On',
@@ -1336,6 +1347,7 @@ class TestAbstract(CPyExtTestCase):
             ([], 10, 1),
             (['a', 'b', 'c'], 2, 'z'),
             ('hello', 2, 'z'),
+            (DictSubclassWithSequenceMethods(), 1, 1)
         ),
         code=''' PyObject* wrap_PySequence_SetItem(PyObject* sequence, Py_ssize_t idx, PyObject* value) {
             if (PySequence_SetItem(sequence, idx, value) < 0) {

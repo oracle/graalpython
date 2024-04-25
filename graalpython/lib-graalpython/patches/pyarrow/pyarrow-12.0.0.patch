@@ -11,20 +11,35 @@ index 46ea021..58a3fb5 100644
                      SendSignal(exc_value.signum)
                  else:
                      SendSignalToThread(exc_value.signum,
-diff --git a/pyarrow/tests/test_memory.py b/pyarrow/tests/test_memory.py
-index 092c50d..931b3fa 100644
---- a/pyarrow/tests/test_memory.py
-+++ b/pyarrow/tests/test_memory.py
-@@ -44,6 +44,9 @@ def allocate_bytes(pool, nbytes):
+diff --git a/pyarrow/memory.pxi b/pyarrow/memory.pxi
+index 1ddcb01..6805e42 100644
+--- a/pyarrow/memory.pxi
++++ b/pyarrow/memory.pxi
+@@ -20,6 +20,10 @@
+ # cython: embedsignature = True
+ 
+ 
++cdef extern from "Python.h":
++    void Py_INCREF(object)
++
++
+ cdef class MemoryPool(_Weakrefable):
      """
-     Temporarily allocate *nbytes* from the given *pool*.
-     """
-+    # GraalPy change: the buffers don't maintain a python reference to their
-+    # pool, so they may get destroyed after their pool, which segfaults
-+    raise RuntimeError("GraalPy: destructors segfault")
-     arr = pa.array([b"x" * nbytes], type=pa.binary(), memory_pool=pool)
-     # Fetch the values buffer from the varbinary array and release the rest,
-     # to get the desired allocation amount
+     Base class for memory allocation.
+@@ -35,6 +39,13 @@ cdef class MemoryPool(_Weakrefable):
+ 
+     cdef void init(self, CMemoryPool* pool):
+         self.pool = pool
++        # GraalPy change: pyarrow doesn't maintain python references from
++        # buffers to pools, but they dereference the pointer to the pool in the
++        # destructor. They just assume buffers will get GC'ed before their
++        # pools. You can easily get a segfault even on CPython if you make
++        # a buffer outlive its pool. Since we can't guarantee destruction
++        # order, we just leak the pool.
++        Py_INCREF(self)
+ 
+     def release_unused(self):
+         """
 diff --git a/pyarrow_build_backend.py b/pyarrow_build_backend.py
 new file mode 100644
 index 0000000..c9826ce

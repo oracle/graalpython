@@ -164,7 +164,7 @@ public abstract class MethodsFlags {
 
     public static final long DICTITEMSVIEW_M_FLAGS = NB_SUBTRACT | NB_AND | NB_XOR | NB_OR | SQ_LENGTH |
                     SQ_CONTAINS;
-    public static final long LIST_M_FLAGS = SQ_LENGTH | SQ_CONCAT | SQ_REPEAT | SQ_ITEM | SQ_CONTAINS |
+    public static final long LIST_M_FLAGS = SQ_LENGTH | SQ_CONCAT | SQ_REPEAT | SQ_ITEM | SQ_ASS_ITEM | SQ_CONTAINS |
                     SQ_INPLACE_CONCAT | SQ_INPLACE_REPEAT | MP_LENGTH | MP_SUBSCRIPT | MP_ASS_SUBSCRIPT;
     public static final long TUPLE_M_FLAGS = SQ_LENGTH | SQ_CONCAT | SQ_REPEAT | SQ_ITEM | SQ_CONTAINS |
                     MP_LENGTH | MP_SUBSCRIPT;

@@ -839,6 +839,10 @@ PyAPI_FUNC(void*) truffle_convert_pointer(Py_ssize_t value) {
 	return (void*) value;
 }
 
+PyAPI_FUNC(int) truffle_no_op_clear(PyObject* o) {
+    return 0;
+}
+
 // defined in 'exceptions.c'
 void initialize_exceptions();
 // defined in 'pyhash.c'
