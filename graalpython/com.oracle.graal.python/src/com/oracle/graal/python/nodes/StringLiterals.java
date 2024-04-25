@@ -154,4 +154,5 @@ public abstract class StringLiterals {
     public static final TruffleString T_STAR_KWARGS = tsLiteral("**kwargs");
     public static final TruffleString T_ARGS = tsLiteral("args");
     public static final TruffleString T_KWARGS = tsLiteral("kwargs");
+    public static final TruffleString T_VISIT = tsLiteral("visit");
 }

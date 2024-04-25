@@ -315,7 +315,7 @@ PY_TRUFFLE_TYPE(PyCell_Type,                     "cell",                       &
 PY_TRUFFLE_TYPE(PyCMethod_Type,                  "builtin_method",             &PyCFunction_Type, sizeof(PyCFunctionObject)) \
 PY_TRUFFLE_TYPE(PyCode_Type,                     "code",                       &PyType_Type, sizeof(PyTypeObject)) \
 PY_TRUFFLE_TYPE(PyComplex_Type,                  "complex",                    &PyType_Type, sizeof(PyComplexObject)) \
-PY_TRUFFLE_TYPE(PyDict_Type,                     "dict",                       &PyType_Type, sizeof(PyDictObject)) \
+PY_TRUFFLE_TYPE_EXTERN(PyDict_Type,              "dict"                        ) \
 PY_TRUFFLE_TYPE(PyDictProxy_Type,                "mappingproxy",               &PyType_Type, sizeof(mappingproxyobject)) \
 PY_TRUFFLE_TYPE(PyEllipsis_Type,                 "ellipsis",                   &PyType_Type, 0) \
 PY_TRUFFLE_TYPE(PyFloat_Type,                    "float",                      &PyType_Type, sizeof(PyFloatObject)) \

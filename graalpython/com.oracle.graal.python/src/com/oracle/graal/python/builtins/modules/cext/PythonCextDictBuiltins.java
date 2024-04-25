@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_HASH_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
@@ -59,6 +60,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_P_HAS_NO_ATTR_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
@@ -70,12 +72,21 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -100,9 +111,13 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -111,7 +126,11 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -578,6 +597,95 @@ public final class PythonCextDictBuiltins {
         @Fallback
         int fallback(Object dict, @SuppressWarnings("unused") Object b, @SuppressWarnings("unused") Object override) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, Pointer, Pointer}, call = Ignored)
+    abstract static class PyTruffleDict_Traverse extends CApiTernaryBuiltinNode {
+
+        @Specialization
+        static int doGeneric(PDict self, Object visitFun, Object arg,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HashingStorageNodes.HashingStorageForEach forEachNode,
+                        @CachedLibrary(limit = "2") InteropLibrary interopLib,
+                        @Cached EnsureExecutableNode ensureExecutableNode,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached DictTraverseCallback traverseCallback) {
+            HashingStorage dictStorage = self.getDictStorage();
+
+            Object visitExecutable = ensureExecutableNode.execute(inliningTarget, visitFun, PExternalFunctionWrapper.VISITPROC);
+            assert interopLib.isExecutable(visitExecutable);
+
+            DictTraverseAccumulator accumulator = new DictTraverseAccumulator(visitExecutable, arg, getThreadStateNode.execute(inliningTarget), 0);
+            forEachNode.execute(null, inliningTarget, dictStorage, traverseCallback, accumulator);
+
+            return 0;
+        }
+    }
+
+    static final class DictTraverseAccumulator {
+
+        final Object visitFunction;
+        final Object visitArg;
+        final int result;
+        final PythonThreadState threadState;
+
+        DictTraverseAccumulator(Object visitFunction, Object visitArg, PythonThreadState threadState, int result) {
+            this.visitFunction = visitFunction;
+            this.visitArg = visitArg;
+            this.result = result;
+            // TOOD(fa): create a C API timing object per unique native function pointer
+            this.threadState = threadState;
+        }
+
+        static DictTraverseAccumulator createError(int i) {
+            return new DictTraverseAccumulator(null, null, null, i);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class DictTraverseCallback extends HashingStorageForEachCallback<DictTraverseAccumulator> {
+
+        @Override
+        public abstract DictTraverseAccumulator execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, DictTraverseAccumulator s);
+
+        @Specialization
+        static DictTraverseAccumulator doGeneric(VirtualFrame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, DictTraverseAccumulator accumulator,
+                        @Cached HashingStorageIteratorKey nextKey,
+                        @Cached HashingStorageIteratorValue nextValue,
+                        @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached ExternalFunctionInvokeNode externalFunctionInvokeNode,
+                        @Cached(inline = false) CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode) {
+            // do nothing if there was already an error when visiting earlier keys/values
+            if (accumulator.result == 0) {
+                Object key = nextKey.execute(inliningTarget, storage, it);
+                Object value = nextValue.execute(inliningTarget, storage, it);
+                assert accumulator.threadState == PythonContext.get(inliningTarget).getThreadState(PythonLanguage.get(inliningTarget));
+                // visit key
+                int iresult = visit(frame, inliningTarget, accumulator, toNativeNode, externalFunctionInvokeNode, checkPrimitiveFunctionResultNode, key);
+
+                // visit item (only if previous returned '0')
+                if (iresult == 0) {
+                    iresult = visit(frame, inliningTarget, accumulator, toNativeNode, externalFunctionInvokeNode, checkPrimitiveFunctionResultNode, value);
+                }
+
+                // return error result
+                if (iresult != 0) {
+                    return DictTraverseAccumulator.createError(iresult);
+                }
+            }
+            return accumulator;
+        }
+
+        private static int visit(VirtualFrame frame, Node inliningTarget, DictTraverseAccumulator accumulator, PythonToNativeNode toNativeNode, ExternalFunctionInvokeNode externalFunctionInvokeNode,
+                        CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode, Object item) {
+            if (item instanceof PythonAbstractNativeObject) {
+                Object result = externalFunctionInvokeNode.call(frame, inliningTarget, accumulator.threadState, CApiGCSupport.VISIT_TIMING, StringLiterals.T_VISIT, accumulator.visitFunction,
+                                toNativeNode.execute(item), accumulator.visitArg);
+                return (int) checkPrimitiveFunctionResultNode.executeLong(accumulator.threadState, StringLiterals.T_VISIT, result);
+            }
+            return 0;
         }
     }
 }

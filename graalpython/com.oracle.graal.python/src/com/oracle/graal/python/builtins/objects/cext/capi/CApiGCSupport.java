@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupportFactory.PyObjectGCDelNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -59,6 +61,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class CApiGCSupport {
+    public static final CApiTiming VISIT_TIMING = CApiTiming.create(true, PExternalFunctionWrapper.VISITPROC);
+
     /* Bit 0 is set when tp_finalize is called */
     private static final long _PyGC_PREV_MASK_FINALIZED = 1;
 
