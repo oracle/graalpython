@@ -42,13 +42,13 @@ package com.oracle.graal.python;
 
 import java.security.Security;
 
-import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
+import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 
 public class BouncyCastleFeature implements Feature {
     @Override
@@ -56,8 +56,8 @@ public class BouncyCastleFeature implements Feature {
         if (!PythonImageBuildOptions.WITHOUT_SSL) {
             RuntimeClassInitializationSupport support = ImageSingletons.lookup(RuntimeClassInitializationSupport.class);
             support.initializeAtBuildTime("org.bouncycastle", "security provider");
-            support.rerunInitialization("org.bouncycastle.jcajce.provider.drbg.DRBG$Default", "RNG");
-            support.rerunInitialization("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV", "RNG");
+            support.initializeAtRunTime("org.bouncycastle.jcajce.provider.drbg.DRBG$Default", "RNG");
+            support.initializeAtRunTime("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV", "RNG");
             Security.addProvider(CertUtils.BOUNCYCASTLE_PROVIDER);
 
             // Register runtime reflection here, not in a config, so it can be easily disabled
