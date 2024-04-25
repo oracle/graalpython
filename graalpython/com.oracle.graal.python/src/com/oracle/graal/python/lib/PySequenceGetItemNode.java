@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -89,18 +90,17 @@ public abstract class PySequenceGetItemNode extends Node {
     static Object doGenericManaged(VirtualFrame frame, Object object, int index,
                     @Bind("this") Node inliningTarget,
                     @Cached GetClassNode getClassNode,
-                    @Cached PySequenceCheckNode sequenceCheckNode,
-                    @Cached PyMappingCheckNode mappingCheckNode,
+                    @Cached GetMethodsFlagsNode getMethodsFlagsNode,
                     @Cached(parameters = "GetItem") LookupSpecialMethodSlotNode lookupGetItem,
                     @Cached CallBinaryMethodNode callGetItem,
                     @Cached PRaiseNode.Lazy raise) {
-        if (sequenceCheckNode.execute(inliningTarget, object)) {
-            Object type = getClassNode.execute(inliningTarget, object);
+        Object type = getClassNode.execute(inliningTarget, object);
+        if ((getMethodsFlagsNode.execute(inliningTarget, type) & MethodsFlags.SQ_ITEM) != 0) {
             Object getItem = lookupGetItem.execute(frame, type, object);
             assert getItem != PNone.NO_VALUE;
             return callGetItem.executeObject(frame, getItem, object, index);
         }
-        if (mappingCheckNode.execute(inliningTarget, object)) {
+        if ((getMethodsFlagsNode.execute(inliningTarget, type) & MethodsFlags.MP_SUBSCRIPT) != 0) {
             throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, object);
         } else {
             throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_INDEXING, object);

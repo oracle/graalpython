@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -89,18 +90,17 @@ public abstract class PySequenceDelItemNode extends Node {
     static Object doGenericManaged(VirtualFrame frame, Object object, int index,
                     @Bind("this") Node inliningTarget,
                     @Cached GetClassNode getClassNode,
-                    @Cached PySequenceCheckNode sequenceCheckNode,
-                    @Cached PyMappingCheckNode mappingCheckNode,
+                    @Cached GetMethodsFlagsNode getMethodsFlagsNode,
                     @Cached(parameters = "DelItem") LookupSpecialMethodSlotNode lookupDelItem,
                     @Cached CallBinaryMethodNode callDelItem,
                     @Cached PRaiseNode.Lazy raise) {
-        if (sequenceCheckNode.execute(inliningTarget, object)) {
-            Object type = getClassNode.execute(inliningTarget, object);
+        Object type = getClassNode.execute(inliningTarget, object);
+        if ((getMethodsFlagsNode.execute(inliningTarget, type) & MethodsFlags.SQ_ASS_ITEM) != 0) {
             Object delItem = lookupDelItem.execute(frame, type, object);
             assert delItem != PNone.NO_VALUE;
             return callDelItem.executeObject(frame, delItem, object, index);
         }
-        if (mappingCheckNode.execute(inliningTarget, object)) {
+        if ((getMethodsFlagsNode.execute(inliningTarget, type) & MethodsFlags.MP_ASS_SUBSCRIPT) != 0) {
             throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, object);
         } else {
             throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_DELETION, object);
