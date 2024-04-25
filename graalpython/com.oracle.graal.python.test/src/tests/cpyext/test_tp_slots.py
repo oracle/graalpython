@@ -379,3 +379,16 @@ def test_type_not_ready():
     """, "NotReadyType")
     not_ready = module.create_not_ready()
     assert not_ready.foo == 'foo'
+
+
+def test_sq_len_and_item():
+    MySqLenItem = CPyExtType("MySqLenItem",
+                             '''
+                             Py_ssize_t my_sq_len(PyObject* a) { return 10; }
+                             PyObject* my_sq_item(PyObject* self, Py_ssize_t index) { return PyLong_FromSsize_t(index); }
+                             ''',
+                             sq_length="&my_sq_len",
+                             sq_item="my_sq_item")
+    x = MySqLenItem()
+    assert x[5] == 5
+    assert x[-1] == 9
