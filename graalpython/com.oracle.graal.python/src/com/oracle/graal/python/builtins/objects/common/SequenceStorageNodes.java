@@ -1187,7 +1187,7 @@ public abstract class SequenceStorageNodes {
             PythonUtils.arraycopy(array, srcPos, array, distPos, length);
         }
 
-        @Specialization(guards = {"length > 0", "!isBasicSequenceStorage(storage)"})
+        @Specialization(guards = {"length > 0", "!isArrayBasedSequenceStorage(storage)"})
         protected static void doOther(Node inliningTarget, SequenceStorage storage, int distPos, int srcPos, int length,
                         @Cached SetItemScalarNode setLeftItemNode,
                         @Cached GetItemScalarNode getRightItemNode) {
@@ -1196,8 +1196,8 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        protected static boolean isBasicSequenceStorage(Object o) {
-            return o instanceof BasicSequenceStorage;
+        protected static boolean isArrayBasedSequenceStorage(Object o) {
+            return o instanceof ArrayBasedSequenceStorage;
         }
     }
 
@@ -1222,7 +1222,7 @@ public abstract class SequenceStorageNodes {
             PythonUtils.arraycopy(srcArray, srcPos, distArray, distPos, length);
         }
 
-        @Specialization(guards = {"length > 0", "!isBasicSequenceStorage(dist) || dist.getClass() != src.getClass()"})
+        @Specialization(guards = {"length > 0", "!isArrayBasedSequenceStorage(dist) || dist.getClass() != src.getClass()"})
         protected static void doOther(Node inliningTarget, SequenceStorage dist, int distPos, SequenceStorage src, int srcPos, int length,
                         @Cached SetItemScalarNode setLeftItemNode,
                         @Cached GetItemScalarNode getRightItemNode) {
@@ -1231,8 +1231,8 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        protected static boolean isBasicSequenceStorage(Object o) {
-            return o instanceof BasicSequenceStorage;
+        protected static boolean isArrayBasedSequenceStorage(Object o) {
+            return o instanceof ArrayBasedSequenceStorage;
         }
     }
 
@@ -1461,7 +1461,7 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        protected static boolean replacesWholeSequence(Class<? extends BasicSequenceStorage> cachedClass, BasicSequenceStorage s, SliceInfo info) {
+        protected static boolean replacesWholeSequence(Class<? extends ArrayBasedSequenceStorage> cachedClass, ArrayBasedSequenceStorage s, SliceInfo info) {
             return info.start == 0 && info.step == 1 && info.stop == cachedClass.cast(s).length();
         }
     }
