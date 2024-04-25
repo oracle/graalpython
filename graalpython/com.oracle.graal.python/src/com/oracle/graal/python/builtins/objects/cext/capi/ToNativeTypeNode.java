@@ -301,7 +301,6 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, HiddenAttr.DEALLOC));
         writeI64Node.write(mem, CFields.PyTypeObject__tp_vectorcall_offset, lookupSize(clazz, PyTypeObject__tp_vectorcall_offset, HiddenAttr.VECTORCALL_OFFSET));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_getattr, nullValue);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_setattr, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_async, asAsync);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_repr, lookup(clazz, SlotMethodDef.TP_REPR));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number, asNumber);
@@ -310,7 +309,6 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_hash, lookup(clazz, SlotMethodDef.TP_HASH));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_call, lookup(clazz, SlotMethodDef.TP_CALL));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_str, lookup(clazz, SlotMethodDef.TP_STR));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_setattro, lookup(clazz, SlotMethodDef.TP_SETATTRO));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_as_buffer, asBuffer);
         writeI64Node.write(mem, CFields.PyTypeObject__tp_flags, flags);
 
