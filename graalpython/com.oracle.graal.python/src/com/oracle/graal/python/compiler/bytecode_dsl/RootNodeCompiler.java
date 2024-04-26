@@ -72,41 +72,55 @@ import com.oracle.truffle.api.bytecode.BytecodeRootNodes;
 import com.oracle.truffle.api.bytecode.BytecodeParser;
 import com.oracle.truffle.api.strings.TruffleString;
 
+/**
+ * Visitor that compiles a top-level AST (modules, functions, classes, etc.) to a root node.
+ * Produces a {@link BytecodeDSLCompilerResult}.
+ * <p>
+ * This visitor is a small wrapper that calls into another visitor, {@link StatementCompiler}, to
+ * produce bytecode for the various statements/expressions within the AST.
+ */
 public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompilerResult> {
+    /**
+     * Because a {@link RootNodeCompiler} instance gets reused on reparse, it should be idempotent.
+     * Consequently, most of its fields are final and immutable/not mutated after construction. For
+     * some tables updated during parsing (e.g., the constants map), we ensure these updates are
+     * idempotent. Any remaining fields must be {@link #reset()} at the beginning of the parse.
+     */
+    // Immutable
     private final BytecodeDSLCompilerContext ctx;
     private final SSTNode startNode;
-    private final Map<String, BytecodeLocal> locals;
-    private final Map<String, BytecodeLocal> cellLocals;
-    private final Map<String, BytecodeLocal> freeLocals;
     private final Scope scope;
     private final CompilationScope scopeType;
-
     private final boolean isInteractive;
     private final EnumSet<FutureFeature> futureFeatures;
+    private final ErrorCallback errorCallback;
 
+    // Immutable after construction
     private final HashMap<String, Integer> varnames;
     private final HashMap<String, Integer> cellvars;
     private final HashMap<String, Integer> freevars;
     private final int[] cell2arg;
+
+    // Updated idempotently
+    private final Map<String, BytecodeLocal> locals = new HashMap<>();
+    private final Map<String, BytecodeLocal> cellLocals = new HashMap<>();
+    private final Map<String, BytecodeLocal> freeLocals = new HashMap<>();
     private final HashMap<Object, Integer> constants = new HashMap<>();
     private final HashMap<String, Integer> names = new HashMap<>();
 
-    private final ErrorCallback errorCallback;
+    // Mutable (must be reset)
     private SourceRange currentLocation;
 
     public RootNodeCompiler(BytecodeDSLCompilerContext ctx, SSTNode rootNode, EnumSet<FutureFeature> futureFeatures) {
         this.ctx = ctx;
         this.startNode = rootNode;
-        this.locals = new HashMap<>();
-        this.cellLocals = new HashMap<>();
-        this.freeLocals = new HashMap<>();
         this.scope = ctx.scopeEnvironment.lookupScope(rootNode);
         this.scopeType = getScopeType(scope, rootNode);
-
         this.isInteractive = rootNode instanceof ModTy.Interactive;
         this.futureFeatures = futureFeatures;
+        this.errorCallback = new RaisePythonExceptionErrorCallback(ctx.source, false);
 
-        varnames = new HashMap<>();
+        this.varnames = new HashMap<>();
         if (scope.isFunction()) {
             /*
              * scope.getVarnames only returns parameters. We use the scope to collect the rest of
@@ -118,12 +132,14 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             varnames.putAll(scope.getSymbolsByType(EnumSet.of(DefUse.Local), EnumSet.of(DefUse.DefParam, DefUse.Cell, DefUse.Free), varnames.size()));
         }
 
-        cellvars = scope.getSymbolsByType(EnumSet.of(Scope.DefUse.Cell), 0);
+        this.cellvars = scope.getSymbolsByType(EnumSet.of(Scope.DefUse.Cell), 0);
         if (scope.needsClassClosure()) {
             assert scopeType == Class;
             assert cellvars.isEmpty();
             cellvars.put("__class__", 0);
         }
+
+        this.freevars = scope.getSymbolsByType(EnumSet.of(Scope.DefUse.Free, Scope.DefUse.DefFreeClass), 0);
 
         int[] cell2argValue = new int[cellvars.size()];
         boolean hasArgCell = false;
@@ -135,9 +151,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             }
         }
         this.cell2arg = hasArgCell ? cell2argValue : null;
-        freevars = scope.getSymbolsByType(EnumSet.of(Scope.DefUse.Free, Scope.DefUse.DefFreeClass), 0);
-
-        errorCallback = new RaisePythonExceptionErrorCallback(ctx.source, false);
     }
 
     private static CompilationScope getScopeType(Scope scope, SSTNode rootNode) {
@@ -171,13 +184,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         return orderedKeys(map, base, x -> x);
     }
 
-    private static <T> T addObject(HashMap<T, Integer> dict, T o) {
-        Integer v = dict.get(o);
+    private Object addConstant(Object c) {
+        Integer v = constants.get(c);
         if (v == null) {
-            v = dict.size();
-            dict.put(o, v);
+            v = constants.size();
+            constants.put(c, v);
         }
-        return o;
+        return c;
     }
 
     private static TruffleString[] orderedTruffleStringArray(HashMap<String, Integer> map) {
@@ -382,9 +395,14 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         return startNode.accept(this);
     }
 
+    public void reset() {
+        this.currentLocation = null;
+    }
+
     // -------------- helpers --------------
 
     void beginRootNode(SSTNode node, ArgumentsTy args, Builder b) {
+        reset();
         b.beginSource(ctx.source);
         beginSourceSection(node, b);
         b.beginRoot(ctx.language);
@@ -571,12 +589,12 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         if (docstring != null) {
             i++;
             if (ctx.optimizationLevel < 2) {
-                addObject(constants, docstring);
+                addConstant(docstring);
             } else {
-                addObject(constants, PNone.NONE);
+                addConstant(PNone.NONE);
             }
         } else {
-            addObject(constants, PNone.NONE);
+            addConstant(PNone.NONE);
         }
 
         StatementCompiler statementCompiler = new StatementCompiler(b);
@@ -797,7 +815,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
      * Use this method for values that should show up in co_consts.
      */
     private void emitPythonConstant(Object constant, Builder b) {
-        b.emitLoadConstant(addObject(constants, constant));
+        b.emitLoadConstant(addConstant(constant));
     }
 
     /*
@@ -3173,7 +3191,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         @Override
         public Void visit(StmtTy.Import node) {
             for (AliasTy name : node.names) {
-                addObject(constants, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
+                addConstant(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
                 if (name.asName == null) {
                     // import a.b.c
                     // --> a = (Import "a.b.c" [] 0)
@@ -3271,7 +3289,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
                     endStoreLocal(asName, b);
                 }
-                addObject(constants, importedNames);
+                addConstant(importedNames);
 
                 b.endBlock();
             }
