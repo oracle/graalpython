@@ -214,8 +214,11 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
@@ -2249,6 +2252,55 @@ public abstract class CExtNodes {
                 Object result = externalFunctionInvokeNode.call(frame, inliningTarget, threadState, CApiGCSupport.VISIT_TIMING, StringLiterals.T_VISIT, visitFunction,
                                 toNativeNode.execute(item), visitArg);
                 return (int) checkPrimitiveFunctionResultNode.executeLong(threadState, StringLiterals.T_VISIT, result);
+            }
+            return 0;
+        }
+    }
+
+    /**
+     * Traverses the attributes of a dynamic object and visits them.
+     * <p>
+     * In CPython, objects that have <it>dynamic attributes</it> are traversed by simply traversing
+     * their {@code dict} (i.e. either the {@code tp_dict} or the dict object at
+     * {@code tp_dict_offset}). We could also just <it>visit</it> the dict by using
+     * {@link com.oracle.graal.python.nodes.object.GetDictIfExistsNode} but if the dict may not be
+     * materialized yet and we don't want to force materialization just for visiting. We therefore
+     * visit the attributes (keys and values) directly by accessing the dynamic object.
+     * </p>
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class TraverseDynamicObjectNode extends Node {
+
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, DynamicObject self, Object visitFun, Object arg);
+
+        @Specialization(limit = "1")
+        static int doGeneric(VirtualFrame frame, Node inliningTarget, DynamicObject self, Object visitFunction, Object visitArg,
+                        @CachedLibrary("self") DynamicObjectLibrary dylib,
+                        @Cached InlinedLoopConditionProfile loopProfile,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached VisitNode visitNode) {
+            assert InteropLibrary.getUncached().isExecutable(visitFunction);
+            Object[] keyArray = dylib.getKeyArray(self);
+            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
+            loopProfile.profileCounted(inliningTarget, keyArray.length);
+            for (int i = 0; loopProfile.inject(inliningTarget, i < keyArray.length); i++) {
+                Object key = keyArray[i];
+
+                // visit key
+                int res = visitNode.execute(frame, inliningTarget, threadState, key, visitFunction, visitArg);
+
+                // visit item (only if previous returned '0')
+                if (res == 0) {
+                    Object item = dylib.getOrDefault(self, key, NO_VALUE);
+                    res = visitNode.execute(frame, inliningTarget, threadState, item, visitFunction, visitArg);
+                }
+
+                // return error result
+                if (res != 0) {
+                    return res;
+                }
             }
             return 0;
         }
