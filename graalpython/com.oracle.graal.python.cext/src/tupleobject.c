@@ -17,6 +17,9 @@
 #endif // GraalPy change
 #include "pycore_object.h"        // _PyObject_GC_TRACK(), _Py_FatalRefcountError()
 
+// GraalPy change
+void PyTruffle_Tuple_Dealloc(PyTupleObject* self);
+
 #if 0 // GraalPy change
 /*[clinic input]
 class tuple "PyTupleObject *" "&PyTuple_Type"
@@ -637,17 +640,42 @@ tuple_count(PyTupleObject *self, PyObject *value)
     }
     return PyLong_FromSsize_t(count);
 }
+#endif // GraalPy change
 
 static int
 tupletraverse(PyTupleObject *o, visitproc visit, void *arg)
 {
-    Py_ssize_t i;
+    // GraalPy change: different implementation
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+    return GraalPyTruffleTuple_TraverseManaged((PyObject *)o, visit, arg);
+#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+    Py_ssize_t size, i;
+    PyObject **ob_item;
 
-    for (i = Py_SIZE(o); --i >= 0; )
-        Py_VISIT(o->ob_item[i]);
+    if (points_to_py_handle_space(o)) {
+        /* If the managed tuple already uses a native storage, then
+         * 'GraalPyVarObject.ob_item' will not be NULL and we can do the whole
+         * traversal in native. Otherwise, we do an upcall.
+         */
+        GraalPyVarObject *go = (GraalPyVarObject *)pointer_to_stub(o);
+        size = go->ob_size;
+        ob_item = go->ob_item;
+        if (ob_item == NULL) {
+            return GraalPyTruffleTuple_TraverseManaged((PyObject *)o,
+                    visit, arg);
+        }
+    } else {
+        ob_item = o->ob_item;
+        size = Py_SIZE(o);
+    }
+
+    for (i = size; --i >= 0; )
+        Py_VISIT(ob_item[i]);
     return 0;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
+#if 0 // GraalPy change
 static PyObject *
 tuplerichcompare(PyObject *v, PyObject *w, int op)
 {
@@ -883,38 +911,39 @@ static PyMappingMethods tuple_as_mapping = {
 };
 
 static PyObject *tuple_iter(PyObject *seq);
+#endif // GraalPy change
 
 PyTypeObject PyTuple_Type = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
     "tuple",
     sizeof(PyTupleObject) - sizeof(PyObject *),
     sizeof(PyObject *),
-    (destructor)tupledealloc,                   /* tp_dealloc */
+    (destructor)PyTruffle_Tuple_Dealloc,        /* tp_dealloc */ // GraalPy change: different function
     0,                                          /* tp_vectorcall_offset */
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
     0,                                          /* tp_as_async */
-    (reprfunc)tuplerepr,                        /* tp_repr */
+    0,                                          /* tp_repr */ // GraalPy change: nulled
     0,                                          /* tp_as_number */
-    &tuple_as_sequence,                         /* tp_as_sequence */
-    &tuple_as_mapping,                          /* tp_as_mapping */
-    (hashfunc)tuplehash,                        /* tp_hash */
+    0,                                          /* tp_as_sequence */ // GraalPy change: nulled
+    0,                                          /* tp_as_mapping */ // GraalPy change: nulled
+    0,                                          /* tp_hash */ // GraalPy change: nulled
     0,                                          /* tp_call */
     0,                                          /* tp_str */
-    PyObject_GenericGetAttr,                    /* tp_getattro */
+    0,                                          /* tp_getattro */ // GraalPy change: nulled
     0,                                          /* tp_setattro */
     0,                                          /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
         Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS |
         _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE,  /* tp_flags */
-    tuple_new__doc__,                           /* tp_doc */
+    0,                                          /* tp_doc */ // GraalPy change: nulled
     (traverseproc)tupletraverse,                /* tp_traverse */
     0,                                          /* tp_clear */
-    tuplerichcompare,                           /* tp_richcompare */
+    0,                                          /* tp_richcompare */ // GraalPy change: nulled
     0,                                          /* tp_weaklistoffset */
-    tuple_iter,                                 /* tp_iter */
+    0,                                          /* tp_iter */ // GraalPy change: nulled
     0,                                          /* tp_iternext */
-    tuple_methods,                              /* tp_methods */
+    0,                                          /* tp_methods */ // GraalPy change: nulled
     0,                                          /* tp_members */
     0,                                          /* tp_getset */
     0,                                          /* tp_base */
@@ -923,12 +952,16 @@ PyTypeObject PyTuple_Type = {
     0,                                          /* tp_descr_set */
     0,                                          /* tp_dictoffset */
     0,                                          /* tp_init */
-    0,                                          /* tp_alloc */
-    tuple_new,                                  /* tp_new */
-    PyObject_GC_Del,                            /* tp_free */
+    PyTruffle_Tuple_Alloc,                      /* tp_alloc */ // GraalPy change
+    0,                                          /* tp_new */ // GraalPy change: nulled
+    GraalPyObject_GC_Del,                       /* tp_free */ // GraalPy change: different function
+#if 0 // GraalPy change
     .tp_vectorcall = tuple_vectorcall,
+#endif // GraalPy change
 };
 
+
+#if 0 // GraalPy change
 /* The following function breaks the notion that tuples are immutable:
    it changes the size of a tuple.  We get away with this only if there
    is only one module referencing the object.  You can also think of it
@@ -1345,6 +1378,8 @@ PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* type, Py_ssize_t nitems) {
 }
 
 void PyTruffle_Tuple_Dealloc(PyTupleObject* self) {
+    PyObject_GC_UnTrack(self);
+    Py_TRASHCAN_BEGIN(self, PyTruffle_Tuple_Dealloc)
     Py_ssize_t len =  PyTuple_GET_SIZE(self);
     if (len > 0) {
         Py_ssize_t i = len;
@@ -1353,6 +1388,7 @@ void PyTruffle_Tuple_Dealloc(PyTupleObject* self) {
         }
     }
     Py_TYPE(self)->tp_free((PyObject *)self);
+    Py_TRASHCAN_END
 }
 
 PyObject **

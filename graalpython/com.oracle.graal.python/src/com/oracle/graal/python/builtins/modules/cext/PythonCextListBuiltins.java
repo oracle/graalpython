@@ -65,12 +65,9 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.VisitNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TraverseSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.XDecRefPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
@@ -84,8 +81,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
-import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -341,33 +336,14 @@ public final class PythonCextListBuiltins {
         static long doGeneric(PList self, Object outItems, Object visitFun, Object arg,
                         @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.WritePointerNode writePointerNode,
-                        @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached EnsureExecutableNode ensureExecutableNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Cached VisitNode visitNode) {
+                        @Cached TraverseSequenceStorageNode traverseSequenceStorageNode) {
             SequenceStorage sequenceStorage = self.getSequenceStorage();
             if (sequenceStorage instanceof NativeObjectSequenceStorage nativeStorage) {
                 writePointerNode.write(outItems, nativeStorage.getPtr());
                 return nativeStorage.length();
             } else if (sequenceStorage instanceof ObjectSequenceStorage || sequenceStorage instanceof MroSequenceStorage) {
-                BasicSequenceStorage basicStorage = (BasicSequenceStorage) sequenceStorage;
-
-                Object visitExecutable = ensureExecutableNode.execute(inliningTarget, visitFun, PExternalFunctionWrapper.VISITPROC);
-                PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
-                for (int i = basicStorage.length(); --i >= 0;) {
-                    Object item = getItemScalarNode.execute(inliningTarget, basicStorage, i);
-                    int iresult = visitNode.execute(null, inliningTarget, threadState, item, visitExecutable, arg);
-                    if (iresult != 0) {
-                        return -1;
-                    }
-                }
+                return traverseSequenceStorageNode.execute(inliningTarget, (BasicSequenceStorage) sequenceStorage, visitFun, arg);
             }
-            /*
-             * Since 'tp_traverse' is meant to be used from Python GC, we do not traverse other
-             * storages because then we would need to materialize them. This is safe because long,
-             * float, and unicode objects do not participate in GC anyway (i.e. they don't have type
-             * flag 'HAVE_GC' set).
-             */
             return 0;
         }
     }

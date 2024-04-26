@@ -184,7 +184,9 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
@@ -2303,6 +2305,50 @@ public abstract class CExtNodes {
                 }
             }
             return 0;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class TraverseSequenceStorageNode extends Node {
+
+        public abstract int execute(Node inliningTarget, BasicSequenceStorage storage, Object visitFun, Object arg);
+
+        @Specialization
+        static int doObject(Node inliningTarget, ObjectSequenceStorage basicStorage, Object visitFun, Object arg,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsureExecutableNode ensureExecutableNode,
+                        @Cached InlinedLoopConditionProfile loopConditionProfile,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
+                        @Cached VisitNode visitNode) {
+
+            Object visitExecutable = ensureExecutableNode.execute(inliningTarget, visitFun, PExternalFunctionWrapper.VISITPROC);
+            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
+            loopConditionProfile.profileCounted(inliningTarget, basicStorage.length());
+            for (int i = basicStorage.length(); loopConditionProfile.inject(inliningTarget, --i >= 0);) {
+                Object item = getItemScalarNode.execute(inliningTarget, basicStorage, i);
+                int iresult = visitNode.execute(null, inliningTarget, threadState, item, visitExecutable, arg);
+                if (iresult != 0) {
+                    return -1;
+                }
+            }
+            /*
+             * Since 'tp_traverse' is meant to be used from Python GC, we do not traverse other
+             * storages because then we would need to materialize them. This is safe because long,
+             * float, and unicode objects do not participate in GC anyway (i.e. they don't have type
+             * flag 'HAVE_GC' set).
+             */
+            return 0;
+        }
+
+        @Specialization(guards = "!isObjectStorage(basicStorage)")
+        @SuppressWarnings("unused")
+        static int doOther(Node inliningTarget, BasicSequenceStorage basicStorage, Object visitFun, Object arg) {
+            return 0;
+        }
+
+        static boolean isObjectStorage(BasicSequenceStorage storage) {
+            return storage instanceof ObjectSequenceStorage;
         }
     }
 }

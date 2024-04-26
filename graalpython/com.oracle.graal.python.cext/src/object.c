@@ -2272,6 +2272,7 @@ finally:
     /* ignore exceptions because there is no way to report them. */
     PyErr_Restore(error_type, error_value, error_traceback);
 }
+#endif // GraalPy change
 
 /* Trashcan support. */
 
@@ -2365,6 +2366,7 @@ _PyTrash_cond(PyObject *op, destructor dealloc)
 }
 
 
+#if 0 // GraalPy change
 void _Py_NO_RETURN
 _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
                        const char *file, int line, const char *function)

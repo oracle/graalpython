@@ -340,7 +340,7 @@ PY_TRUFFLE_TYPE(PySlice_Type,                    "slice",                      &
 PY_TRUFFLE_TYPE(PyStaticMethod_Type,             "staticmethod",               &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PySuper_Type,                    "super",                      &PyType_Type, sizeof(superobject)) \
 PY_TRUFFLE_TYPE(PyTraceBack_Type,                "traceback",                  &PyType_Type, sizeof(PyTypeObject)) \
-PY_TRUFFLE_TYPE_GENERIC(PyTuple_Type,            "tuple",                      &PyType_Type, sizeof(PyTupleObject) - sizeof(PyObject *), sizeof(PyObject *), PyTruffle_Tuple_Alloc, (destructor)PyTruffle_Tuple_Dealloc, 0, 0) \
+PY_TRUFFLE_TYPE_EXTERN(PyTuple_Type,             "tuple"                       ) \
 PY_TRUFFLE_TYPE_GENERIC(PyUnicode_Type,          "str",                        &PyType_Type, sizeof(PyUnicodeObject), 0, NULL, unicode_dealloc, PyObject_Del, 0) \
 /* NOTE: we use the same Python type (namely 'PBuiltinFunction') for 'wrapper_descriptor' as for 'method_descriptor'; so the flags must be the same! */ \
 PY_TRUFFLE_TYPE(PyWrapperDescr_Type,              "wrapper_descriptor",        &PyType_Type, sizeof(PyWrapperDescrObject)) \
