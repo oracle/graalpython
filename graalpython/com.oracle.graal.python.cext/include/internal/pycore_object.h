@@ -188,8 +188,8 @@ static inline void _PyObject_GC_UNTRACK(
     PyGC_Head *next = _PyGCHead_NEXT(gc);
     _PyGCHead_SET_NEXT(prev, next);
     _PyGCHead_SET_PREV(next, prev);
-    gc->_gc_next = 0;
-    gc->_gc_prev &= _PyGC_PREV_MASK_FINALIZED;
+    _PyGCHead_UNTAG(gc)->_gc_next = 0;
+    _PyGCHead_UNTAG(gc)->_gc_prev &= _PyGC_PREV_MASK_FINALIZED;
 }
 
 // Macros to accept any type for the parameter, and to automatically pass

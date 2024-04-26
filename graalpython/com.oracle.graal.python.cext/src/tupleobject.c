@@ -10,7 +10,9 @@
 #include "Python.h"
 #if 0 // GraalPy change
 #include "pycore_abstract.h"      // _PyIndex_Check()
+#endif // GraalPy change
 #include "pycore_gc.h"            // _PyObject_GC_IS_TRACKED()
+#if 0 // GraalPy change
 #include "pycore_initconfig.h"    // _PyStatus_OK()
 #endif // GraalPy change
 #include "pycore_object.h"        // _PyObject_GC_TRACK(), _Py_FatalRefcountError()
@@ -157,7 +159,6 @@ PyTuple_SetItem(PyObject *op, Py_ssize_t i, PyObject *newitem)
     return 0;
 }
 
-#if 0 // GraalPy change
 void
 _PyTuple_MaybeUntrack(PyObject *op)
 {
@@ -179,8 +180,6 @@ _PyTuple_MaybeUntrack(PyObject *op)
     }
     _PyObject_GC_UNTRACK(op);
 }
-
-#endif // GraalPy change
 
 NO_INLINE // GraalPy change: disallow bitcode inlining
 PyObject *

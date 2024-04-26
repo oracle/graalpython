@@ -124,8 +124,10 @@ As a consequence of this, split keys have a maximum size of 16.
 #include "pycore_call.h"          // _PyObject_CallNoArgs()
 #include "pycore_code.h"          // stats
 #include "pycore_dict.h"          // PyDictKeysObject
+#endif // GraalPy change
 #include "pycore_gc.h"            // _PyObject_GC_IS_TRACKED()
 #include "pycore_object.h"        // _PyObject_GC_TRACK()
+#if 0 // GraalPy change
 #include "pycore_pyerrors.h"      // _PyErr_Fetch()
 #include "pycore_pystate.h"       // _PyThreadState_GET()
 #include "stringlib/eq.h"         // unicode_eq()
@@ -1120,6 +1122,7 @@ _PyDict_HasOnlyStringKeys(PyObject *dict)
             } \
         } \
     } while(0)
+#endif // GraalPy change
 
 void
 _PyDict_MaybeUntrack(PyObject *op)
@@ -1131,6 +1134,9 @@ _PyDict_MaybeUntrack(PyObject *op)
     if (!PyDict_CheckExact(op) || !_PyObject_GC_IS_TRACKED(op))
         return;
 
+    // TODO(fa): upcall
+
+#if 0 // GraalPy change
     mp = (PyDictObject *) op;
     numentries = mp->ma_keys->dk_nentries;
     if (_PyDict_HasSplitTable(mp)) {
@@ -1163,9 +1169,11 @@ _PyDict_MaybeUntrack(PyObject *op)
             }
         }
     }
+#endif // GraalPy change
     _PyObject_GC_UNTRACK(op);
 }
 
+#if 0 // GraalPy change
 /* Internal function to find slot for an item from its hash
    when it is known that the key is not present in the dict.
 
