@@ -1,0 +1,114 @@
+From 08f340d5d4c2f5bb86513f0ccf691159b5d8536c Mon Sep 17 00:00:00 2001
+From: Ondrej Tethal <ondrej.tethal@oracle.com>
+Date: Fri, 26 Apr 2024 10:56:48 +0200
+Subject: [PATCH 1/1] Force patched pyo3
+
+---
+ Cargo.lock | 33 ++++++++++++++++++---------------
+ Cargo.toml |  2 +-
+ 2 files changed, 19 insertions(+), 16 deletions(-)
+
+diff --git a/Cargo.lock b/Cargo.lock
+index 4561887..0571bd5 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -214,6 +214,12 @@ dependencies = [
+  "windows-sys 0.45.0",
+ ]
+ 
++[[package]]
++name = "portable-atomic"
++version = "1.6.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "7170ef9988bc169ba16dd36a7fa041e5c4cbeb6a35b76d4c03daded371eae7c0"
++
+ [[package]]
+ name = "proc-macro2"
+ version = "1.0.53"
+@@ -225,15 +231,15 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3"
+-version = "0.20.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "04e8453b658fe480c3e70c8ed4e3d3ec33eb74988bd186561b0cc66b85c3bc4b"
++version = "0.20.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.20.3.graalpy#c02d58c5158dbb3a080200a078b0e997b83a7575"
+ dependencies = [
+  "cfg-if",
+  "indoc",
+  "libc",
+  "memoffset",
+  "parking_lot",
++ "portable-atomic",
+  "pyo3-build-config",
+  "pyo3-ffi",
+  "pyo3-macros",
+@@ -242,9 +248,8 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3-build-config"
+-version = "0.20.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a96fe70b176a89cff78f2fa7b3c930081e163d5379b4dcdf993e3ae29ca662e5"
++version = "0.20.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.20.3.graalpy#c02d58c5158dbb3a080200a078b0e997b83a7575"
+ dependencies = [
+  "once_cell",
+  "python3-dll-a",
+@@ -253,9 +258,8 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3-ffi"
+-version = "0.20.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "214929900fd25e6604661ed9cf349727c8920d47deff196c4e28165a6ef2a96b"
++version = "0.20.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.20.3.graalpy#c02d58c5158dbb3a080200a078b0e997b83a7575"
+ dependencies = [
+  "libc",
+  "pyo3-build-config",
+@@ -263,9 +267,8 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3-macros"
+-version = "0.20.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "dac53072f717aa1bfa4db832b39de8c875b7c7af4f4a6fe93cdbf9264cf8383b"
++version = "0.20.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.20.3.graalpy#c02d58c5158dbb3a080200a078b0e997b83a7575"
+ dependencies = [
+  "proc-macro2",
+  "pyo3-macros-backend",
+@@ -275,12 +278,12 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3-macros-backend"
+-version = "0.20.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "7774b5a8282bd4f25f803b1f0d945120be959a36c72e08e7cd031c792fdfd424"
++version = "0.20.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.20.3.graalpy#c02d58c5158dbb3a080200a078b0e997b83a7575"
+ dependencies = [
+  "heck",
+  "proc-macro2",
++ "pyo3-build-config",
+  "quote",
+  "syn",
+ ]
+diff --git a/Cargo.toml b/Cargo.toml
+index c129d85..284371e 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -25,7 +25,7 @@ include = [
+ [dependencies]
+ crossbeam-channel = "0.5.4"
+ notify = "5.0.0"
+-pyo3 = {version = "=0.20", features = ["extension-module", "generate-import-lib"]}
++pyo3 = { git = "https://github.com/timfel/pyo3.git", branch = "v0.20.3.graalpy", features = ["extension-module"]}
+ 
+ [lib]
+ name = "_rust_notify"
+-- 
+2.34.1
+
