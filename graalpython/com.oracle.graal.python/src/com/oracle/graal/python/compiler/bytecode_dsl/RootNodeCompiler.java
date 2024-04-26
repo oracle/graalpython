@@ -419,16 +419,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         b.endSource();
     }
 
-    void beginNode(SSTNode node, Builder b) {
-        beginSourceSection(node, b);
-        b.beginBlock();
-    }
-
-    void endNode(Builder b) {
-        b.endBlock();
-        endSourceSection(b);
-    }
-
     void beginSourceSection(SSTNode node, Builder b) {
         SourceRange sourceRange = node.getSourceRange();
         this.currentLocation = sourceRange;
@@ -1177,14 +1167,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             this.b = b;
         }
 
-        public void beginNode(SSTNode node) {
-            RootNodeCompiler.this.beginNode(node, b);
-        }
-
-        public void endNode() {
-            RootNodeCompiler.this.endNode(b);
-        }
-
         // --------------------- visitor ---------------------------
 
         @Override
@@ -1209,14 +1191,14 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(ExprTy.Attribute node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             b.beginGetAttribute();
             node.value.accept(this);
             b.emitLoadConstant(toTruffleStringUncached(mangle(node.attr)));
             b.endGetAttribute();
 
-            endNode();
+            endSourceSection(b);
 
             return null;
         }
@@ -1230,15 +1212,15 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 errorCallback.onError(ErrorType.Syntax, currentLocation, "'await' outside async function");
             }
 
-            beginNode(node);
+            beginSourceSection(node, b);
             emitAwait(() -> node.value.accept(this));
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.BinOp node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             switch (node.op) {
                 case Add:
                     b.beginAdd();
@@ -1322,13 +1304,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     throw new UnsupportedOperationException("" + node.getClass());
             }
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.BoolOp node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             if (node.op == BoolOpTy.And) {
                 b.beginBoolAnd();
@@ -1344,7 +1326,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endBoolOr();
             }
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -1476,9 +1458,9 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(ExprTy.Call node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             emitCall(node.func, node.args, node.keywords);
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -1562,7 +1544,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(ExprTy.Compare node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             boolean multipleComparisons = node.comparators.length > 1;
 
@@ -1596,7 +1578,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endBoolAnd();
             }
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -1670,15 +1652,15 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(ExprTy.Constant node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             createConstant(node.value);
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.Dict node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             if (len(node.keys) == 0) {
                 b.emitMakeEmptyDict();
@@ -1695,26 +1677,26 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endMakeDict();
             }
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.DictComp node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
             emitMakeFunction(node, "<dictcomp>", COMPREHENSION_ARGS, null);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.FormattedValue node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             b.beginFormat();
 
             // @formatter:off
@@ -1746,43 +1728,41 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             }
 
             b.endFormat();
-            endNode();
+            endSourceSection(b);
 
             return null;
         }
 
         @Override
         public Void visit(ExprTy.GeneratorExp node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
             emitMakeFunction(node, "<generator>", COMPREHENSION_ARGS, null);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.IfExp node) {
-            beginNode(node);
+            beginSourceSection(node, b);
+
             b.beginConditional();
-
             visitCondition(node.test);
-
             node.body.accept(this);
-
             node.orElse.accept(this);
-
             b.endConditional();
-            endNode();
+
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.JoinedStr node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             if (node.values.length == 1) {
                 node.values[0].accept(this);
@@ -1792,21 +1772,21 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endBuildString();
             }
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.Lambda node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             emitMakeFunction(node, "<lambda>", node.args, null);
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.List node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             ConstantCollection constantCollection = Compiler.tryCollectConstantCollection(node.elements);
             if (constantCollection != null) {
@@ -1817,7 +1797,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endMakeList();
             }
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -1826,28 +1806,29 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(ExprTy.ListComp node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
             emitMakeFunction(node, "<listcomp>", COMPREHENSION_ARGS, null);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.Name node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             emitReadLocal(node.id, b);
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.NamedExpr node) {
-            beginNode(node);
+            beginSourceSection(node, b);
+            b.beginBlock();
 
             // save expr result to "tmp"
             BytecodeLocal tmp = b.createLocal();
@@ -1860,7 +1841,9 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             }));
 
             b.emitLoadLocal(tmp);
-            endNode();
+
+            b.endBlock();
+            endSourceSection(b);
             return null;
         }
 
@@ -2011,7 +1994,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(ExprTy.Set node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             if (len(node.elements) == 0) {
                 b.emitMakeEmptySet();
@@ -2021,20 +2004,20 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endMakeSet();
             }
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.SetComp node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             b.beginCallUnaryMethod();
             emitMakeFunction(node, "<setcomp>", COMPREHENSION_ARGS, null);
             node.generators[0].iter.accept(this);
             b.endCallUnaryMethod();
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -2048,7 +2031,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(ExprTy.Slice node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             b.beginMakeSlice();
 
@@ -2058,7 +2041,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
             b.endMakeSlice();
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -2069,20 +2052,20 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(ExprTy.Subscript node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             b.beginGetItem();
             node.value.accept(this);
             node.slice.accept(this);
             b.endGetItem();
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.Tuple node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             ConstantCollection constantCollection = Compiler.tryCollectConstantCollection(node.elements);
             if (constantCollection != null) {
@@ -2093,7 +2076,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endMakeTuple();
             }
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -2105,14 +2088,14 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                                 c.value.kind == ConstantValue.Kind.COMPLEX) {
                     ConstantValue cv = c.value.negate();
 
-                    beginNode(node);
+                    beginSourceSection(node, b);
                     visit(new ExprTy.Constant(cv, null, c.getSourceRange()));
-                    endNode();
+                    endSourceSection(b);
                     return null;
                 }
             }
 
-            beginNode(node);
+            beginSourceSection(node, b);
             switch (node.op) {
                 case UAdd:
                     b.beginPos();
@@ -2138,13 +2121,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     throw new UnsupportedOperationException("" + node.getClass());
             }
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.Yield node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             b.beginResumeYield();
             emitYield((statementCompiler) -> {
@@ -2156,19 +2139,19 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             }, this);
             b.endResumeYield();
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(ExprTy.YieldFrom node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             emitYieldFrom(() -> {
                 b.beginGetYieldFromIter();
                 node.value.accept(this);
                 b.endGetYieldFromIter();
             });
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -2209,7 +2192,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
              * returnValue (result)
              * @formatter:on
              */
-
             b.beginBlock();
 
             BytecodeLocal generator = b.createLocal();
@@ -2308,7 +2290,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(StmtTy.AnnAssign node) {
-            beginNode(node);
+            beginSourceSection(node, b);
+            b.beginBlock();
             if (node.value != null) {
                 // Emit the assignment if there's an RHS.
                 emitAssignment(new ExprTy[]{node.target}, node.value);
@@ -2361,7 +2344,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     checkAnnExpr(node.annotation);
                 }
             }
-            endNode();
+            b.endBlock();
+            endSourceSection(b);
             return null;
         }
 
@@ -2394,7 +2378,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         @Override
         public Void visit(StmtTy.Assert node) {
             if (ctx.optimizationLevel <= 0) {
-                beginNode(node);
+                beginSourceSection(node, b);
                 b.beginIfThen();
 
                 b.beginNot();
@@ -2410,7 +2394,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endAssertFailed();
 
                 b.endIfThen();
-                endNode();
+                endSourceSection(b);
             }
             return null;
         }
@@ -2427,36 +2411,36 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
             @Override
             public Void visit(ExprTy.Name node) {
-                beginNode(node);
+                beginSourceSection(node, b);
                 beginStoreLocal(node.id, b);
                 generateValue.run();
                 endStoreLocal(node.id, b);
-                endNode();
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.Attribute node) {
-                beginNode(node);
+                beginSourceSection(node, b);
                 checkForbiddenName(node.attr, NameOperation.BeginWrite);
                 b.beginSetAttribute();
                 generateValue.run();
                 node.value.accept(StatementCompiler.this);
                 b.emitLoadConstant(toTruffleStringUncached(mangle(node.attr)));
                 b.endSetAttribute();
-                endNode();
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.Subscript node) {
-                beginNode(node);
+                beginSourceSection(node, b);
                 b.beginSetItem();
                 generateValue.run();
                 node.value.accept(StatementCompiler.this);
                 node.slice.accept(StatementCompiler.this);
                 b.endSetItem();
-                endNode();
+                endSourceSection(b);
                 return null;
             }
 
@@ -2511,17 +2495,17 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
             @Override
             public Void visit(ExprTy.Tuple node) {
-                beginNode(node);
+                beginSourceSection(node, b);
                 visitIterableAssign(node.elements);
-                endNode();
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.List node) {
-                beginNode(node);
+                beginSourceSection(node, b);
                 visitIterableAssign(node.elements);
-                endNode();
+                endSourceSection(b);
                 return null;
             }
         }
@@ -2630,7 +2614,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
             @Override
             public Void visit(ExprTy.Name node) {
-                beginNode(node);
+                beginSourceSection(node, b);
 
                 beginStoreLocal(node.id, b);
                 beginAugAssign();
@@ -2639,13 +2623,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 endAugAssign();
                 endStoreLocal(node.id, b);
 
-                endNode();
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.Attribute node) {
-                beginNode(node);
+                beginSourceSection(node, b);
                 checkForbiddenName(node.attr, NameOperation.BeginWrite);
                 b.beginBlock();
                 // {
@@ -2673,13 +2657,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endSetAttribute();
                 // }
                 b.endBlock();
-                endNode();
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.Subscript node) {
-                beginNode(node);
+                beginSourceSection(node, b);
                 b.beginBlock();
                 // {
                 BytecodeLocal target = b.createLocal();
@@ -2710,16 +2694,18 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endSetItem();
                 // }
                 b.endBlock();
-                endNode();
+                endSourceSection(b);
                 return null;
             }
         }
 
         @Override
         public Void visit(StmtTy.Assign node) {
-            beginNode(node);
+            beginSourceSection(node, b);
+            b.beginBlock();
             emitAssignment(node.targets, node.value);
-            endNode();
+            b.endBlock();
+            endSourceSection(b);
             return null;
         }
 
@@ -2756,17 +2742,17 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             if (scopeType != CompilationScope.AsyncFunction && scopeType != CompilationScope.Comprehension) {
                 errorCallback.onError(ErrorType.Syntax, currentLocation, "'async with' outside async function");
             }
-            beginNode(node);
+            beginSourceSection(node, b);
             visitWithRecurse(node.items, 0, node.body, true);
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.AugAssign node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             node.target.accept(new AugStoreVisitor(node.op, node.value));
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -2870,7 +2856,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(StmtTy.ClassDef node) {
-            beginNode(node);
+            beginSourceSection(node, b);
+            b.beginBlock();
             BytecodeLocal buildClassFunction = b.createLocal();
 
             // compute __build_class__ (we need it in multiple places, so store it)
@@ -2909,7 +2896,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
             endStoreLocal(node.name, b);
 
-            endNode();
+            b.endBlock();
+            endSourceSection(b);
 
             return null;
         }
@@ -2918,51 +2906,55 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
             @Override
             public Void visit(ExprTy.Subscript node) {
-                beginNode(node);
+                beginSourceSection(node, b);
 
                 b.beginDeleteItem();
                 node.value.accept(StatementCompiler.this);
                 node.slice.accept(StatementCompiler.this);
                 b.endDeleteItem();
 
-                endNode();
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.Attribute node) {
-                beginNode(node);
+                beginSourceSection(node, b);
                 checkForbiddenName(node.attr, NameOperation.BeginWrite);
                 b.beginDeleteAttribute();
                 node.value.accept(StatementCompiler.this);
                 b.emitLoadConstant(toTruffleStringUncached(node.attr));
                 b.endDeleteAttribute();
 
-                endNode();
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.Name node) {
-                beginNode(node);
+                beginSourceSection(node, b);
                 emitNameOperation(node.id, NameOperation.Delete, b);
-                endNode();
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.Tuple node) {
-                beginNode(node);
+                beginSourceSection(node, b);
+                b.beginBlock();
                 visitSequence(node.elements);
-                endNode();
+                b.endBlock();
+                endSourceSection(b);
                 return null;
             }
 
             @Override
             public Void visit(ExprTy.List node) {
-                beginNode(node);
+                beginSourceSection(node, b);
+                b.beginBlock();
                 visitSequence(node.elements);
-                endNode();
+                b.endBlock();
+                endSourceSection(b);
                 return null;
             }
         }
@@ -2975,7 +2967,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(StmtTy.Expr node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             if (isInteractive) {
                 b.beginPrintExpr();
                 node.value.accept(this);
@@ -2983,7 +2975,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             } else {
                 node.value.accept(this);
             }
-            endNode();
+            endSourceSection(b);
 
             return null;
         }
@@ -3000,7 +2992,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             // <<elses>
             // breakLabel:
             // @formatter:on
-            beginNode(node);
+            beginSourceSection(node, b);
+            b.beginBlock();
 
             BytecodeLocal iter = b.createLocal();
 
@@ -3042,13 +3035,15 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             visitSequence(node.orElse);
             b.emitLabel(currentBreakLabel);
 
-            endNode();
+            b.endBlock();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.FunctionDef node) {
-            beginNode(node);
+            beginSourceSection(node, b);
+            b.beginBlock();
 
             beginStoreLocal(node.name, b);
 
@@ -3067,14 +3062,14 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
             endStoreLocal(node.name, b);
 
-            endNode();
+            b.endBlock();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.AsyncFunctionDef node) {
-            beginNode(node);
-
+            beginSourceSection(node, b);
             beginStoreLocal(node.name, b);
 
             int numDeco = len(node.decoratorList);
@@ -3091,8 +3086,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             }
 
             endStoreLocal(node.name, b);
-
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -3226,29 +3220,22 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(StmtTy.If node) {
-            beginNode(node);
+            beginSourceSection(node, b);
 
             if (node.orElse == null || node.orElse.length == 0) {
                 b.beginIfThen();
-
                 visitCondition(node.test);
-
                 visitStatements(node.body);
-
                 b.endIfThen();
             } else {
                 b.beginIfThenElse();
-
                 visitCondition(node.test);
-
                 visitStatements(node.body);
-
                 visitStatements(node.orElse);
-
                 b.endIfThenElse();
             }
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -3274,7 +3261,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(StmtTy.Import node) {
-            beginNode(node);
+            beginSourceSection(node, b);
+            b.beginBlock();
 
             for (AliasTy name : node.names) {
                 addConstant(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
@@ -3326,13 +3314,14 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 }
             }
 
-            endNode();
+            b.endBlock();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.ImportFrom node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             if (node.getSourceRange().startLine > ctx.futureLineNumber && "__future__".equals(node.module)) {
                 errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "from __future__ imports must occur at the beginning of the file");
             }
@@ -3382,13 +3371,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endBlock();
             }
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.Match node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             b.beginBlock();
             // Compute and store the subject in a local.
             BytecodeLocal subject = b.createLocal();
@@ -3399,7 +3388,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             visitMatchCaseRecursively(node.cases, 0, new PatternContext(subject));
 
             b.endBlock();
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -3452,7 +3441,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
              * @formatter:on
              */
             MatchCaseTy c = cases[index];
-            beginNode(c);
+            beginSourceSection(c, b);
 
             if (index != cases.length - 1) {
                 b.beginIfThenElse();
@@ -3483,7 +3472,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 }
             }
 
-            endNode();
+            endSourceSection(b);
         }
 
         private void emitPatternCondition(MatchCaseTy currentCase, PatternContext pc) {
@@ -3553,7 +3542,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
          * </ul>
          */
         private void visitPattern(PatternTy pattern, PatternContext pc) {
-            beginNode(pattern);
+            beginSourceSection(pattern, b);
             if (pattern instanceof PatternTy.MatchAs matchAs) {
                 doVisitPattern(matchAs, pc);
             } else if (pattern instanceof PatternTy.MatchClass matchClass) {
@@ -3573,7 +3562,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             } else {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-            endNode();
+            endSourceSection(b);
         }
 
         // In a subpattern, irrefutable patterns are OK.
@@ -3958,7 +3947,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(StmtTy.Raise node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             b.beginRaise();
 
             if (node.exc != null) {
@@ -3974,7 +3963,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             }
 
             b.endRaise();
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -3984,7 +3973,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 errorCallback.onError(ErrorType.Syntax, currentLocation, "'return' outside function");
             }
 
-            beginNode(node);
+            beginSourceSection(node, b);
             beginReturn(b);
             if (node.value != null) {
                 node.value.accept(this);
@@ -3992,13 +3981,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.emitLoadConstant(PNone.NONE);
             }
             endReturn(b);
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.Try node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             if (node.finalBody != null && node.finalBody.length != 0) {
                 /**
                  * In Python, an uncaught exception becomes the "current" exception inside a finally
@@ -4076,7 +4065,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 emitTryExceptElse(node);
             }
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -4171,7 +4160,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                             b.beginBlock(); // try
                                 SourceRange bareExceptRange = null;
                                 for (ExceptHandlerTy h : node.handlers) {
-                                    beginNode(h);
+                                    beginSourceSection(h, b);
                                     if (bareExceptRange != null) {
                                         errorCallback.onError(ErrorType.Syntax, currentLocation, "default 'except:' must be last");
                                     }
@@ -4230,7 +4219,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                                         b.endIfThen();
                                     }
 
-                                    endNode();
+                                    endSourceSection(b);
                                 }
                             b.endBlock(); // try
 
@@ -4308,7 +4297,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(StmtTy.While node) {
-            beginNode(node);
+            beginSourceSection(node, b);
+            b.beginBlock();
 
             BytecodeLabel oldBreakLabel = breakLabel;
             BytecodeLabel oldContinueLabel = continueLabel;
@@ -4333,7 +4323,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             visitStatements(node.orElse);
             b.emitLabel(currentBreakLabel);
 
-            endNode();
+            b.endBlock();
+            endSourceSection(b);
             return null;
         }
 
@@ -4365,7 +4356,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
              * is). Once we have entered all of the context managers, we emit the body.
              */
             WithItemTy item = items[index];
-            beginNode(item);
+            beginSourceSection(item, b);
+            b.beginBlock();
 
             BytecodeLocal contextManager = b.createLocal();
             b.beginStoreLocal(contextManager);
@@ -4453,14 +4445,15 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             b.endBlock(); // catch
 
             b.endFinallyTryCatch();
-            endNode();
+            b.endBlock();
+            endSourceSection(b);
         }
 
         @Override
         public Void visit(StmtTy.With node) {
-            beginNode(node);
+            beginSourceSection(node, b);
             visitWithRecurse(node.items, 0, node.body, false);
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
@@ -4471,23 +4464,23 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(StmtTy.Break aThis) {
-            beginNode(aThis);
+            beginSourceSection(aThis, b);
 
             assert breakLabel != null;
             b.emitBranch(breakLabel);
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.Continue aThis) {
-            beginNode(aThis);
+            beginSourceSection(aThis, b);
 
             assert continueLabel != null;
             b.emitBranch(continueLabel);
 
-            endNode();
+            endSourceSection(b);
             return null;
         }
 
