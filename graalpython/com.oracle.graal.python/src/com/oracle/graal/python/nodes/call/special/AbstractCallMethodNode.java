@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.call.special;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_D_ARGS;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -234,8 +235,10 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
             if (builtinNodeFactory == null) {
                 return null; // see for example MethodDescriptorRoot and subclasses
             }
-            assert builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class).length > 0 : "PBuiltinFunction " + builtinFunc + " is expected to have a Builtin annotated node.";
-            if (builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class)[0].needsFrame() && frame == null) {
+            Builtin[] builtinAnnotations = builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class);
+            assert builtinAnnotations.length > 0 || builtinNodeFactory.getNodeClass().getAnnotationsByType(Slot.class).length > 0 : "PBuiltinFunction " + builtinFunc +
+                            " is expected to have a Builtin or Slot annotated node.";
+            if (builtinAnnotations.length > 0 && builtinAnnotations[0].needsFrame() && frame == null) {
                 return null;
             }
             if (PythonVarargsBuiltinNode.class.isAssignableFrom(builtinNodeFactory.getNodeClass())) {
