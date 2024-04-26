@@ -36,14 +36,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import sys
 
-from . import CPyExtTestCase, CPyExtFunction
+from . import CPyExtTestCase, CPyExtFunction, CPyExtType
 
 __dir__ = __file__.rpartition("/")[0]
 
 
 class TestPystate(CPyExtTestCase):
-
     test_PyThreadState_GetDict = CPyExtFunction(
         lambda args: type({}),
         lambda: (
@@ -58,3 +58,15 @@ class TestPystate(CPyExtTestCase):
         arguments=["PyObject* ignored"],
         callfunction="wrap_PyThreadState_GetDict",
     )
+
+    def test_PyThreadState_GetFrame(self):
+        Tester = CPyExtType(
+            "PyThreadState_GetFrameTester",
+            code="""
+            static PyObject* get_frame(PyObject* unused) {
+                return (PyObject*)PyThreadState_GetFrame(PyThreadState_GET());
+            }
+            """,
+            tp_methods='{"get_frame", (PyCFunction)get_frame, METH_NOARGS | METH_STATIC, NULL}',
+        )
+        assert Tester.get_frame() is sys._getframe(0)

@@ -865,7 +865,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PySys_WriteStdout", ret = Void, args = {ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "PyThreadState_Delete", ret = Void, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "PyThreadState_EnterTracing", ret = Void, args = {PyThreadState}, call = NotImplemented)
-    @CApiBuiltin(name = "PyThreadState_GetFrame", ret = PyFrameObjectTransfer, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "PyThreadState_GetID", ret = UINT64_T, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "PyThreadState_GetInterpreter", ret = PyInterpreterState, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "PyThreadState_LeaveTracing", ret = Void, args = {PyThreadState}, call = NotImplemented)
