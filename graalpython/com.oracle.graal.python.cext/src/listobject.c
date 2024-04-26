@@ -48,7 +48,7 @@ _list_clear(PyListObject *a)
 
     /* Because XDECREF can recursively invoke operations on
        this list, we make it empty first. */
-    i = GraalPyTruffleList_ClearManagedOrGetItems(a, &item);
+    i = GraalPyTruffleList_ClearManagedOrGetItems((PyObject *)a, &item);
     if (i > 0) {
         assert(item != NULL);
         while (--i >= 0) {
@@ -70,7 +70,8 @@ list_traverse(PyListObject *o, visitproc visit, void *arg)
     int64_t size, i;
     PyObject **ob_item;
 
-    size = GraalPyTruffleList_TraverseManagedOrGetItems(o, &ob_item, visit, arg);
+    size = GraalPyTruffleList_TraverseManagedOrGetItems((PyObject *)o, &ob_item,
+                                                        visit, arg);
     for (i = size; --i >= 0; )
         Py_VISIT(ob_item[i]);
     return 0;
