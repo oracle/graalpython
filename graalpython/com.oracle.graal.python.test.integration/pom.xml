@@ -100,6 +100,17 @@ Additionally, one can change the polyglot artifacts version with
 
     <profiles>
         <profile>
+            <id>Version from suite</id>
+            <activation>
+                <property>
+                    <name>env.GRAALPY_VERSION</name>
+                </property>
+            </activation>
+            <properties>
+                <com.oracle.graal.python.test.polyglot.version>${env.GRAALPY_VERSION}</com.oracle.graal.python.test.polyglot.version>
+            </properties>
+        </profile>
+        <profile>
             <id>Custom central repo</id>
             <activation>
                 <property>

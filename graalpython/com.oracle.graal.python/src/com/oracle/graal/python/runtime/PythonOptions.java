@@ -112,8 +112,7 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Set the location of sys.base_prefix. Overrides any environment variables or Java options.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> SysBasePrefix = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
-    @Option(category = OptionCategory.USER, help = "Set the location of lib/graalpy" + PythonLanguage.GRAALVM_MAJOR + "." + //
-                    PythonLanguage.GRAALVM_MINOR + ". Overrides any environment variables or Java options.", //
+    @Option(category = OptionCategory.USER, help = "Set the location of what is usually lib/graalpy<graalvm_major>.<graalvm_minor>. Overrides any environment variables or Java options.", //
                     usageSyntax = "<path>", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> CoreHome = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
