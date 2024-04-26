@@ -97,9 +97,8 @@ def get_boolean_env(name, default=False):
 
 SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
-SUITE_TRUFFLE = mx.suite("truffle")
 
-GRAAL_VERSION = SUITE_TRUFFLE.suiteDict['version']
+GRAAL_VERSION = SUITE.suiteDict['version']
 GRAAL_VERSION_MAJ_MIN = ".".join(GRAAL_VERSION.split(".")[:2])
 PYTHON_VERSION = SUITE.suiteDict[f'{SUITE.name}:pythonVersion']
 PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
