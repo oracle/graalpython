@@ -279,6 +279,8 @@ class TestGCRefCycles:
         obj3 = TestCycle0(1)
         obj4 = TestCycle0(2)
         obj5 = TestCycle0(3)
+        obj6 = TestCycle0(4)
+        obj7 = TestCycle0(5)
 
         # establish cycle: obj2 -> obj3 -> l -> obj2
         obj2.set_obj(obj3)
@@ -290,15 +292,29 @@ class TestGCRefCycles:
         l1 = [obj4]
         obj5.set_obj(l1)
 
+        # establish cycle: obj6 -> obj7 -> d0 -> obj6
+        obj6.set_obj(obj7)
+        d0 = {0: obj6}
+        obj7.set_obj(d0)
+
+        # everything should still be alive
         assert not TestCycle0.is_freed(0)
         assert not TestCycle0.is_freed(1)
         assert not TestCycle0.is_freed(2)
         assert not TestCycle0.is_freed(3)
+        assert not TestCycle0.is_freed(4)
+        assert not TestCycle0.is_freed(5)
+
         del obj2, l, obj3
         del obj4, obj5
+        del obj6, d0, obj7
+
         self._trigger_gc()
+
         assert TestCycle0.is_freed(0)
         assert TestCycle0.is_freed(1)
+        assert TestCycle0.is_freed(4)
+        assert TestCycle0.is_freed(5)
         # because l1 is still alive
         assert not TestCycle0.is_freed(2)
         assert not TestCycle0.is_freed(3)
