@@ -72,10 +72,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.VisitNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -111,7 +108,6 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
@@ -614,8 +610,6 @@ public final class PythonCextDictBuiltins {
             HashingStorage dictStorage = self.getDictStorage();
 
             Object visitExecutable = ensureExecutableNode.execute(inliningTarget, visitFun, PExternalFunctionWrapper.VISITPROC);
-            assert interopLib.isExecutable(visitExecutable);
-
             DictTraverseAccumulator accumulator = new DictTraverseAccumulator(visitExecutable, arg, getThreadStateNode.execute(inliningTarget), 0);
             forEachNode.execute(null, inliningTarget, dictStorage, traverseCallback, accumulator);
 
@@ -634,7 +628,6 @@ public final class PythonCextDictBuiltins {
             this.visitFunction = visitFunction;
             this.visitArg = visitArg;
             this.result = result;
-            // TOOD(fa): create a C API timing object per unique native function pointer
             this.threadState = threadState;
         }
 
@@ -654,20 +647,18 @@ public final class PythonCextDictBuiltins {
         static DictTraverseAccumulator doGeneric(VirtualFrame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, DictTraverseAccumulator accumulator,
                         @Cached HashingStorageIteratorKey nextKey,
                         @Cached HashingStorageIteratorValue nextValue,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode,
-                        @Cached ExternalFunctionInvokeNode externalFunctionInvokeNode,
-                        @Cached(inline = false) CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode) {
+                        @Cached VisitNode visitNode) {
             // do nothing if there was already an error when visiting earlier keys/values
             if (accumulator.result == 0) {
                 Object key = nextKey.execute(inliningTarget, storage, it);
                 Object value = nextValue.execute(inliningTarget, storage, it);
                 assert accumulator.threadState == PythonContext.get(inliningTarget).getThreadState(PythonLanguage.get(inliningTarget));
                 // visit key
-                int iresult = visit(frame, inliningTarget, accumulator, toNativeNode, externalFunctionInvokeNode, checkPrimitiveFunctionResultNode, key);
+                int iresult = visitNode.execute(frame, inliningTarget, accumulator.threadState, key, accumulator.visitFunction, accumulator.visitArg);
 
                 // visit item (only if previous returned '0')
                 if (iresult == 0) {
-                    iresult = visit(frame, inliningTarget, accumulator, toNativeNode, externalFunctionInvokeNode, checkPrimitiveFunctionResultNode, value);
+                    iresult = visitNode.execute(frame, inliningTarget, accumulator.threadState, value, accumulator.visitFunction, accumulator.visitArg);
                 }
 
                 // return error result
@@ -676,16 +667,6 @@ public final class PythonCextDictBuiltins {
                 }
             }
             return accumulator;
-        }
-
-        private static int visit(VirtualFrame frame, Node inliningTarget, DictTraverseAccumulator accumulator, PythonToNativeNode toNativeNode, ExternalFunctionInvokeNode externalFunctionInvokeNode,
-                        CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode, Object item) {
-            if (item instanceof PythonAbstractNativeObject) {
-                Object result = externalFunctionInvokeNode.call(frame, inliningTarget, accumulator.threadState, CApiGCSupport.VISIT_TIMING, StringLiterals.T_VISIT, accumulator.visitFunction,
-                                toNativeNode.execute(item), accumulator.visitArg);
-                return (int) checkPrimitiveFunctionResultNode.executeLong(accumulator.threadState, StringLiterals.T_VISIT, result);
-            }
-            return 0;
         }
     }
 }

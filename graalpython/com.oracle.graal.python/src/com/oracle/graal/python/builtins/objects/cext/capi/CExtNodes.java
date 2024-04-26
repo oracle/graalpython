@@ -94,7 +94,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PyErr
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PyErrOccurredNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.UnicodeFromFormatNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
@@ -162,6 +164,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
@@ -2204,6 +2207,50 @@ public abstract class CExtNodes {
                 }
             }
             return null;
+        }
+    }
+
+    /**
+     * Similar to CPython's macro {@code Py_VISIT}, this node will call the provided visit function
+     * on the item if that item is a native object. This is because we assume that the traverse and
+     * visit functions are only used in the Python GC to determine reference cycles due to reference
+     * counting. If a reference cycle is <it>interrupted</it> by a managed reference, we are fine
+     * because the Java GC will correctly handle that.
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class VisitNode extends Node {
+
+        /**
+         * Calls the visit function on the given item.
+         *
+         * @param frame The virtual frame (may be {code null}).
+         * @param inliningTarget The inlining target.
+         * @param threadState The Python thread state (must not be {@code null}).
+         * @param item The item to visit (may be {@code null}). Only a native object will be
+         *            visited.
+         * @param visitFunction The visit function to call. This is expected to be an
+         *            {@link InteropLibrary#isExecutable(Object) executable} interop object (must
+         *            not be {@code null}).
+         * @param visitArg The argument for the visit function as provided by the root caller.
+         * @return {@code 0} on success, {@code !=0} on error
+         */
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, Object item, Object visitFunction, Object visitArg);
+
+        @Specialization
+        static int doGeneric(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, Object item, Object visitFunction, Object visitArg,
+                        @Cached InlinedConditionProfile isNativeObjectProfile,
+                        @Cached ExternalFunctionInvokeNode externalFunctionInvokeNode,
+                        @Cached(inline = false) CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode,
+                        @Cached(inline = false) PythonToNativeNode toNativeNode) {
+            assert InteropLibrary.getUncached().isExecutable(visitFunction);
+            if (isNativeObjectProfile.profile(inliningTarget, item instanceof PythonAbstractNativeObject)) {
+                Object result = externalFunctionInvokeNode.call(frame, inliningTarget, threadState, CApiGCSupport.VISIT_TIMING, StringLiterals.T_VISIT, visitFunction,
+                                toNativeNode.execute(item), visitArg);
+                return (int) checkPrimitiveFunctionResultNode.executeLong(threadState, StringLiterals.T_VISIT, result);
+            }
+            return 0;
         }
     }
 }

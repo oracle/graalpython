@@ -65,12 +65,9 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.VisitNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.XDecRefPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -85,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
@@ -102,7 +98,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextListBuiltins {
@@ -349,9 +344,7 @@ public final class PythonCextListBuiltins {
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached EnsureExecutableNode ensureExecutableNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Cached PythonToNativeNode toNativeNode,
-                        @Cached ExternalFunctionInvokeNode externalFunctionInvokeNode,
-                        @Cached(inline = false) CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode) {
+                        @Cached VisitNode visitNode) {
             SequenceStorage sequenceStorage = self.getSequenceStorage();
             if (sequenceStorage instanceof NativeObjectSequenceStorage nativeStorage) {
                 writePointerNode.write(outItems, nativeStorage.getPtr());
@@ -360,18 +353,12 @@ public final class PythonCextListBuiltins {
                 BasicSequenceStorage basicStorage = (BasicSequenceStorage) sequenceStorage;
 
                 Object visitExecutable = ensureExecutableNode.execute(inliningTarget, visitFun, PExternalFunctionWrapper.VISITPROC);
-                assert InteropLibrary.getUncached().isExecutable(visitExecutable);
-
                 PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
                 for (int i = basicStorage.length(); --i >= 0;) {
                     Object item = getItemScalarNode.execute(inliningTarget, basicStorage, i);
-                    if (item instanceof PythonAbstractNativeObject) {
-                        Object result = externalFunctionInvokeNode.call(null, inliningTarget, threadState, CApiGCSupport.VISIT_TIMING, StringLiterals.T_VISIT, visitExecutable,
-                                        toNativeNode.execute(item), arg);
-                        int iresult = (int) checkPrimitiveFunctionResultNode.executeLong(threadState, StringLiterals.T_VISIT, result);
-                        if (iresult != 0) {
-                            return -1;
-                        }
+                    int iresult = visitNode.execute(null, inliningTarget, threadState, item, visitExecutable, arg);
+                    if (iresult != 0) {
+                        return -1;
                     }
                 }
             }
