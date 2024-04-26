@@ -1,0 +1,29 @@
+diff --git a/numba/core/decorators.py b/numba/core/decorators.py
+index 21f1125..00a28fe 100644
+--- a/numba/core/decorators.py
++++ b/numba/core/decorators.py
+@@ -217,6 +217,10 @@ def _jit(sigs, locals, target, cache, targetoptions, **dispatcher_args):
+                 f"{type(func)})."
+             )
+ 
++        if sys.implementation.name == 'graalpy':
++            if target == 'npyufunc':
++                raise NotImplementedError("Cannot create npyufunc under graalpy")
++            return func
+         if config.ENABLE_CUDASIM and target == 'cuda':
+             from numba import cuda
+             return cuda.jit(func)
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000..fecb79e
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,8 @@
++[build-system]
++requires = ["setuptools >= 40.6.0", "wheel", "llvmlite<0.43,>=0.42.0dev0", "numpy<1.27,>=1.22", "versioneer"]
++build-backend = "setuptools.build_meta"
++
++[tool.versioneer]
++VCS = 'git'
++versionfile_source = 'numba/_version.py'
++versionfile_build ='numba/_version.py'
