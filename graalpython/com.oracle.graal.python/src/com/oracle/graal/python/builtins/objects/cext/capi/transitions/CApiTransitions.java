@@ -89,9 +89,10 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeN
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -900,6 +901,7 @@ public abstract class CApiTransitions {
                         @Exclusive @Cached InlinedConditionProfile isGcProfile,
                         @Shared @Cached InlinedConditionProfile isFloatObjectProfile,
                         @Cached GetClassNode getClassNode,
+                        @Cached GetTypeFlagsNode getTypeFlagsNode,
                         @Shared @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
 
             assert !(wrapper instanceof TruffleObjectNativeWrapper);
@@ -908,19 +910,16 @@ public abstract class CApiTransitions {
             Object delegate = wrapper.getDelegate();
             Object type = getClassNode.execute(inliningTarget, delegate);
 
-            boolean gc = false;
             CStructs ctype;
             if (isVarObjectProfile.profile(inliningTarget, delegate instanceof PTuple)) {
                 ctype = CStructs.GraalPyVarObject;
             } else if (isFloatObjectProfile.profile(inliningTarget, delegate instanceof Double || delegate instanceof PFloat)) {
                 ctype = CStructs.GraalPyFloatObject;
-            } else if (isGcProfile.profile(inliningTarget, delegate instanceof PList)) {
-                ctype = CStructs.GraalPyObject;
-                gc = true;
             } else {
                 ctype = CStructs.GraalPyObject;
             }
 
+            boolean gc = isGcProfile.profile(inliningTarget, (getTypeFlagsNode.execute(type) & TypeFlags.HAVE_GC) != 0);
             long taggedPointer = allocateNativeObjectStubNode.execute(inliningTarget, wrapper, type, ctype, immortal, gc);
 
             // allocate a native stub object (C type: GraalPy*Object)
