@@ -536,16 +536,28 @@ public final class CApiContext extends CExtContext {
     }
 
     /**
-     * Returns or allocates (on demand) the {@code GCState}.
+     * Allocates the {@code GCState} which needs to happen very early in the C API initialization
+     * phase. <it>Very early</it> means it needs to happen before the first object (that takes part
+     * in the GC) is sent to native. This could, e.g., be the thread-state dict that is allocated
+     * when creating the {@link PThreadState native thread state}.
      */
-    public Object getOrCreateGCState() {
+    public Object createGCState() {
         CompilerAsserts.neverPartOfCompilation();
-        if (gcState == null) {
-            Object ptr = CStructAccess.AllocateNode.allocUncached(CStructs.GCState);
-            CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__enabled, PInt.intValue(getContext().getGcState().isEnabled()));
-            CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__debug, getContext().getGcState().getDebug());
-            gcState = ptr;
-        }
+        assert gcState == null;
+        Object ptr = CStructAccess.AllocateNode.allocUncached(CStructs.GCState);
+        CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__enabled, PInt.intValue(getContext().getGcState().isEnabled()));
+        CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__debug, getContext().getGcState().getDebug());
+        gcState = ptr;
+        return gcState;
+    }
+
+    /**
+     * Fast-path method to retrieve the {@code GCState} pointer. This must only be called after
+     * {@link #createGCState()} was called the first time which should happen very early during C
+     * API context initialization.
+     */
+    public Object getGCState() {
+        assert gcState != null;
         return gcState;
     }
 
@@ -846,13 +858,19 @@ public final class CApiContext extends CExtContext {
                 CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative);
                 context.setCApiContext(cApiContext);
                 try (BuiltinArrayWrapper builtinArrayWrapper = new BuiltinArrayWrapper()) {
+                    /*
+                     * The GC state needs to be created before the first managed object is sent to
+                     * native. This is because the native object stub could take part in GC and will
+                     * then already require the GC state.
+                     */
+                    Object gcState = cApiContext.createGCState();
                     if (useNative) {
-                        Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER):VOID", "exec").build()).call();
+                        Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
                         initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                        U.execute(initFunction, builtinArrayWrapper);
+                        U.execute(initFunction, builtinArrayWrapper, gcState);
                     } else {
                         assert U.isExecutable(initFunction);
-                        U.execute(initFunction, NativePointer.createNull(), builtinArrayWrapper);
+                        U.execute(initFunction, NativePointer.createNull(), builtinArrayWrapper, gcState);
                     }
                 }
 

@@ -106,8 +106,10 @@ public abstract class CApiGCSupport {
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode) {
 
             // PyGC_Head *generation0 = tstate->gc->generation0;
-            Object gcState = PythonContext.get(inliningTarget).getCApiContext().getOrCreateGCState();
+            Object gcState = PythonContext.get(inliningTarget).getCApiContext().getGCState();
+            assert gcState != null;
             long gen0 = coerceToLongNode.execute(inliningTarget, readPointerNode.read(gcState, CFields.GCState__generation0));
+            assert gen0 != 0;
             assert !HandlePointerConverter.pointsToPyHandleSpace(gen0);
 
             // PyGC_Head *last = (PyGC_Head*)(generation0->_gc_prev);

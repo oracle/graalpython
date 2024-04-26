@@ -119,7 +119,7 @@ public final class PThreadState extends PythonStructNativeWrapper {
             Object exceptionType = GetClassNode.executeUncached(GetUnreifiedExceptionNode.executeUncached(threadState.getCurrentException()));
             CStructAccess.WritePointerNode.getUncached().write(ptr, CFields.PyThreadState__curexc_type, PythonToNativeNode.getUncached().execute(exceptionType));
         }
-        writePtrNode.write(ptr, CFields.PyThreadState__gc, cApiContext.getOrCreateGCState());
+        writePtrNode.write(ptr, CFields.PyThreadState__gc, cApiContext.getGCState());
         return ptr;
     }
 }

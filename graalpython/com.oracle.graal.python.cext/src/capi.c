@@ -290,8 +290,6 @@ static void initialize_globals() {
 #ifndef GRAALVM_PYTHON_LLVM_MANAGED
     // store the thread state into a thread local variable
     tstate_current = GraalPyTruffleThreadState_Get(&tstate_current);
-    // this needs PyThreadState; this is the earliest we can do it
-    _PyGC_InitState(tstate_current->gc);
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
     _Py_NoneStructReference = GraalPyTruffle_None();
     _Py_NotImplementedStructReference = GraalPyTruffle_NotImplemented();
@@ -876,12 +874,16 @@ void _PyFloat_InitState(PyInterpreterState* state);
 Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
 Py_LOCAL_SYMBOL int32_t graalpy_finalizing;
 
-PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures) {
+PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures, GCState *gc) {
     clock_t t = clock();
 
     if (env) {
         TRUFFLE_CONTEXT = (*env)->getTruffleContext(env);
     }
+
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+    _PyGC_InitState(gc);
+#endif
 
     initialize_builtins(builtin_closures);
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
