@@ -43,10 +43,8 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 import static com.oracle.graal.python.builtins.objects.type.slots.BuiltinSlotWrapperSignature.J_DOLLAR_SELF;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DEL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -256,7 +254,7 @@ public class TpSlotSetAttr {
         static void callNative(VirtualFrame frame, TpSlots slots, TpSlotNative slot, Object self, Object name, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached InlinedConditionProfile isGetAttrProfile,
+                        @Cached InlinedConditionProfile isSetAttrProfile,
                         @Cached AsCharPointerNode asCharPointerNode,
                         @Cached FreeNode freeNode,
                         @Cached PythonToNativeNode nameToNativeNode,
@@ -264,7 +262,7 @@ public class TpSlotSetAttr {
                         @Cached PythonToNativeNode valueToNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached CheckInquiryResultNode checkResultNode) {
-            boolean isSetAttr = isGetAttrProfile.profile(inliningTarget, slots.tp_setattr() == slot);
+            boolean isSetAttr = isSetAttrProfile.profile(inliningTarget, slots.tp_setattr() == slot);
             Object nameArg;
             if (isSetAttr) {
                 nameArg = asCharPointerNode.execute(name);
@@ -313,10 +311,10 @@ public class TpSlotSetAttr {
             TruffleString funName;
             if (callDel) {
                 callable = slot.getDelattr();
-                funName = T___DEL__;
+                funName = T___DELATTR__;
             } else {
                 callable = slot.getSetattr();
-                funName = T___SET__;
+                funName = T___SETATTR__;
             }
             if (callable == null) {
                 throw raiseAttributeError(inliningTarget, raiseNode, funName);

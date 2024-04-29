@@ -390,7 +390,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]), toJavaNode.execute(arguments[2]));
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "ObjobjargWrapper", getDelegate());
+                    throw checkThrowableBeforeNative(t, "SetattrWrapper", getDelegate());
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(inliningTarget, e);
