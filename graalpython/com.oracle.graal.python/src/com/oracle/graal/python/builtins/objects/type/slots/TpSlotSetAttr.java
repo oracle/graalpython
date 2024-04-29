@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotSimpleBuiltinBase;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
@@ -216,7 +217,8 @@ public class TpSlotSetAttr {
     }
 
     /**
-     * Variant of {@link CallSlotSetAttrNode} that accepts generic object as the name.
+     * Variant of {@link CallSlotSetAttrNode} that accepts generic object as the name. The caller
+     * should ensure that the "name" is a Unicode object (subclasses are permitted).
      */
     @GenerateInline
     @GenerateCached(false)
@@ -248,6 +250,7 @@ public class TpSlotSetAttr {
     abstract static class CallNativeSlotSetAttrNode extends Node {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "tp_setattr");
 
+        // The caller should ensure that the "name" is a Unicode object (subclasses are permitted)
         abstract void execute(VirtualFrame frame, TpSlots slots, TpSlotNative tp_set_attro_attr, Object self, Object name, Object value);
 
         @Specialization
@@ -262,6 +265,7 @@ public class TpSlotSetAttr {
                         @Cached PythonToNativeNode valueToNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached CheckInquiryResultNode checkResultNode) {
+            assert PyUnicodeCheckNode.executeUncached(name);
             boolean isSetAttr = isSetAttrProfile.profile(inliningTarget, slots.tp_setattr() == slot);
             Object nameArg;
             if (isSetAttr) {
@@ -289,6 +293,15 @@ public class TpSlotSetAttr {
     @ImportStatic(PGuards.class)
     @SuppressWarnings("rawtypes")
     public abstract static class CallManagedSlotSetAttrNode extends Node {
+        /**
+         * We need this entry-point for {@code setattr} builtin that permits any key that's Unicode
+         * subclass and upcalls from native code: there the user may, in theory, call the slot
+         * directly with non-string {@code name}. We let the builtin/python method handle such
+         * situation, because even builtins may differ in the way they handle non-string keys, and
+         * Python methods may do all sorts of thins like looking for some tagged string or even
+         * accepting non-string keys ({@code slot_tp_setattro} just forwards to the Python method
+         * without checking the name).
+         */
         public abstract void execute(VirtualFrame frame, Node inliningTarget, TpSlotManaged slot, Object self, Object name, Object value);
 
         public abstract void execute(VirtualFrame frame, Node inliningTarget, TpSlotManaged slot, Object self, TruffleString name, Object value);
@@ -297,8 +310,8 @@ public class TpSlotSetAttr {
         static void callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotSetAttrBuiltin slot, Object self, TruffleString name, Object value,
                         @SuppressWarnings("unused") @Cached("slot") TpSlotSetAttrBuiltin cachedSlot,
                         @Cached("cachedSlot.createSlotNode()") SetAttrBuiltinNode slotNode) {
-            // Assumption: most of the code is going to pass TruffleString, we have a slow-path
-            // fallback for other cases at the end
+            // Assumption: most of the code is going to pass TruffleString even for the "Object
+            // name" execute, we have a slow-path fallback for other cases at the end
             slotNode.executeSetAttr(frame, self, name, value);
         }
 

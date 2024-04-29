@@ -159,11 +159,11 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -672,7 +672,7 @@ public class PUnpickler extends PythonBuiltinObject {
         @Child private PData.PDataPopListNode pDataPopListNode;
         @Child private HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode;
         @Child private ListBuiltins.ListExtendNode listExtendNode;
-        @Child private SetAttributeNode.Dynamic setAttributeNode;
+        @Child private PyObjectSetAttrO setAttributeNode;
         @Child private IntNodes.PyLongFromByteArray pyLongFromByteArray;
         @Child private PyObjectSetItem setItemNode;
         @Child HashingStorageCopy hashCopy;
@@ -707,9 +707,9 @@ public class PUnpickler extends PythonBuiltinObject {
         protected void setAttribute(VirtualFrame frame, Object object, Object key, Object value) {
             if (setAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                setAttributeNode = insert(SetAttributeNode.Dynamic.create());
+                setAttributeNode = insert(PyObjectSetAttrO.create());
             }
-            setAttributeNode.execute(frame, object, key, value);
+            setAttributeNode.executeCached(frame, object, key, value);
         }
 
         protected void extendList(VirtualFrame frame, PList list, Object slice) {
@@ -1446,6 +1446,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 HashingStorageIteratorKey getKeyNode = ensureHashingStorageIteratorKey();
                 HashingStorageIteratorValue getValueNode = ensureHashingStorageIteratorValue();
                 while (nextNode.executeCached(storage, it)) {
+                    // Note: in CPython they write into the object dict using PyObject_SetItem
                     setAttribute(frame, inst, getKeyNode.executeCached(storage, it), getValueNode.executeCached(storage, it));
                 }
             }

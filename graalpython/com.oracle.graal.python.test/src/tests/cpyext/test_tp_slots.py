@@ -166,6 +166,37 @@ def test_attrs():
     assert x.foo is None
 
 
+def test_setattr_str_subclass():
+    TestAttrSetWitStrSubclass = CPyExtType("TestAttrSetWitStrSubclass",
+                             '''
+                             int testattro_set(PyObject* self, PyObject* key, PyObject* value) {
+                                 Py_XDECREF(((TestAttrSetWitStrSubclassObject*)self)->payload);
+                                 if (key != NULL) {
+                                     Py_INCREF(key);
+                                 }
+                                 ((TestAttrSetWitStrSubclassObject*)self)->payload = key;
+                                 return 0;
+                             }
+
+                             PyObject* my_repr(PyObject *self) {
+                                  PyObject* r = ((TestAttrSetWitStrSubclassObject*)self)->payload;
+                                  if (r == NULL) Py_RETURN_NONE;
+                                  Py_INCREF(r);
+                                  return r;
+                             }
+                             ''',
+                             cmembers='PyObject* payload;',
+                             tp_repr="my_repr",
+                             tp_setattro="(setattrofunc) testattro_set")
+    class MyStr(str):
+        pass
+
+    x = TestAttrSetWitStrSubclass()
+    setattr(x, MyStr('hello'), 42)
+    assert type(repr(x)) == MyStr
+    assert repr(x) == 'hello'
+
+
 def test_concat_vs_add():
     # Inheritance of the Py_sq_concat slot:
     SqAdd = CPyExtHeapType("SqAdd",
@@ -251,11 +282,11 @@ def test_type_not_ready():
     module = compile_module_from_string("""
         #define PY_SSIZE_T_CLEAN
         #include <Python.h>
-        
+
         static PyObject* my_getattro(PyObject* self, PyObject* key) {
             return Py_NewRef(key);
         }
-        
+
         static PyTypeObject NotReadyType = {
             PyVarObject_HEAD_INIT(NULL, 0)
             .tp_name = "NotReadyType",
@@ -263,20 +294,20 @@ def test_type_not_ready():
             .tp_dealloc = (destructor)PyObject_Del,
             .tp_getattro = my_getattro
         };
-        
+
         static PyObject* create_not_ready(PyObject* module, PyObject* unused) {
             return PyObject_New(PyObject, &NotReadyType);
         }
-        
+
         static PyMethodDef module_methods[] = {
             {"create_not_ready", _PyCFunction_CAST(create_not_ready), METH_NOARGS, ""},
             {NULL}
         };
-        
+
         static PyModuleDef NotReadyTypeModule = {
             PyModuleDef_HEAD_INIT, "NotReadyType", "", -1, module_methods
         };
-    
+
         PyMODINIT_FUNC
         PyInit_NotReadyType(void)
         {

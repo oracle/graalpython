@@ -85,9 +85,9 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -146,7 +146,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttrType,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
-                        @Cached SetAttributeNode.DynamicStringKey setAttrString,
+                        @Cached PyObjectSetAttr setAttrString,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached TruffleString.IndexOfStringNode indexOfStringNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
@@ -245,10 +245,10 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
                                 addAllToOtherNode,
                                 factory);
                 StgDictObject sw_dict = pyTypeStgDictNode.execute(inliningTarget, swapped);
-                setAttrString.execute(frame, result, T_CTYPE_BE, swapped);
-                setAttrString.execute(frame, result, T_CTYPE_LE, result);
-                setAttrString.execute(frame, swapped, T_CTYPE_LE, result);
-                setAttrString.execute(frame, swapped, T_CTYPE_BE, swapped);
+                setAttrString.execute(frame, inliningTarget, result, T_CTYPE_BE, swapped);
+                setAttrString.execute(frame, inliningTarget, result, T_CTYPE_LE, result);
+                setAttrString.execute(frame, inliningTarget, swapped, T_CTYPE_LE, result);
+                setAttrString.execute(frame, inliningTarget, swapped, T_CTYPE_BE, swapped);
                 /* We are creating the type for the OTHER endian */
                 sw_dict.format = switchEncodingNode.execute(fromCharArrayNode.execute(new char[]{'>', (char) codePointAtIndexNode.execute(stgdict.format, 1, TS_ENCODING)}), TS_ENCODING);
             }

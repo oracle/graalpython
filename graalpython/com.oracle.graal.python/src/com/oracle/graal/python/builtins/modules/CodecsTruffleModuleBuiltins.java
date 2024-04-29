@@ -84,12 +84,12 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -110,7 +110,6 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -326,7 +325,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         Object init(VirtualFrame frame, PythonObject self, Object[] args, PKeyword[] kw,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
-                        @Cached("createSetAttr()") SetAttributeNode setAttrNode,
+                        @Cached PyObjectSetAttr setAttrNode,
                         @Cached GetPythonObjectClassNode getClass,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached CallNode callNode) {
@@ -339,13 +338,8 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
                 PythonUtils.arraycopy(args, 1, callArgs, 1, args.length - 1);
             }
             callNode.execute(frame, superInit, callArgs, kw);
-            setAttrNode.execute(frame, self, args[0]);
+            setAttrNode.execute(frame, inliningTarget, self, T_ATTR_ENCODING, args[0]);
             return PNone.NONE;
-        }
-
-        @NeverDefault
-        protected SetAttributeNode createSetAttr() {
-            return SetAttributeNode.create(T_ATTR_ENCODING);
         }
     }
 

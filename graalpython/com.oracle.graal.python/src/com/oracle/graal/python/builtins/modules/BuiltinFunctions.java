@@ -179,6 +179,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
@@ -198,7 +199,6 @@ import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.bytecode.GetAIterNode;
@@ -2079,9 +2079,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetAttrNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object setAttr(VirtualFrame frame, Object object, Object key, Object value,
-                        @Cached SetAttributeNode.Dynamic setAttrNode) {
-            setAttrNode.execute(frame, object, key, value);
+        static Object setAttr(VirtualFrame frame, Object object, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectSetAttrO setAttrNode) {
+            setAttrNode.execute(frame, inliningTarget, object, key, value);
             return PNone.NONE;
         }
     }

@@ -44,17 +44,25 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRI
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallSlotSetAttrONode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -70,10 +78,19 @@ public abstract class PyObjectSetAttrO extends PNodeWithContext {
         PyObjectSetAttrONodeGen.getUncached().execute(null, null, receiver, name, value);
     }
 
+    public static PyObjectSetAttrO create() {
+        return PyObjectSetAttrONodeGen.create();
+    }
+
+    public final void executeCached(VirtualFrame frame, Object object, Object key, Object value) {
+        execute(frame, this, object, key, value);
+    }
+
     public abstract void execute(Frame frame, Node inliningTarget, Object receiver, Object name, Object value);
 
-    @Specialization
-    static void doIt(Frame frame, Node inliningTarget, Object self, @SuppressWarnings("unused") Object nameObj, Object value,
+    @Specialization(guards = "cannotBeOverridden(nameObj, inliningTarget, getClassNode)", limit = "1")
+    static void doIt(Frame frame, Node inliningTarget, Object self, Object nameObj, Object value,
+                    @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @Cached CastToTruffleStringNode castNode,
                     @Cached PRaiseNode.Lazy raise,
                     @Cached PyObjectSetAttr setAttr) {
@@ -84,5 +101,38 @@ public abstract class PyObjectSetAttrO extends PNodeWithContext {
             throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, nameObj);
         }
         setAttr.execute(frame, inliningTarget, self, name, value);
+    }
+
+    @Specialization(guards = "!cannotBeOverridden(nameObj, inliningTarget, getClassNode)", limit = "1")
+    @InliningCutoff
+    static void doIt(Frame frame, Node inliningTarget, Object self, @SuppressWarnings("unused") Object nameObj, Object value,
+                    @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @Cached(inline = false) PyObjectSetAttrOGeneric generic) {
+        generic.execute(frame, self, nameObj, value);
+    }
+
+    @GenerateInline(false) // intentionally lazy
+    @GenerateUncached
+    public abstract static class PyObjectSetAttrOGeneric extends Node {
+        public abstract void execute(Frame frame, Object self, Object nameObj, Object value);
+
+        @Specialization
+        static void doIt(Frame frame, Object self, Object nameObj, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyUnicodeCheckNode unicodeCheckNode,
+                        @Cached PRaiseNode.Lazy raise,
+                        @Cached GetObjectSlotsNode getSlotsNode,
+                        @Cached CallSlotSetAttrONode callSetAttr) {
+            if (!unicodeCheckNode.execute(inliningTarget, nameObj)) {
+                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, nameObj);
+            }
+            assert value != null; // should use PNone.NO_VALUE
+            TpSlots slots = getSlotsNode.execute(inliningTarget, self);
+            if (slots.combined_tp_setattro_setattr() != null) {
+                callSetAttr.execute((VirtualFrame) frame, inliningTarget, slots, self, nameObj, value);
+            } else {
+                PyObjectSetAttr.raiseNoSlotError(inliningTarget, self, nameObj, value, raise, slots);
+            }
+        }
     }
 }

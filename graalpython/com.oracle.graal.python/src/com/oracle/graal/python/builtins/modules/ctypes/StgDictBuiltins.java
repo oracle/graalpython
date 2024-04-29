@@ -73,6 +73,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -80,7 +81,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -189,7 +189,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttrO getAttributeNode,
-                        @Cached SetAttributeNode.Dynamic setAttributeNode,
+                        @Cached PyObjectSetAttrO setAttributeNode,
                         @Cached PySequenceCheckNode sequenceCheckNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectGetItem getItemNode,
@@ -235,7 +235,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
                 new_descr.getfunc = fdescr.getfunc;
                 new_descr.setfunc = fdescr.setfunc;
 
-                setAttributeNode.execute(frame, type, fname, new_descr);
+                setAttributeNode.execute(frame, inliningTarget, type, fname, new_descr);
             }
         }
 

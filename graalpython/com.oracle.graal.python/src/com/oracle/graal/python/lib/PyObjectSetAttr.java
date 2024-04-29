@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallSlotSetAttrNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -110,14 +111,7 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
         if (slots.combined_tp_setattro_setattr() != null) {
             callSetAttr.execute((VirtualFrame) frame, inliningTarget, slots, self, name, value);
         } else {
-            TruffleString message;
-            boolean isDelete = value == PNone.NO_VALUE;
-            if (slots.combined_tp_getattro_getattr() == null) {
-                message = isDelete ? P_HAS_NO_ATTRS_S_TO_DELETE : P_HAS_NO_ATTRS_S_TO_ASSIGN;
-            } else {
-                message = isDelete ? P_HAS_RO_ATTRS_S_TO_DELETE : P_HAS_RO_ATTRS_S_TO_ASSIGN;
-            }
-            throw raise.get(inliningTarget).raise(TypeError, message, self, name);
+            raiseNoSlotError(inliningTarget, self, name, value, raise, slots);
         }
     }
 
@@ -128,6 +122,18 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
                     @Shared @Cached PRaiseNode.Lazy raise,
                     @Shared @Cached CallSlotSetAttrNode callSetAttr) {
         setFixedAttr(frame, inliningTarget, self, name, value, name, getSlotsNode, raise, callSetAttr);
+    }
+
+    @InliningCutoff
+    static void raiseNoSlotError(Node inliningTarget, Object self, Object name, Object value, Lazy raise, TpSlots slots) {
+        TruffleString message;
+        boolean isDelete = value == PNone.NO_VALUE;
+        if (slots.combined_tp_getattro_getattr() == null) {
+            message = isDelete ? P_HAS_NO_ATTRS_S_TO_DELETE : P_HAS_NO_ATTRS_S_TO_ASSIGN;
+        } else {
+            message = isDelete ? P_HAS_RO_ATTRS_S_TO_DELETE : P_HAS_RO_ATTRS_S_TO_ASSIGN;
+        }
+        throw raise.get(inliningTarget).raise(TypeError, message, self, name);
     }
 
     @NeverDefault
