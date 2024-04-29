@@ -87,6 +87,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     private static final String VENV_PREFIX = "/" + VFS_ROOT + "/" + VFS_VENV;
     private static final String HOME_PREFIX = "/" + VFS_ROOT + "/" + VFS_HOME;
     private static final String PROJ_PREFIX = "/" + VFS_ROOT + "/" + VFS_PROJ;
+    private boolean extractOnStartup = "true".equals(System.getProperty("graalpy.vfs.extractOnStartup"));
 
     public static enum HostIO {
         NONE,
@@ -464,6 +465,12 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                     FileEntry fileEntry = new FileEntry(platformPath);
                     vfsEntries.put(toCaseComparable(platformPath), fileEntry);
                     parent.entries.add(fileEntry);
+                    if(extractOnStartup) {
+                        Path p = Paths.get(fileEntry.getPlatformPath());
+                        if (shouldExtract(p)) {
+                            getExtractedPath(p);
+                        }
+                    }
                 }
             }
         }
