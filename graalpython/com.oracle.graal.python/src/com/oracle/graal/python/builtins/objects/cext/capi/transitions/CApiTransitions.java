@@ -1583,8 +1583,15 @@ public abstract class CApiTransitions {
     private static final int TP_REFCNT_OFFSET = 0;
 
     private static long addNativeRefCount(long pointer, long refCntDelta) {
+        return addNativeRefCount(pointer, refCntDelta, false);
+    }
+
+    private static long addNativeRefCount(long pointer, long refCntDelta, boolean ignoreIfDead) {
         assert PythonContext.get(null).isNativeAccessAllowed();
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
+        if (ignoreIfDead && refCount == 0) {
+            return 0;
+        }
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount + refCntDelta) > 0 : String.format("refcnt reached zero during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
 
@@ -1629,11 +1636,20 @@ public abstract class CApiTransitions {
 
         pollReferenceQueue();
         PythonAbstractNativeObject result = new PythonAbstractNativeObject(obj);
-        NativeObjectReference ref = new NativeObjectReference(handleContext, result, pointer);
-        nativeLookupPut(getContext(), pointer, ref);
-
         long refCntDelta = MANAGED_REFCNT - (transfer ? 1 : 0);
-        addNativeRefCount(pointer, refCntDelta);
+        /*
+         * Some APIs might be called from tp_dealloc/tp_del/tp_finalize where the refcount is 0. In
+         * that case we don't want to create a new reference, since that would resurrect the object
+         * and we would end up deallocating it twice.
+         */
+        long refCount = addNativeRefCount(pointer, refCntDelta, true);
+        if (refCount > 0) {
+            NativeObjectReference ref = new NativeObjectReference(handleContext, result, pointer);
+            nativeLookupPut(getContext(), pointer, ref);
+        } else if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(PythonUtils.formatJString("createAbstractNativeObject: creating PythonAbstractNativeObject for a dying object (refcount 0): 0x%x", pointer));
+        }
+
         return result;
     }
 
