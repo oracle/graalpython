@@ -130,7 +130,7 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
+    @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends GetAttrBuiltinNode {
         @Specialization

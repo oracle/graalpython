@@ -292,7 +292,7 @@ public record TpSlots(TpSlot nb_bool, //
                         null,
                         PExternalFunctionWrapper.DESCR_SET,
                         DescrSetFunctionWrapper::new),
-        TP_GET_ATTRO(
+        TP_GETATTRO(
                         TpSlots::tp_getattro,
                         TpSlotGetAttrPython.class,
                         TpSlotGetAttrBuiltin.class,
@@ -300,7 +300,7 @@ public record TpSlots(TpSlot nb_bool, //
                         null,
                         PExternalFunctionWrapper.BINARYFUNC,
                         GetAttrWrapper::new),
-        TP_GET_ATTR(
+        TP_GETATTR(
                         TpSlots::tp_getattr,
                         null,
                         null,
@@ -308,7 +308,7 @@ public record TpSlots(TpSlot nb_bool, //
                         null,
                         PExternalFunctionWrapper.GETATTR,
                         new NativeWrapperFactory.ShouldNotReach("tp_getattr")),
-        TP_SET_ATTRO(
+        TP_SETATTRO(
                         TpSlots::tp_setattro,
                         TpSlotSetAttrPython.class,
                         TpSlotSetAttrBuiltin.class,
@@ -316,7 +316,7 @@ public record TpSlots(TpSlot nb_bool, //
                         null,
                         PExternalFunctionWrapper.SETATTRO,
                         SetattrWrapper::new),
-        TP_SET_ATTR(
+        TP_SETATTR(
                         TpSlots::tp_setattr,
                         null,
                         null,
@@ -451,16 +451,16 @@ public record TpSlots(TpSlot nb_bool, //
     static {
         LinkedHashMap<TpSlotMeta, TpSlotDef[]> s = new LinkedHashMap<>(30);
 
-        addSlotDef(s, TpSlotMeta.TP_GET_ATTR,
+        addSlotDef(s, TpSlotMeta.TP_GETATTR,
                         TpSlotDef.withNoFunctionNoWrapper(T___GETATTRIBUTE__),
                         TpSlotDef.withNoFunctionNoWrapper(T___GETATTR__));
-        addSlotDef(s, TpSlotMeta.TP_SET_ATTR,
+        addSlotDef(s, TpSlotMeta.TP_SETATTR,
                         TpSlotDef.withNoFunctionNoWrapper(T___SETATTR__),
                         TpSlotDef.withNoFunctionNoWrapper(T___DELATTR__));
-        addSlotDef(s, TpSlotMeta.TP_GET_ATTRO,
+        addSlotDef(s, TpSlotMeta.TP_GETATTRO,
                         new TpSlotDef(T___GETATTRIBUTE__, TpSlotGetAttrPython::create, PExternalFunctionWrapper.BINARYFUNC),
                         new TpSlotDef(T___GETATTR__, TpSlotGetAttrPython::create, null));
-        addSlotDef(s, TpSlotMeta.TP_SET_ATTRO,
+        addSlotDef(s, TpSlotMeta.TP_SETATTRO,
                         new TpSlotDef(T___SETATTR__, TpSlotSetAttrPython::create, PExternalFunctionWrapper.SETATTRO),
                         new TpSlotDef(T___DELATTR__, TpSlotSetAttrPython::create, PExternalFunctionWrapper.DELATTRO));
         addSlotDef(s, TpSlotMeta.TP_DESCR_GET, TpSlotDef.withSimpleFunction(T___GET__, PExternalFunctionWrapper.DESCR_GET));
@@ -950,8 +950,8 @@ public record TpSlots(TpSlot nb_bool, //
         public TpSlots build() {
             TpSlot sq_mp_length = fistNonNull(TpSlotMeta.SQ_LENGTH, TpSlotMeta.MP_LENGTH);
             TpSlot mp_sq_length = fistNonNull(TpSlotMeta.MP_LENGTH, TpSlotMeta.SQ_LENGTH);
-            TpSlot tp_get_attro_attr = fistNonNull(TpSlotMeta.TP_GET_ATTRO, TpSlotMeta.TP_GET_ATTR);
-            TpSlot tp_set_attro_attr = fistNonNull(TpSlotMeta.TP_SET_ATTRO, TpSlotMeta.TP_SET_ATTR);
+            TpSlot tp_get_attro_attr = fistNonNull(TpSlotMeta.TP_GETATTRO, TpSlotMeta.TP_GETATTR);
+            TpSlot tp_set_attro_attr = fistNonNull(TpSlotMeta.TP_SETATTRO, TpSlotMeta.TP_SETATTR);
             return new TpSlots(
                             get(TpSlotMeta.NB_BOOL), //
                             get(TpSlotMeta.SQ_LENGTH), //
@@ -960,11 +960,11 @@ public record TpSlots(TpSlot nb_bool, //
                             mp_sq_length, //
                             get(TpSlotMeta.TP_DESCR_GET), //
                             get(TpSlotMeta.TP_DESCR_SET), //
-                            get(TpSlotMeta.TP_GET_ATTRO), //
-                            get(TpSlotMeta.TP_GET_ATTR), //
+                            get(TpSlotMeta.TP_GETATTRO), //
+                            get(TpSlotMeta.TP_GETATTR), //
                             tp_get_attro_attr,
-                            get(TpSlotMeta.TP_SET_ATTRO),
-                            get(TpSlotMeta.TP_SET_ATTR),
+                            get(TpSlotMeta.TP_SETATTRO),
+                            get(TpSlotMeta.TP_SETATTR),
                             tp_set_attro_attr);
         }
     }

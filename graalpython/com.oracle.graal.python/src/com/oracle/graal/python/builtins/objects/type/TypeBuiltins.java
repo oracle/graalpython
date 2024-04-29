@@ -656,7 +656,7 @@ public final class TypeBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
+    @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends GetAttrBuiltinNode {
         @Child private CallSlotDescrGet callSlotDescrGet;
@@ -748,7 +748,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.tp_set_attro, isComplex = true)
+    @Slot(value = SlotKind.tp_setattro, isComplex = true)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization(guards = "!isImmutable(object)")

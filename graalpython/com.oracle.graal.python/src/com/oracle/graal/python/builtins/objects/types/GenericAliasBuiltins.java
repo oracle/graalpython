@@ -283,7 +283,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
+    @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
     abstract static class GetAttributeNode extends GetAttrBuiltinNode {
 

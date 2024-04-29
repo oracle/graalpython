@@ -358,7 +358,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
+    @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
     public abstract static class GetAttributeNode extends GetAttrBuiltinNode {
         @CompilationFinal private int profileFlags = 0;
@@ -471,7 +471,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.tp_set_attro, isComplex = true)
+    @Slot(value = SlotKind.tp_setattro, isComplex = true)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization

@@ -85,7 +85,7 @@ public final class PyCStructTypeBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends StructUnionTypeNewNode {
     }
 
-    @Slot(value = SlotKind.tp_set_attro, isComplex = true)
+    @Slot(value = SlotKind.tp_setattro, isComplex = true)
     @GenerateNodeFactory
     protected abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization

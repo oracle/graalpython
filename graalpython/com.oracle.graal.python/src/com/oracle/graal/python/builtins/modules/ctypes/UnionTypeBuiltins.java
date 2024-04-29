@@ -92,7 +92,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.tp_set_attro, isComplex = true)
+    @Slot(value = SlotKind.tp_setattro, isComplex = true)
     @GenerateNodeFactory
     protected abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization
