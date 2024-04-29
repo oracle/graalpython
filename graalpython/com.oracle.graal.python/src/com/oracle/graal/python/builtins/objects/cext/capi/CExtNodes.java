@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_NO_OP_CLEAR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_DEALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GC_DEL;
@@ -646,11 +645,6 @@ public abstract class CExtNodes {
         static boolean isNativeObjectOrLong(Object object) {
             return object instanceof PythonNativeObject || object instanceof Long;
         }
-    }
-
-    @TruffleBoundary
-    public static Object pointerAdd(Object pointer, long offset) {
-        return PCallCapiFunction.callUncached(FUN_PTR_ADD, pointer, offset);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

@@ -55,18 +55,14 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.PythonObje
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.Storage;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer.ZeroStorage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -662,31 +658,23 @@ public abstract class PointerNodes {
         @Specialization
         static long doMemoryView(Node inliningTarget, MemoryBlock memory, MemoryViewStorage storage, int offset,
                         @CachedLibrary(limit = "1") InteropLibrary ilib,
-                        @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             PMemoryView mv = storage.memoryView;
-            Object ptr = null;
-            if (mv.getBufferPointer() != null) {
-                ptr = mv.getBufferPointer();
-            } else if (mv.getBuffer() instanceof PBytesLike bytes) {
-                if (bytes.getSequenceStorage() instanceof NativeSequenceStorage nativeSequenceStorage) {
-                    ptr = nativeSequenceStorage.getPtr();
-                }
-                if (bytes.getSequenceStorage() instanceof ByteSequenceStorage byteSequenceStorage) {
-                    NativeSequenceStorage nativeStorage = storageToNativeNode.execute(inliningTarget, byteSequenceStorage.getInternalByteArray(), byteSequenceStorage.length());
-                    bytes.setSequenceStorage(nativeStorage);
-                    ptr = nativeStorage.getPtr();
-                }
-            }
-            if (ptr != null && ilib.isPointer(ptr)) {
+            Object ptr = bufferLib.getNativePointer(mv);
+            long nativePointer;
+            if (ptr instanceof Long lptr) {
+                nativePointer = lptr;
+            } else if (ptr != null && ilib.isPointer(ptr)) {
                 try {
-                    long nativePointer = ilib.asPointer(ptr);
-                    memory.storage = new LongPointerStorage(nativePointer);
-                    return nativePointer + offset;
+                    nativePointer = ilib.asPointer(ptr);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
+            } else {
+                throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.MEMORYVIEW_CANNOT_BE_CONVERTED_TO_NATIVE_MEMORY);
             }
-            throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.MEMORYVIEW_CANNOT_BE_CONVERTED_TO_NATIVE_MEMORY);
+            memory.storage = new LongPointerStorage(nativePointer);
+            return nativePointer + offset;
         }
 
         @Specialization
@@ -911,6 +899,32 @@ public abstract class PointerNodes {
             ByteArrayStorage newStorage = new ByteArrayStorage(bytes);
             memory.storage = newStorage;
             return newStorage;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class PointerIsNativeNode extends Node {
+        public final boolean execute(Node inliningTarget, Pointer ptr) {
+            return execute(inliningTarget, ptr.memory.storage);
+        }
+
+        abstract boolean execute(Node inliningTarget, Storage storage);
+
+        @Specialization
+        static boolean doLongPointer(@SuppressWarnings("unused") LongPointerStorage storage) {
+            return true;
+        }
+
+        @Specialization
+        static boolean doObjectPointer(@SuppressWarnings("unused") ObjectPointerStorage storage) {
+            return true;
+        }
+
+        @Fallback
+        static boolean doOther(@SuppressWarnings("unused") Storage storage) {
+            return false;
         }
     }
 }

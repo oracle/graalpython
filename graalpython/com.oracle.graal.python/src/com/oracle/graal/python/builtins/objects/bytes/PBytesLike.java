@@ -44,14 +44,19 @@ import java.nio.ByteOrder;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonBufferAcquireLibrary.class)
@@ -151,5 +156,19 @@ public abstract class PBytesLike extends PSequence {
     double readDoubleByteOrder(int byteOffset, ByteOrder byteOrder,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
         return bufferLib.readDoubleByteOrder(store, byteOffset, byteOrder);
+    }
+
+    @ExportMessage
+    boolean isNative() {
+        return store instanceof NativeByteSequenceStorage;
+    }
+
+    @ExportMessage
+    Object getNativePointer(
+                    @Bind("$node") Node inliningTarget,
+                    @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
+        NativeSequenceStorage newStorage = toNativeStorageNode.execute(inliningTarget, store, true);
+        setSequenceStorage(newStorage);
+        return newStorage.getPtr();
     }
 }

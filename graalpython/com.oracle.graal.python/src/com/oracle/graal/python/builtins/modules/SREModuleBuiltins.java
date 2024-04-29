@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -81,7 +82,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonSenaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.BufferToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -810,7 +810,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                     binaryProfile.enter(inliningTarget);
                     // It's bytes or other buffer object
                     buffer = bufferAcquireLib.acquireReadonly(inputStringOrBytes, frame, indirectCallData);
-                    input = getBufferToTruffleStringNode().execute(buffer, 0);
+                    input = getBufferToTruffleStringNode().execute(buffer);
                 }
                 try {
                     return interop.invokeMember(cachedCallable, "exec", input, fromIndex);
@@ -843,6 +843,48 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                 bufferToTruffleStringNode = insert(BufferToTruffleStringNode.create());
             }
             return bufferToTruffleStringNode;
+        }
+
+        @GenerateInline(false)
+        abstract static class BufferToTruffleStringNode extends PNodeWithContext {
+
+            public abstract TruffleString execute(Object buffer);
+
+            @Specialization(limit = "4")
+            static TruffleString convert(Object buffer,
+                            @Bind("this") Node inliningTarget,
+                            @CachedLibrary(value = "buffer") PythonBufferAccessLibrary bufferLib,
+                            @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                            @Cached TruffleString.FromNativePointerNode fromNativePointerNode,
+                            @Cached InlinedBranchProfile internalArrayProfile,
+                            @Cached InlinedBranchProfile nativeProfile,
+                            @Cached InlinedBranchProfile fallbackProfile) {
+                PythonBufferAccessLibrary.assertIsBuffer(buffer);
+                int len = bufferLib.getBufferLength(buffer);
+                if (bufferLib.hasInternalByteArray(buffer)) {
+                    internalArrayProfile.enter(inliningTarget);
+                    byte[] bytes = bufferLib.getInternalByteArray(buffer);
+                    return fromByteArrayNode.execute(bytes, 0, len, TruffleString.Encoding.ISO_8859_1, false);
+                }
+                if (bufferLib.isNative(buffer)) {
+                    nativeProfile.enter(inliningTarget);
+                    Object ptr = bufferLib.getNativePointer(buffer);
+                    if (ptr != null) {
+                        if (ptr instanceof Long lptr) {
+                            ptr = new NativePointer(lptr);
+                        }
+                        return fromNativePointerNode.execute(ptr, 0, len, TruffleString.Encoding.ISO_8859_1, false);
+                    }
+                }
+                fallbackProfile.enter(inliningTarget);
+                byte[] bytes = bufferLib.getCopiedByteArray(buffer);
+                return fromByteArrayNode.execute(bytes, 0, len, TruffleString.Encoding.ISO_8859_1, false);
+            }
+
+            @NeverDefault
+            public static BufferToTruffleStringNode create() {
+                return SREModuleBuiltinsFactory.TRegexCallExecFactory.BufferToTruffleStringNodeGen.create();
+            }
         }
     }
 }

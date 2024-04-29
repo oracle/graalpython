@@ -469,4 +469,24 @@ public final class PMemoryView extends PythonBuiltinObject {
         assert !readonly;
         bufferLib.writeDoubleByteOrder(buffer, offset + byteOffset, value, byteOrder);
     }
+
+    @ExportMessage
+    boolean isNative(
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        if (getBufferPointer() != null) {
+            return true;
+        } else {
+            return bufferLib.isNative(buffer);
+        }
+    }
+
+    @ExportMessage
+    Object getNativePointer(
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        if (getBufferPointer() != null) {
+            return getBufferPointer();
+        } else {
+            return bufferLib.getNativePointer(buffer);
+        }
+    }
 }

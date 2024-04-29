@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.NFIPosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -212,4 +213,20 @@ public final class PMMap extends PythonObject {
         }
     }
 
+    @ExportMessage
+    boolean isNative(
+                    @Bind("$node") Node inliningTarget) {
+        return PythonContext.get(inliningTarget).getPosixSupport() instanceof NFIPosixSupport;
+    }
+
+    @ExportMessage
+    Object getNativePointer(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
+        try {
+            return posixLib.mmapGetPointer(PythonContext.get(inliningTarget).getPosixSupport(), getPosixSupportHandle());
+        } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
+            return null;
+        }
+    }
 }

@@ -167,6 +167,20 @@ public class CDataObject extends PythonBuiltinObject {
         writeBytesNode.execute(inliningTarget, b_ptr.withOffset(destOffset), src, srcOffset, length);
     }
 
+    @ExportMessage
+    boolean isNative(
+                    @Bind("$node") Node inliningTarget,
+                    @Cached PointerNodes.PointerIsNativeNode pointerIsNativeNode) {
+        return pointerIsNativeNode.execute(inliningTarget, b_ptr);
+    }
+
+    @ExportMessage
+    Object getNativePointer(
+                    @Bind("$node") Node inliningTarget,
+                    @Cached PointerNodes.GetPointerValueAsObjectNode getPointerValue) {
+        return getPointerValue.execute(inliningTarget, b_ptr);
+    }
+
     // TODO we could expose the internal array if available
 
     @SuppressWarnings("static-method")
