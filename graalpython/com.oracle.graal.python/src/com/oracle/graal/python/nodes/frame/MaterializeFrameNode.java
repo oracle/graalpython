@@ -218,7 +218,8 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     protected static boolean hasGeneratorFrame(Frame frame) {
-        return PArguments.getGeneratorFrame(frame) != null;
+        return !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER &&
+                        PArguments.getGeneratorFrame(frame) != null;
     }
 
     protected static boolean hasCustomLocals(Frame frame) {

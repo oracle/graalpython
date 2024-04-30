@@ -316,6 +316,7 @@ public final class PException extends AbstractTruffleException {
     }
 
     public void markAsCaught(Frame frame, PBytecodeDSLRootNode catchLocation) {
+        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
         if (!isCaught()) {
             this.frameInfo = PArguments.getCurrentFrameInfo(frame);
             this.rootNode = catchLocation;
@@ -323,6 +324,7 @@ public final class PException extends AbstractTruffleException {
     }
 
     private boolean isCaught() {
+        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
         return rootNode != null;
     }
 

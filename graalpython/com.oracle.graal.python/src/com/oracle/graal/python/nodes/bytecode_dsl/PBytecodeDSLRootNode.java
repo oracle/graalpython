@@ -157,6 +157,7 @@ import com.oracle.graal.python.runtime.PythonContext.ProfileEvent;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonContext.TraceEvent;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -268,6 +269,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     private static final BytecodeConfig TRACE_AND_PROFILE_CONFIG = PBytecodeDSLRootNodeGen.newConfigBuilder() //
                     .addInstrumentation(TraceOrProfileCall.class) //
                     .addInstrumentation(TraceLine.class) //
+                    .addInstrumentation(TraceLineAtLoopHeader.class) //
                     .addInstrumentation(TraceOrProfileReturn.class) //
                     .addInstrumentation(TraceException.class) //
                     .build();
@@ -334,6 +336,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
             if (root.needsTraceAndProfileInstrumentation()) {
                 root.ensureTraceAndProfileEnabled();
+                root.getThreadState().pushInstrumentationData(root);
             }
         }
     }
@@ -344,6 +347,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static Object doExit(VirtualFrame frame, Object returnValue,
                         @Bind("$root") PBytecodeDSLRootNode root,
                         @Bind("this") Node location) {
+            if (root.needsTraceAndProfileInstrumentation()) {
+                root.getThreadState().popInstrumentationData(root);
+            }
+
             root.calleeContext.exit(frame, root, location);
             return returnValue;
         }
@@ -362,9 +369,45 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
             if (root.needsTraceAndProfileInstrumentation()) {
                 root.traceOrProfileReturn(frame, location, null);
+                root.getThreadState().popInstrumentationData(root);
             }
 
             root.calleeContext.exit(frame, root, location);
+        }
+    }
+
+    /*
+     * Data for tracing, profiling and instrumentation
+     */
+    public static final class InstrumentationData {
+        private final InstrumentationData previous;
+        private final PBytecodeDSLRootNode rootNode;
+        private int pastLine;
+
+        public InstrumentationData(PBytecodeDSLRootNode rootNode, InstrumentationData previous) {
+            this.previous = previous;
+            this.rootNode = rootNode;
+            this.pastLine = -1;
+        }
+
+        public InstrumentationData getPrevious() {
+            return previous;
+        }
+
+        public PBytecodeDSLRootNode getRootNode() {
+            return rootNode;
+        }
+
+        int getPastLine() {
+            return pastLine;
+        }
+
+        void setPastLine(int pastLine) {
+            this.pastLine = pastLine;
+        }
+
+        void clearPastLine() {
+            this.pastLine = -1;
         }
     }
 
@@ -375,7 +418,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @NonIdempotent
-    protected PythonThreadState getThreadState() {
+    public PythonThreadState getThreadState() {
         return PythonContext.get(this).getThreadState(PythonLanguage.get(this));
     }
 
@@ -396,15 +439,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     private void syncLocalsBackToFrame(VirtualFrame frame, PFrame pyFrame) {
-        Frame localFrame = frame;
-        if (co.isGeneratorOrCoroutine()) {
-            localFrame = PArguments.getGeneratorFrame(frame);
-        }
-        GetFrameLocalsNode.syncLocalsBackToFrame(co, this, pyFrame, localFrame);
+        GetFrameLocalsNode.syncLocalsBackToFrame(co, this, pyFrame, frame);
     }
 
     @InliningCutoff
-    private void invokeProfileFunction(VirtualFrame virtualFrame, Node location, Object profileFun, PythonContext.PythonThreadState threadState, PythonContext.ProfileEvent event, Object arg) {
+    private void invokeProfileFunction(VirtualFrame virtualFrame, Node location, Object profileFun,
+                    PythonContext.PythonThreadState threadState, PythonContext.ProfileEvent event, Object arg) {
         if (threadState.isProfiling()) {
             return;
         }
@@ -426,14 +466,19 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @InliningCutoff
-    private void invokeTraceFunction(VirtualFrame virtualFrame, Node location, Object traceFun, PythonContext.PythonThreadState threadState, PythonContext.TraceEvent event, Object arg,
-                    boolean useLocalFn) {
+    private void invokeTraceFunction(VirtualFrame virtualFrame, Node location, Object traceFun, PythonContext.PythonThreadState threadState,
+                    PythonContext.TraceEvent event, Object arg, int line) {
         if (threadState.isTracing()) {
             return;
         }
         assert event != PythonContext.TraceEvent.DISABLED;
         threadState.tracingStart(event);
         PFrame pyFrame = ensurePyFrame(virtualFrame, location);
+        /**
+         * Call events use the thread-local trace function, which returns a "local" trace function
+         * to use for other trace events.
+         */
+        boolean useLocalFn = event != TraceEvent.CALL;
         Object traceFn = useLocalFn ? pyFrame.getLocalTraceFun() : traceFun;
         if (traceFn == null) {
             threadState.tracingStop();
@@ -441,12 +486,16 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
         Object nonNullArg = arg == null ? PNone.NONE : arg;
         try {
-// TODO
-// if (line != -1) {
-// pyFrame.setLineLock(line);
-// }
+            /**
+             * The PFrame syncs to the line of the current bci. Sometimes this location is
+             * inaccurate and needs to be overridden (e.g., when tracing an implicit return at the
+             * end of a function, we need to trace the line of the last statement executed).
+             */
+            if (line != -1) {
+                pyFrame.setLineLock(line);
+            }
 
-// Force locals dict sync, so that we can sync them back later
+            // Force locals dict sync, so that we can sync them back later
             GetFrameLocalsNode.executeUncached(pyFrame);
             Object result = CallTernaryMethodNode.getUncached().execute(null, traceFn, pyFrame, event.pythonName, nonNullArg);
             syncLocalsBackToFrame(virtualFrame, pyFrame);
@@ -463,19 +512,19 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             threadState.setTraceFun(null, PythonLanguage.get(this));
             throw e;
         } finally {
-// TODO
-// if (line != -1) {
-// pyFrame.lineUnlock();
-// }
+            if (line != -1) {
+                pyFrame.lineUnlock();
+            }
             threadState.tracingStop();
         }
     }
 
-    private final void traceOrProfileCall(VirtualFrame frame, Node location) {
+    private final void traceOrProfileCall(VirtualFrame frame, Node location, BytecodeNode bytecode, int bci) {
         PythonThreadState threadState = getThreadState();
         Object traceFun = threadState.getTraceFun();
         if (traceFun != null) {
-            invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.CALL, null, false);
+            int line = bciToLine(bci, bytecode);
+            invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.CALL, null, line);
         }
         Object profileFun = threadState.getProfileFun();
         if (profileFun != null) {
@@ -483,11 +532,57 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
+    @InliningCutoff
+    private final void traceLine(VirtualFrame frame, Node location, BytecodeNode bytecode, int bci) {
+        PythonThreadState threadState = getThreadState();
+        InstrumentationData instrumentationData = threadState.getInstrumentationData(this);
+
+        int thisLine = bciToLine(bci, bytecode);
+        // We should be executing a new line.
+        assert thisLine != instrumentationData.getPastLine();
+        instrumentationData.setPastLine(thisLine);
+
+        PFrame pyFrame = ensurePyFrame(frame, location);
+        if (pyFrame.getTraceLine()) {
+            Object traceFun = threadState.getTraceFun();
+            if (traceFun != null) {
+                invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.LINE, null, thisLine);
+            }
+        }
+    }
+
+    @InliningCutoff
+    private final void traceLineAtLoopHeader(VirtualFrame frame, Node location, BytecodeNode bytecode, int bci) {
+        PythonThreadState threadState = getThreadState();
+        InstrumentationData instrumentationData = threadState.getInstrumentationData(this);
+        int thisLine = bciToLine(bci, bytecode);
+        int pastLine = instrumentationData.getPastLine();
+
+        /**
+         * A loop should always be traced once, even if it is not entered. We also need to trace the
+         * loop header on each iteration. To accomplish this, we emit a TraceLine at the top of each
+         * loop (before loop initialization) and a TraceLineAtLoopHeader before the loop condition
+         * evaluates. To avoid tracing twice on the first iteration, we need to check our line
+         * against pastLine.
+         */
+        if (thisLine != pastLine) {
+            Object traceFun = threadState.getTraceFun();
+            if (traceFun != null) {
+                invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.LINE, null, thisLine);
+            }
+        }
+        /**
+         * If the loop is all on one line, we need to trace on each iteration (even though the line
+         * hasn't changed). Clear pastLine so the line comparison above succeeds.
+         */
+        instrumentationData.clearPastLine();
+    }
+
     private final void traceOrProfileReturn(VirtualFrame frame, Node location, Object value) {
         PythonThreadState threadState = getThreadState();
         Object traceFun = threadState.getTraceFun();
         if (traceFun != null) {
-            invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.RETURN, value, true);
+            invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.RETURN, value, threadState.getInstrumentationData(this).getPastLine());
         }
         Object profileFun = threadState.getProfileFun();
         if (profileFun != null) {
@@ -495,21 +590,61 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
+    @InliningCutoff
+    private final PException traceException(VirtualFrame frame, BytecodeNode bytecode, int bci, PException pe) {
+        PFrame pyFrame = ensurePyFrame(frame, bytecode);
+        if (pyFrame.getLocalTraceFun() != null) {
+            pe.markAsCaught(frame, this);
+            PythonThreadState threadState = getThreadState();
+            Object peForPython = pe.getEscapedException();
+            Object peType = GetClassNode.executeUncached(peForPython);
+            Object traceback = ExceptionNodes.GetTracebackNode.executeUncached(peForPython);
+            invokeTraceFunction(frame, bytecode, null, threadState, TraceEvent.EXCEPTION,
+                            factory.createTuple(new Object[]{peType, peForPython, traceback}),
+                            bciToLine(bci, bytecode));
+
+            // The exception was reified already. Get a new exception that looks like this catch
+            // didn't happen.
+            PException newPe = pe.getExceptionForReraise(!isInternal());
+            newPe.setCatchLocation(bci, bytecode);
+            return newPe;
+        }
+        return pe;
+    }
+
     @Instrumentation
     public static final class TraceOrProfileCall {
         @Specialization
         public static void perform(VirtualFrame frame,
                         @Bind("this") Node location,
-                        @Bind("$root") PBytecodeDSLRootNode root) {
-            root.traceOrProfileCall(frame, location);
+                        @Bind("$root") PBytecodeDSLRootNode root,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
+            root.traceOrProfileCall(frame, location, bytecode, bci);
         }
     }
 
     @Instrumentation
     public static final class TraceLine {
         @Specialization
-        public static void perform() {
-            throw new UnsupportedOperationException("trace line not implemented");
+        public static void perform(VirtualFrame frame,
+                        @Bind("this") Node location,
+                        @Bind("$root") PBytecodeDSLRootNode root,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
+            root.traceLine(frame, location, bytecode, bci);
+        }
+    }
+
+    @Instrumentation
+    public static final class TraceLineAtLoopHeader {
+        @Specialization
+        public static void perform(VirtualFrame frame,
+                        @Bind("this") Node location,
+                        @Bind("$root") PBytecodeDSLRootNode root,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
+            root.traceLineAtLoopHeader(frame, location, bytecode, bci);
         }
     }
 
@@ -546,6 +681,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         if (ex instanceof PException pe) {
             pe.setCatchLocation(bci, bytecodeNode);
 
+            if (needsTraceAndProfileInstrumentation() && !getThreadState().isTracing()) {
+                pe = traceException(frame, bytecodeNode, bci, pe);
+            }
+
             // Fill in the __context__, if available.
             if (getCaughtExceptionNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -559,6 +698,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 }
                 chainExceptionsNode.execute(pe, context);
             }
+            return pe;
         }
 
         return ex;
@@ -3669,28 +3809,43 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
+    /**
+     * Performs some clean-up steps before suspending execution.
+     */
     @Operation
     public static final class PreYield {
         @Specialization
-        public static Object doObject(VirtualFrame frame, Object value) {
-            // Store any current exception into the generator frame so it is remembered on
-            // resumption.
+        public static Object doObject(VirtualFrame frame, Object value,
+                        @Bind("this") Node location,
+                        @Bind("$root") PBytecodeDSLRootNode root) {
+            /**
+             * Store any current exception in the generator so it can be remembered on resumption.
+             */
             PArguments.setException(PArguments.getGeneratorFrame(frame), PArguments.getException(frame));
+
+            if (root.needsTraceAndProfileInstrumentation()) {
+                root.traceOrProfileReturn(frame, location, value);
+                root.getThreadState().popInstrumentationData(root);
+            }
+
             return value;
         }
     }
 
+    /**
+     * Resumes execution after yield.
+     */
     @Operation
     public static final class ResumeYield {
         @Specialization
         public static Object doObject(VirtualFrame frame, Object sendValue,
                         @Bind("this") Node location,
                         @Bind("$root") PBytecodeDSLRootNode root,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci,
                         @Cached GetSendValueNode getSendValue) {
             /**
-             * This operation resumes execution after a yield. Most of the resumption work is done
-             * by the caller. All we need to do here is restore any existing exception state from
-             * before the yield and process the sent/thrown value.
+             * Restore any existing exception state from before the yield.
              */
             PException currentException = PArguments.getException(PArguments.getGeneratorFrame(frame));
             if (currentException != null) {
@@ -3700,7 +3855,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             if (root.needsTraceAndProfileInstrumentation()) {
                 // We may not have reparsed the root with instrumentation yet.
                 root.ensureTraceAndProfileEnabled();
-                root.traceOrProfileCall(frame, location);
+                root.getThreadState().pushInstrumentationData(root);
+                root.traceOrProfileCall(frame, location, bytecode, bci);
             }
 
             return getSendValue.execute(sendValue);

@@ -421,6 +421,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
     void beginSourceSection(SSTNode node, Builder b) {
         SourceRange sourceRange = node.getSourceRange();
+        SourceRange oldSourceRange = this.currentLocation;
         this.currentLocation = sourceRange;
 
         if (ctx.source.hasCharacters()) {
@@ -431,6 +432,10 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 startOffset = 0;
             }
             b.beginSourceSection(startOffset, length);
+
+            if (oldSourceRange != null && oldSourceRange.startLine != sourceRange.startLine) {
+                b.emitTraceLine();
+            }
         }
     }
 
@@ -811,26 +816,25 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         b.endRaiseNotImplementedError();
     }
 
-    /*
+    /**
      * Use this method for values that should show up in co_consts.
      */
     private void emitPythonConstant(Object constant, Builder b) {
         b.emitLoadConstant(addConstant(constant));
     }
 
-    /*
-     * Use this to emit a yield operation. We have to perform a pre-yield operation that stores the
-     * current exception before actually yielding, and possibly report the result to trace/profile
-     * functions.
+    /**
+     * This helper encapsulates all of the logic needed to yield and resume. Yields should not be
+     * emitted directly.
      */
     private static void emitYield(Consumer<StatementCompiler> yieldValueProducer, StatementCompiler statementCompiler) {
+        statementCompiler.b.beginResumeYield();
         statementCompiler.b.beginYield();
-        statementCompiler.b.beginTraceOrProfileReturn();
         statementCompiler.b.beginPreYield();
         yieldValueProducer.accept(statementCompiler);
         statementCompiler.b.endPreYield();
-        statementCompiler.b.endTraceOrProfileReturn();
         statementCompiler.b.endYield();
+        statementCompiler.b.endResumeYield();
     }
 
     private void emitNameCellOperation(String mangled, NameOperation op, Builder b) {
@@ -2129,7 +2133,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         public Void visit(ExprTy.Yield node) {
             beginSourceSection(node, b);
 
-            b.beginResumeYield();
             emitYield((statementCompiler) -> {
                 if (node.value != null) {
                     node.value.accept(this);
@@ -2137,7 +2140,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     statementCompiler.b.emitLoadConstant(PNone.NONE);
                 }
             }, this);
-            b.endResumeYield();
 
             endSourceSection(b);
             return null;
@@ -2226,9 +2228,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
             // try clause: yield
             b.beginStoreLocal(sentValue);
-            b.beginResumeYield();
             emitYield((statementCompiler) -> statementCompiler.b.emitLoadLocal(yieldValue), this);
-            b.endResumeYield();
             b.endStoreLocal();
 
             // catch clause: handle throw/close exceptions.
@@ -3013,9 +3013,12 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             BytecodeLocal value = b.createLocal();
 
             // condition
+            b.beginBlock();
+            b.emitTraceLineAtLoopHeader();
             b.beginForIterate(value);
             b.emitLoadLocal(iter);
             b.endForIterate();
+            b.endBlock();
 
             // body
             b.beginBlock();
@@ -4307,15 +4310,18 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             breakLabel = currentBreakLabel;
 
             b.beginWhile();
-            // {
+
+            b.beginBlock();
+            b.emitTraceLineAtLoopHeader();
             visitCondition(node.test);
+            b.endBlock();
 
             b.beginBlock();
             continueLabel = b.createLabel();
             visitStatements(node.body);
             b.emitLabel(continueLabel);
             b.endBlock();
-            // }
+
             b.endWhile();
 
             breakLabel = oldBreakLabel;
