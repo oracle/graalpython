@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TraverseDynamicObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.VisitNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -103,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -667,6 +669,23 @@ public final class PythonCextDictBuiltins {
                 }
             }
             return accumulator;
+        }
+    }
+
+    /*
+     * We cannot use 'call = Direct' with name '_PyObject_VisitInstanceAttributes' because this
+     * function is not part of the public API and not exported as symbol.
+     */
+    @CApiBuiltin(ret = Int, args = {PyObject, Pointer, Pointer}, call = Ignored)
+    abstract static class PyTruffleObject_VisitInstanceAttributes extends CApiTernaryBuiltinNode {
+
+        @Specialization
+        static int doPythonObject(PythonObject self, Object visitFun, Object arg,
+                        @Bind("this") Node inliningTarget,
+                        @Cached EnsureExecutableNode ensureExecutableNode,
+                        @Cached TraverseDynamicObjectNode traverseDynamicObjectNode) {
+            Object visitExecutable = ensureExecutableNode.execute(inliningTarget, visitFun, PExternalFunctionWrapper.VISITPROC);
+            return traverseDynamicObjectNode.execute(null, inliningTarget, self, visitExecutable, arg);
         }
     }
 }
