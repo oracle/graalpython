@@ -824,7 +824,12 @@ def find_eclipse():
 def set_env(**environ):
     """Temporarily set the process environment variables"""
     old_environ = dict(os.environ)
-    os.environ.update(environ)
+    for k, v in environ.items():
+        if v is None:
+            if k in os.environ:
+                del os.environ[k]
+        else:
+            os.environ[k] = v
     try:
         yield
     finally:
@@ -1553,10 +1558,11 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm], report=True) as task:
         if task:
-            svm_image = python_svm()
-            benchmark = os.path.join(PATH_MESO, "image-magix.py")
-            out = mx.OutputCapture()
-            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+            with set_env(PYTHONIOENCODING=None):
+                svm_image = python_svm()
+                benchmark = os.path.join(PATH_MESO, "image-magix.py")
+                out = mx.OutputCapture()
+                mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
             success = "\n".join([
                 "[0, 0, 0, 0, 0, 0, 10, 10, 10, 0, 0, 10, 3, 10, 0, 0, 10, 10, 10, 0, 0, 0, 0, 0, 0]",
             ])
