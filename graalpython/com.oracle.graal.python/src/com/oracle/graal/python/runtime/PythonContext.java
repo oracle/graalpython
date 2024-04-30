@@ -107,7 +107,6 @@ import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
@@ -145,6 +144,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -2589,9 +2589,9 @@ public final class PythonContext extends Python3Core {
             PythonModule sysModule = this.lookupBuiltinModule(T_SYS);
             Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, T_IMPLEMENTATION);
             // sys.implementation.cache_tag
-            TruffleString cacheTag = (TruffleString) PInteropGetAttributeNode.executeUncached(implementationObj, T_CACHE_TAG);
+            TruffleString cacheTag = (TruffleString) PyObjectGetAttr.executeUncached(implementationObj, T_CACHE_TAG);
             // sys.implementation._multiarch
-            TruffleString multiArch = (TruffleString) PInteropGetAttributeNode.executeUncached(implementationObj, T__MULTIARCH);
+            TruffleString multiArch = (TruffleString) PyObjectGetAttr.executeUncached(implementationObj, T__MULTIARCH);
 
             TruffleString toolchainId = getPlatformId();
 
