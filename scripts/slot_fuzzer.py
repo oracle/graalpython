@@ -140,6 +140,14 @@ def slots_tester(Klass):
     test(lambda: obj.del_descr(), "obj.del_descr()")
     test(lambda: obj.descr, "obj.descr")
 
+    obj = Klass()
+    test(lambda: obj[42], "obj[42]")
+    test(lambda: obj['hello'], "obj['hello']")
+    test(lambda: obj[-1], "obj[-1]")
+    test_dunder(obj, '__getitem__', 42)
+    test_dunder(obj, '__getitem__', -1)
+    test_dunder(obj, '__getitem__', 'hello')
+
 
 '''
 
@@ -215,7 +223,9 @@ PyObject *global_stash2;
 SLOTS = [
     Slot('tp_as_number', 'nb_bool', 'int $name$(PyObject* self)', ['1', '0', None]),
     Slot('tp_as_sequence', 'sq_length', 'Py_ssize_t $name$(PyObject* self)', ['0', '1', '42', None]),
+    Slot('tp_as_sequence', 'sq_item', 'PyObject* $name$(PyObject* self, Py_ssize_t index)', ['0', 'PyLong_FromSsize_t(index + 1)', None]),
     Slot('tp_as_mapping', 'mp_length', 'Py_ssize_t $name$(PyObject* self)', ['0', '1', '42', None]),
+    Slot('tp_as_mapping', 'mp_subscript', 'PyObject* $name$(PyObject* self, PyObject* key)', ['Py_RETURN_FALSE', 'Py_NewRef(key)', None]),
     Slot(NO_GROUP, 'tp_getattr', 'PyObject* $name$(PyObject* self, char *name)', ['Py_RETURN_NONE', 'Py_RETURN_FALSE', 'Py_NewRef(self)', None,
         '''
             if (global_stash1 == NULL) Py_RETURN_NONE;
@@ -287,6 +297,7 @@ MAGIC = {
                                      del global_dict1[name]
                                      return None
                                      '''],
+    '__getitem__(self, index)': [None, 'True', 'repr(index)']
 }
 
 

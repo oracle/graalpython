@@ -78,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
@@ -86,6 +85,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -386,9 +386,9 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsEncodeNode encode,
-                        @Cached TupleBuiltins.GetItemNode getItemNode) {
+                        @Cached PyTupleGetItem getItemNode) {
             PTuple result = (PTuple) encode.execute(frame, input, getAttrNode.execute(frame, inliningTarget, self, T_ATTR_ENCODING), getAttrNode.execute(frame, inliningTarget, self, T_ATTR_ERRORS));
-            return getItemNode.execute(frame, result, 0);
+            return getItemNode.execute(inliningTarget, result, 0);
         }
     }
 

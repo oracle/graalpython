@@ -88,3 +88,19 @@ def test_readline():
     m[1026] = b'b'[0]
     assert m.readline() == (b'\x00' * 1024) + b'\n'
     assert m.readline() == b'ab'
+
+def test_iter():
+    m = mmap.mmap(-1, 3)
+    for i in range(0, 3):
+        m[i] = i + 2
+
+    it = iter(m)
+    assert next(it) == b'\x02'
+    assert next(it) == b'\x03'
+    assert next(it) == b'\x04'
+
+    l = list()
+    for i in m:
+        l.append(i)
+
+    assert l == [b'\x02', b'\x03', b'\x04']

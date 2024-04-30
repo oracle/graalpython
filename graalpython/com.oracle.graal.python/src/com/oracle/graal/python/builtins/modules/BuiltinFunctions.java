@@ -197,7 +197,6 @@ import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
@@ -262,6 +261,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.debug.Debugger;
@@ -2481,15 +2481,25 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return CallNode.executeUncached(buildFunction, namespace, name, base);
         }
 
+        @InliningCutoff
+        private static Object buildJavaClass(VirtualFrame frame, PythonLanguage language, PFunction function, Object[] arguments, PythonObjectFactory factory, CallDispatchNode callBody,
+                        TruffleString name) {
+            PDict ns = factory.createDict(new DynamicObjectStorage(language));
+            Object[] args = PArguments.create(0);
+            PArguments.setSpecialArgument(args, ns);
+            callBody.executeCall(frame, function, args);
+            return buildJavaClass(ns, name, arguments[1]);
+        }
+
         @Specialization
         protected Object doItNonFunction(VirtualFrame frame, Object function, Object[] arguments, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PythonObjectFactory factory,
                         @Cached CalculateMetaclassNode calculateMetaClass,
                         @Cached("create(T___PREPARE__)") GetAttributeNode getPrepare,
-                        @Cached(parameters = "GetItem") LookupCallableSlotInMRONode getGetItem,
-                        @Cached GetClassNode getGetItemClass,
+                        @Cached PyMappingCheckNode pyMappingCheckNode,
                         @Cached CallVarargsMethodNode callPrep,
                         @Cached CallVarargsMethodNode callType,
                         @Cached CallDispatchNode callBody,
@@ -2507,7 +2517,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             TruffleString name;
             try {
-                name = CastToTruffleStringNode.executeUncached(arguments[0]);
+                name = castToTruffleStringNode.execute(inliningTarget, arguments[0]);
             } catch (CannotCastException e) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.BUILD_CLS_NAME_NOT_STRING);
             }
@@ -2515,14 +2525,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] basesArray = Arrays.copyOfRange(arguments, 1, arguments.length);
             PTuple origBases = factory.createTuple(basesArray);
 
-            Env env = PythonContext.get(calculateMetaClass).getEnv();
+            PythonContext ctx = PythonContext.get(calculateMetaClass);
+            Env env = ctx.getEnv();
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
             if (arguments.length == 2 && env.isHostObject(arguments[1]) && env.asHostObject(arguments[1]) instanceof Class<?>) {
                 // we want to subclass a Java class
-                PDict ns = PythonObjectFactory.getUncached().createDict(new DynamicObjectStorage(PythonLanguage.get(null)));
-                Object[] args = PArguments.create(0);
-                PArguments.setSpecialArgument(args, ns);
-                callBody.executeCall(frame, (PFunction) function, args);
-                return buildJavaClass(ns, name, arguments[1]);
+                return buildJavaClass(frame, language, (PFunction) function, arguments, factory, callBody, name);
             }
 
             class InitializeBuildClass {
@@ -2532,7 +2540,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 PTuple bases;
 
                 @TruffleBoundary
-                InitializeBuildClass() {
+                InitializeBuildClass(PythonContext ctx) {
 
                     bases = update.execute(origBases, basesArray, basesArray.length);
 
@@ -2553,7 +2561,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     if (meta == null) {
                         // if there are no bases, use type:
                         if (bases.getSequenceStorage().length() == 0) {
-                            meta = PythonContext.get(update).lookupType(PythonBuiltinClassType.PythonClass);
+                            meta = ctx.lookupType(PythonBuiltinClassType.PythonClass);
                         } else {
                             // else get the type of the first base
                             meta = getClass.execute(inliningTarget, SequenceStorageNodes.GetItemScalarNode.executeUncached(bases.getSequenceStorage(), 0));
@@ -2573,7 +2581,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object savedState = IndirectCallContext.enter(frame, indirectCallData);
             InitializeBuildClass init;
             try {
-                init = new InitializeBuildClass();
+                init = new InitializeBuildClass(ctx);
             } finally {
                 IndirectCallContext.exit(frame, indirectCallData, savedState);
             }
@@ -2584,14 +2592,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 ns = callPrep.execute(frame, prep, new Object[]{name, init.bases}, init.mkw);
             } catch (PException p) {
                 p.expectAttributeError(inliningTarget, noAttributeProfile);
-                ns = factory.createDict(new DynamicObjectStorage(PythonLanguage.get(this)));
+                ns = factory.createDict(new DynamicObjectStorage(language));
             }
-            if (isNoValue(getGetItem.execute(getGetItemClass.execute(inliningTarget, ns)))) {
-                if (init.isClass) {
-                    throw raise(PythonErrorType.TypeError, ErrorMessages.N_PREPARE_MUST_RETURN_MAPPING, init.meta, ns);
-                } else {
-                    throw raise(PythonErrorType.TypeError, ErrorMessages.MTCLS_PREPARE_MUST_RETURN_MAPPING, ns);
-                }
+            if (!pyMappingCheckNode.execute(inliningTarget, ns)) {
+                throw raiseNoMapping(init.isClass, init.meta, ns);
             }
             Object[] bodyArguments = PArguments.create(0);
             PArguments.setSpecialArgument(bodyArguments, ns);
@@ -2606,6 +2610,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
              */
 
             return cls;
+        }
+
+        @InliningCutoff
+        private PException raiseNoMapping(boolean isClass, Object meta, Object ns) {
+            if (isClass) {
+                throw raise(PythonErrorType.TypeError, ErrorMessages.N_PREPARE_MUST_RETURN_MAPPING, meta, ns);
+            } else {
+                throw raise(PythonErrorType.TypeError, ErrorMessages.MTCLS_PREPARE_MUST_RETURN_MAPPING, ns);
+            }
         }
     }
 

@@ -40,11 +40,14 @@
  */
 package com.oracle.graal.python.test.builtin.objects;
 
+import java.util.EnumSet;
+
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.Builder;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotGroup;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
@@ -99,12 +102,23 @@ public class TpSlotsTests {
     }
 
     private static void verifySlots(TpSlots slots, Function<TpSlotMeta, Boolean> checkNonNullValue) {
+        var groupsSeen = EnumSet.noneOf(TpSlotGroup.class);
         for (TpSlotMeta def : TpSlotMeta.VALUES) {
             TpSlot slotValue = def.getValue(slots);
             if (checkNonNullValue.apply(def)) {
                 checkSlotValue(def, slotValue);
+                groupsSeen.add(def.getGroup());
             } else {
                 Assert.assertNull(def.name(), slotValue);
+            }
+        }
+        for (TpSlotGroup group : TpSlotGroup.values()) {
+            switch (group) {
+                case NO_GROUP -> {
+                }
+                case AS_NUMBER -> Assert.assertEquals(slots.has_as_number(), groupsSeen.contains(group));
+                case AS_SEQUENCE -> Assert.assertEquals(slots.has_as_sequence(), groupsSeen.contains(group));
+                case AS_MAPPING -> Assert.assertEquals(slots.has_as_mapping(), groupsSeen.contains(group));
             }
         }
     }

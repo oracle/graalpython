@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,13 +81,13 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
+import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -350,7 +350,7 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Cached PyCallableCheckNode callableCheckNode,
                         @Cached PyTupleCheckExactNode tupleCheckExactNode,
                         @Cached PyDictCheckExactNode dictCheckExactNode,
-                        @Cached TupleBuiltins.GetItemNode getItemNode,
+                        @Cached PyTupleGetItem getItemNode,
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
                         @Cached HashingStorageCopy copyStorageNode,
@@ -360,10 +360,10 @@ public final class PartialBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }
 
-            final Object function = getItemNode.execute(frame, state, 0);
-            final Object fnArgs = getItemNode.execute(frame, state, 1);
-            final Object fnKwargs = getItemNode.execute(frame, state, 2);
-            final Object dict = getItemNode.execute(frame, state, 3);
+            final Object function = getItemNode.execute(inliningTarget, state, 0);
+            final Object fnArgs = getItemNode.execute(inliningTarget, state, 1);
+            final Object fnKwargs = getItemNode.execute(inliningTarget, state, 2);
+            final Object dict = getItemNode.execute(inliningTarget, state, 3);
 
             if (!callableCheckNode.execute(inliningTarget, function) ||
                             !PGuards.isPTuple(fnArgs) ||

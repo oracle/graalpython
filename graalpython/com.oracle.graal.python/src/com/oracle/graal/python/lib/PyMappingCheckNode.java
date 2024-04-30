@@ -42,7 +42,7 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
@@ -86,12 +86,12 @@ public abstract class PyMappingCheckNode extends PNodeWithContext {
     @Specialization
     static boolean doGeneric(Node inliningTarget, Object object,
                     @Cached GetClassNode getClassNode,
-                    @Cached GetMethodsFlagsNode getMethodsFlagsNode,
+                    @Cached GetCachedTpSlotsNode getSlotsNode,
                     @Cached LazyInteropLibrary lazyLib) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             return lazyLib.get(inliningTarget).hasHashEntries(object);
         }
-        return (getMethodsFlagsNode.execute(inliningTarget, type) & MethodsFlags.MP_SUBSCRIPT) != 0;
+        return getSlotsNode.execute(inliningTarget, type).mp_subscript() != null;
     }
 }

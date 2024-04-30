@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.POINTER_INDICES_MUST_B
 import static com.oracle.graal.python.nodes.ErrorMessages.SLICE_START_IS_REQUIRED_FOR_STEP_0;
 import static com.oracle.graal.python.nodes.ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO;
 import static com.oracle.graal.python.nodes.ErrorMessages.SLICE_STOP_IS_REQUIRED;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
@@ -85,15 +84,19 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -276,9 +279,9 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_item, isComplex = true)
     @GenerateNodeFactory
-    abstract static class PointerGetItemNode extends PythonBinaryBuiltinNode {
+    abstract static class PointerGetItemNode extends SqItemBuiltinNode {
 
         @Specialization
         static Object Pointer_item(CDataObject self, int index,
@@ -289,7 +292,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PointerNodes.ReadPointerNode readPointerNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (self.b_ptr.isNull()) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, NULL_POINTER_ACCESS);
+                raiseNullPtr(inliningTarget, raiseNode);
             }
 
             StgDictObject stgdict = pyObjectStgDictNode.execute(inliningTarget, self);
@@ -306,8 +309,30 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
             return pyCDataGetNode.execute(inliningTarget, proto, stgdict.getfunc, self, index, size, readPointerNode.execute(inliningTarget, self.b_ptr).withOffset(offset));
         }
 
+        @InliningCutoff
+        private static void raiseNullPtr(Node inliningTarget, Lazy raiseNode) {
+            throw raiseNode.get(inliningTarget).raise(ValueError, NULL_POINTER_ACCESS);
+        }
+    }
+
+    @Slot(value = SlotKind.mp_subscript, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class PointerSubscriptNode extends MpSubscriptBuiltinNode {
+
+        @Specialization
+        static Object doInt(CDataObject self, int index,
+                        @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
+                        @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Exclusive @Cached PointerNodes.ReadPointerNode readPointerNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            return PointerGetItemNode.Pointer_item(self, index, inliningTarget, pyCDataGetNode,
+                            pyTypeStgDictNode, pyObjectStgDictNode, readPointerNode, raiseNode);
+        }
+
         @Specialization(limit = "1")
-        static Object Pointer_subscriptSlice(VirtualFrame frame, CDataObject self, PSlice slice,
+        static Object doSubscript(VirtualFrame frame, CDataObject self, PSlice slice,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
@@ -394,13 +419,13 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
             Object[] np = new Object[len];
 
             for (int cur = start, i = 0; i < len; cur += step, i++) {
-                np[i] = Pointer_item(self, cur, inliningTarget, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode, readPointerNode, raiseNode);
+                np[i] = PointerGetItemNode.Pointer_item(self, cur, inliningTarget, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode, readPointerNode, raiseNode);
             }
             return factory.createList(np);
         }
 
-        @Specialization(guards = "!isPSlice(item)")
-        static Object Pointer_subscript(VirtualFrame frame, CDataObject self, Object item,
+        @Specialization(guards = "!isPSlice(item)", replaces = "doInt")
+        static Object doGeneric(VirtualFrame frame, CDataObject self, Object item,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
                         @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -411,7 +436,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (indexCheckNode.execute(inliningTarget, item)) {
                 int i = asSizeNode.executeExact(frame, inliningTarget, item, IndexError);
-                return Pointer_item(self, i, inliningTarget, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode, readPointerNode, raiseNode);
+                return PointerGetItemNode.Pointer_item(self, i, inliningTarget, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode, readPointerNode, raiseNode);
             }
             throw raiseNode.get(inliningTarget).raise(TypeError, POINTER_INDICES_MUST_BE_INTEGER);
         }

@@ -391,4 +391,8 @@ def test_sq_len_and_item():
                              sq_item="my_sq_item")
     x = MySqLenItem()
     assert x[5] == 5
+    assert x.__getitem__(5) == 5
     assert x[-1] == 9
+    assert x.__getitem__(-1) == 9
+    assert x[-20] == -10
+    assert x.__getitem__(-20) == -10

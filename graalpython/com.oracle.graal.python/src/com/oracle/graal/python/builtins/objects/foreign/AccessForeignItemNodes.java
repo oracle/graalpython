@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,7 +49,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
-import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.GetForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.RemoveForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.SetForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
@@ -225,7 +224,7 @@ abstract class AccessForeignItemNodes {
             throw raise(TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, object);
         }
 
-        private Object readForeignIndex(Object object, long index, InteropLibrary libForObject) {
+        public Object readForeignIndex(Object object, long index, InteropLibrary libForObject) {
             if (libForObject.isArrayElementReadable(object, index)) {
                 try {
                     return getToPythonNode().executeConvert(libForObject.readArrayElement(object, index));
@@ -244,10 +243,6 @@ abstract class AccessForeignItemNodes {
                 toPythonNode = insert(PForeignToPTypeNode.create());
             }
             return toPythonNode;
-        }
-
-        public static GetForeignItemNode create() {
-            return GetForeignItemNodeGen.create();
         }
 
     }

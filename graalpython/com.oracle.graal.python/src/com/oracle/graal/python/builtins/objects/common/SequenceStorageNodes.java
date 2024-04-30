@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.builtins.objects.common.IndexNodes.checkBounds;
 import static com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextHelperNode.STOP_MARKER;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
@@ -164,6 +165,75 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class SequenceStorageNodes {
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class SequenceStorageSqItemNode extends Node {
+        public abstract Object execute(Node inliningTarget, SequenceStorage storage, int index, TruffleString indexBoundsErrorMessage);
+
+        @Specialization
+        static Object doIt(Node inliningTarget, SequenceStorage self, int index, TruffleString errorMessage,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            return getItem(inliningTarget, self, index, errorMessage, raiseNode, getItemNode);
+        }
+
+        private static Object getItem(Node inliningTarget, SequenceStorage storage, int index, TruffleString errorMessage, PRaiseNode.Lazy raiseNode, GetItemScalarNode getItemNode) {
+            checkBounds(inliningTarget, raiseNode, errorMessage, index, storage.length());
+            return getItemNode.execute(inliningTarget, storage, index);
+        }
+    }
+
+    @FunctionalInterface
+    public interface StorageWrapperFactory {
+        Object create(PythonObjectFactory factory, SequenceStorage newStorage);
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class SequenceStorageMpSubscriptNode extends PNodeWithContext {
+        // This should be checked by the caller before calling execute
+        public static boolean isValidIndex(Node inliningTarget, Object index, PyIndexCheckNode indexCheckNode) {
+            return PGuards.isPSlice(index) || indexCheckNode.execute(inliningTarget, index);
+        }
+
+        public final Object execute(VirtualFrame frame, Node inliningTarget, SequenceStorage storage, Object index,
+                        TruffleString indexBoundsErrorMessage, StorageWrapperFactory factory) {
+            assert isValidIndex(null, index, PyIndexCheckNode.getUncached());
+            return executeImpl(frame, inliningTarget, storage, index, indexBoundsErrorMessage, factory);
+        }
+
+        abstract Object executeImpl(VirtualFrame frame, Node inliningTarget, SequenceStorage storage, Object index,
+                        TruffleString indexBoundsErrorMessage, StorageWrapperFactory factory);
+
+        @Specialization(guards = "!isPSlice(idx)")
+        static Object doNonSlice(VirtualFrame frame, Node inliningTarget, SequenceStorage storage, Object idx,
+                        TruffleString indexBoundsErrorMessage, StorageWrapperFactory wrapperFactory,
+                        @Cached PyNumberAsSizeNode numberAsSizeNode,
+                        @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            int index = numberAsSizeNode.executeExact(frame, inliningTarget, idx, PythonBuiltinClassType.IndexError);
+            if (negativeIndexProfile.profile(inliningTarget, index < 0)) {
+                index += storage.length();
+            }
+            return SequenceStorageSqItemNode.getItem(inliningTarget, storage, index, indexBoundsErrorMessage, raiseNode, getItemNode);
+        }
+
+        @Specialization
+        static Object doSlice(VirtualFrame frame, Node inliningTarget, SequenceStorage storage, PSlice slice,
+                        @SuppressWarnings("unused") TruffleString indexBoundsErrorMessage, StorageWrapperFactory wrapperFactory,
+                        @Cached(inline = false) PythonObjectFactory factory,
+                        @Cached CoerceToIntSlice sliceCast,
+                        @Cached(inline = false) ComputeIndices compute,
+                        @Cached(inline = false) GetItemSliceNode getItemSliceNode,
+                        @Cached LenOfRangeNode sliceLen) {
+            SliceInfo info = compute.execute(frame, sliceCast.execute(inliningTarget, slice), storage.length());
+            SequenceStorage newStorage = getItemSliceNode.execute(storage, info.start, info.stop, info.step, sliceLen.len(inliningTarget, info));
+            return wrapperFactory.create(factory, newStorage);
+        }
+    }
 
     public interface GenNodeSupplier {
         GeneralizationNode create();
