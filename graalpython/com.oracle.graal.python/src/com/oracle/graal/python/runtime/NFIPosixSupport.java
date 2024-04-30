@@ -301,6 +301,9 @@ public final class NFIPosixSupport extends PosixSupport {
         call_sem_trywait("(pointer):sint32"),
         call_sem_timedwait("(pointer, sint64):sint32"),
 
+        call_ioctl_bytes("(sint32, uint64, [sint8]):sint32"),
+        call_ioctl_int("(sint32, uint64, sint32):sint32"),
+
         crypt("([sint8], [sint8]):sint64");
 
         private final String signature;
@@ -2461,6 +2464,26 @@ public final class NFIPosixSupport extends PosixSupport {
                         output[1], output[2],
                         extractZeroTerminatedString(data, output[3], fromByteArrayNode, switchEncodingFromUtf8Node),
                         extractZeroTerminatedString(data, output[4], fromByteArrayNode, switchEncodingFromUtf8Node));
+    }
+
+    @ExportMessage
+    public int ioctlBytes(int fd, long request, byte[] arg,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_ioctl_bytes, fd, request, wrap(arg));
+        if (res < 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+        return res;
+    }
+
+    @ExportMessage
+    public int ioctlInt(int fd, long request, int arg,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_ioctl_int, fd, request, arg);
+        if (res < 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+        return res;
     }
 
     private static TruffleString extractZeroTerminatedString(byte[] buffer, long longOffset, TruffleString.FromByteArrayNode fromByteArrayNode,

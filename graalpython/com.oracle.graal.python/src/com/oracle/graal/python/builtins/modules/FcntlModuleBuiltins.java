@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltinsClinicProviders.FlockNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FileDescriptorConversionNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -68,10 +71,16 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -80,6 +89,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "fcntl")
 public final class FcntlModuleBuiltins extends PythonBuiltins {
@@ -174,6 +184,152 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return FcntlModuleBuiltinsClinicProviders.LockfNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "ioctl", minNumOfPositionalArgs = 2, parameterNames = {"fd", "request", "arg", "mutate_flag"})
+    @ArgumentClinic(name = "fd", conversionClass = FileDescriptorConversionNode.class)
+    @ArgumentClinic(name = "request", conversion = ClinicConversion.Long)
+    @ArgumentClinic(name = "mutate_flag", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    abstract static class IoctlNode extends PythonClinicBuiltinNode {
+        private static final int IOCTL_BUFSZ = 1024;
+
+        @Specialization
+        Object ioctl(VirtualFrame frame, int fd, long request, Object arg, boolean mutateArg,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Cached PyLongAsIntNode asIntNode,
+                        @Cached CastToTruffleStringNode castToString,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                        @Cached GilNode gilNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit(inliningTarget, "fcnt.ioctl", fd, request, arg);
+
+            int intArg = 0;
+            if (arg != PNone.NO_VALUE) {
+                Object buffer = null;
+                // Buffer argument
+                if (acquireLib.hasBuffer(arg)) {
+                    boolean writable = false;
+                    try {
+                        buffer = acquireLib.acquireWritable(arg, frame, indirectCallData);
+                        writable = true;
+                    } catch (PException e) {
+                        try {
+                            buffer = acquireLib.acquireReadonly(arg, frame, indirectCallData);
+                        } catch (PException e1) {
+                            // ignore
+                        }
+                    }
+                    if (buffer != null) {
+                        try {
+                            int len = bufferLib.getBufferLength(buffer);
+                            boolean writeBack = false;
+                            boolean releaseGil = true;
+                            byte[] ioctlArg = null;
+                            if (writable && mutateArg) {
+                                writeBack = true;
+                                if (bufferLib.hasInternalByteArray(buffer)) {
+                                    byte[] internalArray = bufferLib.getInternalByteArray(buffer);
+                                    if (internalArray.length > len && internalArray[len] == 0) {
+                                        writeBack = false;
+                                        releaseGil = false; // Could resize concurrently
+                                        ioctlArg = internalArray;
+                                    }
+                                }
+                            } else {
+                                if (len > IOCTL_BUFSZ) {
+                                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
+                                }
+                            }
+                            if (ioctlArg == null) {
+                                ioctlArg = new byte[len + 1];
+                                bufferLib.readIntoByteArray(buffer, 0, ioctlArg, 0, len);
+                            }
+                            try {
+                                int ret = callIoctlBytes(frame, inliningTarget, fd, request, ioctlArg, releaseGil, posixLib, gilNode, constructAndRaiseNode);
+                                if (writable && mutateArg) {
+                                    return ret;
+                                } else {
+                                    return factory.createBytes(ioctlArg, len);
+                                }
+                            } finally {
+                                if (writeBack) {
+                                    bufferLib.writeFromByteArray(buffer, 0, ioctlArg, 0, len);
+                                }
+                            }
+                        } finally {
+                            bufferLib.release(buffer, frame, indirectCallData);
+                        }
+                    }
+                }
+                // string arg
+                TruffleString stringArg = null;
+                try {
+                    stringArg = castToString.execute(inliningTarget, arg);
+                } catch (CannotCastException e) {
+                    // ignore
+                }
+                if (stringArg != null) {
+                    TruffleString.Encoding utf8 = TruffleString.Encoding.UTF_8;
+                    stringArg = switchEncodingNode.execute(stringArg, utf8);
+                    int len = stringArg.byteLength(utf8);
+                    if (len > IOCTL_BUFSZ) {
+                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
+                    }
+                    byte[] ioctlArg = new byte[len + 1];
+                    copyToByteArrayNode.execute(stringArg, 0, ioctlArg, 0, len, utf8);
+                    callIoctlBytes(frame, inliningTarget, fd, request, ioctlArg, true, posixLib, gilNode, constructAndRaiseNode);
+                    return factory.createBytes(ioctlArg, len);
+                }
+
+                // int arg
+                intArg = asIntNode.execute(frame, inliningTarget, arg);
+                // fall through
+            }
+
+            // default arg or int arg
+            try {
+                gilNode.release(true);
+                try {
+                    return posixLib.ioctlInt(getPosixSupport(), fd, request, intArg);
+                } finally {
+                    gilNode.acquire();
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        private int callIoctlBytes(VirtualFrame frame, Node inliningTarget, int fd, long request, byte[] ioctlArg, boolean releaseGil, PosixSupportLibrary posixLib, GilNode gilNode,
+                        PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            try {
+                if (releaseGil) {
+                    gilNode.release(true);
+                }
+                try {
+                    return posixLib.ioctlBytes(getPosixSupport(), fd, request, ioctlArg);
+                } finally {
+                    if (releaseGil) {
+                        gilNode.acquire();
+                    }
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FcntlModuleBuiltinsClinicProviders.IoctlNodeClinicProviderGen.INSTANCE;
         }
     }
 }

@@ -1017,6 +1017,7 @@ public abstract class ErrorMessages {
     public static final TruffleString N_OBJECT_DOES_NOT_SUPPORT_THE_ASYNC_CONTEXT_MANAGER_PROTOCOL = tsLiteral("'%N' object does not support the asynchronous context manager protocol");
     public static final TruffleString N_OBJECT_DOES_NOT_SUPPORT_THE_ASYNC_CONTEXT_MANAGER_PROTOCOL_AEXIT = tsLiteral(
                     "'%N' object does not support the asynchronous context manager protocol (missed __aexit__ method)");
+    public static final TruffleString IOCTL_STRING_ARG_TOO_LONG = tsLiteral("ioctl string arg too long");
 
     // mmap
     public static final TruffleString MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = tsLiteral("memory mapped length must be positive");

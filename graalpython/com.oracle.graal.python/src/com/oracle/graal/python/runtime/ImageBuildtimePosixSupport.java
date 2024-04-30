@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -848,6 +848,20 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     public PwdResult[] getpwentries(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
         return nativeLib.getpwentries(nativePosixSupport);
+    }
+
+    @ExportMessage
+    final int ioctlBytes(int fd, long request, byte[] arg,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.ioctlBytes(nativePosixSupport, fd, request, arg);
+    }
+
+    @ExportMessage
+    final int ioctlInt(int fd, long request, int arg,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.ioctlInt(nativePosixSupport, fd, request, arg);
     }
 
     @ExportMessage

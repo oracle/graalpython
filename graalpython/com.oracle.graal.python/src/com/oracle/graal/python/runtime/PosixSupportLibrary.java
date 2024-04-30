@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -815,6 +815,10 @@ public abstract class PosixSupportLibrary extends Library {
      * @see "crypt(3) manpage"
      */
     public abstract TruffleString crypt(Object receiver, TruffleString word, TruffleString salt) throws PosixException;
+
+    public abstract int ioctlBytes(Object receiver, int fd, long request, byte[] arg) throws PosixException;
+
+    public abstract int ioctlInt(Object receiver, int fd, long request, int arg) throws PosixException;
 
     /**
      * Provides messages for manipulating {@link AddrInfoCursor}.
