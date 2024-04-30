@@ -2849,13 +2849,13 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("unused")
     public int ioctlBytes(int fd, long request, byte[] arg) {
-        throw new UnsupportedPosixFeatureException("ioctl");
+        throw new UnsupportedPosixFeatureException("ioctl is not available in Java posix backend");
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
     public int ioctlInt(int fd, long request, int arg) {
-        throw new UnsupportedPosixFeatureException("ioctl");
+        throw new UnsupportedPosixFeatureException("ioctl is not available in Java posix backend");
     }
 
     @ExportMessage

@@ -213,99 +213,103 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit(inliningTarget, "fcnt.ioctl", fd, request, arg);
 
-            int intArg = 0;
-            if (arg != PNone.NO_VALUE) {
-                Object buffer = null;
-                // Buffer argument
-                if (acquireLib.hasBuffer(arg)) {
-                    boolean writable = false;
-                    try {
-                        buffer = acquireLib.acquireWritable(arg, frame, indirectCallData);
-                        writable = true;
-                    } catch (PException e) {
+            try {
+                int intArg = 0;
+                if (arg != PNone.NO_VALUE) {
+                    Object buffer = null;
+                    // Buffer argument
+                    if (acquireLib.hasBuffer(arg)) {
+                        boolean writable = false;
                         try {
-                            buffer = acquireLib.acquireReadonly(arg, frame, indirectCallData);
-                        } catch (PException e1) {
-                            // ignore
+                            buffer = acquireLib.acquireWritable(arg, frame, indirectCallData);
+                            writable = true;
+                        } catch (PException e) {
+                            try {
+                                buffer = acquireLib.acquireReadonly(arg, frame, indirectCallData);
+                            } catch (PException e1) {
+                                // ignore
+                            }
                         }
-                    }
-                    if (buffer != null) {
-                        try {
-                            int len = bufferLib.getBufferLength(buffer);
-                            boolean writeBack = false;
-                            boolean releaseGil = true;
-                            byte[] ioctlArg = null;
-                            if (writable && mutateArg) {
-                                writeBack = true;
-                                if (bufferLib.hasInternalByteArray(buffer)) {
-                                    byte[] internalArray = bufferLib.getInternalByteArray(buffer);
-                                    if (internalArray.length > len && internalArray[len] == 0) {
-                                        writeBack = false;
-                                        releaseGil = false; // Could resize concurrently
-                                        ioctlArg = internalArray;
+                        if (buffer != null) {
+                            try {
+                                int len = bufferLib.getBufferLength(buffer);
+                                boolean writeBack = false;
+                                boolean releaseGil = true;
+                                byte[] ioctlArg = null;
+                                if (writable && mutateArg) {
+                                    writeBack = true;
+                                    if (bufferLib.hasInternalByteArray(buffer)) {
+                                        byte[] internalArray = bufferLib.getInternalByteArray(buffer);
+                                        if (internalArray.length > len && internalArray[len] == 0) {
+                                            writeBack = false;
+                                            releaseGil = false; // Could resize concurrently
+                                            ioctlArg = internalArray;
+                                        }
+                                    }
+                                } else {
+                                    if (len > IOCTL_BUFSZ) {
+                                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
                                     }
                                 }
-                            } else {
-                                if (len > IOCTL_BUFSZ) {
-                                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
+                                if (ioctlArg == null) {
+                                    ioctlArg = new byte[len + 1];
+                                    bufferLib.readIntoByteArray(buffer, 0, ioctlArg, 0, len);
                                 }
-                            }
-                            if (ioctlArg == null) {
-                                ioctlArg = new byte[len + 1];
-                                bufferLib.readIntoByteArray(buffer, 0, ioctlArg, 0, len);
-                            }
-                            try {
-                                int ret = callIoctlBytes(frame, inliningTarget, fd, request, ioctlArg, releaseGil, posixLib, gilNode, constructAndRaiseNode);
-                                if (writable && mutateArg) {
-                                    return ret;
-                                } else {
-                                    return factory.createBytes(ioctlArg, len);
+                                try {
+                                    int ret = callIoctlBytes(frame, inliningTarget, fd, request, ioctlArg, releaseGil, posixLib, gilNode, constructAndRaiseNode);
+                                    if (writable && mutateArg) {
+                                        return ret;
+                                    } else {
+                                        return factory.createBytes(ioctlArg, len);
+                                    }
+                                } finally {
+                                    if (writeBack) {
+                                        bufferLib.writeFromByteArray(buffer, 0, ioctlArg, 0, len);
+                                    }
                                 }
                             } finally {
-                                if (writeBack) {
-                                    bufferLib.writeFromByteArray(buffer, 0, ioctlArg, 0, len);
-                                }
+                                bufferLib.release(buffer, frame, indirectCallData);
                             }
-                        } finally {
-                            bufferLib.release(buffer, frame, indirectCallData);
                         }
                     }
-                }
-                // string arg
-                TruffleString stringArg = null;
-                try {
-                    stringArg = castToString.execute(inliningTarget, arg);
-                } catch (CannotCastException e) {
-                    // ignore
-                }
-                if (stringArg != null) {
-                    TruffleString.Encoding utf8 = TruffleString.Encoding.UTF_8;
-                    stringArg = switchEncodingNode.execute(stringArg, utf8);
-                    int len = stringArg.byteLength(utf8);
-                    if (len > IOCTL_BUFSZ) {
-                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
+                    // string arg
+                    TruffleString stringArg = null;
+                    try {
+                        stringArg = castToString.execute(inliningTarget, arg);
+                    } catch (CannotCastException e) {
+                        // ignore
                     }
-                    byte[] ioctlArg = new byte[len + 1];
-                    copyToByteArrayNode.execute(stringArg, 0, ioctlArg, 0, len, utf8);
-                    callIoctlBytes(frame, inliningTarget, fd, request, ioctlArg, true, posixLib, gilNode, constructAndRaiseNode);
-                    return factory.createBytes(ioctlArg, len);
+                    if (stringArg != null) {
+                        TruffleString.Encoding utf8 = TruffleString.Encoding.UTF_8;
+                        stringArg = switchEncodingNode.execute(stringArg, utf8);
+                        int len = stringArg.byteLength(utf8);
+                        if (len > IOCTL_BUFSZ) {
+                            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
+                        }
+                        byte[] ioctlArg = new byte[len + 1];
+                        copyToByteArrayNode.execute(stringArg, 0, ioctlArg, 0, len, utf8);
+                        callIoctlBytes(frame, inliningTarget, fd, request, ioctlArg, true, posixLib, gilNode, constructAndRaiseNode);
+                        return factory.createBytes(ioctlArg, len);
+                    }
+
+                    // int arg
+                    intArg = asIntNode.execute(frame, inliningTarget, arg);
+                    // fall through
                 }
 
-                // int arg
-                intArg = asIntNode.execute(frame, inliningTarget, arg);
-                // fall through
-            }
-
-            // default arg or int arg
-            try {
-                gilNode.release(true);
+                // default arg or int arg
                 try {
-                    return posixLib.ioctlInt(getPosixSupport(), fd, request, intArg);
-                } finally {
-                    gilNode.acquire();
+                    gilNode.release(true);
+                    try {
+                        return posixLib.ioctlInt(getPosixSupport(), fd, request, intArg);
+                    } finally {
+                        gilNode.acquire();
+                    }
+                } catch (PosixException e) {
+                    throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
-            } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
             }
         }
 
