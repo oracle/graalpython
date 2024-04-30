@@ -110,6 +110,7 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySequenceDelItemNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
@@ -231,13 +232,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public void writeMember(String key, Object value,
                     @Bind("$node") Node inliningTarget,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Cached PInteropSetAttributeNode setAttributeNode,
+                    @Cached PyObjectSetAttr setAttributeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached IsBuiltinObjectProfile attrErrorProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            setAttributeNode.execute(this, fromJavaStringNode.execute(key, TS_ENCODING), value);
+            setAttributeNode.execute(null, inliningTarget, this, fromJavaStringNode.execute(key, TS_ENCODING), value);
         } catch (PException e) {
             e.expectAttributeError(inliningTarget, attrErrorProfile);
             // TODO(fa) not accurate; distinguish between read-only and non-existing
@@ -748,13 +749,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public void removeMember(String member,
                     @Bind("$node") Node inliningTarget,
-                    @Cached PInteropDeleteAttributeNode deleteAttributeNode,
+                    @Cached PyObjectSetAttr deleteAttributeNode,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached IsBuiltinObjectProfile attrErrorProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            deleteAttributeNode.execute(this, member);
+            deleteAttributeNode.delete(null, inliningTarget, this, fromJavaStringNode.execute(member, TS_ENCODING));
         } catch (PException e) {
             e.expectAttributeError(inliningTarget, attrErrorProfile);
             // TODO(fa) not accurate; distinguish between read-only and non-existing
