@@ -97,7 +97,7 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
     }
 
     public final void delete(Frame frame, Node inliningTarget, Object receiver, TruffleString name) {
-        execute(frame, inliningTarget, receiver, name, null);
+        execute(frame, inliningTarget, receiver, name, PNone.NO_VALUE);
     }
 
     @Specialization(guards = {"name == cachedName", "value != null"}, limit = "1")

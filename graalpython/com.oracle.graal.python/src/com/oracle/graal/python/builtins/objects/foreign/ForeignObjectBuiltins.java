@@ -37,7 +37,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
@@ -1038,19 +1037,38 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_setattro, isComplex = true)
     @GenerateNodeFactory
     abstract static class SetattrNode extends SetAttrBuiltinNode {
-        @Specialization
-        static void doIt(Object object, Object key, Object value,
+        @Specialization(guards = "!isNoValue(value)")
+        static void doSet(Object object, Object key, Object value,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached CastToJavaStringNode castToString,
-                        @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached CastToJavaStringNode castToString,
+                        @Shared @Cached GilNode gil,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
                 lib.writeMember(object, castToString.execute(key), value);
             } catch (CannotCastException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        static void doDelete(Object object, Object key, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached CastToJavaStringNode castToString,
+                        @Shared @Cached GilNode gil,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            gil.release(true);
+            try {
+                lib.removeMember(object, castToString.execute(key));
+            } catch (CannotCastException e) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
+            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
             } finally {
                 gil.acquire();
@@ -1066,30 +1084,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(VirtualFrame frame, Object object, Object key, Object value) {
             setForeignItemNode.execute(frame, object, key, value);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = J___DELATTR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class DelattrNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static PNone doIt(Object object, Object key,
-                        @Bind("this") Node inliningTarget,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached CastToJavaStringNode castToString,
-                        @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            gil.release(true);
-            try {
-                lib.removeMember(object, castToString.execute(key));
-            } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
-            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
-            } finally {
-                gil.acquire();
-            }
             return PNone.NONE;
         }
     }
