@@ -73,6 +73,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemDynamicNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.MemMoveNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextHelperNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.BuiltinIteratorLengthHint;
@@ -1171,6 +1173,10 @@ public abstract class SequenceStorageNodes {
 
         public abstract void execute(Node inliningTarget, SequenceStorage s, int distPos, int srcPos, int length);
 
+        public static void executeUncached(SequenceStorage s, int distPos, int srcPos, int length) {
+            MemMoveNodeGen.getUncached().execute(null, s, distPos, srcPos, length);
+        }
+
         @SuppressWarnings("unused")
         @Specialization(guards = "length <= 0")
         protected static void nothing(SequenceStorage storage, int distPos, int srcPos, int length) {
@@ -1187,8 +1193,38 @@ public abstract class SequenceStorageNodes {
         protected static void doOther(Node inliningTarget, SequenceStorage storage, int distPos, int srcPos, int length,
                         @Cached SetItemScalarNode setLeftItemNode,
                         @Cached GetItemScalarNode getRightItemNode) {
-            for (int cur = distPos, j = srcPos, i = 0; i < length; cur += 1, j++, i++) {
-                setLeftItemNode.execute(inliningTarget, storage, cur, getRightItemNode.execute(inliningTarget, storage, j));
+
+            if (srcPos < distPos && srcPos + length > distPos) {
+                // case where we override values which we later want to read, therefore we need to
+                // copy from the end
+                copyBackward(inliningTarget, storage, getRightItemNode, setLeftItemNode, distPos, srcPos, length);
+
+            } else {
+                // otherwise copying forwards
+                copyForward(inliningTarget, storage, getRightItemNode, setLeftItemNode, distPos, srcPos, length);
+            }
+        }
+
+        private static void copyForward(Node inliningTarget, SequenceStorage storage, GetItemScalarNode getRightItemNode, SetItemScalarNode setLeftItemNode, int destPos, int srcPos, int length) {
+            while (length > 0) {
+                var value = getRightItemNode.execute(inliningTarget, storage, srcPos);
+                setLeftItemNode.execute(inliningTarget, storage, destPos, value);
+                destPos++;
+                srcPos++;
+                length--;
+
+            }
+        }
+
+        private static void copyBackward(Node inliningTarget, SequenceStorage storage, GetItemScalarNode getRightItemNode, SetItemScalarNode setLeftItemNode, int destPos, int srcPos, int length) {
+            destPos += length;
+            srcPos += length;
+            while (length > 0) {
+                destPos--;
+                srcPos--;
+                length--;
+                var value = getRightItemNode.execute(inliningTarget, storage, srcPos);
+                setLeftItemNode.execute(inliningTarget, storage, destPos, value);
             }
         }
 
@@ -1473,6 +1509,10 @@ public abstract class SequenceStorageNodes {
 
         public final NativeByteSequenceStorage executeBytes(Node inliningTarget, byte[] obj, int length) {
             return executeBytes(inliningTarget, obj, length, true);
+        }
+
+        public static NativeSequenceStorage executeUncached(Object obj, int length) {
+            return StorageToNativeNodeGen.getUncached().execute(null, obj, length);
         }
 
         public final NativeSequenceStorage execute(Node inliningTarget, Object obj, int length) {
