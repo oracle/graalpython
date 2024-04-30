@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
@@ -694,7 +695,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectLookupAttr lookupKeys,
                     @Cached CallNode callKeys,
-                    @Cached PInteropSubscriptNode getItemNode,
+                    @Cached PyObjectGetItem getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
                     @Cached TypeNodes.GetMroNode getMroNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -723,7 +724,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         PList mapKeys = castToList.executeWithGlobalState(callKeys.execute(keysMethod));
                         int len = lenNode.execute(inliningTarget, mapKeys);
                         for (int i = 0; i < len; i++) {
-                            Object key = getItemNode.execute(mapKeys, i);
+                            Object key = getItemNode.execute(null, inliningTarget, mapKeys, i);
                             TruffleString tsKey = null;
                             if (key instanceof TruffleString) {
                                 tsKey = (TruffleString) key;
