@@ -113,6 +113,8 @@ class FcntlTests(unittest.TestCase):
             os.close(file)
 
 
+@unittest.skipUnless(sys.platform == 'linux', "Linux only test")
+@unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', "No ioctl in emulated backend")
 class IoctlTests(unittest.TestCase):
     # Taken from CPython test_ioctl.py which unfortunately skips the whole file when not in a terminal
     def test_ioctl_signed_unsigned_code_param(self):
