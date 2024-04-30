@@ -344,6 +344,13 @@ public final class PythonContext extends Python3Core {
         Object asyncgenFirstIter;
 
         /*
+         * Instrumentation data (Bytecode DSL interpreter only). For the manual bytecode
+         * interpreter, this data is stored in a local state variable, but the DSL interpreter must
+         * use a thread local.
+         */
+        PBytecodeDSLRootNode.InstrumentationData instrumentationData;
+
+        /*
          * Counter for C-level recursion depth used for Py_(Enter/Leave)RecursiveCall.
          */
         public int recursionDepth;
@@ -519,15 +526,27 @@ public final class PythonContext extends Python3Core {
                 language.noTracingOrProfilingAssumption.invalidate();
 
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                    final List<PBytecodeDSLRootNode> rootNodes = new ArrayList<>();
+
                     // Ensure tracing + profiling are enabled for each method on the stack.
                     Truffle.getRuntime().iterateFrames((frameInstance) -> {
                         if (frameInstance.getCallTarget() instanceof RootCallTarget c && c.getRootNode() instanceof PBytecodeDSLRootNode r) {
                             if (r.needsTraceAndProfileInstrumentation()) {
                                 r.ensureTraceAndProfileEnabled();
                             }
+                            rootNodes.add(r);
                         }
                         return null;
                     });
+
+                    /**
+                     * Normally, a root node will push + pop the instrumentation data in its
+                     * prolog/epilog. Since these nodes are on stack, we need to push them manually,
+                     * starting from the deepest stack frame.
+                     */
+                    for (PBytecodeDSLRootNode rootNode : rootNodes.reversed()) {
+                        rootNode.getThreadState().pushInstrumentationData(rootNode);
+                    }
                 }
             }
         }
@@ -587,6 +606,23 @@ public final class PythonContext extends Python3Core {
 
         public void profilingStop() {
             this.profiling = false;
+        }
+
+        public PBytecodeDSLRootNode.InstrumentationData getInstrumentationData(PBytecodeDSLRootNode rootNode) {
+            assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+            assert instrumentationData != null && instrumentationData.getRootNode() == rootNode;
+            return instrumentationData;
+        }
+
+        public void pushInstrumentationData(PBytecodeDSLRootNode rootNode) {
+            assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+            instrumentationData = new PBytecodeDSLRootNode.InstrumentationData(rootNode, instrumentationData);
+        }
+
+        public void popInstrumentationData(PBytecodeDSLRootNode rootNode) {
+            assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+            assert instrumentationData != null && instrumentationData.getRootNode() == rootNode;
+            instrumentationData = instrumentationData.getPrevious();
         }
 
         public Object getAsyncgenFirstIter() {
