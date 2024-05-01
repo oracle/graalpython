@@ -526,28 +526,33 @@ public final class PythonContext extends Python3Core {
                 language.noTracingOrProfilingAssumption.invalidate();
 
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    final List<PBytecodeDSLRootNode> rootNodes = new ArrayList<>();
-
-                    // Ensure tracing + profiling are enabled for each method on the stack.
-                    Truffle.getRuntime().iterateFrames((frameInstance) -> {
-                        if (frameInstance.getCallTarget() instanceof RootCallTarget c && c.getRootNode() instanceof PBytecodeDSLRootNode r) {
-                            if (r.needsTraceAndProfileInstrumentation()) {
-                                r.ensureTraceAndProfileEnabled();
-                            }
-                            rootNodes.add(r);
-                        }
-                        return null;
-                    });
-
-                    /**
-                     * Normally, a root node will push + pop the instrumentation data in its
-                     * prolog/epilog. Since these nodes are on stack, we need to push them manually,
-                     * starting from the deepest stack frame.
-                     */
-                    for (PBytecodeDSLRootNode rootNode : rootNodes.reversed()) {
-                        rootNode.getThreadState().pushInstrumentationData(rootNode);
-                    }
+                    enableTracingOrProfilingForActiveRootNodes();
                 }
+            }
+        }
+
+        @TruffleBoundary
+        private static void enableTracingOrProfilingForActiveRootNodes() {
+            final List<PBytecodeDSLRootNode> rootNodes = new ArrayList<>();
+
+            // Ensure tracing + profiling are enabled for each method on the stack.
+            Truffle.getRuntime().iterateFrames((frameInstance) -> {
+                if (frameInstance.getCallTarget() instanceof RootCallTarget c && c.getRootNode() instanceof PBytecodeDSLRootNode r) {
+                    if (r.needsTraceAndProfileInstrumentation()) {
+                        r.ensureTraceAndProfileEnabled();
+                    }
+                    rootNodes.add(r);
+                }
+                return null;
+            });
+
+            /**
+             * Normally, a root node will push + pop the instrumentation data in its prolog/epilog.
+             * Since these nodes are on stack, we need to push them manually, starting from the
+             * deepest stack frame.
+             */
+            for (PBytecodeDSLRootNode rootNode : rootNodes.reversed()) {
+                rootNode.getThreadState().pushInstrumentationData(rootNode);
             }
         }
 
