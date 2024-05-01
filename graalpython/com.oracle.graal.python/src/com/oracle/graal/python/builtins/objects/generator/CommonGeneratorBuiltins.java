@@ -67,7 +67,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode.GeneratorReturnException;
 import com.oracle.graal.python.nodes.bytecode.GeneratorYieldResult;
-import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -82,6 +81,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -397,7 +397,12 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 // its frame to the traceback manually.
                 self.markAsFinished();
                 Node location = self.getCurrentCallTarget().getRootNode();
-                MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
+                MaterializedFrame generatorFrame;
+                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                    generatorFrame = Truffle.getRuntime().createMaterializedFrame(PArguments.create(), self.getRootNode().getFrameDescriptor());
+                } else {
+                    generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
+                }
                 PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory.get(inliningTarget));
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 pFrame.setLine(info.getFirstLineNumber());

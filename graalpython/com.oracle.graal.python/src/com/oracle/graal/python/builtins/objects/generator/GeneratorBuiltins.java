@@ -52,7 +52,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
-import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -192,18 +191,18 @@ public final class GeneratorBuiltins extends PythonBuiltins {
             if (self.isFinished()) {
                 return PNone.NONE;
             } else {
-                MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-                    PBytecodeDSLRootNode rootNode = info.getRootNode();
                     ContinuationResult continuation = self.getContinuation();
                     BytecodeLocation location = continuation.getBytecodeLocation();
+                    MaterializedFrame generatorFrame = continuation.getFrame();
+                    BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                     PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location.getBytecodeNode(), generatorFrame, PFrame.Reference.EMPTY, factory);
                     int bci = location.getBytecodeIndex();
                     frame.setBci(bci);
-                    frame.setLine(rootNode.bciToLine(bci, location.getBytecodeNode()));
+                    frame.setLine(info.getRootNode().bciToLine(bci, location.getBytecodeNode()));
                     return frame;
                 } else {
+                    MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
                     BytecodeFrameInfo info = (BytecodeFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                     PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(info.getRootNode(), generatorFrame, PFrame.Reference.EMPTY, factory);
                     int bci = self.getBci();

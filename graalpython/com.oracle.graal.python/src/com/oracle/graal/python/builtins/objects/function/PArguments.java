@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.function;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -217,6 +218,11 @@ public final class PArguments {
         return arguments[INDEX_CURRENT_EXCEPTION];
     }
 
+    public static boolean hasException(Object[] arguments) {
+        Object exception = getExceptionUnchecked(arguments);
+        return exception != null && exception != PException.NO_EXCEPTION;
+    }
+
     public static void setException(Frame frame, PException exc) {
         setException(frame.getArguments(), exc);
     }
@@ -280,6 +286,7 @@ public final class PArguments {
     }
 
     public static MaterializedFrame getGeneratorFrame(Object[] arguments) {
+        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
         return (MaterializedFrame) arguments[INDEX_GENERATOR_FRAME];
     }
 

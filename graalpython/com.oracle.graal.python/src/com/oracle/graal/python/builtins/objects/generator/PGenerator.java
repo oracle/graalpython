@@ -140,8 +140,6 @@ public class PGenerator extends PythonBuiltinObject {
 
     public static PGenerator create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeDSLRootNode rootNode, Object[] arguments,
                     PythonBuiltinClassType cls, boolean isIterableCoroutine) {
-        // note: also done in PAsyncGen.create
-        rootNode.createGeneratorFrame(arguments);
         return new PGenerator(lang, name, qualname, arguments, cls, isIterableCoroutine, new BytecodeDSLState(rootNode));
     }
 
