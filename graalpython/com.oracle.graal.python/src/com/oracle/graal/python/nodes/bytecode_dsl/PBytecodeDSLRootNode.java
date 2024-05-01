@@ -592,22 +592,26 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @InliningCutoff
     private final PException traceException(VirtualFrame frame, BytecodeNode bytecode, int bci, PException pe) {
-        PFrame pyFrame = ensurePyFrame(frame, bytecode);
-        if (pyFrame.getLocalTraceFun() != null) {
-            pe.markAsCaught(frame, this);
-            PythonThreadState threadState = getThreadState();
-            Object peForPython = pe.getEscapedException();
-            Object peType = GetClassNode.executeUncached(peForPython);
-            Object traceback = ExceptionNodes.GetTracebackNode.executeUncached(peForPython);
-            invokeTraceFunction(frame, bytecode, null, threadState, TraceEvent.EXCEPTION,
-                            factory.createTuple(new Object[]{peType, peForPython, traceback}),
-                            bciToLine(bci, bytecode));
+        PythonThreadState threadState = getThreadState();
+        // We should only trace the exception if tracing is enabled.
+        if (threadState.getTraceFun() != null) {
+            PFrame pyFrame = ensurePyFrame(frame, bytecode);
+            // We use the local function for tracing exceptions.
+            if (pyFrame.getLocalTraceFun() != null) {
+                pe.markAsCaught(frame, this);
+                Object peForPython = pe.getEscapedException();
+                Object peType = GetClassNode.executeUncached(peForPython);
+                Object traceback = ExceptionNodes.GetTracebackNode.executeUncached(peForPython);
+                invokeTraceFunction(frame, bytecode, null, threadState, TraceEvent.EXCEPTION,
+                                factory.createTuple(new Object[]{peType, peForPython, traceback}),
+                                bciToLine(bci, bytecode));
 
-            // The exception was reified already. Get a new exception that looks like this catch
-            // didn't happen.
-            PException newPe = pe.getExceptionForReraise(!isInternal());
-            newPe.setCatchLocation(bci, bytecode);
-            return newPe;
+                // The exception was reified already. Get a new exception that looks like this catch
+                // didn't happen.
+                PException newPe = pe.getExceptionForReraise(!isInternal());
+                newPe.setCatchLocation(bci, bytecode);
+                return newPe;
+            }
         }
         return pe;
     }
@@ -807,18 +811,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Override
     protected byte[] extractCode() {
         return MarshalModuleBuiltins.serializeCodeUnit(co);
-    }
-
-    public MaterializedFrame createGeneratorFrame(Object[] arguments) {
-        Object[] generatorFrameArguments = PArguments.create();
-        MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(generatorFrameArguments, getFrameDescriptor());
-        PArguments.setGeneratorFrame(arguments, generatorFrame);
-        PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(null));
-        // The invoking node will set these two to the correct value only when the callee requests
-        // it, otherwise they stay at the initial value, which we must set to null here
-        PArguments.setException(arguments, null);
-        PArguments.setCallerFrameInfo(arguments, null);
-        return generatorFrame;
     }
 
     private static Object checkUnboundCell(PCell cell, int index, PBytecodeDSLRootNode rootNode, Node inliningTarget, PRaiseNode.Lazy raiseNode) {
@@ -3818,16 +3810,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static Object doObject(VirtualFrame frame, Object value,
                         @Bind("this") Node location,
                         @Bind("$root") PBytecodeDSLRootNode root) {
-            /**
-             * Store any current exception in the generator so it can be remembered on resumption.
-             */
-            PArguments.setException(PArguments.getGeneratorFrame(frame), PArguments.getException(frame));
-
             if (root.needsTraceAndProfileInstrumentation()) {
                 root.traceOrProfileReturn(frame, location, value);
                 root.getThreadState().popInstrumentationData(root);
             }
-
             return value;
         }
     }
@@ -3844,14 +3830,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind("$bytecode") BytecodeNode bytecode,
                         @Bind("$bci") int bci,
                         @Cached GetSendValueNode getSendValue) {
-            /**
-             * Restore any existing exception state from before the yield.
-             */
-            PException currentException = PArguments.getException(PArguments.getGeneratorFrame(frame));
-            if (currentException != null) {
-                PArguments.setException(frame, currentException);
-            }
-
             if (root.needsTraceAndProfileInstrumentation()) {
                 // We may not have reparsed the root with instrumentation yet.
                 root.ensureTraceAndProfileEnabled();

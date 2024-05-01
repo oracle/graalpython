@@ -108,17 +108,21 @@ public abstract class ExecutionContext {
 
             PRootNode calleeRootNode;
             Object[] actualCallArguments;
+            boolean needsExceptionState;
             if (rootNode instanceof ContinuationRootNode continuationRoot) {
                 calleeRootNode = (PRootNode) continuationRoot.getSourceRootNode();
                 assert callArguments.length == 2;
                 actualCallArguments = ((MaterializedFrame) callArguments[0]).getArguments();
+                // Local exception state takes precedence over any exception in the caller's context
+                needsExceptionState = calleeRootNode.needsExceptionState() && !PArguments.hasException(actualCallArguments);
             } else {
                 // n.b.: The class cast should always be correct, since this context
                 // must only be used when calling from Python to Python
                 calleeRootNode = (PRootNode) rootNode;
                 actualCallArguments = callArguments;
+                needsExceptionState = calleeRootNode.needsExceptionState();
             }
-            prepareCall(frame, actualCallArguments, callNode, calleeRootNode.needsCallerFrame(), calleeRootNode.needsExceptionState());
+            prepareCall(frame, actualCallArguments, callNode, calleeRootNode.needsCallerFrame(), needsExceptionState);
 
         }
 

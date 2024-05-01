@@ -762,11 +762,6 @@ AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py", "test_ssl_java_in
 # These test would work on JVM too, but they are prohibitively slow due to a large amount of subprocesses
 AOT_ONLY_TESTS = ["test_patched_pip.py", "test_multiprocessing_spawn.py"]
 
-BYTECODE_DSL_INCOMPATIBLE_TESTS = [
-    "test_pdb.py", # This test hangs the test runner.
-    "test_codeobject.py", # Relies on getBytecodeNode support for continuations
-]
-
 GINSTALL_GATE_PACKAGES = {
     "numpy": "numpy",
     "scipy": "scipy",
@@ -1147,7 +1142,6 @@ def graalpytest(args):
 
     if args.use_bytecode_dsl_interpreter:
         cmd_args += ["--vm.Dpython.EnableBytecodeDSLInterpreter=true"]
-        excludes = BYTECODE_DSL_INCOMPATIBLE_TESTS
 
     testfiles = _list_graalpython_unittests(args.test, exclude=excludes)
     # if we got a binary path it's most likely CPython, so don't add graalpython args
