@@ -502,7 +502,7 @@ def run_cpython_test(raw_args):
         *testfiles,
     ]
     handle_debug_arg(python_args)
-    standalone_home = graalpy_standalone_home(args.standalone_type, dev=True, build=False)
+    standalone_home = graalpy_standalone_home(args.standalone_type, dev=True, build=False, use_bytecode_dsl=args.use_bytecode_dsl_interpreter)
     graalpy_path = os.path.join(standalone_home, 'bin', _graalpy_launcher())
     if not os.path.exists(graalpy_path):
         mx.abort("GraalPy standalone is not built")
@@ -1232,7 +1232,6 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
 
     if enableBytecodeDSLInterpreter:
         args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
-        exclude += BYTECODE_DSL_INCOMPATIBLE_TESTS
 
     # just to be able to verify, print C ext mode (also works for CPython)
     mx.run([python_binary,

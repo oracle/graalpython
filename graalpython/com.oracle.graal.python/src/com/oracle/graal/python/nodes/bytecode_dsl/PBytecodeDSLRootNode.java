@@ -715,6 +715,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Override
     public String getName() {
+        if (co == null) {
+            // getName can be called by validation code before the code unit has been set.
+            return null;
+        }
         return co.name.toJavaStringUncached();
     }
 
@@ -746,17 +750,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @TruffleBoundary
     public SourceSection getSourceSectionForLocation(BytecodeLocation location) {
-        return getSourceSectionForLocation(location.getBytecodeIndex(), location.getBytecodeNode());
-    }
-
-    @TruffleBoundary
-    public SourceSection getSourceSectionForLocation(int bci, BytecodeNode bytecodeNode) {
         SourceSection sourceSection = null;
-        if (bytecodeNode != null) {
-            BytecodeLocation bytecodeLocation = bytecodeNode.getBytecodeLocation(bci);
-            if (bytecodeLocation != null) {
-                sourceSection = bytecodeLocation.getSourceLocation();
-            }
+        if (location != null) {
+            sourceSection = location.getSourceLocation();
         }
 
         if (sourceSection == null) {
@@ -769,6 +765,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         return sourceSection;
+    }
+
+    @TruffleBoundary
+    public SourceSection getSourceSectionForLocation(int bci, BytecodeNode bytecodeNode) {
+        BytecodeLocation location = null;
+        if (bytecodeNode != null) {
+            location = bytecodeNode.getBytecodeLocation(bci);
+        }
+        return getSourceSectionForLocation(location);
     }
 
     public static int bciToLasti(int bci, BytecodeNode bytecodeNode) {
