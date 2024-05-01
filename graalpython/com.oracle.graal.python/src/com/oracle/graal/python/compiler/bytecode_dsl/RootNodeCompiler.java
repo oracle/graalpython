@@ -690,9 +690,12 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         b.beginWhile();
 
+        b.beginBlock();
+        b.emitTraceLineAtLoopHeader();
         b.beginForIterate(localValue);
         b.emitLoadLocal(localIter);
         b.endForIterate();
+        b.endBlock();
 
         b.beginBlock();
 
