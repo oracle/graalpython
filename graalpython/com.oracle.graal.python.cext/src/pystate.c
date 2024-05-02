@@ -190,3 +190,19 @@ PyGILState_Release(PyGILState_STATE oldstate)
         }
     }
 }
+
+// GraalPy change: We don't have subinterpreters at the moment, so store the dict into a global object
+static PyObject* interpreter_dict;
+
+PyObject *
+PyInterpreterState_GetDict(PyInterpreterState *interp)
+{
+    if (interpreter_dict == NULL) {
+        interpreter_dict = PyDict_New();
+        if (interpreter_dict == NULL) {
+            PyErr_Clear();
+        }
+    }
+    /* Returning NULL means no per-interpreter dict is available. */
+    return interpreter_dict;
+}
