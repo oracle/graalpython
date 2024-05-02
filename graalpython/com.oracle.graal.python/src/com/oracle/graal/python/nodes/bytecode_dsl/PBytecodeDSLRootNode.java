@@ -214,6 +214,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -342,7 +343,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @EpilogReturn
-    public static final class ExitCalleeContext {
+    public static final class EpilogForReturn {
         @Specialization
         public static Object doExit(VirtualFrame frame, Object returnValue,
                         @Bind("$root") PBytecodeDSLRootNode root,
@@ -357,12 +358,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @EpilogExceptional
-    public static final class ExitCalleeContextExceptional {
+    public static final class EpilogForException {
         @Specialization
         public static void doExit(VirtualFrame frame, AbstractTruffleException ate,
                         @Bind("$root") PBytecodeDSLRootNode root,
                         @Bind("this") Node location) {
-
             if (ate instanceof PException pe) {
                 pe.notifyAddedTracebackFrame(!root.isPythonInternal());
             }
@@ -442,6 +442,16 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         GetFrameLocalsNode.syncLocalsBackToFrame(co, this, pyFrame, frame);
     }
 
+    /**
+     * When tracing/profiling is enabled, we emit a lot of extra operations. Reduce compiled code
+     * size by putting the calls behind a boundary (the uncached invoke will eventually perform an
+     * indirect call anyway).
+     */
+    @TruffleBoundary
+    private static Object doInvokeProfileOrTraceFunction(Object fun, PFrame pyFrame, TruffleString eventName, Object arg) {
+        return CallTernaryMethodNode.getUncached().execute(null, fun, pyFrame, eventName, arg == null ? PNone.NONE : arg);
+    }
+
     @InliningCutoff
     private void invokeProfileFunction(VirtualFrame virtualFrame, Node location, Object profileFun,
                     PythonContext.PythonThreadState threadState, PythonContext.ProfileEvent event, Object arg) {
@@ -450,10 +460,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
         threadState.profilingStart();
         PFrame pyFrame = ensurePyFrame(virtualFrame, location);
+        EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
+        Node oldEncapsulatingNode = encapsulating.set(location);
         try {
             // Force locals dict sync, so that we can sync them back later
             GetFrameLocalsNode.executeUncached(pyFrame);
-            Object result = CallTernaryMethodNode.getUncached().execute(null, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
+            Object result = doInvokeProfileOrTraceFunction(profileFun, pyFrame, event.name, arg);
             syncLocalsBackToFrame(virtualFrame, pyFrame);
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
@@ -462,6 +474,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             throw e;
         } finally {
             threadState.profilingStop();
+            encapsulating.set(oldEncapsulatingNode);
         }
     }
 
@@ -485,6 +498,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return;
         }
         Object nonNullArg = arg == null ? PNone.NONE : arg;
+
+        EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
+        Node oldEncapsulatingNode = encapsulating.set(location);
         try {
             /**
              * The PFrame syncs to the line of the current bci. Sometimes this location is
@@ -497,7 +513,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
             // Force locals dict sync, so that we can sync them back later
             GetFrameLocalsNode.executeUncached(pyFrame);
-            Object result = CallTernaryMethodNode.getUncached().execute(null, traceFn, pyFrame, event.pythonName, nonNullArg);
+            Object result = doInvokeProfileOrTraceFunction(traceFn, pyFrame, event.pythonName, nonNullArg);
             syncLocalsBackToFrame(virtualFrame, pyFrame);
             // https://github.com/python/cpython/issues/104232
             if (useLocalFn) {
@@ -516,6 +532,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 pyFrame.lineUnlock();
             }
             threadState.tracingStop();
+            encapsulating.set(oldEncapsulatingNode);
         }
     }
 
@@ -592,6 +609,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @InliningCutoff
     private final PException traceException(VirtualFrame frame, BytecodeNode bytecode, int bci, PException pe) {
+        PException result = pe;
+
         PythonThreadState threadState = getThreadState();
         // We should only trace the exception if tracing is enabled.
         if (threadState.getTraceFun() != null) {
@@ -602,18 +621,23 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 Object peForPython = pe.getEscapedException();
                 Object peType = GetClassNode.executeUncached(peForPython);
                 Object traceback = ExceptionNodes.GetTracebackNode.executeUncached(peForPython);
-                invokeTraceFunction(frame, bytecode, null, threadState, TraceEvent.EXCEPTION,
-                                factory.createTuple(new Object[]{peType, peForPython, traceback}),
-                                bciToLine(bci, bytecode));
-
-                // The exception was reified already. Get a new exception that looks like this catch
-                // didn't happen.
-                PException newPe = pe.getExceptionForReraise(!isInternal());
-                newPe.setCatchLocation(bci, bytecode);
-                return newPe;
+                try {
+                    invokeTraceFunction(frame, bytecode, null, threadState, TraceEvent.EXCEPTION,
+                                    factory.createTuple(new Object[]{peType, peForPython, traceback}),
+                                    bciToLine(bci, bytecode));
+                } catch (PException newPe) {
+                    // If the trace function raises, handle its exception instead.
+                    result = newPe;
+                    // Below, we get the exception for reraise in order to hide the original
+                    // raising site that's being traced (i.e., hiding the original cause).
+                }
+                // The exception was reified already. Return a new exception that looks like this
+                // catch didn't happen.
+                result = result.getExceptionForReraise(!isInternal());
+                result.setCatchLocation(bci, bytecode);
             }
         }
-        return pe;
+        return result;
     }
 
     @Instrumentation

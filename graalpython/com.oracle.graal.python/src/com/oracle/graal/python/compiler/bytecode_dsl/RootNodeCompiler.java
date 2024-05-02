@@ -4297,6 +4297,12 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         }
 
         @Override
+        public Void visit(StmtTy.TryStar node) {
+            emitNotImplemented("try star", b);
+            return null;
+        }
+
+        @Override
         public Void visit(ExceptHandlerTy.ExceptHandler node) {
             throw new UnsupportedOperationException("" + node.getClass());
         }
