@@ -63,7 +63,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateFunctionNode;
@@ -127,6 +126,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.HasSameConstructorNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -2913,11 +2913,11 @@ public abstract class GraalHPyNodes {
         static int tuple(GraalHPyContext context, Object err, PTuple exc,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached RecursiveExceptionMatches recExcMatch,
-                        @Exclusive @Cached PInteropSubscriptNode getItemNode,
+                        @Exclusive @Cached PyObjectGetItem getItemNode,
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile) {
             int len = exc.getSequenceStorage().length();
             for (int i = 0; loopProfile.profile(inliningTarget, i < len); i++) {
-                Object e = getItemNode.execute(exc, i);
+                Object e = getItemNode.execute(null, inliningTarget, exc, i);
                 if (recExcMatch.execute(context, err, e) != 0) {
                     return 1;
                 }
@@ -2934,11 +2934,11 @@ public abstract class GraalHPyNodes {
                         @Shared @Cached ReadAttributeFromObjectNode readAttr,
                         @Shared @Cached CallNode callNode,
                         @Cached CastToJavaIntExactNode cast,
-                        @Exclusive @Cached PInteropSubscriptNode getItemNode,
+                        @Exclusive @Cached PyObjectGetItem getItemNode,
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile) {
             int len = cast.execute(inliningTarget, callBuiltinFunction(context, BuiltinNames.T_LEN, new Object[]{exc}, readAttr, callNode));
             for (int i = 0; loopProfile.profile(inliningTarget, i < len); i++) {
-                Object e = getItemNode.execute(exc, i);
+                Object e = getItemNode.execute(null, inliningTarget, exc, i);
                 if (recExcMatch.execute(context, err, e) != 0) {
                     return 1;
                 }

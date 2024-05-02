@@ -48,11 +48,8 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_TYPE_A_NOT_TYP
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_A_S_TUPLE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
@@ -71,7 +68,6 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
@@ -108,8 +104,10 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySequenceDelItemNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
@@ -117,7 +115,6 @@ import com.oracle.graal.python.lib.PySequenceSetItemNode;
 import com.oracle.graal.python.lib.PySequenceSizeNode;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -127,7 +124,6 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
 import com.oracle.graal.python.nodes.interop.GetInteropBehaviorNode;
@@ -230,14 +226,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public void writeMember(String key, Object value,
                     @Bind("$node") Node inliningTarget,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Cached PInteropSetAttributeNode setAttributeNode,
+                    @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                    @Exclusive @Cached PyObjectSetAttr setAttributeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached IsBuiltinObjectProfile attrErrorProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            setAttributeNode.execute(this, fromJavaStringNode.execute(key, TS_ENCODING), value);
+            setAttributeNode.execute(null, inliningTarget, this, fromJavaStringNode.execute(key, TS_ENCODING), value);
         } catch (PException e) {
             e.expectAttributeError(inliningTarget, attrErrorProfile);
             // TODO(fa) not accurate; distinguish between read-only and non-existing
@@ -250,7 +246,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object readMember(String key,
                     @Bind("$node") Node inliningTarget,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                    @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectLookupAttr lookup,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
@@ -602,7 +598,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object invokeMember(String member, Object[] arguments,
                     @Bind("$node") Node inliningTarget,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                    @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Exclusive @Cached CallBinaryMethodNode callGetattributeNode,
                     @Exclusive @Cached PExecuteNode executeNode,
@@ -693,7 +689,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectLookupAttr lookupKeys,
                     @Cached CallNode callKeys,
-                    @Cached PInteropSubscriptNode getItemNode,
+                    @Cached PyObjectGetItem getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
                     @Cached TypeNodes.GetMroNode getMroNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -722,7 +718,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         PList mapKeys = castToList.executeWithGlobalState(callKeys.execute(keysMethod));
                         int len = lenNode.execute(inliningTarget, mapKeys);
                         for (int i = 0; i < len; i++) {
-                            Object key = getItemNode.execute(mapKeys, i);
+                            Object key = getItemNode.execute(null, inliningTarget, mapKeys, i);
                             TruffleString tsKey = null;
                             if (key instanceof TruffleString) {
                                 tsKey = (TruffleString) key;
@@ -748,13 +744,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public void removeMember(String member,
                     @Bind("$node") Node inliningTarget,
-                    @Cached PInteropDeleteAttributeNode deleteAttributeNode,
+                    @Exclusive @Cached PyObjectSetAttr deleteAttributeNode,
+                    @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached IsBuiltinObjectProfile attrErrorProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            deleteAttributeNode.execute(this, member);
+            deleteAttributeNode.delete(null, inliningTarget, this, fromJavaStringNode.execute(member, TS_ENCODING));
         } catch (PException e) {
             e.expectAttributeError(inliningTarget, attrErrorProfile);
             // TODO(fa) not accurate; distinguish between read-only and non-existing
@@ -1265,37 +1262,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
     }
 
-    /*
-     * Basically the same as 'com.oracle.graal.python.nodes.subscript.GetItemNode' but with an
-     * uncached version.
-     */
-    @GenerateUncached
-    @ImportStatic(SpecialMethodSlot.class)
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 19
-    public abstract static class PInteropSubscriptNode extends Node {
-
-        public abstract Object execute(Object primary, Object index);
-
-        @Specialization
-        static Object doSpecialObject(Object primary, Object index,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupInMRONode,
-                        @Cached CallBinaryMethodNode callGetItemNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached InlinedConditionProfile profile) {
-            Object attrGetItem = lookupInMRONode.execute(getClassNode.execute(inliningTarget, primary));
-            if (profile.profile(inliningTarget, attrGetItem == PNone.NO_VALUE)) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, primary);
-            }
-            return callGetItemNode.executeObject(attrGetItem, primary, index);
-        }
-
-        public static PInteropSubscriptNode getUncached() {
-            return PythonAbstractObjectFactory.PInteropSubscriptNodeGen.getUncached();
-        }
-    }
-
     @GenerateUncached
     @ReportPolymorphism
     @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
@@ -1412,185 +1378,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         @ExportMessage
         boolean isArrayElementReadable(long index) {
             return index >= 0 && index < keys.length;
-        }
-    }
-
-    /*
-     * Basically the same as 'com.oracle.graal.python.nodes.attributes.GetAttributeNode' but with an
-     * uncached version.
-     */
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class PInteropGetAttributeNode extends Node {
-
-        public abstract Object execute(Node inliningTarget, Object object, Object attrName);
-
-        public static Object executeUncached(Object object, Object attrName) {
-            return PInteropGetAttributeNodeGen.getUncached().execute(null, object, attrName);
-        }
-
-        @Specialization(limit = "2")
-        static Object doIt(Node inliningTarget, Object object, Object attrName,
-                        @CachedLibrary("attrName") InteropLibrary libAttrName,
-                        // GR-44020: make shared:
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
-                        @Cached(inline = false) CallBinaryMethodNode callGetattributeNode,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetattrNode,
-                        @Cached(inline = false) CallBinaryMethodNode callGetattrNode,
-                        @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
-                        @Cached InlinedConditionProfile hasGetattrProfile) {
-            if (!libAttrName.isString(attrName)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, attrName);
-            }
-
-            TruffleString attrNameStr;
-            try {
-                attrNameStr = switchEncodingNode.execute(libAttrName.asTruffleString(attrName), TS_ENCODING);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
-            }
-
-            try {
-                Object attrGetattribute = lookupGetattributeNode.execute(inliningTarget, object, T___GETATTRIBUTE__);
-                return callGetattributeNode.executeObject(attrGetattribute, object, attrNameStr);
-            } catch (PException pe) {
-                pe.expect(inliningTarget, AttributeError, isBuiltinClassProfile);
-                Object attrGetattr = lookupGetattrNode.execute(inliningTarget, object, T___GETATTR__);
-                if (hasGetattrProfile.profile(inliningTarget, attrGetattr != PNone.NO_VALUE)) {
-                    return callGetattrNode.executeObject(attrGetattr, object, attrNameStr);
-                }
-                throw pe;
-            }
-        }
-    }
-
-    /*
-     * Basically the same as 'com.oracle.graal.python.nodes.subscript.SetItemNode' but with an
-     * uncached version.
-     */
-    @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
-    public abstract static class PInteropSubscriptAssignNode extends Node {
-
-        public abstract void execute(PythonAbstractObject primary, Object key, Object value) throws UnsupportedMessageException;
-
-        @Specialization
-        static void doSpecialObject(PythonAbstractObject primary, Object key, Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PForeignToPTypeNode convert,
-                        @Cached PInteropGetAttributeNode getAttributeNode,
-                        @Cached CallBinaryMethodNode callSetItemNode,
-                        @Cached InlinedConditionProfile profile) throws UnsupportedMessageException {
-
-            Object attrSetitem = getAttributeNode.execute(inliningTarget, primary, T___SETITEM__);
-            if (profile.profile(inliningTarget, attrSetitem != PNone.NO_VALUE)) {
-                callSetItemNode.executeObject(attrSetitem, key, convert.executeConvert(value));
-            } else {
-                throw UnsupportedMessageException.create();
-            }
-        }
-    }
-
-    /*
-     * Basically the same as 'com.oracle.graal.python.nodes.attributes.SetAttributeNode' but with an
-     * uncached version.
-     */
-    @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 19
-    public abstract static class PInteropSetAttributeNode extends Node {
-
-        public abstract void execute(Object primary, TruffleString attrName, Object value) throws UnsupportedMessageException, UnknownIdentifierException;
-
-        @Specialization
-        public static void doSpecialObject(PythonAbstractObject primary, TruffleString attrName, Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PForeignToPTypeNode convert,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
-                        @Cached CallTernaryMethodNode callSetAttrNode,
-                        @Cached InlinedConditionProfile profile,
-                        @Cached IsBuiltinObjectProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
-            Object attrSetattr = lookupSetAttrNode.execute(inliningTarget, primary, SpecialMethodNames.T___SETATTR__);
-            if (profile.profile(inliningTarget, attrSetattr != PNone.NO_VALUE)) {
-                try {
-                    callSetAttrNode.execute(null, attrSetattr, primary, attrName, convert.executeConvert(value));
-                } catch (PException e) {
-                    e.expectAttributeError(inliningTarget, attrErrorProfile);
-                    // TODO(fa) not accurate; distinguish between read-only and non-existing
-                    throw UnknownIdentifierException.create(attrName.toJavaStringUncached());
-                }
-            } else {
-                throw UnsupportedMessageException.create();
-            }
-        }
-
-        public static PInteropSetAttributeNode getUncached() {
-            return PythonAbstractObjectFactory.PInteropSetAttributeNodeGen.getUncached();
-        }
-    }
-
-    /*
-     * Basically the same as 'com.oracle.graal.python.nodes.subscript.DelItemNode' but with an
-     * uncached version.
-     */
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class PInteropDeleteItemNode extends Node {
-
-        public abstract void execute(Node inliningTarget, Object primary, Object key) throws UnsupportedMessageException;
-
-        @Specialization
-        public static void doSpecialObject(Node inliningTarget, PythonAbstractObject primary, Object key,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
-                        @Cached(inline = false) CallBinaryMethodNode callSetAttrNode,
-                        @Cached InlinedConditionProfile profile) throws UnsupportedMessageException {
-            Object attrDelattr = lookupSetAttrNode.execute(inliningTarget, primary, T___DELITEM__);
-            if (profile.profile(inliningTarget, attrDelattr != PNone.NO_VALUE)) {
-                callSetAttrNode.executeObject(attrDelattr, primary, key);
-            } else {
-                throw UnsupportedMessageException.create();
-            }
-        }
-    }
-
-    /*
-     * Basically the same as 'com.oracle.graal.python.nodes.attributes.DeleteAttributeNode' but with
-     * an uncached version.
-     */
-    @GenerateUncached
-    @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 19
-    public abstract static class PInteropDeleteAttributeNode extends Node {
-
-        public abstract void execute(Object primary, String attrName) throws UnsupportedMessageException, UnknownIdentifierException;
-
-        @Specialization
-        public void doSpecialObject(PythonAbstractObject primary, String attrName,
-                        @Bind("this") Node inliningTarget,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
-                        @Cached CallBinaryMethodNode callSetAttrNode,
-                        @Cached InlinedConditionProfile profile,
-                        @Cached IsBuiltinObjectProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
-            Object attrDelattr = lookupSetAttrNode.execute(inliningTarget, primary, SpecialMethodNames.T___DELATTR__);
-            if (profile.profile(inliningTarget, attrDelattr != PNone.NO_VALUE)) {
-                try {
-                    callSetAttrNode.executeObject(attrDelattr, primary, fromJavaStringNode.execute(attrName, TS_ENCODING));
-                } catch (PException e) {
-                    e.expectAttributeError(inliningTarget, attrErrorProfile);
-                    // TODO(fa) not accurate; distinguish between read-only and non-existing
-                    throw UnknownIdentifierException.create(attrName);
-                }
-            } else {
-                throw UnsupportedMessageException.create();
-            }
-        }
-
-        public static PInteropDeleteAttributeNode getUncached() {
-            return PythonAbstractObjectFactory.PInteropDeleteAttributeNodeGen.getUncached();
         }
     }
 

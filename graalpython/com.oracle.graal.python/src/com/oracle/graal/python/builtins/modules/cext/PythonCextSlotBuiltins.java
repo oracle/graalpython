@@ -94,9 +94,7 @@ import static com.oracle.graal.python.nodes.HiddenAttr.NATIVE_STORAGE;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_START;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STEP;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STOP;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -148,7 +146,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -477,9 +475,9 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         Object get(PythonObject object,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
+                        @Cached(parameters = "T___DOC__") GetFixedAttributeNode getAttrNode,
                         @Cached AsCharPointerNode asCharPointerNode) {
-            Object doc = getAttrNode.execute(inliningTarget, object, T___DOC__);
+            Object doc = getAttrNode.execute(null, object);
             if (PGuards.isPNone(doc)) {
                 return getNULL();
             } else {
@@ -501,9 +499,9 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         Object get(PythonObject object,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
+                        @Cached(parameters = "T___NAME__") GetFixedAttributeNode getAttrNode,
                         @Cached AsCharPointerNode asCharPointerNode) {
-            Object name = getAttrNode.execute(inliningTarget, object, T___NAME__);
+            Object name = getAttrNode.execute(null, object);
             if (PGuards.isPNone(name)) {
                 return getNULL();
             } else {
@@ -619,8 +617,8 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         static Object get(Object object,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PythonAbstractObject.PInteropGetAttributeNode getDictNode) {
-            return getDictNode.execute(inliningTarget, object, SpecialAttributeNames.T___DICT__);
+                        @Exclusive @Cached(parameters = "T___DICT__") GetFixedAttributeNode getDictNode) {
+            return getDictNode.execute(null, object);
         }
     }
 

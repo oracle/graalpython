@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativePrimitiveNodeGen;
@@ -1883,7 +1882,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 }
                 // TODO: other storages...
             }
-            Object result = PInteropSubscriptNode.getUncached().execute(receiver, lidx);
+            Object result = PyObjectGetItem.executeUncached(receiver, lidx);
             return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(result));
         } catch (PException e) {
             HPyTransformExceptionToNativeNode.executeUncached(context, e);
