@@ -117,7 +117,6 @@ def add_graalpython_core():
         "_sysconfig",
         "_weakref",
         "builtins",
-        "function",
         "java",
         "pip_hook",
         "unicodedata",

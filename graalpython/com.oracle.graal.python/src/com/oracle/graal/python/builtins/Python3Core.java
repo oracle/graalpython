@@ -406,7 +406,6 @@ public abstract class Python3Core {
                         toTruffleStringUncached("_weakref"),
                         toTruffleStringUncached("unicodedata"),
                         toTruffleStringUncached("_sre"),
-                        toTruffleStringUncached("function"),
                         toTruffleStringUncached("_sysconfig"),
                         toTruffleStringUncached("java"),
                         toTruffleStringUncached("pip_hook"),

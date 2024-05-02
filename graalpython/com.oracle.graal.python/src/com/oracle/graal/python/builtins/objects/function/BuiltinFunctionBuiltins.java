@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -29,9 +29,14 @@ package com.oracle.graal.python.builtins.objects.function;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_GETATTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OBJCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.T_DOLLAR_DECL_TYPE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -44,12 +49,17 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.StringLiterals;
+import com.oracle.graal.python.nodes.bytecode.ImportNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -126,6 +136,78 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
             Object getattr = getAttr.execute(frame, inliningTarget, builtins, T_GETATTR);
             PTuple args = factory.createTuple(new Object[]{func.getEnclosingType(), func.getName()});
             return factory.createTuple(new Object[]{getattr, args});
+        }
+    }
+
+    @Builtin(name = J___SIGNATURE__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class SignatureNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        public Object doIt(PBuiltinFunction fun) {
+            return createInspectSignagure(fun.getSignature(), false);
+        }
+
+        private enum ParameterKinds {
+            POSITIONAL_ONLY,
+            POSITIONAL_OR_KEYWORD,
+            VAR_POSITIONAL,
+            KEYWORD_ONLY,
+            VAR_KEYWORD;
+
+            static final ParameterKinds[] VALUES = values();
+
+            Object get(Object[] kinds, Object inspectParameter) {
+                if (kinds[ordinal()] == null) {
+                    kinds[ordinal()] = PyObjectGetAttr.executeUncached(inspectParameter, PythonUtils.toTruffleStringUncached(name()));
+                }
+                return kinds[ordinal()];
+            }
+        }
+
+        @TruffleBoundary
+        public static Object createInspectSignagure(Signature signature, boolean skipSelf) {
+            PythonModule inspect = ImportNode.importModule(tsLiteral("inspect"));
+            Object inspectSignature = PyObjectGetAttr.executeUncached(inspect, tsLiteral("Signature"));
+            Object inspectParameter = PyObjectGetAttr.executeUncached(inspect, tsLiteral("Parameter"));
+            Object[] parameterKinds = new Object[ParameterKinds.VALUES.length];
+
+            TruffleString[] keywordNames = signature.getKeywordNames();
+            boolean takesVarArgs = signature.takesVarArgs();
+            boolean takesVarKeywordArgs = signature.takesVarKeywordArgs();
+            TruffleString[] parameterNames = signature.getParameterIds();
+
+            Object kind = ParameterKinds.POSITIONAL_ONLY.get(parameterKinds, inspectParameter);
+            ArrayList<Object> parameters = new ArrayList<>();
+            CallNode callNode = CallNode.getUncached();
+            for (int i = 0; i < parameterNames.length; i++) {
+                if (i == 0 && T_DOLLAR_DECL_TYPE.equalsUncached(parameterNames[i], TS_ENCODING)) {
+                    continue;
+                }
+                if (skipSelf) {
+                    skipSelf = false;
+                    continue;
+                }
+                if (signature.getPositionalOnlyArgIndex() == i) {
+                    kind = ParameterKinds.POSITIONAL_OR_KEYWORD.get(parameterKinds, inspectParameter);
+                }
+                TruffleString name = parameterNames[i];
+                if (name.codePointAtIndexUncached(0, TS_ENCODING) == '$') {
+                    name = name.substringUncached(1, name.codePointLengthUncached(TS_ENCODING) - 1, TS_ENCODING, true);
+                }
+                parameters.add(callNode.execute(inspectParameter, name, kind));
+            }
+            if (takesVarArgs) {
+                parameters.add(callNode.execute(inspectParameter, StringLiterals.T_ARGS, ParameterKinds.VAR_POSITIONAL.get(parameterKinds, inspectParameter)));
+            }
+            for (TruffleString keywordName : keywordNames) {
+                parameters.add(callNode.execute(inspectParameter, keywordName, ParameterKinds.KEYWORD_ONLY.get(parameterKinds, inspectParameter)));
+            }
+            if (takesVarKeywordArgs) {
+                parameters.add(callNode.execute(inspectParameter, StringLiterals.T_KWARGS, ParameterKinds.VAR_KEYWORD.get(parameterKinds, inspectParameter)));
+            }
+
+            return callNode.execute(inspectSignature, PythonObjectFactory.getUncached().createTuple(parameters.toArray()));
         }
     }
 }

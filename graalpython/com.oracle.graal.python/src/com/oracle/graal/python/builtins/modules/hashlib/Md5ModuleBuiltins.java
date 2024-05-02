@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,7 +65,7 @@ public final class Md5ModuleBuiltins extends PythonBuiltins {
         return Md5ModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "md5", minNumOfPositionalArgs = 0, parameterNames = {"string"}, keywordOnlyNames = {"usedforsecurity"})
+    @Builtin(name = "md5", numOfPositionalOnlyArgs = 0, parameterNames = {"string"}, keywordOnlyNames = {"usedforsecurity"})
     @GenerateNodeFactory
     abstract static class Md5FunctionNode extends PythonBuiltinNode {
         @Specialization
