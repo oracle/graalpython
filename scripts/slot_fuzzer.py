@@ -78,6 +78,18 @@ def slots_tester(Klass):
             else:
                 print(type(e))
 
+    def test_dunder(obj, fun_name, *args):
+        # avoid going through tp_getattr/o, which may be overridden to something funky
+        args_str = ','.join([repr(x) for x in args])
+        test(lambda: Klass.__dict__[fun_name](obj, *args), f"{fun_name} via class dict")
+        test(lambda: getattr(obj, fun_name)(*args), f"{fun_name}")
+
+    def write_attr(obj, attr, value):
+        if attr == 'foo':
+            obj.foo = value
+        elif attr == 'bar':
+            obj.bar = value
+
     obj = Klass()
     test(lambda: bool(obj), "bool(obj)")
     test(lambda: len(obj), "len(obj)")
@@ -86,10 +98,23 @@ def slots_tester(Klass):
     test(lambda: obj.foo, "obj.foo")
     test(lambda: obj.bar, "obj.bar")
 
+    test(lambda: write_attr(obj, 'foo', 42), "obj.foo = 42")
+    test(lambda: obj.foo, "obj.foo")
+    test(lambda: write_attr(obj, 'foo', 'hello'), "obj.foo = 'hello'")
+    test(lambda: obj.foo, "obj.foo")
+
+    test(lambda: write_attr(obj, 'bar', 42), "obj.bar = 42")
+    test(lambda: obj.foo, "obj.foo")
+    test(lambda: obj.bar, "obj.bar")
+
     test(lambda: obj.__bool__(), "obj.__bool__()")
     test(lambda: obj.__len__(), "obj.__len__()")
     test(lambda: obj.__getattr__('bar'), "obj.__getattr__('bar')")
     test(lambda: obj.__getattribute__('bar'), "obj.__getattribute__('bar')")
+    test(lambda: obj.__setattr__('foo', 11), "obj.__setattr__('foo', 11)")
+    test(lambda: obj.__getattr__('foo'), "obj.__getattr__('foo')")
+    test(lambda: obj.__delattr__('foo'), "obj.__delattr__('foo')")
+    test(lambda: obj.__getattr__('foo'), "obj.__getattr__('foo')")
 
     class Dummy1:
         pass
@@ -143,6 +168,14 @@ def compile_ext(name):
         )
 '''
 
+# language=C
+C_SOURCE_HEADER = '''
+#include <Python.h>
+
+PyObject *global_stash1;
+PyObject *global_stash2;
+'''
+
 
 def write_all(filename, text):
     with open(filename, 'w+') as f:
@@ -182,10 +215,38 @@ SLOTS = [
     Slot('tp_as_number', 'nb_bool', 'int $name$(PyObject* self)', ['1', '0', None]),
     Slot('tp_as_sequence', 'sq_length', 'Py_ssize_t $name$(PyObject* self)', ['0', '1', '42', None]),
     Slot('tp_as_mapping', 'mp_length', 'Py_ssize_t $name$(PyObject* self)', ['0', '1', '42', None]),
-    Slot(NO_GROUP, 'tp_getattr', 'PyObject* $name$(PyObject* self, char *name)', ['Py_RETURN_NONE', 'Py_RETURN_TRUE', 'Py_NewRef(self)', None]),
-    Slot(NO_GROUP, 'tp_getattro', 'PyObject* $name$(PyObject* self, PyObject *name)', ['Py_RETURN_NONE', 'Py_RETURN_TRUE', 'Py_NewRef(self)', None]),
-    Slot(NO_GROUP, 'tp_descr_get', 'PyObject* $name$(PyObject* self, PyObject* key, PyObject* type)', ['Py_RETURN_NONE', 'Py_NewRef(key)', None]),
-    Slot(NO_GROUP, 'tp_descr_set', 'int $name$(PyObject* self, PyObject* key, PyObject* value)', ['0', None])
+    Slot(NO_GROUP, 'tp_getattr', 'PyObject* $name$(PyObject* self, char *name)', ['Py_RETURN_NONE', 'Py_RETURN_TRUE', 'Py_NewRef(self)', None,
+        '''
+            if (global_stash1 == NULL) Py_RETURN_NONE;
+            Py_IncRef(global_stash1);
+            return global_stash1;
+        ''']),
+    Slot(NO_GROUP, 'tp_getattro', 'PyObject* $name$(PyObject* self, PyObject *name)', ['Py_RETURN_NONE', 'Py_RETURN_TRUE', 'Py_NewRef(self)', 'Py_NewRef(name)', None,
+       '''
+            if (global_stash1 == NULL) Py_RETURN_NONE;
+            Py_IncRef(global_stash1);
+            return global_stash1;
+       ''']),
+    Slot(NO_GROUP, 'tp_setattro', 'PyObject* $name$(PyObject* self, PyObject *name, PyObject *value)', ['0', None,
+        '''
+            Py_IncRef(value);
+            Py_XDECREF(global_stash1);
+            global_stash1 = value;
+            return 0;
+        ''']),
+    Slot(NO_GROUP, 'tp_descr_get', 'PyObject* $name$(PyObject* self, PyObject* key, PyObject* type)', ['Py_RETURN_NONE', 'Py_NewRef(key)', None,
+        '''
+            if (global_stash2 == NULL) Py_RETURN_NONE;
+            Py_IncRef(global_stash2);
+            return global_stash2;
+        ''']),
+    Slot(NO_GROUP, 'tp_descr_set', 'int $name$(PyObject* self, PyObject* key, PyObject* value)', ['0', None,
+        '''
+            Py_IncRef(value);
+            Py_XDECREF(global_stash2);
+            global_stash2 = value;
+            return 0;
+        '''])
 ]
 
 
@@ -362,7 +423,7 @@ for test_case_idx in range(args.iterations):
     classes_count = max(3, rand.randint(1, 5))  # Make it more likely that it's 3...
     classes = []
     test_module_name = f"test{test_case_idx}"
-    c_source = '#include <Python.h>\n\n'
+    c_source = C_SOURCE_HEADER
     py_source = SLOTS_TESTER
     native_classes = []
     for i in range(classes_count):
