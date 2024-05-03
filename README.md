@@ -52,20 +52,20 @@ Refer to our [embedding documentation](https://www.graalvm.org/latest/reference-
   <dependency>
       <groupId>org.graalvm.polyglot</groupId>
       <artifactId>polyglot</artifactId>
-      <version>23.1.2</version>
+      <version>24.0.0</version>
   </dependency>
   <dependency>
       <groupId>org.graalvm.polyglot</groupId>
       <artifactId>python</artifactId>
-      <version>23.1.2</version>
+      <version>24.0.0</version>
       <type>pom</type>
   </dependency>
   ```
 
 * Gradle
   ```kotlin
-  implementation("org.graalvm.polyglot:polyglot:23.1.2")
-  implementation("org.graalvm.polyglot:python:23.1.2")
+  implementation("org.graalvm.polyglot:polyglot:24.0.0")
+  implementation("org.graalvm.polyglot:python:24.0.0")
   ```
 
 </details>
@@ -83,12 +83,12 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
 * Linux
 
   The easiest way to install GraalPy on Linux is to use [Pyenv](https://github.com/pyenv/pyenv) (the Python version manager).
-  To install version 23.1.2 using Pyenv, run the following commands:
+  To install version 24.0.0 using Pyenv, run the following commands:
   ```bash
-  pyenv install graalpy-23.1.2
+  pyenv install graalpy-24.0.0
   ```
   ```bash
-  pyenv shell graalpy-23.1.2
+  pyenv shell graalpy-24.0.0
   ```
   
   Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
@@ -99,12 +99,12 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
 * macOS
 
   The easiest way to install GraalPy on macOS is to use [Pyenv](https://github.com/pyenv/pyenv) (the Python version manager).
-  To install version 23.1.2 using Pyenv, run the following commands:
+  To install version 24.0.0 using Pyenv, run the following commands:
   ```bash
-  pyenv install graalpy-23.1.2
+  pyenv install graalpy-24.0.0
   ```
   ```bash
-  pyenv shell graalpy-23.1.2
+  pyenv shell graalpy-24.0.0
   ```
   Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
   
@@ -115,7 +115,7 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
       ```
       For example:
       ```bash
-      sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-23.1.2
+      sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-24.0.0
       ```
   3. Uncompress the file and update your `PATH` environment variable to include to the _graalpy-XX.Y.Z-macos-amd64/bin_ (or _graalpy-XX.Y.Z-macos-aarch64/bin_) directory.
 
@@ -136,7 +136,7 @@ The _setup-python_ action supports GraalPy:
     - name: Setup GraalPy
       uses: actions/setup-python@v5
       with:
-        python-version: graalpy # or graalpy23.1 to pin a version
+        python-version: graalpy # or graalpy24.0 to pin a version
 ```
 
 </details>
@@ -163,7 +163,7 @@ To run Jython scripts, you need to use a GraalPy distribution running on the JVM
       ```
       For example:
       ```bash
-      sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-23.1.2
+      sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-24.0.0
       ```
   3. Uncompress the file and update your `PATH` environment variable to include to the _graalpy-jvm-XX.Y.Z-macos-amd64/bin_ (or _graalpy-jvm-XX.Y.Z-macos-aarch64/bin_) directory.
   4. Run your scripts with `graalpy --python.EmulateJython`.
