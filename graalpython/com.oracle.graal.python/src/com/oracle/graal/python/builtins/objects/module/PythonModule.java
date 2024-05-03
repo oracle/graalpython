@@ -55,6 +55,26 @@ public final class PythonModule extends PythonObject {
     private Object nativeModuleDef;
     private Object nativeModuleState;
 
+    /**
+     * Replicates the native references of this module's native state in Java.
+     * <p>
+     * Since a module can have a native module state where it is valid to store native references to
+     * other objects, we need this field to replicate those references in Java if we make the handle
+     * table reference weak in order to break possible reference cycles. This field will ever only
+     * be set if the module's native definition provides a traverse function (see
+     * {@code moduleobject.c: module_traverse}). The condition for this is:
+     * 
+     * <pre>
+     * {@code
+     * if (m -> md_def && m -> md_def -> m_traverse && (m -> md_def -> m_size <= 0 || m -> md_state != NULL)) {
+     *     // ...
+     * }
+     * }
+     * </pre>
+     * </p>
+     */
+    private Object[] replicatedNativeReferences;
+
     private PythonBuiltins builtins;
     private Object moduleState;
 
@@ -134,4 +154,10 @@ public final class PythonModule extends PythonObject {
         this.nativeModuleState = nativeModuleState;
     }
 
+    /**
+     * For a description, see {@link #replicatedNativeReferences}.
+     */
+    public void setReplicatedNativeReferences(Object[] replicatedNativeReferences) {
+        this.replicatedNativeReferences = replicatedNativeReferences;
+    }
 }
