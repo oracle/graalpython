@@ -868,8 +868,8 @@ public abstract class CApiTransitions {
         @Specialization
         static long doPrimitiveNativeWrapper(Node inliningTarget, PrimitiveNativeWrapper wrapper, boolean immortal,
                         @Shared @Cached(inline = false) CStructAccess.WriteDoubleNode writeDoubleNode,
-                        @Shared @Cached InlinedConditionProfile isFloatObjectProfile,
-                        @Shared @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
+                        @Exclusive @Cached InlinedConditionProfile isFloatObjectProfile,
+                        @Exclusive @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
             boolean isFloat = isFloatObjectProfile.profile(inliningTarget, wrapper.isDouble());
             CStructs ctype = isFloat ? CStructs.GraalPyFloatObject : CStructs.GraalPyObject;
             Object type;
@@ -899,10 +899,10 @@ public abstract class CApiTransitions {
                         @Shared @Cached(inline = false) CStructAccess.WriteDoubleNode writeDoubleNode,
                         @Exclusive @Cached InlinedConditionProfile isVarObjectProfile,
                         @Exclusive @Cached InlinedConditionProfile isGcProfile,
-                        @Shared @Cached InlinedConditionProfile isFloatObjectProfile,
+                        @Exclusive @Cached InlinedConditionProfile isFloatObjectProfile,
                         @Cached GetClassNode getClassNode,
                         @Cached GetTypeFlagsNode getTypeFlagsNode,
-                        @Shared @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
+                        @Exclusive @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
 
             assert !(wrapper instanceof TruffleObjectNativeWrapper);
             assert !(wrapper instanceof PrimitiveNativeWrapper);
@@ -1708,45 +1708,19 @@ public abstract class CApiTransitions {
     }
 
     @GenerateUncached
-    @GenerateInline(false)
-    @ImportStatic(CApiGuards.class)
-    public abstract static class ToPythonWrapperNode extends CExtToJavaNode {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class NativePtrToPythonWrapperNode extends Node {
 
-        public static PythonNativeWrapper executeUncached(Object obj, boolean strict) {
-            return getUncached().executeWrapper(obj, strict);
-        }
+        public abstract PythonNativeWrapper execute(Node inliningTarget, long ptr, boolean strict);
 
-        @Override
-        public final Object execute(Object object) {
-            return executeWrapper(object, true);
-        }
-
-        public abstract PythonNativeWrapper executeWrapper(Object obj, boolean strict);
-
-        @Specialization(guards = "!isNativeWrapper(obj)", limit = "3")
-        static PythonNativeWrapper doNonWrapper(Object obj, boolean strict,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CStructAccess.ReadI32Node readI32Node,
-                        @CachedLibrary("obj") InteropLibrary interopLibrary,
+        @Specialization
+        static PythonNativeWrapper doGeneric(Node inliningTarget, long pointer, boolean strict,
+                        @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedConditionProfile isNullProfile,
-                        @Cached InlinedConditionProfile isLongProfile,
                         @Cached InlinedConditionProfile isNativeProfile,
                         @Cached InlinedExactClassProfile nativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile) {
-            long pointer;
-            if (isLongProfile.profile(inliningTarget, obj instanceof Long)) {
-                pointer = (long) obj;
-            } else {
-                if (!interopLibrary.isPointer(obj)) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw CompilerDirectives.shouldNotReachHere("not a pointer: " + obj);
-                }
-                try {
-                    pointer = interopLibrary.asPointer(obj);
-                } catch (final UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
             if (isNullProfile.profile(inliningTarget, pointer == 0)) {
                 return null;
             }
@@ -1782,6 +1756,46 @@ public abstract class CApiTransitions {
                 }
                 return null;
             }
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    @ImportStatic(CApiGuards.class)
+    public abstract static class ToPythonWrapperNode extends CExtToJavaNode {
+
+        public static PythonNativeWrapper executeUncached(Object obj, boolean strict) {
+            return getUncached().executeWrapper(obj, strict);
+        }
+
+        @Override
+        public final Object execute(Object object) {
+            return executeWrapper(object, true);
+        }
+
+        public abstract PythonNativeWrapper executeWrapper(Object obj, boolean strict);
+
+        @Specialization(guards = "!isNativeWrapper(obj)", limit = "3")
+        static PythonNativeWrapper doNonWrapper(Object obj, boolean strict,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary("obj") InteropLibrary interopLibrary,
+                        @Cached NativePtrToPythonWrapperNode nativePtrToPythonWrapperNode,
+                        @Cached InlinedConditionProfile isLongProfile) {
+            long pointer;
+            if (isLongProfile.profile(inliningTarget, obj instanceof Long)) {
+                pointer = (long) obj;
+            } else {
+                if (!interopLibrary.isPointer(obj)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw CompilerDirectives.shouldNotReachHere("not a pointer: " + obj);
+                }
+                try {
+                    pointer = interopLibrary.asPointer(obj);
+                } catch (final UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            return nativePtrToPythonWrapperNode.execute(inliningTarget, pointer, strict);
         }
 
         @Specialization
