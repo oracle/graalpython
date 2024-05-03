@@ -81,6 +81,7 @@
 #include "pycore_fileutils.h"
 #include "bytesobject.h"
 #include "pycore_global_objects.h" // _PY_NSMALLPOSINTS
+#include "pycore_gc.h" // PyGC_Head
 
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED
 #include <graalvm/llvm/polyglot.h>
@@ -140,6 +141,7 @@ typedef struct _cycle_node {
 typedef struct {
     GraalPyGC_CycleNode *head;
     int32_t n;
+    PyGC_Head *reachable;
 } GraalPyGC_Cycle;
 
 // {{start CAPI_BUILTINS}}
