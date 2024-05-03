@@ -54,7 +54,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectWrapper;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectTransfer;
@@ -123,10 +122,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonWrapperNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -135,6 +138,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CConstants;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -372,6 +376,11 @@ public final class PythonCextBuiltins {
         protected final PException badInternalCall(String argName) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC, getName(), argName);
+        }
+
+        @NonIdempotent
+        protected final boolean isNativeAccessAllowed() {
+            return getContext().isNativeAccessAllowed();
         }
 
         private String getName() {
@@ -1459,21 +1468,45 @@ public final class PythonCextBuiltins {
     }
 
     /**
-     * Ensures that the
-     * {@link com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference}
-     * to the given wrapper is weak. This is used to break reference cycles that involve managed
-     * objects.
+     * Iterates over all objects in the given GC list and makes all
+     * {@link com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference
+     * handle table references} of the denoted objects weak. This is used to break reference cycles
+     * that involve managed objects.
      */
-    @CApiBuiltin(ret = Void, args = {PyObjectWrapper}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class PyTruffleObject_GC_EnsureWeak extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object doGeneric(PythonAbstractObjectNativeWrapper wrapper,
+        @Specialization(guards = "isNativeAccessAllowed()")
+        static Object doNative(Object weakCandidates,
                         @Bind("this") Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceToLongNode,
+                        @Cached(inline = false) CStructAccess.ReadI64Node readI64Node,
+                        @Cached NativePtrToPythonWrapperNode nativePtrToPythonWrapperNode,
                         @Cached InlinedConditionProfile hasRefProfile) {
-            if (CApiContext.GC_LOGGER.isLoggable(Level.INFO)) {
-                CApiContext.GC_LOGGER.info(PythonUtils.formatJString("Breaking reference cycle for %s", wrapper));
+            // guaranteed by the guard
+            assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
+
+            long head = HandlePointerConverter.pointerToStub(coerceToLongNode.execute(inliningTarget, weakCandidates));
+            // PyGC_Head *gc = GC_NEXT(head)
+            long gcUntagged = readI64Node.read(head, CFields.PyGC_Head___gc_next);
+            while (gcUntagged != head) {
+                // PyObject *op = FROM_GC(gc)
+                long op = HandlePointerConverter.stubToPointer(gcUntagged + CStructs.PyGC_Head.size());
+
+                PythonNativeWrapper wrapper = nativePtrToPythonWrapperNode.execute(inliningTarget, op, true);
+                if (wrapper instanceof PythonAbstractObjectNativeWrapper abstractObjectNativeWrapper) {
+                    if (CApiContext.GC_LOGGER.isLoggable(Level.INFO)) {
+                        CApiContext.GC_LOGGER.info(PythonUtils.formatJString("Breaking reference cycle for %s", abstractObjectNativeWrapper));
+                    }
+                    abstractObjectNativeWrapper.updateRef(inliningTarget, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT, hasRefProfile);
+                }
+                // gc = GC_NEXT(gc)
+                gcUntagged = HandlePointerConverter.pointerToStub(readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next));
             }
-            wrapper.updateRef(inliningTarget, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT, hasRefProfile);
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "!isNativeAccessAllowed()")
+        static Object doNative(@SuppressWarnings("unused") Object weakCandidates) {
             return PNone.NO_VALUE;
         }
     }
