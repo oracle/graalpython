@@ -769,7 +769,8 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
             // gc is not COLLECTING state after here.
             gc_clear_collecting(gc);
 
-            if (gc_refcnt == MANAGED_REFCNT && is_managed(gc)) {
+            if (gc_refcnt == MANAGED_REFCNT && is_managed(gc) &&
+                    Py_REFCNT(op) > MANAGED_REFCNT) {
                 // Move gc to weak_candidates.
                 gc_list_move(gc, weak_candidates);
             }
