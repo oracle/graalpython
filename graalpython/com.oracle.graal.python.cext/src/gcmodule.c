@@ -844,7 +844,10 @@ untrack_dicts(PyGC_Head *head)
 static inline void
 commit_weak_candidate(PyGC_Head *weak_candidates)
 {
-    GraalPyTruffleObject_GC_EnsureWeak(weak_candidates);
+    // avoid upcalls for empty lists
+    if (!gc_list_is_empty(weak_candidates)) {
+        GraalPyTruffleObject_GC_EnsureWeak(weak_candidates);
+    }
 }
 
 /* Return true if object has a pre-PEP 442 finalization method. */
