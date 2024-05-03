@@ -755,6 +755,9 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
             // young->_gc_prev == gc.  Don't do gc = GC_NEXT(gc) before!
             // GraalPy change
             // CALL_TRAVERSE(traverse, op, visit_reachable, (void *)young);
+            cycle.head = NULL;
+            cycle.n = 0;
+            assert (cycle.reachable == weak_candidates );
             CALL_TRAVERSE(traverse, op, visit_collect_managed_referents, (void *)&cycle);
 
             /* replicate any native reference to managed objects to Java */
