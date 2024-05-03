@@ -1487,7 +1487,7 @@ public final class PythonCextBuiltins {
 
             long head = HandlePointerConverter.pointerToStub(coerceToLongNode.execute(inliningTarget, weakCandidates));
             // PyGC_Head *gc = GC_NEXT(head)
-            long gcUntagged = readI64Node.read(head, CFields.PyGC_Head___gc_next);
+            long gcUntagged = HandlePointerConverter.pointerToStub(readI64Node.read(head, CFields.PyGC_Head___gc_next));
             while (gcUntagged != head) {
                 // PyObject *op = FROM_GC(gc)
                 long op = HandlePointerConverter.stubToPointer(gcUntagged + CStructs.PyGC_Head.size());
