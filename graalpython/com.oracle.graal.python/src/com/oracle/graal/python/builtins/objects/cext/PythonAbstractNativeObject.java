@@ -92,11 +92,15 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     public NativeObjectReference ref;
 
     /**
-     * An array of objects that are together with this object in a reference cycle. For an
-     * explanation of why this is necessary, see function
-     * {@code gcmodule.c: break_cycles_with_managed_objects}.
+     * Replicates the native references of this native object in Java.
+     * <p>
+     * Native objects, that have a traverse function, may have references (i.e. native fields of
+     * type {@code PyObject *}) to other objects. Whenever the Python GC detects a possible
+     * reference cycle, we will replicate those native references in Java to give control to the
+     * Java GC when objects may die.
+     * </p>
      */
-    private Object[] refCycle;
+    private Object[] replicatedNativeReferences;
 
     public PythonAbstractNativeObject(Object object) {
         // GR-50245
@@ -118,8 +122,11 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         throw CompilerDirectives.shouldNotReachHere("not yet implemented");
     }
 
-    public void setRefCycle(Object[] refCycle) {
-        this.refCycle = refCycle;
+    /**
+     * For a description, see {@link #replicatedNativeReferences}.
+     */
+    public void setReplicatedNativeReferences(Object[] replicatedNativeReferences) {
+        this.replicatedNativeReferences = replicatedNativeReferences;
     }
 
     @Override
