@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -126,6 +126,9 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
+
+        addBuiltinConstant("error", PythonBuiltinClassType.OSError);
+
         addBuiltinConstant("RUSAGE_CHILDREN", RUSAGE_CHILDREN);
         addBuiltinConstant("RUSAGE_SELF", RUSAGE_SELF);
         addBuiltinConstant("RUSAGE_THREAD", RUSAGE_THREAD);
