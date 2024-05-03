@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -71,18 +71,20 @@ class Platform:
     def runs_on(self) -> str:
         match (self.name, self.arch):
             case ("linux", "amd64"):
-                return ["self-hosted", "Linux", "X64"]
-                # return "ubuntu-latest"
+                # return ["self-hosted", "Linux", "X64"]
+                return "ubuntu-latest"
             case ("linux", "aarch64"):
                 return ["self-hosted", "Linux", "ARM64"]
                 # return "ubuntu-latest"
             case ("macos", "amd64"):
-                # return "macos-11"
-                return ["self-hosted", "macOS", "X64"]
+                return "macos-12"
+                # return ["self-hosted", "macOS", "X64"]
             case ("macos", "aarch64"):
-                return ["self-hosted", "macOS", "ARM64"]
+                return "macos-latest"
+                # return ["self-hosted", "macOS", "ARM64"]
             case ("windows", "amd64"):
-                return ["self-hosted", "windows", "X64"]
+                # return ["self-hosted", "windows", "X64"]
+                return "windows-latest"
         raise RuntimeError(f"Invalid platform spec {self.name}:{self.arch}")
 
     @property
@@ -316,7 +318,7 @@ def create_jobs(
             steps.append(
                 {
                     "name": "Checkout",
-                    "uses": "actions/checkout@v3",
+                    "uses": "actions/checkout@main",
                 }
             )
             if spec.custom_steps:
@@ -331,7 +333,7 @@ def create_jobs(
             steps.append(
                 {
                     "name": "Setup GraalPy",
-                    "uses": "actions/setup-python@main",
+                    "uses": "actions/setup-python@v5",
                     "if": "inputs.graalpy == ''",
                     "with": {
                         "python-version": "graalpy24.0",
@@ -350,7 +352,7 @@ def create_jobs(
                     steps.append(
                         {
                             "name": f"Download artifacts from {spec_dep.name}",
-                            "uses": "actions/download-artifact@v3",
+                            "uses": "actions/download-artifact@main",
                             "continue-on-error": True,
                             "with": {"name": spec_dep.platform_name(platform)},
                         }
@@ -390,7 +392,7 @@ def create_jobs(
             steps.append(
                 {
                     "name": "Store wheels",
-                    "uses": "umutozd/upload-artifact@5c459179e7745e2c730c50b10a6459da0b6f25db",
+                    "uses": "actions/upload-artifact@main",
                     "with": {
                         "name": spec.platform_name(platform),
                         "path": f"{_glob_all_from_pattern(spec.name)}*.whl",

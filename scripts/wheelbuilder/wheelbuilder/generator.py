@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -147,7 +147,7 @@ def generate(workflow_directory):
                 + [
                     {
                         "name": "Set up Python",
-                        "uses": "actions/setup-python@v4",
+                        "uses": "actions/setup-python@v5",
                         "with": {
                             "python-version": "3.10",
                         },

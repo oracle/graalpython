@@ -1,0 +1,577 @@
+name: build-act-wheels
+'on':
+  workflow_dispatch:
+    inputs:
+      name:
+        type: string
+        description: Pkg to build (empty for all)
+        required: false
+      graalpy:
+        type: string
+        description: GraalPy download url prefix (empty for default)
+        required: false
+jobs:
+  numpy-linux-amd64:
+    runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'numpy') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |-
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+          dnf install -y gcc-toolset-12-gcc-gfortran openblas-devel
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@v5
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy24.0
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) numpy
+      - name: Store wheels
+        uses: actions/upload-artifact@main
+        with:
+          name: numpy-linux-amd64
+          path: numpy*.whl
+          if-no-files-found: error
+  numpy-linux-aarch64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - ARM64
+    container: quay.io/pypa/manylinux_2_28_aarch64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'numpy') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |-
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+          dnf install -y gcc-toolset-12-gcc-gfortran openblas-devel
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-aarch64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@v5
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy24.0
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) numpy
+      - name: Store wheels
+        uses: actions/upload-artifact@main
+        with:
+          name: numpy-linux-aarch64
+          path: numpy*.whl
+          if-no-files-found: error
+  numpy-macos-amd64:
+    runs-on: macos-12
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'numpy') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: brew install gcc openblas
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-macos-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@v5
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy24.0
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) numpy
+      - name: Store wheels
+        uses: actions/upload-artifact@main
+        with:
+          name: numpy-macos-amd64
+          path: numpy*.whl
+          if-no-files-found: error
+  numpy-macos-aarch64:
+    runs-on: macos-latest
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'numpy') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: brew install gcc openblas
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-macos-aarch64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@v5
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy24.0
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) numpy
+      - name: Store wheels
+        uses: actions/upload-artifact@main
+        with:
+          name: numpy-macos-aarch64
+          path: numpy*.whl
+          if-no-files-found: error
+  PyYAML-linux-amd64:
+    runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: numpy-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@v5
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy24.0
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from numpy
+        uses: actions/download-artifact@main
+        continue-on-error: true
+        with:
+          name: numpy-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) PyYAML
+      - name: Store wheels
+        uses: actions/upload-artifact@main
+        with:
+          name: PyYAML-linux-amd64
+          path: PyYAML*.whl
+          if-no-files-found: error
+  PyYAML-linux-aarch64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - ARM64
+    container: quay.io/pypa/manylinux_2_28_aarch64
+    needs: numpy-linux-aarch64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-aarch64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@v5
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy24.0
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from numpy
+        uses: actions/download-artifact@main
+        continue-on-error: true
+        with:
+          name: numpy-linux-aarch64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) PyYAML
+      - name: Store wheels
+        uses: actions/upload-artifact@main
+        with:
+          name: PyYAML-linux-aarch64
+          path: PyYAML*.whl
+          if-no-files-found: error
+  PyYAML-macos-amd64:
+    runs-on: macos-12
+    needs: numpy-macos-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-macos-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@v5
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy24.0
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from numpy
+        uses: actions/download-artifact@main
+        continue-on-error: true
+        with:
+          name: numpy-macos-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) PyYAML
+      - name: Store wheels
+        uses: actions/upload-artifact@main
+        with:
+          name: PyYAML-macos-amd64
+          path: PyYAML*.whl
+          if-no-files-found: error
+  PyYAML-macos-aarch64:
+    runs-on: macos-latest
+    needs: numpy-macos-aarch64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-macos-aarch64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@v5
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy24.0
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from numpy
+        uses: actions/download-artifact@main
+        continue-on-error: true
+        with:
+          name: numpy-macos-aarch64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) PyYAML
+      - name: Store wheels
+        uses: actions/upload-artifact@main
+        with:
+          name: PyYAML-macos-aarch64
+          path: PyYAML*.whl
+          if-no-files-found: error
+  PyYAML-windows-amd64:
+    runs-on: windows-latest
+    needs: numpy-windows-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'PyYAML') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          Invoke-WebRequest https://kumisystems.dl.sourceforge.net/project/gnuwin32/patch/2.5.9-7/patch-2.5.9-7-bin.zip -OutFile patch.zip
+          Expand-Archive patch.zip -DestinationPath ../patch -Force
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest ${{ inputs.graalpy }}-windows-amd64.zip -OutFile graalpy-windows-amd64.zip
+          Expand-Archive graalpy-windows-amd64.zip
+          mv graalpy-windows-amd64/* graalpy
+          graalpy/bin/graalpy.exe -s -m ensurepip
+          graalpy/bin/graalpy.exe -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@v5
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy24.0
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from numpy
+        uses: actions/download-artifact@main
+        continue-on-error: true
+        with:
+          name: numpy-windows-amd64
+      - name: Build wheel
+        run: |-
+          $env:PIP_FIND_LINKS=$PWD
+          $env:PATH+=";$PWD\graalpy\bin;$PWD\graalpy\Scripts;$PWD\..\patch\bin"
+          graalpy/bin/graalpy -m pip wheel --find-links $PWD PyYAML
+      - name: Store wheels
+        uses: actions/upload-artifact@main
+        with:
+          name: PyYAML-windows-amd64
+          path: PyYAML*.whl
+          if-no-files-found: error
+  ujson-linux-amd64:
+    runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    needs: PyYAML-linux-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ujson') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@v5
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy24.0
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from PyYAML
+        uses: actions/download-artifact@main
+        continue-on-error: true
+        with:
+          name: PyYAML-linux-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) ujson
+      - name: Store wheels
+        uses: actions/upload-artifact@main
+        with:
+          name: ujson-linux-amd64
+          path: ujson*.whl
+          if-no-files-found: error
+  ujson-linux-aarch64:
+    runs-on:
+      - self-hosted
+      - Linux
+      - ARM64
+    container: quay.io/pypa/manylinux_2_28_aarch64
+    needs: PyYAML-linux-aarch64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ujson') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install dependencies
+        run: |
+          dnf install -y epel-release
+          crb enable
+          dnf makecache --refresh
+          dnf module install -y nodejs:18
+          dnf install -y /usr/bin/patch
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-linux-aarch64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@v5
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy24.0
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from PyYAML
+        uses: actions/download-artifact@main
+        continue-on-error: true
+        with:
+          name: PyYAML-linux-aarch64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) ujson
+      - name: Store wheels
+        uses: actions/upload-artifact@main
+        with:
+          name: ujson-linux-aarch64
+          path: ujson*.whl
+          if-no-files-found: error
+  ujson-macos-amd64:
+    runs-on: macos-12
+    needs: PyYAML-macos-amd64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ujson') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-macos-amd64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@v5
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy24.0
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from PyYAML
+        uses: actions/download-artifact@main
+        continue-on-error: true
+        with:
+          name: PyYAML-macos-amd64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) ujson
+      - name: Store wheels
+        uses: actions/upload-artifact@main
+        with:
+          name: ujson-macos-amd64
+          path: ujson*.whl
+          if-no-files-found: error
+  ujson-macos-aarch64:
+    runs-on: macos-latest
+    needs: PyYAML-macos-aarch64
+    if: ${{ !cancelled() && (inputs.name == '' || inputs.name == 'ujson') }}
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup custom GraalPy
+        if: inputs.graalpy != ''
+        run: |-
+          curl -L -o graalpy.tar.gz ${{ inputs.graalpy }}-macos-aarch64.tar.gz
+          mkdir -p graalpy
+          tar -C $(pwd)/graalpy --strip-components=1 -xzf graalpy.tar.gz
+          graalpy/bin/graalpy -s -m ensurepip
+          graalpy/bin/graalpy -m pip install wheel
+      - name: Setup GraalPy
+        uses: actions/setup-python@v5
+        if: inputs.graalpy == ''
+        with:
+          python-version: graalpy24.0
+      - name: Setup local GraalPy venv
+        if: inputs.graalpy == ''
+        run: python -m venv graalpy
+      - name: Download artifacts from PyYAML
+        uses: actions/download-artifact@main
+        continue-on-error: true
+        with:
+          name: PyYAML-macos-aarch64
+      - name: Build wheel
+        run: |-
+          export PIP_FIND_LINKS=$(pwd)
+          export PATH=$(pwd)/graalpy/bin/:$PATH
+          graalpy/bin/graalpy -m pip wheel --find-links $(pwd) ujson
+      - name: Store wheels
+        uses: actions/upload-artifact@main
+        with:
+          name: ujson-macos-aarch64
+          path: ujson*.whl
+          if-no-files-found: error

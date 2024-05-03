@@ -90,3 +90,4 @@ graalpython/graalpy-maven-plugin/target
 graalpython/graalpy-archetype-polyglot-app/target
 graalpython/graalpy-archetype-polyglot-app/target
 pom-mx.xml
+.venv

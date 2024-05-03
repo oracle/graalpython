@@ -29,15 +29,7 @@ giant one with all jobs.
 
 Many packages use a lot of resources to build, and even those that do not
 quickly add up. We have chosen GitHub Action workflows as the cross-platform
-specification for how to build packages, but it is infeasible to build all
-packages on free GitHub Action runners. There are two ways around this:
-
-### Self-hosted runners
-
-The workflow files we generate declare they want to run on self-hosted runners.
-Anyone forking this repository to build packages can add their own runners to
-their fork and build packages this way. On Linux you will need Docker or Podman
-to use the GitHub Action runner script.
+specification for how to build packages.
 
 ### Running actions locally with nektos/act
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -49,10 +49,9 @@ from wheelbuilder import (
     WindowsX86,
 )
 
-BuildSpec(name="psutil")
+psutil = BuildSpec(name="psutil")
 numpy = BuildSpec(
     name="numpy",
-    extra_versions=["1.21.6", "1.22.4", "1.23.1", "1.23.4"],
     platforms=[Linux, Mac, Windows],
     system_dependencies={
         Linux: ["gcc-toolset-12-gcc-gfortran", "openblas-devel"],
@@ -67,7 +66,7 @@ BuildSpec(
 pybind11 = BuildSpec(name="pybind11")
 ninja = BuildSpec(name="ninja")
 pillow = BuildSpec(
-    name="Pillow",
+    name="pillow",
     system_dependencies={
         Linux: [
             "libtiff-devel",
@@ -98,11 +97,13 @@ scipy = BuildSpec(
     name="scipy",
     spec_dependencies=[numpy],
     system_dependencies={
-        Linux: ["gcc-toolset-9", "gcc-toolset-9-gcc-gfortran", "openblas-devel"],
+        Linux: ["gcc-toolset-12-gcc-gfortran", "openblas-devel"],
         Mac: ["gcc", "openblas", "pkg-config"],
     },
     before_build={
-        Linux: ["source /opt/rh/gcc-toolset-9/enable"],
+        Linux: [
+            "export FFLAGS=-fallow-argument-mismatch",
+        ],
         Mac: [
             "export PKG_CONFIG_PATH=/opt/homebrew/opt/openblas/lib/pkgconfig",
             "export FFLAGS=-fallow-argument-mismatch",
@@ -114,6 +115,9 @@ BuildSpec(
     spec_dependencies=[numpy, scipy],
     system_dependencies=["openblas"],
     before_build={
+        Linux: [
+            "export FFLAGS=-fallow-argument-mismatch",
+        ],
         Mac: [
             "export PKG_CONFIG_PATH=/opt/homebrew/opt/openblas/lib/pkgconfig",
             "export FFLAGS=-fallow-argument-mismatch",
@@ -122,6 +126,9 @@ BuildSpec(
 )
 cffi = BuildSpec(
     name="cffi",
+    before_build=[
+        "graalpy/bin/graalpy -m pip install wheel",
+    ],
     system_dependencies={
         Linux: ["libffi-devel"],
         Mac: ["libffi"],
@@ -140,25 +147,18 @@ BuildSpec(
     name="torch",
     spec_dependencies=[numpy, ninja, cmake, pybind11, cffi, pyyaml],
     system_dependencies={
-        Linux: ["openblas-devel", "/usr/bin/cmake", "/usr/bin/sudo"],
-        Mac: ["openblas", "cmake"],
+        Linux: ["openblas-devel", "/usr/bin/cmake", "/usr/bin/sudo", "libffi-devel"],
+        Mac: ["openblas", "cmake", "libffi"],
     },
     before_build={
+        Linux: [
+            "export USE_CUDA=0",
+        ],
         Mac: [
             "export USE_CUDA=0",
             "export PKG_CONFIG_PATH=/opt/homebrew/opt/openblas/lib/pkgconfig",
         ],
     },
-    custom_steps=[
-        {
-            "uses": "Jimver/cuda-toolkit@v0.2.11",
-            "id": "cuda-toolkit",
-            "if": "runner.os != 'macOS'",
-            "with": {
-                "cuda": "11.7.0",
-            },
-        }
-    ],
     environment={
         "MAX_JOBS": 4,
         "BUILD_TEST": 0,
@@ -166,16 +166,37 @@ BuildSpec(
 )
 opt_einsum = BuildSpec(
     name="opt_einsum",
+    spec_dependencies=[numpy],
     platforms=[LinuxX86],
 )
 keras_preprocessing = BuildSpec(
-    name="keras_preprocessing",
+    name="Keras_Preprocessing",
+    spec_dependencies=[numpy],
     platforms=[LinuxX86],
+)
+grpcio = BuildSpec(
+    name="grpcio",
+    platforms=[LinuxX86],
+)
+ml_dtypes = BuildSpec(
+    name="ml_dtypes",
+    platforms=[LinuxX86],
+)
+wrapt = BuildSpec(
+    name="wrapt",
+    platforms=[LinuxX86],
+)
+h5py = BuildSpec(
+    name="h5py",
+    platforms=[LinuxX86],
+    system_dependencies={
+        Linux: ["hdf5-devel"],
+    },
 )
 BuildSpec(
     name="tensorflow",
     platforms=[LinuxX86],
-    spec_dependencies=[opt_einsum, keras_preprocessing],
+    spec_dependencies=[grpcio, psutil, wrapt, ml_dtypes, h5py, numpy, opt_einsum, keras_preprocessing],
     before_build=[
         "export PIP_FIND_LINKS=$(pwd)",
         "pip install pip numpy wheel packaging requests opt_einsum",
