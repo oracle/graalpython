@@ -93,8 +93,8 @@ In order to distribute the resulting application for other systems, follow these
     - Include the GraalPy support and the [GraalVM SDK Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) in the `dependencies` section:
 
         ```
-        implementation("org.graalvm.polyglot:polyglot:23.1.2")
-        implementation("org.graalvm.polyglot:python:23.1.2")
+        implementation("org.graalvm.polyglot:polyglot:24.0.0")
+        implementation("org.graalvm.polyglot:python:24.0.0")
         ```
 
     - We recommend you use the Java modules build. Add the appropriate plugin to the `plugins` section:
