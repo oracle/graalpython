@@ -147,6 +147,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -1424,32 +1425,53 @@ public final class PythonCextBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = Void, args = {PyObject, Pointer, Int}, call = Ignored)
+    abstract static class PyTruffleObject_ReplicateNativeReferences extends CApiTernaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(Object object, Object listHead, int n,
+                        @Cached CStructAccess.ReadObjectNode readObjectNode,
+                        @Cached CStructAccess.ReadPointerNode readPointerNode) {
+            boolean loggable = CApiContext.GC_LOGGER.isLoggable(Level.INFO);
+            Object repr = object;
+            Object[] referents = null;
+            if (object instanceof PythonAbstractNativeObject nativeObject) {
+                if (loggable) {
+                    repr = nativeObject.toStringWithContext();
+                }
+                referents = new Object[n];
+                nativeObject.setReplicatedNativeReferences(referents);
+            } else if (object instanceof PythonModule module) {
+                referents = new Object[n];
+                module.setReplicatedNativeReferences(referents);
+            }
+            if (referents != null) {
+                Object cur = listHead;
+                for (int i = 0; i < n; i++) {
+                    referents[i] = readObjectNode.read(cur, GraalPyGC_CycleNode__item);
+                    cur = readPointerNode.read(cur, GraalPyGC_CycleNode__next);
+                }
+            }
+            if (loggable) {
+                CApiContext.GC_LOGGER.info(PythonUtils.formatJString("Replicated native refs of %s to managed: %s", repr, Arrays.toString(referents)));
+            }
+            return PNone.NO_VALUE;
+        }
+    }
+
     /**
      * Ensures that the
      * {@link com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference}
      * to the given wrapper is weak. This is used to break reference cycles that involve managed
      * objects.
      */
-    @CApiBuiltin(ret = Void, args = {PyObjectWrapper, Pointer, Int}, call = Ignored)
-    abstract static class PyTruffleObject_GC_EnsureWeak extends CApiTernaryBuiltinNode {
+    @CApiBuiltin(ret = Void, args = {PyObjectWrapper}, call = Ignored)
+    abstract static class PyTruffleObject_GC_EnsureWeak extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object doGeneric(PythonAbstractObjectNativeWrapper wrapper, Object listHead, int n,
+        static Object doGeneric(PythonAbstractObjectNativeWrapper wrapper,
                         @Bind("this") Node inliningTarget,
-                        @Cached CStructAccess.ReadObjectNode readObjectNode,
-                        @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached InlinedConditionProfile hasRefProfile) {
             if (CApiContext.GC_LOGGER.isLoggable(Level.INFO)) {
                 CApiContext.GC_LOGGER.info(PythonUtils.formatJString("Breaking reference cycle for %s", wrapper));
-            }
-            Object[] cycleObjects = new Object[n];
-            Object cur = listHead;
-            for (int i = 0; i < n; i++) {
-                Object item = readObjectNode.read(cur, GraalPyGC_CycleNode__item);
-                cycleObjects[i] = item;
-                if (item instanceof PythonAbstractNativeObject nativeObject) {
-                    nativeObject.setRefCycle(cycleObjects);
-                }
-                cur = readPointerNode.read(cur, GraalPyGC_CycleNode__next);
             }
             wrapper.updateRef(inliningTarget, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT, hasRefProfile);
             return PNone.NO_VALUE;
