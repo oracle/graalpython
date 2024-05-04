@@ -1,0 +1,90 @@
+diff --git a/src/rust/Cargo.lock b/src/rust/Cargo.lock
+index b2e0ac4..792c398 100644
+--- a/src/rust/Cargo.lock
++++ b/src/rust/Cargo.lock
+@@ -274,9 +274,8 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3"
+-version = "0.20.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "9a89dc7a5850d0e983be1ec2a463a171d20990487c3cfcd68b5363f1ee3d6fe0"
++version = "0.20.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.20.3.graalpy#c02d58c5158dbb3a080200a078b0e997b83a7575"
+ dependencies = [
+  "cfg-if",
+  "indoc",
+@@ -291,9 +290,8 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3-build-config"
+-version = "0.20.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "07426f0d8fe5a601f26293f300afd1a7b1ed5e78b2a705870c5f30893c5163be"
++version = "0.20.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.20.3.graalpy#c02d58c5158dbb3a080200a078b0e997b83a7575"
+ dependencies = [
+  "once_cell",
+  "target-lexicon",
+@@ -301,9 +299,8 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3-ffi"
+-version = "0.20.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "dbb7dec17e17766b46bca4f1a4215a85006b4c2ecde122076c562dd058da6cf1"
++version = "0.20.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.20.3.graalpy#c02d58c5158dbb3a080200a078b0e997b83a7575"
+ dependencies = [
+  "libc",
+  "pyo3-build-config",
+@@ -311,9 +308,8 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3-macros"
+-version = "0.20.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "05f738b4e40d50b5711957f142878cfa0f28e054aa0ebdfc3fd137a843f74ed3"
++version = "0.20.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.20.3.graalpy#c02d58c5158dbb3a080200a078b0e997b83a7575"
+ dependencies = [
+  "proc-macro2",
+  "pyo3-macros-backend",
+@@ -323,9 +319,8 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3-macros-backend"
+-version = "0.20.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "0fc910d4851847827daf9d6cdd4a823fbdaab5b8818325c5e97a86da79e8881f"
++version = "0.20.3"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.20.3.graalpy#c02d58c5158dbb3a080200a078b0e997b83a7575"
+ dependencies = [
+  "heck",
+  "proc-macro2",
+diff --git a/src/rust/Cargo.toml b/src/rust/Cargo.toml
+index 2322486..a0b5c8f 100644
+--- a/src/rust/Cargo.toml
++++ b/src/rust/Cargo.toml
+@@ -10,7 +10,7 @@ rust-version = "1.63.0"
+ [dependencies]
+ once_cell = "1"
+ cfg-if = "1"
+-pyo3 = { version = "0.20", features = ["abi3"] }
++pyo3 = { git = "https://github.com/timfel/pyo3.git", branch = "v0.20.3.graalpy", features = ["abi3"] }
+ asn1 = { version = "0.15.5", default-features = false }
+ cryptography-cffi = { path = "cryptography-cffi" }
+ cryptography-key-parsing = { path = "cryptography-key-parsing" }
+diff --git a/src/rust/cryptography-cffi/Cargo.toml b/src/rust/cryptography-cffi/Cargo.toml
+index a025e58..cff5fcf 100644
+--- a/src/rust/cryptography-cffi/Cargo.toml
++++ b/src/rust/cryptography-cffi/Cargo.toml
+@@ -8,7 +8,7 @@ publish = false
+ rust-version = "1.63.0"
+ 
+ [dependencies]
+-pyo3 = { version = "0.20", features = ["abi3"] }
++pyo3 = { git = "https://github.com/timfel/pyo3.git", branch = "v0.20.3.graalpy", features = ["abi3"] }
+ openssl-sys = "0.9.99"
+ 
+ [build-dependencies]
