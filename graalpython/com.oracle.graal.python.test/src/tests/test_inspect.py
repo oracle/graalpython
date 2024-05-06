@@ -40,7 +40,10 @@ import inspect
 import re
 from inspect import Parameter
 import hashlib
-import posix
+try:
+    import posix
+except ModuleNotFoundError as e:
+    posix = None
 
 
 TEST_CASES = [
@@ -54,11 +57,6 @@ TEST_CASES = [
     (hashlib.md5, '($module, /, string=b\'\', *, usedforsecurity=True)',
               [('string', Parameter.POSITIONAL_OR_KEYWORD),
               ('usedforsecurity', Parameter.KEYWORD_ONLY)]),
-    (posix.open, '($module, /, path, flags, mode=511, *, dir_fd=None)',
-              [('path', Parameter.POSITIONAL_OR_KEYWORD),
-              ('flags', Parameter.POSITIONAL_OR_KEYWORD),
-              ('mode', Parameter.POSITIONAL_OR_KEYWORD),
-              ('dir_fd', Parameter.KEYWORD_ONLY)]),
     (abs, '($module, x, /)',
               [('x', Parameter.POSITIONAL_ONLY)]),
     (pow, '($module, /, base, exp, mod=None)',
@@ -66,6 +64,14 @@ TEST_CASES = [
               ('exp', Parameter.POSITIONAL_OR_KEYWORD),
               ('mod', Parameter.POSITIONAL_OR_KEYWORD)]),
 ]
+
+if posix:
+    TEST_CASES += [
+        (posix.open, '($module, /, path, flags, mode=511, *, dir_fd=None)',
+              [('path', Parameter.POSITIONAL_OR_KEYWORD),
+              ('flags', Parameter.POSITIONAL_OR_KEYWORD),
+              ('mode', Parameter.POSITIONAL_OR_KEYWORD),
+              ('dir_fd', Parameter.KEYWORD_ONLY)])]
 
 
 def normalize_signature_text(text):
