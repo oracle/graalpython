@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.GCListRemoveNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCTrackNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
@@ -473,6 +474,14 @@ public abstract class CApiTransitions {
                                      * ID which could resolve to another object.
                                      */
                                     CStructAccess.WriteIntNode.writeUncached(stubPointer, CFields.GraalPyObject__handle_table_index, 0);
+                                    /*
+                                     * Since the managed object is already dead (only the native
+                                     * object stub is still alive), we need to remove the object
+                                     * from its current GC list. Otherwise, the Python GC would try
+                                     * to traverse the object on the next collection which would
+                                     * lead to a crash.
+                                     */
+                                    GCListRemoveNode.executeUncached(stubPointer);
                                 }
                             } else {
                                 assert nativeLookupGet(handleContext, reference.pointer) != null : Long.toHexString(reference.pointer);
