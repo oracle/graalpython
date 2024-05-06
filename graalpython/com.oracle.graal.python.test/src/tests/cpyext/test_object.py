@@ -1242,6 +1242,9 @@ class TestObject(object):
         del obj.foo
         assert obj.foo == 'unset'
 
+        obj = TestSetter()
+        assert TestSetter.foo.__set__(obj, 42) is None
+
     def test_member_kind_precedence(self):
         TestWithConflictingMember1 = CPyExtType(
             "TestWithConflictingMember1",

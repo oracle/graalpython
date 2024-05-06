@@ -77,6 +77,12 @@ def slots_tester(Klass):
                 traceback.print_exc()
             else:
                 print(type(e))
+                
+    def test_dunder(obj, fun_name, *args):
+        # avoid going through tp_getattr/o, which may be overridden to something funky
+        args_str = ','.join([repr(x) for x in args])
+        test(lambda: Klass.__dict__[fun_name](obj, *args), f"{fun_name} via class dict")        
+        test(lambda: getattr(obj, fun_name)(*args), f"{fun_name}")
 
     def test_dunder(obj, fun_name, *args):
         # avoid going through tp_getattr/o, which may be overridden to something funky
@@ -93,8 +99,8 @@ def slots_tester(Klass):
     obj = Klass()
     test(lambda: bool(obj), "bool(obj)")
     test(lambda: len(obj), "len(obj)")
-    test(lambda: obj.__bool__(), "obj.__bool__()")
-    test(lambda: obj.__len__(), "obj.__len__()")
+    test_dunder(obj, '__bool__')
+    test_dunder(obj, '__len__')
     test(lambda: obj.foo, "obj.foo")
     test(lambda: obj.bar, "obj.bar")
 
@@ -107,25 +113,26 @@ def slots_tester(Klass):
     test(lambda: obj.foo, "obj.foo")
     test(lambda: obj.bar, "obj.bar")
 
-    test(lambda: obj.__bool__(), "obj.__bool__()")
-    test(lambda: obj.__len__(), "obj.__len__()")
-    test(lambda: obj.__getattr__('bar'), "obj.__getattr__('bar')")
-    test(lambda: obj.__getattribute__('bar'), "obj.__getattribute__('bar')")
-    test(lambda: obj.__setattr__('foo', 11), "obj.__setattr__('foo', 11)")
-    test(lambda: obj.__getattr__('foo'), "obj.__getattr__('foo')")
-    test(lambda: obj.__delattr__('foo'), "obj.__delattr__('foo')")
-    test(lambda: obj.__getattr__('foo'), "obj.__getattr__('foo')")
+    test_dunder(obj, '__bool__')
+    test_dunder(obj, '__len__')
+    test_dunder(obj, '__getattr__', 'bar')
+    test_dunder(obj, '__getattribute__', 'bar')
+    test_dunder(obj, '__setattr__', 'foo', 11)
+    test_dunder(obj, '__getattr__', 'foo')
+    test_dunder(obj, '__delattr__', 'foo')
+    test_dunder(obj, '__getattr__', 'foo')
+    test(lambda: obj.foo, "obj.foo")
 
     class Dummy1:
         pass
 
     obj = Klass()
     owner = Dummy1()
-    test(lambda: obj.__get__(owner), "obj.__get__(owner)")
-    test(lambda: obj.__set__(owner, 42), "obj.__set__(owner, 42)")
-    test(lambda: obj.__get__(owner), "obj.__get__(owner)")
-    test(lambda: obj.__delete__(owner), "obj.__delete__(owner)")
-    test(lambda: obj.__get__(owner), "obj.__get__(owner)")
+    test_dunder(obj, '__get__', owner)
+    test_dunder(obj, '__set__', owner, 42)
+    test_dunder(obj, '__get__', owner)
+    test_dunder(obj, '__delete__', owner)
+    test_dunder(obj, '__get__', owner)
 
     class WithDescr:
         descr = Klass()
@@ -215,7 +222,7 @@ SLOTS = [
     Slot('tp_as_number', 'nb_bool', 'int $name$(PyObject* self)', ['1', '0', None]),
     Slot('tp_as_sequence', 'sq_length', 'Py_ssize_t $name$(PyObject* self)', ['0', '1', '42', None]),
     Slot('tp_as_mapping', 'mp_length', 'Py_ssize_t $name$(PyObject* self)', ['0', '1', '42', None]),
-    Slot(NO_GROUP, 'tp_getattr', 'PyObject* $name$(PyObject* self, char *name)', ['Py_RETURN_NONE', 'Py_RETURN_TRUE', 'Py_NewRef(self)', None,
+    Slot(NO_GROUP, 'tp_getattr', 'PyObject* $name$(PyObject* self, char *name)', ['Py_RETURN_NONE', 'Py_RETURN_FALSE', 'Py_NewRef(self)', None,
         '''
             if (global_stash1 == NULL) Py_RETURN_NONE;
             Py_IncRef(global_stash1);
@@ -227,7 +234,14 @@ SLOTS = [
             Py_IncRef(global_stash1);
             return global_stash1;
        ''']),
-    Slot(NO_GROUP, 'tp_setattro', 'PyObject* $name$(PyObject* self, PyObject *name, PyObject *value)', ['0', None,
+    Slot(NO_GROUP, 'tp_setattro', 'int $name$(PyObject* self, PyObject *name, PyObject *value)', ['0', None,
+        '''
+            Py_IncRef(value);
+            Py_XDECREF(global_stash1);
+            global_stash1 = value;
+            return 0;
+        ''']),
+    Slot(NO_GROUP, 'tp_setattr', 'int $name$(PyObject* self, char *name, PyObject *value)', ['0', None,
         '''
             Py_IncRef(value);
             Py_XDECREF(global_stash1);
@@ -253,10 +267,24 @@ SLOTS = [
 MAGIC = {
     '__bool__(self)': ['True', 'False', None],
     '__len__(self)': ['0', '1', '42', None],
-    '__getattribute__(self,name)': ['name', '42', None],
-    '__getattr__(self,name)': ['name+"abc"', 'False', None],
+    '__getattribute__(self,name)': ['name', '42', 'self._dict[name]', None],
+    '__getattr__(self,name)': ['name+"abc"', 'False', 'self._dict[name]', None],
     '__get__(self,obj,objtype=None)': ['obj', 'True', 'self.descr_value', None],
     '__set__(self,obj,value)': ['self.descr_value = value\nreturn None', None],
+    '__setattr__(self,name,value)': [None,
+                                    '''
+                                    if not self._dict:
+                                        self._dict = dict()
+                                    self._dict[name] = value
+                                    return None
+                                    '''],
+    '__delattr__(self,name,value)': [None,
+                                     '''
+                                     if not self._dict:
+                                         self._dict = dict()
+                                     del self._dict[name]
+                                     return None
+                                     '''],
 }
 
 

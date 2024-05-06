@@ -197,6 +197,22 @@ def test_setattr_str_subclass():
     assert repr(x) == 'hello'
 
 
+def test_setattr_wrapper():
+    TestSetAttrWrapperReturn = CPyExtType("TestSetAttrWrapperReturn",
+                                          "int myset(PyObject* self, PyObject* key, PyObject* value) { return 0; }",
+                                           tp_setattro="(setattrofunc) myset")
+    x = TestSetAttrWrapperReturn()
+    assert x.__setattr__("bar", 42) is None
+
+
+def test_sq_ass_item_wrapper():
+    TestSqAssItemWrapperReturn = CPyExtType("TestSqAssItemWrapperReturn",
+                                          "static int myassitem(PyObject *self, Py_ssize_t i, PyObject *v) { return 0; }",
+                                            sq_ass_item="myassitem")
+    x = TestSqAssItemWrapperReturn()
+    assert x.__setitem__(42, 42) is None
+
+
 def test_concat_vs_add():
     # Inheritance of the Py_sq_concat slot:
     SqAdd = CPyExtHeapType("SqAdd",
