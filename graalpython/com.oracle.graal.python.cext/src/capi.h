@@ -338,7 +338,7 @@ PY_TRUFFLE_TYPE(PyModuleDef_Type,                "moduledef",                  &
 PY_TRUFFLE_TYPE(PyProperty_Type,                 "property",                   &PyType_Type, sizeof(propertyobject)) \
 PY_TRUFFLE_TYPE(PyRange_Type,                    "range",                      &PyType_Type, sizeof(rangeobject)) \
 PY_TRUFFLE_TYPE(PySet_Type,                      "set",                        &PyType_Type, sizeof(PySetObject)) \
-PY_TRUFFLE_TYPE(PySlice_Type,                    "slice",                      &PyType_Type, sizeof(PySliceObject)) \
+PY_TRUFFLE_TYPE_EXTERN(PySlice_Type,             "slice"                       ) \
 PY_TRUFFLE_TYPE(PyStaticMethod_Type,             "staticmethod",               &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PySuper_Type,                    "super",                      &PyType_Type, sizeof(superobject)) \
 PY_TRUFFLE_TYPE(PyTraceBack_Type,                "traceback",                  &PyType_Type, sizeof(PyTypeObject)) \
