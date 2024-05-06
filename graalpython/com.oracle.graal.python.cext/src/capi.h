@@ -144,6 +144,8 @@ typedef struct {
     PyGC_Head *reachable;
 } GraalPyGC_Cycle;
 
+typedef struct gc_generation GCGeneration;
+
 // {{start CAPI_BUILTINS}}
 #include "capi.gen.h"
 

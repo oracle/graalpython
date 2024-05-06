@@ -971,7 +971,9 @@ public abstract class CApiTransitions {
                         @Cached(inline = false) CStructAccess.AllocateNode allocateNode,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
                         @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNode,
+                        @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached(inline = false) CStructAccess.WriteIntNode writeIntNode,
+                        @Cached(inline = false) CStructAccess.GetElementPtrNode getElementPtrNode,
                         @Cached CoerceNativePointerToLongNode coerceToLongNode,
                         @Cached PyObjectGCTrackNode gcTrackNode) {
 
@@ -987,13 +989,22 @@ public abstract class CApiTransitions {
             long presize = gc ? CStructs.PyGC_Head.size() : 0;
             Object nativeObjectStub = allocateNode.alloc(ctype.size() + presize);
 
-            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
+            PythonContext pythonContext = PythonContext.get(inliningTarget);
+            HandleContext handleContext = pythonContext.nativeContext;
             long stubPointer = coerceToLongNode.execute(inliningTarget, nativeObjectStub);
             long taggedPointer = HandlePointerConverter.stubToPointer(stubPointer);
 
             if (gc) {
-                // TODO(fa): adjust allocation count of generation
+                // adjust allocation count of generation
+                // GCState *gcstate = get_gc_state();
+                Object gcState = pythonContext.getCApiContext().getGCState();
+                assert gcState != null;
+                // compute start address of embedded array; essentially '&gcstate->generations[0]'
+                Object generations = getElementPtrNode.getElementPtr(gcState, CFields.GCState__generations);
+
                 // gcstate->generations[0].count++;
+                int count = readI32Node.read(generations, CFields.GCGeneration__count);
+                writeIntNode.write(generations, CFields.GCGeneration__count, count + 1);
 
                 // similar to 'typeobject.c: PyType_GenericAlloc':
                 // register native stub to Python GC; use tagged pointer to PyGC_Head

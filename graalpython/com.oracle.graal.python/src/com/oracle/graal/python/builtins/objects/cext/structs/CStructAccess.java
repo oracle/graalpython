@@ -766,11 +766,6 @@ public class CStructAccess {
             return result;
         }
 
-        public final Object readStructArrayElement(Object pointer, long element, CFields field) {
-            assert accepts(field);
-            return execute(pointer, element * field.struct.size() + field.offset());
-        }
-
         @Specialization
         static Object readLong(long pointer, long offset,
                         @Shared @Cached NativePtrToPythonNode toPython) {
@@ -1071,6 +1066,10 @@ public class CStructAccess {
 
         public final void writeArrayElement(Object pointer, long element, int value) {
             execute(pointer, element * Integer.BYTES, value);
+        }
+
+        public final void writeStructArrayElement(Object pointer, long element, CFields field, int value) {
+            execute(pointer, element * field.struct.size() + field.offset(), value);
         }
 
         @Specialization

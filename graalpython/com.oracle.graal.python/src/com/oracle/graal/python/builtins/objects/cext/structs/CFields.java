@@ -343,7 +343,10 @@ public enum CFields {
 
     GCState__enabled(Int),
     GCState__debug(Int),
+    GCState__generations(Pointer),
     GCState__generation0(Pointer),
+
+    GCGeneration__count(Int),
 
     PyGC_Head___gc_prev(UINTPTR_T),
     PyGC_Head___gc_next(UINTPTR_T),

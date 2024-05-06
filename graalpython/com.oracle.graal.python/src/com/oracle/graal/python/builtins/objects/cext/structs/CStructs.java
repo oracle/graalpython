@@ -93,7 +93,8 @@ public enum CStructs {
     Py_ssize_t,
     GCState,
     PyGC_Head,
-    GraalPyGC_CycleNode;
+    GraalPyGC_CycleNode,
+    GCGeneration;
 
     @CompilationFinal(dimensions = 1) public static final CStructs[] VALUES = values();
 

@@ -229,7 +229,10 @@ public abstract class CApiGCSupport {
 
         @Specialization
         static void doGeneric(Node inliningTarget, long op,
-                        @Cached GCListRemoveNode gcListRemoveNode) {
+                        @Cached GCListRemoveNode gcListRemoveNode,
+                        @Cached(inline = false) CStructAccess.GetElementPtrNode getElementPtrNode,
+                        @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
+                        @Cached(inline = false) CStructAccess.WriteIntNode writeIntNode) {
             if (CApiContext.GC_LOGGER.isLoggable(Level.FINE)) {
                 CApiContext.GC_LOGGER.fine(PythonUtils.formatJString("releasing native object stub 0x%x", op));
             }
@@ -243,11 +246,17 @@ public abstract class CApiGCSupport {
             long opUntagged = HandlePointerConverter.pointerToStub(op);
             long gcUntagged = gcListRemoveNode.execute(inliningTarget, opUntagged);
 
-            // TODO(fa): adjust allocation count of generation
             // GCState *gcstate = get_gc_state();
+            Object gcState = PythonContext.get(inliningTarget).getCApiContext().getGCState();
+            assert gcState != null;
+            // compute start address of embedded array; essentially '&gcstate->generations[0]'
+            Object generations = getElementPtrNode.getElementPtr(gcState, CFields.GCState__generations);
             // if (gcstate->generations[0].count > 0) {
-            // gcstate->generations[0].count--;
-            // }
+            int count = readI32Node.read(generations, CFields.GCGeneration__count);
+            if (count > 0) {
+                // gcstate->generations[0].count--;
+                writeIntNode.write(generations, CFields.GCGeneration__count, count - 1);
+            }
 
             // PyObject_Free(((char *)op)-presize)
             FreeNode.executeUncached(gcUntagged);
