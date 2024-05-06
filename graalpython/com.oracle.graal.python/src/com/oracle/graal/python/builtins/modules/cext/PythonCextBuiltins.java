@@ -129,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonWrapperNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformExceptionToNativeNodeGen;
@@ -1496,7 +1497,7 @@ public final class PythonCextBuiltins {
                         @Cached CoerceNativePointerToLongNode coerceToLongNode,
                         @Cached(inline = false) CStructAccess.ReadI64Node readI64Node,
                         @Cached NativePtrToPythonWrapperNode nativePtrToPythonWrapperNode,
-                        @Cached InlinedConditionProfile hasRefProfile) {
+                        @Cached UpdateRefNode updateRefNode) {
             // guaranteed by the guard
             assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
 
@@ -1512,7 +1513,7 @@ public final class PythonCextBuiltins {
                     if (CApiContext.GC_LOGGER.isLoggable(Level.FINE)) {
                         CApiContext.GC_LOGGER.fine(PythonUtils.formatJString("Breaking reference cycle for %s", abstractObjectNativeWrapper.ref));
                     }
-                    abstractObjectNativeWrapper.updateRef(inliningTarget, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT, hasRefProfile);
+                    updateRefNode.execute(inliningTarget, abstractObjectNativeWrapper, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT);
                 }
                 // gc = GC_NEXT(gc)
                 gcUntagged = HandlePointerConverter.pointerToStub(readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next));

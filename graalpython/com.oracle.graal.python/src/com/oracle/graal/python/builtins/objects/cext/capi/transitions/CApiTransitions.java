@@ -1274,8 +1274,8 @@ public abstract class CApiTransitions {
                         @Bind("this") Node inliningTarget,
                         @Cached GetNativeWrapperNode getWrapper,
                         @Cached GetReplacementNode getReplacementNode,
-                        @Cached InlinedConditionProfile isStrongProfile,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached UpdateRefNode updateRefNode) {
             CompilerAsserts.partialEvaluationConstant(needsTransfer);
             assert PythonContext.get(inliningTarget).ownsGil();
             pollReferenceQueue();
@@ -1292,7 +1292,7 @@ public abstract class CApiTransitions {
             }
             if (needsTransfer && wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
                 // native part needs to decRef to release
-                objectNativeWrapper.incRef();
+                long refCnt = objectNativeWrapper.incRef();
                 /*
                  * This creates a new reference to the object and the ownership is transferred to
                  * the C extension. Therefore, we need to make the reference strong such that we do
@@ -1301,9 +1301,8 @@ public abstract class CApiTransitions {
                  * down to MANAGED_RECOUNT again.
                  */
                 assert wrapper.ref != null;
-                if (isStrongProfile.profile(inliningTarget, !objectNativeWrapper.ref.isStrongReference())) {
-                    objectNativeWrapper.ref.setStrongReference(objectNativeWrapper);
-                }
+                assert refCnt != MANAGED_REFCNT;
+                updateRefNode.execute(inliningTarget, objectNativeWrapper, refCnt);
             }
             assert wrapper != null;
             return wrapper;
@@ -1861,6 +1860,40 @@ public abstract class CApiTransitions {
                 }
             }
             return object;
+        }
+    }
+
+    /**
+     * Adjusts the native wrapper's reference to be weak (if {@code refCount <= MANAGED_REFCNT}) or
+     * to be strong (if {@code refCount > MANAGED_REFCNT}) if there is a reference. This node should
+     * be called at appropriate points in the program, e.g., it should be called from native code if
+     * the refcount falls below {@link PythonAbstractObjectNativeWrapper#MANAGED_REFCNT}.
+     *
+     * Additionally, if the reference to a wrapper will be made weak and the wrapper takes part in
+     * the Python GC and is currently tracked, it will be removed from the GC list. This is done to
+     * reduce the GC list size and avoid repeated upcalls to ensure that a
+     * {@link PythonObjectReference} is weak.
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class UpdateRefNode extends Node {
+
+        public abstract void execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, long refCount);
+
+        @Specialization
+        static void doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, long refCount,
+                        @Cached InlinedConditionProfile hasRefProfile) {
+            PythonObjectReference ref;
+            if (hasRefProfile.profile(inliningTarget, (ref = wrapper.ref) != null)) {
+                assert ref.gc;
+                assert ref.pointer == wrapper.getNativePointer();
+                if (refCount > MANAGED_REFCNT && !ref.isStrongReference()) {
+                    ref.setStrongReference(wrapper);
+                } else if (refCount <= MANAGED_REFCNT && ref.isStrongReference()) {
+                    ref.setStrongReference(null);
+                }
+            }
         }
     }
 }

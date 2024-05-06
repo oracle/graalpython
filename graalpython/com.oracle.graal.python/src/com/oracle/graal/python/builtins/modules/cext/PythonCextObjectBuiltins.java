@@ -92,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -152,7 +153,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonCextObjectBuiltins {
@@ -165,9 +165,9 @@ public abstract class PythonCextObjectBuiltins {
         @Specialization
         static Object doGeneric(PythonAbstractObjectNativeWrapper wrapper, long refCount,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile hasRefProfile) {
+                        @Cached UpdateRefNode updateRefNode) {
             assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(wrapper.getNativePointer())) == refCount;
-            wrapper.updateRef(inliningTarget, refCount, hasRefProfile);
+            updateRefNode.execute(inliningTarget, wrapper, refCount);
             return PNone.NO_VALUE;
         }
     }
@@ -178,7 +178,7 @@ public abstract class PythonCextObjectBuiltins {
         @Specialization
         static Object doGeneric(Object arrayPointer, int len,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile hasRefProfile,
+                        @Cached UpdateRefNode updateRefNode,
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached ToPythonWrapperNode toPythonWrapperNode) {
 
@@ -197,7 +197,7 @@ public abstract class PythonCextObjectBuiltins {
             for (int i = 0; i < resolved.length; i++) {
                 if (resolved[i] instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
                     long refCount = CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(objectNativeWrapper.getNativePointer()));
-                    objectNativeWrapper.updateRef(inliningTarget, refCount, hasRefProfile);
+                    updateRefNode.execute(inliningTarget, objectNativeWrapper, refCount);
                 }
             }
             return PNone.NO_VALUE;
