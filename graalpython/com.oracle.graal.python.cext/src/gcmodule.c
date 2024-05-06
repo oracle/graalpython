@@ -473,17 +473,16 @@ visit_collect_managed_referents(PyObject *op, GraalPyGC_Cycle *cycle)
         return 0;
     }
 
-    // capture references to managed objects
-    if (is_managed(op)) {
-        GraalPyGC_CycleNode *n = (GraalPyGC_CycleNode *)malloc(sizeof(GraalPyGC_CycleNode));
-        if (n == NULL) {
-            return -1;
-        }
-        n->item = op;
-        n->next = cycle->head;
-        cycle->head = n;
-        cycle->n++;
+    // capture references to objects (to replicate them in Java)
+    GraalPyGC_CycleNode *n = (GraalPyGC_CycleNode *)malloc(sizeof(GraalPyGC_CycleNode));
+    if (n == NULL) {
+        return -1;
     }
+    n->item = op;
+    n->next = cycle->head;
+    cycle->head = n;
+    cycle->n++;
+
     return visit_reachable(op, cycle->reachable);
 }
 
