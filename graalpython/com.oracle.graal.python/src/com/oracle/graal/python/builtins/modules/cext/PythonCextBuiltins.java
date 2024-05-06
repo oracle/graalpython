@@ -229,6 +229,7 @@ import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.api.Toolchain;
@@ -1436,32 +1437,46 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = Void, args = {PyObject, Pointer, Int}, call = Ignored)
     abstract static class PyTruffleObject_ReplicateNativeReferences extends CApiTernaryBuiltinNode {
+        private static final Level LEVEL = Level.FINER;
+
         @Specialization
         static Object doGeneric(Object object, Object listHead, int n,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedExactClassProfile profile,
                         @Cached CStructAccess.ReadObjectNode readObjectNode,
                         @Cached CStructAccess.ReadPointerNode readPointerNode) {
-            boolean loggable = CApiContext.GC_LOGGER.isLoggable(Level.INFO);
+            boolean loggable = CApiContext.GC_LOGGER.isLoggable(LEVEL);
             Object repr = object;
+            Object profiledObject = profile.profile(inliningTarget, object);
+
             Object[] referents = null;
-            if (object instanceof PythonAbstractNativeObject nativeObject) {
-                if (loggable) {
-                    repr = nativeObject.toStringWithContext();
-                }
+            if (profiledObject instanceof PythonAbstractNativeObject || profiledObject instanceof PythonModule) {
                 referents = new Object[n];
-                nativeObject.setReplicatedNativeReferences(referents);
-            } else if (object instanceof PythonModule module) {
-                referents = new Object[n];
-                module.setReplicatedNativeReferences(referents);
-            }
-            if (referents != null) {
                 Object cur = listHead;
                 for (int i = 0; i < n; i++) {
                     referents[i] = readObjectNode.read(cur, GraalPyGC_CycleNode__item);
                     cur = readPointerNode.read(cur, GraalPyGC_CycleNode__next);
                 }
+
+                /*
+                 * Note: it is important that we first collect the objects such that we have strong
+                 * Java references to them on the Java stack and then we overwrite the
+                 * 'replicatedNativeReferences' field. This is because the referents may already be
+                 * weakly referenced from the handle table and such referents may already be in the
+                 * previous array and then it could happen, that they die during list processing.
+                 */
+                if (profiledObject instanceof PythonAbstractNativeObject nativeObject) {
+                    if (loggable) {
+                        repr = nativeObject.toStringWithContext();
+                    }
+                    nativeObject.setReplicatedNativeReferences(referents);
+                } else {
+                    PythonModule module = (PythonModule) profiledObject;
+                    module.setReplicatedNativeReferences(referents);
+                }
             }
             if (loggable) {
-                CApiContext.GC_LOGGER.info(PythonUtils.formatJString("Replicated native refs of %s to managed: %s", repr, Arrays.toString(referents)));
+                CApiContext.GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Replicated native refs of %s to managed: %s", repr, Arrays.toString(referents)));
             }
             return PNone.NO_VALUE;
         }
@@ -1494,8 +1509,8 @@ public final class PythonCextBuiltins {
 
                 PythonNativeWrapper wrapper = nativePtrToPythonWrapperNode.execute(inliningTarget, op, true);
                 if (wrapper instanceof PythonAbstractObjectNativeWrapper abstractObjectNativeWrapper) {
-                    if (CApiContext.GC_LOGGER.isLoggable(Level.INFO)) {
-                        CApiContext.GC_LOGGER.info(PythonUtils.formatJString("Breaking reference cycle for %s", abstractObjectNativeWrapper));
+                    if (CApiContext.GC_LOGGER.isLoggable(Level.FINE)) {
+                        CApiContext.GC_LOGGER.fine(PythonUtils.formatJString("Breaking reference cycle for %s", abstractObjectNativeWrapper.ref));
                     }
                     abstractObjectNativeWrapper.updateRef(inliningTarget, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT, hasRefProfile);
                 }
