@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupportFactory.GCListRemoveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupportFactory.PyObjectGCDelNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -132,35 +133,40 @@ public abstract class CApiGCSupport {
     }
 
     /**
-     * Implements the logic of {@code gcmodule.c: PyObject_GC_Del} without downcalls but to be used
-     * for native object stubs.
+     * Implements the logic of {@code gcmodule.c: gc_list_remove} without downcalls.
+     * <p>
+     * This operation is very similar to {@code pycore_object.h: _PyObject_GC_UNTRACK} with the
+     * little difference that {@code _PyObject_GC_UNTRACK} will also clear {@code gc->_gc_prev}
+     * (still rescue the {@code _PyGC_PREV_MASK_FINALIZED} flag) while this operation doesn't touch
+     * that field at all.
+     * </p>
      */
     @GenerateInline
     @GenerateUncached
     @GenerateCached(false)
-    public abstract static class PyObjectGCDelNode extends Node {
+    public abstract static class GCListRemoveNode extends Node {
 
-        public static void executeUncached(long op) {
-            PyObjectGCDelNodeGen.getUncached().execute(null, op);
+        public static long executeUncached(long opUntagged) {
+            return GCListRemoveNodeGen.getUncached().execute(null, opUntagged);
         }
 
-        public abstract void execute(Node inliningTarget, long op);
+        public abstract long execute(Node inliningTarget, long opUntagged);
 
         @Specialization
-        static void doGeneric(long op,
+        static long doGeneric(long opUntagged,
                         @Cached(inline = false) CStructAccess.ReadI64Node readI64Node,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode) {
-            if (CApiContext.GC_LOGGER.isLoggable(Level.FINE)) {
-                CApiContext.GC_LOGGER.fine(PythonUtils.formatJString("releasing native object stub 0x%x", op));
+            // issue a log message before doing the first memory access
+            if (CApiContext.GC_LOGGER.isLoggable(Level.FINER)) {
+                CApiContext.GC_LOGGER.finer(PythonUtils.formatJString("attempting to remove 0x%x from GC generation", opUntagged));
             }
 
             /*
-             * We expect a tagged pointer here because otherwise, the native 'PyObject_GC_Del'
-             * function should be used.
+             * We expect a real (untagged) pointer here because this operation is usually used in
+             * conjunction with other operations that already untag pointers before.
              */
-            assert HandlePointerConverter.pointsToPyHandleSpace(op) : "expected tagged pointer";
+            assert !HandlePointerConverter.pointsToPyHandleSpace(opUntagged) : "expected real (untagged) pointer";
 
-            long opUntagged = HandlePointerConverter.pointerToStub(op);
             long gcUntagged = opUntagged - CStructs.PyGC_Head.size();
 
             /*
@@ -169,10 +175,13 @@ public abstract class CApiGCSupport {
              */
 
             // #define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)
-            long gcNext = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_prev);
+            long gcNext = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next);
             // if (_PyObject_GC_IS_TRACKED(op))
             if (gcNext != 0) {
                 // gc_list_remove
+                if (CApiContext.GC_LOGGER.isLoggable(Level.FINE)) {
+                    CApiContext.GC_LOGGER.fine(PythonUtils.formatJString("removing 0x%x from GC generation", opUntagged));
+                }
 
                 // PyGC_Head *prev = GC_PREV(gc)
                 long prev = maskPrevValue(readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_prev));
@@ -189,7 +198,50 @@ public abstract class CApiGCSupport {
 
                 // UNTAG(gc)->_gc_next = 0
                 writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_next, 0);
+            } else {
+                /*
+                 * This is a valid case because objects can manually be untracked or removed from GC
+                 * lists and if then 'GraalPyObject_GC_Del' is called on the native object stub, it
+                 * is checked if that still needs to be done.
+                 */
+                if (CApiContext.GC_LOGGER.isLoggable(Level.FINER)) {
+                    CApiContext.GC_LOGGER.finer(PythonUtils.formatJString("removing 0x%x from GC generation skipped; not tracked", opUntagged));
+                }
             }
+            return gcUntagged;
+        }
+    }
+
+    /**
+     * Implements the logic of {@code gcmodule.c: PyObject_GC_Del} without downcalls but to be used
+     * for native object stubs.
+     */
+    @GenerateInline
+    @GenerateUncached
+    @GenerateCached(false)
+    public abstract static class PyObjectGCDelNode extends Node {
+
+        public static void executeUncached(long op) {
+            PyObjectGCDelNodeGen.getUncached().execute(null, op);
+        }
+
+        public abstract void execute(Node inliningTarget, long op);
+
+        @Specialization
+        static void doGeneric(Node inliningTarget, long op,
+                        @Cached GCListRemoveNode gcListRemoveNode) {
+            if (CApiContext.GC_LOGGER.isLoggable(Level.FINE)) {
+                CApiContext.GC_LOGGER.fine(PythonUtils.formatJString("releasing native object stub 0x%x", op));
+            }
+
+            /*
+             * We expect a tagged pointer here because otherwise, the native 'PyObject_GC_Del'
+             * function should be used.
+             */
+            assert HandlePointerConverter.pointsToPyHandleSpace(op) : "expected tagged pointer";
+
+            long opUntagged = HandlePointerConverter.pointerToStub(op);
+            long gcUntagged = gcListRemoveNode.execute(inliningTarget, opUntagged);
 
             // TODO(fa): adjust allocation count of generation
             // GCState *gcstate = get_gc_state();
