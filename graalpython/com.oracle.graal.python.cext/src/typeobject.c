@@ -9277,7 +9277,7 @@ static int type_ready_graalpy_slot_conv(PyTypeObject* cls) {
     // NOTE: The slots may be called from managed code, i.e., we need to wrap the functions
     // and convert arguments that should be C primitives.
     // ADD_SLOT_CONV("__getattribute__", cls->tp_getattr, -2, JWRAPPER_GETATTR); tp_getattr does not have wrapper set in slotdefs and hence is ignored in add_operators
-    ADD_SLOT_CONV("__setattr__", cls->tp_setattr, -3, JWRAPPER_SETATTR);
+    // ADD_SLOT_CONV("__setattr__", cls->tp_setattr, -3, JWRAPPER_SETATTR); dtto for tp_setattr
     ADD_SLOT_CONV("__repr__", cls->tp_repr, -1, JWRAPPER_REPR);
     ADD_SLOT_CONV("__hash__", cls->tp_hash, -1, JWRAPPER_HASHFUNC);
     ADD_SLOT_CONV("__call__", cls->tp_call, METH_KEYWORDS | METH_VARARGS, JWRAPPER_CALL);

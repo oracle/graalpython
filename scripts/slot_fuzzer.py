@@ -77,12 +77,6 @@ def slots_tester(Klass):
                 traceback.print_exc()
             else:
                 print(type(e))
-                
-    def test_dunder(obj, fun_name, *args):
-        # avoid going through tp_getattr/o, which may be overridden to something funky
-        args_str = ','.join([repr(x) for x in args])
-        test(lambda: Klass.__dict__[fun_name](obj, *args), f"{fun_name} via class dict")        
-        test(lambda: getattr(obj, fun_name)(*args), f"{fun_name}")
 
     def test_dunder(obj, fun_name, *args):
         # avoid going through tp_getattr/o, which may be overridden to something funky
