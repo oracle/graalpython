@@ -4390,7 +4390,6 @@ type_clear(PyTypeObject *type)
      * holds a reference to the appropriate object already. This means, we must
      * not clear those fields in native code.
      */
-#if 0 // GraalPy change
     /* Because of type_is_gc(), the collector only calls this
        for heaptypes. */
     _PyObject_ASSERT((PyObject *)type, type->tp_flags & Py_TPFLAGS_HEAPTYPE);
@@ -4431,7 +4430,6 @@ type_clear(PyTypeObject *type)
     Py_CLEAR(((PyHeapTypeObject *)type)->ht_module);
 
     Py_CLEAR(type->tp_mro);
-#endif // GraalPy change
 
     return 0;
 }
