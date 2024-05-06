@@ -266,9 +266,6 @@ PyAPI_FUNC(int) _PyArg_VaParse_SizeT(PyObject *, const char *, va_list);
 PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *, PyObject *,
                                                   const char *, char **, va_list);
 
-extern size_t PyTruffle_AllocatedMemory;
-extern size_t PyTruffle_MaxNativeMemory;
-extern size_t PyTruffle_NativeMemoryGCBarrier;
 
 /*
  * alphabetical but: according to CPython's '_PyTypes_Init': first
