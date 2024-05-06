@@ -77,7 +77,13 @@ list_traverse(PyListObject *o, visitproc visit, void *arg)
      * is indicated by 'size > 0'). We don't traverse managed storages. For an
      * explanation, see 'dictobject.c: dict_traverse'.
      */
-    size = GraalPyTruffleList_TryGetItems((PyObject *)o, &ob_item);
+    if (points_to_py_handle_space(o)) {
+        size = GraalPyTruffleList_TryGetItems((PyObject *)o, &ob_item);
+    } else {
+        size = Py_SIZE(o);
+        ob_item = o->ob_item;
+    }
+
     for (i = size; --i >= 0; )
         Py_VISIT(ob_item[i]);
 #endif
@@ -125,7 +131,7 @@ PyTypeObject PyList_Type = {
     0,                                          /* tp_init */ // GraalPy change: nulled
     PyType_GenericAlloc,                        /* tp_alloc */
     PyType_GenericNew,                          /* tp_new */
-    GraalPyObject_GC_Del,                       /* tp_free */
+    GraalPyObject_GC_Del,                       /* tp_free */ // GraalPy change: different function
     .tp_vectorcall = 0, // GraalPy change: nulled
 };
 
