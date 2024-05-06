@@ -4439,8 +4439,12 @@ type_clear(PyTypeObject *type)
 static int
 type_is_gc(PyTypeObject *type)
 {
-    // GraalPy change: we don't traverse types for now
-    return type->tp_flags & Py_TPFLAGS_HEAPTYPE;
+    /* GraalPy change: immortal types (these are usually managed types that
+     * received toNative) do not participate in Python GC. Usually, we would
+     * just test for 'points_to_py_handle_space' but this is not applicable for
+     * 'PyTypeObject' because there we really allocate and fill a native
+     * mirror. */
+    return type->tp_flags & Py_TPFLAGS_HEAPTYPE && Py_REFCNT(type) != IMMORTAL_REFCNT;
 }
 
 
@@ -4497,7 +4501,7 @@ PyTypeObject PyType_Type = {
     0,                                          /* tp_init */ // GraalPy change: nulled
     PyType_GenericAlloc,                        /* tp_alloc */ // GraalPy change: added 'PyType_GenericAlloc'
     0,                                          /* tp_new */ // GraalPy change: nulled
-    PyObject_GC_Del,                            /* tp_free */ // GraalPy change: nulled
+    GraalPyObject_GC_Del,                       /* tp_free */ // GraalPy change: different function
     (inquiry)type_is_gc,                        /* tp_is_gc */
 #if 0 // GraalPy change
     .tp_vectorcall = type_vectorcall,
