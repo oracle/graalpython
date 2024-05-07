@@ -2639,19 +2639,25 @@ Py_ssize_t _Py_SIZE(PyObject *obj) {
     return PyTruffle_SIZE(obj);
 }
 
-void PyTruffle_SET_TYPE(PyObject *a, PyTypeObject *b) {
-	if (points_to_py_handle_space(a)) {
-		printf("changing the type of an object is not supported\n");
-	} else {
-		a->ob_type = b;
-	}
+void
+PyTruffle_SET_TYPE(PyObject *a, PyTypeObject *b)
+{
+    if (points_to_py_handle_space(a)) {
+        PyTruffle_Log(PY_TRUFFLE_LOG_INFO,
+                "changing the type of an object is not supported\n");
+    } else {
+        a->ob_type = b;
+    }
 }
-void PyTruffle_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
-	if (points_to_py_handle_space(a)) {
-		Graal_PyTruffle_SET_SIZE(a, b);
-	} else {
-		a->ob_size = b;
-	}
+
+void
+PyTruffle_SET_SIZE(PyVarObject *a, Py_ssize_t b)
+{
+    if (points_to_py_handle_space(a)) {
+        Graal_PyTruffle_SET_SIZE(a, b);
+    } else {
+        a->ob_size = b;
+    }
 }
 
 #define DEFERRED_NOTIFY_SIZE 16
