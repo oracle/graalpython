@@ -10,7 +10,7 @@ import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.io.IOAccess;
 import org.graalvm.python.embedding.micronaut.GraalPyContextFactory;
-import org.graalvm.python.embedding.utils.VirtualFileSystem;
+import org.graalvm.python.embedding.vfs.VirtualFileSystem;
 
 import java.io.IOException;
 import java.time.Duration;
