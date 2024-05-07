@@ -91,7 +91,7 @@ public abstract class CApiGCSupport {
 
     /**
      * Implements the logic of {@code pycore_object.h: _PyObject_GC_TRACK} without downcalls but
-     * will additionally also test {@code if (_PyObject_GC_IS_TRACKED(op))}.
+     * will additionally also test {@code if (!_PyObject_GC_IS_TRACKED(op))}.
      */
     @GenerateInline
     @GenerateUncached
@@ -110,8 +110,8 @@ public abstract class CApiGCSupport {
             long gcUntagged = HandlePointerConverter.pointerToStub(gc);
             // #define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)
             long gcNext = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next);
-            // if (_PyObject_GC_IS_TRACKED(op))
-            if (gcNext != 0) {
+            // if (!_PyObject_GC_IS_TRACKED(op))
+            if (gcNext == 0) {
                 // PyGC_Head *generation0 = tstate->gc->generation0;
                 Object gcState = PythonContext.get(inliningTarget).getCApiContext().getGCState();
                 assert gcState != null;
