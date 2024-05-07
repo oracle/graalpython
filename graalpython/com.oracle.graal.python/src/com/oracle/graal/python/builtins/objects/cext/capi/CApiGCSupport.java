@@ -90,7 +90,8 @@ public abstract class CApiGCSupport {
     }
 
     /**
-     * Implements the logic of {@code pycore_object.h: _PyObject_GC_TRACK} without downcalls.
+     * Implements the logic of {@code pycore_object.h: _PyObject_GC_TRACK} without downcalls but
+     * will additionally also test {@code if (_PyObject_GC_IS_TRACKED(op))}.
      */
     @GenerateInline
     @GenerateUncached
@@ -106,29 +107,34 @@ public abstract class CApiGCSupport {
                         @Cached(inline = false) CStructAccess.ReadI64Node readI64Node,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode) {
 
-            // PyGC_Head *generation0 = tstate->gc->generation0;
-            Object gcState = PythonContext.get(inliningTarget).getCApiContext().getGCState();
-            assert gcState != null;
-            long gen0 = coerceToLongNode.execute(inliningTarget, readPointerNode.read(gcState, CFields.GCState__generation0));
-            assert gen0 != 0;
-            assert !HandlePointerConverter.pointsToPyHandleSpace(gen0);
-
-            // PyGC_Head *last = (PyGC_Head*)(generation0->_gc_prev);
-            long last = readI64Node.read(gen0, CFields.PyGC_Head___gc_prev);
-
-            // _PyGCHead_SET_NEXT(last, gc);
-            writeLongNode.write(HandlePointerConverter.pointerToStub(last), CFields.PyGC_Head___gc_next, gc);
-
-            // _PyGCHead_SET_PREV(gc, last);
             long gcUntagged = HandlePointerConverter.pointerToStub(gc);
-            long curGcPrev = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_prev);
-            writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_prev, computePrevValue(curGcPrev, last));
+            // #define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)
+            long gcNext = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next);
+            // if (_PyObject_GC_IS_TRACKED(op))
+            if (gcNext != 0) {
+                // PyGC_Head *generation0 = tstate->gc->generation0;
+                Object gcState = PythonContext.get(inliningTarget).getCApiContext().getGCState();
+                assert gcState != null;
+                long gen0 = coerceToLongNode.execute(inliningTarget, readPointerNode.read(gcState, CFields.GCState__generation0));
+                assert gen0 != 0;
+                assert !HandlePointerConverter.pointsToPyHandleSpace(gen0);
 
-            // _PyGCHead_SET_NEXT(gc, generation0);
-            writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_next, gen0);
+                // PyGC_Head *last = (PyGC_Head*)(generation0->_gc_prev);
+                long last = readI64Node.read(gen0, CFields.PyGC_Head___gc_prev);
 
-            // generation0->_gc_prev = (uintptr_t)gc;
-            writeLongNode.write(gen0, CFields.PyGC_Head___gc_prev, gc);
+                // _PyGCHead_SET_NEXT(last, gc);
+                writeLongNode.write(HandlePointerConverter.pointerToStub(last), CFields.PyGC_Head___gc_next, gc);
+
+                // _PyGCHead_SET_PREV(gc, last);
+                long curGcPrev = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_prev);
+                writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_prev, computePrevValue(curGcPrev, last));
+
+                // _PyGCHead_SET_NEXT(gc, generation0);
+                writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_next, gen0);
+
+                // generation0->_gc_prev = (uintptr_t)gc;
+                writeLongNode.write(gen0, CFields.PyGC_Head___gc_prev, gc);
+            }
         }
     }
 

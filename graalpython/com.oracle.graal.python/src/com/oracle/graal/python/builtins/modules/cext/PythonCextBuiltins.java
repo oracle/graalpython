@@ -1496,6 +1496,7 @@ public final class PythonCextBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CoerceNativePointerToLongNode coerceToLongNode,
                         @Cached(inline = false) CStructAccess.ReadI64Node readI64Node,
+                        @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
                         @Cached NativePtrToPythonWrapperNode nativePtrToPythonWrapperNode,
                         @Cached UpdateRefNode updateRefNode) {
             // guaranteed by the guard
@@ -1515,8 +1516,19 @@ public final class PythonCextBuiltins {
                     }
                     updateRefNode.execute(inliningTarget, abstractObjectNativeWrapper, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT);
                 }
-                // gc = GC_NEXT(gc)
-                gcUntagged = HandlePointerConverter.pointerToStub(readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next));
+                // next = GC_NEXT(gc)
+                long nextUntagged = HandlePointerConverter.pointerToStub(readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next));
+
+                /*
+                 * This is a "dirty" untrack since we just overwrite '_gc_prev' and '_gc_next' with
+                 * zero. Here it is fine because (a) managed objects will never have flags set in
+                 * '_gc_prev' that need to be preserved, and (b) because we untrack all objects in
+                 * this list anyway.
+                 */
+                writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_next, 0);
+                writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_prev, 0);
+
+                gcUntagged = nextUntagged;
             }
             return PNone.NO_VALUE;
         }

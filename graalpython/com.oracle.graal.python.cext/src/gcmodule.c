@@ -845,7 +845,13 @@ commit_weak_candidate(PyGC_Head *weak_candidates)
 {
     // avoid upcalls for empty lists
     if (!gc_list_is_empty(weak_candidates)) {
+        /* This call will overwrite '_gc_prev' and '_gc_next' with zero which
+         * essentially untracks all objects. The list 'weak_candidates' is no
+         * longer used after that but just to be sure, we re-init it to have a
+         * valid head.
+         */
         GraalPyTruffleObject_GC_EnsureWeak(weak_candidates);
+        gc_list_init(weak_candidates);
     }
 }
 
@@ -1345,9 +1351,6 @@ deduce_unreachable(PyGC_Head *base, PyGC_Head *unreachable) {
      * This *MUST NOT* be done before native references to managed objects are
      * replicated in Java. Otherwise, we might end up with dangling pointers. */
     commit_weak_candidate(&weak_candidates);
-
-    /* append list 'weak_candidates' to 'base' */
-    gc_list_merge(&weak_candidates, base);
 }
 
 /* Handle objects that may have resurrected after a call to 'finalize_garbage', moving

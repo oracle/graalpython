@@ -1006,9 +1006,12 @@ public abstract class CApiTransitions {
                 int count = readI32Node.read(generations, CFields.GCGeneration__count);
                 writeIntNode.write(generations, CFields.GCGeneration__count, count + 1);
 
-                // similar to 'typeobject.c: PyType_GenericAlloc':
-                // register native stub to Python GC; use tagged pointer to PyGC_Head
-                gcTrackNode.execute(inliningTarget, taggedPointer);
+                /*
+                 * The corresponding location in CPython (i.e. 'typeobject.c: PyType_GenericAlloc')
+                 * would now track the object. We don't do that yet because the object is still
+                 * weakly referenced. As soon as someone increfs, the object will be added to the
+                 * young generation.
+                 */
 
                 // same as in 'gcmodule.c: gc_alloc': PyObject *op = (PyObject *)(mem + presize);
                 stubPointer += presize;
@@ -1883,13 +1886,18 @@ public abstract class CApiTransitions {
 
         @Specialization
         static void doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, long refCount,
-                        @Cached InlinedConditionProfile hasRefProfile) {
+                        @Cached InlinedConditionProfile hasRefProfile,
+                        @Cached PyObjectGCTrackNode gcTrackNode) {
             PythonObjectReference ref;
             if (hasRefProfile.profile(inliningTarget, (ref = wrapper.ref) != null)) {
-                assert ref.gc;
                 assert ref.pointer == wrapper.getNativePointer();
                 if (refCount > MANAGED_REFCNT && !ref.isStrongReference()) {
                     ref.setStrongReference(wrapper);
+                    if (ref.gc) {
+                        // gc = AS_GC(op)
+                        long gc = wrapper.getNativePointer() - CStructs.PyGC_Head.size();
+                        gcTrackNode.execute(inliningTarget, gc);
+                    }
                 } else if (refCount <= MANAGED_REFCNT && ref.isStrongReference()) {
                     ref.setStrongReference(null);
                 }
