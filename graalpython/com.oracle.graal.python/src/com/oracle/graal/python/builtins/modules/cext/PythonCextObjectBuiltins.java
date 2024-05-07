@@ -167,6 +167,8 @@ public abstract class PythonCextObjectBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached UpdateRefNode updateRefNode) {
             assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(wrapper.getNativePointer())) == refCount;
+            // refcounting on an immortal object should be a NOP
+            assert refCount != PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
             updateRefNode.execute(inliningTarget, wrapper, refCount);
             return PNone.NO_VALUE;
         }
@@ -197,6 +199,8 @@ public abstract class PythonCextObjectBuiltins {
             for (int i = 0; i < resolved.length; i++) {
                 if (resolved[i] instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
                     long refCount = CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(objectNativeWrapper.getNativePointer()));
+                    // refcounting on an immortal object should be a NOP
+                    assert refCount != PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
                     updateRefNode.execute(inliningTarget, objectNativeWrapper, refCount);
                 }
             }
