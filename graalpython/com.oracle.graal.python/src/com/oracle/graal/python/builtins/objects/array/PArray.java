@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -45,6 +46,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
@@ -416,5 +418,19 @@ public final class PArray extends PythonBuiltinObject {
     @ExportMessage
     public boolean isArrayElementRemovable(long idx) {
         return isInBounds(idx);
+    }
+
+    @ExportMessage
+    boolean isNative() {
+        return storage instanceof NativeByteSequenceStorage;
+    }
+
+    @ExportMessage
+    Object getNativePointer(
+                    @Bind("$node") Node inliningTarget,
+                    @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
+        NativeSequenceStorage newStorage = toNativeStorageNode.execute(inliningTarget, storage, true);
+        setSequenceStorage(newStorage);
+        return newStorage.getPtr();
     }
 }

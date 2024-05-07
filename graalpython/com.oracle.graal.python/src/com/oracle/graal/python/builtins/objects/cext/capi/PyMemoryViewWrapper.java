@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__exports;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__flags;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
@@ -48,27 +49,18 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyOb
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructs.PyMemoryViewObject;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
-import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper.ToNativeStorageNode;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.GetElementPtrNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.SetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -115,32 +107,28 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
 
         Object view = getElementNode.getElementPtr(mem, CFields.PyMemoryViewObject__view);
 
-        Object buf;
-        if (object.getBufferPointer() == null) {
-            Object pointer;
-            if (object.getOwner() instanceof PSequence owner) {
-                NativeSequenceStorage nativeStorage = ToNativeStorageNode.executeUncached(GetSequenceStorageNode.executeUncached(owner), owner instanceof PBytesLike);
-                SetSequenceStorageNode.executeUncached(owner, nativeStorage);
-                pointer = nativeStorage.getPtr();
-            } else if (object.getOwner() instanceof PArray owner) {
-                NativeSequenceStorage nativeStorage = ToNativeStorageNode.executeUncached(owner.getSequenceStorage(), true);
-                owner.setSequenceStorage(nativeStorage);
-                pointer = nativeStorage.getPtr();
-            } else if (object.getOwner() instanceof PMMap owner) {
-                pointer = PosixSupportLibrary.getUncached().mmapGetPointer(PythonContext.get(null).getPosixSupport(), owner.getPosixSupportHandle());
-            } else {
-                throw shouldNotReachHere("Cannot convert managed object to native storage");
+        Object buf = object.getBufferPointer();
+        if (buf == null) {
+            buf = PythonBufferAccessLibrary.getUncached().getNativePointer(object.getBuffer());
+            if (buf == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw shouldNotReachHere("Cannot convert managed object to native storage: " + object.getBuffer().getClass().getSimpleName());
             }
-            if (object.getOffset() == 0) {
-                buf = pointer;
+        }
+        if (object.getOffset() != 0) {
+            if (buf instanceof Long ptr) {
+                buf = ptr + object.getOffset();
             } else {
-                buf = CExtNodes.pointerAdd(pointer, object.getOffset());
-            }
-        } else {
-            if (object.getOffset() == 0) {
-                buf = object.getBufferPointer();
-            } else {
-                buf = CExtNodes.pointerAdd(object.getBufferPointer(), object.getOffset());
+                InteropLibrary ptrLib = InteropLibrary.getUncached(buf);
+                if (ptrLib.isPointer(buf)) {
+                    try {
+                        buf = ptrLib.asPointer(buf) + object.getOffset();
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                } else {
+                    buf = CExtNodes.PCallCapiFunction.callUncached(FUN_PTR_ADD, buf, (long) object.getOffset());
+                }
             }
         }
         writePointerNode.write(view, CFields.Py_buffer__buf, buf);

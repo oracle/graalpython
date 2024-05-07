@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -111,3 +111,28 @@ class FcntlTests(unittest.TestCase):
         finally:
             fcntl.flock(file, fcntl.LOCK_UN)
             os.close(file)
+
+
+@unittest.skipUnless(sys.platform == 'linux', "Linux only test")
+@unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', "No ioctl in emulated backend")
+class IoctlTests(unittest.TestCase):
+    # Taken from CPython test_ioctl.py which unfortunately skips the whole file when not in a terminal
+    def test_ioctl_signed_unsigned_code_param(self):
+        import pty, termios, struct
+        mfd, sfd = pty.openpty()
+        try:
+            if termios.TIOCSWINSZ < 0:
+                set_winsz_opcode_maybe_neg = termios.TIOCSWINSZ
+                set_winsz_opcode_pos = termios.TIOCSWINSZ & 0xffffffff
+            else:
+                set_winsz_opcode_pos = termios.TIOCSWINSZ
+                set_winsz_opcode_maybe_neg, = struct.unpack("i",
+                                                            struct.pack("I", termios.TIOCSWINSZ))
+
+            our_winsz = struct.pack("HHHH",80,25,0,0)
+            # test both with a positive and potentially negative ioctl code
+            new_winsz = fcntl.ioctl(mfd, set_winsz_opcode_pos, our_winsz)
+            new_winsz = fcntl.ioctl(mfd, set_winsz_opcode_maybe_neg, our_winsz)
+        finally:
+            os.close(mfd)
+            os.close(sfd)

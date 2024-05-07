@@ -2847,6 +2847,18 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @SuppressWarnings("unused")
+    public int ioctlBytes(int fd, long request, byte[] arg) {
+        throw new UnsupportedPosixFeatureException("ioctl is not available in Java posix backend");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public int ioctlInt(int fd, long request, int arg) {
+        throw new UnsupportedPosixFeatureException("ioctl is not available in Java posix backend");
+    }
+
+    @ExportMessage
     public int socket(int domain, int type, int protocol,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {

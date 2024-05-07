@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -579,6 +579,24 @@ public abstract class PythonBufferAccessLibrary extends Library {
     @Abstract(ifExported = "getItemSize")
     public TruffleString getFormatString(@SuppressWarnings("unused") Object receiver) {
         return T_UINT_8_TYPE_CODE;
+    }
+
+    /**
+     * Return if the buffer is backed by native memory.
+     */
+    @Abstract(ifExported = "getNativePointer")
+    public boolean isNative(@SuppressWarnings("unused") Object receiver) {
+        return false;
+    }
+
+    /**
+     * Return the native pointer to the buffer. Should convert the buffer to native when possible.
+     * Might return null when there is no native representation. The pointer can be either an
+     * interop pointer or a long.
+     */
+    @Abstract(ifExported = "isNative")
+    public Object getNativePointer(@SuppressWarnings("unused") Object receiver) {
+        return null;
     }
 
     static final LibraryFactory<PythonBufferAccessLibrary> FACTORY = LibraryFactory.resolve(PythonBufferAccessLibrary.class);

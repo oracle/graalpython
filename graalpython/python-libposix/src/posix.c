@@ -1032,6 +1032,13 @@ int32_t get_getpwent_data(struct passwd *p, char *buffer, int32_t bufferSize, ui
     return 0;
 }
 
+int32_t call_ioctl_bytes(int32_t fd, uint64_t request, char* buffer) {
+    return ioctl(fd, request, buffer);
+}
+
+int32_t call_ioctl_int(int32_t fd, uint64_t request, int32_t arg) {
+    return ioctl(fd, request, (int)arg);
+}
 
 int32_t get_errno() {
     return errno;

@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNodeGen.LazyNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -224,6 +225,15 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1, Object filename2) {
         return raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), filename1, filename2);
+    }
+
+    public final PException raiseOSErrorUnsupported(VirtualFrame frame, UnsupportedPosixFeatureException e) {
+        return raiseOSError(frame, OSErrorEnum.EINVAL, createUnsupportedErrorMessage(e));
+    }
+
+    @TruffleBoundary
+    private static TruffleString createUnsupportedErrorMessage(UnsupportedPosixFeatureException e) {
+        return TruffleString.fromJavaStringUncached(e.getMessage(), TS_ENCODING);
     }
 
     public final PException raiseSSLError(Frame frame, TruffleString message) {

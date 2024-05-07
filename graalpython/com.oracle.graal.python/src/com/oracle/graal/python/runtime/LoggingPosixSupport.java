@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1086,6 +1086,28 @@ public class LoggingPosixSupport extends PosixSupport {
             return logExit("getpwentries", "%s", lib.getpwentries(delegate));
         } catch (PosixException e) {
             throw logException("getpwentries", e);
+        }
+    }
+
+    @ExportMessage
+    final int ioctlBytes(int fd, long request, byte[] arg,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("ioctl", "%d %d %s", fd, request, arg);
+        try {
+            return logExit("ioctl", "%d", lib.ioctlBytes(delegate, fd, request, arg));
+        } catch (PosixException e) {
+            throw logException("ioctl", e);
+        }
+    }
+
+    @ExportMessage
+    final int ioctlInt(int fd, long request, int arg,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("ioctl", "%d %d %d", fd, request, arg);
+        try {
+            return logExit("ioctl", "%d", lib.ioctlInt(delegate, fd, request, arg));
+        } catch (PosixException e) {
+            throw logException("ioctl", e);
         }
     }
 

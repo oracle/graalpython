@@ -592,29 +592,25 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static NativeSequenceStorage doNativeByte(NativeByteSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CStructAccess.ReadByteNode readNode,
-                        @Shared @Cached StorageToNativeNode storageToNativeNode) {
+        protected static SequenceStorage doNativeByte(NativeByteSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
+                        @Cached CStructAccess.ReadByteNode readNode) {
 
             byte[] newArray = new byte[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = readNode.readArrayElement(storage.getPtr(), i);
             }
-            return storageToNativeNode.execute(inliningTarget, newArray, length);
+            return new ByteSequenceStorage(newArray);
         }
 
         @Specialization
-        protected static NativeSequenceStorage doNativeObject(NativeObjectSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                        @Bind("this") Node inliningTarget,
+        protected static SequenceStorage doNativeObject(NativeObjectSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached CStructAccess.ReadPointerNode readNode,
-                        @Shared @Cached StorageToNativeNode storageToNativeNode,
                         @Cached NativeToPythonNode toJavaNode) {
             Object[] newArray = new Object[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = toJavaNode.execute(readNode.readArrayElement(storage.getPtr(), i));
             }
-            return storageToNativeNode.execute(inliningTarget, newArray, length);
+            return new ObjectSequenceStorage(newArray);
         }
 
         @NeverDefault
