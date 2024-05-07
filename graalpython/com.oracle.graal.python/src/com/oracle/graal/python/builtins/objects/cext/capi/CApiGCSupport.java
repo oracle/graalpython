@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.GC_LOGGER;
+
 import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupportFactory.GCListRemoveNodeGen;
@@ -112,6 +114,9 @@ public abstract class CApiGCSupport {
             long gcNext = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next);
             // if (!_PyObject_GC_IS_TRACKED(op))
             if (gcNext == 0) {
+                if (GC_LOGGER.isLoggable(Level.FINER)) {
+                    GC_LOGGER.finer(PythonUtils.formatJString("tracking GC object 0x%x (op=0x%x)", gc, gc + CStructs.PyGC_Head.size()));
+                }
                 // PyGC_Head *generation0 = tstate->gc->generation0;
                 Object gcState = PythonContext.get(inliningTarget).getCApiContext().getGCState();
                 assert gcState != null;
@@ -134,6 +139,8 @@ public abstract class CApiGCSupport {
 
                 // generation0->_gc_prev = (uintptr_t)gc;
                 writeLongNode.write(gen0, CFields.PyGC_Head___gc_prev, gc);
+            } else if (GC_LOGGER.isLoggable(Level.FINER)) {
+                GC_LOGGER.finer(PythonUtils.formatJString("GC object 0x%x (op=0x%x) already tracked", gc, gc + CStructs.PyGC_Head.size()));
             }
         }
     }
@@ -163,8 +170,8 @@ public abstract class CApiGCSupport {
                         @Cached(inline = false) CStructAccess.ReadI64Node readI64Node,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode) {
             // issue a log message before doing the first memory access
-            if (CApiContext.GC_LOGGER.isLoggable(Level.FINER)) {
-                CApiContext.GC_LOGGER.finer(PythonUtils.formatJString("attempting to remove 0x%x from GC generation", opUntagged));
+            if (GC_LOGGER.isLoggable(Level.FINER)) {
+                GC_LOGGER.finer(PythonUtils.formatJString("attempting to remove 0x%x from GC generation", opUntagged));
             }
 
             /*
@@ -185,8 +192,8 @@ public abstract class CApiGCSupport {
             // if (_PyObject_GC_IS_TRACKED(op))
             if (gcNext != 0) {
                 // gc_list_remove
-                if (CApiContext.GC_LOGGER.isLoggable(Level.FINE)) {
-                    CApiContext.GC_LOGGER.fine(PythonUtils.formatJString("removing 0x%x from GC generation", opUntagged));
+                if (GC_LOGGER.isLoggable(Level.FINE)) {
+                    GC_LOGGER.fine(PythonUtils.formatJString("removing 0x%x from GC generation", opUntagged));
                 }
 
                 // PyGC_Head *prev = GC_PREV(gc)
@@ -210,8 +217,8 @@ public abstract class CApiGCSupport {
                  * lists and if then 'GraalPyObject_GC_Del' is called on the native object stub, it
                  * is checked if that still needs to be done.
                  */
-                if (CApiContext.GC_LOGGER.isLoggable(Level.FINER)) {
-                    CApiContext.GC_LOGGER.finer(PythonUtils.formatJString("removing 0x%x from GC generation skipped; not tracked", opUntagged));
+                if (GC_LOGGER.isLoggable(Level.FINER)) {
+                    GC_LOGGER.finer(PythonUtils.formatJString("removing 0x%x from GC generation skipped; not tracked", opUntagged));
                 }
             }
             return gcUntagged;
@@ -239,8 +246,8 @@ public abstract class CApiGCSupport {
                         @Cached(inline = false) CStructAccess.GetElementPtrNode getElementPtrNode,
                         @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached(inline = false) CStructAccess.WriteIntNode writeIntNode) {
-            if (CApiContext.GC_LOGGER.isLoggable(Level.FINE)) {
-                CApiContext.GC_LOGGER.fine(PythonUtils.formatJString("releasing native object stub 0x%x", op));
+            if (GC_LOGGER.isLoggable(Level.FINE)) {
+                GC_LOGGER.fine(PythonUtils.formatJString("releasing native object stub 0x%x", op));
             }
 
             /*
