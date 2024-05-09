@@ -1511,6 +1511,8 @@ def graalpython_gate_runner(args, tasks):
 
             env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
             env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
+            env['ENABLE_MICRONAUT_UNITTESTS'] ='true'
+            default_java_home = env.get('JAVA_HOME')
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home
 
@@ -1533,6 +1535,16 @@ def graalpython_gate_runner(args, tasks):
             mx.run([sys.executable, _graalpytest_driver(), "-v",
                 "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_jbang_integration.py",
                 "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py"], env=env)
+
+            # avoid conflict between truffle_api and compiler modules transitively pulled in by micronaut plugin in the test app
+            # and those, which are available in the current gvm_jdk
+            if default_java_home:
+                env['JAVA_HOME'] = default_java_home
+            else:
+                del env['JAVA_HOME']
+            mx.logv(f"running test_micronaut with os.environ extended with: {env=}")
+            mx.run([sys.executable, _graalpytest_driver(), "-v",
+                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_micronaut.py"], env=env)
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:

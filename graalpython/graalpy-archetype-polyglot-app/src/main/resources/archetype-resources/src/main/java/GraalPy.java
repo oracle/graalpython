@@ -49,6 +49,7 @@ import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.io.IOAccess;
 import java.io.IOException;
 import org.graalvm.python.embedding.vfs.VirtualFileSystem;
@@ -71,7 +72,7 @@ public class GraalPy {
             // setting false will deny all privileges unless configured below
             .allowAllAccess(false)
             // allows python to access the java language
-            .allowHostAccess(true)
+            .allowHostAccess(HostAccess.ALL)
             // allow access to the virtual and the host filesystem, as well as sockets
             .allowIO(IOAccess.newBuilder()
                             .allowHostSocketAccess(true)

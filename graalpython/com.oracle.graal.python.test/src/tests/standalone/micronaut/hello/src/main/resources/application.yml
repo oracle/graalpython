@@ -1,0 +1,6 @@
+micronaut:
+  server:
+    read-timeout: 120
+  http:
+    client:
+      read-timeout: 120s

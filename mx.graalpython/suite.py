@@ -1468,5 +1468,18 @@ suite = {
                 "tag": ["default", "public"],
             },
         },
+
+        "graalpy-micronaut-embedding": {
+            "class": "MavenProject",
+            "subDir": "graalpython",
+            "noMavenJavadoc": True,
+            "dependencies": [
+                "PYTHON_COMMUNITY",
+                "GRAALPYTHON_EMBEDDING",
+            ],
+            "maven": {
+                "tag": ["default", "public"],
+            },
+        },
     },
 }
