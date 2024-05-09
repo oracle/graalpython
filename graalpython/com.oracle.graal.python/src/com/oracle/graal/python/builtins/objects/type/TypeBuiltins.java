@@ -74,7 +74,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSCHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSHOOK__;
@@ -142,6 +141,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -170,7 +170,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
@@ -188,6 +187,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -656,7 +656,7 @@ public final class TypeBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
+    @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends GetAttrBuiltinNode {
         @Child private CallSlotDescrGet callSlotDescrGet;
@@ -748,26 +748,33 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.tp_setattro, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
+    public abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization(guards = "!isImmutable(object)")
-        static Object set(VirtualFrame frame, Object object, Object key, Object value,
+        void setString(VirtualFrame frame, Object object, TruffleString key, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
-                        @Cached("createForceType()") WriteAttributeToObjectNode write) {
+                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Shared @Cached("createForceType()") WriteAttributeToObjectNode write) {
             genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
-            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isImmutable(object)")
+        @InliningCutoff
+        static void set(VirtualFrame frame, Object object, Object key, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Shared @Cached("createForceType()") WriteAttributeToObjectNode write) {
+            genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
         }
 
         @Specialization(guards = "isImmutable(object)")
         @TruffleBoundary
-        Object setBuiltin(Object object, Object key, Object value) {
+        void setBuiltin(Object object, Object key, Object value) {
             if (PythonContext.get(this).isInitialized()) {
                 throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.executeUncached(key), object);
             } else {
                 set(null, object, key, value, null, ObjectNodes.GenericSetAttrNode.getUncached(), WriteAttributeToObjectNode.getUncached(true));
-                return PNone.NONE;
             }
         }
 

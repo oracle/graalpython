@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -103,11 +103,11 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -294,7 +294,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached("create(T___IOBASE_CLOSED)") SetAttributeNode setAttributeNode,
+                        @Cached PyObjectSetAttr setAttributeNode,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached PyErrChainExceptions chainExceptions) {
             if (!isClosed(inliningTarget, self, frame, lookup)) {
@@ -303,13 +303,13 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                 } catch (PException e) {
                     errorProfile.enter(inliningTarget);
                     try {
-                        setAttributeNode.execute(frame, self, true);
+                        setAttributeNode.execute(frame, inliningTarget, self, T___IOBASE_CLOSED, true);
                     } catch (PException e1) {
                         throw chainExceptions.execute(inliningTarget, e1, e);
                     }
                     throw e;
                 }
-                setAttributeNode.execute(frame, self, true);
+                setAttributeNode.execute(frame, inliningTarget, self, T___IOBASE_CLOSED, true);
             }
             return PNone.NONE;
         }

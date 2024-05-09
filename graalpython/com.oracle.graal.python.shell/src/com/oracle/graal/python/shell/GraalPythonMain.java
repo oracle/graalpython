@@ -199,6 +199,16 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                                 inputArgs.remove("-debug-java");
                             }
                             continue;
+                        case "-debug-subprocess-java-port":
+                        case "-debug-subprocess-java":
+                            int subprocessDebuggerPort = 8000;
+                            if (arg.equals("-debug-subprocess-java-port")) {
+                                subprocessDebuggerPort = Integer.parseInt(argumentIterator.next());
+                            }
+                            addRelaunchArg("-debug-subprocess-java-port");
+                            addRelaunchArg(Integer.toString(subprocessDebuggerPort + 1));
+                            addRelaunchArg("--vm.agentlib:jdwp=transport=dt_socket,server=y,address=" + subprocessDebuggerPort + ",suspend=y");
+                            continue;
                         case "-debug-perf":
                             unrecognized.add("--engine.TraceCompilation");
                             unrecognized.add("--engine.TraceCompilationDetails");

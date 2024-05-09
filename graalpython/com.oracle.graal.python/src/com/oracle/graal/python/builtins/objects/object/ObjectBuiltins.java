@@ -35,7 +35,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
@@ -51,7 +50,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSHOOK__;
@@ -99,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -111,7 +110,6 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -142,6 +140,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -359,7 +358,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
+    @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
     public abstract static class GetAttributeNode extends GetAttrBuiltinNode {
         @CompilationFinal private int profileFlags = 0;
@@ -472,68 +471,29 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.tp_setattro, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
+    public abstract static class SetattrNode extends SetAttrBuiltinNode {
+        @Specialization
+        void setString(VirtualFrame frame, Object object, TruffleString key, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Shared @Cached WriteAttributeToObjectNode write) {
+            genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
+        }
 
         @Specialization
-        Object set(VirtualFrame frame, Object object, Object key, Object value,
+        @InliningCutoff
+        void setGeneric(VirtualFrame frame, Object object, Object key, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
-                        @Cached WriteAttributeToObjectNode write) {
+                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Shared @Cached WriteAttributeToObjectNode write) {
             genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
-            return PNone.NONE;
         }
 
         @NeverDefault
         public static SetattrNode create() {
             return ObjectBuiltinsFactory.SetattrNodeFactory.create();
-        }
-    }
-
-    @Builtin(name = J___DELATTR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static PNone doIt(VirtualFrame frame, Object object, Object keyObj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached LookupAttributeInMRONode.Dynamic getExisting,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetClassNode getDescClassNode,
-                        @Cached("create(T___DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
-                        @Cached CallBinaryMethodNode callSetNode,
-                        @Cached ReadAttributeFromObjectNode attrRead,
-                        @Cached WriteAttributeToObjectNode writeNode,
-                        @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            TruffleString key;
-            try {
-                key = castKeyToStringNode.execute(inliningTarget, keyObj);
-            } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
-            }
-
-            Object type = getClassNode.execute(inliningTarget, object);
-            Object descr = getExisting.execute(type, key);
-            if (descr != PNone.NO_VALUE) {
-                Object dataDescClass = getDescClassNode.execute(inliningTarget, descr);
-                Object set = lookupDeleteNode.execute(dataDescClass);
-                if (PGuards.isCallable(set)) {
-                    callSetNode.executeObject(frame, set, descr, object);
-                    return PNone.NONE;
-                }
-            }
-            Object currentValue = attrRead.execute(object, key);
-            if (currentValue != PNone.NO_VALUE) {
-                if (writeNode.execute(object, key, PNone.NO_VALUE)) {
-                    return PNone.NONE;
-                }
-            }
-            if (descr != PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
-            } else {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
-            }
         }
     }
 

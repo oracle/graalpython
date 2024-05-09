@@ -216,7 +216,6 @@ public abstract class TpSlotDescrGet {
         }
 
         @Specialization
-        @InliningCutoff
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotNative slot, Object self, Object obj, Object value,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode selfToNativeNode,

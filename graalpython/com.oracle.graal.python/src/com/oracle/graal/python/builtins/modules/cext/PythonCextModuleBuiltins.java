@@ -71,8 +71,8 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixN
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -94,7 +94,7 @@ public final class PythonCextModuleBuiltins {
         @Specialization
         static int run(PythonModule module, Object doc,
                         @Cached ObjectBuiltins.SetattrNode setattrNode) {
-            setattrNode.execute(null, module, T___DOC__, doc);
+            setattrNode.executeSetAttr(null, module, T___DOC__, doc);
             return 0;
         }
     }
@@ -139,7 +139,7 @@ public final class PythonCextModuleBuiltins {
             int nameLength = codePointLengthNode.execute(newModuleName, TS_ENCODING);
             int idx = lastIndexNode.execute(newModuleName, '.', nameLength, 0, TS_ENCODING);
             if (idx > -1) {
-                setattrNode.execute(null, newModule, T___PACKAGE__, substringNode.execute(newModuleName, 0, idx, TS_ENCODING, false));
+                setattrNode.executeSetAttr(null, newModule, T___PACKAGE__, substringNode.execute(newModuleName, 0, idx, TS_ENCODING, false));
             }
             return newModule;
         }
@@ -238,7 +238,7 @@ public final class PythonCextModuleBuiltins {
             Object modName = readAttrNode.execute(mod, T___NAME__, null);
             assert modName != null : "module name is missing!";
             Object func = cFunctionNewExMethodNode.execute(inliningTarget, methodDefPtr, name, cfunc, flags, wrapper, mod, modName, doc);
-            setattrNode.execute(null, mod, name, func);
+            setattrNode.executeSetAttr(null, mod, name, func);
             return 0;
         }
     }

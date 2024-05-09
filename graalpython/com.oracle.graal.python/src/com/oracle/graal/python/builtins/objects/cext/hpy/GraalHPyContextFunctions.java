@@ -2165,7 +2165,7 @@ public abstract class GraalHPyContextFunctions {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectSetAttrO setAttrNode) {
             if (value == NULL_HANDLE_DELEGATE) {
-                setAttrNode.execute(null, inliningTarget, receiver, key, null);
+                setAttrNode.execute(null, inliningTarget, receiver, key, PNone.NO_VALUE);
             } else {
                 setAttrNode.execute(null, inliningTarget, receiver, key, value);
             }
@@ -2184,7 +2184,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PyObjectSetAttr setAttrNode) {
             TruffleString key = fromCharPointerNode.execute(charPtr);
             if (value == NULL_HANDLE_DELEGATE) {
-                setAttrNode.execute(inliningTarget, receiver, key, null);
+                setAttrNode.execute(inliningTarget, receiver, key, PNone.NO_VALUE);
             } else {
                 setAttrNode.execute(inliningTarget, receiver, key, value);
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -92,10 +92,11 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -154,7 +155,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached("create(T__FIELDS_)") SetAttributeNode setFieldsAttributeNode,
+                        @Cached PyObjectSetAttr setFieldsAttributeNode,
                         @Cached PythonObjectFactory factory) {
             /*
              * create the new instance (which is a class, since we are a metatype!)
@@ -184,7 +185,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
             dict.paramfunc = CArgObjectBuiltins.StructUnionTypeParamFunc;
             Object fieldsValue = getItemStgDict.execute(inliningTarget, dict.getDictStorage(), T__FIELDS_);
             if (fieldsValue != null) {
-                setFieldsAttributeNode.execute(frame, result, fieldsValue);
+                setFieldsAttributeNode.execute(frame, inliningTarget, result, T__FIELDS_, fieldsValue);
             } else {
                 StgDictObject basedict = pyTypeStgDictNode.execute(inliningTarget, getBaseClassNode.execute(inliningTarget, result));
                 if (basedict == null) {
@@ -224,7 +225,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached MakeAnonFieldsNode makeAnonFieldsNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached SetAttributeNode.Dynamic setAttr,
+                        @Cached PyObjectSetAttrO setAttr,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached PyObjectLookupAttr lookupSwappedbytes,
                         @Cached PyObjectLookupAttr lookupPack,
@@ -434,7 +435,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
 
                 total_align = Math.max(align, total_align);
 
-                setAttr.execute(frame, type, name, prop);
+                setAttr.execute(frame, inliningTarget, type, name, prop);
             }
             stgdict.fieldsNames = fieldsNames;
             stgdict.fieldsOffsets = fieldsOffsets;

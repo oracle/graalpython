@@ -68,8 +68,8 @@ import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -128,7 +128,7 @@ public final class StructureBuiltins extends PythonBuiltins {
         static Object Struct_init(VirtualFrame frame, CDataObject self, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") com.oracle.graal.python.runtime.IndirectCallData indirectCallData,
-                        @Cached SetAttributeNode.Dynamic setAttr,
+                        @Cached PyObjectSetAttr setAttr,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetItem getItemNode,
                         @Cached CastToTruffleStringNode toString,
@@ -147,7 +147,7 @@ public final class StructureBuiltins extends PythonBuiltins {
 
             if (kwds.length > 0) {
                 for (PKeyword kw : kwds) {
-                    setAttr.execute(frame, self, kw.getName(), kw.getValue());
+                    setAttr.execute(frame, inliningTarget, self, kw.getName(), kw.getValue());
                 }
             }
             return PNone.NONE;
@@ -166,7 +166,7 @@ public final class StructureBuiltins extends PythonBuiltins {
          */
         static int _init_pos_args(VirtualFrame frame, Node inliningTarget, Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
                         IndirectCallData indirectCallData,
-                        SetAttributeNode.Dynamic setAttr,
+                        PyObjectSetAttr setAttr,
                         PyObjectGetItem getItemNode,
                         CastToTruffleStringNode toString,
                         HashingStorageGetItem getItem,
@@ -212,7 +212,7 @@ public final class StructureBuiltins extends PythonBuiltins {
                     }
                 }
 
-                setAttr.execute(frame, self, name, val);
+                setAttr.execute(frame, inliningTarget, self, name, val);
             }
             return index + dict.length;
         }
@@ -220,7 +220,7 @@ public final class StructureBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static int _init_pos_args_boundary(Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
                         IndirectCallData indirectCallData,
-                        SetAttributeNode.Dynamic setAttr,
+                        PyObjectSetAttr setAttr,
                         PyObjectGetItem getItemNode) {
             return _init_pos_args(null, null, self, type, args, kwds, idx, indirectCallData, setAttr,
                             getItemNode, CastToTruffleStringNode.getUncached(),

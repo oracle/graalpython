@@ -133,9 +133,9 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -320,7 +320,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached(inline = false) IONodes.CastOpenNameNode castOpenNameNode,
                         @Cached(inline = false) PosixModuleBuiltins.CloseNode posixClose,
-                        @Cached(inline = false) SetAttributeNode.Dynamic setAttr,
+                        @Cached PyObjectSetAttr setAttr,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached InlinedBranchProfile exceptionProfile,
                         @Cached InlinedBranchProfile exceptionProfile1,
@@ -421,7 +421,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                     }
                 }
-                setAttr.execute(frame, self, T_NAME, nameobj);
+                setAttr.execute(frame, inliningTarget, self, T_NAME, nameobj);
 
                 if (self.isAppending()) {
                     /*

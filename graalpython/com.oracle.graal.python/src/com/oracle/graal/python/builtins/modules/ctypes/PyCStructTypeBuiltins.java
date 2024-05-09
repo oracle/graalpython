@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,25 +42,28 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.PyCStructUnionTypeUpdateStgDict;
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.StructUnionTypeNewNode;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -70,6 +73,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCStructType)
 public final class PyCStructTypeBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = PyCStructTypeBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -81,24 +85,34 @@ public final class PyCStructTypeBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends StructUnionTypeNewNode {
     }
 
-    @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.tp_setattro, isComplex = true)
     @GenerateNodeFactory
-    protected abstract static class SetattrNode extends PythonTernaryBuiltinNode {
-
+    protected abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization
-        PNone doStringKey(VirtualFrame frame, Object object, Object keyObject, Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Cached TruffleString.EqualNode equalNode,
-                        @Cached WriteAttributeToObjectNode writeNode,
-                        @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,
-                        @Cached CastToTruffleStringCheckedNode castKeyToStringNode,
-                        @Cached PythonObjectFactory factory) {
-            TruffleString key = castKeyToStringNode.cast(inliningTarget, keyObject, ATTR_NAME_MUST_BE_STRING, keyObject);
-            writeNode.execute(object, key, value);
+        void doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
+                        @Shared @Cached TypeBuiltins.SetattrNode typeSetAttr,
+                        @Shared @Cached TruffleString.EqualNode equalNode,
+                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,
+                        @Shared @Cached PythonObjectFactory factory) {
+            // CPython just delegates to "PyType_Type.tp_setattro" with the comment:
+            /* XXX Should we disallow deleting _fields_? */
+            typeSetAttr.executeSetAttr(frame, object, key, value);
             if (equalNode.execute(key, StructUnionTypeBuiltins.T__FIELDS_, TS_ENCODING)) {
                 updateStgDict.execute(frame, object, value, true, factory);
             }
-            return PNone.NONE;
+        }
+
+        @Specialization
+        @InliningCutoff
+        void doGeneric(VirtualFrame frame, Object object, Object keyObject, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringCheckedNode castKeyToStringNode,
+                        @Shared @Cached TypeBuiltins.SetattrNode typeSetAttr,
+                        @Shared @Cached TruffleString.EqualNode equalNode,
+                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,
+                        @Shared @Cached PythonObjectFactory factory) {
+            TruffleString key = castKeyToStringNode.cast(inliningTarget, keyObject, ATTR_NAME_MUST_BE_STRING, keyObject);
+            doStringKey(frame, object, key, value, typeSetAttr, equalNode, updateStgDict, factory);
         }
     }
 }

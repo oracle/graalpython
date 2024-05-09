@@ -37,7 +37,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
@@ -66,7 +65,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
@@ -102,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -985,7 +984,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
+    @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
     abstract static class GetAttributeNode extends GetAttrBuiltinNode {
         @Specialization
@@ -1035,16 +1034,16 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(PGuards.class)
-    @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.tp_setattro, isComplex = true)
     @GenerateNodeFactory
-    abstract static class SetattrNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        static PNone doIt(Object object, Object key, Object value,
+    abstract static class SetattrNode extends SetAttrBuiltinNode {
+        @Specialization(guards = "!isNoValue(value)")
+        static void doSet(Object object, Object key, Object value,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached CastToJavaStringNode castToString,
-                        @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached CastToJavaStringNode castToString,
+                        @Shared @Cached GilNode gil,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
                 lib.writeMember(object, castToString.execute(key), value);
@@ -1055,7 +1054,25 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        static void doDelete(Object object, Object key, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached CastToJavaStringNode castToString,
+                        @Shared @Cached GilNode gil,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            gil.release(true);
+            try {
+                lib.removeMember(object, castToString.execute(key));
+            } catch (CannotCastException e) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
+            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
+            } finally {
+                gil.acquire();
+            }
         }
     }
 
@@ -1067,30 +1084,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(VirtualFrame frame, Object object, Object key, Object value) {
             setForeignItemNode.execute(frame, object, key, value);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = J___DELATTR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class DelattrNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static PNone doIt(Object object, Object key,
-                        @Bind("this") Node inliningTarget,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached CastToJavaStringNode castToString,
-                        @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            gil.release(true);
-            try {
-                lib.removeMember(object, castToString.execute(key));
-            } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
-            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
-            } finally {
-                gil.acquire();
-            }
             return PNone.NONE;
         }
     }

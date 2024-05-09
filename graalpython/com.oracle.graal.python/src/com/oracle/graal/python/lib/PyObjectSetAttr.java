@@ -49,13 +49,12 @@ import static com.oracle.graal.python.nodes.ErrorMessages.P_HAS_RO_ATTRS_S_TO_DE
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallSlotSetAttrNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -65,6 +64,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -93,69 +93,47 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
     }
 
     public final void deleteCached(Frame frame, Object receiver, TruffleString name) {
-        execute(frame, null, receiver, name, null);
+        execute(frame, null, receiver, name, PNone.NO_VALUE);
     }
 
     public final void delete(Frame frame, Node inliningTarget, Object receiver, TruffleString name) {
-        execute(frame, inliningTarget, receiver, name, null);
+        execute(frame, inliningTarget, receiver, name, PNone.NO_VALUE);
     }
 
     @Specialization(guards = {"name == cachedName", "value != null"}, limit = "1")
     static void setFixedAttr(Frame frame, Node inliningTarget, Object self, @SuppressWarnings("unused") TruffleString name, Object value,
                     @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,
-                    @Shared("getClass") @Cached GetClassNode getClass,
-                    @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
-                    @Shared("lookup") @Cached(parameters = "SetAttr", inline = false) LookupSpecialMethodSlotNode lookupSetattr,
-                    @Shared("raise") @Cached PRaiseNode.Lazy raise,
-                    @Shared("call") @Cached(inline = false) CallTernaryMethodNode callSetattr) {
-        Object type = getClass.execute(inliningTarget, self);
-        Object setattr = lookupSetattr.execute(frame, type, self);
-        if (setattr == PNone.NO_VALUE) {
-            TpSlots slots = getSlotsNode.execute(inliningTarget, type);
-            if (slots.combined_tp_getattro_getattr() == null) {
-                throw raise.get(inliningTarget).raise(TypeError, P_HAS_NO_ATTRS_S_TO_ASSIGN, self, name);
-            } else {
-                throw raise.get(inliningTarget).raise(TypeError, P_HAS_RO_ATTRS_S_TO_ASSIGN, self, name);
-            }
-        }
-        callSetattr.execute(frame, setattr, self, name, value);
-    }
-
-    @Specialization(guards = {"name == cachedName", "value == null"}, limit = "1")
-    static void delFixedAttr(Frame frame, Node inliningTarget, Object self, @SuppressWarnings("unused") TruffleString name, @SuppressWarnings("unused") Object value,
-                    @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,
-                    @Shared("getClass") @Cached GetClassNode getClass,
-                    @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
-                    @Shared("lookupDel") @Cached(parameters = "DelAttr", inline = false) LookupSpecialMethodSlotNode lookupDelattr,
-                    @Shared("raise") @Cached PRaiseNode.Lazy raise,
-                    @Shared("callDel") @Cached(inline = false) CallBinaryMethodNode callDelattr) {
-        Object type = getClass.execute(inliningTarget, self);
-        Object delattr = lookupDelattr.execute(frame, type, self);
-        if (delattr == PNone.NO_VALUE) {
-            TpSlots slots = getSlotsNode.execute(inliningTarget, type);
-            if (slots.combined_tp_getattro_getattr() == null) {
-                throw raise.get(inliningTarget).raise(TypeError, P_HAS_NO_ATTRS_S_TO_DELETE, self, name);
-            } else {
-                throw raise.get(inliningTarget).raise(TypeError, P_HAS_RO_ATTRS_S_TO_DELETE, self, name);
-            }
-        }
-        callDelattr.executeObject(frame, delattr, self, name);
-    }
-
-    @Specialization(replaces = {"setFixedAttr", "delFixedAttr"})
-    static void doDynamicAttr(Frame frame, Node inliningTarget, Object self, TruffleString name, Object value,
-                    @Shared("getClass") @Cached GetClassNode getClass,
-                    @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
-                    @Shared("lookup") @Cached(parameters = "SetAttr", inline = false) LookupSpecialMethodSlotNode lookupSetattr,
-                    @Shared("lookupDel") @Cached(parameters = "DelAttr", inline = false) LookupSpecialMethodSlotNode lookupDelattr,
-                    @Shared("raise") @Cached PRaiseNode.Lazy raise,
-                    @Shared("call") @Cached(inline = false) CallTernaryMethodNode callSetattr,
-                    @Shared("callDel") @Cached(inline = false) CallBinaryMethodNode callDelattr) {
-        if (value == null) {
-            delFixedAttr(frame, inliningTarget, self, name, value, name, getClass, getSlotsNode, lookupDelattr, raise, callDelattr);
+                    @Shared @Cached GetObjectSlotsNode getSlotsNode,
+                    @Shared @Cached PRaiseNode.Lazy raise,
+                    @Shared @Cached CallSlotSetAttrNode callSetAttr) {
+        assert value != null; // should use PNone.NO_VALUE
+        TpSlots slots = getSlotsNode.execute(inliningTarget, self);
+        if (slots.combined_tp_setattro_setattr() != null) {
+            callSetAttr.execute((VirtualFrame) frame, inliningTarget, slots, self, name, value);
         } else {
-            setFixedAttr(frame, inliningTarget, self, name, value, name, getClass, getSlotsNode, lookupSetattr, raise, callSetattr);
+            raiseNoSlotError(inliningTarget, self, name, value, raise, slots);
         }
+    }
+
+    @Specialization(replaces = "setFixedAttr")
+    @InliningCutoff
+    static void doDynamicAttr(Frame frame, Node inliningTarget, Object self, TruffleString name, Object value,
+                    @Shared @Cached GetObjectSlotsNode getSlotsNode,
+                    @Shared @Cached PRaiseNode.Lazy raise,
+                    @Shared @Cached CallSlotSetAttrNode callSetAttr) {
+        setFixedAttr(frame, inliningTarget, self, name, value, name, getSlotsNode, raise, callSetAttr);
+    }
+
+    @InliningCutoff
+    static void raiseNoSlotError(Node inliningTarget, Object self, Object name, Object value, Lazy raise, TpSlots slots) {
+        TruffleString message;
+        boolean isDelete = value == PNone.NO_VALUE;
+        if (slots.combined_tp_getattro_getattr() == null) {
+            message = isDelete ? P_HAS_NO_ATTRS_S_TO_DELETE : P_HAS_NO_ATTRS_S_TO_ASSIGN;
+        } else {
+            message = isDelete ? P_HAS_RO_ATTRS_S_TO_DELETE : P_HAS_RO_ATTRS_S_TO_ASSIGN;
+        }
+        throw raise.get(inliningTarget).raise(TypeError, message, self, name);
     }
 
     @NeverDefault

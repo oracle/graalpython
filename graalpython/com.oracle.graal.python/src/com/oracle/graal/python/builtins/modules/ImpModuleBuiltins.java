@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenS
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_INVALID;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_NOT_FOUND;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_OKAY;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
@@ -95,13 +96,13 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
-import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -432,7 +433,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         static Object run(VirtualFrame frame, PythonObject moduleSpec,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode toStringNode,
-                        @Cached("create(T___LOADER__)") SetAttributeNode setAttributeNode,
+                        @Cached PyObjectSetAttr setAttributeNode,
                         @Cached PyObjectLookupAttr lookup) {
             Object name = lookup.execute(frame, inliningTarget, moduleSpec, T_NAME);
             PythonModule builtinModule = PythonContext.get(inliningTarget).lookupBuiltinModule(toStringNode.execute(inliningTarget, name));
@@ -443,7 +444,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 // reinitialization (if reinit is possible)
                 Object loader = lookup.execute(frame, inliningTarget, moduleSpec, T_LOADER);
                 if (loader != PNone.NO_VALUE) {
-                    setAttributeNode.execute(frame, builtinModule, loader);
+                    setAttributeNode.execute(frame, inliningTarget, builtinModule, T___LOADER__, loader);
                 }
                 return builtinModule;
             }

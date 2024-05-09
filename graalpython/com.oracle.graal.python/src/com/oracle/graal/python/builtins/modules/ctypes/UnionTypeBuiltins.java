@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,31 +41,42 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.PyCStructUnionTypeUpdateStgDict;
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.StructUnionTypeNewNode;
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GenericSetAttrNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.EqualNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.UnionType)
 public final class UnionTypeBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = UnionTypeBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -81,21 +92,42 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETATTR__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.tp_setattro, isComplex = true)
     @GenerateNodeFactory
-    protected abstract static class SetattrNode extends PythonTernaryBuiltinNode {
+    protected abstract static class SetattrNode extends SetAttrBuiltinNode {
+        @Specialization
+        static void doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Shared @Cached WriteAttributeToObjectNode write,
+                        @Shared @Cached TruffleString.EqualNode equalNode,
+                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,
+                        @Shared @Cached PythonObjectFactory factory) {
+            genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
+            updateStgDictIfNecessary(frame, object, key, value, equalNode, updateStgDict, factory);
+        }
 
         @Specialization
-        static PNone doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
-                        @Cached TruffleString.EqualNode equalNode,
-                        @Cached WriteAttributeToObjectNode writeNode,
-                        @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,
-                        @Cached PythonObjectFactory factory) {
-            writeNode.execute(object, key, value);
+        @InliningCutoff
+        static void doGenericKey(VirtualFrame frame, Object object, Object keyObject, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringNode castKeyNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Shared @Cached WriteAttributeToObjectNode write,
+                        @Shared @Cached TruffleString.EqualNode equalNode,
+                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,
+                        @Shared @Cached PythonObjectFactory factory) {
+            TruffleString key = GenericSetAttrNode.castAttributeKey(inliningTarget, keyObject, castKeyNode, raiseNode);
+            genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
+            updateStgDictIfNecessary(frame, object, key, value, equalNode, updateStgDict, factory);
+        }
+
+        private static void updateStgDictIfNecessary(VirtualFrame frame, Object object, TruffleString key, Object value,
+                        EqualNode equalNode, PyCStructUnionTypeUpdateStgDict updateStgDict, PythonObjectFactory factory) {
             if (equalNode.execute(key, StructUnionTypeBuiltins.T__FIELDS_, TS_ENCODING)) {
                 updateStgDict.execute(frame, object, value, false, factory);
             }
-            return PNone.NONE;
         }
     }
 

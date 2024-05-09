@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,7 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CU
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_MODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LOCALE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
@@ -88,9 +89,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -315,7 +316,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
-                        @Cached("create(T_MODE)") SetAttributeNode setAttrNode,
+                        @Cached PyObjectSetAttr setAttrNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
                         @Shared @Cached PythonObjectFactory factory,
@@ -369,7 +370,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
                 result = wrapper;
 
-                setAttrNode.execute(frame, wrapper, mode.mode);
+                setAttrNode.execute(frame, inliningTarget, wrapper, T_MODE, mode.mode);
                 return result;
             } catch (PException e) {
                 callClose.execute(frame, inliningTarget, result, T_CLOSE);

@@ -226,7 +226,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.tp_get_attro, isComplex = true)
+    @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
     public abstract static class ModuleGetattritbuteNode extends GetAttrBuiltinNode {
         @Specialization

@@ -41,11 +41,13 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.getUncachedInterop;
@@ -72,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrSe
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.GetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InquiryWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.LenfuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetattrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -94,6 +97,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotG
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotGetAttrPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.TpSlotInquiryBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.TpSlotLenBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.TpSlotSetAttrBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.TpSlotSetAttrPython;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -181,7 +186,10 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot tp_descr_set, //
                 TpSlot tp_getattro, //
                 TpSlot tp_getattr, //
-                TpSlot combined_tp_getattro_getattr) {
+                TpSlot combined_tp_getattro_getattr, //
+                TpSlot tp_setattro, //
+                TpSlot tp_setattr,
+                TpSlot combined_tp_setattro_setattr) {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(TpSlot.class);
 
@@ -284,7 +292,7 @@ public record TpSlots(TpSlot nb_bool, //
                         null,
                         PExternalFunctionWrapper.DESCR_SET,
                         DescrSetFunctionWrapper::new),
-        TP_GET_ATTRO(
+        TP_GETATTRO(
                         TpSlots::tp_getattro,
                         TpSlotGetAttrPython.class,
                         TpSlotGetAttrBuiltin.class,
@@ -292,14 +300,30 @@ public record TpSlots(TpSlot nb_bool, //
                         null,
                         PExternalFunctionWrapper.BINARYFUNC,
                         GetAttrWrapper::new),
-        TP_GET_ATTR(
+        TP_GETATTR(
                         TpSlots::tp_getattr,
                         null,
                         null,
                         CFields.PyTypeObject__tp_getattr,
                         null,
                         PExternalFunctionWrapper.GETATTR,
-                        new NativeWrapperFactory.ShouldNotReach("tp_getattr"));
+                        new NativeWrapperFactory.ShouldNotReach("tp_getattr")),
+        TP_SETATTRO(
+                        TpSlots::tp_setattro,
+                        TpSlotSetAttrPython.class,
+                        TpSlotSetAttrBuiltin.class,
+                        CFields.PyTypeObject__tp_setattro,
+                        null,
+                        PExternalFunctionWrapper.SETATTRO,
+                        SetattrWrapper::new),
+        TP_SETATTR(
+                        TpSlots::tp_setattr,
+                        null,
+                        null,
+                        CFields.PyTypeObject__tp_setattr,
+                        null,
+                        PExternalFunctionWrapper.SETATTR,
+                        new NativeWrapperFactory.ShouldNotReach("tp_setattr"));
 
         public static final TpSlotMeta[] VALUES = values();
 
@@ -427,12 +451,18 @@ public record TpSlots(TpSlot nb_bool, //
     static {
         LinkedHashMap<TpSlotMeta, TpSlotDef[]> s = new LinkedHashMap<>(30);
 
-        addSlotDef(s, TpSlotMeta.TP_GET_ATTR,
+        addSlotDef(s, TpSlotMeta.TP_GETATTR,
                         TpSlotDef.withNoFunctionNoWrapper(T___GETATTRIBUTE__),
                         TpSlotDef.withNoFunctionNoWrapper(T___GETATTR__));
-        addSlotDef(s, TpSlotMeta.TP_GET_ATTRO,
+        addSlotDef(s, TpSlotMeta.TP_SETATTR,
+                        TpSlotDef.withNoFunctionNoWrapper(T___SETATTR__),
+                        TpSlotDef.withNoFunctionNoWrapper(T___DELATTR__));
+        addSlotDef(s, TpSlotMeta.TP_GETATTRO,
                         new TpSlotDef(T___GETATTRIBUTE__, TpSlotGetAttrPython::create, PExternalFunctionWrapper.BINARYFUNC),
                         new TpSlotDef(T___GETATTR__, TpSlotGetAttrPython::create, null));
+        addSlotDef(s, TpSlotMeta.TP_SETATTRO,
+                        new TpSlotDef(T___SETATTR__, TpSlotSetAttrPython::create, PExternalFunctionWrapper.SETATTRO),
+                        new TpSlotDef(T___DELATTR__, TpSlotSetAttrPython::create, PExternalFunctionWrapper.DELATTRO));
         addSlotDef(s, TpSlotMeta.TP_DESCR_GET, TpSlotDef.withSimpleFunction(T___GET__, PExternalFunctionWrapper.DESCR_GET));
         addSlotDef(s, TpSlotMeta.TP_DESCR_SET, //
                         new TpSlotDef(T___SET__, TpSlotDescrSetPython::create, PExternalFunctionWrapper.DESCR_SET), //
@@ -815,20 +845,21 @@ public record TpSlots(TpSlot nb_bool, //
         }
     }
 
-    private static boolean checkNoMagicOverrides(PythonBuiltinClassType type) {
+    private static boolean checkNoMagicOverrides(Python3Core core, PythonBuiltinClassType type) {
         // Check that no one is trying to define magic methods directly
         // If the assertion fires: you should define @Slot instead of @Builtin
         // We do not look in MRO, we may have already called addOperatorsToBuiltin on super
         var readAttr = ReadAttributeFromObjectNode.getUncachedForceType();
+        PythonBuiltinClass typeObj = core.lookupType(type);
         for (TruffleString name : SPECIAL2SLOT.keySet()) {
-            assert readAttr.execute(type, name) == PNone.NO_VALUE : name;
+            assert readAttr.execute(typeObj, name) == PNone.NO_VALUE : type.name() + ":" + name;
         }
         return true;
     }
 
     public static void addOperatorsToBuiltin(Map<TruffleString, BoundBuiltinCallable<?>> builtins, Python3Core core, PythonBuiltinClassType type) {
         TpSlots slots = type.getDeclaredSlots();
-        assert checkNoMagicOverrides(type);
+        assert checkNoMagicOverrides(core, type);
 
         // Similar to CPython:add_operators
         for (var slotDefGroup : SLOTDEFS.entrySet()) {
@@ -838,7 +869,7 @@ public record TpSlots(TpSlot nb_bool, //
                 continue;
             }
             for (TpSlotDef slotDef : slotDefGroup.getValue()) {
-                if (slotDef.wrapper() != null) {
+                if (slotDef.wrapper() != null && !builtins.containsKey(slotDef.name())) {
                     var value = builtinSlot.createBuiltin(core, type, slotDef.name(), slotDef.wrapper());
                     builtins.put(slotDef.name(), value);
                 }
@@ -920,7 +951,8 @@ public record TpSlots(TpSlot nb_bool, //
         public TpSlots build() {
             TpSlot sq_mp_length = fistNonNull(TpSlotMeta.SQ_LENGTH, TpSlotMeta.MP_LENGTH);
             TpSlot mp_sq_length = fistNonNull(TpSlotMeta.MP_LENGTH, TpSlotMeta.SQ_LENGTH);
-            TpSlot tp_get_attro_attr = fistNonNull(TpSlotMeta.TP_GET_ATTRO, TpSlotMeta.TP_GET_ATTR);
+            TpSlot tp_get_attro_attr = fistNonNull(TpSlotMeta.TP_GETATTRO, TpSlotMeta.TP_GETATTR);
+            TpSlot tp_set_attro_attr = fistNonNull(TpSlotMeta.TP_SETATTRO, TpSlotMeta.TP_SETATTR);
             return new TpSlots(
                             get(TpSlotMeta.NB_BOOL), //
                             get(TpSlotMeta.SQ_LENGTH), //
@@ -929,9 +961,12 @@ public record TpSlots(TpSlot nb_bool, //
                             mp_sq_length, //
                             get(TpSlotMeta.TP_DESCR_GET), //
                             get(TpSlotMeta.TP_DESCR_SET), //
-                            get(TpSlotMeta.TP_GET_ATTRO), //
-                            get(TpSlotMeta.TP_GET_ATTR), //
-                            tp_get_attro_attr);
+                            get(TpSlotMeta.TP_GETATTRO), //
+                            get(TpSlotMeta.TP_GETATTR), //
+                            tp_get_attro_attr,
+                            get(TpSlotMeta.TP_SETATTRO),
+                            get(TpSlotMeta.TP_SETATTR),
+                            tp_set_attro_attr);
         }
     }
 
