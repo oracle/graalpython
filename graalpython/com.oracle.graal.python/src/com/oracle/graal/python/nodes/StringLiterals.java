@@ -150,4 +150,8 @@ public abstract class StringLiterals {
     public static final TruffleString T_READ = tsLiteral("read");
     public static final TruffleString T_READLINE = tsLiteral("readline");
     public static final TruffleString T_CODEC = tsLiteral("codec");
+    public static final TruffleString T_STAR_ARGS = tsLiteral("*args");
+    public static final TruffleString T_STAR_KWARGS = tsLiteral("**kwargs");
+    public static final TruffleString T_ARGS = tsLiteral("args");
+    public static final TruffleString T_KWARGS = tsLiteral("kwargs");
 }

@@ -368,8 +368,8 @@ public final class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    // list.append(x)
-    @Builtin(name = J_APPEND, minNumOfPositionalArgs = 2)
+    // list.append(object)
+    @Builtin(name = J_APPEND, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "object"})
     @GenerateNodeFactory
     public abstract static class ListAppendNode extends PythonBinaryBuiltinNode {
 

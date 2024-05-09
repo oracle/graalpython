@@ -65,6 +65,7 @@ import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -113,7 +114,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private TruffleString jsonEncode(PJSONEncoder encoder, Object obj) {
-            TruffleStringBuilderUTF32 builder = TruffleStringBuilder.createUTF32();
+            TruffleStringBuilderUTF32 builder = PythonUtils.createStringBuilder();
             appendListObj(encoder, builder, obj);
             return TruffleStringBuilder.ToStringNode.getUncached().execute(builder);
         }

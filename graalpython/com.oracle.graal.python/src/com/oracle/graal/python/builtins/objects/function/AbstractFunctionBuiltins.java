@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.T_D
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -61,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -72,6 +72,7 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -85,6 +86,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.WrapperDescriptor})
 public final class AbstractFunctionBuiltins extends PythonBuiltins {
@@ -279,9 +281,6 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TextSignatureNode extends PythonBinaryBuiltinNode {
 
-        private static final TruffleString ARGS = tsLiteral("*args");
-        private static final TruffleString KWARGS = tsLiteral("**kwargs");
-
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
         static Object getFunction(PFunction self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
@@ -315,7 +314,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
 
             TruffleString[] parameterNames = signature.getParameterIds();
 
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = PythonUtils.createStringBuilder();
             sb.appendStringUncached(T_LPAREN);
             boolean first = true;
             for (int i = 0; i < parameterNames.length; i++) {
@@ -339,7 +338,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
             }
             if (takesVarArgs) {
                 first = appendCommaIfNeeded(sb, first);
-                sb.appendStringUncached(ARGS);
+                sb.appendStringUncached(StringLiterals.T_STAR_ARGS);
             }
             if (keywordNames.length > 0) {
                 if (!takesVarArgs) {
@@ -355,7 +354,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
             }
             if (takesVarKeywordArgs) {
                 appendCommaIfNeeded(sb, first);
-                sb.appendStringUncached(KWARGS);
+                sb.appendStringUncached(StringLiterals.T_STAR_KWARGS);
             }
             sb.appendStringUncached(T_RPAREN);
             return sb.toStringUncached();

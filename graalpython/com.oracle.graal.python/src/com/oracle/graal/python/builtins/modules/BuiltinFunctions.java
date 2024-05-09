@@ -327,7 +327,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // abs(x)
-    @Builtin(name = J_ABS, minNumOfPositionalArgs = 1)
+    @Builtin(name = J_ABS, minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = "x")
     @GenerateNodeFactory
     public abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -2159,7 +2159,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_POW, minNumOfPositionalArgs = 2, parameterNames = {"base", "exp", "mod"})
+    @Builtin(name = J_POW, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 0, parameterNames = {"base", "exp", "mod"})
     @GenerateNodeFactory
     public abstract static class PowNode extends PythonTernaryBuiltinNode {
         @NeverDefault

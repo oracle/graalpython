@@ -817,7 +817,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "open", minNumOfPositionalArgs = 2, parameterNames = {"path", "flags", "mode"}, keywordOnlyNames = {"dir_fd"})
+    @Builtin(name = "open", numOfPositionalOnlyArgs = 0, minNumOfPositionalArgs = 2, parameterNames = {"path", "flags", "mode"}, keywordOnlyNames = {"dir_fd"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "0777")

@@ -109,6 +109,8 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 import sun.misc.Unsafe;
 
@@ -133,6 +135,10 @@ public final class PythonUtils {
      * Encoding of all {@link TruffleString} instances.
      */
     public static final TruffleString.Encoding TS_ENCODING = TruffleString.Encoding.UTF_32;
+
+    public static TruffleStringBuilderUTF32 createStringBuilder() {
+        return TruffleStringBuilder.createUTF32();
+    }
 
     public static final String[] EMPTY_STRING_ARRAY = new String[0];
     public static final TruffleString[] EMPTY_TRUFFLESTRING_ARRAY = new TruffleString[0];
