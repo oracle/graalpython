@@ -97,7 +97,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     public static final class Builder {
         private static final Predicate<Path> DEFAULT_EXTRACT_FILTER = (p) -> {
             var s = p.toString();
-            return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll");
+            return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll") || s.endsWith(".ttf");
         };
 
         private String vfsPrefix = "/" + VFS_ROOT;
