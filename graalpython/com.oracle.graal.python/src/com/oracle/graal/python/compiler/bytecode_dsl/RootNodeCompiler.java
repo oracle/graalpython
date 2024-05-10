@@ -2,6 +2,7 @@ package com.oracle.graal.python.compiler.bytecode_dsl;
 
 import static com.oracle.graal.python.compiler.CompilationScope.Class;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -100,6 +101,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
     private final HashMap<String, Integer> cellvars;
     private final HashMap<String, Integer> freevars;
     private final int[] cell2arg;
+    private final String selfCellName;
 
     // Updated idempotently
     private final Map<String, BytecodeLocal> locals = new HashMap<>();
@@ -144,13 +146,20 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         int[] cell2argValue = new int[cellvars.size()];
         boolean hasArgCell = false;
         Arrays.fill(cell2argValue, -1);
+        String selfCellNameValue = null;
         for (String cellvar : cellvars.keySet()) {
             if (varnames.containsKey(cellvar)) {
-                cell2argValue[cellvars.get(cellvar)] = varnames.get(cellvar);
+                int argIndex = varnames.get(cellvar);
+                cell2argValue[cellvars.get(cellvar)] = argIndex;
                 hasArgCell = true;
+                if (argIndex == 0) {
+                    assert selfCellNameValue == null;
+                    selfCellNameValue = cellvar;
+                }
             }
         }
         this.cell2arg = hasArgCell ? cell2argValue : null;
+        this.selfCellName = selfCellNameValue;
     }
 
     private static CompilationScope getScopeType(Scope scope, SSTNode rootNode) {
@@ -223,6 +232,19 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             flags |= flag.flagValue;
         }
 
+        int classcellIndex = -1;
+        if (freeLocals.containsKey(J___CLASS__)) {
+            classcellIndex = freeLocals.get(J___CLASS__).getLocalOffset();
+        }
+
+        int selfIndex = -1;
+        if (argumentInfo.nonEmpty()) {
+            selfIndex = 0;
+            if (selfCellName != null) {
+                selfIndex = cellLocals.get(selfCellName).getLocalOffset();
+            }
+        }
+
         BytecodeDSLCodeUnit codeUnit = new BytecodeDSLCodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(ctx.getQualifiedName(scope)),
                         argumentInfo.argCount, argumentInfo.kwOnlyArgCount, argumentInfo.positionalOnlyArgCount,
                         flags, orderedTruffleStringArray(names),
@@ -235,6 +257,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                         sourceRange.startColumn,
                         sourceRange.endLine,
                         sourceRange.endColumn,
+                        classcellIndex,
+                        selfIndex,
                         null,
                         nodes);
         rootNode.setMetadata(codeUnit);
@@ -272,6 +296,10 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 kwSplat = args.kwArg != null;
             }
             return new ArgumentInfo(argc, pargc, kwargc, splat, kwSplat);
+        }
+
+        private boolean nonEmpty() {
+            return argCount + positionalOnlyArgCount + kwOnlyArgCount > 0 || takesVarArgs || takesVarKeywordArgs;
         }
     }
 

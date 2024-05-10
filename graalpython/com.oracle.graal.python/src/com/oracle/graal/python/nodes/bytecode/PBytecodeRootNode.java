@@ -665,8 +665,27 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         for (int i = 0; i < cellvars.length; i++) {
             cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
         }
-        this.classcellIndex = co.getClassCellIndex();
-        this.selfIndex = co.getSelfIndex();
+        int classcellIndexValue = -1;
+        for (int i = 0; i < this.freevars.length; i++) {
+            if (T___CLASS__.equalsUncached(this.freevars[i], TS_ENCODING)) {
+                classcellIndexValue = this.freeoffset + i;
+                break;
+            }
+        }
+        this.classcellIndex = classcellIndexValue;
+        int selfIndexValue = -1;
+        if (!signature.takesNoArguments()) {
+            selfIndexValue = 0;
+            if (co.cell2arg != null) {
+                for (int i = 0; i < co.cell2arg.length; i++) {
+                    if (co.cell2arg[i] == 0) {
+                        selfIndexValue = celloffset + i;
+                        break;
+                    }
+                }
+            }
+        }
+        this.selfIndex = selfIndexValue;
         if (language.getEngineOption(PythonOptions.ForceInitializeSourceSections)) {
             getSourceSection();
         }
