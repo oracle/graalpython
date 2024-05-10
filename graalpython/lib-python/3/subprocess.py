@@ -1913,6 +1913,17 @@ class Popen:
                         executable_list = tuple(
                             os.path.join(os.fsencode(dir), executable)
                             for dir in os.get_exec_path(env))
+                    # Truffle change
+                    if sys.platform == 'win32':
+                        __exts = [os.fsencode(ext.lower()) for ext in os.environ.get("PATHEXT", "").split(";")]
+                        if (b"." + executable.split(b".")[-1].lower()) not in __exts:
+                            __new_executable_list = []
+                            for __exe in executable_list:
+                                __new_executable_list.append(__exe)
+                                for __ext in __exts:
+                                    __new_executable_list.append(__exe + __ext)
+                            executable_list = __new_executable_list
+                    # End truffle change
                     fds_to_keep = set(pass_fds)
                     fds_to_keep.add(errpipe_write)
                     self.pid = _fork_exec(
