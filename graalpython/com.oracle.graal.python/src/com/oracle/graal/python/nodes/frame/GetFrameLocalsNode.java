@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -131,7 +132,7 @@ public abstract class GetFrameLocalsNode extends Node {
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                 BytecodeDSLFrameInfo bytecodeDSLFrameInfo = (BytecodeDSLFrameInfo) info;
                 PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
-                Object[] localsArray = rootNode.getLocals(locals);
+                Object[] localsArray = rootNode.getBytecodeNode().getLocalValues(0, locals);
                 for (int i = 0; i < count; i++) {
                     copyItem(inliningTarget, localsArray[i], info, dict, setItem, delItem, i, i >= regularVarCount);
                 }
@@ -154,7 +155,7 @@ public abstract class GetFrameLocalsNode extends Node {
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                 BytecodeDSLFrameInfo bytecodeDSLFrameInfo = (BytecodeDSLFrameInfo) info;
                 PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
-                Object[] localsArray = rootNode.getLocals(locals);
+                Object[] localsArray = rootNode.getBytecodeNode().getLocalValues(0, locals);
                 for (int i = 0; i < count; i++) {
                     copyItem(inliningTarget, localsArray[i], info, dict, setItem, delItem, i, i >= regularVarCount);
                 }
@@ -199,14 +200,15 @@ public abstract class GetFrameLocalsNode extends Node {
     private static void copyLocalsArray(Frame localFrame, PRootNode root, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
             PBytecodeDSLRootNode bytecodeDSLRootNode = (PBytecodeDSLRootNode) root;
+            BytecodeNode bytecodeNode = bytecodeDSLRootNode.getBytecodeNode();
             for (int i = 0; i < namesArray.length; i++) {
                 TruffleString varname = namesArray[i];
                 Object value = PyDictGetItem.executeUncached(localsDict, varname);
                 if (deref) {
-                    PCell cell = (PCell) bytecodeDSLRootNode.getLocal(localFrame, offset + i);
+                    PCell cell = (PCell) bytecodeNode.getLocalValue(0, localFrame, offset + i);
                     cell.setRef(value);
                 } else {
-                    bytecodeDSLRootNode.setLocal(localFrame, offset + i, value);
+                    bytecodeNode.setLocalValue(0, localFrame, offset + i, value);
                 }
             }
         } else {

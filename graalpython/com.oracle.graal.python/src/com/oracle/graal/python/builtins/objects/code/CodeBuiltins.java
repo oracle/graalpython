@@ -70,7 +70,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.bytecode.BytecodeIntrospection;
 import com.oracle.truffle.api.bytecode.Instruction;
 import com.oracle.truffle.api.bytecode.SourceInformation;
 import com.oracle.truffle.api.dsl.Bind;
@@ -308,10 +307,10 @@ public final class CodeBuiltins extends PythonBuiltins {
             CodeUnit co = self.getCodeUnit();
             if (co != null) {
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    BytecodeIntrospection introspectionData = ((PBytecodeDSLRootNode) self.getRootNodeForExtraction()).getIntrospectionData();
+                    PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
                     List<PTuple> lines = new ArrayList<>();
-                    for (SourceInformation sourceInfo : introspectionData.getSourceInformation()) {
-                        lines.add(factory.createTuple(new int[]{sourceInfo.getBeginBci(), sourceInfo.getEndBci(), sourceInfo.getSourceSection().getStartLine()}));
+                    for (SourceInformation sourceInfo : rootNode.getBytecodeNode().getSourceInformation()) {
+                        lines.add(factory.createTuple(new int[]{sourceInfo.getStartIndex(), sourceInfo.getEndIndex(), sourceInfo.getSourceSection().getStartLine()}));
                     }
                     tuple = factory.createTuple(lines.toArray());
                 } else {

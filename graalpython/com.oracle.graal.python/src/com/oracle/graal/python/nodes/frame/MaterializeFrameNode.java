@@ -254,7 +254,8 @@ public abstract class MaterializeFrameNode extends Node {
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                 FrameInfo info = (FrameInfo) cachedFd.getInfo();
                 if (info instanceof BytecodeDSLFrameInfo bytecodeDSLFrameInfo) {
-                    bytecodeDSLFrameInfo.getRootNode().copyLocals(frameToSync, target, slotCount);
+                    PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
+                    rootNode.getBytecodeNode().copyLocalValues(0, frameToSync, target, 0, slotCount);
                 }
             } else {
                 for (int i = 0; i < slotCount; i++) {
@@ -273,7 +274,8 @@ public abstract class MaterializeFrameNode extends Node {
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                 FrameInfo info = (FrameInfo) fd.getInfo();
                 if (info instanceof BytecodeDSLFrameInfo bytecodeDSLFrameInfo) {
-                    bytecodeDSLFrameInfo.getRootNode().copyLocals(frameToSync, target, slotCount);
+                    PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
+                    rootNode.getBytecodeNode().copyLocalValues(0, frameToSync, target, 0, slotCount);
                 }
             } else {
                 for (int i = 0; i < slotCount; i++) {

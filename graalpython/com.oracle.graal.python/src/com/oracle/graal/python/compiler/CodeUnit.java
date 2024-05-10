@@ -40,9 +40,6 @@
  */
 package com.oracle.graal.python.compiler;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -170,29 +167,5 @@ public abstract class CodeUnit {
                         positionalOnlyArgCount > 0,
                         parameterNames,
                         kwOnlyNames);
-    }
-
-    public final int getClassCellIndex() {
-        for (int i = 0; i < this.freevars.length; i++) {
-            if (T___CLASS__.equalsUncached(this.freevars[i], TS_ENCODING)) {
-                return i + varnames.length + cellvars.length;
-            }
-        }
-        return -1;
-    }
-
-    public final int getSelfIndex() {
-        if (getTotalArgCount() != 0) {
-            if (cell2arg != null) {
-                for (int i = 0; i < cell2arg.length; i++) {
-                    if (cell2arg[i] == 0) {
-                        return i + varnames.length;
-                    }
-                }
-
-            }
-            return 0;
-        }
-        return -1;
     }
 }

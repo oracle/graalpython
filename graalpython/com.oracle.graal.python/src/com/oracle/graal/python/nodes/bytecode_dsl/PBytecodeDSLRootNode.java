@@ -228,6 +228,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @GenerateBytecode(//
                 languageClass = PythonLanguage.class, //
+                enableLocalScoping = false, //
                 enableYield = true, //
                 enableSerialization = true, //
                 boxingEliminationTypes = {int.class, boolean.class}, //
@@ -304,8 +305,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         CompilerDirectives.transferToInterpreterAndInvalidate();
         this.co = co;
         this.signature = co.computeSignature();
-        this.classcellIndex = co.getClassCellIndex();
-        this.selfIndex = co.getSelfIndex();
+        this.classcellIndex = co.classcellIndex;
+        this.selfIndex = co.selfIndex;
         this.internal = getSource().isInternal();
     }
 
@@ -862,16 +863,16 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         if (classcellIndex < 0) {
             return null;
         }
-        return (PCell) getLocal(frame, classcellIndex);
+        return (PCell) getBytecodeNode().getLocalValue(0, frame, classcellIndex);
     }
 
     public Object readSelf(Frame frame) {
         if (selfIndex < 0) {
             return null;
         } else if (selfIndex == 0) {
-            return getLocal(frame, 0);
+            return getBytecodeNode().getLocalValue(0, frame, 0);
         } else {
-            PCell selfCell = (PCell) getLocal(frame, selfIndex);
+            PCell selfCell = (PCell) getBytecodeNode().getLocalValue(0, frame, selfIndex);
             return selfCell.getRef();
         }
     }
