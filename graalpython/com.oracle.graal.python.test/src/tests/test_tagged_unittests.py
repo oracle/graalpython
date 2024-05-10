@@ -182,7 +182,7 @@ def make_tests_class():
             working_tests = [x for x in working_tests if x[0] in selection]
 
     this_os = sys.platform
-    this_machine = os.uname().machine
+    this_machine = os.uname().machine if hasattr(os, "uname") else ""
     for idx, working_test in enumerate(working_tests):
         if os.environ.get("CI", None) and any(
             (os is None or os in this_os)

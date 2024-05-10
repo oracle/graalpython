@@ -72,7 +72,9 @@ try:
 except ModuleNotFoundError:
     _mswindows = False
 else:
-    _mswindows = True
+    # Truffle change
+    # _mswindows = True
+    _mswindows = False
 
 # wasm32-emscripten and wasm32-wasi do not support processes
 _can_fork_exec = sys.platform not in {"emscripten", "wasi"}

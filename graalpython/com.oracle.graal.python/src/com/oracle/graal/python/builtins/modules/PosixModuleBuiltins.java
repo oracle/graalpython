@@ -645,7 +645,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
         /*
          * Return average recent system load information.
-         * 
+         *
          * Return the number of processes in the system run queue averaged over the last 1, 5, and
          * 15 minutes as a tuple of three floats. Raises OSError if the load average was
          * unobtainable.
@@ -1517,7 +1517,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "uname", minNumOfPositionalArgs = 0)
+    @Builtin(name = "uname", minNumOfPositionalArgs = 0, os = PythonOS.PLATFORM_LINUX)
+    @Builtin(name = "uname", minNumOfPositionalArgs = 0, os = PythonOS.PLATFORM_DARWIN)
     @GenerateNodeFactory
     abstract static class UnameNode extends PythonBuiltinNode {
 

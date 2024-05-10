@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -86,7 +86,6 @@ public final class WinregModuleBuiltins extends PythonBuiltins {
         // stubs to just have msvc9compiler import
         addBuiltinConstant("error", PNone.NONE);
         addBuiltinConstant("EnumValue", PNone.NONE);
-        addBuiltinConstant("OpenKeyEx", PNone.NONE);
     }
 
     @Builtin(name = "OpenKey", minNumOfPositionalArgs = 2, parameterNames = {"key", "sub_key", "reserved", "access"})
@@ -117,6 +116,18 @@ public final class WinregModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "EnumKey", minNumOfPositionalArgs = 2, parameterNames = {"key", "index"})
     @GenerateNodeFactory
     public abstract static class EnumKeyNode extends PythonBinaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        static Object enumKey(VirtualFrame frame, Object key, Object index,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.ENOENT);
+        }
+    }
+
+    @Builtin(name = "OpenKeyEx", minNumOfPositionalArgs = 2, parameterNames = {"key", "index"})
+    @GenerateNodeFactory
+    public abstract static class OpenKeyExNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         static Object enumKey(VirtualFrame frame, Object key, Object index,
