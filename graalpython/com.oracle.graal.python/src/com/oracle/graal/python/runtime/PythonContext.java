@@ -270,7 +270,7 @@ public final class PythonContext extends Python3Core {
      * A class to store thread-local data mostly like CPython's {@code PyThreadState}.
      */
     public static final class PythonThreadState {
-        private boolean shuttingDown = false;
+        private volatile boolean shuttingDown = false;
 
         /*
          * The reference to the last top frame on the Python stack during interop calls. Initially,
