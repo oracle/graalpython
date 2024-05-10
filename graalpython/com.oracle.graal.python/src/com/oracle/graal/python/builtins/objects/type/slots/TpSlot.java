@@ -88,7 +88,11 @@ public abstract class TpSlot {
             // This returns PyProcsWrapper, which will, in its toNative message, register the
             // pointer in C API context, such that we can map back from a pointer that we get from C
             // to the PyProcsWrapper and from that to the slot instance again in TpSlots#fromNative
-            return slotMeta.createNativeWrapper(managedSlot);
+            assert PythonContext.get(null).ownsGil(); // without GIL: use AtomicReference & CAS
+            if (managedSlot.slotWrapper == null) {
+                managedSlot.slotWrapper = slotMeta.createNativeWrapper(managedSlot);
+            }
+            return managedSlot.slotWrapper;
         } else {
             throw CompilerDirectives.shouldNotReachHere("TpSlotWrapper should wrap only managed slots. Native slots should go directly to native unwrapped.");
         }
@@ -121,6 +125,7 @@ public abstract class TpSlot {
      * Marker base class for managed slots: either builtin slots or user defined Python slots.
      */
     public abstract static sealed class TpSlotManaged extends TpSlot permits TpSlotBuiltin, TpSlotPython {
+        private TpSlotWrapper slotWrapper;
     }
 
     /**

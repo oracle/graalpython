@@ -47,6 +47,12 @@ SlotsGetter = CPyExtType("SlotsGetter",
                          static PyObject* get_tp_attro(PyObject* unused, PyObject* object) {
                              return PyLong_FromVoidPtr(Py_TYPE(object)->tp_getattro);
                          }
+                         static PyObject* get_tp_setattr(PyObject* unused, PyObject* object) {
+                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_setattr);
+                         }
+                         static PyObject* get_tp_setattro(PyObject* unused, PyObject* object) {
+                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_setattro);
+                         }
                          static PyObject* get_tp_descr_get(PyObject* unused, PyObject* object) {
                              return PyLong_FromVoidPtr(Py_TYPE(object)->tp_descr_get);
                          }
@@ -54,6 +60,8 @@ SlotsGetter = CPyExtType("SlotsGetter",
                          tp_methods=
                          '{"get_tp_attr", (PyCFunction)get_tp_attr, METH_O | METH_STATIC, ""},' +
                          '{"get_tp_attro", (PyCFunction)get_tp_attro, METH_O | METH_STATIC, ""},' +
+                         '{"get_tp_setattr", (PyCFunction)get_tp_setattr, METH_O | METH_STATIC, ""},' +
+                         '{"get_tp_setattro", (PyCFunction)get_tp_setattro, METH_O | METH_STATIC, ""},' +
                          '{"get_tp_descr_get", (PyCFunction)get_tp_descr_get, METH_O | METH_STATIC, ""}')
 
 
@@ -203,6 +211,45 @@ def test_setattr_wrapper():
                                            tp_setattro="(setattrofunc) myset")
     x = TestSetAttrWrapperReturn()
     assert x.__setattr__("bar", 42) is None
+
+
+def test_setattr_vs_setattro_inheritance():
+    TestSetAttrOInheritance = CPyExtType("TestSetAttrOInheritance",
+                                         '''
+                                         int testattr_set(PyObject* self, char* key, PyObject* value) {
+                                             Py_XDECREF(((TestSetAttrOInheritanceObject*)self)->payload);
+                                             if (value != NULL) {
+                                                 Py_INCREF(value);
+                                             }
+                                             ((TestSetAttrOInheritanceObject*)self)->payload = value;
+                                             return 0;
+                                         }
+
+                                         PyObject* get_payload(PyObject *self) {
+                                              PyObject* r = ((TestSetAttrOInheritanceObject*)self)->payload;
+                                              if (r == NULL) Py_RETURN_NONE;
+                                              Py_INCREF(r);
+                                              return r;
+                                         }
+                                         ''',
+                                         cmembers='PyObject* payload;',
+                                         tp_methods='{"get_payload", (PyCFunction)get_payload, METH_NOARGS, ""}',
+                                         tp_setattr="testattr_set")
+
+    x = TestSetAttrOInheritance()
+    x.foo = 42
+    assert x.get_payload() == 42
+
+    class Managed(TestSetAttrOInheritance):
+        pass
+
+    x = Managed()
+    x.foo = 42  # calls slot_tp_setattro, which calls __setattr__, which wraps the object.tp_setattro
+    assert x.get_payload() is None
+
+    assert SlotsGetter.get_tp_setattro(object()) == SlotsGetter.get_tp_setattro(Managed())
+    assert SlotsGetter.get_tp_setattro(TestSetAttrOInheritance()) == 0
+    assert SlotsGetter.get_tp_setattr(TestSetAttrOInheritance()) != 0
 
 
 def test_sq_ass_item_wrapper():
