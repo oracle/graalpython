@@ -54,7 +54,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_subclasses;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.compareStringsUncached;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASE_EXC_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BYTES_SUBCLASS;
@@ -139,7 +138,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectAr
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
@@ -148,7 +146,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenAttrDescriptor;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.IndexedSlotDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -158,11 +156,13 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeGen;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.IsIdentifierNode;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBasicSizeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetIndexedSlotsCountNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
@@ -1000,7 +1000,7 @@ public abstract class TypeNodes {
     @GenerateCached(false)
     public abstract static class GetBestBaseClassNode extends PNodeWithContext {
 
-        public abstract Object execute(Node inliningTarget, PythonAbstractClass[] bases);
+        public abstract PythonAbstractClass execute(Node inliningTarget, PythonAbstractClass[] bases);
 
         @Specialization(guards = "bases.length == 0")
         static PythonAbstractClass getEmpty(@SuppressWarnings("unused") PythonAbstractClass[] bases) {
@@ -1013,7 +1013,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization(guards = "bases.length > 1")
-        static Object getBestBase(Node inliningTarget, PythonAbstractClass[] bases,
+        static PythonAbstractClass getBestBase(Node inliningTarget, PythonAbstractClass[] bases,
                         @Cached(inline = false) IsSubtypeNode isSubTypeNode,
                         @Cached GetSolidBaseNode getSolidBaseNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -1024,15 +1024,16 @@ public abstract class TypeNodes {
         @SuppressWarnings("unused")
         // The fallback is necessary because the DSL otherwise generates code with a warning on
         // varargs ambiguity
-        static Object fallback(PythonAbstractClass[] bases) {
+        static PythonAbstractClass fallback(PythonAbstractClass[] bases) {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
         /**
          * Aims to get as close as possible to typeobject.best_base().
          */
-        private static Object bestBase(Node inliningTarget, PythonAbstractClass[] bases, GetSolidBaseNode getSolidBaseNode, IsSubtypeNode isSubTypeNode, PRaiseNode.Lazy raiseNode) throws PException {
-            Object base = null;
+        private static PythonAbstractClass bestBase(Node inliningTarget, PythonAbstractClass[] bases, GetSolidBaseNode getSolidBaseNode, IsSubtypeNode isSubTypeNode, PRaiseNode.Lazy raiseNode)
+                        throws PException {
+            PythonAbstractClass base = null;
             Object winner = null;
             for (int i = 0; i < bases.length; i++) {
                 PythonAbstractClass basei = bases[i];
@@ -1050,6 +1051,34 @@ public abstract class TypeNodes {
                 }
             }
             return base;
+        }
+    }
+
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
+    @GenerateUncached
+    public abstract static class GetIndexedSlotsCountNode extends Node {
+        public abstract int execute(Node inliningTarget, Object cls);
+
+        public static int executeUncached(Object cls) {
+            return GetIndexedSlotsCountNodeGen.getUncached().execute(null, cls);
+        }
+
+        @Specialization
+        static int doManaged(PythonManagedClass cls) {
+            return cls.getIndexedSlotCount();
+        }
+
+        @Specialization
+        static int getNative(Node inliningTarget, PythonNativeClass cls,
+                        @Cached GetBaseClassNode getBaseClassNode,
+                        @Cached(inline = false) GetIndexedSlotsCountNode recursiveNode) {
+            return recursiveNode.execute(inliningTarget, getBaseClassNode.execute(inliningTarget, cls));
+        }
+
+        @Fallback
+        static int fallback(@SuppressWarnings("unused") Object cls) {
+            return 0;
         }
     }
 
@@ -2052,7 +2081,7 @@ public abstract class TypeNodes {
             boolean mayAddDict;
             boolean mayAddWeak;
             Object slotsObject;
-            PTuple copiedSlots;
+            TruffleString[] copiedSlots;
             boolean qualnameSet;
         }
 
@@ -2072,6 +2101,7 @@ public abstract class TypeNodes {
                         @Cached InstancesOfTypeHaveDictNode hasDictNode,
                         @Cached InstancesOfTypeHaveWeakrefsNode hasWeakrefsNode,
                         @Cached GetBestBaseClassNode getBestBaseNode,
+                        @Cached GetIndexedSlotsCountNode getIndexedSlotsCountNode,
                         @Cached IsIdentifierNode isIdentifier,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raise,
@@ -2083,7 +2113,6 @@ public abstract class TypeNodes {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached GetItemSizeNode getItemSize) {
             PythonLanguage language = PythonLanguage.get(inliningTarget);
@@ -2110,7 +2139,7 @@ public abstract class TypeNodes {
                 }
             }
             // check for possible layout conflicts
-            Object base = getBestBaseNode.execute(inliningTarget, basesArray);
+            PythonAbstractClass base = getBestBaseNode.execute(inliningTarget, basesArray);
 
             assert metaclass != null;
 
@@ -2206,19 +2235,6 @@ public abstract class TypeNodes {
                             throw raise.raise(TypeError, ErrorMessages.WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE);
                         }
                         ctx.addWeak = true;
-                    } else {
-                        // TODO avoid if native slots are inherited
-                        TruffleString mangledName;
-                        try {
-                            mangledName = PythonUtils.mangleName(name, slotName);
-
-                        } catch (OutOfMemoryError e) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
-                        }
-                        HiddenAttr hiddenSlotAttr = HiddenAttr.createTypeAttrForSlot(toJavaStringNode.execute(mangledName));
-                        HiddenAttrDescriptor slotDesc = factory.createHiddenAttrDescriptor(hiddenSlotAttr, pythonClass);
-                        pythonClass.setAttribute(mangledName, slotDesc);
                     }
                 }
                 // Make slots into a tuple
@@ -2227,13 +2243,22 @@ public abstract class TypeNodes {
                     pythonClass.setAttribute(T___SLOTS__, slotsObject);
 
                     // checks for some name errors too
-                    ctx.copiedSlots = copySlots(inliningTarget, ctx, name, slotsStorage, slotlen, namespace, factory);
+                    ctx.copiedSlots = copySlots(inliningTarget, ctx, name, slotsStorage, slotlen, namespace);
                 } finally {
                     IndirectCallContext.exit(frame, language, context, state);
                 }
                 /* Secondary bases may provide weakrefs or dict */
                 typeNewSlotBases(ctx, base, basesArray);
             }
+
+            int indexedSlotCount = getIndexedSlotsCountNode.execute(inliningTarget, base);
+            if (ctx.copiedSlots != null) {
+                for (TruffleString slotName : ctx.copiedSlots) {
+                    IndexedSlotDescriptor slotDesc = factory.createIndexedSlotDescriptor(slotName, indexedSlotCount++, pythonClass);
+                    pythonClass.setAttribute(slotName, slotDesc);
+                }
+            }
+            pythonClass.setIndexedSlotCount(indexedSlotCount);
 
             if (ctx.addDict) {
                 addDictDescrAttribute(basesArray, pythonClass, factory);
@@ -2345,12 +2370,11 @@ public abstract class TypeNodes {
         private static void addNativeSlots(TypeNewContext ctx, PythonManagedClass pythonClass, Object base) {
             long slotOffset = GetBasicSizeNode.executeUncached(base);
             if (ctx.copiedSlots != null) {
-                SequenceStorage slotsStorage = ctx.copiedSlots.getSequenceStorage();
-                if (slotsStorage.length() != 0) {
+                if (ctx.copiedSlots.length != 0) {
                     if (slotOffset == 0) {
                         throw CompilerDirectives.shouldNotReachHere("tp_basicsize not set on a type");
                     }
-                    slotOffset = installMemberDescriptors(pythonClass, slotsStorage, slotOffset);
+                    slotOffset = installMemberDescriptors(pythonClass, ctx.copiedSlots, slotOffset);
                 }
             }
             long dictOffset = GetDictOffsetNode.executeUncached(base);
@@ -2375,11 +2399,10 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static long installMemberDescriptors(PythonManagedClass pythonClass, SequenceStorage slotsStorage, long slotOffset) {
+        private static long installMemberDescriptors(PythonManagedClass pythonClass, TruffleString[] slotNames, long slotOffset) {
             PDict typeDict = GetOrCreateDictNode.executeUncached(pythonClass);
-            for (int i = 0; i < slotsStorage.length(); i++) {
-                Object slotName = SequenceStorageNodes.GetItemScalarNode.executeUncached(slotsStorage, i);
-                PyTruffleType_AddMember.addMember(pythonClass, typeDict, (TruffleString) slotName, CApiMemberAccessNodes.T_OBJECT_EX, slotOffset, 1, PNone.NO_VALUE);
+            for (TruffleString slotName : slotNames) {
+                PyTruffleType_AddMember.addMember(pythonClass, typeDict, slotName, CApiMemberAccessNodes.T_OBJECT_EX, slotOffset, 1, PNone.NO_VALUE);
                 slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
             return slotOffset;
@@ -2469,10 +2492,9 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static PTuple copySlots(Node inliningTarget, TypeNewContext ctx, TruffleString className, SequenceStorage slotList, int slotlen, PDict namespace,
-                        PythonObjectFactory factory) {
+        private static TruffleString[] copySlots(Node inliningTarget, TypeNewContext ctx, TruffleString className, SequenceStorage slotList, int slotlen, PDict namespace) {
             int nslots = slotlen - PInt.intValue(ctx.addDict) - PInt.intValue(ctx.addWeak);
-            ObjectSequenceStorage newSlots = new ObjectSequenceStorage(nslots);
+            TruffleString[] newSlots = new TruffleString[nslots];
             int j = 0;
             for (int i = 0; i < slotlen; i++) {
                 // the cast is ensured by the previous loop
@@ -2492,7 +2514,7 @@ public abstract class TypeNodes {
                     return null;
                 }
 
-                SequenceStorageNodes.AppendNode.executeUncached(newSlots, slotName, NoGeneralizationNode.DEFAULT);
+                newSlots[j] = slotName;
                 // Passing 'null' frame is fine because the caller already transfers the exception
                 // state to the context.
                 if (!T___CLASSCELL__.equalsUncached(slotName, TS_ENCODING) && !T___QUALNAME__.equalsUncached(slotName, TS_ENCODING) &&
@@ -2505,9 +2527,9 @@ public abstract class TypeNodes {
             assert j == nslots;
 
             // sort newSlots
-            Arrays.sort(newSlots.getInternalArray(), (a, b) -> compareStringsUncached((TruffleString) a, (TruffleString) b));
+            Arrays.sort(newSlots, StringUtils::compareStringsUncached);
 
-            return factory.createTuple(newSlots);
+            return newSlots;
         }
     }
 

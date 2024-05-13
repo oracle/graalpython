@@ -70,6 +70,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @CompilationFinal private Shape instanceShape;
     private TruffleString name;
     private TruffleString qualName;
+    private int indexedSlotCount;
 
     /**
      * Access using methods in {@link SpecialMethodSlot}.
@@ -165,6 +166,14 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                 subclass.lookupChanged();
             }
         }
+    }
+
+    public int getIndexedSlotCount() {
+        return indexedSlotCount;
+    }
+
+    public void setIndexedSlotCount(int indexedSlotCount) {
+        this.indexedSlotCount = indexedSlotCount;
     }
 
     public final TpSlots getTpSlots() {
