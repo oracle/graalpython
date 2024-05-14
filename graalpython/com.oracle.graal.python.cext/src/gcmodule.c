@@ -44,7 +44,7 @@ static inline int
 call_traverse(traverseproc traverse, PyObject *op, visitproc visit, void *arg)
 {
     if (!traverse) {
-        PyTruffle_Log(PY_TRUFFLE_LOG_INFO,
+        PyTruffle_Log(PY_TRUFFLE_LOG_FINE,
                       "type '%.100s' is a GC type but tp_traverse is NULL",
                       Py_TYPE((op))->tp_name);
         return 0;
