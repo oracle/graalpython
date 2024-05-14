@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.GcNativePtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonTransferNodeGen;
@@ -125,6 +126,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -166,6 +168,7 @@ public abstract class CApiTransitions {
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
         public final ConcurrentHashMap<Long, Long> nativeWeakRef = new ConcurrentHashMap<>();
         public final WeakHashMap<Object, WeakReference<Object>> managedNativeLookup = new WeakHashMap<>();
+        public final HashMap<Long, Object[]> replicatedNativeRefs = new HashMap<>(2);
 
         private final HashMap<Long, PythonObjectReference> nativeStubLookupShadowTable;
         public PythonObjectReference[] nativeStubLookup;
@@ -179,17 +182,17 @@ public abstract class CApiTransitions {
         volatile boolean referenceQueuePollActive = false;
 
         @TruffleBoundary
-        static <T> T putShadowTable(HashMap<Long, T> table, long pointer, T ref) {
+        public static <T> T putShadowTable(HashMap<Long, T> table, long pointer, T ref) {
             return table.put(pointer, ref);
         }
 
         @TruffleBoundary
-        static <T> T removeShadowTable(HashMap<Long, T> table, long pointer) {
+        public static <T> T removeShadowTable(HashMap<Long, T> table, long pointer) {
             return table.remove(pointer);
         }
 
         @TruffleBoundary
-        static <T> T getShadowTable(HashMap<Long, T> table, long pointer) {
+        public static <T> T getShadowTable(HashMap<Long, T> table, long pointer) {
             return table.get(pointer);
         }
     }
@@ -1645,10 +1648,66 @@ public abstract class CApiTransitions {
         }
     }
 
+    /**
+     * Very similar to {@link NativePtrToPythonNode}, this node resolves a native pointer (given as
+     * Java {@code long}) to a Python object. However, it will never create a fresh
+     * {@link PythonAbstractNativeObject} for a native object (it will only return one if it already
+     * exists).
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GcNativePtrToPythonNode extends PNodeWithContext {
+
+        public abstract Object execute(Node inliningTarget, long pointer);
+
+        @Specialization
+        static Object doLong(Node inliningTarget, long pointer,
+                        @Cached CStructAccess.ReadI32Node readI32Node,
+                        @Cached InlinedBranchProfile isNativeProfile,
+                        @Cached InlinedConditionProfile isNativeWrapperProfile,
+                        @Cached InlinedConditionProfile isHandleSpaceProfile) {
+
+            PythonContext pythonContext = PythonContext.get(inliningTarget);
+            HandleContext nativeContext = pythonContext.nativeContext;
+
+            assert pointer != 0;
+            assert pythonContext.ownsGil();
+            if (isHandleSpaceProfile.profile(inliningTarget, HandlePointerConverter.pointsToPyHandleSpace(pointer))) {
+                int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
+                PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer, idx);
+                if (reference == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw CompilerDirectives.shouldNotReachHere("reference was freed: " + Long.toHexString(pointer));
+                }
+                PythonNativeWrapper wrapper = reference.get();
+                if (wrapper == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
+                }
+                return wrapper.getDelegate();
+            } else {
+                IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
+                Object referent;
+                if (lookup != null && (referent = lookup.get()) != null) {
+                    isNativeProfile.enter(inliningTarget);
+                    if (isNativeWrapperProfile.profile(inliningTarget, referent instanceof PythonAbstractObjectNativeWrapper)) {
+                        assert referent instanceof PythonAbstractObjectNativeWrapper;
+                        return ((PythonAbstractObjectNativeWrapper) referent).getDelegate();
+                    } else {
+                        assert referent instanceof PythonAbstractNativeObject;
+                        return referent;
+                    }
+                }
+                return null;
+            }
+        }
+    }
+
     private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
     private static final int TP_REFCNT_OFFSET = 0;
 
-    private static long addNativeRefCount(long pointer, long refCntDelta) {
+    public static long addNativeRefCount(long pointer, long refCntDelta) {
         return addNativeRefCount(pointer, refCntDelta, false);
     }
 
@@ -1668,7 +1727,7 @@ public abstract class CApiTransitions {
         return refCount + refCntDelta;
     }
 
-    private static long subNativeRefCount(long pointer, long refCntDelta) {
+    public static long subNativeRefCount(long pointer, long refCntDelta) {
         assert PythonContext.get(null).isNativeAccessAllowed();
         assert PythonContext.get(null).ownsGil();
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);

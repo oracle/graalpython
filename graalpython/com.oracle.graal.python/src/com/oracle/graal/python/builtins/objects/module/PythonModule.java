@@ -160,4 +160,8 @@ public final class PythonModule extends PythonObject {
     public void setReplicatedNativeReferences(Object[] replicatedNativeReferences) {
         this.replicatedNativeReferences = replicatedNativeReferences;
     }
+
+    public Object[] getReplicatedNativeReferences() {
+        return this.replicatedNativeReferences;
+    }
 }

@@ -129,6 +129,10 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         this.replicatedNativeReferences = replicatedNativeReferences;
     }
 
+    public Object[] getReplicatedNativeReferences() {
+        return replicatedNativeReferences;
+    }
+
     @Override
     public Object getPtr() {
         return object;

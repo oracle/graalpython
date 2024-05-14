@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionE
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.GC_LOGGER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
@@ -127,6 +128,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateRefNode;
@@ -230,7 +233,6 @@ import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.api.Toolchain;
@@ -1422,7 +1424,7 @@ public final class PythonCextBuiltins {
     abstract static class PyTruffleObject_GC_UnTrack extends PyTruffleGcTracingNode {
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            CApiContext.GC_LOGGER.finer(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
+            GC_LOGGER.finer(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().untrackObject(ptr, ref, className);
         }
     }
@@ -1431,34 +1433,71 @@ public final class PythonCextBuiltins {
     abstract static class PyTruffleObject_GC_Track extends PyTruffleGcTracingNode {
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            CApiContext.GC_LOGGER.finer(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
+            GC_LOGGER.finer(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().trackObject(ptr, ref, className);
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObject, Pointer, Int}, call = Ignored)
+    /**
+     * Replicates native references in Java.
+     * <p>
+     * This upcall is the core function for Python GC support. It replicates native references in
+     * Java such that the Java GC sees all references (and also cycles) and can properly collect
+     * everything.
+     * </p>
+     * <p>
+     * In order to save managed-native round trips, this upcall function expects the native pointer
+     * of a primary object and the pointer to a single linked list (node type
+     * {@link CStructs#GraalPyGC_CycleNode}) that contains the referents. The referents are usually
+     * determined by traversing the primary object.
+     * </p>
+     * <p>
+     * If the primary object is a native object or a Python module, the native references will be
+     * replicated. Other object types may be added if they also have some native memory that may
+     * contain object references (e.g. a module object may store references in its native module
+     * state).
+     * </p>
+     * <p>
+     * The pointers of the referents in the single linked list are resolved (in particular, this
+     * means that it ensures the existence of a {@link PythonAbstractNativeObject} for each native
+     * object) and then stored in a Java object array which is then attached to the primary object.
+     * </p>
+     * <p>
+     * Further, the native references are <emph>stolen</emph>. This is important because otherwise
+     * we would still keep potential reference cycles in native and the Java GC cannot collect them.
+     * As a consequence, the refcount of a native object may temporarily be lower than
+     * {@link PythonAbstractObjectNativeWrapper#MANAGED_REFCNT MANAGED_REFCNT}. This is best
+     * explained by an example: Assume there is a native object {@code p0} that has a field
+     * {@code PyObject *obj}. If native object {@code p1} is assigned to {@code p0->obj}, an incref
+     * needs to be done. Now, if the Python GC runs, we will replicate the reference to Java and do
+     * a decref. Since the corresponding {@link PythonAbstractNativeObject} then exist, the refcount
+     * will be at least {@link PythonAbstractObjectNativeWrapper#MANAGED_REFCNT MANAGED_REFCNT}.
+     * Now, another object {@code p2} is assigned to {@code p0->obj} which means the previous
+     * {@code p1} will be decref'd. The refcount is at this point
+     * {@link PythonAbstractObjectNativeWrapper#MANAGED_REFCNT MANAGED_REFCNT - 1} although there is
+     * a managed reference to {@code p1}. This will be fixed in the next Python GC run as soon as we
+     * see the update.
+     * </p>
+     */
+    @CApiBuiltin(ret = Void, args = {Pointer, Pointer, Int}, call = Ignored)
     abstract static class PyTruffleObject_ReplicateNativeReferences extends CApiTernaryBuiltinNode {
         private static final Level LEVEL = Level.FINER;
 
-        @Specialization
-        static Object doGeneric(Object object, Object listHead, int n,
+        @Specialization(guards = "isNativeAccessAllowed()")
+        static Object doGeneric(Object pointer, Object listHead, int n,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedExactClassProfile profile,
                         @Cached CStructAccess.ReadObjectNode readObjectNode,
-                        @Cached CStructAccess.ReadPointerNode readPointerNode) {
-            boolean loggable = CApiContext.GC_LOGGER.isLoggable(LEVEL);
+                        @Cached CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode,
+                        @Cached GcNativePtrToPythonNode gcNativePtrToPythonNode) {
+            boolean loggable = GC_LOGGER.isLoggable(LEVEL);
+            long lPointer = coerceNativePointerToLongNode.execute(inliningTarget, pointer);
+            assert lPointer != 0;
+            Object object = gcNativePtrToPythonNode.execute(inliningTarget, lPointer);
+
             Object repr = object;
-            Object profiledObject = profile.profile(inliningTarget, object);
-
             Object[] referents = null;
-            if (profiledObject instanceof PythonAbstractNativeObject || profiledObject instanceof PythonModule) {
-                referents = new Object[n];
-                Object cur = listHead;
-                for (int i = 0; i < n; i++) {
-                    referents[i] = readObjectNode.read(cur, GraalPyGC_CycleNode__item);
-                    cur = readPointerNode.read(cur, GraalPyGC_CycleNode__next);
-                }
-
+            if (object instanceof PythonAbstractNativeObject || object instanceof PythonModule || object == null) {
                 /*
                  * Note: it is important that we first collect the objects such that we have strong
                  * Java references to them on the Java stack and then we overwrite the
@@ -1466,20 +1505,93 @@ public final class PythonCextBuiltins {
                  * weakly referenced from the handle table and such referents may already be in the
                  * previous array and then it could happen, that they die during list processing.
                  */
-                if (profiledObject instanceof PythonAbstractNativeObject nativeObject) {
+                Object[] oldReferents;
+                referents = new Object[n];
+                if (object instanceof PythonAbstractNativeObject nativeObject) {
                     if (loggable) {
                         repr = nativeObject.toStringWithContext();
                     }
+                    oldReferents = nativeObject.getReplicatedNativeReferences();
                     nativeObject.setReplicatedNativeReferences(referents);
-                } else {
-                    PythonModule module = (PythonModule) profiledObject;
+                } else if (object instanceof PythonModule module) {
+                    oldReferents = module.getReplicatedNativeReferences();
                     module.setReplicatedNativeReferences(referents);
+                } else {
+                    if (loggable) {
+                        repr = CApiContext.asHex(lPointer);
+                    }
+                    /*
+                     * TODO(fa): Here we could mark the native object that we need notification of
+                     * dealloc in order to release the associated replicated references.
+                     */
+                    oldReferents = PythonContext.get(inliningTarget).nativeContext.replicatedNativeRefs.put(lPointer, referents);
                 }
+                // 1. Collect referents (traverse native list and resolve pointers)
+                Object cur = listHead;
+                for (int i = 0; i < n; i++) {
+                    referents[i] = readObjectNode.read(cur, GraalPyGC_CycleNode__item);
+                    cur = readPointerNode.read(cur, GraalPyGC_CycleNode__next);
+                }
+
+                /*
+                 * 2. Compare old and new referents. We optimize for the case where the arrays are
+                 * equal. In this case, we don't need to do anything. If the arrays differ, we will
+                 * give the stolen reference back (by doing an incref) and we will steal the
+                 * reference which is up to be replicated.
+                 */
+                if (!arrayEquals(oldReferents, referents)) {
+                    int oldLen = oldReferents != null ? oldReferents.length : 0;
+                    int maxLen = Math.max(oldLen, referents.length);
+                    for (int i = 0; i < maxLen; i++) {
+                        Object oldReferent = i < oldLen ? oldReferents[i] : null;
+                        Object referent = i < referents.length ? referents[i] : null;
+                        assert oldReferent != null || referent != null;
+                        if (oldReferent != referent) {
+                            if (oldReferent instanceof PythonAbstractNativeObject nativeObject) {
+                                long lItemPointer = coerceNativePointerToLongNode.execute(inliningTarget, nativeObject.getPtr());
+                                CApiTransitions.addNativeRefCount(lItemPointer, 1);
+                            }
+                            if (referent instanceof PythonAbstractNativeObject nativeObject) {
+                                long lItemPointer = coerceNativePointerToLongNode.execute(inliningTarget, nativeObject.getPtr());
+                                CApiTransitions.subNativeRefCount(lItemPointer, 1);
+                            }
+                        }
+                    }
+                }
+                /*
+                 * As described above: Ensure that the 'old' replicated references are strong until
+                 * this point. Otherwise, weakly referenced managed objects could die.
+                 */
+                java.lang.ref.Reference.reachabilityFence(oldReferents);
             }
             if (loggable) {
-                CApiContext.GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Replicated native refs of %s to managed: %s", repr, Arrays.toString(referents)));
+                GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Replicated native refs of %s to managed: %s", repr, Arrays.toString(referents)));
             }
             return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "!isNativeAccessAllowed()")
+        @SuppressWarnings("unused")
+        static Object doManaged(Object pointer, Object listHead, int n) {
+            return PNone.NO_VALUE;
+        }
+
+        private static boolean arrayEquals(Object[] a, Object[] b) {
+            if (a == null || b == null) {
+                return false;
+            }
+
+            int length = a.length;
+            if (b.length != length) {
+                return false;
+            }
+
+            for (int i = 0; i < length; i++) {
+                if (a[i] != b[i]) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
@@ -1511,8 +1623,8 @@ public final class PythonCextBuiltins {
 
                 PythonNativeWrapper wrapper = nativePtrToPythonWrapperNode.execute(inliningTarget, op, true);
                 if (wrapper instanceof PythonAbstractObjectNativeWrapper abstractObjectNativeWrapper) {
-                    if (CApiContext.GC_LOGGER.isLoggable(Level.FINE)) {
-                        CApiContext.GC_LOGGER.fine(PythonUtils.formatJString("Breaking reference cycle for %s", abstractObjectNativeWrapper.ref));
+                    if (GC_LOGGER.isLoggable(Level.FINE)) {
+                        GC_LOGGER.fine(PythonUtils.formatJString("Breaking reference cycle for %s", abstractObjectNativeWrapper.ref));
                     }
                     updateRefNode.execute(inliningTarget, abstractObjectNativeWrapper, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT);
                 }
@@ -1535,6 +1647,29 @@ public final class PythonCextBuiltins {
 
         @Specialization(guards = "!isNativeAccessAllowed()")
         static Object doNative(@SuppressWarnings("unused") Object weakCandidates) {
+            return PNone.NO_VALUE;
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
+    abstract static class PyTruffle_NotifyDealloc extends CApiUnaryBuiltinNode {
+        private static final Level LEVEL = Level.FINE;
+
+        @Specialization(guards = "isNativeAccessAllowed()")
+        static Object doNative(Object ptr,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
+            long lptr = coerceNativePointerToLongNode.execute(inliningTarget, ptr);
+            Object[] refs = HandleContext.removeShadowTable(PythonContext.get(inliningTarget).nativeContext.replicatedNativeRefs, lptr);
+
+            if (GC_LOGGER.isLoggable(LEVEL)) {
+                GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Removing replicated native refs of 0x%x: %s", lptr, Arrays.toString(refs)));
+            }
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "!isNativeAccessAllowed()")
+        static Object doNative(@SuppressWarnings("unused") Object ptr) {
             return PNone.NO_VALUE;
         }
     }
