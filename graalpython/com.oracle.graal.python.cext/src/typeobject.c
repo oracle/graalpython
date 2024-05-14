@@ -4141,7 +4141,12 @@ type_dealloc(PyTypeObject *type)
 
     // PyObject_ClearWeakRefs() raises an exception if Py_REFCNT() != 0
     assert(Py_REFCNT(type) == 0);
+    /* TODO(fa): clear weakrefs will do an upcall with an object that has
+     * refcnt==0 which is currently a problem for GraalPy.
+     */
+#if 0 // GraalPy change
     PyObject_ClearWeakRefs((PyObject *)type);
+#endif // GraalPy change
 
     Py_XDECREF(type->tp_base);
     Py_XDECREF(type->tp_dict);
