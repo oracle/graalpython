@@ -595,6 +595,25 @@ public class JavaInteropTest {
             assertEquals(javaObj.asInt(), 42);
         }
 
+        @Test
+        public void testDictTypeConversion() {
+            Value bindings = context.getBindings("python");
+            bindings.putMember("foo", "32");
+            bindings.putMember("bar", (short) 32);
+            Value intValue = context.eval("python", "int(foo) + int(bar)");
+            assertEquals(intValue.asInt(), 64);
+        }
+
+        @Test
+        public void testListTypeConversions() {
+            Value intConversion = context.eval("python", "int");
+            Value list = context.eval("python", "[1]");
+            list.setArrayElement(0, "32");
+            assertEquals(intConversion.execute(list.getArrayElement(0)).asInt(), 32);
+            list.setArrayElement(0, (short) 3);
+            assertEquals(intConversion.execute(list.getArrayElement(0)).asInt(), 3);
+        }
+
         public class UnsupportedProxyHashMap implements ProxyHashMap {
             @Override
             public long getHashSize() {

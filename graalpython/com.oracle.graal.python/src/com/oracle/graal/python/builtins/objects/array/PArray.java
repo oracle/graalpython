@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -55,6 +56,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -345,8 +347,8 @@ public final class PArray extends PythonBuiltinObject {
     @ExportMessage
     public Object readArrayElement(long index,
                     @Bind("$node") Node inliningTarget,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItem,
-                    @Cached.Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+                    @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItem,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             try {
@@ -363,12 +365,13 @@ public final class PArray extends PythonBuiltinObject {
     @ExportMessage
     public void writeArrayElement(long index, Object value,
                     @Bind("$node") Node inliningTarget,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
-                    @Cached.Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+                    @Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
+                    @Exclusive @Cached PForeignToPTypeNode convert,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             try {
-                setItem.execute(inliningTarget, storage, PInt.intValueExact(index), value);
+                setItem.execute(inliningTarget, storage, PInt.intValueExact(index), convert.executeConvert(value));
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw InvalidArrayIndexException.create(index);
@@ -381,8 +384,8 @@ public final class PArray extends PythonBuiltinObject {
     @ExportMessage
     public void removeArrayElement(long index,
                     @Bind("$node") Node inliningTarget,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
-                    @Cached.Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+                    @Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             try {

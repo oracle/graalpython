@@ -227,13 +227,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public void writeMember(String key, Object value,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                    @Shared @Cached PForeignToPTypeNode convert,
                     @Exclusive @Cached PyObjectSetAttr setAttributeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached IsBuiltinObjectProfile attrErrorProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            setAttributeNode.execute(null, inliningTarget, this, fromJavaStringNode.execute(key, TS_ENCODING), value);
+            setAttributeNode.execute(null, inliningTarget, this, fromJavaStringNode.execute(key, TS_ENCODING), convert.executeConvert(value));
         } catch (PException e) {
             e.expectAttributeError(inliningTarget, attrErrorProfile);
             // TODO(fa) not accurate; distinguish between read-only and non-existing
@@ -325,10 +326,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Bind("$node") Node inliningTarget,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                    @Shared @Cached PForeignToPTypeNode convert,
                     @Cached PySequenceSetItemNode sequenceSetItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
+            value = convert.executeConvert(value);
             InteropBehaviorMethod method = InteropBehaviorMethod.write_array_element;
             InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
             if (behavior != null) {
@@ -1520,7 +1523,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public TriState isIdenticalOrUndefined(Object otherInterop,
-                    @Cached PForeignToPTypeNode convert,
+                    @Shared @Cached PForeignToPTypeNode convert,
                     @Exclusive @CachedLibrary(limit = "3") InteropLibrary otherLib,
                     @Cached IsNode isNode,
                     @Exclusive @Cached GilNode gil) {

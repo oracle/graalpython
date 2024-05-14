@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -150,11 +151,12 @@ public final class PByteArray extends PBytesLike {
     public void writeArrayElement(long index, Object value,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
+                    @Exclusive @Cached PForeignToPTypeNode convert,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             try {
-                setItem.execute(inliningTarget, store, PInt.intValueExact(index), value);
+                setItem.execute(inliningTarget, store, PInt.intValueExact(index), convert.executeConvert(value));
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw InvalidArrayIndexException.create(index);
