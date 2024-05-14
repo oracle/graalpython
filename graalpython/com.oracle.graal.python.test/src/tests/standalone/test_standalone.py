@@ -47,8 +47,8 @@ import shutil
 
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
 
-MVN_CMD = [shutil.which('mvn'), "--batch-mode"]
-
+GLOBAL_MVN_CMD = [shutil.which('mvn'), "--batch-mode"]
+MAVEN_VERSION = "3.9.6"
 VFS_PREFIX = "org.graalvm.python.vfs"
 
 def run_cmd(cmd, env, cwd=None):
@@ -110,6 +110,22 @@ def get_graalvm_version():
     graalvmVersion = graalvmVersion.split("-dev")[0]
     return graalvmVersion
 
+def get_mvn_wrapper(project_dir, env):
+    if 'win32' != sys.platform:
+        cmd = [shutil.which('mvn'), "--batch-mode", "wrapper:wrapper", f"-Dmaven={MAVEN_VERSION}"]
+        out, return_code = run_cmd(cmd, env, cwd=project_dir)
+        assert "BUILD SUCCESS", out
+        mvn_cmd = [os.path.abspath(os.path.join(project_dir, "mvnw")),  "--batch-mode"]
+    else:
+        # TODO installing mvn wrapper with the current mvn 3.3.9 on gates does not work
+        # we still have to provide the mvnw.bat script
+        mvnw_dir = os.path.join(os.path.dirname(__file__), "mvnw")
+        mvn_cmd = [os.path.abspath(os.path.join(mvnw_dir, "mvnw.cmd")),  "--batch-mode"]
+
+    cmd = mvn_cmd + ["--version"]
+    out, return_code = run_cmd(cmd, env, cwd=project_dir)
+    assert "3.9.6" in out
+    return mvn_cmd
 
 class PolyglotAppTest(unittest.TestCase):
 
@@ -142,7 +158,7 @@ class PolyglotAppTest(unittest.TestCase):
                     self.graalvmVersion,
                     f"{self.archetypeArtifactId}-{self.graalvmVersion}.pom",
                 )
-                cmd = MVN_CMD + [
+                cmd = GLOBAL_MVN_CMD + [
                     "install:install-file",
                     f"-Dfile={jar}",
                     f"-DgroupId={self.archetypeGroupId}",
@@ -171,7 +187,7 @@ class PolyglotAppTest(unittest.TestCase):
                     f"{self.pluginArtifactId}-{self.graalvmVersion}.pom",
                 )
 
-                cmd = MVN_CMD + [
+                cmd = GLOBAL_MVN_CMD + [
                     "install:install-file",
                     f"-Dfile={jar}",
                     f"-DgroupId={self.archetypeGroupId}",
@@ -186,7 +202,7 @@ class PolyglotAppTest(unittest.TestCase):
                 break
 
     def generate_app(self, tmpdir, target_dir, target_name, pom_template=None):
-        cmd = MVN_CMD + [
+        cmd = GLOBAL_MVN_CMD + [
             "archetype:generate",
             "-B",
             f"-DarchetypeGroupId={self.archetypeGroupId}",
@@ -262,8 +278,10 @@ class PolyglotAppTest(unittest.TestCase):
             target_dir = os.path.join(str(tmpdir), target_name)
             self.generate_app(tmpdir, target_dir, target_name)
 
+            mvnw_cmd = get_mvn_wrapper(target_dir, self.env)
+
             # build
-            cmd = MVN_CMD + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy"]
+            cmd = mvnw_cmd + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
             assert "BUILD SUCCESS" in out, "unexpected output from " + str(cmd)
 
@@ -295,7 +313,7 @@ class PolyglotAppTest(unittest.TestCase):
                 f.write("import struct\n" + contents)
 
             # rebuild and exec
-            cmd = MVN_CMD + ["package", "exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
+            cmd = mvnw_cmd + ["package", "exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
             assert "BUILD SUCCESS" in out, "unexpected output from " + str(cmd)
             assert "hello java" in out, "unexpected output from " + str(cmd)
@@ -311,7 +329,9 @@ class PolyglotAppTest(unittest.TestCase):
             pom_template = os.path.join(os.path.dirname(__file__), "fail_without_graalpy_dep_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
 
-            cmd = MVN_CMD + ["process-resources"]
+            mvnw_cmd = get_mvn_wrapper(target_dir, self.env)
+
+            cmd = mvnw_cmd + ["process-resources"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
             assert "Missing GraalPy dependency. Please add to your pom either org.graalvm.polyglot:python-community or org.graalvm.polyglot:python" in out
 
@@ -323,7 +343,9 @@ class PolyglotAppTest(unittest.TestCase):
             pom_template = os.path.join(os.path.dirname(__file__), "prepare_venv_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
 
-            cmd = MVN_CMD + ["process-resources"]
+            mvnw_cmd = get_mvn_wrapper(target_dir, self.env)
+
+            cmd = mvnw_cmd + ["process-resources"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
             assert "-m venv" in out, "unexpected output from " + str(cmd)
             assert "-m ensurepip" in out, "unexpected output from " + str(cmd)
@@ -331,7 +353,7 @@ class PolyglotAppTest(unittest.TestCase):
             assert "termcolor" in out, "unexpected output from " + str(cmd)
 
             # run again and assert that we do not regenerate the venv
-            cmd = MVN_CMD + ["process-resources"]
+            cmd = mvnw_cmd + ["process-resources"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
             assert "-m venv" not in out, "unexpected output from " + str(cmd)
             assert "-m ensurepip" not in out, "unexpected output from " + str(cmd)
@@ -345,7 +367,7 @@ class PolyglotAppTest(unittest.TestCase):
             with open(os.path.join(target_dir, "pom.xml"), "w") as f:
                 f.write(contents.replace("<package>ujson</package>", ""))
 
-            cmd = MVN_CMD + ["process-resources"]
+            cmd = mvnw_cmd + ["process-resources"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
             assert "-m venv" not in out, "unexpected output from " + str(cmd)
             assert "-m ensurepip" not in out, "unexpected output from " + str(cmd)
@@ -360,7 +382,9 @@ class PolyglotAppTest(unittest.TestCase):
             pom_template = os.path.join(os.path.dirname(__file__), "check_home_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
 
-            cmd = MVN_CMD + ["process-resources"]
+            mvnw_cmd = get_mvn_wrapper(target_dir, self.env)
+
+            cmd = mvnw_cmd + ["process-resources"]
             out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
 
             # check fileslist.txt

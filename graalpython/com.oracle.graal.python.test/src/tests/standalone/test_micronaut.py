@@ -47,6 +47,8 @@ import sys
 
 is_enabled = 'ENABLE_MICRONAUT_UNITTESTS' in os.environ and os.environ['ENABLE_MICRONAUT_UNITTESTS'] == "true"
 
+MAVEN_VERSION = "3.9.6"
+
 def run_cmd(cmd, env, cwd=None):
     out = []
     out.append(f"Executing:\n    {cmd=}\n")
@@ -186,6 +188,25 @@ def check_ouput(txt, out, contains=True):
         print_output(out)
         assert False, f"did not expect '{txt}' in output"
 
+def get_mvn_wrapper(project_dir, env):
+    if 'win32' != sys.platform:
+        cmd = [shutil.which('mvn'), "--batch-mode", "wrapper:wrapper", f"-Dmaven={MAVEN_VERSION}"]
+        out, return_code = run_cmd(cmd, env, cwd=project_dir)
+        check_ouput("BUILD SUCCESS", out)
+        mvn_cmd = [os.path.abspath(os.path.join(project_dir, "mvnw")),  "--batch-mode"]
+    else:
+        # TODO installing mvn wrapper with the current mvn 3.3.9 on gates does not work
+        # we have to provide the mvnw.bat script
+        mvnw_dir = os.path.join(os.path.dirname(__file__), "mvnw")
+        mvn_cmd = [os.path.abspath(os.path.join(mvnw_dir, "mvnw.cmd")),  "--batch-mode"]
+
+    print("mvn --version ...")
+    cmd = mvn_cmd + ["--version"]
+    out, return_code = run_cmd(cmd, env, cwd=project_dir)
+    check_ouput("3.9.6", out)
+    print_output(out)
+    return mvn_cmd
+
 class MicronautAppTest(unittest.TestCase):
     def setUpClass(self):
         if not is_enabled:
@@ -203,7 +224,7 @@ class MicronautAppTest(unittest.TestCase):
             pom_file = os.path.join(target_dir, "pom.xml")
             patch_pom(pom_file)
 
-            mvn_cmd = [os.path.abspath(os.path.join(hello_app_dir, "mvnw" if 'win32' != sys.platform else "mvnw.bat")),  "--batch-mode"]
+            mvn_cmd = get_mvn_wrapper(target_dir, self.env)
 
             # clean
             print("clean micronaut hello app ...")
