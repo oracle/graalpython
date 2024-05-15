@@ -983,14 +983,14 @@ public final class ListBuiltins extends PythonBuiltins {
             final SequenceStorage leftStorage = left.getSequenceStorage();
             final SequenceStorage rightStorage = right.getSequenceStorage();
             final boolean result = neNode.execute(frame, leftStorage, rightStorage);
-            /**
+            /*
              * This will check if the underlying storage has been modified and if so, we do the
              * check again.
              */
             if (leftStorage == left.getSequenceStorage() && rightStorage == right.getSequenceStorage()) {
                 return result;
             }
-            /**
+            /*
              * To avoid possible infinite recursion case, we call the default specialization.
              */
             return doPList(frame, left, right, neNode);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -35,7 +35,7 @@ public abstract class SequenceStorageFactory {
         assert values != null;
         assert values.getClass() == Object[].class : "cannot use non-Object array for modifiable list";
 
-        /**
+        /*
          * Try to use unboxed SequenceStorage.
          */
         if (values.length == 0) {

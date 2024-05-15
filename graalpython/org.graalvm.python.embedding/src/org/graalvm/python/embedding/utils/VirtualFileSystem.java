@@ -76,10 +76,10 @@ import java.util.function.Predicate;
 
 import org.graalvm.polyglot.io.FileSystem;
 
-@Deprecated(since = "24.1.0")
 /**
  * @deprecated use org.graalvm.python.embedding.vfs.VirtualFileSystem instead
  */
+@Deprecated(since = "24.1.0")
 public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     private static final String VFS_ROOT = "org.graalvm.python.vfs";
