@@ -462,7 +462,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             b.beginSourceSection(startOffset, length);
 
             if (oldSourceRange != null && oldSourceRange.startLine != sourceRange.startLine) {
-                b.emitTraceLine();
+                b.emitTraceLine(sourceRange.startLine);
             }
         }
     }
@@ -719,7 +719,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         b.beginWhile();
 
         b.beginBlock();
-        b.emitTraceLineAtLoopHeader();
+        b.emitTraceLineAtLoopHeader(currentLocation.startLine);
         b.beginForIterate(localValue);
         b.emitLoadLocal(localIter);
         b.endForIterate();
@@ -1228,9 +1228,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         public Void visit(ExprTy.Attribute node) {
             beginSourceSection(node, b);
 
-            b.beginGetAttribute();
+            b.beginGetAttribute(toTruffleStringUncached(mangle(node.attr)));
             node.value.accept(this);
-            b.emitLoadConstant(toTruffleStringUncached(mangle(node.attr)));
             b.endGetAttribute();
 
             endSourceSection(b);
@@ -1661,7 +1660,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     b.endMakeTuple();
                     break;
                 case FROZENSET:
-                    b.beginMakeFrozenSet();
+                    b.beginMakeFrozenSet(value.getFrozensetElements().length);
                     for (ConstantValue cv : value.getFrozensetElements()) {
                         createConstant(cv);
                     }
@@ -1700,7 +1699,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             if (len(node.keys) == 0) {
                 b.emitMakeEmptyDict();
             } else {
-                b.beginMakeDict();
+                b.beginMakeDict(node.keys.length);
                 for (int i = 0; i < node.keys.length; i++) {
                     if (node.keys[i] == null) {
                         b.emitLoadConstant(PNone.NO_VALUE);
@@ -1802,7 +1801,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             if (node.values.length == 1) {
                 node.values[0].accept(this);
             } else {
-                b.beginBuildString();
+                b.beginBuildString(node.values.length);
                 visitSequence(node.values);
                 b.endBuildString();
             }
@@ -1947,7 +1946,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         }
 
         /**
-         * Converts a sequence of expressions of which some may be started into just an Object[].
+         * Converts a sequence of expressions of which some may be starred into just an Object[].
          *
          * @param args the sequence of expressions
          */
@@ -1985,6 +1984,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                  */
                 b.beginUnstar();
                 boolean inVariadic = false;
+                int numOperands = 0;
 
                 if (receiver != null) {
                     b.beginMakeVariadic();
@@ -1997,11 +1997,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                         if (inVariadic) {
                             b.endMakeVariadic();
                             inVariadic = false;
+                            numOperands++;
                         }
 
                         b.beginUnpackStarred();
                         ((ExprTy.Starred) args[i]).value.accept(this);
                         b.endUnpackStarred();
+                        numOperands++;
                     } else {
                         if (!inVariadic) {
                             b.beginMakeVariadic();
@@ -2014,9 +2016,10 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
                 if (inVariadic) {
                     b.endMakeVariadic();
+                    numOperands++;
                 }
 
-                b.endUnstar();
+                b.endUnstar(numOperands);
             } else {
                 b.beginMakeVariadic();
                 if (receiver != null) {
@@ -2454,10 +2457,9 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             public Void visit(ExprTy.Attribute node) {
                 beginSourceSection(node, b);
                 checkForbiddenName(node.attr, NameOperation.BeginWrite);
-                b.beginSetAttribute();
+                b.beginSetAttribute(toTruffleStringUncached(mangle(node.attr)));
                 generateValue.run();
                 node.value.accept(StatementCompiler.this);
-                b.emitLoadConstant(toTruffleStringUncached(mangle(node.attr)));
                 b.endSetAttribute();
                 endSourceSection(b);
                 return null;
@@ -2496,7 +2498,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 if (indexOfStarred == -1) {
                     b.beginUnpackToLocals(targets);
                 } else {
-                    b.beginUnpackStarredToLocals(targets);
+                    b.beginUnpackStarredToLocals(indexOfStarred, targets);
                 }
 
                 generateValue.run();
@@ -2504,7 +2506,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 if (indexOfStarred == -1) {
                     b.endUnpackToLocals();
                 } else {
-                    b.emitLoadConstant(indexOfStarred);
                     b.endUnpackStarredToLocals();
                 }
 
@@ -2670,12 +2671,12 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 node.value.accept(StatementCompiler.this);
                 b.endStoreLocal();
 
-                b.beginSetAttribute();
+                TruffleString attrName = toTruffleStringUncached(mangle(node.attr));
+                b.beginSetAttribute(attrName);
                 beginAugAssign();
 
-                b.beginGetAttribute();
+                b.beginGetAttribute(attrName);
                 b.emitLoadLocal(target);
-                b.emitLoadConstant(toTruffleStringUncached(mangle(node.attr)));
                 b.endGetAttribute();
 
                 value.accept(StatementCompiler.this);
@@ -2683,8 +2684,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 endAugAssign();
 
                 b.emitLoadLocal(target);
-
-                b.emitLoadConstant(toTruffleStringUncached(mangle(node.attr)));
                 b.endSetAttribute();
                 // }
                 b.endBlock();
@@ -2864,7 +2863,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         private void emitKeywordGroup(KeywordGroup group, boolean copy, BytecodeLocal function) {
             if (group instanceof NamedKeywords namedKeywords) {
-                b.beginMakeDict();
+                b.beginMakeDict(namedKeywords.names.size());
                 for (int i = 0; i < namedKeywords.names.size(); i++) {
                     emitPythonConstant(namedKeywords.names.get(i), b);
                     namedKeywords.values.get(i).accept(this);
@@ -2952,9 +2951,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             public Void visit(ExprTy.Attribute node) {
                 beginSourceSection(node, b);
                 checkForbiddenName(node.attr, NameOperation.BeginWrite);
-                b.beginDeleteAttribute();
+                b.beginDeleteAttribute(toTruffleStringUncached(node.attr));
                 node.value.accept(StatementCompiler.this);
-                b.emitLoadConstant(toTruffleStringUncached(node.attr));
                 b.endDeleteAttribute();
 
                 endSourceSection(b);
@@ -3045,7 +3043,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
             // condition
             b.beginBlock();
-            b.emitTraceLineAtLoopHeader();
+            b.emitTraceLineAtLoopHeader(currentLocation.startLine);
             b.beginForIterate(value);
             b.emitLoadLocal(iter);
             b.endForIterate();
@@ -3184,14 +3182,16 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 ArgTy[] kwOnlyArgs = args.kwOnlyArgs;
 
                 b.beginMakeKeywords();
+                int numKeywords = 0;
                 for (int i = 0; i < args.kwDefaults.length; i++) {
                     // Only emit keywords with default values.
                     if (args.kwDefaults[i] != null) {
                         b.emitLoadConstant(toTruffleStringUncached(mangle(kwOnlyArgs[i].arg)));
                         args.kwDefaults[i].accept(this);
+                        numKeywords++;
                     }
                 }
-                b.endMakeKeywords();
+                b.endMakeKeywords(numKeywords);
             }
 
             if (codeUnit.freevars.length == 0) {
@@ -3213,7 +3213,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
             // __annotations__
             if (annotations != null && annotations.size() > 0) {
-                b.beginMakeDict();
+                b.beginMakeDict(annotations.size());
                 for (ParamAnnotation annotation : annotations) {
                     emitParamAnnotation(annotation);
                 }
@@ -3690,19 +3690,16 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                         errorCallback.onError(ErrorType.Syntax, currentLocation, "too many expressions in star-unpacking sequence pattern");
                     }
                     // If there's a star pattern, emit UnpackEx.
-                    b.beginUnpackEx();
+                    b.beginUnpackEx(i, countAfter);
                     b.emitLoadLocal(pc.subject);
-                    b.emitLoadConstant(i);
-                    b.emitLoadConstant(countAfter);
                     b.endUnpackEx();
                     // Continue in the loop to ensure there are no additional starred patterns.
                 }
             }
             // If there were no star patterns, emit UnpackSequence.
             if (!seenStar) {
-                b.beginUnpackSequence();
+                b.beginUnpackSequence(n);
                 b.emitLoadLocal(pc.subject);
-                b.emitLoadConstant(n);
                 b.endUnpackSequence();
             }
         }
@@ -4349,7 +4346,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             b.beginWhile();
 
             b.beginBlock();
-            b.emitTraceLineAtLoopHeader();
+            b.emitTraceLineAtLoopHeader(currentLocation.startLine);
             visitCondition(node.test);
             b.endBlock();
 
