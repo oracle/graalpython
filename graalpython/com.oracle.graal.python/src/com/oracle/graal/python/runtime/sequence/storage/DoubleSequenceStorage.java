@@ -29,7 +29,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.util.PythonUtils;
 
-public final class DoubleSequenceStorage extends TypedSequenceStorage {
+public final class DoubleSequenceStorage extends ArrayBasedSequenceStorage {
 
     private double[] values;
 

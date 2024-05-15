@@ -128,7 +128,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
-import com.oracle.graal.python.runtime.sequence.storage.TypedSequenceStorage;
 import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -3387,7 +3386,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static Object[] doTypedSequenceStorage(Node inliningTarget, TypedSequenceStorage s,
+        static Object[] doArrayBasedSequenceStorage(Node inliningTarget, ArrayBasedSequenceStorage s,
                         @Cached CopyInternalArrayNode copy) {
             Object[] internalArray = copy.execute(inliningTarget, s);
             assert internalArray.length == s.length();
@@ -3405,7 +3404,7 @@ public abstract class SequenceStorageNodes {
             return PythonUtils.EMPTY_OBJECT_ARRAY;
         }
 
-        @Specialization(replaces = {"doObjectSequenceStorage", "doTypedSequenceStorage", "doNativeObject", "doEmptySequenceStorage"})
+        @Specialization(replaces = {"doObjectSequenceStorage", "doArrayBasedSequenceStorage", "doNativeObject", "doEmptySequenceStorage"})
         static Object[] doGeneric(Node inliningTarget, SequenceStorage s,
                         @Exclusive @Cached GetItemScalarNode getItemNode) {
             return materializeGeneric(inliningTarget, s, s.length(), getItemNode);
@@ -3473,7 +3472,7 @@ public abstract class SequenceStorageNodes {
         protected abstract SequenceStorage execute(Node inliningTarget, SequenceStorage storage, int index, Object value, boolean recursive);
 
         @Specialization
-        protected static SequenceStorage doStorage(EmptySequenceStorage storage, int index, Object value, boolean recursive,
+        protected static SequenceStorage doEmptyStorage(EmptySequenceStorage storage, int index, Object value, boolean recursive,
                         @Shared @Cached(inline = false) InsertItemNode recursiveNode) {
             if (!recursive) {
                 throw CompilerDirectives.shouldNotReachHere();

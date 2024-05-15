@@ -40,7 +40,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(PythonBufferAccessLibrary.class)
-public final class ByteSequenceStorage extends TypedSequenceStorage {
+public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
 
     private byte[] values;
 

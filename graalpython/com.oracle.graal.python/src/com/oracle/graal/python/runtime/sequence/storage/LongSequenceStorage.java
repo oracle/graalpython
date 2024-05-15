@@ -31,7 +31,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.util.PythonUtils;
 
-public final class LongSequenceStorage extends TypedSequenceStorage {
+public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
 
     private long[] values;
 

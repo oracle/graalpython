@@ -29,7 +29,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.util.PythonUtils;
 
-public final class BoolSequenceStorage extends TypedSequenceStorage {
+public final class BoolSequenceStorage extends ArrayBasedSequenceStorage {
 
     private boolean[] values;
 

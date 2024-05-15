@@ -29,7 +29,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.util.PythonUtils;
 
-public final class IntSequenceStorage extends TypedSequenceStorage {
+public final class IntSequenceStorage extends ArrayBasedSequenceStorage {
 
     private int[] values;
 

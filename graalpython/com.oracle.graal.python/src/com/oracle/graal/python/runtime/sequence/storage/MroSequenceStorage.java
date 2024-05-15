@@ -59,7 +59,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
-public final class MroSequenceStorage extends TypedSequenceStorage {
+public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
 
     private final TruffleString className;
     /**
