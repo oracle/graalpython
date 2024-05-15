@@ -2287,11 +2287,13 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         private static void addWeakrefDescrAttribute(PythonClass pythonClass, PythonObjectFactory factory) {
-            Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
-            RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(
-                            l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), GetWeakRefsNode.class,
-                            WeakRefModuleBuiltinsFactory.class);
-            setAttribute(T___WEAKREF__, builtin, callTarget, pythonClass, factory);
+            if (LookupAttributeInMRONode.lookupSlowPath(pythonClass, T___WEAKREF__) == PNone.NO_VALUE) {
+                Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
+                RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(
+                                l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), GetWeakRefsNode.class,
+                                WeakRefModuleBuiltinsFactory.class);
+                setAttribute(T___WEAKREF__, builtin, callTarget, pythonClass, factory);
+            }
         }
 
         private static void setAttribute(TruffleString name, Builtin builtin, RootCallTarget callTarget, PythonClass pythonClass, PythonObjectFactory factory) {

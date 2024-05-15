@@ -52,3 +52,9 @@ def test_evil_getattribute():
     obj = EvilGetattribute()
     assert getattr(obj, "bar") == "original"
     assert getattr(obj, "bar") == "bar"
+
+
+def test_overwrite___weakref__():
+    class C:
+        __weakref__ = 1
+    assert C.__weakref__ == 1
