@@ -8,8 +8,8 @@
 
 #include "capi.h" // GraalPy change
 #include "Python.h"
-#if 0 // GraalPy change
 #include "pycore_call.h"          // _PyObject_CallNoArgs()
+#if 0 // GraalPy change
 #include "pycore_initconfig.h"    // _PyStatus_ERR()
 #endif // GraalPy change
 #include "pycore_pyerrors.h"      // _PyErr_Format()
@@ -68,6 +68,7 @@ _PyErr_GetTopmostException(PyThreadState *tstate)
     }
     return exc_info;
 }
+#endif // GraalPy change
 
 static PyObject*
 _PyErr_CreateException(PyObject *exception_type, PyObject *value)
@@ -94,7 +95,6 @@ _PyErr_CreateException(PyObject *exception_type, PyObject *value)
 
     return exc;
 }
-#endif // GraalPy change
 
 void
 _PyErr_SetObject(PyThreadState *tstate, PyObject *exception, PyObject *value)
@@ -234,9 +234,107 @@ void
 _PyErr_NormalizeException(PyThreadState *tstate, PyObject **exc,
                           PyObject **val, PyObject **tb)
 {
-    // GraalPy change: nothing to do here from our side, the exception is already
-    // reified
+    int recursion_depth = 0;
+    // GraalPy change: we don't have recursion_headroom
+    // tstate->recursion_headroom++;
+    PyObject *type, *value, *initial_tb;
+
+  restart:
+    type = *exc;
+    if (type == NULL) {
+        /* There was no exception, so nothing to do. */
+        // tstate->recursion_headroom--;
+        return;
+    }
+
+    value = *val;
+    /* If PyErr_SetNone() was used, the value will have been actually
+       set to NULL.
+    */
+    if (!value) {
+        value = Py_None;
+        Py_INCREF(value);
+    }
+
+    /* Normalize the exception so that if the type is a class, the
+       value will be an instance.
+    */
+    if (PyExceptionClass_Check(type)) {
+        PyObject *inclass = NULL;
+        int is_subclass = 0;
+
+        if (PyExceptionInstance_Check(value)) {
+            inclass = PyExceptionInstance_Class(value);
+            is_subclass = PyObject_IsSubclass(inclass, type);
+            if (is_subclass < 0) {
+                goto error;
+            }
+        }
+
+        /* If the value was not an instance, or is not an instance
+           whose class is (or is derived from) type, then use the
+           value as an argument to instantiation of the type
+           class.
+        */
+        if (!is_subclass) {
+            PyObject *fixed_value = _PyErr_CreateException(type, value);
+            if (fixed_value == NULL) {
+                goto error;
+            }
+            Py_DECREF(value);
+            value = fixed_value;
+        }
+        /* If the class of the instance doesn't exactly match the
+           class of the type, believe the instance.
+        */
+        else if (inclass != type) {
+            Py_INCREF(inclass);
+            Py_DECREF(type);
+            type = inclass;
+        }
+    }
+    *exc = type;
+    *val = value;
+    // tstate->recursion_headroom--;
     return;
+
+  error:
+    Py_DECREF(type);
+    Py_DECREF(value);
+    recursion_depth++;
+    if (recursion_depth == Py_NORMALIZE_RECURSION_LIMIT) {
+        _PyErr_SetString(tstate, PyExc_RecursionError,
+                         "maximum recursion depth exceeded "
+                         "while normalizing an exception");
+    }
+    /* If the new exception doesn't set a traceback and the old
+       exception had a traceback, use the old traceback for the
+       new exception.  It's better than nothing.
+    */
+    initial_tb = *tb;
+    _PyErr_Fetch(tstate, exc, val, tb);
+    assert(*exc != NULL);
+    if (initial_tb != NULL) {
+        if (*tb == NULL)
+            *tb = initial_tb;
+        else
+            Py_DECREF(initial_tb);
+    }
+    /* Abort when Py_NORMALIZE_RECURSION_LIMIT has been exceeded, and the
+       corresponding RecursionError could not be normalized, and the
+       MemoryError raised when normalize this RecursionError could not be
+       normalized. */
+    if (recursion_depth >= Py_NORMALIZE_RECURSION_LIMIT + 2) {
+        if (PyErr_GivenExceptionMatches(*exc, PyExc_MemoryError)) {
+            Py_FatalError("Cannot recover from MemoryErrors "
+                          "while normalizing exceptions.");
+        }
+        else {
+            Py_FatalError("Cannot recover from the recursive normalization "
+                          "of an exception.");
+        }
+    }
+    goto restart;
 }
 
 
