@@ -184,6 +184,7 @@ import com.oracle.truffle.api.bytecode.BytecodeConfig;
 import com.oracle.truffle.api.bytecode.BytecodeLocation;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.BytecodeRootNode;
+import com.oracle.truffle.api.bytecode.ConstantOperand;
 import com.oracle.truffle.api.bytecode.EpilogExceptional;
 import com.oracle.truffle.api.bytecode.EpilogReturn;
 import com.oracle.truffle.api.bytecode.GenerateBytecode;
@@ -551,29 +552,27 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @InliningCutoff
-    private final void traceLine(VirtualFrame frame, Node location, BytecodeNode bytecode, int bci) {
+    private final void traceLine(VirtualFrame frame, Node location, int line) {
         PythonThreadState threadState = getThreadState();
         InstrumentationData instrumentationData = threadState.getInstrumentationData(this);
 
-        int thisLine = bciToLine(bci, bytecode);
         // We should be executing a new line.
-        assert thisLine != instrumentationData.getPastLine();
-        instrumentationData.setPastLine(thisLine);
+        assert line != instrumentationData.getPastLine();
+        instrumentationData.setPastLine(line);
 
         PFrame pyFrame = ensurePyFrame(frame, location);
         if (pyFrame.getTraceLine()) {
             Object traceFun = threadState.getTraceFun();
             if (traceFun != null) {
-                invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.LINE, null, thisLine);
+                invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.LINE, null, line);
             }
         }
     }
 
     @InliningCutoff
-    private final void traceLineAtLoopHeader(VirtualFrame frame, Node location, BytecodeNode bytecode, int bci) {
+    private final void traceLineAtLoopHeader(VirtualFrame frame, Node location, int line) {
         PythonThreadState threadState = getThreadState();
         InstrumentationData instrumentationData = threadState.getInstrumentationData(this);
-        int thisLine = bciToLine(bci, bytecode);
         int pastLine = instrumentationData.getPastLine();
 
         /**
@@ -583,10 +582,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
          * evaluates. To avoid tracing twice on the first iteration, we need to check our line
          * against pastLine.
          */
-        if (thisLine != pastLine) {
+        if (line != pastLine) {
             Object traceFun = threadState.getTraceFun();
             if (traceFun != null) {
-                invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.LINE, null, thisLine);
+                invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.LINE, null, line);
             }
         }
         /**
@@ -654,26 +653,26 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Instrumentation
+    @ConstantOperand(type = int.class)
     public static final class TraceLine {
         @Specialization
         public static void perform(VirtualFrame frame,
+                        int line,
                         @Bind("this") Node location,
-                        @Bind("$root") PBytecodeDSLRootNode root,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
-            root.traceLine(frame, location, bytecode, bci);
+                        @Bind("$root") PBytecodeDSLRootNode root) {
+            root.traceLine(frame, location, line);
         }
     }
 
     @Instrumentation
+    @ConstantOperand(type = int.class)
     public static final class TraceLineAtLoopHeader {
         @Specialization
         public static void perform(VirtualFrame frame,
+                        int line,
                         @Bind("this") Node location,
-                        @Bind("$root") PBytecodeDSLRootNode root,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
-            root.traceLineAtLoopHeader(frame, location, bytecode, bci);
+                        @Bind("$root") PBytecodeDSLRootNode root) {
+            root.traceLineAtLoopHeader(frame, location, line);
         }
     }
 
@@ -1743,24 +1742,27 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class)
     public static final class GetAttribute {
         @Specialization
         @InliningCutoff
         public static Object doIt(VirtualFrame frame,
-                        Object obj, TruffleString name,
-                        @Cached("name") TruffleString cachedName,
-                        @Cached("create(cachedName)") GetFixedAttributeNode getAttributeNode) {
-            // TODO (GR-52217): make name a DSL constant.
-            assert name == cachedName;
+                        TruffleString name,
+                        Object obj,
+                        @Cached("create(name)") GetFixedAttributeNode getAttributeNode) {
             return getAttributeNode.execute(frame, obj);
         }
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class)
     public static final class SetAttribute {
         @Specialization
         @InliningCutoff
-        public static void doIt(VirtualFrame frame, Object value, Object object, Object key,
+        public static void doIt(VirtualFrame frame,
+                        TruffleString key,
+                        Object value,
+                        Object object,
                         @Cached LookupAndCallTernaryNode call) {
             call.execute(frame, object, key, value);
         }
@@ -1772,10 +1774,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class)
     public static final class DeleteAttribute {
         @Specialization
         @InliningCutoff
-        public static Object doObject(VirtualFrame frame, Object object, Object key,
+        public static Object doObject(VirtualFrame frame,
+                        TruffleString key,
+                        Object object,
                         @Cached LookupAndCallBinaryNode call) {
             return call.executeObject(frame, object, key);
         }
@@ -1862,7 +1867,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached(value = "elements.length", neverDefault = false) int length,
                         @Cached SetNodes.AddNode addNode,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode) {
-            // TODO (GR-52217): make length a DSL constant.
             assert elements.length == length;
 
             PSet set = rootNode.factory.createSet();
@@ -1899,16 +1903,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
     public static final class MakeFrozenSet {
         @Specialization
-        public static PFrozenSet perform(VirtualFrame frame, @Variadic Object[] elements,
-                        @Cached(value = "elements.length", neverDefault = false) int length,
+        public static PFrozenSet perform(VirtualFrame frame,
+                        int length,
+                        @Variadic Object[] elements,
                         @Cached HashingStorageSetItem hashingStorageLibrary,
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
                         @Bind("this") Node inliningTarget) {
-            // TODO (GR-52217): make length a DSL constant.
-            assert elements.length == length;
-
             HashingStorage setStorage;
             if (length <= EXPLODE_LOOP_THRESHOLD) {
                 setStorage = doExploded(frame, inliningTarget, elements, length, hashingStorageLibrary);
@@ -1954,7 +1957,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static Object perform(@Variadic Object[] elements,
                         @Cached(value = "elements.length", neverDefault = false) int length,
                         @Bind("$root") PBytecodeDSLRootNode rootNode) {
-            // TODO (GR-52217): make length a DSL constant.
             assert elements.length == length;
 
             Object[] elts;
@@ -2139,37 +2141,33 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int.class, specifyAtEnd = true)
     public static final class MakeKeywords {
         @Specialization
-        public static PKeyword[] perform(@Variadic Object[] keysAndValues,
-                        @Cached(value = "keysAndValues.length", neverDefault = true) int length) {
-            // TODO (GR-52217): make length a DSL constant.
-            assert keysAndValues.length == length;
-            assert length % 2 == 0;
-
-            if (length <= EXPLODE_LOOP_THRESHOLD) {
-                return doExploded(keysAndValues, length);
+        public static PKeyword[] perform(@Variadic Object[] keysAndValues, int entries) {
+            if (entries <= EXPLODE_LOOP_THRESHOLD) {
+                return doExploded(keysAndValues, entries);
             } else {
-                return doRegular(keysAndValues, length);
+                return doRegular(keysAndValues, entries);
             }
         }
 
         @ExplodeLoop
-        private static PKeyword[] doExploded(Object[] keysAndValues, int length) {
-            CompilerAsserts.partialEvaluationConstant(length);
-            PKeyword[] result = new PKeyword[length / 2];
-            for (int i = 0; i < length; i += 2) {
-                CompilerAsserts.compilationConstant(keysAndValues[i]);
-                result[i / 2] = new PKeyword((TruffleString) keysAndValues[i], keysAndValues[i + 1]);
+        private static PKeyword[] doExploded(Object[] keysAndValues, int entries) {
+            CompilerAsserts.partialEvaluationConstant(entries);
+            PKeyword[] result = new PKeyword[entries];
+            for (int i = 0; i < entries; i++) {
+                CompilerAsserts.compilationConstant(keysAndValues[i * 2]);
+                result[i] = new PKeyword((TruffleString) keysAndValues[i * 2], keysAndValues[i * 2 + 1]);
             }
             return result;
         }
 
-        private static PKeyword[] doRegular(Object[] keysAndValues, int length) {
-            PKeyword[] result = new PKeyword[length / 2];
-            for (int i = 0; i < length; i += 2) {
-                CompilerAsserts.compilationConstant(keysAndValues[i]);
-                result[i / 2] = new PKeyword((TruffleString) keysAndValues[i], keysAndValues[i + 1]);
+        private static PKeyword[] doRegular(Object[] keysAndValues, int entries) {
+            PKeyword[] result = new PKeyword[entries];
+            for (int i = 0; i < entries; i++) {
+                CompilerAsserts.compilationConstant(keysAndValues[i * 2]);
+                result[i] = new PKeyword((TruffleString) keysAndValues[i * 2], keysAndValues[i * 2 + 1]);
             }
             return result;
         }
@@ -2187,30 +2185,29 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
     public static final class MakeDict {
         @Specialization
-        public static PDict perform(VirtualFrame frame, @Variadic Object[] keysAndValues,
+        public static PDict perform(VirtualFrame frame,
+                        int entries,
+                        @Variadic Object[] keysAndValues,
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
-                        @Cached(value = "keysAndValues.length", neverDefault = true) int length,
                         @Cached DictNodes.UpdateNode updateNode) {
-            // TODO (GR-52217): make length a DSL constant.
-            assert keysAndValues.length == length;
-
             PDict dict = rootNode.factory.createDict();
-            if (length <= EXPLODE_LOOP_THRESHOLD) {
-                doExploded(frame, keysAndValues, length, updateNode, dict);
+            if (entries <= EXPLODE_LOOP_THRESHOLD) {
+                doExploded(frame, keysAndValues, entries, updateNode, dict);
             } else {
-                doRegular(frame, keysAndValues, length, updateNode, dict);
+                doRegular(frame, keysAndValues, entries, updateNode, dict);
             }
             return dict;
         }
 
         @ExplodeLoop
-        private static void doExploded(VirtualFrame frame, Object[] keysAndValues, int length, DictNodes.UpdateNode updateNode, PDict dict) {
-            CompilerAsserts.partialEvaluationConstant(length);
-            for (int i = 0; i < length; i += 2) {
-                Object key = keysAndValues[i];
-                Object value = keysAndValues[i + 1];
+        private static void doExploded(VirtualFrame frame, Object[] keysAndValues, int entries, DictNodes.UpdateNode updateNode, PDict dict) {
+            CompilerAsserts.partialEvaluationConstant(entries);
+            for (int i = 0; i < entries; i++) {
+                Object key = keysAndValues[i * 2];
+                Object value = keysAndValues[i * 2 + 1];
                 if (key == PNone.NO_VALUE) {
                     updateNode.execute(frame, dict, value);
                 } else {
@@ -2219,10 +2216,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             }
         }
 
-        private static void doRegular(VirtualFrame frame, Object[] keysAndValues, int length, DictNodes.UpdateNode updateNode, PDict dict) {
-            for (int i = 0; i < length; i += 2) {
-                Object key = keysAndValues[i];
-                Object value = keysAndValues[i + 1];
+        private static void doRegular(VirtualFrame frame, Object[] keysAndValues, int entries, DictNodes.UpdateNode updateNode, PDict dict) {
+            for (int i = 0; i < entries; i++) {
+                Object key = keysAndValues[i * 2];
+                Object value = keysAndValues[i * 2 + 1];
                 if (key == PNone.NO_VALUE) {
                     updateNode.execute(frame, dict, value);
                 } else {
@@ -2369,13 +2366,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
     @ImportStatic({PGuards.class})
     @SuppressWarnings("truffle-interpreted-performance")
     public static final class UnpackStarredToLocals {
         @Specialization(guards = {"cannotBeOverridden(sequence, inliningTarget, getClassNode)", "!isPString(sequence)"}, limit = "1")
-        public static void doUnpackSequence(VirtualFrame localFrame, PSequence sequence, int starIndex,
+        public static void doUnpackSequence(VirtualFrame localFrame,
+                        int starIndex,
+                        PSequence sequence,
                         LocalSetterRange results,
-                        @Shared @Cached(value = "starIndex", neverDefault = false) int cachedStarIndex,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
@@ -2384,12 +2383,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
-            // TODO (GR-52217): make starIndex a DSL constant.
-            assert starIndex == cachedStarIndex;
-
             int resultsLength = results.getLength();
-            int countBefore = cachedStarIndex;
-            int countAfter = resultsLength - cachedStarIndex - 1;
+            int countBefore = starIndex;
+            int countAfter = resultsLength - starIndex - 1;
 
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, sequence);
             int len = storage.length();
@@ -2402,15 +2398,16 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
             moveItemsToStack(storage, localFrame, inliningTarget, results, 0, 0, countBefore, getItemNode);
             PList starList = rootNode.factory.createList(getItemSliceNode.execute(storage, countBefore, countBefore + starLen, 1, starLen));
-            results.setObject(localFrame, cachedStarIndex, starList);
-            moveItemsToStack(storage, localFrame, inliningTarget, results, cachedStarIndex + 1, len - countAfter, countAfter, getItemNode);
+            results.setObject(localFrame, starIndex, starList);
+            moveItemsToStack(storage, localFrame, inliningTarget, results, starIndex + 1, len - countAfter, countAfter, getItemNode);
         }
 
         @Specialization
         @InliningCutoff
-        public static void doUnpackIterable(VirtualFrame frame, Object collection, int starIndex,
+        public static void doUnpackIterable(VirtualFrame frame,
+                        int starIndex,
+                        Object collection,
                         LocalSetterRange results,
-                        @Shared @Cached(value = "starIndex", neverDefault = false) int cachedStarIndex,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
@@ -2421,12 +2418,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
-            // TODO (GR-52217): make starIndex a DSL constant.
-            assert starIndex == cachedStarIndex;
-
             int resultsLength = results.getLength();
-            int countBefore = cachedStarIndex;
-            int countAfter = resultsLength - cachedStarIndex - 1;
+            int countBefore = starIndex;
+            int countAfter = resultsLength - starIndex - 1;
 
             Object iterator;
             try {
@@ -2445,13 +2439,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, countBefore + lenAfter);
             }
             if (countAfter == 0) {
-                results.setObject(frame, cachedStarIndex, starAndAfter);
+                results.setObject(frame, starIndex, starAndAfter);
             } else {
                 int starLen = lenAfter - countAfter;
                 PList starList = rootNode.factory.createList(getItemSliceNode.execute(storage, 0, starLen, 1, starLen));
-                results.setObject(frame, cachedStarIndex, starList);
+                results.setObject(frame, starIndex, starList);
 
-                moveItemsToStack(storage, frame, inliningTarget, results, cachedStarIndex + 1, starLen, countAfter, getItemNode);
+                moveItemsToStack(storage, frame, inliningTarget, results, starIndex + 1, starLen, countAfter, getItemNode);
             }
         }
 
@@ -3130,13 +3124,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * Flattens an array of arrays. Used for splatting Starred expressions.
      */
     @Operation
+    @ConstantOperand(type = int.class, specifyAtEnd = true)
     public static final class Unstar {
         @Specialization
         public static Object[] perform(@Variadic Object[] values,
-                        @Cached(value = "values.length", neverDefault = false) int length) {
-            // TODO (GR-52217): make length a DSL constant.
-            assert values.length == length;
-
+                        int length) {
             if (length <= EXPLODE_LOOP_THRESHOLD) {
                 return doExploded(values, length);
             } else {
@@ -3254,33 +3246,32 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
     @ImportStatic({PGuards.class})
     public static final class UnpackSequence {
         @Specialization(guards = {"cannotBeOverridden(sequence, inliningTarget, getClassNode)", "!isPString(sequence)"}, limit = "1")
         @ExplodeLoop
-        public static Object[] doUnpackSequence(VirtualFrame localFrame, PSequence sequence, int count,
+        public static Object[] doUnpackSequence(VirtualFrame localFrame,
+                        int count,
+                        PSequence sequence,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached(value = "count", neverDefault = false) int cachedCount,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Shared @Cached PRaiseNode raiseNode) {
-            // TODO (GR-52217): make count a DSL constant.
-            assert count == cachedCount;
-
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, sequence);
             int len = storage.length();
-            if (len == cachedCount) {
+            if (len == count) {
                 Object[] result = new Object[len];
-                for (int i = 0; i < cachedCount; i++) {
+                for (int i = 0; i < count; i++) {
                     result[i] = getItemNode.execute(inliningTarget, storage, i);
                 }
                 return result;
             } else {
-                if (len < cachedCount) {
-                    throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, cachedCount, len);
+                if (len < count) {
+                    throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, len);
                 } else {
-                    throw raiseNode.raise(ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, cachedCount);
+                    throw raiseNode.raise(ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);
                 }
             }
         }
@@ -3288,8 +3279,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         @ExplodeLoop
         @InliningCutoff
-        public static Object[] doUnpackIterable(VirtualFrame virtualFrame, Object collection, int count,
-                        @Shared @Cached(value = "count", neverDefault = false) int cachedCount,
+        public static Object[] doUnpackIterable(VirtualFrame virtualFrame,
+                        int count,
+                        Object collection,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
@@ -3297,9 +3289,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached IsBuiltinObjectProfile stopIterationProfile2,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
-            // TODO (GR-52217): make count a DSL constant.
-            assert count == cachedCount;
-
             Object iterator;
             try {
                 iterator = getIter.execute(virtualFrame, inliningTarget, collection);
@@ -3308,13 +3297,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
             }
 
-            Object[] result = new Object[cachedCount];
-            for (int i = 0; i < cachedCount; i++) {
+            Object[] result = new Object[count];
+            for (int i = 0; i < count; i++) {
                 try {
                     result[i] = getNextNode.execute(virtualFrame, iterator);
                 } catch (PException e) {
                     e.expectStopIteration(inliningTarget, stopIterationProfile1);
-                    throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, cachedCount, i);
+                    throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, i);
                 }
             }
             try {
@@ -3323,48 +3312,48 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 e.expectStopIteration(inliningTarget, stopIterationProfile2);
                 return result;
             }
-            throw raiseNode.raise(ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, cachedCount);
+            throw raiseNode.raise(ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);
         }
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
+    @ConstantOperand(type = int.class)
     @ImportStatic({PGuards.class})
     public static final class UnpackEx {
         @Specialization(guards = {"cannotBeOverridden(sequence, inliningTarget, getClassNode)", "!isPString(sequence)"}, limit = "1")
-        public static Object[] doUnpackSequence(VirtualFrame localFrame, PSequence sequence, int countBefore, int countAfter,
+        public static Object[] doUnpackSequence(VirtualFrame localFrame,
+                        int countBefore,
+                        int countAfter,
+                        PSequence sequence,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached(value = "countBefore", neverDefault = false) int cachedCountBefore,
-                        @Shared @Cached(value = "countAfter", neverDefault = false) int cachedCountAfter,
                         @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Exclusive @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
                         @Shared @Cached PythonObjectFactory factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            // TODO (GR-52217): make countBefore and countAfter DSL constants.
-            assert countBefore == cachedCountBefore;
-            assert countAfter == cachedCountAfter;
-
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, sequence);
             int len = storage.length();
-            int starLen = len - cachedCountBefore - cachedCountAfter;
+            int starLen = len - countBefore - countAfter;
             if (starLen < 0) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, cachedCountBefore + cachedCountAfter, len);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, len);
             }
 
-            Object[] result = new Object[cachedCountBefore + 1 + cachedCountAfter];
-            copyItemsToArray(inliningTarget, storage, 0, result, 0, cachedCountBefore, getItemNode);
-            result[cachedCountBefore] = factory.createList(getItemSliceNode.execute(storage, cachedCountBefore, cachedCountBefore + starLen, 1, starLen));
-            copyItemsToArray(inliningTarget, storage, len - cachedCountAfter, result, cachedCountBefore + 1, cachedCountAfter, getItemNode);
+            Object[] result = new Object[countBefore + 1 + countAfter];
+            copyItemsToArray(inliningTarget, storage, 0, result, 0, countBefore, getItemNode);
+            result[countBefore] = factory.createList(getItemSliceNode.execute(storage, countBefore, countBefore + starLen, 1, starLen));
+            copyItemsToArray(inliningTarget, storage, len - countAfter, result, countBefore + 1, countAfter, getItemNode);
             return result;
         }
 
         @Specialization
         @InliningCutoff
-        public static Object[] doUnpackIterable(VirtualFrame virtualFrame, Object collection, int countBefore, int countAfter,
+        public static Object[] doUnpackIterable(VirtualFrame virtualFrame,
+                        int countBefore,
+                        int countAfter,
+                        Object collection,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached(value = "countBefore", neverDefault = false) int cachedCountBefore,
-                        @Shared @Cached(value = "countAfter", neverDefault = false) int cachedCountAfter,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
@@ -3374,10 +3363,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Exclusive @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
                         @Shared @Cached PythonObjectFactory factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            // TODO (GR-52217): make countBefore and countAfter DSL constants.
-            assert countBefore == cachedCountBefore;
-            assert countAfter == cachedCountAfter;
-
             Object iterator;
             try {
                 iterator = getIter.execute(virtualFrame, inliningTarget, collection);
@@ -3386,21 +3371,21 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
             }
 
-            Object[] result = new Object[cachedCountBefore + 1 + cachedCountAfter];
-            copyItemsToArray(virtualFrame, inliningTarget, iterator, result, 0, cachedCountBefore, cachedCountBefore + cachedCountAfter, getNextNode, stopIterationProfile, raiseNode);
+            Object[] result = new Object[countBefore + 1 + countAfter];
+            copyItemsToArray(virtualFrame, inliningTarget, iterator, result, 0, countBefore, countBefore + countAfter, getNextNode, stopIterationProfile, raiseNode);
             PList starAndAfter = constructListNode.execute(virtualFrame, iterator);
             SequenceStorage storage = starAndAfter.getSequenceStorage();
             int lenAfter = storage.length();
-            if (lenAfter < cachedCountAfter) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, cachedCountBefore + cachedCountAfter, cachedCountBefore + lenAfter);
+            if (lenAfter < countAfter) {
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, countBefore + lenAfter);
             }
-            if (cachedCountAfter == 0) {
-                result[cachedCountBefore] = starAndAfter;
+            if (countAfter == 0) {
+                result[countBefore] = starAndAfter;
             } else {
-                int starLen = lenAfter - cachedCountAfter;
+                int starLen = lenAfter - countAfter;
                 PList starList = factory.createList(getItemSliceNode.execute(storage, 0, starLen, 1, starLen));
-                result[cachedCountBefore] = starList;
-                copyItemsToArray(inliningTarget, storage, starLen, result, cachedCountBefore + 1, cachedCountAfter, getItemNode);
+                result[countBefore] = starList;
+                copyItemsToArray(inliningTarget, storage, starLen, result, countBefore + 1, countAfter, getItemNode);
             }
             return result;
         }
@@ -3662,17 +3647,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
     public static final class BuildString {
         @Specialization
-        public static Object perform(@Variadic Object[] strings,
-                        @Cached(value = "strings.length", neverDefault = false) int length,
+        public static Object perform(
+                        int length,
+                        @Variadic Object[] strings,
                         @Cached TruffleStringBuilder.AppendStringNode appendNode,
                         @Cached TruffleStringBuilder.ToStringNode toString) {
-            // TODO (GR-52217): make length a DSL constant.
-            assert strings.length == length;
-
             TruffleStringBuilder tsb = TruffleStringBuilder.create(PythonUtils.TS_ENCODING);
-
             if (length <= EXPLODE_LOOP_THRESHOLD) {
                 doExploded(strings, length, appendNode, tsb);
             } else {
