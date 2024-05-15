@@ -364,7 +364,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         this.extractFilter = extractFilter;
         if (extractFilter != null) {
             try {
-                this.extractDir = Files.createTempDirectory("vfsx");
+                this.extractDir = Files.createTempDirectory("org.graalvm.python.vfsx");
                 this.deleteTempDir = new DeleteTempDir(this.extractDir);
                 Runtime.getRuntime().addShutdownHook(deleteTempDir);
             } catch (IOException e) {
