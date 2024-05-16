@@ -932,7 +932,7 @@ public final class PythonCextBuiltins {
      * marked with this annotation. The information in the annotation allows code generation,
      * argument conversions (based on {@link ArgDescriptor}s), and verification of the C API
      * implementation in general.
-     *
+     * <p>
      * Apart from being placed on classes that implement {@link CApiBuiltinNode}, this annotation is
      * also used in {@link CApiFunction} to list all functions that are implemented in C code or
      * that are not currently implemented.
@@ -1058,7 +1058,7 @@ public final class PythonCextBuiltins {
          * custom slots at a time where the C API is not yet loaded. So we need to check if any of
          * the base classes defines custom slots and adapt the basicsize to allocate space for the
          * slots and add the native member slot descriptors.
-         * 
+         * <p>
          * Additionally, at this point the native slots have been inherited on the native side, here
          * we transfer the result of that inheritance process to the slots mirror on the managed
          * side.
@@ -1609,8 +1609,8 @@ public final class PythonCextBuiltins {
         static Object doNative(Object weakCandidates,
                         @Bind("this") Node inliningTarget,
                         @Cached CoerceNativePointerToLongNode coerceToLongNode,
-                        @Cached(inline = false) CStructAccess.ReadI64Node readI64Node,
-                        @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
+                        @Cached CStructAccess.ReadI64Node readI64Node,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached NativePtrToPythonWrapperNode nativePtrToPythonWrapperNode,
                         @Cached UpdateRefNode updateRefNode) {
             // guaranteed by the guard

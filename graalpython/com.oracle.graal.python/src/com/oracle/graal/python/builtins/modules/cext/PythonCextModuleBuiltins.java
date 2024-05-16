@@ -272,8 +272,8 @@ public final class PythonCextModuleBuiltins {
                         @Cached EnsureExecutableNode ensureExecutableNode,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached ExternalFunctionInvokeNode externalFunctionInvokeNode,
-                        @Cached(inline = false) CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode) {
+                        @Cached CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode,
+                        @Cached PythonToNativeNode toNativeNode) {
 
             /*
              * As in 'moduleobject.c: module_traverse': 'if (m->md_def && m->md_def->m_traverse &&

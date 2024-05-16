@@ -915,7 +915,7 @@ public abstract class CApiTransitions {
                         @Exclusive @Cached InlinedConditionProfile isGcProfile,
                         @Exclusive @Cached InlinedConditionProfile isFloatObjectProfile,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetTypeFlagsNode getTypeFlagsNode,
+                        @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
                         @Exclusive @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
 
             assert !(wrapper instanceof TruffleObjectNativeWrapper);
@@ -1665,7 +1665,7 @@ public abstract class CApiTransitions {
 
         @Specialization
         static Object doLong(Node inliningTarget, long pointer,
-                        @Cached CStructAccess.ReadI32Node readI32Node,
+                        @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedBranchProfile isNativeProfile,
                         @Cached InlinedConditionProfile isNativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile) {
