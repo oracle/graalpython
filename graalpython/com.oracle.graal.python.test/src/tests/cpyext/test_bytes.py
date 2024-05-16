@@ -517,6 +517,27 @@ class TestPyBytes(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_set_size = CPyExtFunction(
+        lambda args: b'1234',
+        lambda: ((),),
+        code="""
+        PyObject* set_size() {
+            PyObject* output = PyBytes_FromStringAndSize(NULL, 50);
+            if (output == NULL)
+                return NULL;
+            char* s = PyBytes_AsString(output);
+            memcpy(s, "1234", 4);
+            Py_SET_SIZE(output, 4);
+            return output;
+        }
+        """,
+        resultspec="O",
+        argspec="",
+        arguments=[],
+        callfunction="set_size",
+        cmpfunc=unhandled_error_compare
+    )
+
 
 class ObjectTests(unittest.TestCase):
     def test_create_from_buffer(self):
