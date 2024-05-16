@@ -1652,78 +1652,85 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = LocalSetter.class)
     public static final class ForIterate {
 
         @Specialization
-        public static boolean doIntegerSequence(VirtualFrame frame, PIntegerSequenceIterator iterator,
-                        LocalSetter output) {
-            return doInteger(frame, iterator, output);
+        public static boolean doIntegerSequence(VirtualFrame frame, LocalSetter output, PIntegerSequenceIterator iterator,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
+            return doInteger(frame, output, iterator, bytecode, bci);
         }
 
         @Specialization
-        public static boolean doIntRange(VirtualFrame frame, PIntRangeIterator iterator,
-                        LocalSetter output) {
-            return doInteger(frame, iterator, output);
+        public static boolean doIntRange(VirtualFrame frame, LocalSetter output, PIntRangeIterator iterator,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
+            return doInteger(frame, output, iterator, bytecode, bci);
         }
 
-        private static boolean doInteger(VirtualFrame frame, PIntegerIterator iterator,
-                        LocalSetter output) {
+        private static boolean doInteger(VirtualFrame frame, LocalSetter output,
+                        PIntegerIterator iterator, BytecodeNode bytecode, int bci) {
             if (!iterator.hasNext()) {
                 iterator.setExhausted();
                 return false;
             }
-            output.setInt(frame, iterator.next());
+            output.setInt(bytecode, bci, frame, iterator.next());
             return true;
         }
 
         @Specialization
-        public static boolean doObjectIterator(VirtualFrame frame, PObjectSequenceIterator iterator,
-                        LocalSetter output) {
+        public static boolean doObjectIterator(VirtualFrame frame, LocalSetter output, PObjectSequenceIterator iterator,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
             if (!iterator.hasNext()) {
                 iterator.setExhausted();
-                output.setObject(frame, null);
+                output.setObject(bytecode, bci, frame, null);
                 return false;
             }
             Object value = iterator.next();
-            output.setObject(frame, value);
+            output.setObject(bytecode, bci, frame, value);
             return value != null;
         }
 
         @Specialization
-        public static boolean doLongIterator(VirtualFrame frame, PLongSequenceIterator iterator,
-                        LocalSetter output) {
+        public static boolean doLongIterator(VirtualFrame frame, LocalSetter output, PLongSequenceIterator iterator,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
             if (!iterator.hasNext()) {
                 iterator.setExhausted();
                 return false;
             }
-            output.setLong(frame, iterator.next());
+            output.setLong(bytecode, bci, frame, iterator.next());
             return true;
         }
 
         @Specialization
-        public static boolean doDoubleIterator(VirtualFrame frame, PDoubleSequenceIterator iterator,
-                        LocalSetter output) {
+        public static boolean doDoubleIterator(VirtualFrame frame, LocalSetter output, PDoubleSequenceIterator iterator,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
             if (!iterator.hasNext()) {
                 iterator.setExhausted();
                 return false;
             }
-            output.setDouble(frame, iterator.next());
+            output.setDouble(bytecode, bci, frame, iterator.next());
             return true;
         }
 
         @Specialization
         @InliningCutoff
-        public static boolean doIterator(VirtualFrame frame, Object object,
-                        LocalSetter output,
+        public static boolean doIterator(VirtualFrame frame, LocalSetter output, Object object,
                         @Bind("this") Node inliningTarget,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci,
                         @Cached GetNextNode next,
                         @Cached IsBuiltinObjectProfile errorProfile) {
             try {
                 Object value = next.execute(frame, object);
-                output.setObject(frame, value);
+                output.setObject(bytecode, bci, frame, value);
                 return value != null;
             } catch (PException e) {
-                output.setObject(frame, null);
+                output.setObject(bytecode, bci, frame, null);
                 e.expectStopIteration(inliningTarget, errorProfile);
                 return false;
             }
@@ -2293,13 +2300,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = LocalSetterRange.class)
     @ImportStatic({PGuards.class})
     public static final class UnpackToLocals {
         @Specialization(guards = {"cannotBeOverridden(sequence, inliningTarget, getClassNode)", "!isPString(sequence)"}, limit = "1")
         @ExplodeLoop
-        public static void doUnpackSequence(VirtualFrame localFrame, PSequence sequence,
-                        LocalSetterRange results,
+        public static void doUnpackSequence(VirtualFrame localFrame, LocalSetterRange results, PSequence sequence,
                         @Bind("this") Node inliningTarget,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
@@ -2313,7 +2322,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
             if (len == count) {
                 for (int i = 0; i < count; i++) {
-                    results.setObject(localFrame, i, getItemNode.execute(inliningTarget, storage, i));
+                    results.setObject(bytecode, bci, localFrame, i, getItemNode.execute(inliningTarget, storage, i));
                 }
             } else {
                 errorProfile.enter(inliningTarget);
@@ -2328,9 +2337,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         @ExplodeLoop
         @InliningCutoff
-        public static void doUnpackIterable(VirtualFrame virtualFrame, Object collection,
-                        LocalSetterRange results,
+        public static void doUnpackIterable(VirtualFrame virtualFrame, LocalSetterRange results, Object collection,
                         @Bind("this") Node inliningTarget,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
@@ -2349,7 +2359,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             }
             for (int i = 0; i < count; i++) {
                 try {
-                    results.setObject(virtualFrame, i, getNextNode.execute(virtualFrame, iterator));
+                    results.setObject(bytecode, bci, virtualFrame, i, getNextNode.execute(virtualFrame, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(inliningTarget, stopIterationProfile1);
                     throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, i);
@@ -2367,20 +2377,23 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation
     @ConstantOperand(type = int.class)
+    @ConstantOperand(type = LocalSetterRange.class)
     @ImportStatic({PGuards.class})
     @SuppressWarnings("truffle-interpreted-performance")
     public static final class UnpackStarredToLocals {
         @Specialization(guards = {"cannotBeOverridden(sequence, inliningTarget, getClassNode)", "!isPString(sequence)"}, limit = "1")
         public static void doUnpackSequence(VirtualFrame localFrame,
                         int starIndex,
-                        PSequence sequence,
                         LocalSetterRange results,
+                        PSequence sequence,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Shared @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
                         @Cached InlinedBranchProfile errorProfile,
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             int resultsLength = results.getLength();
@@ -2396,18 +2409,18 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, len);
             }
 
-            moveItemsToStack(storage, localFrame, inliningTarget, results, 0, 0, countBefore, getItemNode);
+            copyToLocalsFromSequence(storage, 0, 0, countBefore, results, localFrame, inliningTarget, bytecode, bci, getItemNode);
             PList starList = rootNode.factory.createList(getItemSliceNode.execute(storage, countBefore, countBefore + starLen, 1, starLen));
-            results.setObject(localFrame, starIndex, starList);
-            moveItemsToStack(storage, localFrame, inliningTarget, results, starIndex + 1, len - countAfter, countAfter, getItemNode);
+            results.setObject(bytecode, bci, localFrame, starIndex, starList);
+            copyToLocalsFromSequence(storage, starIndex + 1, len - countAfter, countAfter, results, localFrame, inliningTarget, bytecode, bci, getItemNode);
         }
 
         @Specialization
         @InliningCutoff
         public static void doUnpackIterable(VirtualFrame frame,
                         int starIndex,
-                        Object collection,
                         LocalSetterRange results,
+                        Object collection,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
@@ -2416,6 +2429,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Shared @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             int resultsLength = results.getLength();
@@ -2430,7 +2445,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
             }
 
-            moveItemsToStack(frame, inliningTarget, iterator, results, 0, 0, countBefore, countBefore + countAfter, getNextNode, stopIterationProfile, raiseNode);
+            copyToLocalsFromIterator(iterator, countBefore, results, frame, inliningTarget, bytecode, bci, countBefore + countAfter, getNextNode, stopIterationProfile, raiseNode);
 
             PList starAndAfter = constructListNode.execute(frame, iterator);
             SequenceStorage storage = starAndAfter.getSequenceStorage();
@@ -2439,37 +2454,39 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, countBefore + lenAfter);
             }
             if (countAfter == 0) {
-                results.setObject(frame, starIndex, starAndAfter);
+                results.setObject(bytecode, bci, frame, starIndex, starAndAfter);
             } else {
                 int starLen = lenAfter - countAfter;
                 PList starList = rootNode.factory.createList(getItemSliceNode.execute(storage, 0, starLen, 1, starLen));
-                results.setObject(frame, starIndex, starList);
+                results.setObject(bytecode, bci, frame, starIndex, starList);
 
-                moveItemsToStack(storage, frame, inliningTarget, results, starIndex + 1, starLen, countAfter, getItemNode);
+                copyToLocalsFromSequence(storage, starIndex + 1, starLen, countAfter, results, frame, inliningTarget, bytecode, bci, getItemNode);
             }
         }
 
         @ExplodeLoop
-        private static void moveItemsToStack(VirtualFrame frame, Node self, Object iterator, LocalSetterRange results, int resultsOffset, int offset, int length, int totalLength,
-                        GetNextNode getNextNode, IsBuiltinObjectProfile stopIterationProfile, PRaiseNode raiseNode) {
+        private static void copyToLocalsFromIterator(Object iterator, int length, LocalSetterRange results,
+                        VirtualFrame frame, Node inliningTarget, BytecodeNode bytecode, int bci,
+                        int requiredLength, GetNextNode getNextNode, IsBuiltinObjectProfile stopIterationProfile, PRaiseNode raiseNode) {
             CompilerAsserts.partialEvaluationConstant(length);
             for (int i = 0; i < length; i++) {
                 try {
                     Object item = getNextNode.execute(frame, iterator);
-                    results.setObject(frame, resultsOffset + i, item);
+                    results.setObject(bytecode, bci, frame, i, item);
                 } catch (PException e) {
-                    e.expectStopIteration(self, stopIterationProfile);
-                    throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, totalLength, offset + i);
+                    e.expectStopIteration(inliningTarget, stopIterationProfile);
+                    throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, requiredLength, i);
                 }
             }
         }
 
         @ExplodeLoop
-        private static void moveItemsToStack(SequenceStorage storage, VirtualFrame localFrame, Node inliningTarget, LocalSetterRange run, int runOffset, int offset, int length,
+        private static void copyToLocalsFromSequence(SequenceStorage storage, int runOffset, int offset, int length, LocalSetterRange run,
+                        VirtualFrame localFrame, Node inliningTarget, BytecodeNode bytecode, int bci,
                         SequenceStorageNodes.GetItemScalarNode getItemNode) {
             CompilerAsserts.partialEvaluationConstant(length);
             for (int i = 0; i < length; i++) {
-                run.setObject(localFrame, runOffset + i, getItemNode.execute(inliningTarget, storage, offset + i));
+                run.setObject(bytecode, bci, localFrame, runOffset + i, getItemNode.execute(inliningTarget, storage, offset + i));
             }
         }
     }
@@ -3066,10 +3083,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = LocalSetter.class)
     public static final class ClearLocal {
         @Specialization
-        public static void doClearLocal(VirtualFrame frame, LocalSetter localSetter) {
-            localSetter.setObject(frame, null);
+        public static void doClearLocal(VirtualFrame frame, LocalSetter localSetter,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
+            localSetter.setObject(bytecode, bci, frame, null);
         }
     }
 
@@ -3082,32 +3102,34 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = LocalSetterRange.class)
     public static final class StoreRange {
         @Specialization
-        public static void perform(VirtualFrame frame, Object[] values,
-                        LocalSetterRange locals) {
+        public static void perform(VirtualFrame frame, LocalSetterRange locals, Object[] values,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
             if (values.length <= EXPLODE_LOOP_THRESHOLD) {
-                doExploded(frame, values, locals);
+                doExploded(frame, locals, values, bytecode, bci);
             } else {
-                doRegular(frame, values, locals);
+                doRegular(frame, locals, values, bytecode, bci);
             }
         }
 
         @ExplodeLoop
-        private static void doExploded(VirtualFrame frame, Object[] values,
-                        LocalSetterRange locals) {
+        private static void doExploded(VirtualFrame frame, LocalSetterRange locals, Object[] values,
+                        BytecodeNode bytecode, int bci) {
             CompilerAsserts.partialEvaluationConstant(values.length);
             assert values.length == locals.getLength();
-            for (int i = 0; i < locals.length; i++) {
-                locals.setObject(frame, i, values[i]);
+            for (int i = 0; i < values.length; i++) {
+                locals.setObject(bytecode, bci, frame, i, values[i]);
             }
         }
 
-        private static void doRegular(VirtualFrame frame, Object[] values,
-                        LocalSetterRange locals) {
+        private static void doRegular(VirtualFrame frame, LocalSetterRange locals, Object[] values,
+                        BytecodeNode bytecode, int bci) {
             assert values.length == locals.getLength();
-            for (int i = 0; i < locals.length; i++) {
-                locals.setObject(frame, i, values[i]);
+            for (int i = 0; i < values.length; i++) {
+                locals.setObject(bytecode, bci, frame, i, values[i]);
             }
         }
     }
@@ -3480,14 +3502,19 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = LocalSetter.class)
+    @ConstantOperand(type = LocalSetter.class)
     @ImportStatic({SpecialMethodSlot.class})
     public static final class ContextManagerEnter {
         @Specialization
         @InliningCutoff
-        public static void doEnter(VirtualFrame frame, Object contextManager,
+        public static void doEnter(VirtualFrame frame,
                         LocalSetter exitSetter,
                         LocalSetter resultSetter,
+                        Object contextManager,
                         @Bind("this") Node inliningTarget,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci,
                         @Cached GetClassNode getClass,
                         @Cached(parameters = "Enter") LookupSpecialMethodSlotNode lookupEnter,
                         @Cached(parameters = "Exit") LookupSpecialMethodSlotNode lookupExit,
@@ -3503,8 +3530,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.N_OBJECT_DOES_NOT_SUPPORT_CONTEXT_MANAGER_PROTOCOL_EXIT, type);
             }
             Object result = callEnter.executeObject(frame, enter, contextManager);
-            exitSetter.setObject(frame, exit);
-            resultSetter.setObject(frame, result);
+            exitSetter.setObject(bytecode, bci, frame, exit);
+            resultSetter.setObject(bytecode, bci, frame, result);
         }
     }
 
@@ -3553,14 +3580,19 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = LocalSetter.class)
+    @ConstantOperand(type = LocalSetter.class)
     @ImportStatic({SpecialMethodSlot.class})
     public static final class AsyncContextManagerEnter {
         @Specialization
         @InliningCutoff
-        public static void doEnter(VirtualFrame frame, Object contextManager,
+        public static void doEnter(VirtualFrame frame,
                         LocalSetter exitSetter,
                         LocalSetter resultSetter,
+                        Object contextManager,
                         @Bind("this") Node inliningTarget,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci,
                         @Cached GetClassNode getClass,
                         @Cached(parameters = "AEnter") LookupSpecialMethodSlotNode lookupEnter,
                         @Cached(parameters = "AExit") LookupSpecialMethodSlotNode lookupExit,
@@ -3576,8 +3608,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 throw raiseNode.raise(AttributeError, new Object[]{T___AEXIT__});
             }
             Object result = callEnter.executeObject(frame, enter, contextManager);
-            exitSetter.setObject(frame, exit);
-            resultSetter.setObject(frame, result);
+            exitSetter.setObject(bytecode, bci, frame, exit);
+            resultSetter.setObject(bytecode, bci, frame, result);
         }
     }
 
@@ -3696,32 +3728,37 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = LocalSetter.class)
     public static final class TeeLocal {
         @Specialization
-        public static int doInt(VirtualFrame frame, int value,
-                        LocalSetter local) {
-            local.setInt(frame, value);
+        public static int doInt(VirtualFrame frame, LocalSetter local, int value,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
+            local.setInt(bytecode, bci, frame, value);
             return value;
         }
 
         @Specialization
-        public static double doDouble(VirtualFrame frame, double value,
-                        LocalSetter local) {
-            local.setDouble(frame, value);
+        public static double doDouble(VirtualFrame frame, LocalSetter local, double value,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
+            local.setDouble(bytecode, bci, frame, value);
             return value;
         }
 
         @Specialization
-        public static long doLong(VirtualFrame frame, long value,
-                        LocalSetter local) {
-            local.setLong(frame, value);
+        public static long doLong(VirtualFrame frame, LocalSetter local, long value,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
+            local.setLong(bytecode, bci, frame, value);
             return value;
         }
 
         @Specialization(replaces = {"doInt", "doDouble", "doLong"})
-        public static Object doObject(VirtualFrame frame, Object value,
-                        LocalSetter local) {
-            local.setObject(frame, value);
+        public static Object doObject(VirtualFrame frame, LocalSetter local, Object value,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci) {
+            local.setObject(bytecode, bci, frame, value);
             return value;
         }
     }
@@ -3855,75 +3892,92 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = LocalSetter.class)
+    @ConstantOperand(type = LocalSetter.class)
     @SuppressWarnings("truffle-interpreted-performance")
     public static final class YieldFromSend {
         private static final TruffleString T_SEND = tsLiteral("send");
 
         @Specialization
-        static boolean doGenerator(VirtualFrame virtualFrame, PGenerator generator, Object arg,
-                        LocalSetter yieldValue,
-                        LocalSetter returnValue,
+        static boolean doGenerator(VirtualFrame virtualFrame,
+                        LocalSetter yieldedValue,
+                        LocalSetter returnedValue,
+                        PGenerator generator,
+                        Object arg,
                         @Bind("this") Node inliningTarget,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci,
                         @Cached CommonGeneratorBuiltins.SendNode sendNode,
                         @Shared @Cached IsBuiltinObjectProfile stopIterationProfile,
                         @Shared @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
             try {
                 Object value = sendNode.execute(virtualFrame, generator, arg);
-                yieldValue.setObject(virtualFrame, value);
+                yieldedValue.setObject(bytecode, bci, virtualFrame, value);
                 return false;
             } catch (PException e) {
-                handleException(virtualFrame, e, inliningTarget, stopIterationProfile, getValue, returnValue);
+                handleException(virtualFrame, e, inliningTarget, bytecode, bci, stopIterationProfile, getValue, returnedValue);
                 return true;
             }
         }
 
         @Specialization(guards = "iterCheck.execute(inliningTarget, iter)", limit = "1")
-        static boolean doIterator(VirtualFrame virtualFrame, Object iter, @SuppressWarnings("unused") PNone arg,
-                        LocalSetter yieldValue,
-                        LocalSetter returnValue,
+        static boolean doIterator(VirtualFrame virtualFrame,
+                        LocalSetter yieldedValue,
+                        LocalSetter returnedValue,
+                        Object iter,
+                        @SuppressWarnings("unused") PNone arg,
                         @Bind("this") Node inliningTarget,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci,
                         @SuppressWarnings("unused") @Cached PyIterCheckNode iterCheck,
                         @Cached GetNextNode getNextNode,
                         @Shared @Cached IsBuiltinObjectProfile stopIterationProfile,
                         @Shared @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
             try {
                 Object value = getNextNode.execute(virtualFrame, iter);
-                yieldValue.setObject(virtualFrame, value);
+                yieldedValue.setObject(bytecode, bci, virtualFrame, value);
                 return false;
             } catch (PException e) {
-                handleException(virtualFrame, e, inliningTarget, stopIterationProfile, getValue, returnValue);
+                handleException(virtualFrame, e, inliningTarget, bytecode, bci, stopIterationProfile, getValue, returnedValue);
                 return true;
             }
         }
 
         @Fallback
-        static boolean doOther(VirtualFrame virtualFrame, Object obj, Object arg,
-                        LocalSetter yieldValue,
-                        LocalSetter returnValue,
+        static boolean doOther(VirtualFrame virtualFrame,
+                        LocalSetter yieldedValue,
+                        LocalSetter returnedValue,
+                        Object obj,
+                        Object arg,
                         @Bind("this") Node inliningTarget,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci,
                         @Cached PyObjectCallMethodObjArgs callMethodNode,
                         @Shared @Cached IsBuiltinObjectProfile stopIterationProfile,
                         @Shared @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
             try {
                 Object value = callMethodNode.execute(virtualFrame, inliningTarget, obj, T_SEND, arg);
-                yieldValue.setObject(virtualFrame, value);
+                yieldedValue.setObject(bytecode, bci, virtualFrame, value);
                 return false;
             } catch (PException e) {
-                handleException(virtualFrame, e, inliningTarget, stopIterationProfile, getValue, returnValue);
+                handleException(virtualFrame, e, inliningTarget, bytecode, bci, stopIterationProfile, getValue, returnedValue);
                 return true;
             }
         }
 
-        private static void handleException(VirtualFrame frame, PException e, Node inliningTarget, IsBuiltinObjectProfile stopIterationProfile,
+        private static void handleException(VirtualFrame frame, PException e, Node inliningTarget, BytecodeNode bytecode, int bci,
+                        IsBuiltinObjectProfile stopIterationProfile,
                         StopIterationBuiltins.StopIterationValueNode getValue,
-                        LocalSetter returnValue) {
+                        LocalSetter returnedValue) {
             e.expectStopIteration(inliningTarget, stopIterationProfile);
-            returnValue.setObject(frame, getValue.execute((PBaseException) e.getUnreifiedException()));
+            returnedValue.setObject(bytecode, bci, frame, getValue.execute((PBaseException) e.getUnreifiedException()));
         }
 
     }
 
     @Operation
+    @ConstantOperand(type = LocalSetter.class)
+    @ConstantOperand(type = LocalSetter.class)
     @SuppressWarnings("truffle-interpreted-performance")
     public static final class YieldFromThrow {
 
@@ -3931,10 +3985,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         private static final TruffleString T_THROW = tsLiteral("throw");
 
         @Specialization
-        static boolean doGenerator(VirtualFrame frame, PGenerator generator, PException exception,
-                        LocalSetter yieldValue,
-                        LocalSetter returnValue,
+        static boolean doGenerator(VirtualFrame frame,
+                        LocalSetter yieldedValue,
+                        LocalSetter returnedValue,
+                        PGenerator generator,
+                        PException exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci,
                         @Cached CommonGeneratorBuiltins.ThrowNode throwNode,
                         @Cached CommonGeneratorBuiltins.CloseNode closeNode,
                         @Shared @Cached IsBuiltinObjectProfile profileExit,
@@ -3946,20 +4004,24 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             } else {
                 try {
                     Object value = throwNode.execute(frame, generator, exception.getEscapedException(), PNone.NO_VALUE, PNone.NO_VALUE);
-                    yieldValue.setObject(frame, value);
+                    yieldedValue.setObject(bytecode, bci, frame, value);
                     return false;
                 } catch (PException e) {
-                    handleException(frame, inliningTarget, e, stopIterationProfile, getValue, returnValue);
+                    handleException(frame, e, inliningTarget, bytecode, bci, stopIterationProfile, getValue, returnedValue);
                     return true;
                 }
             }
         }
 
         @Fallback
-        static boolean doOther(VirtualFrame frame, Object obj, Object exception,
-                        LocalSetter yieldValue,
-                        LocalSetter returnValue,
+        static boolean doOther(VirtualFrame frame,
+                        LocalSetter yieldedValue,
+                        LocalSetter returnedValue,
+                        Object obj,
+                        Object exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind("$bytecode") BytecodeNode bytecode,
+                        @Bind("$bci") int bci,
                         @Cached PyObjectLookupAttr lookupThrow,
                         @Cached PyObjectLookupAttr lookupClose,
                         @Cached CallNode callThrow,
@@ -3987,20 +4049,20 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 }
                 try {
                     Object value = callThrow.execute(frame, throwMethod, pException.getEscapedException());
-                    yieldValue.setObject(frame, value);
+                    yieldedValue.setObject(bytecode, bci, frame, value);
                     return false;
                 } catch (PException e) {
-                    handleException(frame, inliningTarget, e, stopIterationProfile, getValue, returnValue);
+                    handleException(frame, e, inliningTarget, bytecode, bci, stopIterationProfile, getValue, returnedValue);
                     return true;
                 }
             }
         }
 
-        private static void handleException(VirtualFrame frame, Node inliningTarget, PException e,
+        private static void handleException(VirtualFrame frame, PException e, Node inliningTarget, BytecodeNode bytecode, int bci,
                         IsBuiltinObjectProfile stopIterationProfile, StopIterationBuiltins.StopIterationValueNode getValue,
-                        LocalSetter returnValue) {
+                        LocalSetter returnedValue) {
             e.expectStopIteration(inliningTarget, stopIterationProfile);
-            returnValue.setObject(frame, getValue.execute((PBaseException) e.getUnreifiedException()));
+            returnedValue.setObject(bytecode, bci, frame, getValue.execute((PBaseException) e.getUnreifiedException()));
         }
     }
 
