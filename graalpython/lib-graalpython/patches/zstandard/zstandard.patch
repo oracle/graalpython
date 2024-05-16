@@ -1,0 +1,18 @@
+diff --git a/c-ext/backend_c.c b/c-ext/backend_c.c
+index 6edcd52..12ee7c1 100644
+--- a/c-ext/backend_c.c
++++ b/c-ext/backend_c.c
+@@ -313,7 +313,12 @@ size_t roundpow2(size_t i) {
+ int safe_pybytes_resize(PyObject **obj, Py_ssize_t size) {
+     PyObject *tmp;
+ 
+-    if (Py_REFCNT((*obj)) == 1) {
++    /*
++     * GraalPy change: we don't want to randomly fall through to the code
++     * below, because it doesn't handle all cases (shrinking) and causes memory
++     * corruption
++     */
++    if (/* Py_REFCNT((*obj)) == 1 */ 1) {
+         return _PyBytes_Resize(obj, size);
+     }
+ 
