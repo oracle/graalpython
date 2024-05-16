@@ -1163,12 +1163,14 @@ PyType_GenericNew(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
 /* Helpers for subtyping */
 
-#if 0 // GraalPy change
 static int
 traverse_slots(PyTypeObject *type, PyObject *self, visitproc visit, void *arg)
 {
     Py_ssize_t i, n;
     PyMemberDef *mp;
+
+    // GraalPy change: managed types don't have native slot attributes
+    assert (!points_to_py_handle_space(self));
 
     n = Py_SIZE(type);
     mp = _PyHeapType_GET_MEMBERS((PyHeapTypeObject *)type);
@@ -1186,7 +1188,8 @@ traverse_slots(PyTypeObject *type, PyObject *self, visitproc visit, void *arg)
     return 0;
 }
 
-static int
+// GraalPy change: replaced 'static' with 'PyAPI_FUNC'
+PyAPI_FUNC(int)
 subtype_traverse(PyObject *self, visitproc visit, void *arg)
 {
     PyTypeObject *type, *base;
@@ -1206,18 +1209,29 @@ subtype_traverse(PyObject *self, visitproc visit, void *arg)
         assert(base);
     }
 
-    if (type->tp_flags & Py_TPFLAGS_MANAGED_DICT) {
-        assert(type->tp_dictoffset);
-        int err = _PyObject_VisitInstanceAttributes(self, visit, arg);
+
+    // GraalPy change: don't do this for managed objects
+    if (!points_to_py_handle_space(self)) {
+#if 0 // GraalPy change: we don't have inlined managed dict values
+        if (type->tp_flags & Py_TPFLAGS_MANAGED_DICT) {
+            assert(type->tp_dictoffset);
+            int err = _PyObject_VisitInstanceAttributes(self, visit, arg);
+            if (err) {
+                return err;
+            }
+        }
+#endif // GraalPy change
+
+        if (type->tp_dictoffset != base->tp_dictoffset) {
+            PyObject **dictptr = _PyObject_DictPointer(self);
+            if (dictptr && *dictptr)
+                Py_VISIT(*dictptr);
+        }
+    } else {
+        int err = GraalPyTruffleObject_VisitInstanceAttributes(self, visit, arg);
         if (err) {
             return err;
         }
-    }
-
-    if (type->tp_dictoffset != base->tp_dictoffset) {
-        PyObject **dictptr = _PyObject_DictPointer(self);
-        if (dictptr && *dictptr)
-            Py_VISIT(*dictptr);
     }
 
     if (type->tp_flags & Py_TPFLAGS_HEAPTYPE
@@ -1236,6 +1250,7 @@ subtype_traverse(PyObject *self, visitproc visit, void *arg)
     return 0;
 }
 
+#if 0 // GraalPy change
 static void
 clear_slots(PyTypeObject *type, PyObject *self)
 {
