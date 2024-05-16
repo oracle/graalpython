@@ -187,6 +187,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_select("(sint32, [sint32], sint32, [sint32], sint32, [sint32], sint32, sint64, sint64, [sint8]):sint32"),
         call_lseek("(sint32, sint64, sint32):sint64"),
         call_ftruncate("(sint32, sint64):sint32"),
+        call_truncate("([sint8], sint64):sint32"),
         call_fsync("(sint32):sint32"),
         call_flock("(sint32, sint32):sint32"),
         call_fcntl_lock("(sint32, sint32, sint32, sint32, sint64, sint64):sint32"),
@@ -680,6 +681,15 @@ public final class NFIPosixSupport extends PosixSupport {
     public void ftruncate(int fd, long length,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int res = invokeNode.callInt(this, PosixNativeFunction.call_ftruncate, fd, length);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    public void truncate(Object path, long length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_truncate, pathToCString(path), length);
         if (res != 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }

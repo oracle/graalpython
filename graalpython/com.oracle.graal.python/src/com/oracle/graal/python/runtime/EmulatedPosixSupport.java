@@ -800,6 +800,27 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
+    @ExportMessage
+    public void truncate(Object path, long length,
+                    @Bind("$node") Node inliningTarget,
+                    @Shared("eq") @Cached TruffleString.EqualNode eqNode,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
+        TruffleString pathname = pathToTruffleString(path, fromJavaStringNode);
+        TruffleFile file = getTruffleFile(pathname, eqNode);
+        try {
+            doTruncate(file, length);
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e, eqNode));
+        }
+    }
+
+    @TruffleBoundary
+    private static void doTruncate(TruffleFile file, long length) throws IOException {
+        try (SeekableByteChannel channel = file.newByteChannel(Set.of(StandardOpenOption.WRITE))) {
+            channel.truncate(length);
+        }
+    }
+
     @ExportMessage(name = "fsync")
     public void fsyncMessage(int fd) throws PosixException {
         if (!fsync(fd)) {

@@ -284,6 +284,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void truncate(Object path, long length,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("truncate", "%s, %d", path, length);
+        try {
+            lib.truncate(delegate, path, length);
+        } catch (PosixException e) {
+            throw logException("truncate", e);
+        }
+    }
+
+    @ExportMessage
     final void fsync(int fd,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("fsync", "%d", fd);
