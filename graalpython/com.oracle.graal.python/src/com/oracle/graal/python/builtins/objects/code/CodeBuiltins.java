@@ -70,8 +70,9 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.Instruction;
-import com.oracle.truffle.api.bytecode.SourceInformation;
+import com.oracle.truffle.api.bytecode.SourceInformationTree;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -308,10 +309,7 @@ public final class CodeBuiltins extends PythonBuiltins {
             if (co != null) {
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                     PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
-                    List<PTuple> lines = new ArrayList<>();
-                    for (SourceInformation sourceInfo : rootNode.getBytecodeNode().getSourceInformation()) {
-                        lines.add(factory.createTuple(new int[]{sourceInfo.getStartIndex(), sourceInfo.getEndIndex(), sourceInfo.getSourceSection().getStartLine()}));
-                    }
+                    List<PTuple> lines = computeLinesForBytecodeDSLInterpreter(rootNode, factory);
                     tuple = factory.createTuple(lines.toArray());
                 } else {
                     BytecodeCodeUnit bytecodeCo = (BytecodeCodeUnit) co;
@@ -336,6 +334,78 @@ public final class CodeBuiltins extends PythonBuiltins {
             }
             return PyObjectGetIter.executeUncached(tuple);
         }
+
+        private static List<PTuple> computeLinesForBytecodeDSLInterpreter(PBytecodeDSLRootNode root, PythonObjectFactory factory) {
+            BytecodeNode bytecodeNode = root.getBytecodeNode();
+            List<int[]> triples = new ArrayList<>();
+            traverseSourceInformationTree(bytecodeNode.getSourceInformationTree(), triples);
+            return convertTripleBcisToInstructionIndices(bytecodeNode, factory, triples);
+        }
+
+        /**
+         * This function traverses the source information tree recursively to compute a list of
+         * consecutive bytecode ranges with their corresponding line numbers.
+         * <p>
+         * Each node in the tree covers a bytecode range. Each child covers some sub-range. The
+         * bytecodes covered by a particular node are the bytecodes within its range that are *not*
+         * covered by the node's children.
+         * <p>
+         * For example, consider a node covering [0, 20] with children covering [4, 9] and [15, 18].
+         * The node itself covers the ranges [0, 4], [9, 15], and [18, 20]. These ranges are
+         * assigned the line number of the node.
+         */
+        private static void traverseSourceInformationTree(SourceInformationTree tree, List<int[]> triples) {
+            int startIndex = tree.getStartIndex();
+            int startLine = tree.getSourceSection().getStartLine();
+            for (SourceInformationTree child : tree.getChildren()) {
+                if (startIndex < child.getStartIndex()) {
+                    // range before child.start is uncovered
+                    triples.add(new int[]{startIndex, child.getStartIndex(), startLine});
+                }
+                // recursively handle [child.start, child.end]
+                traverseSourceInformationTree(child, triples);
+                startIndex = child.getEndIndex();
+            }
+
+            if (startIndex < tree.getEndIndex()) {
+                // range after last_child.end is uncovered
+                triples.add(new int[]{startIndex, tree.getEndIndex(), startLine});
+            }
+        }
+
+        /**
+         * The bci ranges in the triples are not stable and can change when the bytecode is
+         * instrumented. We create new triples with stable instruction indices by walking the
+         * instructions.
+         */
+        private static List<PTuple> convertTripleBcisToInstructionIndices(BytecodeNode bytecodeNode, PythonObjectFactory factory, List<int[]> triples) {
+            List<PTuple> result = new ArrayList<>(triples.size());
+            int tripleIndex = 0;
+            int[] triple = triples.get(0);
+            assert triple[0] == 0 : "the first bytecode range should start from 0";
+
+            int startInstructionIndex = 0;
+            int instructionIndex = 0;
+            for (Instruction instruction : bytecodeNode.getInstructions()) {
+                if (instruction.getBytecodeIndex() == triple[1] /* end bci */) {
+                    result.add(factory.createTuple(new int[]{startInstructionIndex, instructionIndex, triple[2]}));
+                    startInstructionIndex = instructionIndex;
+                    triple = triples.get(++tripleIndex);
+                    assert triple[0] == instruction.getBytecodeIndex() : "bytecode ranges should be consecutive";
+                }
+
+                if (!instruction.isInstrumentation()) {
+                    // Emulate CPython's fixed 2-word instructions.
+                    instructionIndex += 2;
+                }
+            }
+
+            result.add(factory.createTuple(new int[]{startInstructionIndex, instructionIndex, triple[2]}));
+            assert tripleIndex == triples.size() : "every bytecode range should have been converted to an instruction range";
+
+            return result;
+        }
+
     }
 
     @Builtin(name = "co_positions", minNumOfPositionalArgs = 1)
