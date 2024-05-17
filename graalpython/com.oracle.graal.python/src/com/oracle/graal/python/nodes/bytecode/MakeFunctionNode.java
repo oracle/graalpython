@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -64,13 +63,11 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class MakeFunctionNode extends PNodeWithContext {
     private final RootCallTarget callTarget;
     private final CodeUnit code;
     private final Signature signature;
-    private final TruffleString doc;
     @CompilationFinal private PCode cachedCode;
 
     private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
@@ -78,11 +75,10 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
 
     public abstract int execute(VirtualFrame frame, Object globals, int initialStackTop, int flags);
 
-    public MakeFunctionNode(RootCallTarget callTarget, CodeUnit code, Signature signature, TruffleString doc) {
+    public MakeFunctionNode(RootCallTarget callTarget, CodeUnit code, Signature signature) {
         this.callTarget = callTarget;
         this.code = code;
         this.signature = signature;
-        this.doc = doc;
     }
 
     @Specialization
@@ -142,9 +138,6 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         if (annotations != null) {
             writeAttrNode.execute(function, T___ANNOTATIONS__, annotations);
         }
-        if (doc != null) {
-            writeAttrNode.execute(function, T___DOC__, doc);
-        }
 
         frame.setObject(++stackTop, function);
         return stackTop;
@@ -159,11 +152,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         } else {
             callTarget = bytecodeRootNode.getCallTarget();
         }
-        TruffleString doc = null;
-        if (code.constants.length > 0 && code.constants[0] instanceof TruffleString) {
-            doc = (TruffleString) code.constants[0];
-        }
-        return MakeFunctionNodeGen.create(callTarget, code, bytecodeRootNode.getSignature(), doc);
+        return MakeFunctionNodeGen.create(callTarget, code, bytecodeRootNode.getSignature());
     }
 
     public RootCallTarget getCallTarget() {
