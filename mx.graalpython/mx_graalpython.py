@@ -2156,6 +2156,10 @@ def _python_checkpatchfiles():
             'prompt_toolkit.patch',
             # Whole license in the field. It's BSD-3-Clause
             'pyzmq.patch',
+            # Whole license in the field. It's PSF
+            'matplotlib-3.5.3.patch',
+            'matplotlib-3.6.3.patch',
+            'matplotlib-3.7.0.patch',
         }
         allowed_licenses = [
             "MIT",
