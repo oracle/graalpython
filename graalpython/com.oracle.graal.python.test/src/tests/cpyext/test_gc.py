@@ -41,11 +41,14 @@ import gc
 import sys
 import time
 
+import os
+from unittest import skipIf
 from . import CPyExtType
 
 __dir__ = __file__.rpartition("/")[0]
 
-GRAALPYTHON_NATIVE = sys.implementation.name == 'graalpy' and __graalpython__.get_platform_id() == 'native'
+GRAALPY = sys.implementation.name == 'graalpy'
+GRAALPY_NATIVE = GRAALPY and __graalpython__.get_platform_id() == 'native'
 
 # typedef PyObject * (*unaryfunc)(PyObject *);
 # typedef PyObject * (*binaryfunc)(PyObject *, PyObject *);
@@ -122,7 +125,7 @@ GCTestClass = CPyExtType("GCTestClass",
 class TestGC1():
 
     def test_native_class(self):
-        if GRAALPYTHON_NATIVE:
+        if GRAALPY_NATIVE:
             gc.enable()
             GCTestClass.resetCounters()
             a = GCTestClass.getCounters()
@@ -176,21 +179,62 @@ class TestGC1():
 #         callfunction="wrap_simple",
 #     )
 
+ID_OBJ0 = 0
+ID_OBJ1 = 1
+ID_OBJ2 = 0
+ID_OBJ3 = 1
+ID_OBJ4 = 2
+ID_OBJ5 = 3
+ID_OBJ6 = 4
+ID_OBJ7 = 5
+ID_OBJ8 = 6
+ID_OBJ9 = 7
+ID_OBJ10 = 8
+ID_OBJ11 = 9
+ID_OBJ12 = 10
+ID_OBJ13 = 11
+
+# don't rely on deterministic Java GC behavior by default on GraalPy
+RELY_ON_GC = os.environ.get("RELY_ON_GC", not GRAALPY)
+
+if GRAALPY_NATIVE and RELY_ON_GC:
+    import warnings
+    warnings.warn("Relying on deterministic Java GC behavior. "
+                  "Tests may fail if the Java GC doesn't run at a certain program point or doesn't collect objects "
+                  "as we expect.")
+
+if GRAALPY_NATIVE:
+    get_handle_table_id = __graalpython__.get_handle_table_id
+    is_strong_handle_table_ref = __graalpython__.is_strong_handle_table_ref
+else:
+    # just that the test is compatible with CPython
+    def get_handle_table_id(object):
+        return -1
+
+
+    def is_strong_handle_table_ref(id):
+        return False
 
 class TestGCRefCycles:
     def _trigger_gc(self):
         gc.collect()
-        for i in range(4 if GRAALPYTHON_NATIVE else 1):
-            time.sleep(0.5)
+        for i in range(4 if GRAALPY_NATIVE and RELY_ON_GC else 1):
+            time.sleep(0.25)
             gc.collect()
 
+    @skipIf(GRAALPY and not GRAALPY_NATIVE, "Python GC only used in native mode")
     def test_cycle_with_native_objects(self):
         TestCycle0 = CPyExtType("TestCycle0",
                                 '''
                                 #define N 16
                                 static int freed[N];
+                                static PyObject *global_objs[N];
 
-                                static PyObject *global_obj = NULL;
+                                #ifdef DEBUG
+                                #define log printf
+                                #else
+                                #define log(...)
+                                #endif
 
                                 static int tc0_init(TestCycle0Object* self, PyObject* args, PyObject *kwargs) {
                                     if (!PyArg_ParseTuple(args, "i", &self->idx)) {
@@ -205,12 +249,12 @@ class TestGCRefCycles:
                                 }
 
                                 static void tc0_clear(TestCycle0Object* self) {
-                                    printf("clear of %d called\\n", self->idx);
+                                    log("clear of %d called\\n", self->idx);
                                     Py_CLEAR(self->other);
                                 }
 
                                 static void tc0_dealloc(TestCycle0Object* self) {
-                                    printf("dealloc of %d called\\n", self->idx);
+                                    log("dealloc of %d called\\n", self->idx);
                                     PyObject_GC_UnTrack(self);
                                     tc0_clear(self);
                                     freed[self->idx] = 1;
@@ -218,7 +262,7 @@ class TestGCRefCycles:
                                 }
 
                                 static int tc0_traverse(TestCycle0Object* self, visitproc visit, void* arg) {
-                                    printf("traverse of %d called -- refcnt = %zd\\n", self->idx, Py_REFCNT(self));
+                                    log("traverse of %d called -- refcnt = %zd\\n", self->idx, Py_REFCNT(self));
                                     if (self->other) {
                                         Py_VISIT(self->other);
                                     }
@@ -243,8 +287,17 @@ class TestGCRefCycles:
                                     return PyBool_FromLong(freed[l]);
                                 }
 
-                                static PyObject* tc0_set_global_obj(PyObject* unused, PyObject* arg) {
-                                    Py_XSETREF(global_obj, Py_NewRef(arg));
+                                static PyObject* tc0_set_global_obj(PyObject* unused, PyObject* args) {
+                                    size_t i;
+                                    PyObject *arg;
+                                    if (!PyArg_ParseTuple(args, "nO", &i, &arg)) {
+                                        return NULL;
+                                    }
+                                    if (i < 0 || i >= N) {
+                                        PyErr_Format(PyExc_ValueError, "invalid index; must be between 0 and %d", N);
+                                        return NULL;
+                                    }
+                                    Py_XSETREF(global_objs[i], Py_NewRef(arg));
                                     return Py_NewRef(Py_None);
                                 }
                                 ''',
@@ -254,7 +307,7 @@ class TestGCRefCycles:
                                 tp_init='(initproc)tc0_init',
                                 tp_methods="""
                                 {"set_obj", (PyCFunction)tc0_set_obj, METH_O, ""},
-                                {"set_global_obj", (PyCFunction)tc0_set_global_obj, METH_O | METH_CLASS, ""},
+                                {"set_global_obj", (PyCFunction)tc0_set_global_obj, METH_VARARGS | METH_CLASS, ""},
                                 {"get_obj", (PyCFunction)tc0_get_obj, METH_NOARGS, ""},
                                 {"is_freed", (PyCFunction)tc0_is_freed, METH_O | METH_CLASS, ""}
                                 """,
@@ -263,81 +316,147 @@ class TestGCRefCycles:
                                 tp_clear='(inquiry)tc0_clear',
                                 tp_dealloc='(destructor)tc0_dealloc',
         )
-        obj0 = TestCycle0(0)
-        obj1 = TestCycle0(1)
+
+        if RELY_ON_GC:
+            def assert_is_alive(id):
+                assert not TestCycle0.is_freed(id)
+            def assert_is_freed(id):
+                assert TestCycle0.is_freed(id)
+        else:
+            def assert_is_alive(id): pass
+            def assert_is_freed(id): pass
+
+        obj0 = TestCycle0(ID_OBJ0)
+        obj1 = TestCycle0(ID_OBJ1)
 
         # establish cycle: obj0 -> obj1 -> obj0
         obj0.set_obj(obj1)
         obj1.set_obj(obj0)
 
-        assert not TestCycle0.is_freed(0)
-        assert not TestCycle0.is_freed(1)
+        assert_is_alive(ID_OBJ0)
+        assert_is_alive(ID_OBJ1)
 
         del obj1
         self._trigger_gc()
-        assert not TestCycle0.is_freed(0)
-        assert not TestCycle0.is_freed(1)
+        assert_is_alive(ID_OBJ0)
+        assert_is_alive(ID_OBJ1)
 
         del obj0
         self._trigger_gc()
-        assert TestCycle0.is_freed(0)
-        assert TestCycle0.is_freed(1)
+        assert_is_freed(ID_OBJ0)
+        assert_is_freed(ID_OBJ1)
 
-        obj2 = TestCycle0(0)
-        obj3 = TestCycle0(1)
-        obj4 = TestCycle0(2)
-        obj5 = TestCycle0(3)
-        obj6 = TestCycle0(4)
-        obj7 = TestCycle0(5)
-        obj8 = TestCycle0(6)
-        obj9 = TestCycle0(7)
-        obj10 = TestCycle0(8)
+        obj2 = TestCycle0(ID_OBJ2)
+        obj3 = TestCycle0(ID_OBJ3)
+        obj4 = TestCycle0(ID_OBJ4)
+        obj5 = TestCycle0(ID_OBJ5)
+        obj6 = TestCycle0(ID_OBJ6)
+        obj7 = TestCycle0(ID_OBJ7)
+        obj8 = TestCycle0(ID_OBJ8)
+        obj9 = TestCycle0(ID_OBJ9)
+        obj10 = TestCycle0(ID_OBJ10)
+        obj11 = TestCycle0(ID_OBJ11)
 
-        # establish cycle: obj2 -> obj3 -> l -> obj2
+        # Legend
+        # '=>'
+        #   A strong reference without handle table indirection. Possible cases:
+        #   1. native_object => native_object
+        #   2. managed_object => managed_object
+        #   2. managed_object => native_object
+        #
+        # '=ht=>'
+        #   A strong reference through the handle table. So, this can only be a reference from a native to a managed
+        #   object.
+        #
+        # '=ht->'
+        #   Similar as above (a native object references a managed object) but the handle table only has a weak
+        #   Java reference to the managed object. From the native object's point of view, the reference is still strong
+        #   and it will do a decref on clear/dealloc.
+        #
+        #
+        # The phases "update_refs", "subtract_refs", and "move_unreachable" refer to the corresponding C functions
+        # (see C function "deduce_unreachable").
+        #
+        # The reference count values in the comments are the 'gc_refs' (which is stored in 'PyGC_Head._gc_prev' during a
+        # GC run) and not 'ob_refcnt'.
+        # The values are the expected value *AFTER* the corresponding phase.
+
+        # establish cycle:  obj2 => obj3 =ht=> l => obj2
+        # update_refs:       10      1         11
+        # subtract_refs:     10      0         10
+        # move_unreachable:  10      0         10
+        # commit_weak_cand: obj2 => obj3 =ht-> l => obj2
         obj2.set_obj(obj3)
         l = [obj2]
         obj3.set_obj(l)
+        htid_l = get_handle_table_id(l)
 
-        # establish cycle: obj4 => obj5 =ht=> l1 => obj6 => obj4
-        # init:             1       1         10     11
-        # decref:           0       0         10     11
-        # move_unreachable: 1       1         10     11
-        # broken cycle:    obj4 => obj5 =ht-> l1 => obj6 => obj4
+        # establish cycle:  obj4 => obj5 =ht=> l1 => obj6 => obj4
+        # update_refs:       1       1         10     11
+        # subtract_refs:     0       0         10     11
+        # move_unreachable:  1       1         10     11
+        # commit_weak_cand: obj4 => obj5 =ht-> l1 => obj6 => obj4
 
-        # establish cycle: obj4 -> obj5 -> l1 -> obj4
+        # establish cycle:  obj4 => obj5 =ht=> l1 => obj4
+        # update_refs:       10      1         11
+        # subtract_refs:     10      0         10
+        # move_unreachable:  10      10        10
+        # commit_weak_cand: obj4 => obj5 =ht-> l1 => obj4
         obj4.set_obj(obj5)
         l1 = [obj4]
         obj5.set_obj(l1)
+        htid_l1 = get_handle_table_id(l1)
 
-        # establish cycle: obj6 -> obj7 -> d0 -> obj6
+        # establish cycle: obj6 => obj7 =ht=> d0 => obj6
         obj6.set_obj(obj7)
         d0 = {0: obj6}
         obj7.set_obj(d0)
+        htid_d0 = get_handle_table_id(d0)
 
         # J-> obj9 -> obj8 -> ["hello"]
         obj8.set_obj(["hello"])
         obj9.set_obj(obj8)
         del obj8
 
-        #                   N => obj10 =ht=> ["world"]
-        # init:                    1            11
-        # decref:                  1            10
-        # move_unreachable:        1            10
-        # broken cycle:     N => obj10 =ht-> ["world"]
-        obj10.set_obj(["hello"])
-        TestCycle0.set_global_obj(obj10)
-        del obj10
+        #                   N => obj10 =ht=> l2
+        # update_refs:             1         11
+        # subtract_refs:           1         10
+        # move_unreachable:        1         10
+        # commit_weak_cand: N => obj10 =ht=> l2
+        l2 = ["hello"]
+        obj10.set_obj(l2)
+        TestCycle0.set_global_obj(0, obj10)
+        htid_l2 = get_handle_table_id(l2)
+        del obj10, l2
+
+        #                   J/N => obj11 =ht=> l3
+        # update_refs:               11        11
+        # subtract_refs:             11        10
+        # move_unreachable:          11        10
+        # commit_weak_cand:   N => obj11 =ht=> l3
+        l3 = ["hello"]
+        obj11.set_obj(l3)
+        TestCycle0.set_global_obj(1, obj11)
+        htid_l3 = get_handle_table_id(l3)
+        del l3
+        # difference to previous situation: obj11 is still reachable from Java
 
         # everything should still be alive
-        assert not TestCycle0.is_freed(0)
-        assert not TestCycle0.is_freed(1)
-        assert not TestCycle0.is_freed(2)
-        assert not TestCycle0.is_freed(3)
-        assert not TestCycle0.is_freed(4)
-        assert not TestCycle0.is_freed(5)
-        assert not TestCycle0.is_freed(6)
-        assert not TestCycle0.is_freed(7)
-        assert not TestCycle0.is_freed(8)
+        assert_is_alive(ID_OBJ2)
+        assert_is_alive(ID_OBJ3)
+        assert_is_alive(ID_OBJ4)
+        assert_is_alive(ID_OBJ5)
+        assert_is_alive(ID_OBJ6)
+        assert_is_alive(ID_OBJ7)
+        assert_is_alive(ID_OBJ8)
+        assert_is_alive(ID_OBJ9)
+        assert_is_alive(ID_OBJ10)
+        assert_is_alive(ID_OBJ11)
+        assert is_strong_handle_table_ref(htid_l)
+        assert is_strong_handle_table_ref(htid_l1)
+        assert is_strong_handle_table_ref(htid_l2)
+        assert is_strong_handle_table_ref(htid_l3)
+        assert is_strong_handle_table_ref(htid_d0)
 
         del obj2, l, obj3
         del obj4, obj5
@@ -345,44 +464,69 @@ class TestGCRefCycles:
 
         self._trigger_gc()
 
-        assert TestCycle0.is_freed(0)
-        assert TestCycle0.is_freed(1)
-        assert TestCycle0.is_freed(4)
-        assert TestCycle0.is_freed(5)
+        # Delete Java ref after GC. This will provoke the situation where 'PythonAbstractNativeObject' of obj11 will
+        # die after references where potentially replicated. This tests if dangling pointers appear for the managed
+        # referent.
+        del obj11
+
+        assert_is_freed(ID_OBJ2)
+        assert_is_freed(ID_OBJ3)
+        assert_is_freed(ID_OBJ6)
+        assert_is_freed(ID_OBJ7)
         # because l1 is still alive
-        assert not TestCycle0.is_freed(2)
-        assert not TestCycle0.is_freed(3)
-        assert not TestCycle0.is_freed(6)
-        assert not TestCycle0.is_freed(7)
-        assert not TestCycle0.is_freed(8)
+        assert_is_alive(ID_OBJ4)
+        assert_is_alive(ID_OBJ5)
+        assert_is_alive(ID_OBJ8)
+        assert_is_alive(ID_OBJ9)
+        assert_is_alive(ID_OBJ10)
+        assert is_strong_handle_table_ref(htid_l2)
+        assert is_strong_handle_table_ref(htid_l3)
+        assert not is_strong_handle_table_ref(htid_l)
+        assert not is_strong_handle_table_ref(htid_l1)
+        assert not is_strong_handle_table_ref(htid_d0)
 
         rescued_obj4 = l1[0]
         del l1
         self._trigger_gc()
         # still reachable
-        assert not TestCycle0.is_freed(2)
-        assert not TestCycle0.is_freed(3)
+        assert_is_alive(ID_OBJ4)
+        assert_is_alive(ID_OBJ5)
         assert rescued_obj4.get_obj().get_obj()[0] is rescued_obj4
 
         del rescued_obj4
 
-        # establish cycles: obj4 -> l2 -> obj5 -> l3 -> obj4 ;; l2 -> obj5 -> l3 -> l2
-        obj4 = TestCycle0(4)
-        obj5 = TestCycle0(5)
-        l2 = [obj5]
-        l3 = [obj4, l2]
-        obj4.set_obj(l2)
-        obj5.set_obj(l3)
-        assert not TestCycle0.is_freed(4)
-        assert not TestCycle0.is_freed(5)
-        del obj4, obj5, l2, l3
+        # establish cycles: obj12 =ht=> l2 => obj13 =ht=> l3 => obj12 ;; l2 -> obj13 =ht=> l3 => l2
+        # update_refs:       10         11     10         11
+        # subtract_refs:     10         10     10         10
+        # move_unreachable:  10         10     10         10
+        # commit_weak_cand: obj12 =ht-> l2 => obj13 =ht-> l3 => obj12 ;; l2 -> obj13 =ht-> l3 => l2
+        obj12 = TestCycle0(ID_OBJ12)
+        obj13 = TestCycle0(ID_OBJ13)
+        l2 = [obj13]
+        l3 = [obj12, l2]
+        obj12.set_obj(l2)
+        obj13.set_obj(l3)
+        htid_l2 = get_handle_table_id(l2)
+        htid_l3 = get_handle_table_id(l3)
+
+        assert_is_alive(ID_OBJ12)
+        assert_is_alive(ID_OBJ13)
+        assert is_strong_handle_table_ref(htid_l2)
+        assert is_strong_handle_table_ref(htid_l3)
+
+        del obj12, obj13, l2, l3
+
         self._trigger_gc()
-        assert TestCycle0.is_freed(2)
-        assert TestCycle0.is_freed(3)
-        assert TestCycle0.is_freed(4)
-        assert TestCycle0.is_freed(5)
+
+        assert_is_freed(ID_OBJ4)
+        assert_is_freed(ID_OBJ5)
+        assert_is_freed(ID_OBJ12)
+        assert_is_freed(ID_OBJ13)
+        assert not is_strong_handle_table_ref(htid_l2)
+        assert not is_strong_handle_table_ref(htid_l3)
 
 
+    @skipIf(GRAALPY and not GRAALPY_NATIVE, "Python GC only used in native mode")
     def test_cycle_with_lists(self):
         TestCycle = CPyExtType("TestCycle",
                                '''
