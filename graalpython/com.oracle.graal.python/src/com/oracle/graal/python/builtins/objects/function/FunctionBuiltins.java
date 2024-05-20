@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
@@ -305,7 +306,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___DOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___DOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
     @GenerateNodeFactory
     abstract static class DocNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
@@ -313,9 +314,15 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return self.getDoc();
         }
 
-        @Specialization(guards = "!isNoValue(value)")
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
         Object set(PFunction self, Object value) {
             self.setDoc(value);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object delete(PFunction self, @SuppressWarnings("unused") DescriptorDeleteMarker marker) {
+            self.setDoc(PNone.NONE);
             return PNone.NONE;
         }
     }

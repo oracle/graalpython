@@ -64,7 +64,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -256,22 +255,16 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
     abstract static class DocNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getDoc(PMethod self,
-                        @Shared @Cached ReadAttributeFromObjectNode readNode) {
-            Object doc = readNode.execute(self.getFunction(), T___DOC__);
-            if (doc == PNone.NO_VALUE) {
-                return PNone.NONE;
-            }
-            return doc;
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyObjectGetAttr getAttr) {
+            return getAttr.execute(inliningTarget, self.getFunction(), T___DOC__);
         }
 
         @Specialization
         static Object getDoc(PBuiltinMethod self,
-                        @Shared @Cached ReadAttributeFromObjectNode readNode) {
-            Object doc = readNode.execute(self.getFunction(), T___DOC__);
-            if (doc == PNone.NO_VALUE) {
-                return PNone.NONE;
-            }
-            return doc;
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyObjectGetAttr getAttr) {
+            return getAttr.execute(inliningTarget, self.getFunction(), T___DOC__);
         }
     }
 
