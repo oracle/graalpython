@@ -599,9 +599,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             }
         }
 
-        /**
-         * Adding constants for methods flags checks in
-         * {@link NativeCAPISymbol.FUN_GET_METHODS_FLAGS}
+        /*
+         * Adding constants for methods flags checks in {@link
+         * NativeCAPISymbol.FUN_GET_METHODS_FLAGS}
          */
         lines.add("");
         methodFlags.entrySet().stream().sorted((a, b) -> a.getValue().compareTo(b.getValue())).forEach(e -> lines.add("#define " + e.getKey() + " " + e.getValue()));

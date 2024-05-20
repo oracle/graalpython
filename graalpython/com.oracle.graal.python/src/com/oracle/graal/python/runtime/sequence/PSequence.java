@@ -29,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -191,12 +192,13 @@ public abstract class PSequence extends PythonBuiltinObject {
     public void writeArrayElement(long index, Object value,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached PForeignToPTypeNode convert,
                     @Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             try {
-                setItem.execute(inliningTarget, getSequenceStorageNode.execute(inliningTarget, this), PInt.intValueExact(index), value);
+                setItem.execute(inliningTarget, getSequenceStorageNode.execute(inliningTarget, this), PInt.intValueExact(index), convert.executeConvert(value));
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw InvalidArrayIndexException.create(index);

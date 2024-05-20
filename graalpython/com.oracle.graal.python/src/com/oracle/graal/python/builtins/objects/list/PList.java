@@ -50,6 +50,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 @SuppressWarnings("truffle-abstract-export")
@@ -115,7 +116,7 @@ public final class PList extends PSequence {
 
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
+                    @Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -145,7 +146,7 @@ public final class PList extends PSequence {
 
     @ExportMessage
     public boolean isArrayElementRemovable(long index,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
+                    @Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -165,17 +166,24 @@ public final class PList extends PSequence {
     public void writeArrayElement(long index, Object value,
                     @Bind("$node") Node inliningTarget,
                     @Cached PForeignToPTypeNode convert,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
+                    @Exclusive @Cached SequenceStorageNodes.SetItemScalarGeneralizingNode setItem,
                     @Cached SequenceStorageNodes.AppendNode appendNode,
+                    @Cached InlinedBranchProfile generalizedProfile,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             final int len = store.length();
+            value = convert.executeConvert(value);
             try {
+                SequenceStorage newStorage;
                 if (index == len) {
-                    appendNode.execute(inliningTarget, store, convert.executeConvert(value), SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
+                    newStorage = appendNode.execute(inliningTarget, store, value, SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
                 } else {
-                    setItem.execute(inliningTarget, store, PInt.intValueExact(index), convert.executeConvert(value));
+                    newStorage = setItem.execute(inliningTarget, store, PInt.intValueExact(index), value, SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
+                }
+                if (newStorage != store) {
+                    generalizedProfile.enter(inliningTarget);
+                    store = newStorage;
                 }
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

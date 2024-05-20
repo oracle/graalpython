@@ -30,7 +30,6 @@
 *graalpython.lib-python.3.test.test_module.ModuleTests.test_unicode_docstring
 *graalpython.lib-python.3.test.test_module.ModuleTests.test_uninitialized
 *graalpython.lib-python.3.test.test_module.ModuleTests.test_uninitialized_missing_getattr
-*graalpython.lib-python.3.test.test_module.ModuleTests.test_weakref
 *graalpython.lib-python.3.test.test_module.__init__.ModuleTests.test_annotations_are_created_correctly
 *graalpython.lib-python.3.test.test_module.__init__.ModuleTests.test_annotations_getset_raises
 *graalpython.lib-python.3.test.test_module.__init__.ModuleTests.test_ascii_docstring

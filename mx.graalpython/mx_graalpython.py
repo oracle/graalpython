@@ -647,6 +647,7 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_deque.TestBasic.test_container_iterator',
         'graalpython.lib-python.3.test.test_mmap.MmapTests.test_weakref',
         'graalpython.lib-python.3.test.test_ast.AST_Tests.test_AST_garbage_collection',
+        'graalpython.lib-python.3.test.test_module.ModuleTests.test_weakref',
         # Disabled since code object comparison is not stable for us
         'graalpython.lib-python.3.test.test_marshal.InstancingTestCase.testModule',
         'graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_code',
@@ -2155,6 +2156,10 @@ def _python_checkpatchfiles():
             'prompt_toolkit.patch',
             # Whole license in the field. It's BSD-3-Clause
             'pyzmq.patch',
+            # Whole license in the field. It's PSF
+            'matplotlib-3.5.3.patch',
+            'matplotlib-3.6.3.patch',
+            'matplotlib-3.7.0.patch',
         }
         allowed_licenses = [
             "MIT",

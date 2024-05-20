@@ -67,14 +67,14 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemSliceNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.InsertItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ListGeneralizationNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.MemMoveNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.NoGeneralizationCustomMessageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.NoGeneralizationNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.RepeatNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemDynamicNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.MemMoveNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextHelperNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.BuiltinIteratorLengthHint;
@@ -1073,6 +1073,34 @@ public abstract class SequenceStorageNodes {
         protected static void doNative(NativeSequenceStorage storage, int idx, Object value,
                         @Cached(inline = false) SetNativeItemScalarNode setItem) {
             setItem.execute(storage, idx, value);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class SetItemScalarGeneralizingNode extends Node {
+        public abstract SequenceStorage execute(Node inliningTarget, SequenceStorage storage, int idx, Object value, GenNodeSupplier genNodeSupplier);
+
+        @Specialization
+        static SequenceStorage set(Node inliningTarget, SequenceStorage storage, int idx, Object value, GenNodeSupplier genNodeSupplier,
+                        @Cached InlinedBranchProfile generalizeProfile,
+                        @Cached SetItemScalarNode setItemScalarNode,
+                        @Cached DoGeneralizationNode doGeneralizationNode) {
+            try {
+                setItemScalarNode.execute(inliningTarget, storage, idx, value);
+                return storage;
+            } catch (SequenceStoreException e) {
+                generalizeProfile.enter(inliningTarget);
+                SequenceStorage generalized = doGeneralizationNode.execute(inliningTarget, genNodeSupplier, storage, e.getIndicationValue());
+                try {
+                    setItemScalarNode.execute(inliningTarget, generalized, idx, value);
+                } catch (SequenceStoreException e1) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException();
+                }
+                return generalized;
+            }
         }
     }
 

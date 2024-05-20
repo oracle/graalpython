@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,6 +62,29 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+/*
+ * This file is a copy (sigh) of <code> OpenJDK / jdk8u / jdk8u-dev / jdk
+ * src/share/classes/java/util/WeakHashMap.java @ 13329:c35f231af17a </code>
+ * with the following changes:
+ * <ol>
+ * <li>Turning off the formatter for the whole file so that comments stay the same.</li>
+ * <li>Disabling checkstyle for the whole file.</li>
+ * <li>Changing the copyright date.</li>
+ * <li>Changing the package name.</li>
+ * <li>Disabling warnings for the whole class.</li>
+ * <li>Uniformly changing <code>WeakHashMap</code> to <code>WeakIdentityHashMap</code>
+ *     in the code (but not the JavaDoc! So the diff is easier to read.).</li>
+ * <li>Updating the <code>import</code> statements.</li>
+ * <li>Copying in the declarations of {@link #keySet} and {@link #values}
+ *     from {@link AbstractMap}, which are otherwise package-private.</li>
+ * <li>Changing {@link #hash(Object)} to use {@link System#identityHashCode(Object)}.</li>
+ * <li>Changing {@link #eq(Object, Object)} to compare objects with reference equality.</li>
+ * <li>Changing {@link Entry#hashCode()} to use {@link System#identityHashCode(Object)}
+ *     to contribute to the hash code of an {@link Entry}.</li>
+ * <li>Changing {@link Entry#equals(Object)} to compare keys using reference equality
+ *     (after which the values are compared with {@link Object#equals(Object)}).</li>
+ * </ol>
+ */
 
 /**
  * Hash table based implementation of the <tt>Map</tt> interface, with
@@ -162,29 +185,6 @@ import java.util.function.Consumer;
  * @since       1.2
  * @see         java.util.HashMap
  * @see         java.lang.ref.WeakReference
- */
-/**
- * This file is a copy (sigh) of <code> OpenJDK / jdk8u / jdk8u-dev / jdk
- * src/share/classes/java/util/WeakHashMap.java @ 13329:c35f231af17a </code>
- * with the following changes:
- * <ol>
- * <li>Turning off the formatter for the whole file so that comments stay the same.</li>
- * <li>Disabling checkstyle for the whole file.</li>
- * <li>Changing the copyright date.</li>
- * <li>Changing the package name.</li>
- * <li>Disabling warnings for the whole class.</li>
- * <li>Uniformly changing <code>WeakHashMap</code> to <code>WeakIdentityHashMap</code>
- *     in the code (but not the JavaDoc! So the diff is easier to read.).</li>
- * <li>Updating the <code>import</code> statements.</li>
- * <li>Copying in the declarations of {@link #keySet} and {@link #values}
- *     from {@link AbstractMap}, which are otherwise package-private.</li>
- * <li>Changing {@link #hash(Object)} to use {@link System#identityHashCode(Object)}.</li>
- * <li>Changing {@link #eq(Object, Object)} to compare objects with reference equality.</li>
- * <li>Changing {@link Entry#hashCode()} to use {@link System#identityHashCode(Object)}
- *     to contribute to the hash code of an {@link Entry}.</li>
- * <li>Changing {@link Entry#equals(Object)} to compare keys using reference equality
- *     (after which the values are compared with {@link Object#equals(Object)}).</li>
- * </ol>
  */
 @SuppressWarnings("all")
 public class WeakIdentityHashMap<K,V>
