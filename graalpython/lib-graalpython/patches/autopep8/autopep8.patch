@@ -1,0 +1,18 @@
+diff --git a/autopep8.py b/autopep8.py
+index 792a501..6dc15ca 100644
+--- a/autopep8.py
++++ b/autopep8.py
+@@ -3905,8 +3905,11 @@ def parse_args(arguments, apply_config=False):
+     if args.jobs < 1:
+         # Do not import multiprocessing globally in case it is not supported
+         # on the platform.
+-        import multiprocessing
+-        args.jobs = multiprocessing.cpu_count()
++        if sys.implementation.name == 'graalpy':
++            args.jobs = __graalpython__.get_max_process_count()
++        else:
++            import multiprocessing
++            args.jobs = multiprocessing.cpu_count()
+ 
+     if args.jobs > 1 and not (args.in_place or args.diff):
+         parser.exit(
