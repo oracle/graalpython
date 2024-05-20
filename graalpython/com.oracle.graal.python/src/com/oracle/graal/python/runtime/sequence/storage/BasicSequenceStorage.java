@@ -40,8 +40,6 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
 
     public abstract SequenceStorage copy();
 
-    public abstract SequenceStorage getSliceInBound(int start, int stop, int step, int len);
-
     public abstract SequenceStorage generalizeFor(Object value, SequenceStorage other);
 
     /**

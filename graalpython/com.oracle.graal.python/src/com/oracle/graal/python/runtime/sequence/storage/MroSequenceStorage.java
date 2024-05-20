@@ -121,22 +121,6 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    @Override
-    public MroSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
-        PythonAbstractClass[] newArray = new PythonAbstractClass[sliceLength];
-
-        if (step == 1) {
-            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
-            return new MroSequenceStorage(getClassName(), newArray);
-        }
-
-        for (int i = start, j = 0; j < sliceLength; i += step, j++) {
-            newArray[j] = values[i];
-        }
-
-        return new MroSequenceStorage(getClassName(), newArray);
-    }
-
     public TruffleString getClassName() {
         return className;
     }

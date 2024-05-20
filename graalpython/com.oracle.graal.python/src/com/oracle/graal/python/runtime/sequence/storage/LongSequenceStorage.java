@@ -142,22 +142,6 @@ public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
         incLength();
     }
 
-    @Override
-    public LongSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
-        long[] newArray = new long[sliceLength];
-
-        if (step == 1) {
-            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
-            return new LongSequenceStorage(newArray);
-        }
-
-        for (int i = start, j = 0; j < sliceLength; i += step, j++) {
-            newArray[j] = values[i];
-        }
-
-        return new LongSequenceStorage(newArray);
-    }
-
     public int indexOfLong(long value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {

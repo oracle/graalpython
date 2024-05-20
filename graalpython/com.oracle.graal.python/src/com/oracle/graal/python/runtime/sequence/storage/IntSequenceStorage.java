@@ -132,22 +132,6 @@ public final class IntSequenceStorage extends ArrayBasedSequenceStorage {
         incLength();
     }
 
-    @Override
-    public IntSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
-        int[] newArray = new int[sliceLength];
-
-        if (step == 1) {
-            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
-            return new IntSequenceStorage(newArray);
-        }
-
-        for (int i = start, j = 0; j < sliceLength; i += step, j++) {
-            newArray[j] = values[i];
-        }
-
-        return new IntSequenceStorage(newArray);
-    }
-
     public int indexOfInt(int value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {

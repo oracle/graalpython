@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CoerceToIntSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -586,10 +587,123 @@ public abstract class SequenceStorageNodes {
             return EmptySequenceStorage.INSTANCE;
         }
 
-        @Specialization(limit = "MAX_BASIC_STORAGES", guards = {"storage.getClass() == cachedClass"})
-        protected static SequenceStorage doManagedStorage(BasicSequenceStorage storage, int start, int stop, int step, int length,
-                        @Cached("storage.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
-            return cachedClass.cast(storage).getSliceInBound(start, stop, step, length);
+        @Specialization
+        protected static SequenceStorage doIntSequenceStorage(IntSequenceStorage storage, int start, int stop, int step, int length) {
+            int[] newArray = new int[length];
+            int[] values = storage.getInternalIntArray();
+
+            if (step == 1) {
+                PythonUtils.arraycopy(values, start, newArray, 0, length);
+                return new IntSequenceStorage(newArray);
+            }
+
+            for (int i = start, j = 0; j < length; i += step, j++) {
+                newArray[j] = values[i];
+            }
+
+            return new IntSequenceStorage(newArray);
+        }
+
+        @Specialization
+        protected static SequenceStorage doLongSequenceStorage(LongSequenceStorage storage, int start, int stop, int step, int length) {
+            long[] newArray = new long[length];
+            long[] values = storage.getInternalLongArray();
+
+            if (step == 1) {
+                PythonUtils.arraycopy(values, start, newArray, 0, length);
+                return new LongSequenceStorage(newArray);
+            }
+
+            for (int i = start, j = 0; j < length; i += step, j++) {
+                newArray[j] = values[i];
+            }
+
+            return new LongSequenceStorage(newArray);
+        }
+
+        @Specialization
+        protected static SequenceStorage doDoubleSequenceStorage(DoubleSequenceStorage storage, int start, int stop, int step, int length) {
+            double[] newArray = new double[length];
+            double[] values = storage.getInternalDoubleArray();
+
+            if (step == 1) {
+                PythonUtils.arraycopy(values, start, newArray, 0, length);
+                return new DoubleSequenceStorage(newArray);
+            }
+
+            for (int i = start, j = 0; j < length; i += step, j++) {
+                newArray[j] = values[i];
+            }
+
+            return new DoubleSequenceStorage(newArray);
+        }
+
+        @Specialization
+        protected static SequenceStorage doBoolSequenceStorage(BoolSequenceStorage storage, int start, int stop, int step, int length) {
+            boolean[] newArray = new boolean[length];
+            boolean[] values = storage.getInternalBoolArray();
+
+            if (step == 1) {
+                PythonUtils.arraycopy(values, start, newArray, 0, length);
+                return new BoolSequenceStorage(newArray);
+            }
+
+            for (int i = start, j = 0; j < length; i += step, j++) {
+                newArray[j] = values[i];
+            }
+
+            return new BoolSequenceStorage(newArray);
+        }
+
+        @Specialization
+        protected static SequenceStorage doByteSequenceStorage(ByteSequenceStorage storage, int start, int stop, int step, int length) {
+            byte[] newArray = new byte[length];
+            byte[] values = storage.getInternalByteArray();
+
+            if (step == 1) {
+                PythonUtils.arraycopy(values, start, newArray, 0, length);
+                return new ByteSequenceStorage(newArray);
+            }
+
+            for (int i = start, j = 0; j < length; i += step, j++) {
+                newArray[j] = values[i];
+            }
+
+            return new ByteSequenceStorage(newArray);
+        }
+
+        @Specialization
+        protected static SequenceStorage doObjectSequenceStorage(ObjectSequenceStorage storage, int start, int stop, int step, int length) {
+            Object[] newArray = new Object[length];
+            Object[] values = storage.getInternalArray();
+
+            if (step == 1) {
+                PythonUtils.arraycopy(values, start, newArray, 0, length);
+                return new ObjectSequenceStorage(newArray);
+            }
+
+            for (int i = start, j = 0; j < length; i += step, j++) {
+                newArray[j] = values[i];
+            }
+
+            return new ObjectSequenceStorage(newArray);
+        }
+
+        @Specialization
+        protected static SequenceStorage doMroSequenceStorage(MroSequenceStorage storage, int start, int stop, int step, int length) {
+            PythonAbstractClass[] newArray = new PythonAbstractClass[length];
+            PythonAbstractClass[] values = storage.getInternalClassArray();
+
+            if (step == 1) {
+                PythonUtils.arraycopy(values, start, newArray, 0, length);
+                return new MroSequenceStorage(storage.getClassName(), newArray);
+            }
+
+            for (int i = start, j = 0; j < length; i += step, j++) {
+                newArray[j] = values[i];
+            }
+
+            return new MroSequenceStorage(storage.getClassName(), newArray);
         }
 
         @Specialization

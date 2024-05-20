@@ -705,7 +705,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SequenceStorage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SequenceStorageFactory.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SequenceStoreException.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/TypedSequenceStorage.java,zippy.copyright
 graalpython/lib-graalpython/modules/hpy/debug/__init__.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/debug/leakdetector.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/debug/pytest.py,hpy.copyright

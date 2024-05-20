@@ -131,22 +131,6 @@ public final class BoolSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     @Override
-    public SequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
-        boolean[] newArray = new boolean[sliceLength];
-
-        if (step == 1) {
-            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
-            return new BoolSequenceStorage(newArray);
-        }
-
-        for (int i = start, j = 0; j < sliceLength; i += step, j++) {
-            newArray[j] = values[i];
-        }
-
-        return new BoolSequenceStorage(newArray);
-    }
-
-    @Override
     public void reverse() {
         if (length > 0) {
             int head = 0;

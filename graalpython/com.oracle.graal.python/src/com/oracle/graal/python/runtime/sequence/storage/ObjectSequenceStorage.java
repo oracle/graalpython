@@ -80,22 +80,6 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     @Override
-    public ObjectSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
-        Object[] newArray = new Object[sliceLength];
-
-        if (step == 1) {
-            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
-            return new ObjectSequenceStorage(newArray);
-        }
-
-        for (int i = start, j = 0; j < sliceLength; i += step, j++) {
-            newArray[j] = values[i];
-        }
-
-        return new ObjectSequenceStorage(newArray);
-    }
-
-    @Override
     public SequenceStorage copy() {
         return new ObjectSequenceStorage(getCopyOfInternalArray());
     }

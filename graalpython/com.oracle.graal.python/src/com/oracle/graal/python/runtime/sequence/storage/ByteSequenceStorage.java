@@ -144,22 +144,6 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
         length++;
     }
 
-    @Override
-    public ByteSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
-        byte[] newArray = new byte[sliceLength];
-
-        if (step == 1) {
-            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
-            return new ByteSequenceStorage(newArray);
-        }
-
-        for (int i = start, j = 0; j < sliceLength; i += step, j++) {
-            newArray[j] = values[i];
-        }
-
-        return new ByteSequenceStorage(newArray);
-    }
-
     public int indexOfByte(byte value) {
         return ArrayUtils.indexOf(values, 0, length, value);
     }

@@ -132,22 +132,6 @@ public final class DoubleSequenceStorage extends ArrayBasedSequenceStorage {
         length++;
     }
 
-    @Override
-    public DoubleSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
-        double[] newArray = new double[sliceLength];
-
-        if (step == 1) {
-            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
-            return new DoubleSequenceStorage(newArray);
-        }
-
-        for (int i = start, j = 0; j < sliceLength; i += step, j++) {
-            newArray[j] = values[i];
-        }
-
-        return new DoubleSequenceStorage(newArray);
-    }
-
     public int indexOfDouble(double value) {
         for (int i = 0; i < length; i++) {
             if (Double.compare(values[i], value) == 0) {
