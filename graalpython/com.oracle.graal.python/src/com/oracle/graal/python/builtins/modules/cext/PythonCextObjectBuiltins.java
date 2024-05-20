@@ -578,12 +578,16 @@ public abstract class PythonCextObjectBuiltins {
         @Specialization
         static PNone set(PSequence obj, long size,
                         @Bind("this") Node inliningTarget,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode) {
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached InlinedBranchProfile basicProfile,
+                        @Cached InlinedBranchProfile nativeProfile) {
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, obj);
             // Can't use SetLenNode as that decrefs items for native storages when shrinking
             if (storage instanceof BasicSequenceStorage basicStorage) {
+                basicProfile.enter(inliningTarget);
                 basicStorage.setNewLength((int) size);
             } else if (storage instanceof NativeSequenceStorage nativeStorage) {
+                nativeProfile.enter(inliningTarget);
                 nativeStorage.setNewLength((int) size);
             } else if (storage instanceof EmptySequenceStorage) {
                 if (size > 0) {
