@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,11 +43,13 @@ package com.oracle.graal.python.runtime;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.channels.Channels;
 import java.nio.channels.FileLock;
 import java.nio.channels.Pipe;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -154,6 +156,33 @@ abstract class PosixResources extends PosixSupport {
         }
     }
 
+    private static class FlushingWritableByteChannel implements WritableByteChannel {
+        private final OutputStream stream;
+        private final WritableByteChannel delegate;
+
+        private FlushingWritableByteChannel(OutputStream stream) {
+            this.stream = stream;
+            delegate = Channels.newChannel(stream);
+        }
+
+        @Override
+        public int write(ByteBuffer src) throws IOException {
+            int res = delegate.write(src);
+            stream.flush();
+            return res;
+        }
+
+        @Override
+        public boolean isOpen() {
+            return delegate.isOpen();
+        }
+
+        @Override
+        public void close() throws IOException {
+            delegate.close();
+        }
+    }
+
     private static class ChannelWrapper {
         Channel channel;
         int cnt;
@@ -184,7 +213,7 @@ abstract class PosixResources extends PosixSupport {
         }
 
         void setNewChannel(OutputStream outputStream) {
-            this.channel = Channels.newChannel(outputStream);
+            this.channel = new FlushingWritableByteChannel(outputStream);
             this.cnt = 1;
         }
     }
