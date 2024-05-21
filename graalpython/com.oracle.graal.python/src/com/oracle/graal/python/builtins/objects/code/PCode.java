@@ -225,7 +225,6 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     public static TruffleString extractFileName(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        SourceSection src = funcRootNode.getSourceSection();
 
         PythonContext context = PythonContext.get(rootNode);
         TruffleString filename;
@@ -242,6 +241,7 @@ public final class PCode extends PythonBuiltinObject {
             // for compiled modules, _imp._fix_co_filename will set the filename
             return filename;
         }
+        SourceSection src = funcRootNode.getSourceSection();
         String jFilename;
         if (src != null) {
             jFilename = getSourceSectionFileName(src);
