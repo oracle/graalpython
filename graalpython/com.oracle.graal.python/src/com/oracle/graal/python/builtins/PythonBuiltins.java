@@ -122,7 +122,6 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -133,7 +132,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonBuiltins {
-    private final Map<Object, Object> builtinConstants = new HashMap<>();
+    private final Map<TruffleString, Object> builtinConstants = new HashMap<>();
     private final Map<TruffleString, BoundBuiltinCallable<?>> builtinFunctions = new HashMap<>();
 
     protected abstract List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories();
@@ -271,21 +270,12 @@ public abstract class PythonBuiltins {
         return maxNumPosArgs - builtin.minNumOfPositionalArgs();
     }
 
-    private void addBuiltinConstantInternal(Object name, Object value) {
-        assert name instanceof TruffleString || name instanceof HiddenAttr;
-        builtinConstants.put(name, ensureNoJavaString(value));
-    }
-
-    protected final void addBuiltinConstant(HiddenAttr name, Object value) {
-        addBuiltinConstantInternal(name, value);
-    }
-
     protected final void addBuiltinConstant(String name, Object value) {
-        addBuiltinConstantInternal(toTruffleStringUncached(name), value);
+        addBuiltinConstant(toTruffleStringUncached(name), value);
     }
 
     protected final void addBuiltinConstant(TruffleString name, Object value) {
-        addBuiltinConstantInternal(name, value);
+        builtinConstants.put(name, ensureNoJavaString(value));
     }
 
     protected Object getBuiltinConstant(TruffleString name) {
@@ -293,15 +283,9 @@ public abstract class PythonBuiltins {
     }
 
     void addConstantsToModuleObject(PythonObject obj) {
-        for (Map.Entry<Object, Object> entry : builtinConstants.entrySet()) {
-            Object constant = assertNoJavaString(entry.getKey());
+        for (Map.Entry<TruffleString, Object> entry : builtinConstants.entrySet()) {
             Object value = assertNoJavaString(entry.getValue());
-            if (constant instanceof HiddenAttr attr) {
-                HiddenAttr.WriteNode.executeUncached(obj, attr, value);
-            } else {
-                assert constant instanceof TruffleString;
-                obj.setAttribute((TruffleString) constant, value);
-            }
+            obj.setAttribute(entry.getKey(), value);
         }
     }
 

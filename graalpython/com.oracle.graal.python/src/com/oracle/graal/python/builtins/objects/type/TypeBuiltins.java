@@ -36,7 +36,6 @@ import static com.oracle.graal.python.nodes.HiddenAttr.CLEAR;
 import static com.oracle.graal.python.nodes.HiddenAttr.DEALLOC;
 import static com.oracle.graal.python.nodes.HiddenAttr.DEL;
 import static com.oracle.graal.python.nodes.HiddenAttr.DICTOFFSET;
-import static com.oracle.graal.python.nodes.HiddenAttr.DOC;
 import static com.oracle.graal.python.nodes.HiddenAttr.FLAGS;
 import static com.oracle.graal.python.nodes.HiddenAttr.FREE;
 import static com.oracle.graal.python.nodes.HiddenAttr.ITEMSIZE;
@@ -85,6 +84,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -95,7 +95,6 @@ import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
@@ -215,7 +214,7 @@ public final class TypeBuiltins extends PythonBuiltins {
     public static final HashMap<String, HiddenAttr> INITIAL_HIDDEN_TYPE_ATTRS = new HashMap<>();
 
     static {
-        for (HiddenAttr attr : new HiddenAttr[]{DICTOFFSET, ITEMSIZE, BASICSIZE, ALLOC, DEALLOC, DEL, FREE, CLEAR, FLAGS, VECTORCALL_OFFSET, DOC}) {
+        for (HiddenAttr attr : new HiddenAttr[]{DICTOFFSET, ITEMSIZE, BASICSIZE, ALLOC, DEALLOC, DEL, FREE, CLEAR, FLAGS, VECTORCALL_OFFSET}) {
             INITIAL_HIDDEN_TYPE_ATTRS.put(attr.getName(), attr);
         }
     }
@@ -223,15 +222,6 @@ public final class TypeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TypeBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-        addBuiltinConstant(DOC, //
-                        "type(object_or_name, bases, dict)\n" + //
-                                        "type(object) -> the object's type\n" + //
-                                        "type(name, bases, dict) -> a new type");
     }
 
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
@@ -268,6 +258,10 @@ public final class TypeBuiltins extends PythonBuiltins {
     @ImportStatic(SpecialAttributeNames.class)
     public abstract static class DocNode extends PythonBinaryBuiltinNode {
 
+        private static final TruffleString BUILTIN_DOC = tsLiteral("type(object_or_name, bases, dict)\n" + //
+                        "type(object) -> the object's type\n" + //
+                        "type(name, bases, dict) -> a new type");
+
         @Specialization(guards = "isNoValue(value)")
         Object getDoc(PythonBuiltinClassType self, @SuppressWarnings("unused") PNone value) {
             return getDoc(getContext().lookupType(self), value);
@@ -278,7 +272,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         static Object getDoc(PythonBuiltinClass self, @SuppressWarnings("unused") PNone value) {
             // see type.c#type_get_doc()
             if (IsBuiltinClassExactProfile.profileClassSlowPath(self, PythonBuiltinClassType.PythonClass)) {
-                return HiddenAttr.ReadNode.executeUncached(self, DOC, NO_VALUE);
+                return BUILTIN_DOC;
             } else {
                 return self.getAttribute(T___DOC__);
             }

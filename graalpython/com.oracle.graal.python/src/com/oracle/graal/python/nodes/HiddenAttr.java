@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_M
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON_INTEROP_BEHAVIOR__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICTOFFSET__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___FLAGS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___VECTORCALLOFFSET__;
@@ -89,7 +88,6 @@ public final class HiddenAttr {
     public static final HiddenAttr VECTORCALL_OFFSET = new HiddenAttr(J___VECTORCALLOFFSET__);
     public static final HiddenAttr GETBUFFER = new HiddenAttr("__getbuffer__");
     public static final HiddenAttr RELEASEBUFFER = new HiddenAttr("__releasebuffer__");
-    public static final HiddenAttr DOC = new HiddenAttr(J___DOC__);
     public static final HiddenAttr WEAKLIST = new HiddenAttr("__weaklist__");           // _weakref
     public static final HiddenAttr WEAK_REF_QUEUE = new HiddenAttr("weakRefQueue");     // _weakref
     public static final HiddenAttr ENCODER_OBJECT = new HiddenAttr("encoder_object");   // cjkcodecs
@@ -107,7 +105,6 @@ public final class HiddenAttr {
     public static final HiddenAttr NATIVE_STORAGE = new HiddenAttr("native_storage");
     public static final HiddenAttr NATIVE_SLOTS = new HiddenAttr("__native_slots__");
     public static final HiddenAttr INSTANCESHAPE = new HiddenAttr("instanceshape");
-    public static final HiddenAttr STRUCT_CACHE = new HiddenAttr("cache");
 
     private final HiddenKey key;
 
