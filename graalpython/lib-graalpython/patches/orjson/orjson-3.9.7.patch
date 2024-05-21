@@ -1,21 +1,3 @@
-From 1e4e88533f860a0a06668b973264db17cb52387e Mon Sep 17 00:00:00 2001
-From: Tim Felgentreff <tim.felgentreff@oracle.com>
-Date: Tue, 19 Sep 2023 07:05:59 +0200
-Subject: [PATCH] get it to build on graalpy
-
----
- Cargo.lock                |  6 ++----
- Cargo.toml                |  4 ++--
- src/ffi/fragment.rs       |  3 +++
- src/ffi/list.rs           |  3 +++
- src/lib.rs                | 18 +++++++++++++++---
- src/serialize/datetime.rs |  4 ++++
- src/serialize/default.rs  |  4 ++--
- src/serialize/numpy.rs    |  6 ++++++
- src/serialize/tuple.rs    |  3 +++
- src/util.rs               |  4 ++--
- 10 files changed, 42 insertions(+), 13 deletions(-)
-
 diff --git a/Cargo.lock b/Cargo.lock
 index f8ec582..e835fd4 100644
 --- a/Cargo.lock
@@ -62,6 +44,47 @@ index 8ca77f7..9b15f81 100644
  version_check = { version = "0.9" }
  
  [profile.dev]
+diff --git a/src/deserialize/cache.rs b/src/deserialize/cache.rs
+index 62142f7..d136b2b 100644
+--- a/src/deserialize/cache.rs
++++ b/src/deserialize/cache.rs
+@@ -24,7 +24,7 @@ impl CachedKey {
+     }
+     pub fn get(&mut self) -> *mut pyo3_ffi::PyObject {
+         let ptr = self.ptr as *mut pyo3_ffi::PyObject;
+-        debug_assert!(ffi!(Py_REFCNT(ptr)) >= 1);
++        // debug_assert!(ffi!(Py_REFCNT(ptr)) >= 1);
+         ffi!(Py_INCREF(ptr));
+         ptr
+     }
+diff --git a/src/deserialize/deserializer.rs b/src/deserialize/deserializer.rs
+index 0675cce..b9b01ab 100644
+--- a/src/deserialize/deserializer.rs
++++ b/src/deserialize/deserializer.rs
+@@ -8,7 +8,7 @@ use std::ptr::NonNull;
+ pub fn deserialize(
+     ptr: *mut pyo3_ffi::PyObject,
+ ) -> Result<NonNull<pyo3_ffi::PyObject>, DeserializeError<'static>> {
+-    debug_assert!(ffi!(Py_REFCNT(ptr)) >= 1);
++    // debug_assert!(ffi!(Py_REFCNT(ptr)) >= 1);
+     let buffer = read_input_to_buf(ptr)?;
+ 
+     if unlikely!(buffer.len() == 2) {
+diff --git a/src/deserialize/pyobject.rs b/src/deserialize/pyobject.rs
+index 49766b1..3a00296 100644
+--- a/src/deserialize/pyobject.rs
++++ b/src/deserialize/pyobject.rs
+@@ -29,8 +29,8 @@ pub fn get_unicode_key(key_str: &str) -> *mut pyo3_ffi::PyObject {
+         );
+         pykey = entry.get();
+     }
+-    debug_assert!(ffi!(Py_REFCNT(pykey)) >= 1);
+-    debug_assert!(unsafe { (*pykey.cast::<pyo3_ffi::PyASCIIObject>()).hash != -1 });
++    // debug_assert!(ffi!(Py_REFCNT(pykey)) >= 1);
++    // debug_assert!(unsafe { (*pykey.cast::<pyo3_ffi::PyASCIIObject>()).hash != -1 });
+     pykey
+ }
+ 
 diff --git a/src/ffi/fragment.rs b/src/ffi/fragment.rs
 index 44d4517..006111a 100644
 --- a/src/ffi/fragment.rs
@@ -93,10 +116,10 @@ index 44b386c..5800ac3 100644
              Some(nonnull!(elem))
          }
 diff --git a/src/lib.rs b/src/lib.rs
-index 7728d45..5f9547a 100644
+index 7728d45..35ba2b0 100644
 --- a/src/lib.rs
 +++ b/src/lib.rs
-@@ -214,9 +214,18 @@ fn raise_loads_exception(err: deserialize::DeserializeError) -> *mut PyObject {
+@@ -214,11 +214,20 @@ fn raise_loads_exception(err: deserialize::DeserializeError) -> *mut PyObject {
              PyUnicode_FromStringAndSize(msg.as_ptr() as *const c_char, msg.len() as isize);
          let args = PyTuple_New(3);
          let pos = PyLong_FromLongLong(pos);
@@ -116,8 +139,38 @@ index 7728d45..5f9547a 100644
 +            PyTuple_SetItem(args, 2, pos);
 +        }
          PyErr_SetObject(typeref::JsonDecodeError, args);
-         debug_assert!(ffi!(Py_REFCNT(args)) == 2);
+-        debug_assert!(ffi!(Py_REFCNT(args)) == 2);
++        // debug_assert!(ffi!(Py_REFCNT(args)) == 2);
          Py_DECREF(args);
+     };
+     null_mut()
+@@ -232,7 +241,7 @@ fn raise_dumps_exception_fixed(msg: &str) -> *mut PyObject {
+         let err_msg =
+             PyUnicode_FromStringAndSize(msg.as_ptr() as *const c_char, msg.len() as isize);
+         PyErr_SetObject(typeref::JsonEncodeError, err_msg);
+-        debug_assert!(ffi!(Py_REFCNT(err_msg)) == 2);
++        // debug_assert!(ffi!(Py_REFCNT(err_msg)) == 2);
+         Py_DECREF(err_msg);
+     };
+     null_mut()
+@@ -249,7 +258,7 @@ fn raise_dumps_exception_dynamic(err: &String) -> *mut PyObject {
+         let err_msg =
+             PyUnicode_FromStringAndSize(err.as_ptr() as *const c_char, err.len() as isize);
+         PyErr_SetObject(typeref::JsonEncodeError, err_msg);
+-        debug_assert!(ffi!(Py_REFCNT(err_msg)) == 2);
++        // debug_assert!(ffi!(Py_REFCNT(err_msg)) == 2);
+         Py_DECREF(err_msg);
+ 
+         if !cause_exc.is_null() {
+@@ -275,7 +284,7 @@ fn raise_dumps_exception_dynamic(err: &String) -> *mut PyObject {
+         let err_msg =
+             PyUnicode_FromStringAndSize(err.as_ptr() as *const c_char, err.len() as isize);
+         PyErr_SetObject(typeref::JsonEncodeError, err_msg);
+-        debug_assert!(ffi!(Py_REFCNT(err_msg)) == 2);
++        // debug_assert!(ffi!(Py_REFCNT(err_msg)) == 2);
+         Py_DECREF(err_msg);
+         let mut tp: *mut PyObject = null_mut();
+         let mut val: *mut PyObject = null_mut();
 @@ -330,7 +339,10 @@ pub unsafe extern "C" fn dumps(
      }
      if !kwnames.is_null() {
@@ -129,6 +182,46 @@ index 7728d45..5f9547a 100644
              if arg == typeref::DEFAULT {
                  if unlikely!(num_args & 2 == 2) {
                      return raise_dumps_exception_fixed(
+@@ -354,7 +366,7 @@ pub unsafe extern "C" fn dumps(
+     let mut optsbits: i32 = 0;
+     if let Some(opts) = optsptr {
+         if opts.as_ptr() == typeref::NONE {
+-        } else if (*opts.as_ptr()).ob_type != typeref::INT_TYPE {
++        } else if Py_TYPE(opts.as_ptr()) != typeref::INT_TYPE {
+             return raise_dumps_exception_fixed("Invalid opts");
+         } else {
+             optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
+diff --git a/src/serialize/dataclass.rs b/src/serialize/dataclass.rs
+index aa805c4..8f134d5 100644
+--- a/src/serialize/dataclass.rs
++++ b/src/serialize/dataclass.rs
+@@ -178,7 +178,7 @@ impl Serialize for DataclassFallbackSerializer {
+         S: Serializer,
+     {
+         let fields = ffi!(PyObject_GetAttr(self.ptr, DATACLASS_FIELDS_STR));
+-        debug_assert!(ffi!(Py_REFCNT(fields)) >= 2);
++        // debug_assert!(ffi!(Py_REFCNT(fields)) >= 2);
+         ffi!(Py_DECREF(fields));
+         let len = ffi!(Py_SIZE(fields)) as usize;
+         if unlikely!(len == 0) {
+@@ -187,7 +187,7 @@ impl Serialize for DataclassFallbackSerializer {
+         let mut map = serializer.serialize_map(None).unwrap();
+         for (attr, field) in PyDictIter::from_pyobject(fields) {
+             let field_type = ffi!(PyObject_GetAttr(field.as_ptr(), FIELD_TYPE_STR));
+-            debug_assert!(ffi!(Py_REFCNT(field_type)) >= 2);
++            // debug_assert!(ffi!(Py_REFCNT(field_type)) >= 2);
+             ffi!(Py_DECREF(field_type));
+             if unsafe { field_type as *mut pyo3_ffi::PyTypeObject != FIELD_TYPE } {
+                 continue;
+@@ -202,7 +202,7 @@ impl Serialize for DataclassFallbackSerializer {
+             }
+ 
+             let value = ffi!(PyObject_GetAttr(self.ptr, attr.as_ptr()));
+-            debug_assert!(ffi!(Py_REFCNT(value)) >= 2);
++            // debug_assert!(ffi!(Py_REFCNT(value)) >= 2);
+             ffi!(Py_DECREF(value));
+             let pyvalue = PyObjectSerializer::new(
+                 value,
 diff --git a/src/serialize/datetime.rs b/src/serialize/datetime.rs
 index adf35fb..13d5747 100644
 --- a/src/serialize/datetime.rs
@@ -165,6 +258,19 @@ index 6f2d098..eefca82 100644
                  let default_obj = unsafe {
                      pyo3_ffi::PyObject_Vectorcall(
                          callable.as_ptr(),
+diff --git a/src/serialize/dict.rs b/src/serialize/dict.rs
+index a2517e0..9d8e1c7 100644
+--- a/src/serialize/dict.rs
++++ b/src/serialize/dict.rs
+@@ -293,7 +293,7 @@ impl DictNonStrKey {
+             }
+             ObType::Enum => {
+                 let value = ffi!(PyObject_GetAttr(key, VALUE_STR));
+-                debug_assert!(ffi!(Py_REFCNT(value)) >= 2);
++                // debug_assert!(ffi!(Py_REFCNT(value)) >= 2);
+                 let ret = Self::pyobject_to_string(value, opts);
+                 ffi!(Py_DECREF(value));
+                 ret
 diff --git a/src/serialize/numpy.rs b/src/serialize/numpy.rs
 index 2ae9204..9dc97b4 100644
 --- a/src/serialize/numpy.rs
@@ -184,6 +290,35 @@ index 2ae9204..9dc97b4 100644
          let uni = crate::str::unicode_to_str(descr_str).unwrap();
          if uni.len() < 5 {
              return Self::NaT;
+diff --git a/src/serialize/pyenum.rs b/src/serialize/pyenum.rs
+index 1972f8a..d930c90 100644
+--- a/src/serialize/pyenum.rs
++++ b/src/serialize/pyenum.rs
+@@ -39,7 +39,7 @@ impl Serialize for EnumSerializer {
+         S: Serializer,
+     {
+         let value = ffi!(PyObject_GetAttr(self.ptr, VALUE_STR));
+-        debug_assert!(ffi!(Py_REFCNT(value)) >= 2);
++        // debug_assert!(ffi!(Py_REFCNT(value)) >= 2);
+         let ret = PyObjectSerializer::new(
+             value,
+             self.opts,
+diff --git a/src/serialize/serializer.rs b/src/serialize/serializer.rs
+index 0d7d0b3..ea7d8aa 100644
+--- a/src/serialize/serializer.rs
++++ b/src/serialize/serializer.rs
+@@ -106,10 +106,7 @@ macro_rules! is_subclass_by_flag {
+ 
+ macro_rules! is_subclass_by_type {
+     ($ob_type:expr, $type:ident) => {
+-        (*($ob_type as *mut pyo3_ffi::PyTypeObject))
+-            .ob_base
+-            .ob_base
+-            .ob_type
++        pyo3_ffi::Py_TYPE($ob_type as *mut pyo3_ffi::PyObject)
+             == $type
+     };
+ }
 diff --git a/src/serialize/tuple.rs b/src/serialize/tuple.rs
 index 7ad76e4..46881cf 100644
 --- a/src/serialize/tuple.rs
@@ -199,10 +334,139 @@ index 7ad76e4..46881cf 100644
                  let value = PyObjectSerializer::new(
                      elem,
                      self.opts,
+diff --git a/src/str/ffi.rs b/src/str/ffi.rs
+index 2f37b6b..013273d 100644
+--- a/src/str/ffi.rs
++++ b/src/str/ffi.rs
+@@ -37,18 +37,6 @@ pub fn unicode_to_str_via_ffi(op: *mut PyObject) -> Option<&'static str> {
+ #[inline]
+ pub fn unicode_to_str(op: *mut PyObject) -> Option<&'static str> {
+     unsafe {
+-        if unlikely!((*op.cast::<PyASCIIObject>()).compact() == 0) {
+-            unicode_to_str_via_ffi(op)
+-        } else if (*op.cast::<PyASCIIObject>()).ascii() == 1 {
+-            let ptr = op.cast::<PyASCIIObject>().offset(1) as *const u8;
+-            let len = (*op.cast::<PyASCIIObject>()).length as usize;
+-            Some(str_from_slice!(ptr, len))
+-        } else if (*op.cast::<PyCompactUnicodeObject>()).utf8_length != 0 {
+-            let ptr = (*op.cast::<PyCompactUnicodeObject>()).utf8 as *const u8;
+-            let len = (*op.cast::<PyCompactUnicodeObject>()).utf8_length as usize;
+-            Some(str_from_slice!(ptr, len))
+-        } else {
+-            unicode_to_str_via_ffi(op)
+-        }
++        unicode_to_str_via_ffi(op)
+     }
+ }
+diff --git a/src/typeref.rs b/src/typeref.rs
+index 664f8a3..f88d85c 100644
+--- a/src/typeref.rs
++++ b/src/typeref.rs
+@@ -157,26 +157,26 @@ fn _init_typerefs_impl() -> bool {
+         TRUE = Py_True();
+         FALSE = Py_False();
+         EMPTY_UNICODE = PyUnicode_New(0, 255);
+-        STR_TYPE = (*EMPTY_UNICODE).ob_type;
+-        BYTES_TYPE = (*PyBytes_FromStringAndSize("".as_ptr() as *const c_char, 0)).ob_type;
++        STR_TYPE = Py_TYPE(EMPTY_UNICODE);
++        BYTES_TYPE = Py_TYPE(PyBytes_FromStringAndSize("".as_ptr() as *const c_char, 0));
+ 
+         {
+             let bytearray = PyByteArray_FromStringAndSize("".as_ptr() as *const c_char, 0);
+-            BYTEARRAY_TYPE = (*bytearray).ob_type;
++            BYTEARRAY_TYPE = Py_TYPE(bytearray);
+ 
+             let memoryview = PyMemoryView_FromObject(bytearray);
+-            MEMORYVIEW_TYPE = (*memoryview).ob_type;
++            MEMORYVIEW_TYPE = Py_TYPE(memoryview);
+             Py_DECREF(memoryview);
+             Py_DECREF(bytearray);
+         }
+ 
+-        DICT_TYPE = (*PyDict_New()).ob_type;
+-        LIST_TYPE = (*PyList_New(0)).ob_type;
+-        TUPLE_TYPE = (*PyTuple_New(0)).ob_type;
+-        NONE_TYPE = (*NONE).ob_type;
+-        BOOL_TYPE = (*TRUE).ob_type;
+-        INT_TYPE = (*PyLong_FromLongLong(0)).ob_type;
+-        FLOAT_TYPE = (*PyFloat_FromDouble(0.0)).ob_type;
++        DICT_TYPE = Py_TYPE(PyDict_New());
++        LIST_TYPE = Py_TYPE(PyList_New(0));
++        TUPLE_TYPE = Py_TYPE(PyTuple_New(0));
++        NONE_TYPE = Py_TYPE(NONE);
++        BOOL_TYPE = Py_TYPE(TRUE);
++        INT_TYPE = Py_TYPE(PyLong_FromLongLong(0));
++        FLOAT_TYPE = Py_TYPE(PyFloat_FromDouble(0.0));
+         DATETIME_TYPE = look_up_datetime_type();
+         DATE_TYPE = look_up_date_type();
+         TIME_TYPE = look_up_time_type();
+@@ -303,7 +303,7 @@ unsafe fn look_up_uuid_type() -> *mut PyTypeObject {
+     let uuid_mod = PyImport_ImportModule("uuid\0".as_ptr() as *const c_char);
+     let uuid_mod_dict = PyObject_GenericGetDict(uuid_mod, null_mut());
+     let uuid = PyMapping_GetItemString(uuid_mod_dict, "NAMESPACE_DNS\0".as_ptr() as *const c_char);
+-    let ptr = (*uuid).ob_type;
++    let ptr = Py_TYPE(uuid);
+     Py_DECREF(uuid);
+     Py_DECREF(uuid_mod_dict);
+     Py_DECREF(uuid_mod);
+@@ -324,7 +324,7 @@ unsafe fn look_up_datetime_type() -> *mut PyTypeObject {
+         NONE,
+         (*(PyDateTimeAPI())).DateTimeType,
+     );
+-    let ptr = (*datetime).ob_type;
++    let ptr = Py_TYPE(datetime);
+     Py_DECREF(datetime);
+     ptr
+ }
+@@ -333,7 +333,7 @@ unsafe fn look_up_datetime_type() -> *mut PyTypeObject {
+ #[cfg_attr(feature = "optimize", optimize(size))]
+ unsafe fn look_up_date_type() -> *mut PyTypeObject {
+     let date = ((*PyDateTimeAPI()).Date_FromDate)(1, 1, 1, (*(PyDateTimeAPI())).DateType);
+-    let ptr = (*date).ob_type;
++    let ptr = Py_TYPE(date);
+     Py_DECREF(date);
+     ptr
+ }
+@@ -342,7 +342,7 @@ unsafe fn look_up_date_type() -> *mut PyTypeObject {
+ #[cfg_attr(feature = "optimize", optimize(size))]
+ unsafe fn look_up_time_type() -> *mut PyTypeObject {
+     let time = ((*PyDateTimeAPI()).Time_FromTime)(0, 0, 0, 0, NONE, (*(PyDateTimeAPI())).TimeType);
+-    let ptr = (*time).ob_type;
++    let ptr = Py_TYPE(time);
+     Py_DECREF(time);
+     ptr
+ }
 diff --git a/src/util.rs b/src/util.rs
-index fa3b7e1..2b2df61 100644
+index fa3b7e1..fddf97b 100644
 --- a/src/util.rs
 +++ b/src/util.rs
+@@ -8,7 +8,7 @@ macro_rules! is_type {
+ 
+ macro_rules! ob_type {
+     ($obj:expr) => {
+-        unsafe { (*$obj).ob_type }
++        unsafe { pyo3_ffi::Py_TYPE($obj) }
+     };
+ }
+ 
+@@ -61,7 +61,7 @@ macro_rules! reverse_pydict_incref {
+     ($op:expr) => {
+         unsafe {
+             if crate::ffi::_Py_IsImmortal($op) == 0 {
+-                debug_assert!(ffi!(Py_REFCNT($op)) >= 2);
++                // debug_assert!(ffi!(Py_REFCNT($op)) >= 2);
+                 (*$op).ob_refcnt.ob_refcnt -= 1;
+             }
+         }
+@@ -72,7 +72,7 @@ macro_rules! reverse_pydict_incref {
+ macro_rules! reverse_pydict_incref {
+     ($op:expr) => {
+         unsafe {
+-            debug_assert!(ffi!(Py_REFCNT($op)) >= 2);
++            // debug_assert!(ffi!(Py_REFCNT($op)) >= 2);
+             (*$op).ob_refcnt -= 1;
+         }
+     };
 @@ -100,7 +100,7 @@ macro_rules! ffi {
      };
  }
@@ -221,5 +485,3 @@ index fa3b7e1..2b2df61 100644
  macro_rules! call_method {
      ($obj1:expr, $obj2:expr) => {
          unsafe {
--- 
-2.34.1
