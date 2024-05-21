@@ -944,25 +944,27 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class)
     public static final class WriteName {
         @Specialization
-        public static void perform(VirtualFrame frame, Object value, TruffleString name,
+        public static void perform(VirtualFrame frame, TruffleString name, Object value,
                         @Cached WriteNameNode writeNode) {
             writeNode.execute(frame, name, value);
         }
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class)
     public static final class ReadName {
         @Specialization
         public static Object perform(VirtualFrame frame, TruffleString name,
                         @Cached ReadNameNode readNode) {
-            Object result = readNode.execute(frame, name);
-            return result;
+            return readNode.execute(frame, name);
         }
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class)
     public static final class DeleteName {
         @Specialization(guards = "hasLocals(frame)")
         public static void performLocals(VirtualFrame frame, TruffleString name,
@@ -1014,15 +1016,18 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = double.class)
+    @ConstantOperand(type = double.class)
     public static final class LoadComplex {
         @Specialization
-        public static Object perform(double[] complex,
+        public static Object perform(double real, double imag,
                         @Bind("$root") PBytecodeDSLRootNode rootNode) {
-            return rootNode.factory.createComplex(complex[0], complex[1]);
+            return rootNode.factory.createComplex(real, imag);
         }
     }
 
     @Operation
+    @ConstantOperand(type = BigInteger.class)
     public static final class LoadBigInt {
         @Specialization
         public static Object perform(BigInteger bigInt,
@@ -1032,6 +1037,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = byte[].class, dimensions = 0)
     public static final class LoadBytes {
         @Specialization
         public static Object perform(byte[] bytes,
@@ -1100,59 +1106,79 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class, name = "name")
+    @ConstantOperand(type = TruffleString.class, name = "qualifiedName")
+    @ConstantOperand(type = TruffleString.class, name = "doc")
+    @ConstantOperand(type = BytecodeDSLCodeUnit.class)
     public static final class MakeFunction {
         @Specialization(guards = {"isSingleContext(rootNode)", "!codeUnit.isGeneratorOrCoroutine()"})
         public static Object functionSingleContext(VirtualFrame frame,
-                        TruffleString name, TruffleString qualifiedName,
+                        TruffleString name,
+                        TruffleString qualifiedName,
+                        TruffleString doc,
                         BytecodeDSLCodeUnit codeUnit,
-                        Object[] defaults, Object[] kwDefaultsObject,
-                        Object closure, Object annotations, Object doc,
+                        Object[] defaults,
+                        Object[] kwDefaultsObject,
+                        Object closure,
+                        Object annotations,
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
                         @Cached("createCode(rootNode, codeUnit, functionRootNode)") PCode cachedCode,
                         @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-            return createFunction(frame, name, qualifiedName, cachedCode, defaults, kwDefaultsObject, closure, annotations, doc, rootNode, dylib);
+            return createFunction(frame, name, qualifiedName, doc, cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
         }
 
         @Specialization(replaces = "functionSingleContext", guards = "!codeUnit.isGeneratorOrCoroutine()")
         public static Object functionMultiContext(VirtualFrame frame,
-                        TruffleString name, TruffleString qualifiedName,
+                        TruffleString name,
+                        TruffleString qualifiedName,
+                        TruffleString doc,
                         BytecodeDSLCodeUnit codeUnit,
-                        Object[] defaults, Object[] kwDefaultsObject,
-                        Object closure, Object annotations, Object doc,
+                        Object[] defaults,
+                        Object[] kwDefaultsObject,
+                        Object closure,
+                        Object annotations,
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
                         @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             PCode code = createCode(rootNode, codeUnit, functionRootNode);
-            return createFunction(frame, name, qualifiedName, code, defaults, kwDefaultsObject, closure, annotations, doc, rootNode, dylib);
+            return createFunction(frame, name, qualifiedName, doc, code, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
         }
 
         @Specialization(guards = {"isSingleContext(rootNode)", "codeUnit.isGeneratorOrCoroutine()"})
         public static Object generatorOrCoroutineSingleContext(VirtualFrame frame,
-                        TruffleString name, TruffleString qualifiedName,
+                        TruffleString name,
+                        TruffleString qualifiedName,
+                        TruffleString doc,
                         BytecodeDSLCodeUnit codeUnit,
-                        Object[] defaults, Object[] kwDefaultsObject,
-                        Object closure, Object annotations, Object doc,
+                        Object[] defaults,
+                        Object[] kwDefaultsObject,
+                        Object closure,
+                        Object annotations,
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
                         @Cached(value = "createGeneratorRootNode(rootNode, functionRootNode, codeUnit)", adopt = false) PBytecodeDSLGeneratorFunctionRootNode generatorRootNode,
                         @Cached("createCode(rootNode, codeUnit, generatorRootNode)") PCode cachedCode,
                         @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-            return createFunction(frame, name, qualifiedName, cachedCode, defaults, kwDefaultsObject, closure, annotations, doc, rootNode, dylib);
+            return createFunction(frame, name, qualifiedName, doc, cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
         }
 
         @Specialization(replaces = "generatorOrCoroutineSingleContext", guards = "codeUnit.isGeneratorOrCoroutine()")
         public static Object generatorOrCoroutineMultiContext(VirtualFrame frame,
-                        TruffleString name, TruffleString qualifiedName,
+                        TruffleString name,
+                        TruffleString qualifiedName,
+                        TruffleString doc,
                         BytecodeDSLCodeUnit codeUnit,
-                        Object[] defaults, Object[] kwDefaultsObject,
-                        Object closure, Object annotations, Object doc,
+                        Object[] defaults,
+                        Object[] kwDefaultsObject,
+                        Object closure,
+                        Object annotations,
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
                         @Cached(value = "createGeneratorRootNode(rootNode, functionRootNode, codeUnit)", adopt = false) PBytecodeDSLGeneratorFunctionRootNode generatorRootNode,
                         @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             PCode code = createCode(rootNode, codeUnit, generatorRootNode);
-            return createFunction(frame, name, qualifiedName, code, defaults, kwDefaultsObject, closure, annotations, doc, rootNode, dylib);
+            return createFunction(frame, name, qualifiedName, doc, code, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
         }
 
         @Idempotent
@@ -1180,10 +1206,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         protected static PFunction createFunction(VirtualFrame frame,
-                        TruffleString name, TruffleString qualifiedName,
-                        PCode code,
-                        Object[] defaults, Object[] kwDefaultsObject,
-                        Object closure, Object annotations, Object doc,
+                        TruffleString name, TruffleString qualifiedName, TruffleString doc,
+                        PCode code, Object[] defaults,
+                        Object[] kwDefaultsObject, Object closure, Object annotations,
                         PBytecodeDSLRootNode node,
                         DynamicObjectLibrary dylib) {
             PKeyword[] kwDefaults = new PKeyword[kwDefaultsObject.length];
@@ -1210,8 +1235,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @Specialization
-        public static long doIIOvf(int x, int y) {
-            return x + (long) y;
+        public static long doIIOvf(int left, int right) {
+            return left + (long) right;
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
@@ -1738,10 +1763,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class)
     public static final class GetMethod {
         @Specialization
         public static Object doIt(VirtualFrame frame,
-                        Object obj, TruffleString name,
+                        TruffleString name, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetMethod getMethod) {
             return getMethod.execute(frame, inliningTarget, obj, name);
@@ -1817,6 +1843,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class)
     public static final class ReadGlobal {
         @Specialization
         public static Object perform(VirtualFrame frame, TruffleString name,
@@ -1826,15 +1853,17 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class)
     public static final class WriteGlobal {
         @Specialization
-        public static void perform(VirtualFrame frame, Object value, TruffleString name,
+        public static void perform(VirtualFrame frame, TruffleString name, Object value,
                         @Cached WriteGlobalNode writeNode) {
             writeNode.executeObject(frame, name, value);
         }
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class)
     public static final class DeleteGlobal {
         @Specialization
         public static void perform(VirtualFrame frame, TruffleString name,
@@ -2013,6 +2042,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int[].class, dimensions = 0)
     public static final class MakeConstantIntList {
         @Specialization
         public static PList perform(int[] array,
@@ -2023,6 +2053,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = long[].class, dimensions = 0)
     public static final class MakeConstantLongList {
         @Specialization
         public static PList perform(long[] array,
@@ -2033,6 +2064,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = boolean[].class, dimensions = 0)
     public static final class MakeConstantBooleanList {
         @Specialization
         public static PList perform(boolean[] array,
@@ -2043,6 +2075,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = double[].class, dimensions = 0)
     public static final class MakeConstantDoubleList {
         @Specialization
         public static PList perform(double[] array,
@@ -2053,6 +2086,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = Object[].class, dimensions = 0)
     public static final class MakeConstantObjectList {
         @Specialization
         public static PList perform(Object[] array,
@@ -2063,6 +2097,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int[].class, dimensions = 0)
     public static final class MakeConstantIntTuple {
         @Specialization
         public static PTuple perform(int[] array,
@@ -2073,6 +2108,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = long[].class, dimensions = 0)
     public static final class MakeConstantLongTuple {
         @Specialization
         public static PTuple perform(long[] array,
@@ -2083,6 +2119,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = boolean[].class, dimensions = 0)
     public static final class MakeConstantBooleanTuple {
         @Specialization
         public static PTuple perform(boolean[] array,
@@ -2093,6 +2130,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = double[].class, dimensions = 0)
     public static final class MakeConstantDoubleTuple {
         @Specialization
         public static PTuple perform(double[] array,
@@ -2103,6 +2141,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = Object[].class, dimensions = 0)
     public static final class MakeConstantObjectTuple {
         @Specialization
         public static PTuple perform(Object[] array,
@@ -2148,33 +2187,31 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
-    @ConstantOperand(type = int.class, specifyAtEnd = true)
+    @ConstantOperand(type = TruffleString[].class, dimensions = 0, specifyAtEnd = true)
     public static final class MakeKeywords {
         @Specialization
-        public static PKeyword[] perform(@Variadic Object[] keysAndValues, int entries) {
-            if (entries <= EXPLODE_LOOP_THRESHOLD) {
-                return doExploded(keysAndValues, entries);
+        public static PKeyword[] perform(@Variadic Object[] values, TruffleString[] keys) {
+            if (keys.length <= EXPLODE_LOOP_THRESHOLD) {
+                return doExploded(keys, values);
             } else {
-                return doRegular(keysAndValues, entries);
+                return doRegular(keys, values);
             }
         }
 
         @ExplodeLoop
-        private static PKeyword[] doExploded(Object[] keysAndValues, int entries) {
-            CompilerAsserts.partialEvaluationConstant(entries);
-            PKeyword[] result = new PKeyword[entries];
-            for (int i = 0; i < entries; i++) {
-                CompilerAsserts.compilationConstant(keysAndValues[i * 2]);
-                result[i] = new PKeyword((TruffleString) keysAndValues[i * 2], keysAndValues[i * 2 + 1]);
+        private static PKeyword[] doExploded(TruffleString[] keys, Object[] values) {
+            CompilerAsserts.partialEvaluationConstant(keys.length);
+            PKeyword[] result = new PKeyword[keys.length];
+            for (int i = 0; i < keys.length; i++) {
+                result[i] = new PKeyword(keys[i], values[i]);
             }
             return result;
         }
 
-        private static PKeyword[] doRegular(Object[] keysAndValues, int entries) {
-            PKeyword[] result = new PKeyword[entries];
-            for (int i = 0; i < entries; i++) {
-                CompilerAsserts.compilationConstant(keysAndValues[i * 2]);
-                result[i] = new PKeyword((TruffleString) keysAndValues[i * 2], keysAndValues[i * 2 + 1]);
+        private static PKeyword[] doRegular(TruffleString[] keys, Object[] values) {
+            PKeyword[] result = new PKeyword[keys.length];
+            for (int i = 0; i < keys.length; i++) {
+                result[i] = new PKeyword(keys[i], values[i]);
             }
             return result;
         }
@@ -2501,44 +2538,44 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         private static final TruffleString T_OPERATOR = PythonUtils.tsLiteral("<=");
 
         @Specialization
-        public static boolean cmp(int l, int r) {
-            return l <= r;
+        public static boolean cmp(int left, int right) {
+            return left <= right;
         }
 
         @Specialization
-        public static boolean cmp(long l, long r) {
-            return l <= r;
+        public static boolean cmp(long left, long right) {
+            return left <= right;
         }
 
         @Specialization
-        public static boolean cmp(char l, char r) {
-            return l <= r;
+        public static boolean cmp(char left, char right) {
+            return left <= right;
         }
 
         @Specialization
-        public static boolean cmp(byte l, byte r) {
-            return l <= r;
+        public static boolean cmp(byte left, byte right) {
+            return left <= right;
         }
 
         @Specialization
-        public static boolean cmp(double l, double r) {
-            return l <= r;
+        public static boolean cmp(double left, double right) {
+            return left <= right;
         }
 
         @Specialization
-        public static boolean cmp(TruffleString l, TruffleString r,
+        public static boolean cmp(TruffleString left, TruffleString right,
                         @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
-            return StringUtils.compareStrings(l, r, compareIntsUTF32Node) <= 0;
+            return StringUtils.compareStrings(left, right, compareIntsUTF32Node) <= 0;
         }
 
         @Specialization
-        public static boolean cmp(int l, double r) {
-            return l <= r;
+        public static boolean cmp(int left, double right) {
+            return left <= right;
         }
 
         @Specialization
-        public static boolean cmp(double l, int r) {
-            return l <= r;
+        public static boolean cmp(double left, int right) {
+            return left <= right;
         }
 
         @Specialization
@@ -2564,44 +2601,44 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         private static final TruffleString T_OPERATOR = PythonUtils.tsLiteral("<");
 
         @Specialization
-        public static boolean cmp(int l, int r) {
-            return l < r;
+        public static boolean cmp(int left, int right) {
+            return left < right;
         }
 
         @Specialization
-        public static boolean cmp(long l, long r) {
-            return l < r;
+        public static boolean cmp(long left, long right) {
+            return left < right;
         }
 
         @Specialization
-        public static boolean cmp(char l, char r) {
-            return l < r;
+        public static boolean cmp(char left, char right) {
+            return left < right;
         }
 
         @Specialization
-        public static boolean cmp(byte l, byte r) {
-            return l < r;
+        public static boolean cmp(byte left, byte right) {
+            return left < right;
         }
 
         @Specialization
-        public static boolean cmp(double l, double r) {
-            return l < r;
+        public static boolean cmp(double left, double right) {
+            return left < right;
         }
 
         @Specialization
-        public static boolean cmp(TruffleString l, TruffleString r,
+        public static boolean cmp(TruffleString left, TruffleString right,
                         @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
-            return StringUtils.compareStrings(l, r, compareIntsUTF32Node) < 0;
+            return StringUtils.compareStrings(left, right, compareIntsUTF32Node) < 0;
         }
 
         @Specialization
-        public static boolean cmp(int l, double r) {
-            return l < r;
+        public static boolean cmp(int left, double right) {
+            return left < right;
         }
 
         @Specialization
-        public static boolean cmp(double l, int r) {
-            return l < r;
+        public static boolean cmp(double left, int right) {
+            return left < right;
         }
 
         @Specialization
@@ -2627,44 +2664,44 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         private static final TruffleString T_OPERATOR = PythonUtils.tsLiteral(">=");
 
         @Specialization
-        public static boolean cmp(int l, int r) {
-            return l >= r;
+        public static boolean cmp(int left, int right) {
+            return left >= right;
         }
 
         @Specialization
-        public static boolean cmp(long l, long r) {
-            return l >= r;
+        public static boolean cmp(long left, long right) {
+            return left >= right;
         }
 
         @Specialization
-        public static boolean cmp(char l, char r) {
-            return l >= r;
+        public static boolean cmp(char left, char right) {
+            return left >= right;
         }
 
         @Specialization
-        public static boolean cmp(byte l, byte r) {
-            return l >= r;
+        public static boolean cmp(byte left, byte right) {
+            return left >= right;
         }
 
         @Specialization
-        public static boolean cmp(double l, double r) {
-            return l >= r;
+        public static boolean cmp(double left, double right) {
+            return left >= right;
         }
 
         @Specialization
-        public static boolean cmp(TruffleString l, TruffleString r,
+        public static boolean cmp(TruffleString left, TruffleString right,
                         @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
-            return StringUtils.compareStrings(l, r, compareIntsUTF32Node) >= 0;
+            return StringUtils.compareStrings(left, right, compareIntsUTF32Node) >= 0;
         }
 
         @Specialization
-        public static boolean cmp(int l, double r) {
-            return l >= r;
+        public static boolean cmp(int left, double right) {
+            return left >= right;
         }
 
         @Specialization
-        public static boolean cmp(double l, int r) {
-            return l >= r;
+        public static boolean cmp(double left, int right) {
+            return left >= right;
         }
 
         @Specialization
@@ -2690,44 +2727,44 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         private static final TruffleString T_OPERATOR = PythonUtils.tsLiteral(">");
 
         @Specialization
-        public static boolean cmp(int l, int r) {
-            return l > r;
+        public static boolean cmp(int left, int right) {
+            return left > right;
         }
 
         @Specialization
-        public static boolean cmp(long l, long r) {
-            return l > r;
+        public static boolean cmp(long left, long right) {
+            return left > right;
         }
 
         @Specialization
-        public static boolean cmp(char l, char r) {
-            return l > r;
+        public static boolean cmp(char left, char right) {
+            return left > right;
         }
 
         @Specialization
-        public static boolean cmp(byte l, byte r) {
-            return l > r;
+        public static boolean cmp(byte left, byte right) {
+            return left > right;
         }
 
         @Specialization
-        public static boolean cmp(double l, double r) {
-            return l > r;
+        public static boolean cmp(double left, double right) {
+            return left > right;
         }
 
         @Specialization
-        public static boolean cmp(TruffleString l, TruffleString r,
+        public static boolean cmp(TruffleString left, TruffleString right,
                         @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
-            return StringUtils.compareStrings(l, r, compareIntsUTF32Node) > 0;
+            return StringUtils.compareStrings(left, right, compareIntsUTF32Node) > 0;
         }
 
         @Specialization
-        public static boolean cmp(int l, double r) {
-            return l > r;
+        public static boolean cmp(int left, double right) {
+            return left > right;
         }
 
         @Specialization
-        public static boolean cmp(double l, int r) {
-            return l > r;
+        public static boolean cmp(double left, int right) {
+            return left > right;
         }
 
         @Specialization
@@ -2751,44 +2788,44 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class Eq {
 
         @Specialization
-        public static boolean cmp(int l, int r) {
-            return l == r;
+        public static boolean cmp(int left, int right) {
+            return left == right;
         }
 
         @Specialization
-        public static boolean cmp(long l, long r) {
-            return l == r;
+        public static boolean cmp(long left, long right) {
+            return left == right;
         }
 
         @Specialization
-        public static boolean cmp(char l, char r) {
-            return l == r;
+        public static boolean cmp(char left, char right) {
+            return left == right;
         }
 
         @Specialization
-        public static boolean cmp(byte l, byte r) {
-            return l == r;
+        public static boolean cmp(byte left, byte right) {
+            return left == right;
         }
 
         @Specialization
-        public static boolean cmp(double l, double r) {
-            return l == r;
+        public static boolean cmp(double left, double right) {
+            return left == right;
         }
 
         @Specialization
-        public static boolean cmp(TruffleString l, TruffleString r,
+        public static boolean cmp(TruffleString left, TruffleString right,
                         @Cached TruffleString.EqualNode equalNode) {
-            return equalNode.execute(l, r, PythonUtils.TS_ENCODING);
+            return equalNode.execute(left, right, PythonUtils.TS_ENCODING);
         }
 
         @Specialization
-        public static boolean cmp(int l, double r) {
-            return l == r;
+        public static boolean cmp(int left, double right) {
+            return left == right;
         }
 
         @Specialization
-        public static boolean cmp(double l, int r) {
-            return l == r;
+        public static boolean cmp(double left, int right) {
+            return left == right;
         }
 
         @Specialization
@@ -2812,44 +2849,44 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class Ne {
 
         @Specialization
-        public static boolean cmp(int l, int r) {
-            return l != r;
+        public static boolean cmp(int left, int right) {
+            return left != right;
         }
 
         @Specialization
-        public static boolean cmp(long l, long r) {
-            return l != r;
+        public static boolean cmp(long left, long right) {
+            return left != right;
         }
 
         @Specialization
-        public static boolean cmp(char l, char r) {
-            return l != r;
+        public static boolean cmp(char left, char right) {
+            return left != right;
         }
 
         @Specialization
-        public static boolean cmp(byte l, byte r) {
-            return l != r;
+        public static boolean cmp(byte left, byte right) {
+            return left != right;
         }
 
         @Specialization
-        public static boolean cmp(double l, double r) {
-            return l != r;
+        public static boolean cmp(double left, double right) {
+            return left != right;
         }
 
         @Specialization
-        public static boolean cmp(TruffleString l, TruffleString r,
+        public static boolean cmp(TruffleString left, TruffleString right,
                         @Cached TruffleString.EqualNode equalNode) {
-            return !equalNode.execute(l, r, PythonUtils.TS_ENCODING);
+            return !equalNode.execute(left, right, PythonUtils.TS_ENCODING);
         }
 
         @Specialization
-        public static boolean cmp(int l, double r) {
-            return l != r;
+        public static boolean cmp(int left, double right) {
+            return left != right;
         }
 
         @Specialization
-        public static boolean cmp(double l, int r) {
-            return l != r;
+        public static boolean cmp(double left, int right) {
+            return left != right;
         }
 
         @Specialization
@@ -2870,6 +2907,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class)
+    @ConstantOperand(type = TruffleString[].class, dimensions = 0)
+    @ConstantOperand(type = int.class)
     public static final class Import {
         @Specialization
         @InliningCutoff
@@ -2880,16 +2920,19 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class)
     public static final class ImportFrom {
         @Specialization
         @InliningCutoff
-        public static Object doImport(VirtualFrame frame, Object module, TruffleString name,
+        public static Object doImport(VirtualFrame frame, TruffleString name, Object module,
                         @Cached ImportFromNode node) {
             return node.execute(frame, module, name);
         }
     }
 
     @Operation
+    @ConstantOperand(type = TruffleString.class)
+    @ConstantOperand(type = int.class)
     public static final class ImportStar {
         @Specialization
         @InliningCutoff
@@ -3020,6 +3063,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
     public static final class LoadCell {
         @Specialization
         public static Object doLoadCell(int index, PCell cell,
@@ -3031,6 +3075,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
     public static final class ClassLoadCell {
         @Specialization
         public static Object doLoadCell(VirtualFrame frame,
@@ -3071,6 +3116,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
     public static final class ClearCell {
         @Specialization
         public static void doClearCell(int index, PCell cell,
@@ -4067,6 +4113,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
     public static final class CheckUnboundLocal {
         @Specialization
         public static Object doObject(int index, Object localValue,
