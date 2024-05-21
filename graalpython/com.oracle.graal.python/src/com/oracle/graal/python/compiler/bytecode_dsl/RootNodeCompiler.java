@@ -882,20 +882,17 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         switch (op) {
             case Read:
                 if (scope.isClass()) {
-                    b.beginClassLoadCell();
-                    b.emitLoadConstant(index);
+                    b.beginClassLoadCell(index);
                     b.emitLoadLocal(local);
                     b.endClassLoadCell();
                 } else {
-                    b.beginLoadCell();
-                    b.emitLoadConstant(index);
+                    b.beginLoadCell(index);
                     b.emitLoadLocal(local);
                     b.endLoadCell();
                 }
                 break;
             case Delete:
-                b.beginClearCell();
-                b.emitLoadConstant(index);
+                b.beginClearCell(index);
                 b.emitLoadLocal(local);
                 b.endClearCell();
                 break;
@@ -915,15 +912,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         BytecodeLocal local = locals.get(mangled);
         switch (op) {
             case Read:
-                b.beginCheckUnboundLocal();
-                b.emitLoadConstant(varnames.get(mangled));
+                b.beginCheckUnboundLocal(varnames.get(mangled));
                 b.emitLoadLocal(local);
                 b.endCheckUnboundLocal();
                 break;
             case Delete:
                 b.beginBlock();
-                b.beginCheckUnboundLocal();
-                b.emitLoadConstant(varnames.get(mangled));
+                b.beginCheckUnboundLocal(varnames.get(mangled));
                 b.emitLoadLocal(local);
                 b.endCheckUnboundLocal();
 
@@ -952,20 +947,15 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         TruffleString tsName = toTruffleStringUncached(name);
         switch (op) {
             case Read:
-                b.beginReadGlobal();
-                b.emitLoadConstant(tsName);
-                b.endReadGlobal();
+                b.emitReadGlobal(tsName);
                 break;
             case Delete:
-                b.beginDeleteGlobal();
-                b.emitLoadConstant(tsName);
-                b.endDeleteGlobal();
+                b.emitDeleteGlobal(tsName);
                 break;
             case BeginWrite:
-                b.beginWriteGlobal();
+                b.beginWriteGlobal(tsName);
                 break;
             case EndWrite:
-                b.emitLoadConstant(tsName);
                 b.endWriteGlobal();
                 break;
             default:
@@ -979,20 +969,15 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         TruffleString tsName = toTruffleStringUncached(name);
         switch (op) {
             case Read:
-                b.beginReadName();
-                b.emitLoadConstant(tsName);
-                b.endReadName();
+                b.emitReadName(tsName);
                 break;
             case Delete:
-                b.beginDeleteName();
-                b.emitLoadConstant(tsName);
-                b.endDeleteName();
+                b.emitDeleteName(tsName);
                 break;
             case BeginWrite:
-                b.beginWriteName();
+                b.beginWriteName(tsName);
                 break;
             case EndWrite:
-                b.emitLoadConstant(tsName);
                 b.endWriteName();
                 break;
             default:
@@ -1482,10 +1467,9 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             attrAccess.value.accept(this);
             b.endStoreLocal();
 
-            b.beginGetMethod();
-            b.emitLoadLocal(receiver);
             String mangled = mangle(attrAccess.attr);
-            b.emitLoadConstant(toTruffleStringUncached(mangled));
+            b.beginGetMethod(toTruffleStringUncached(mangled));
+            b.emitLoadLocal(receiver);
             b.endGetMethod();
             b.endBlock();
         }
@@ -1634,23 +1618,21 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     emitPythonConstant(value.getDouble(), b);
                     break;
                 case COMPLEX: {
-                    b.beginLoadComplex();
-                    emitPythonConstant(value.getComplex(), b);
-                    b.endLoadComplex();
+                    double[] complex = value.getComplex();
+                    addConstant(complex);
+                    b.emitLoadComplex(complex[0], complex[1]);
                     break;
                 }
                 case BIGINTEGER:
-                    b.beginLoadBigInt();
-                    emitPythonConstant(value.getBigInteger(), b);
-                    b.endLoadBigInt();
+                    addConstant(value.getBigInteger());
+                    b.emitLoadBigInt(value.getBigInteger());
                     break;
                 case RAW:
                     emitPythonConstant(value.getRaw(TruffleString.class), b);
                     break;
                 case BYTES:
-                    b.beginLoadBytes();
-                    emitPythonConstant(value.getBytes(), b);
-                    b.endLoadBytes();
+                    addConstant(value.getBytes());
+                    b.emitLoadBytes(value.getBytes());
                     break;
                 case TUPLE:
                     b.beginMakeTuple();
@@ -1882,31 +1864,22 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         }
 
         private void emitConstantList(ConstantCollection constantCollection) {
+            addConstant(constantCollection.collection);
             switch (constantCollection.elementType) {
                 case CollectionBits.ELEMENT_INT:
-                    b.beginMakeConstantIntList();
-                    emitPythonConstant(constantCollection.collection, b);
-                    b.endMakeConstantIntList();
+                    b.emitMakeConstantIntList((int[]) constantCollection.collection);
                     break;
                 case CollectionBits.ELEMENT_LONG:
-                    b.beginMakeConstantLongList();
-                    emitPythonConstant(constantCollection.collection, b);
-                    b.endMakeConstantLongList();
+                    b.emitMakeConstantLongList((long[]) constantCollection.collection);
                     break;
                 case CollectionBits.ELEMENT_BOOLEAN:
-                    b.beginMakeConstantBooleanList();
-                    emitPythonConstant(constantCollection.collection, b);
-                    b.endMakeConstantBooleanList();
+                    b.emitMakeConstantBooleanList((boolean[]) constantCollection.collection);
                     break;
                 case CollectionBits.ELEMENT_DOUBLE:
-                    b.beginMakeConstantDoubleList();
-                    emitPythonConstant(constantCollection.collection, b);
-                    b.endMakeConstantDoubleList();
+                    b.emitMakeConstantDoubleList((double[]) constantCollection.collection);
                     break;
                 case CollectionBits.ELEMENT_OBJECT:
-                    b.beginMakeConstantObjectList();
-                    emitPythonConstant(constantCollection.collection, b);
-                    b.endMakeConstantObjectList();
+                    b.emitMakeConstantObjectList((Object[]) constantCollection.collection);
                     break;
                 default:
                     throw CompilerDirectives.shouldNotReachHere();
@@ -1914,31 +1887,22 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         }
 
         private void emitConstantTuple(ConstantCollection constantCollection) {
+            addConstant(constantCollection.collection);
             switch (constantCollection.elementType) {
                 case CollectionBits.ELEMENT_INT:
-                    b.beginMakeConstantIntTuple();
-                    emitPythonConstant(constantCollection.collection, b);
-                    b.endMakeConstantIntTuple();
+                    b.emitMakeConstantIntTuple((int[]) constantCollection.collection);
                     break;
                 case CollectionBits.ELEMENT_LONG:
-                    b.beginMakeConstantLongTuple();
-                    emitPythonConstant(constantCollection.collection, b);
-                    b.endMakeConstantLongTuple();
+                    b.emitMakeConstantLongTuple((long[]) constantCollection.collection);
                     break;
                 case CollectionBits.ELEMENT_BOOLEAN:
-                    b.beginMakeConstantBooleanTuple();
-                    emitPythonConstant(constantCollection.collection, b);
-                    b.endMakeConstantBooleanTuple();
+                    b.emitMakeConstantBooleanTuple((boolean[]) constantCollection.collection);
                     break;
                 case CollectionBits.ELEMENT_DOUBLE:
-                    b.beginMakeConstantDoubleTuple();
-                    emitPythonConstant(constantCollection.collection, b);
-                    b.endMakeConstantDoubleTuple();
+                    b.emitMakeConstantDoubleTuple((double[]) constantCollection.collection);
                     break;
                 case CollectionBits.ELEMENT_OBJECT:
-                    b.beginMakeConstantObjectTuple();
-                    emitPythonConstant(constantCollection.collection, b);
-                    b.endMakeConstantObjectTuple();
+                    b.emitMakeConstantObjectTuple((Object[]) constantCollection.collection);
                     break;
                 default:
                     throw CompilerDirectives.shouldNotReachHere();
@@ -3148,12 +3112,19 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             BytecodeDSLCompilerResult compilerResult = compileNode(node);
             BytecodeDSLCodeUnit codeUnit = compilerResult.codeUnit();
 
-            b.beginMakeFunction();
-            b.emitLoadConstant(toTruffleStringUncached(name));
-
+            TruffleString functionName = toTruffleStringUncached(name);
             Scope targetScope = ctx.scopeEnvironment.lookupScope(node);
-            emitPythonConstant(toTruffleStringUncached(ctx.getQualifiedName(targetScope)), b);
-            emitPythonConstant(codeUnit, b);
+            TruffleString qualifiedName = toTruffleStringUncached(ctx.getQualifiedName(targetScope));
+            TruffleString doc = null;
+            if (codeUnit.constants.length > 0 && codeUnit.constants[0] != null && codeUnit.constants[0] instanceof TruffleString docString) {
+                doc = docString;
+            }
+
+            // Register these in the Python constants list.
+            addConstant(qualifiedName);
+            addConstant(codeUnit);
+
+            b.beginMakeFunction(functionName, qualifiedName, doc, codeUnit);
 
             if (args == null || len(args.defaults) == 0) {
                 b.emitLoadConstant(PythonUtils.EMPTY_OBJECT_ARRAY);
@@ -3181,17 +3152,16 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             } else {
                 ArgTy[] kwOnlyArgs = args.kwOnlyArgs;
 
+                List<TruffleString> keys = new ArrayList<>();
                 b.beginMakeKeywords();
-                int numKeywords = 0;
                 for (int i = 0; i < args.kwDefaults.length; i++) {
                     // Only emit keywords with default values.
                     if (args.kwDefaults[i] != null) {
-                        b.emitLoadConstant(toTruffleStringUncached(mangle(kwOnlyArgs[i].arg)));
+                        keys.add(toTruffleStringUncached(mangle(kwOnlyArgs[i].arg)));
                         args.kwDefaults[i].accept(this);
-                        numKeywords++;
                     }
                 }
-                b.endMakeKeywords(numKeywords);
+                b.endMakeKeywords(keys.toArray(new TruffleString[0]));
             }
 
             if (codeUnit.freevars.length == 0) {
@@ -3218,14 +3188,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     emitParamAnnotation(annotation);
                 }
                 b.endMakeDict();
-            } else {
-                b.emitLoadConstant(null);
-            }
-
-            // __doc__
-            Object[] functionConstants = codeUnit.constants;
-            if (functionConstants.length > 0 && functionConstants[0] != null && functionConstants[0] instanceof TruffleString) {
-                b.emitLoadConstant(functionConstants[0]);
             } else {
                 b.emitLoadConstant(null);
             }
@@ -3310,13 +3272,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                                     : name.name;
 
                     beginStoreLocal(resName, b);
-
-                    b.beginImport();
-                    b.emitLoadConstant(toTruffleStringUncached(name.name));
-                    b.emitLoadConstant(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
-                    b.emitLoadConstant(0);
-                    b.endImport();
-
+                    b.emitImport(toTruffleStringUncached(name.name), PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, 0);
                     endStoreLocal(resName, b);
                 } else {
                     // import a.b.c as x
@@ -3329,18 +3285,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
                     for (int i = parts.length - 1; i >= 0; i--) {
                         if (i != 0) {
-                            b.beginImportFrom();
+                            b.beginImportFrom(toTruffleStringUncached(parts[i]));
                         } else {
-                            b.beginImport();
-                            b.emitLoadConstant(toTruffleStringUncached(name.name));
-                            b.emitLoadConstant(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
-                            b.emitLoadConstant(0);
-                            b.endImport();
+                            b.emitImport(toTruffleStringUncached(name.name), PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, 0);
                         }
                     }
 
                     for (int i = 1; i < parts.length; i++) {
-                        b.emitLoadConstant(toTruffleStringUncached(parts[i]));
                         b.endImportFrom();
                     }
 
@@ -3363,10 +3314,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             TruffleString tsModuleName = toTruffleStringUncached(node.module == null ? "" : node.module);
 
             if (node.names[0].name.equals("*")) {
-                b.beginImportStar();
-                b.emitLoadConstant(tsModuleName);
-                b.emitLoadConstant(node.level);
-                b.endImportStar();
+                b.emitImportStar(tsModuleName, node.level);
             } else {
                 b.beginBlock();
 
@@ -3378,11 +3326,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 }
 
                 b.beginStoreLocal(module);
-                b.beginImport();
-                b.emitLoadConstant(tsModuleName);
-                b.emitLoadConstant(fromList);
-                b.emitLoadConstant(node.level);
-                b.endImport();
+                b.emitImport(tsModuleName, fromList, node.level);
                 b.endStoreLocal();
 
                 TruffleString[] importedNames = new TruffleString[node.names.length];
@@ -3391,11 +3335,10 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     String asName = alias.asName == null ? alias.name : alias.asName;
                     beginStoreLocal(asName, b);
 
-                    b.beginImportFrom();
-                    b.emitLoadLocal(module);
                     TruffleString name = toTruffleStringUncached(alias.name);
                     importedNames[i] = name;
-                    b.emitLoadConstant(name);
+                    b.beginImportFrom(name);
+                    b.emitLoadLocal(module);
                     b.endImportFrom();
 
                     endStoreLocal(asName, b);
