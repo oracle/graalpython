@@ -43,10 +43,9 @@ import java.util.stream.Stream;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
-import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
-import org.graalvm.polyglot.io.IOAccess;
+import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.python.embedding.vfs.VirtualFileSystem;
 
 /**
@@ -62,31 +61,13 @@ import org.graalvm.python.embedding.vfs.VirtualFileSystem;
  */
 public class Py2BinLauncher {
 
-    public static void main(String[] args) throws IOException {
-        VirtualFileSystem vfs = VirtualFileSystem.newBuilder()
-            .extractFilter(p -> {
-                String s = p.toString();
-                return s.endsWith(".ttf");
-            })
-            .build();
-        IOAccess ioAccess = IOAccess.newBuilder().fileSystem(vfs).allowHostSocketAccess(true).build();
-        var builder = Context.newBuilder()
-                .allowExperimentalOptions(true)
-                .allowAllAccess(true)
-                .allowIO(ioAccess)
-                .arguments("python", Stream.concat(Stream.of(getProgramName()), Stream.of(args)).toArray(String[]::new))
-                .option("python.PosixModuleBackend", "java")
-                .option("python.DontWriteBytecodeFlag", "true")
-                .option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false")
-                .option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE")
-                .option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS"))
-                .option("python.AlwaysRunExcepthook", "true")
-                .option("python.ForceImportSite", "true")
-                .option("python.RunViaLauncher", "true")
-                .option("python.Executable", vfs.vfsVenvPath() + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.cmd" : "/bin/python"))
-                .option("python.InputFilePath", vfs.vfsProjPath())
-                .option("python.PythonHome", vfs.vfsHomePath())
-                .option("python.CheckHashPycsMode", "never");
+    public static void main(String[] args) throws IOException {                       
+        VirtualFileSystem vfs = VirtualFileSystem.create();
+        Builder builder = VirtualFileSystem.contextBuilder()
+            .allowExperimentalOptions(true)
+            .allowAllAccess(true)
+            .arguments("python", Stream.concat(Stream.of(getProgramName()), Stream.of(args)).toArray(String[]::new))
+            .option("python.RunViaLauncher", "true");
         if(ImageInfo.inImageRuntimeCode()) {
             builder.option("engine.WarnInterpreterOnly", "false");
         }
@@ -102,7 +83,7 @@ public class Py2BinLauncher {
                 }
             }
         }
-    }
+    }    
 
     private static String getProgramName() {
         if (ImageInfo.inImageRuntimeCode()) {

@@ -74,7 +74,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.HostAccess;
+import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.io.FileSystem;
+import org.graalvm.polyglot.io.IOAccess;
 
 public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
@@ -92,6 +96,70 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         NONE,
         READ,
         READ_WRITE,
+    }
+
+    /**
+     * Creates GraalPy context preconfigured with a virtual filesystem and other GraalPy and polygot
+     * Context configuration options optimized for the usage of the Python virtual environment
+     * contained in the virtual filesystem.
+     */
+    public static Context.Builder contextBuilder() {
+        VirtualFileSystem vfs = VirtualFileSystem.create();
+        return contextBuilder(vfs);
+    }
+
+    /**
+     * Creates GraalPy context preconfigured with the given virtual filesystem and other GraalPy and
+     * polygot Context configuration options optimized for the usage of the Python virtual
+     * environment contained in the virtual filesystem.
+     */
+    public static Context.Builder contextBuilder(VirtualFileSystem vfs) {
+        return Context.newBuilder().
+        // set true to allow experimental options
+                        allowExperimentalOptions(false).
+                        // setting false will deny all privileges unless configured below
+                        allowAllAccess(false).
+                        // allows python to access the java language
+                        allowHostAccess(HostAccess.ALL).
+                        // allow access to the virtual and the host filesystem, as well as sockets
+                        allowIO(IOAccess.newBuilder().allowHostSocketAccess(true).fileSystem(vfs).build()).
+                        // allow creating python threads
+                        allowCreateThread(true).
+                        // allow running Python native extensions
+                        allowNativeAccess(true).
+                        // allow exporting Python values to polyglot bindings and accessing Java
+                        // from Python
+                        allowPolyglotAccess(PolyglotAccess.ALL).
+                        // choose the backend for the POSIX module
+                        option("python.PosixModuleBackend", "java").
+                        // equivalent to the Python -B flag
+                        option("python.DontWriteBytecodeFlag", "true").
+                        // equivalent to the Python -v flag
+                        option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false").
+                        // log level
+                        option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE").
+                        // equivalent to setting the PYTHONWARNINGS environment variable
+                        option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS")).
+                        // print Python exceptions directly
+                        option("python.AlwaysRunExcepthook", "true").
+                        // Force to automatically import site.py module, to make Python packages
+                        // available
+                        option("python.ForceImportSite", "true").
+                        // The sys.executable path, a virtual path that is used by the interpreter
+                        // to discover packages
+                        option("python.Executable", vfs.vfsVenvPath() + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.exe" : "/bin/python")).
+                        // Set the python home to be read from the embedded resources
+                        option("python.PythonHome", vfs.vfsHomePath()).
+                        // Do not warn if running without JIT. This can be desirable for short
+                        // running scripts to reduce memory footprint.
+                        option("engine.WarnInterpreterOnly", "false").
+                        // Set python path to point to sources stored in
+                        // src/main/resources/org.graalvm.python.vfs/proj
+                        option("python.PythonPath", vfs.vfsProjPath()).
+                        // pass the path to be executed
+                        option("python.InputFilePath", vfs.vfsProjPath()).
+                        // causes the interpreter to always assume hash-based pycs are valid
+                        option("python.CheckHashPycsMode", "never");
     }
 
     public static final class Builder {
@@ -387,15 +455,15 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
     }
 
-    public String vfsHomePath() {
+    private String vfsHomePath() {
         return resourcePathToPlatformPath(HOME_PREFIX);
     }
 
-    public String vfsProjPath() {
+    private String vfsProjPath() {
         return resourcePathToPlatformPath(PROJ_PREFIX);
     }
 
-    public String vfsVenvPath() {
+    private String vfsVenvPath() {
         return resourcePathToPlatformPath(VENV_PREFIX);
     }
 
