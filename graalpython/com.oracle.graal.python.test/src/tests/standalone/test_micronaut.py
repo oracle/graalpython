@@ -38,92 +38,13 @@
 # SOFTWARE.
 
 import os
-import subprocess
 import unittest
 import shutil
 import difflib
 import tempfile
-import sys
+import util
 
 is_enabled = 'ENABLE_MICRONAUT_UNITTESTS' in os.environ and os.environ['ENABLE_MICRONAUT_UNITTESTS'] == "true"
-
-MAVEN_VERSION = "3.9.6"
-
-def run_cmd(cmd, env, cwd=None):
-    out = []
-    out.append(f"Executing:\n    {cmd=}\n")
-    process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True, errors='backslashreplace')
-    for line in iter(process.stdout.readline, ""):
-        out.append(line)
-    return "".join(out), process.wait()
-
-def patch_pom(pom):
-    if custom_repos := os.environ.get("MAVEN_REPO_OVERRIDE"):
-        repos = []
-        pluginRepos = []
-        for idx, custom_repo in enumerate(custom_repos.split(",")):
-            repos.append(f"""
-                    <repository>
-                        <id>myrepo{idx}</id>
-                        <url>{custom_repo}</url>
-                        <releases>
-                            <enabled>true</enabled>
-                            <updatePolicy>never</updatePolicy>
-                        </releases>
-                        <snapshots>
-                            <enabled>true</enabled>
-                            <updatePolicy>never</updatePolicy>
-                        </snapshots>
-                    </repository>
-                """)
-            pluginRepos.append(f"""
-                    <pluginRepository>
-                        <id>myrepo{idx}</id>
-                        <url>{custom_repo}</url>
-                        <releases>
-                            <enabled>true</enabled>
-                        </releases>
-                        <snapshots>
-                            <enabled>true</enabled>
-                        </snapshots>
-                    </pluginRepository>
-                """)
-
-        with open(pom, "r") as f:
-            contents = f.read()
-        with open(pom, "w") as f:
-            f.write(contents.replace("</project>", """
-                <repositories>
-                """ + '\n'.join(repos) + """
-                </repositories>
-                <pluginRepositories>
-                """ + '\n'.join(pluginRepos) + """
-                </pluginRepositories>
-                </project>
-                """))
-
-def get_gp():
-    graalpy_home = os.environ["PYTHON_STANDALONE_HOME"]
-    graalpy = get_executable(os.path.join(graalpy_home, "bin", "graalpy"))
-
-    if not os.path.isfile(graalpy):
-        print(
-            "Micronaut extension tests require a GraalPy standalone.",
-            "Please point the JAVA_HOME and PYTHON_STANDALONE_HOME environment variables properly.",
-            f"{graalpy_home=}",
-            "graalpy exits: " + str(os.path.exists(graalpy)),
-            sep="\n",
-            )
-        assert False
-    return graalpy
-
-def get_graalvm_version():
-    graalvmVersion, _ = run_cmd([get_gp(), "-c", "print(__graalpython__.get_graalvm_version(), end='')"], os.environ.copy())
-    # when JLine is cannot detect a terminal, it prints logging info
-    graalvmVersion = graalvmVersion.split("\n")[-1]
-    # we never test -dev versions here, we always pretend to use release versions
-    graalvmVersion = graalvmVersion.split("-dev")[0]
-    return graalvmVersion
 
 def create_hello_app(hello_app_dir, target_dir):
     for root, dirs, files in os.walk(hello_app_dir):
@@ -149,7 +70,7 @@ def create_hello_app(hello_app_dir, target_dir):
     with open(pom, 'w') as f:
         for line in lines:
             if "{graalpy-maven-plugin-version}" in line:
-                line = line.replace("{graalpy-maven-plugin-version}", get_graalvm_version())
+                line = line.replace("{graalpy-maven-plugin-version}", util.get_graalvm_version())
             f.write(line)
 
 def diff_texts(a, b, a_filename, b_filename):
@@ -174,39 +95,6 @@ def check_golden_file(file, golden):
 
     return found_diff
 
-def print_output(out):
-    print("============== output =============")
-    for line in out:
-        print(line, end="")
-    print("\n========== end of output ==========")
-
-def check_ouput(txt, out, contains=True):
-    if contains and txt not in out:
-        print_output(out)
-        assert False, f"expected '{txt}' in output"
-    elif not contains and txt in out:
-        print_output(out)
-        assert False, f"did not expect '{txt}' in output"
-
-def get_mvn_wrapper(project_dir, env):
-    if 'win32' != sys.platform:
-        cmd = [shutil.which('mvn'), "--batch-mode", "wrapper:wrapper", f"-Dmaven={MAVEN_VERSION}"]
-        out, return_code = run_cmd(cmd, env, cwd=project_dir)
-        check_ouput("BUILD SUCCESS", out)
-        mvn_cmd = [os.path.abspath(os.path.join(project_dir, "mvnw")),  "--batch-mode"]
-    else:
-        # TODO installing mvn wrapper with the current mvn 3.3.9 on gates does not work
-        # we have to provide the mvnw.bat script
-        mvnw_dir = os.path.join(os.path.dirname(__file__), "mvnw")
-        mvn_cmd = [os.path.abspath(os.path.join(mvnw_dir, "mvnw.cmd")),  "--batch-mode"]
-
-    print("mvn --version ...")
-    cmd = mvn_cmd + ["--version"]
-    out, return_code = run_cmd(cmd, env, cwd=project_dir)
-    check_ouput("3.9.6", out)
-    print_output(out)
-    return mvn_cmd
-
 class MicronautAppTest(unittest.TestCase):
     def setUpClass(self):
         if not is_enabled:
@@ -222,23 +110,23 @@ class MicronautAppTest(unittest.TestCase):
             create_hello_app(hello_app_dir, target_dir)
 
             pom_file = os.path.join(target_dir, "pom.xml")
-            patch_pom(pom_file)
+            util.patch_pom_repositories(pom_file)
 
-            mvn_cmd = get_mvn_wrapper(target_dir, self.env)
+            mvn_cmd = util.get_mvn_wrapper(target_dir, self.env)
 
             # clean
             print("clean micronaut hello app ...")
             cmd = mvn_cmd + ["clean"]
-            out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-            check_ouput("BUILD SUCCESS", out)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
 
             # build
             # java unittests are executed during the build
             print("build micronaut hello app ...")
             cmd = mvn_cmd + ["package"]
-            out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-            check_ouput("BUILD SUCCESS", out)
-            check_ouput("=== CREATED REPLACE CONTEXT ===", out, False)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("=== CREATED REPLACE CONTEXT ===", out, False)
 
             # build and execute tests with a custom graalpy context factory
             source_file = os.path.join(hello_app_dir, "src/main/java/example/micronaut/ContextFactory.j")
@@ -247,8 +135,8 @@ class MicronautAppTest(unittest.TestCase):
 
             print("build micronaut hello app with custom context factory ...")
             cmd = mvn_cmd + ["package"]
-            out, return_code = run_cmd(cmd, self.env, cwd=target_dir)
-            check_ouput("BUILD SUCCESS", out)
-            check_ouput("=== CREATED REPLACE CONTEXT ===", out)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("=== CREATED REPLACE CONTEXT ===", out)
 
 unittest.skip_deselected_test_functions(globals())
