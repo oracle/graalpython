@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DEFAULTS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___KWDEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
@@ -60,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
@@ -300,6 +302,27 @@ public final class FunctionBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.REQUIRES_CODE_OBJ, self.getName(), closureLength, freeVarsLength);
             }
             self.setCode(code);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = J___DOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
+    @GenerateNodeFactory
+    abstract static class DocNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        Object get(PFunction self, @SuppressWarnings("unused") Object none) {
+            return self.getDoc();
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
+        Object set(PFunction self, Object value) {
+            self.setDoc(value);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object delete(PFunction self, @SuppressWarnings("unused") DescriptorDeleteMarker marker) {
+            self.setDoc(PNone.NONE);
             return PNone.NONE;
         }
     }

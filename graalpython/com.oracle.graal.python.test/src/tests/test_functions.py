@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -278,4 +278,20 @@ def test_functools_lru_cache():
 
     type_entity = getattr(sys.modules['functools'], '_lru_cache_wrapper')
     assert isinstance(cached_func, type_entity), "lru_cache should not be using the python-based version"
-    
+
+
+def test_no_docstring():
+    def no_doc():
+        pass
+
+    assert no_doc.__doc__ is None
+
+
+def test_docstring_via_type_contructor():
+    def foo():
+        """my doc"""
+        return 1
+
+    assert foo.__doc__ == 'my doc'
+    foo2 = type(foo)(foo.__code__, foo.__globals__, foo.__name__, foo.__defaults__, foo.__closure__)
+    assert foo2.__doc__ == 'my doc'

@@ -190,11 +190,11 @@ public abstract class SequenceStorageNodes {
                 case Boolean:
                     return rhsType == Boolean || rhsType == Uninitialized || rhsType == Empty;
                 case Byte:
-                    return rhsType == Boolean || rhsType == Byte || rhsType == Uninitialized || rhsType == Empty;
+                    return rhsType == Byte || rhsType == Uninitialized || rhsType == Empty;
                 case Int:
-                    return rhsType == Boolean || rhsType == StorageType.Byte || rhsType == StorageType.Int || rhsType == Uninitialized || rhsType == Empty;
+                    return rhsType == StorageType.Byte || rhsType == StorageType.Int || rhsType == Uninitialized || rhsType == Empty;
                 case Long:
-                    return rhsType == Boolean || rhsType == Byte || rhsType == Int || rhsType == Long || rhsType == Uninitialized || rhsType == Empty;
+                    return rhsType == Byte || rhsType == Int || rhsType == Long || rhsType == Uninitialized || rhsType == Empty;
                 case Double:
                     return rhsType == Double || rhsType == Uninitialized || rhsType == Empty;
                 case Generic:

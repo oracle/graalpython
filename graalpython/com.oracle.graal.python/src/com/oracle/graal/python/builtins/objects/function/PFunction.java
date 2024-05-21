@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,10 +27,13 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeCallTargetNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -69,6 +72,7 @@ public final class PFunction extends PythonObject {
     private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] finalKwDefaultValues;
     private PKeyword[] kwDefaultValues;
+    private Object doc;
 
     public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, PCell[] closure) {
         this(lang, name, qualname, code, globals, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, closure);
@@ -143,6 +147,27 @@ public final class PFunction extends PythonObject {
 
     public boolean forceSplitDirectCalls() {
         return forceSplitDirectCalls;
+    }
+
+    public Object getDoc() {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, doc == null)) {
+            extractDoc();
+        }
+        return doc;
+    }
+
+    public void setDoc(Object doc) {
+        this.doc = doc;
+    }
+
+    @TruffleBoundary
+    private void extractDoc() {
+        CodeUnit co = getCode().getCodeUnit();
+        if (co != null && co.constants.length > 0 && PyUnicodeCheckNode.executeUncached(co.constants[0])) {
+            doc = co.constants[0];
+        } else {
+            doc = PNone.NONE;
+        }
     }
 
     @Override

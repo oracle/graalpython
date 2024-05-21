@@ -2640,7 +2640,7 @@ void PyTruffle_SET_TYPE(PyObject *a, PyTypeObject *b) {
 }
 void PyTruffle_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
 	if (points_to_py_handle_space(a)) {
-		printf("changing the size of an object is not supported\n");
+		Graal_PyTruffle_SET_SIZE(a, b);
 	} else {
 		a->ob_size = b;
 	}

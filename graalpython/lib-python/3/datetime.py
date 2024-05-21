@@ -2219,6 +2219,12 @@ class datetime(date):
             raise TypeError("cannot mix naive and timezone-aware time")
         return base + otoff - myoff
 
+    # GraalPy change: this was missing, but the C impl has it
+    def __rsub__(self, other):
+        if isinstance(other, datetime):
+            return type(self).__sub__(other, self)
+        return NotImplemented
+
     def __hash__(self):
         if self._hashcode == -1:
             if self.fold:

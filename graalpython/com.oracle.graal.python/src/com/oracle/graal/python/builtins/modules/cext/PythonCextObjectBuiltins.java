@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectWrapper;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyVarObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
@@ -94,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -132,6 +134,10 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -564,6 +570,33 @@ public abstract class PythonCextObjectBuiltins {
         @Specialization
         static PNone doNativeNone() {
             return PNone.NONE;
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {PyVarObject, Py_ssize_t}, call = Ignored)
+    abstract static class _PyTruffle_SET_SIZE extends CApiBinaryBuiltinNode {
+        @Specialization
+        static PNone set(PSequence obj, long size,
+                        @Bind("this") Node inliningTarget,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached InlinedBranchProfile basicProfile,
+                        @Cached InlinedBranchProfile nativeProfile) {
+            SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, obj);
+            // Can't use SetLenNode as that decrefs items for native storages when shrinking
+            if (storage instanceof BasicSequenceStorage basicStorage) {
+                basicProfile.enter(inliningTarget);
+                basicStorage.setNewLength((int) size);
+            } else if (storage instanceof NativeSequenceStorage nativeStorage) {
+                nativeProfile.enter(inliningTarget);
+                nativeStorage.setNewLength((int) size);
+            } else if (storage instanceof EmptySequenceStorage) {
+                if (size > 0) {
+                    throw CompilerDirectives.shouldNotReachHere("invalid Py_SET_SIZE call");
+                }
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("unhandled storage type");
+            }
+            return PNone.NO_VALUE;
         }
     }
 

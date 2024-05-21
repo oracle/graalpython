@@ -2160,6 +2160,8 @@ def _python_checkpatchfiles():
             'matplotlib-3.5.3.patch',
             'matplotlib-3.6.3.patch',
             'matplotlib-3.7.0.patch',
+            # Empty license field. It's MIT
+            'autopep8.patch',
         }
         allowed_licenses = [
             "MIT",

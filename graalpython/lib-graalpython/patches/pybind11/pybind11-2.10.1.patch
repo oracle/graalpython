@@ -1,79 +1,20 @@
 diff --git a/pybind11/include/pybind11/detail/common.h b/pybind11/include/pybind11/detail/common.h
-index f34fd27..f1681b7 100644
+index f34fd27..f73e41b 100644
 --- a/pybind11/include/pybind11/detail/common.h
 +++ b/pybind11/include/pybind11/detail/common.h
-@@ -233,6 +233,9 @@
- #if defined(PYPY_VERSION) && !defined(PYBIND11_SIMPLE_GIL_MANAGEMENT)
+@@ -230,7 +230,7 @@
+ #    undef copysign
+ #endif
+ 
+-#if defined(PYPY_VERSION) && !defined(PYBIND11_SIMPLE_GIL_MANAGEMENT)
++#if (defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)) && !defined(PYBIND11_SIMPLE_GIL_MANAGEMENT)
  #    define PYBIND11_SIMPLE_GIL_MANAGEMENT
  #endif
-+#ifdef GRAALVM_PYTHON
-+#    define PYBIND11_SIMPLE_GIL_MANAGEMENT
-+#endif
  
- #if defined(_MSC_VER)
- #    if defined(PYBIND11_DEBUG_MARKER)
-diff --git a/pybind11/include/pybind11/detail/internals.h b/pybind11/include/pybind11/detail/internals.h
-index 7de7794..146b084 100644
---- a/pybind11/include/pybind11/detail/internals.h
-+++ b/pybind11/include/pybind11/detail/internals.h
-@@ -174,7 +174,7 @@ struct internals {
-     PyTypeObject *static_property_type;
-     PyTypeObject *default_metaclass;
-     PyObject *instance_base;
--#if defined(WITH_THREAD)
-+#if defined(WITH_THREAD) && !defined(GRAALVM_PYTHON)
-     // Unused if PYBIND11_SIMPLE_GIL_MANAGEMENT is defined:
-     PYBIND11_TLS_KEY_INIT(tstate)
- #    if PYBIND11_INTERNALS_VERSION > 4
-@@ -278,7 +278,7 @@ struct type_info {
- #endif
- 
- #ifndef PYBIND11_INTERNALS_KIND
--#    if defined(WITH_THREAD)
-+#    if defined(WITH_THREAD) && !defined(GRAALVM_PYTHON)
- #        define PYBIND11_INTERNALS_KIND ""
- #    else
- #        define PYBIND11_INTERNALS_KIND "_without_thread"
-@@ -454,7 +454,7 @@ PYBIND11_NOINLINE internals &get_internals() {
-         }
-         auto *&internals_ptr = *internals_pp;
-         internals_ptr = new internals();
--#if defined(WITH_THREAD)
-+#if defined(WITH_THREAD) && !defined(GRAALVM_PYTHON)
- 
- #    if PY_VERSION_HEX < 0x03090000
-         PyEval_InitThreads();
-@@ -491,7 +491,7 @@ PYBIND11_NOINLINE internals &get_internals() {
- struct local_internals {
-     type_map<type_info *> registered_types_cpp;
-     std::forward_list<ExceptionTranslator> registered_exception_translators;
--#if defined(WITH_THREAD) && PYBIND11_INTERNALS_VERSION == 4
-+#if defined(WITH_THREAD) && !defined(GRAALVM_PYTHON) && PYBIND11_INTERNALS_VERSION == 4
- 
-     // For ABI compatibility, we can't store the loader_life_support TLS key in
-     // the `internals` struct directly.  Instead, we store it in `shared_data` and
 diff --git a/pybind11/include/pybind11/detail/type_caster_base.h b/pybind11/include/pybind11/detail/type_caster_base.h
-index 21f69c2..0b853f0 100644
+index 21f69c2..595c7d4 100644
 --- a/pybind11/include/pybind11/detail/type_caster_base.h
 +++ b/pybind11/include/pybind11/detail/type_caster_base.h
-@@ -36,7 +36,7 @@ private:
-     loader_life_support *parent = nullptr;
-     std::unordered_set<PyObject *> keep_alive;
- 
--#if defined(WITH_THREAD)
-+#if defined(WITH_THREAD) && !defined(GRAALVM_PYTHON)
-     // Store stack pointer in thread-local storage.
-     static PYBIND11_TLS_KEY_REF get_stack_tls_key() {
- #    if PYBIND11_INTERNALS_VERSION == 4
-@@ -55,7 +55,7 @@ private:
-     // Use single global variable for stack.
-     static loader_life_support **get_stack_pp() {
-         static loader_life_support *global_stack = nullptr;
--        return global_stack;
-+        return &global_stack;
-     }
-     static loader_life_support *get_stack_top() { return *get_stack_pp(); }
-     static void set_stack_top(loader_life_support *value) { *get_stack_pp() = value; }
 @@ -484,7 +484,7 @@ PYBIND11_NOINLINE handle get_object_handle(const void *ptr, const detail::type_i
  }
  
@@ -96,21 +37,6 @@ index bd5f981..c25f036 100644
  template <eval_mode mode = eval_statements>
  object eval_file(str, object, object) {
      pybind11_fail("eval_file not supported in PyPy3. Use eval");
-diff --git a/pybind11/include/pybind11/gil.h b/pybind11/include/pybind11/gil.h
-index cb0028d..6435226 100644
---- a/pybind11/include/pybind11/gil.h
-+++ b/pybind11/include/pybind11/gil.h
-@@ -173,8 +173,8 @@ public:
-         if (disassoc) {
-             // Python >= 3.7 can remove this, it's an int before 3.7
-             // NOLINTNEXTLINE(readability-qualified-auto)
--            auto key = detail::get_internals().tstate;
--            PYBIND11_TLS_REPLACE_VALUE(key, tstate);
-+            // auto key = detail::get_internals().tstate;
-+            // PYBIND11_TLS_REPLACE_VALUE(key, tstate);
-         }
-     }
- 
 diff --git a/pybind11/include/pybind11/pybind11.h b/pybind11/include/pybind11/pybind11.h
 index 42d432a..2e12a93 100644
 --- a/pybind11/include/pybind11/pybind11.h
