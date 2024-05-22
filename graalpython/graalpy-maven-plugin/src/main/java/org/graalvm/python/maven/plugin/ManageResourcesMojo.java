@@ -178,9 +178,23 @@ public class ManageResourcesMojo extends AbstractMojo {
     private void manageHome() throws MojoExecutionException {
         var homeDirectory = getHomeDirectory(project);
         if (pythonHome == null) {
-            delete(homeDirectory);
-            return;
+            pythonHome = new PythonHome();
+            pythonHome.includes = Arrays.asList(".*");
+            pythonHome.excludes = Collections.emptyList();
+        } else {
+            if (pythonHome.includes != null) {
+                trim(pythonHome.includes);
+            }
+            if (pythonHome.includes == null || pythonHome.includes.isEmpty()) {
+                pythonHome.includes = Arrays.asList(".*");
+            }
+            if (pythonHome.excludes == null) {
+                pythonHome.excludes = Collections.emptyList();
+            } else {
+                trim(pythonHome.excludes);
+            }
         }
+
         var tag = homeDirectory.resolve("tagfile");
         var graalPyVersion = getGraalPyVersion(project);
 
