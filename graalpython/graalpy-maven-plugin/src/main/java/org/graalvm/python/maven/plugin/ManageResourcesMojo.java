@@ -142,6 +142,16 @@ public class ManageResourcesMojo extends AbstractMojo {
         manageNativeImageConfig();
     }
 
+    private void trim(List<String> l) {
+        Iterator<String> it = l.iterator();
+        while(it.hasNext()) {
+            String p = it.next();
+            if(p == null || p.trim().isEmpty()) {
+                it.remove();
+            }
+        }
+    }
+
     private void manageNativeImageConfig() throws MojoExecutionException {
         Path metaInf = getMetaInfDirectory(project);
         Path resourceConfig = metaInf.resolve("resource-config.json");
@@ -264,6 +274,9 @@ public class ManageResourcesMojo extends AbstractMojo {
 
         var venvDirectory = getVenvDirectory(project);
 
+        if(packages != null) {
+            trim(packages);
+        }
         if (packages == null || packages.isEmpty()) {
             getLog().info(String.format("No venv packages declared, deleting %s", venvDirectory));
             delete(venvDirectory);
