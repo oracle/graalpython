@@ -75,6 +75,12 @@ def get_gp():
 
     return graalpy
 
+def replace_in_file(file, str, replace_str):
+    with open(file, "r") as f:
+        contents = f.read()
+    with open(file, "w") as f:
+        f.write(contents.replace(str, replace_str))
+
 class PolyglotAppTest(unittest.TestCase):
 
     def setUpClass(self):
@@ -274,7 +280,7 @@ class PolyglotAppTest(unittest.TestCase):
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_check_home(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+         with tempfile.TemporaryDirectory() as tmpdir:
             target_name = "check_home_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "check_home_pom.xml")
@@ -296,6 +302,26 @@ class PolyglotAppTest(unittest.TestCase):
                         continue
                     assert line.endswith("/__init__.py")
                     assert not line.endswith("html/__init__.py")
+
+    @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
+    def test_empty_packages(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target_name = "empty_packages_test"
+            target_dir = os.path.join(str(tmpdir), target_name)
+            pom_template = os.path.join(os.path.dirname(__file__), "check_packages_pom.xml")
+            self.generate_app(tmpdir, target_dir, target_name, pom_template)
+
+            mvnw_cmd = util.get_mvn_wrapper(target_dir, self.env)
+
+            cmd = mvnw_cmd + ["process-resources"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+
+            replace_in_file(os.path.join(target_dir, "pom.xml"), "</packages>", "<package></package><package> </package></packages>")
+
+            cmd = mvnw_cmd + ["process-resources"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_one_file():
