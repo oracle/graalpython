@@ -1153,7 +1153,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static class ModuleState {
+    private static final class ModuleState {
         ZoneId currentZoneId;
         long timeSlept;
     }

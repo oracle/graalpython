@@ -518,7 +518,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static class ModuleData {
+    private static final class ModuleData {
         final ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
         final ConcurrentHashMap<Integer, SignalHandler> defaultSignalHandlers = new ConcurrentHashMap<>();
         final ConcurrentLinkedDeque<SignalTriggerAction> signalQueue = new ConcurrentLinkedDeque<>();
