@@ -55,7 +55,7 @@ SOFTWARE.
       <plugin>
         <groupId>org.graalvm.python</groupId>
         <artifactId>graalpy-maven-plugin</artifactId>
-        <version>{graalpy-maven-plugin-version}</version>
+        <version>${env.GRAALPY_VERSION}</version>
         <executions>
           <execution>
             <goals>

@@ -165,17 +165,9 @@ class PolyglotAppTest(unittest.TestCase):
         util.check_ouput("BUILD SUCCESS", out)
 
         if pom_template:
-            self.create_test_pom(pom_template, os.path.join(target_dir, "pom.xml"))
+            shutil.copyfile(pom_template, os.path.join(target_dir, "pom.xml"))
 
         util.patch_pom_repositories(os.path.join(target_dir, "pom.xml"))
-
-    def create_test_pom(self, template, pom):
-        lines = open(template, 'r').readlines()
-        with open(pom, 'w') as f:
-            for line in lines:
-                if "{graalpy-maven-plugin-version}" in line:
-                    line = line.replace("{graalpy-maven-plugin-version}", self.graalvmVersion)
-                f.write(line)
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_generated_app(self):

@@ -64,15 +64,6 @@ def create_hello_app(hello_app_dir, target_dir):
             os.makedirs(os.path.dirname(target_file), exist_ok=True)
             shutil.copyfile(source_file, target_file)
 
-    pom = os.path.join(target_dir, "pom.xml")
-    with open(pom, 'r') as f:
-        lines = f.readlines()
-    with open(pom, 'w') as f:
-        for line in lines:
-            if "{graalpy-maven-plugin-version}" in line:
-                line = line.replace("{graalpy-maven-plugin-version}", util.get_graalvm_version())
-            f.write(line)
-
 def diff_texts(a, b, a_filename, b_filename):
     a = a.splitlines()
     b = b.splitlines()

@@ -23,7 +23,7 @@
     <exec.mainClass>example.micronaut.Application</exec.mainClass>
 
     <!-- graalpy -->
-    <graalpy.version>{graalpy-maven-plugin-version}</graalpy.version>
+    <graalpy.version>${env.GRAALPY_VERSION}</graalpy.version>
     <graalpy.edition>python-community</graalpy.edition>
 
   </properties>
