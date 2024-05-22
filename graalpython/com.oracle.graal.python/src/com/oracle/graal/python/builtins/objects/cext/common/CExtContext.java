@@ -314,6 +314,14 @@ public abstract class CExtContext {
             } catch (PException e) {
                 throw e;
             } catch (AbstractTruffleException e) {
+                if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
+                    // file does not exist and it is from VirtualFileSystem
+                    // => we probably failed to extract it due to unconventional libs location
+                    getLogger().severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
+                                    "!!! Please try to run with java system property graalpy.vfs.extractOnStartup=true !!!\n", spec.path, realPath));
+
+                }
+
                 throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
             }
         } else {

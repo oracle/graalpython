@@ -87,6 +87,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     private static final String VENV_PREFIX = "/" + VFS_ROOT + "/" + VFS_VENV;
     private static final String HOME_PREFIX = "/" + VFS_ROOT + "/" + VFS_HOME;
     private static final String PROJ_PREFIX = "/" + VFS_ROOT + "/" + VFS_PROJ;
+    private boolean extractOnStartup = "true".equals(System.getProperty("graalpy.vfs.extractOnStartup"));
 
     public static enum HostIO {
         NONE,
@@ -359,7 +360,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         this.extractFilter = extractFilter;
         if (extractFilter != null) {
             try {
-                this.extractDir = Files.createTempDirectory("vfsx");
+                this.extractDir = Files.createTempDirectory("org.graalvm.python.vfsx");
                 this.deleteTempDir = new DeleteTempDir(this.extractDir);
                 Runtime.getRuntime().addShutdownHook(deleteTempDir);
             } catch (IOException e) {
@@ -464,6 +465,12 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                     FileEntry fileEntry = new FileEntry(platformPath);
                     vfsEntries.put(toCaseComparable(platformPath), fileEntry);
                     parent.entries.add(fileEntry);
+                    if (extractOnStartup) {
+                        Path p = Paths.get(fileEntry.getPlatformPath());
+                        if (shouldExtract(p)) {
+                            getExtractedPath(p);
+                        }
+                    }
                 }
             }
         }
@@ -528,8 +535,12 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
      * (recursively). If the extracted file or directory already exists, nothing will be done.
      */
     private Path getExtractedPath(Path path) {
-        assert extractDir != null;
         assert shouldExtract(path);
+        return extractPath(path, true);
+    }
+
+    private Path extractPath(Path path, boolean extractLibsDir) {
+        assert extractDir != null;
         try {
             /*
              * Remove the mountPoint(X) (e.g. "graalpy_vfs(x)") prefix if given. Method 'file' is
@@ -552,6 +563,15 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
                     // write data extracted file
                     Files.write(xPath, fileEntry.getData());
+
+                    if (extractLibsDir) {
+                        Path pkgDir = getPythonPackageDir(path);
+                        if (pkgDir != null) {
+                            Path libsDir = Paths.get(pkgDir + ".libs");
+                            extract(libsDir);
+                        }
+                    }
+
                 } else if (entry instanceof DirEntry) {
                     Files.createDirectories(xPath);
                 } else {
@@ -562,6 +582,32 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             return xPath;
         } catch (IOException e) {
             throw new RuntimeException(String.format("Error while extracting virtual filesystem path '%s' to the disk", path), e);
+        }
+    }
+
+    private static Path getPythonPackageDir(Path path) {
+        Path prev = null;
+        Path p = path;
+        while ((p = p.getParent()) != null) {
+            Path fileName = p.getFileName();
+            if (fileName != null && "site-packages".equals(fileName.toString())) {
+                return prev;
+            }
+            prev = p;
+        }
+        return null;
+    }
+
+    private void extract(Path path) throws IOException {
+        BaseEntry entry = getEntry(path);
+        if (entry instanceof FileEntry) {
+            extractPath(path, false);
+        } else if (entry != null) {
+            if (((DirEntry) entry).entries != null) {
+                for (BaseEntry be : ((DirEntry) entry).entries) {
+                    extract(Path.of(be.getPlatformPath()));
+                }
+            }
         }
     }
 

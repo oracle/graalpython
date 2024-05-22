@@ -133,6 +133,28 @@ public class VirtualFileSystemTest {
         checkExtractedFile(vfs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1/file2")), null);
     }
 
+    @Test
+    public void libsExtract() throws Exception {
+        VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
+                        unixMountPoint(VFS_MOUNT_POINT).//
+                        windowsMountPoint(VFS_WIN_MOUNT_POINT).//
+                        extractFilter(p -> p.getFileName().toString().endsWith(".tso")).//
+                        resourceLoadingClass(VirtualFileSystemTest.class).build();
+        Path p = vfs.toAbsolutePath(Path.of("site-packages/testpkg/file.tso"));
+        checkExtractedFile(p, null);
+        Path extractedRoot = p.getParent().getParent().getParent();
+        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/file1.tso"), null);
+        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/file2.tso"), null);
+        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/file1.tso"), null);
+        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/file2.tso"), null);
+        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/nofilterfile"), null);
+        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file1.tso"), null);
+        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file2.tso"), null);
+
+        p = vfs.toAbsolutePath(Path.of("site-packages/testpkg-nolibs/file.tso"));
+        checkExtractedFile(p, null);
+    }
+
     private static void checkExtractedFile(Path extractedFile, String[] expectedContens) throws IOException {
         assertTrue(Files.exists(extractedFile));
         List<String> lines = Files.readAllLines(extractedFile);
@@ -312,7 +334,7 @@ public class VirtualFileSystemTest {
                         assert len(f) == 0, 'expected no files'
 
                         f = listdir('/test_mount_point/')
-                        assert len(f) == 5, 'expected 5 files, got ' + str(len(f))
+                        assert len(f) == 6, 'expected 6 files, got ' + str(len(f))
 
                         assert 'dir1' in f, 'does not contain "dir1"'
                         assert 'emptydir' in f, 'does not contain "emptydir"'
@@ -350,11 +372,14 @@ public class VirtualFileSystemTest {
                         files = set()
                         for r, d, f in walk('/test_mount_point/'):
                             roots.add(r)
-                            files.update(f)
-                            dirs.update(d)
-                        assert len(roots) == 4, 'expected 4 roots, got ' + str(len(roots))
-                        assert len(files) == 4, 'expected 4 files, got ' + str(len(files))
-                        assert len(dirs) == 3, 'expected 3 dirs, got ' + str(len(dirs))
+                            for ff in f:
+                                files.add(r + "/" + ff)
+                            for dd in d:
+                                dirs.add(r + "/" + dd)
+
+                        assert len(roots) == 10, 'expected 10 roots, got ' + str(len(roots))
+                        assert len(files) == 13, 'expected 13 files, got ' + str(len(files))
+                        assert len(dirs) == 9, 'expected 9 dirs, got ' + str(len(dirs))
                         """);
 
         // read file

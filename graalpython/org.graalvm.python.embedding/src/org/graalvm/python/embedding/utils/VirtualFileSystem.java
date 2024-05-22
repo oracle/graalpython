@@ -91,6 +91,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     private static final String VENV_PREFIX = "/" + VFS_ROOT + "/" + VFS_VENV;
     private static final String HOME_PREFIX = "/" + VFS_ROOT + "/" + VFS_HOME;
     private static final String PROJ_PREFIX = "/" + VFS_ROOT + "/" + VFS_PROJ;
+    private boolean extractOnStartup = "true".equals(System.getProperty("graalpy.vfs.extractOnStartup"));
 
     public static enum HostIO {
         NONE,
@@ -136,7 +137,11 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
         /**
          * The mount point for the virtual filesystem on Windows. This mount point shadows any real
-         * filesystem, so should be chosen to avoid clashes with the users machine.
+         * filesystem, so should be chosen to avoid clashes with the users machine, e.g. if set to
+         * "X:\graalpy_vfs", then a resource with path /org.graalvm.python.vfs/xyz/abc is visible as
+         * "X:\graalpy_vfs\xyz\abc". This needs to be an absolute path with platform-specific
+         * separators without any trailing separator. If that file or directory actually exists, it
+         * will not be accessible.
          */
         public Builder windowsMountPoint(String s) {
             windowsMountPoint = s;
@@ -145,7 +150,11 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
         /**
          * The mount point for the virtual filesystem on Unices. This mount point shadows any real
-         * filesystem, so should be chosen to avoid clashes with the users machine.
+         * filesystem, so should be chosen to avoid clashes with the users machine, e.g. if set to
+         * "/graalpy_vfs", then a resource with path /org.graalvm.python.vfs/xyz/abc is visible as
+         * "/graalpy_vfs/xyz/abc". This needs to be an absolute path with platform-specific
+         * separators without any trailing separator. If that file or directory actually exists, it
+         * will not be accessible.
          */
         public Builder unixMountPoint(String s) {
             unixMountPoint = s;
@@ -263,7 +272,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     /*
      * Determines where the virtual filesystem lives in the real filesystem, e.g. if set to
-     * "X:\graalpy_vfs", then a resource with path /vfs/xyz/abc is visible as
+     * "X:\graalpy_vfs", then a resource with path /org.graalvm.python.vfs/xyz/abc is visible as
      * "X:\graalpy_vfs\xyz\abc". This needs to be an absolute path with platform-specific separators
      * without any trailing separator. If that file or directory actually exists, it will not be
      * accessible.
@@ -355,7 +364,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         this.extractFilter = extractFilter;
         if (extractFilter != null) {
             try {
-                this.extractDir = Files.createTempDirectory("vfsx");
+                this.extractDir = Files.createTempDirectory("org.graalvm.python.vfsx");
                 this.deleteTempDir = new DeleteTempDir(this.extractDir);
                 Runtime.getRuntime().addShutdownHook(deleteTempDir);
             } catch (IOException e) {
@@ -460,6 +469,12 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                     FileEntry fileEntry = new FileEntry(platformPath);
                     vfsEntries.put(toCaseComparable(platformPath), fileEntry);
                     parent.entries.add(fileEntry);
+                    if (extractOnStartup) {
+                        Path p = Paths.get(fileEntry.getPlatformPath());
+                        if (shouldExtract(p)) {
+                            getExtractedPath(p);
+                        }
+                    }
                 }
             }
         }
@@ -497,12 +512,14 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         return vfsEntries.get(toCaseComparable(path.toString()));
     }
 
-    public String getPrefix() {
-        return this.vfsPrefix;
-    }
-
-    public String getFileListPath() {
-        return this.filesListPath;
+    /**
+     * The mount point for the virtual filesystem.
+     *
+     * @see Builder#windowsMountPoint(String)
+     * @see Builder#unixMountPoint(String)
+     */
+    public String getMountPoint() {
+        return this.mountPoint.toString();
     }
 
     private boolean pathIsInVfs(Path path) {
@@ -518,12 +535,16 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     /**
      * Extracts a file or directory from the resource to the temporary directory and returns the
-     * path to the extracted file. Inexisting parent directories will also be created (recursively).
-     * If the extracted file or directory already exists, nothing will be done.
+     * path to the extracted file. Nonexistent parent directories will also be created
+     * (recursively). If the extracted file or directory already exists, nothing will be done.
      */
     private Path getExtractedPath(Path path) {
-        assert extractDir != null;
         assert shouldExtract(path);
+        return extractPath(path, true);
+    }
+
+    private Path extractPath(Path path, boolean extractLibsDir) {
+        assert extractDir != null;
         try {
             /*
              * Remove the mountPoint(X) (e.g. "graalpy_vfs(x)") prefix if given. Method 'file' is
@@ -546,6 +567,15 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
                     // write data extracted file
                     Files.write(xPath, fileEntry.getData());
+
+                    if (extractLibsDir) {
+                        Path pkgDir = getPythonPackageDir(path);
+                        if (pkgDir != null) {
+                            Path libsDir = Paths.get(pkgDir + ".libs");
+                            extract(libsDir);
+                        }
+                    }
+
                 } else if (entry instanceof DirEntry) {
                     Files.createDirectories(xPath);
                 } else {
@@ -556,6 +586,32 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             return xPath;
         } catch (IOException e) {
             throw new RuntimeException(String.format("Error while extracting virtual filesystem path '%s' to the disk", path), e);
+        }
+    }
+
+    private static Path getPythonPackageDir(Path path) {
+        Path prev = null;
+        Path p = path;
+        while ((p = p.getParent()) != null) {
+            Path fileName = p.getFileName();
+            if (fileName != null && "site-packages".equals(fileName.toString())) {
+                return prev;
+            }
+            prev = p;
+        }
+        return null;
+    }
+
+    private void extract(Path path) throws IOException {
+        BaseEntry entry = getEntry(path);
+        if (entry instanceof FileEntry) {
+            extractPath(path, false);
+        } else if (entry != null) {
+            if (((DirEntry) entry).entries != null) {
+                for (BaseEntry be : ((DirEntry) entry).entries) {
+                    extract(Path.of(be.getPlatformPath()));
+                }
+            }
         }
     }
 
