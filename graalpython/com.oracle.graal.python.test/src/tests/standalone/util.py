@@ -53,8 +53,8 @@ def run_cmd(cmd, env, cwd=None, print_out=False):
     for line in iter(process.stdout.readline, ""):
         out.append(line)
         if print_out:
-            print(line)
-    if print_output:
+            print(line, end="")
+    if print_out:
         print("\n========== end of output ==========")
     return "".join(out), process.wait()
 
@@ -70,8 +70,8 @@ def print_output(out, err_msg):
     print("============== output =============")
     for line in out:
         print(line, end="")
-    print("", err_msg, "", sep="\n")
     print("\n========== end of output ==========")
+    print("", err_msg, "", sep="\n")
 
 def get_mvn_wrapper(project_dir, env):
     if 'win32' != sys.platform:
