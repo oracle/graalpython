@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.ArrayUtils;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -160,13 +161,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     public int indexOfByte(byte value) {
-        for (int i = 0; i < length; i++) {
-            if (values[i] == value) {
-                return i;
-            }
-        }
-
-        return -1;
+        return ArrayUtils.indexOf(values, 0, length, value);
     }
 
     public int indexOfInt(int value) {
