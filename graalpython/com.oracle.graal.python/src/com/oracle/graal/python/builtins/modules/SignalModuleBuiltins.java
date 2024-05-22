@@ -543,9 +543,10 @@ final class Signals {
     static final String[] SIGNAL_NAMES = new String[SIGMAX + 1];
 
     static {
-        for (String signal : new String[]{"ABRT", "ALRM", "BUS", "FPE", "HUP", "ILL", "INFO", "INT", "KILL", "LOST",
-                        "PIPE", "PWR", "QUIT", "SEGV", "SYS", "TERM", "TRAP", "TSTP", "TTIN", "TTOUT", "USR1", "USR2",
-                        "VTALRM", "WINCH", "CHLD"}) {
+        for (String signal : new String[]{"HUP", "INT", "BREAK", "QUIT", "ILL", "TRAP", "IOT", "ABRT", "EMT", "FPE",
+                        "KILL", "BUS", "SEGV", "SYS", "PIPE", "ALRM", "TERM", "USR1", "USR2", "CLD", "CHLD", "PWR",
+                        "IO", "URG", "WINCH", "POLL", "STOP", "TSTP", "CONT", "TTIN", "TTOU", "VTALRM", "PROF",
+                        "XCPU", "XFSZ", "RTMIN", "RTMAX", "INFO", "STKFLT"}) {
             try {
                 int number = new sun.misc.Signal(signal).getNumber();
                 if (number > SIGMAX) {
