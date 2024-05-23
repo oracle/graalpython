@@ -2007,6 +2007,11 @@ class Popen:
             if _WIFSTOPPED(sts):
                 self.returncode = -_WSTOPSIG(sts)
             else:
+                # Begin Truffle change
+                if sys.platform == 'win32':
+                    self.returncode = sts
+                    return
+                # End Truffle change
                 self.returncode = _waitstatus_to_exitcode(sts)
 
         def _internal_poll(self, _deadstate=None, _waitpid=_waitpid,
