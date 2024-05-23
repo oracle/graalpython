@@ -268,7 +268,6 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                     arguments = prepareArguments(self);
                 } else {
                     // Subsequent invocations: call a continuation root node.
-                    // TODO: forward arguments into the continuation frame (e.g., exception state).
                     arguments = new Object[]{continuation.getFrame(), sendValue};
                 }
 

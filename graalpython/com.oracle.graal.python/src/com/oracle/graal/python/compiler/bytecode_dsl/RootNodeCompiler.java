@@ -2399,6 +2399,10 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         // --------------------- assign ------------------------
 
+        /**
+         * Generates code to store the value produced by {@link #generateValue} into the visited
+         * expression.
+         */
         public class StoreVisitor implements BaseBytecodeDSLVisitor<Void> {
             private final Builder b = StatementCompiler.this.b;
             private final Runnable generateValue;
@@ -2441,12 +2445,21 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 return null;
             }
 
+            /**
+             * This method unpacks the rhs (a sequence/iterable) to the elements on the lhs
+             * (specified by {@code nodes}.
+             */
             private void visitIterableAssign(ExprTy[] nodes) {
                 b.beginBlock();
 
-                // TODO if it is a variable directly, use that variable instead of going to a temp
+                /**
+                 * The rhs should be fully evaluated and unpacked into the expected number of
+                 * elements before storing values into the lhs (e.g., if an lhs element is f().attr,
+                 * but computing or unpacking rhs throws, f() is not computed). Thus, the unpacking
+                 * step stores the unpacked values into intermediate variables, and then those
+                 * variables are copied into the lhs elements afterward.
+                 */
                 BytecodeLocal[] targets = new BytecodeLocal[nodes.length];
-
                 for (int i = 0; i < targets.length; i++) {
                     targets[i] = b.createLocal();
                 }
@@ -3838,7 +3851,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         private ConstantValue foldUnaryOpConstant(ExprTy.UnaryOp unaryOp) {
             assert unaryOp.op == UnaryOpTy.USub;
             assert unaryOp.operand instanceof ExprTy.Constant : unaryOp.operand;
-            // TODO: why does the version in Compiler.java save and restore locations?
             ExprTy.Constant c = (ExprTy.Constant) unaryOp.operand;
             ConstantValue ret = c.value.negate();
             assert ret != null;
@@ -3851,7 +3863,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         private ConstantValue foldBinOpComplexConstant(ExprTy.BinOp binOp) {
             assert (binOp.left instanceof ExprTy.UnaryOp || binOp.left instanceof ExprTy.Constant) && binOp.right instanceof ExprTy.Constant : binOp.left + " " + binOp.right;
             assert binOp.op == OperatorTy.Sub || binOp.op == OperatorTy.Add;
-            // TODO: why does the version in Compiler.java save and restore locations?
             ConstantValue left;
             if (binOp.left instanceof ExprTy.UnaryOp) {
                 left = foldUnaryOpConstant((ExprTy.UnaryOp) binOp.left);
