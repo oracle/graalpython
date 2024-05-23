@@ -544,7 +544,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("api_version", PythonLanguage.API_VERSION);
         addBuiltinConstant("version", toTruffleStringUncached(PythonLanguage.VERSION +
                         " (" + COMPILE_TIME + ")" +
-                        "\n[Graal, " + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + "]"));
+                        "\n[Graal, " + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + " (" + System.getProperty("os.arch") + ")]"));
         addBuiltinConstant("float_info", factory.createStructSeq(FLOAT_INFO_DESC,
                         Double.MAX_VALUE,           // DBL_MAX
                         Double.MAX_EXPONENT + 1,    // DBL_MAX_EXP
