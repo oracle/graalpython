@@ -1,0 +1,3 @@
+[[rules]]
+# Need to specify pybind11 build dependency, otherwise setuptools will install it unpatched
+patch = 'hmmlearn.patch'
