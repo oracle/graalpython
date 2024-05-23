@@ -46,7 +46,7 @@
         <executions>
           <execution>
             <configuration>
-              <!-- specify python packages as if used with pip -->
+              <!-- specify python packages and their versions as if used with pip -->
               <packages>
                 <package>termcolor==2.2</package>
               </packages>
