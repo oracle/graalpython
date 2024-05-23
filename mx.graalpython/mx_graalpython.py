@@ -1571,7 +1571,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.svm, GraalPythonTags.graalvm], report=True) as task:
         if task:
-            with set_env(PYTHONIOENCODING=None):
+            with set_env(PYTHONIOENCODING=None, MX_CHECK_IOENCODING="0"):
                 svm_image = python_svm()
                 benchmark = os.path.join(PATH_MESO, "image-magix.py")
                 out = mx.OutputCapture()
