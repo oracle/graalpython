@@ -126,6 +126,7 @@ import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -737,6 +738,16 @@ public abstract class PythonCextObjectBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectDir dir) {
             return dir.execute(null, inliningTarget, object);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffleObject_GenericGetDict extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object getDict(Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetOrCreateDictNode getDict) {
+            return getDict.execute(inliningTarget, object);
         }
     }
 }

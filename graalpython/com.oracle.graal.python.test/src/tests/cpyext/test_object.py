@@ -1595,6 +1595,26 @@ class TestObjectFunctions(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    object_with_attributes = MyObject()
+    object_with_attributes.foo = 1
+
+    test_PyObject_GenericGetDict = CPyExtFunction(
+        lambda args: args[0].__dict__,
+        lambda: (
+            (TestObjectFunctions.object_with_attributes,),
+        ),
+        code='''
+        static PyObject* wrap_PyObject_GenericGetDict(PyObject* obj) {
+            return PyObject_GenericGetDict(obj, NULL);
+        }
+        ''',
+        arguments=["PyObject* obj"],
+        resultspec="O",
+        argspec="O",
+        callfunction="wrap_PyObject_GenericGetDict",
+        cmpfunc=unhandled_error_compare
+    )
+
 
 class TestPickleNative:
     def test_pickle_native(self):

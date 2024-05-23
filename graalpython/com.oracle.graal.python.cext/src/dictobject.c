@@ -5528,6 +5528,10 @@ _PyObject_FreeInstanceAttributes(PyObject *self)
 PyObject *
 PyObject_GenericGetDict(PyObject *obj, void *context)
 {
+    // GraalPy change: upcall for managed
+    if (points_to_py_handle_space(obj)) {
+        return GraalPyTruffleObject_GenericGetDict(obj);
+    }
     PyObject *dict;
     // GraalPy change: we don't have inlined values in managed dict
     PyObject **dictptr = _PyObject_GetDictPtr(obj);

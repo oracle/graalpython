@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,6 +37,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import json
+import os
 import unittest
 
 BIGINT_JSON_DATA = '''
@@ -58,16 +60,13 @@ BIGINT_JSON_DATA = '''
 
 class JsonTest(unittest.TestCase):
     def test_dump(self):
-        import json
-        import os
         cwd = os.getcwd()
         new_file_path = os.path.join(cwd, 'myFile.json')
         json.dump(['a', 'b', 'c'], open(new_file_path, 'w'))
         assert json.load(open(new_file_path)) == ['a', 'b', 'c']
         os.remove(new_file_path)
 
-    def test_load_bigin(self):
-        import json
+    def test_load_bigint(self):
         data = json.loads(BIGINT_JSON_DATA)
         assert "int_values" in data
         int_values_ = data['int_values']
@@ -83,3 +82,9 @@ class JsonTest(unittest.TestCase):
             1521583201347000000,
             10,
         }
+
+    def test_encode_surrogate(self):
+        s = json.dumps({'foo': "\uda6a"})
+        assert s == '{"foo": "\\uda6a"}'
+        s = json.dumps({'foo': "\uda6a"}, ensure_ascii=False)
+        assert s == '{"foo": "\uda6a"}'
