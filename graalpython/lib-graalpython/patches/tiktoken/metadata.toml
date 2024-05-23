@@ -1,0 +1,3 @@
+[[rules]]
+version = '== 0.7.0'
+patch = 'tiktoken-0.7.0.patch'

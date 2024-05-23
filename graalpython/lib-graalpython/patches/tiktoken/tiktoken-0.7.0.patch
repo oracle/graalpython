@@ -1,0 +1,13 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index 4efb156..8ed776c 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -9,7 +9,7 @@ name = "_tiktoken"
+ crate-type = ["cdylib"]
+ 
+ [dependencies]
+-pyo3 = { version = "0.20.0", features = ["extension-module"] }
++pyo3 = { git = "https://github.com/timfel/pyo3.git", branch = "v0.20.3.graalpy", features = ["extension-module"] }
+ 
+ # tiktoken dependencies
+ fancy-regex = "0.11.0"
