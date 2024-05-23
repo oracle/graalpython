@@ -58,7 +58,6 @@ PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywordsFast_SizeT(PyObject *, PyObject *,
 #define FLAG_COMPAT 1
 #define FLAG_SIZE_T 2
 
-#if 0 // GraalPy change
 typedef int (*destr_t)(PyObject *, void *);
 
 
@@ -102,19 +101,19 @@ static int vgetargskeywordsfast_impl(PyObject *const *args, Py_ssize_t nargs,
                           struct _PyArg_Parser *parser,
                           va_list *p_va, int flags);
 static const char *skipitem(const char **, va_list *, int);
-#endif // GraalPy change
 
 // GraalPy change: add NO_INLINE
 NO_INLINE
 int
 PyArg_Parse(PyObject *args, const char *format, ...)
 {
-    // GraalPy change: different implementation
-    va_list __vl;
-    va_start(__vl, format);
-    int result = GraalPyTruffle_Arg_ParseArrayAndKeywords(&args, 1, NULL, format, NULL, &__vl);
-    va_end(__vl);
-    return result;
+    int retval;
+    va_list va;
+
+    va_start(va, format);
+    retval = vgetargs1(args, format, &va, FLAG_COMPAT);
+    va_end(va);
+    return retval;
 }
 
 // GraalPy change: add NO_INLINE
@@ -122,12 +121,13 @@ NO_INLINE
 PyAPI_FUNC(int)
 _PyArg_Parse_SizeT(PyObject *args, const char *format, ...)
 {
-    // GraalPy change: different implementation
-    va_list __vl;
-    va_start(__vl, format);
-    int result = GraalPyTruffle_Arg_ParseArrayAndKeywords(&args, 1, NULL, format, NULL, &__vl);
-    va_end(__vl);
-    return result;
+    int retval;
+    va_list va;
+
+    va_start(va, format);
+    retval = vgetargs1(args, format, &va, FLAG_COMPAT|FLAG_SIZE_T);
+    va_end(va);
+    return retval;
 }
 
 
@@ -136,12 +136,13 @@ NO_INLINE
 int
 PyArg_ParseTuple(PyObject *args, const char *format, ...)
 {
-    // GraalPy change: different implementation
-    va_list __vl;
-    va_start(__vl, format);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(args, NULL, format, NULL, &__vl);
-    va_end(__vl);
-    return result;
+    int retval;
+    va_list va;
+
+    va_start(va, format);
+    retval = vgetargs1(args, format, &va, 0);
+    va_end(va);
+    return retval;
 }
 
 // GraalPy change: add NO_INLINE
@@ -149,12 +150,13 @@ NO_INLINE
 PyAPI_FUNC(int)
 _PyArg_ParseTuple_SizeT(PyObject *args, const char *format, ...)
 {
-    // GraalPy change: different implementation
-    va_list __vl;
-    va_start(__vl, format);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(args, NULL, format, NULL, &__vl);
-    va_end(__vl);
-    return result;
+    int retval;
+    va_list va;
+
+    va_start(va, format);
+    retval = vgetargs1(args, format, &va, FLAG_SIZE_T);
+    va_end(va);
+    return retval;
 }
 
 
@@ -163,12 +165,13 @@ NO_INLINE
 int
 _PyArg_ParseStack(PyObject *const *args, Py_ssize_t nargs, const char *format, ...)
 {
-    // GraalPy change: different implementation
-    va_list __vl;
-    va_start(__vl, format);
-    int result = GraalPyTruffle_Arg_ParseArrayAndKeywords(args, nargs, NULL, format, NULL, &__vl);
-    va_end(__vl);
-    return result;
+    int retval;
+    va_list va;
+
+    va_start(va, format);
+    retval = vgetargs1_impl(NULL, args, nargs, format, &va, 0);
+    va_end(va);
+    return retval;
 }
 
 // GraalPy change: add NO_INLINE
@@ -176,31 +179,43 @@ NO_INLINE
 PyAPI_FUNC(int)
 _PyArg_ParseStack_SizeT(PyObject *const *args, Py_ssize_t nargs, const char *format, ...)
 {
-    // GraalPy change: different implementation
-    va_list __vl;
-    va_start(__vl, format);
-    int result = GraalPyTruffle_Arg_ParseArrayAndKeywords(args, nargs, NULL, format, NULL, &__vl);
-    va_end(__vl);
-    return result;
+    int retval;
+    va_list va;
+
+    va_start(va, format);
+    retval = vgetargs1_impl(NULL, args, nargs, format, &va, FLAG_SIZE_T);
+    va_end(va);
+    return retval;
 }
 
 
 int
 PyArg_VaParse(PyObject *args, const char *format, va_list va)
 {
-    // GraalPy change: different implementation
-    return _PyArg_VaParseTupleAndKeywords_SizeT(args, NULL, format, NULL, va);
+    va_list lva;
+    int retval;
+
+    va_copy(lva, va);
+
+    retval = vgetargs1(args, format, &lva, 0);
+    va_end(lva);
+    return retval;
 }
 
 PyAPI_FUNC(int)
 _PyArg_VaParse_SizeT(PyObject *args, const char *format, va_list va)
 {
-    // GraalPy change: different implementation
-    return _PyArg_VaParseTupleAndKeywords_SizeT(args, NULL, format, NULL, va);
+    va_list lva;
+    int retval;
+
+    va_copy(lva, va);
+
+    retval = vgetargs1(args, format, &lva, FLAG_SIZE_T);
+    va_end(lva);
+    return retval;
 }
 
 
-#if 0 // GraalPy change
 /* Handle cleanup of allocated memory in case of exception */
 
 static int
@@ -611,7 +626,6 @@ convertitem(PyObject *arg, const char **p_format, va_list *p_va, int flags,
         *p_format = format;
     return msg;
 }
-#endif // GraalPy change
 
 
 
@@ -629,7 +643,6 @@ _PyArg_BadArgument(const char *fname, const char *displayname,
                  arg == Py_None ? "None" : Py_TYPE(arg)->tp_name);
 }
 
-#if 0 // GraalPy change
 static const char *
 converterr(const char *expected, PyObject *arg, char *msgbuf, size_t bufsize)
 {
@@ -1373,7 +1386,6 @@ getbuffer(PyObject *arg, Py_buffer *view, const char **errmsg)
     }
     return 0;
 }
-#endif // GraalPy change
 
 /* Support for keyword arguments donated by
    Geoff Philbrick <philbric@delphi.hks.com> */
@@ -1387,12 +1399,22 @@ PyArg_ParseTupleAndKeywords(PyObject *args,
                             const char *format,
                             char **kwlist, ...)
 {
-    // GraalPy change: different implementation
-    va_list __vl;
-    va_start(__vl, kwlist);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(args, keywords, format, kwlist, &__vl);
-    va_end(__vl);
-    return result;
+    int retval;
+    va_list va;
+
+    if ((args == NULL || !PyTuple_Check(args)) ||
+        (keywords != NULL && !PyDict_Check(keywords)) ||
+        format == NULL ||
+        kwlist == NULL)
+    {
+        PyErr_BadInternalCall();
+        return 0;
+    }
+
+    va_start(va, kwlist);
+    retval = vgetargskeywords(args, keywords, format, kwlist, &va, 0);
+    va_end(va);
+    return retval;
 }
 
 // GraalPy change: add NO_INLINE
@@ -1403,13 +1425,25 @@ _PyArg_ParseTupleAndKeywords_SizeT(PyObject *args,
                                   const char *format,
                                   char **kwlist, ...)
 {
-    // GraalPy change: different implementation
-    va_list __vl;
-    va_start(__vl, kwlist);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(args, keywords, format, kwlist, &__vl);
-    va_end(__vl);
-    return result;
+    int retval;
+    va_list va;
+
+    if ((args == NULL || !PyTuple_Check(args)) ||
+        (keywords != NULL && !PyDict_Check(keywords)) ||
+        format == NULL ||
+        kwlist == NULL)
+    {
+        PyErr_BadInternalCall();
+        return 0;
+    }
+
+    va_start(va, kwlist);
+    retval = vgetargskeywords(args, keywords, format,
+                              kwlist, &va, FLAG_SIZE_T);
+    va_end(va);
+    return retval;
 }
+
 
 int
 PyArg_VaParseTupleAndKeywords(PyObject *args,
@@ -1417,12 +1451,23 @@ PyArg_VaParseTupleAndKeywords(PyObject *args,
                               const char *format,
                               char **kwlist, va_list va)
 {
-    // GraalPy change: different implementation
+    int retval;
     va_list lva;
+
+    if ((args == NULL || !PyTuple_Check(args)) ||
+        (keywords != NULL && !PyDict_Check(keywords)) ||
+        format == NULL ||
+        kwlist == NULL)
+    {
+        PyErr_BadInternalCall();
+        return 0;
+    }
+
     va_copy(lva, va);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(args, keywords, format, kwlist, &lva);
+
+    retval = vgetargskeywords(args, keywords, format, kwlist, &lva, 0);
     va_end(lva);
-    return result;
+    return retval;
 }
 
 PyAPI_FUNC(int)
@@ -1431,12 +1476,24 @@ _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *args,
                                     const char *format,
                                     char **kwlist, va_list va)
 {
-    // GraalPy change: different implementation
+    int retval;
     va_list lva;
+
+    if ((args == NULL || !PyTuple_Check(args)) ||
+        (keywords != NULL && !PyDict_Check(keywords)) ||
+        format == NULL ||
+        kwlist == NULL)
+    {
+        PyErr_BadInternalCall();
+        return 0;
+    }
+
     va_copy(lva, va);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(args, keywords, format, kwlist, &lva);
+
+    retval = vgetargskeywords(args, keywords, format,
+                              kwlist, &lva, FLAG_SIZE_T);
     va_end(lva);
-    return result;
+    return retval;
 }
 
 // GraalPy change: add NO_INLINE
@@ -1445,12 +1502,13 @@ PyAPI_FUNC(int)
 _PyArg_ParseTupleAndKeywordsFast(PyObject *args, PyObject *keywords,
                             struct _PyArg_Parser *parser, ...)
 {
-    // GraalPy change: different implementation
-    va_list __vl;
-    va_start(__vl, parser);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(args, keywords, parser->format, parser->keywords, &__vl);
-    va_end(__vl);
-    return result;
+    int retval;
+    va_list va;
+
+    va_start(va, parser);
+    retval = vgetargskeywordsfast(args, keywords, parser, &va, 0);
+    va_end(va);
+    return retval;
 }
 
 // GraalPy change: add NO_INLINE
@@ -1459,15 +1517,15 @@ PyAPI_FUNC(int)
 _PyArg_ParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *keywords,
                             struct _PyArg_Parser *parser, ...)
 {
-    // GraalPy change: different implementation
-    va_list __vl;
-    va_start(__vl, parser);
-    int result = GraalPyTruffle_Arg_ParseTupleAndKeywords(args, keywords, parser->format, parser->keywords, &__vl);
-    va_end(__vl);
-    return result;
+    int retval;
+    va_list va;
+
+    va_start(va, parser);
+    retval = vgetargskeywordsfast(args, keywords, parser, &va, FLAG_SIZE_T);
+    va_end(va);
+    return retval;
 }
 
-#if 0 // GraalPy change
 PyAPI_FUNC(int)
 _PyArg_ParseStackAndKeywords(PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames,
                   struct _PyArg_Parser *parser, ...)
@@ -1493,23 +1551,34 @@ _PyArg_ParseStackAndKeywords_SizeT(PyObject *const *args, Py_ssize_t nargs, PyOb
     va_end(va);
     return retval;
 }
-#endif // GraalPy change
 
 
 PyAPI_FUNC(int)
 _PyArg_VaParseTupleAndKeywordsFast(PyObject *args, PyObject *keywords,
                             struct _PyArg_Parser *parser, va_list va)
 {
-    // GraalPy change: different implementation
-    return _PyArg_VaParseTupleAndKeywords_SizeT(args, keywords, parser->format, parser->keywords, va);
+    int retval;
+    va_list lva;
+
+    va_copy(lva, va);
+
+    retval = vgetargskeywordsfast(args, keywords, parser, &lva, 0);
+    va_end(lva);
+    return retval;
 }
 
 PyAPI_FUNC(int)
 _PyArg_VaParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *keywords,
                             struct _PyArg_Parser *parser, va_list va)
 {
-    // GraalPy change: different implementation
-    return _PyArg_VaParseTupleAndKeywords_SizeT(args, keywords, parser->format, parser->keywords, va);
+    int retval;
+    va_list lva;
+
+    va_copy(lva, va);
+
+    retval = vgetargskeywordsfast(args, keywords, parser, &lva, FLAG_SIZE_T);
+    va_end(lva);
+    return retval;
 }
 
 static void
@@ -1556,7 +1625,6 @@ error_unexpected_keyword_arg(PyObject *kwargs, PyObject *kwnames, PyObject *kwtu
                  (fname == NULL) ? "" : "()");
 }
 
-#if 0 // GraalPy change
 int
 PyArg_ValidateKeywordArguments(PyObject *kwargs)
 {
@@ -1860,7 +1928,6 @@ vgetargskeywords(PyObject *args, PyObject *kwargs, const char *format,
 
 /* List of static parsers. */
 static struct _PyArg_Parser *static_arg_parsers = NULL;
-#endif // GraalPy change
 
 static int
 parser_init(struct _PyArg_Parser *parser)
@@ -1890,7 +1957,6 @@ parser_init(struct _PyArg_Parser *parser)
     }
     len = i;
 
-#if 0 // GraalPy change: removed format processing as in our code, it should only be called with format == NULL
     format = parser->format;
     if (format) {
         /* grab the function name or custom error msg first (mutually exclusive) */
@@ -1959,7 +2025,6 @@ parser_init(struct _PyArg_Parser *parser)
             return 0;
         }
     }
-#endif // GraalPy change
 
     nkw = len - parser->pos;
     kwtuple = PyTuple_New(nkw);
@@ -1978,23 +2043,18 @@ parser_init(struct _PyArg_Parser *parser)
     }
     parser->kwtuple = kwtuple;
 
-#if 0 // GraalPy change
     assert(parser->next == NULL);
     parser->next = static_arg_parsers;
     static_arg_parsers = parser;
-#endif // GraalPy change
     return 1;
 }
 
-#if 0 // GraalPy change
 static void
 parser_clear(struct _PyArg_Parser *parser)
 {
     Py_CLEAR(parser->kwtuple);
 }
-#endif // GraalPy change
 
-// taken from CPython "Python/getargs.c", changed comparison function
 static PyObject*
 find_keyword(PyObject *kwnames, PyObject *const *kwstack, PyObject *key)
 {
@@ -2019,7 +2079,6 @@ find_keyword(PyObject *kwnames, PyObject *const *kwstack, PyObject *key)
     return NULL;
 }
 
-#if 0 // GraalPy change
 static int
 vgetargskeywordsfast_impl(PyObject *const *args, Py_ssize_t nargs,
                           PyObject *kwargs, PyObject *kwnames,
@@ -2252,7 +2311,6 @@ vgetargskeywordsfast(PyObject *args, PyObject *keywords,
     return vgetargskeywordsfast_impl(stack, nargs, keywords, NULL,
                                      parser, p_va, flags);
 }
-#endif // GraalPy change
 
 
 #undef _PyArg_UnpackKeywords
@@ -2432,7 +2490,6 @@ _PyArg_UnpackKeywords(PyObject *const *args, Py_ssize_t nargs,
     return buf;
 }
 
-#if 0 // GraalPy change
 PyObject * const *
 _PyArg_UnpackKeywordsWithVararg(PyObject *const *args, Py_ssize_t nargs,
                                 PyObject *kwargs, PyObject *kwnames,
@@ -2720,7 +2777,6 @@ err:
     *p_format = format;
     return NULL;
 }
-#endif // GraalPy change
 
 
 #undef _PyArg_CheckPositional
@@ -2880,7 +2936,6 @@ _PyArg_NoPositional(const char *funcname, PyObject *args)
     return 0;
 }
 
-#if 0 // GraalPy change
 int
 _PyArg_NoKwnames(const char *funcname, PyObject *kwnames)
 {
@@ -2910,56 +2965,7 @@ _PyArg_Fini(void)
     }
     static_arg_parsers = NULL;
 }
-#endif // GraalPy change
 
-// GraalPy additions
-
-PyAPI_FUNC(int)
-PyTruffleArg_GetBuffer(PyObject *arg, Py_buffer *view)
-{
-    if (PyObject_GetBuffer(arg, view, PyBUF_SIMPLE) != 0) {
-        return -1;
-    }
-    if (!PyBuffer_IsContiguous(view, 'C')) {
-        PyBuffer_Release(view);
-        return -2;
-    }
-    return 0;
-}
-
-PyAPI_FUNC(int)
-PyTruffleArg_GetBufferWritable(PyObject *arg, Py_buffer *view)
-{
-    if (PyObject_GetBuffer(arg, view, PyBUF_WRITABLE) != 0) {
-        PyErr_Clear();
-        return -1;
-    }
-    if (!PyBuffer_IsContiguous(view, 'C')) {
-        PyBuffer_Release(view);
-        return -2;
-    }
-    return 0;
-}
-
-PyAPI_FUNC(Py_ssize_t)
-PyTruffleArg_ConvertBuffer(PyObject *arg, const void **p)
-{
-    PyBufferProcs *pb = Py_TYPE(arg)->tp_as_buffer;
-    Py_ssize_t count;
-    Py_buffer view;
-
-    // GraalPy change: different error handling, we use specific numbers to indicate different
-    *p = NULL;
-    if (pb != NULL && pb->bf_releasebuffer != NULL) {
-        return -3;
-    }
-
-    int get_buffer_result = PyTruffleArg_GetBuffer(arg, &view);
-    if (get_buffer_result < 0) {
-        return get_buffer_result;
-    }
-    count = view.len;
-    *p = view.buf;
-    PyBuffer_Release(&view);
-    return count;
-}
+#ifdef __cplusplus
+};
+#endif
