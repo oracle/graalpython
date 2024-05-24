@@ -30,7 +30,7 @@ sudo apt install build-essential libc++-12-dev zlib1g-dev cmake
 
 Lastly, download maven, extract it and include it on your `PATH`.
 
-Once you have all the necessary tools, you can run `mx build` in this repository.
+Once you have all the necessary tools, you can run `mx python-jvm` in this repository.
 This will initially download the required dependencies next to the repository and build Python.
 If it succeeds without errors, you should already be able to run `mx python` and get a REPL.
 
@@ -41,7 +41,7 @@ If you use another editor with support for the [Eclipse language server](https:/
 ## Development Layout
 
 Besides the source code of the Python interpreter, we have some useful `mx` functions defined under the _mx.graalpython_ directory.
-As you make changes, you can always test them with `mx build && mx python`.
+As you make changes, you can always test them with `mx python-jvm && mx python`.
 Additionally, there are various "gates" that we use on our CI systems to check any code that is committed. 
 You can run all the gates with the command `mx python-gate` or just some by using `mx python-gate --tags [TAG]`.
 Interesting gates to run that cover a good chunk of the code things are:
