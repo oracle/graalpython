@@ -1826,20 +1826,21 @@ class Popen:
                         args = [comspec, "/u", "/c", *args]
                     else:
                         args = [comspec, "/u", "/c", list2cmdline(args)]
-                for idx, arg in enumerate(args):
-                    # Adapted per the quoting rules from
-                    # https://learn.microsoft.com/en-us/cpp/c-language/parsing-c-command-line-arguments
-                    if idx == 0:
-                        continue
-                    modified = False
-                    if '"' in args[idx]:
-                        args[idx] = args[idx].replace('"', '""')
-                        modified = True
-                    if '\\' in args[idx] and (shell or modified):
-                        args[idx] = args[idx].replace('\\', '\\\\')
-                        modified = True
-                    if modified:
-                        warnings.warn(f"Replacing\n\t{arg!r}\nwith\n\t{args[idx]!r}", RuntimeWarning)
+                else:
+                    for idx, arg in enumerate(args):
+                        # Adapted per the quoting rules from
+                        # https://learn.microsoft.com/en-us/cpp/c-language/parsing-c-command-line-arguments
+                        if idx == 0:
+                            continue
+                        modified = False
+                        if '\\' in args[idx] and (shell or modified):
+                            args[idx] = args[idx].replace('\\', '\\\\')
+                            modified = True
+                        if '"' in args[idx]:
+                            args[idx] = args[idx].replace('"', '\\"')
+                            modified = True
+                        if modified:
+                            warnings.warn(f"Replacing\n\t{arg!r}\nwith\n\t{args[idx]!r}", RuntimeWarning)
             # End Truffle change
 
             if shell:

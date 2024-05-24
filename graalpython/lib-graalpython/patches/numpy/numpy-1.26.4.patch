@@ -1,16 +1,5 @@
 diff --git a/numpy/core/include/numpy/ndarrayobject.h b/numpy/core/include/numpy/ndarrayobject.h
 index d4b73eb..af90a68 100644
---- a/numpy/_build_utils/gitversion.py
-+++ b/numpy/_build_utils/gitversion.py
-@@ -28,7 +28,7 @@ def git_version(version):
-     git_hash = ''
-     try:
-         p = subprocess.Popen(
--            ['git', 'log', '-1', '--format="%H %aI"'],
-+            ['git', 'log', '-1', "--format='%H %aI'"],  # Workaround for GraalPy's emulated posix backend on Windows
-             stdout=subprocess.PIPE,
-             stderr=subprocess.PIPE,
-             cwd=os.path.dirname(__file__),
 --- a/vendored-meson/meson/mesonbuild/utils/universal.py
 +++ b/vendored-meson/meson/mesonbuild/utils/universal.py
 @@ -727,6 +727,7 @@ def windows_detect_native_arch() -> str:
