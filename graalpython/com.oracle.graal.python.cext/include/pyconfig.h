@@ -157,7 +157,6 @@
 #define HAVE_SYS_STAT_H 1
 #define HAVE_ERRNO_H 1
 #define HAVE_UTIME_H
-#define HAVE_UNISTD_H
 #define HAVE_SIGNAL_H
 #define HAVE_FCNTL_H
 
@@ -168,6 +167,7 @@
 #define WITH_THREAD 1
 
 #ifndef MS_WINDOWS
+#define HAVE_UNISTD_H
 #define HAVE_PTHREAD_H
 #define HAVE_SYS_WAIT_H
 #define HAVE_SYS_TIME_H
