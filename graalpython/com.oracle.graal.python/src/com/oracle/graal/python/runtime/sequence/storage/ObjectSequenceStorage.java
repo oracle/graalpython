@@ -106,21 +106,6 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     @Override
-    public void reverse() {
-        if (length > 0) {
-            int head = 0;
-            int tail = length - 1;
-            int middle = (length - 1) / 2;
-
-            for (; head <= middle; head++, tail--) {
-                Object temp = values[head];
-                values[head] = values[tail];
-                values[tail] = temp;
-            }
-        }
-    }
-
-    @Override
     public ObjectSequenceStorage generalizeFor(Object value, SequenceStorage other) {
         return this;
     }

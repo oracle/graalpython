@@ -150,12 +150,6 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    @SuppressWarnings("unused")
-    @Override
-    public void reverse() {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
     @Override
     public Object getIndicativeValue() {
         return null;

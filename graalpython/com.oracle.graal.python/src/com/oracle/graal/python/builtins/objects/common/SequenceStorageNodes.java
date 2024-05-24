@@ -1421,10 +1421,111 @@ public abstract class SequenceStorageNodes {
         static void doEmpty(@SuppressWarnings("unused") EmptySequenceStorage storage) {
         }
 
-        @Specialization(limit = "MAX_BASIC_STORAGES", guards = "storage.getClass() == cachedClass")
-        static void doBasic(BasicSequenceStorage storage,
-                        @Cached("storage.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
-            cachedClass.cast(storage).reverse();
+        @Specialization
+        static void doIntStorage(IntSequenceStorage storage) {
+            final int length = storage.length();
+            final int[] values = storage.getInternalIntArray();
+            if (length > 0) {
+                int head = 0;
+                int tail = length - 1;
+                int middle = (length - 1) / 2;
+
+                for (; head <= middle; head++, tail--) {
+                    int temp = values[head];
+                    values[head] = values[tail];
+                    values[tail] = temp;
+                }
+            }
+        }
+
+        @Specialization
+        static void doDoubleStorage(DoubleSequenceStorage storage) {
+            final int length = storage.length();
+            final double[] values = storage.getInternalDoubleArray();
+            if (length > 0) {
+                int head = 0;
+                int tail = length - 1;
+                int middle = (length - 1) / 2;
+
+                for (; head <= middle; head++, tail--) {
+                    double temp = values[head];
+                    values[head] = values[tail];
+                    values[tail] = temp;
+                }
+            }
+        }
+
+        @Specialization
+        static void doLongStorage(LongSequenceStorage storage) {
+            final int length = storage.length();
+            final long[] values = storage.getInternalLongArray();
+            if (length > 0) {
+                int head = 0;
+                int tail = length - 1;
+                int middle = (length - 1) / 2;
+
+                for (; head <= middle; head++, tail--) {
+                    long temp = values[head];
+                    values[head] = values[tail];
+                    values[tail] = temp;
+                }
+            }
+        }
+
+        @Specialization
+        static void doByteStorage(ByteSequenceStorage storage) {
+            final int length = storage.length();
+            final byte[] values = storage.getInternalByteArray();
+            if (length > 0) {
+                int head = 0;
+                int tail = length - 1;
+                int middle = (length - 1) / 2;
+
+                for (; head <= middle; head++, tail--) {
+                    byte temp = values[head];
+                    values[head] = values[tail];
+                    values[tail] = temp;
+                }
+            }
+        }
+
+        @Specialization
+        static void doObjectStorage(ObjectSequenceStorage storage) {
+            final int length = storage.length();
+            final Object[] values = storage.getInternalArray();
+            if (length > 0) {
+                int head = 0;
+                int tail = length - 1;
+                int middle = (length - 1) / 2;
+
+                for (; head <= middle; head++, tail--) {
+                    Object temp = values[head];
+                    values[head] = values[tail];
+                    values[tail] = temp;
+                }
+            }
+        }
+
+        @Specialization
+        static void doBoolStorage(BoolSequenceStorage storage) {
+            final int length = storage.length();
+            final boolean[] values = storage.getInternalBoolArray();
+            if (length > 0) {
+                int head = 0;
+                int tail = length - 1;
+                int middle = (length - 1) / 2;
+
+                for (; head <= middle; head++, tail--) {
+                    boolean temp = values[head];
+                    values[head] = values[tail];
+                    values[tail] = temp;
+                }
+            }
+        }
+
+        @Specialization
+        static void doMroStorage(MroSequenceStorage storage) {
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         @Specialization

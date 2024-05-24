@@ -159,21 +159,6 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     @Override
-    public void reverse() {
-        if (length > 0) {
-            int head = 0;
-            int tail = length - 1;
-            int middle = (length - 1) / 2;
-
-            for (; head <= middle; head++, tail--) {
-                byte temp = values[head];
-                values[head] = values[tail];
-                values[tail] = temp;
-            }
-        }
-    }
-
-    @Override
     public Object getIndicativeValue() {
         return 0;
     }
