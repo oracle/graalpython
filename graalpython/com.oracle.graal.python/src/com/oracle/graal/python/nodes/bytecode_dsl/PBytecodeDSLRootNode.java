@@ -80,6 +80,8 @@ import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttrNodeGen;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
@@ -1796,13 +1798,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         TruffleString key,
                         Object value,
                         Object object,
-                        @Cached LookupAndCallTernaryNode call) {
-            call.execute(frame, object, key, value);
-        }
-
-        @NeverDefault
-        public static LookupAndCallTernaryNode create() {
-            return LookupAndCallTernaryNode.create(SpecialMethodSlot.SetAttr);
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectSetAttr setAttrNode) {
+            setAttrNode.execute(frame, inliningTarget, object, key, value);
         }
     }
 
