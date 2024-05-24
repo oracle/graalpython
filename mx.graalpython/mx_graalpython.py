@@ -2162,6 +2162,8 @@ def _python_checkpatchfiles():
             'matplotlib-3.7.0.patch',
             # Empty license field. It's MIT
             'autopep8.patch',
+            # Whole license in the field. It's MIT
+            'tiktoken-0.7.0.patch',
         }
         allowed_licenses = [
             "MIT",
