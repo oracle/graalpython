@@ -1192,8 +1192,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone ftruncate(VirtualFrame frame, int fd, long length,
+        static PNone ftruncate(VirtualFrame frame, int fd, long length,
                         @Bind("this") Node inliningTarget,
+                        @Bind("getPosixSupport()") PosixSupport posixSupport,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
@@ -1204,7 +1205,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 try {
                     gil.release(true);
                     try {
-                        posixLib.ftruncate(getPosixSupport(), fd, length);
+                        posixLib.ftruncate(posixSupport, fd, length);
                     } finally {
                         gil.acquire();
                     }
@@ -1212,12 +1213,58 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter(inliningTarget);
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        PythonContext.triggerAsyncActions(this);
+                        PythonContext.triggerAsyncActions(inliningTarget);
                     } else {
                         throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                     }
                 }
             }
+        }
+    }
+
+    @Builtin(name = "truncate", minNumOfPositionalArgs = 2, parameterNames = {"path", "length"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
+    @ArgumentClinic(name = "length", conversionClass = OffsetConversionNode.class)
+    @GenerateNodeFactory
+    public abstract static class TruncateNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.TruncateNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static PNone truncate(VirtualFrame frame, PosixPath path, long length,
+                        @Bind("this") Node inliningTarget,
+                        @Bind("getPosixSupport()") PosixSupport posixSupport,
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared @Cached GilNode gil,
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            auditNode.audit(inliningTarget, "os.truncate", path.originalObject, length);
+            try {
+                gil.release(true);
+                try {
+                    posixLib.truncate(posixSupport, path.value, length);
+                } finally {
+                    gil.acquire();
+                }
+                return PNone.NONE;
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+        }
+
+        @Specialization
+        static PNone ftruncate(VirtualFrame frame, PosixFd fd, long length,
+                        @Bind("this") Node inliningTarget,
+                        @Bind("getPosixSupport()") PosixSupport posixSupport,
+                        @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared @Cached GilNode gil,
+                        @Cached InlinedBranchProfile errorProfile,
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            return FtruncateNode.ftruncate(frame, fd.fd, length, inliningTarget, posixSupport, posixLib, auditNode, gil, errorProfile, constructAndRaiseNode);
         }
     }
 

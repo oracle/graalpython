@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -251,6 +251,19 @@ class PosixTests(unittest.TestCase):
         self.assertEqual(42, os.waitstatus_to_exitcode(0x2A80))
         self.assertEqual(-12, os.waitstatus_to_exitcode(0x428C))
         self.assertRaises(ValueError, os.waitstatus_to_exitcode, 0xFF)
+
+    def test_truncate(self):
+        try:
+            with open(TEST_FULL_PATH1, os.O_WRONLY | os.O_CREAT) as fd:
+                os.write(fd, b'hello world')
+            os.truncate(TEST_FULL_PATH1, 5)
+            with open(TEST_FULL_PATH1, os.O_RDONLY) as fd:
+                self.assertEqual(b'hello', os.read(fd, 100))
+        finally:
+            try:
+                os.unlink(TEST_FULL_PATH1)
+            except Exception:
+                pass
 
 
 class WithCurdirFdTests(unittest.TestCase):

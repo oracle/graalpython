@@ -269,6 +269,13 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void truncate(Object path, long length,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.truncate(nativePosixSupport, path, length);
+    }
+
+    @ExportMessage
     final void fsync(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();

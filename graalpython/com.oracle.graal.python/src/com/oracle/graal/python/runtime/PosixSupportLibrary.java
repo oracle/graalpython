@@ -111,6 +111,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void ftruncate(Object receiver, int fd, long length) throws PosixException;
 
+    public abstract void truncate(Object receiver, Object path, long length) throws PosixException;
+
     public abstract void fsync(Object receiver, int fd) throws PosixException;
 
     public abstract void flock(Object receiver, int fd, int operation) throws PosixException;
