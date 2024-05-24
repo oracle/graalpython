@@ -1,3 +1,35 @@
+diff --git a/c/_cffi_backend.c b/c/_cffi_backend.c
+index b9618bd..fbfd82b 100644
+--- a/c/_cffi_backend.c
++++ b/c/_cffi_backend.c
+@@ -2507,19 +2507,22 @@ _cdata_getslicearg(CDataObject *cd, PySliceObject *slice, Py_ssize_t bounds[])
+     Py_ssize_t start, stop;
+     CTypeDescrObject *ct;
+ 
+-    start = PyInt_AsSsize_t(slice->start);
++    PyObject* slicestart = PySlice_Start(slice);
++    start = PyInt_AsSsize_t(slicestart);
+     if (start == -1 && PyErr_Occurred()) {
+-        if (slice->start == Py_None)
++        if (slicestart == Py_None)
+             PyErr_SetString(PyExc_IndexError, "slice start must be specified");
+         return NULL;
+     }
+-    stop = PyInt_AsSsize_t(slice->stop);
++    PyObject* slicestop = PySlice_Stop(slice);
++    stop = PyInt_AsSsize_t(slicestop);
+     if (stop == -1 && PyErr_Occurred()) {
+-        if (slice->stop == Py_None)
++        if (slicestop == Py_None)
+             PyErr_SetString(PyExc_IndexError, "slice stop must be specified");
+         return NULL;
+     }
+-    if (slice->step != Py_None) {
++    PyObject* slicestep = PySlice_Step(slice);
++    if (slicestep != Py_None) {
+         PyErr_SetString(PyExc_IndexError, "slice with step not supported");
+         return NULL;
+     }
 diff --git a/c/misc_thread_common.h b/c/misc_thread_common.h
 index 66e2835..b48fd85 100644
 --- a/c/misc_thread_common.h
