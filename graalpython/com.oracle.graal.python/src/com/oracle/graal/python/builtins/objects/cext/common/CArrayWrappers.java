@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,6 +62,8 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.InvalidBufferOffsetException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -173,6 +175,7 @@ public abstract class CArrayWrappers {
      * wrapper let's a TruffleString look like a {@code char*}.
      */
     @ExportLibrary(InteropLibrary.class)
+    @SuppressWarnings("truffle-abstract-export")
     public static final class CStringWrapper extends CArrayWrapper {
 
         public CStringWrapper(TruffleString delegate) {
@@ -180,12 +183,16 @@ public abstract class CArrayWrappers {
         }
 
         public TruffleString getString() {
-            return ((TruffleString) getDelegate());
+            TruffleString s = (TruffleString) getDelegate();
+            // TODO GR-37217: use sys.getdefaultencoding if the string contains non-latin1
+            // codepoints
+            assert s.getCodeRangeUncached(TS_ENCODING) == TruffleString.CodeRange.ASCII;
+            return s;
         }
 
         @ExportMessage
         long getArraySize(
-                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             return codePointLengthNode.execute(getString(), TS_ENCODING) + 1;
         }
 
@@ -196,15 +203,12 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        final byte readArrayElement(long index,
-                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) throws InvalidArrayIndexException {
+        byte readArrayElement(long index,
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) throws InvalidArrayIndexException {
             try {
                 int idx = PInt.intValueExact(index);
                 TruffleString s = getString();
-                // TODO GR-37217: use sys.getdefaultencoding if the string contains non-latin1
-                // codepoints
-                assert s.getCodeRangeUncached(TS_ENCODING) == TruffleString.CodeRange.ASCII;
                 int len = codePointLengthNode.execute(s, TS_ENCODING);
                 if (idx >= 0 && idx < len) {
                     return (byte) codePointAtIndexNode.execute(s, idx, TS_ENCODING);
@@ -219,8 +223,8 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        final boolean isArrayElementReadable(long identifier,
-                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+        boolean isArrayElementReadable(long identifier,
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             return 0 <= identifier && identifier < getArraySize(codePointLengthNode);
         }
 
@@ -235,6 +239,91 @@ public abstract class CArrayWrappers {
             if (!isNative()) {
                 setNativePointer(stringToNativeUtf8Bytes(getString(), switchEncodingNode, copyToByteArrayNode));
             }
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean hasBufferElements() {
+            return true;
+        }
+
+        @ExportMessage
+        long getBufferSize(
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+            return codePointLengthNode.execute(getString(), TS_ENCODING) + 1;
+        }
+
+        @ExportMessage
+        byte readBufferByte(long byteOffset,
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) throws InvalidBufferOffsetException {
+            TruffleString s = getString();
+            int len = codePointLengthNode.execute(s, TS_ENCODING);
+            if (byteOffset >= 0 && byteOffset < len) {
+                return (byte) codePointAtIndexNode.execute(s, (int) byteOffset, TS_ENCODING);
+            } else if (byteOffset == len) {
+                return 0;
+            } else {
+                throw InvalidBufferOffsetException.create(byteOffset, len);
+            }
+        }
+
+        @ExportMessage
+        short readBufferShort(ByteOrder byteOrder, long byteOffset,
+                        @CachedLibrary("this") InteropLibrary thisLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+            byte b1 = thisLib.readBufferByte(this, byteOffset);
+            byte b2 = thisLib.readBufferByte(this, byteOffset + 1);
+            if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
+                return (short) (((b2 & 0xFF) << 8) | (b1 & 0xFF));
+            } else {
+                return (short) (((b1 & 0xFF) << 8) | (b2 & 0xFF));
+            }
+        }
+
+        @ExportMessage
+        int readBufferInt(ByteOrder byteOrder, long byteOffset,
+                        @CachedLibrary("this") InteropLibrary thisLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+            byte b1 = thisLib.readBufferByte(this, byteOffset);
+            byte b2 = thisLib.readBufferByte(this, byteOffset + 1);
+            byte b3 = thisLib.readBufferByte(this, byteOffset + 2);
+            byte b4 = thisLib.readBufferByte(this, byteOffset + 3);
+            if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
+                return ((b4 & 0xFF) << 8 * 3) | ((b3 & 0xFF) << 8 * 2) | ((b2 & 0xFF) << 8) | ((b1 & 0xFF));
+            } else {
+                return ((b1 & 0xFF) << 8 * 3) | ((b2 & 0xFF) << 8 * 2) | ((b3 & 0xFF) << 8) | ((b4 & 0xFF));
+            }
+        }
+
+        @ExportMessage
+        long readBufferLong(ByteOrder byteOrder, long byteOffset,
+                        @CachedLibrary("this") InteropLibrary thisLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+            byte b1 = thisLib.readBufferByte(this, byteOffset);
+            byte b2 = thisLib.readBufferByte(this, byteOffset + 1);
+            byte b3 = thisLib.readBufferByte(this, byteOffset + 2);
+            byte b4 = thisLib.readBufferByte(this, byteOffset + 3);
+            byte b5 = thisLib.readBufferByte(this, byteOffset + 4);
+            byte b6 = thisLib.readBufferByte(this, byteOffset + 5);
+            byte b7 = thisLib.readBufferByte(this, byteOffset + 6);
+            byte b8 = thisLib.readBufferByte(this, byteOffset + 7);
+            if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
+                return ((b8 & 0xFFL) << (8 * 7)) | ((b7 & 0xFFL) << (8 * 6)) | ((b6 & 0xFFL) << (8 * 5)) | ((b5 & 0xFFL) << (8 * 4)) |
+                                ((b4 & 0xFFL) << (8 * 3)) | ((b3 & 0xFFL) << (8 * 2)) | ((b2 & 0xFFL) << 8) | ((b1 & 0xFFL));
+            } else {
+                return ((b1 & 0xFFL) << (8 * 7)) | ((b2 & 0xFFL) << (8 * 6)) | ((b3 & 0xFFL) << (8 * 5)) | ((b4 & 0xFFL) << (8 * 4)) |
+                                ((b5 & 0xFFL) << (8 * 3)) | ((b6 & 0xFFL) << (8 * 2)) | ((b7 & 0xFFL) << 8) | ((b8 & 0xFFL));
+            }
+        }
+
+        @ExportMessage
+        float readBufferFloat(ByteOrder byteOrder, long byteOffset,
+                        @CachedLibrary("this") InteropLibrary thisLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+            return Float.intBitsToFloat(thisLib.readBufferInt(this, byteOrder, byteOffset));
+        }
+
+        @ExportMessage
+        double readBufferDouble(ByteOrder byteOrder, long byteOffset,
+                        @CachedLibrary("this") InteropLibrary thisLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+            return Double.longBitsToDouble(thisLib.readBufferLong(this, byteOrder, byteOffset));
         }
     }
 
