@@ -49,7 +49,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation to indicate that an interface is to be used as a binding for a python module.
+ * An annotation to indicate that an interface uses the
+ * <a href="https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/Value.html#target-type-mapping-heading">polyglot type mapping</a>.
  *
  * <p>
  * <b>Example</b> with a python module hello.py

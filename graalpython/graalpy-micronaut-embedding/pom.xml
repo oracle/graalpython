@@ -57,7 +57,7 @@ SOFTWARE.
         <maven.compiler.source>17</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <graalpy.version>24.1.0</graalpy.version>
-        <micronaut.version>4.0.5</micronaut.version>
+        <micronaut.version>4.4.2</micronaut.version>
     </properties>
 
     <dependencies>

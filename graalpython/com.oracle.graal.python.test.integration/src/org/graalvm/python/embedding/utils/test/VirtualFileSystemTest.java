@@ -54,18 +54,18 @@ import java.util.function.Function;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess;
-import org.graalvm.polyglot.PolyglotAccess;
+import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.io.IOAccess;
 import org.graalvm.python.embedding.vfs.VirtualFileSystem;
 import org.junit.Test;
 
 public class VirtualFileSystemTest {
 
-    private static final String VFS_UNIX_MOUNT_POINT = "/test_mount_point";
-    private static final String VFS_WIN_MOUNT_POINT = "X:\\test_win_mount_point";
-    private static final String VFS_MOUNT_POINT = IS_WINDOWS ? VFS_WIN_MOUNT_POINT : VFS_UNIX_MOUNT_POINT;
+    static final String VFS_UNIX_MOUNT_POINT = "/test_mount_point";
+    static final String VFS_WIN_MOUNT_POINT = "X:\\test_win_mount_point";
+    static final String VFS_MOUNT_POINT = IS_WINDOWS ? VFS_WIN_MOUNT_POINT : VFS_UNIX_MOUNT_POINT;
 
-    private static final String PYTHON = "python";
+    static final String PYTHON = "python";
 
     @Test
     public void defaultValues() throws Exception {
@@ -73,14 +73,8 @@ public class VirtualFileSystemTest {
         VirtualFileSystem vfs2 = VirtualFileSystem.newBuilder().build();
 
         assertEquals(vfs.getMountPoint(), vfs2.getMountPoint());
-        assertEquals(vfs.vfsHomePath(), vfs2.vfsHomePath());
-        assertEquals(vfs.vfsProjPath(), vfs2.vfsProjPath());
-        assertEquals(vfs.vfsVenvPath(), vfs2.vfsVenvPath());
 
         assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs" : "/graalpy_vfs", vfs.getMountPoint());
-        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs\\home" : "/graalpy_vfs/home", vfs.vfsHomePath());
-        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs\\proj" : "/graalpy_vfs/proj", vfs.vfsProjPath());
-        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs\\venv" : "/graalpy_vfs/venv", vfs.vfsVenvPath());
     }
 
     @Test
@@ -90,9 +84,6 @@ public class VirtualFileSystemTest {
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).build();
 
         assertEquals(VFS_MOUNT_POINT, vfs.getMountPoint());
-        assertEquals(IS_WINDOWS ? VFS_WIN_MOUNT_POINT + "\\home" : VFS_UNIX_MOUNT_POINT + "/home", vfs.vfsHomePath());
-        assertEquals(IS_WINDOWS ? VFS_WIN_MOUNT_POINT + "\\proj" : VFS_UNIX_MOUNT_POINT + "/proj", vfs.vfsProjPath());
-        assertEquals(IS_WINDOWS ? VFS_WIN_MOUNT_POINT + "\\venv" : VFS_UNIX_MOUNT_POINT + "/venv", vfs.vfsVenvPath());
     }
 
     @Test
@@ -421,13 +412,16 @@ public class VirtualFileSystemTest {
     }
 
     private void eval(String s, Function<VirtualFileSystem.Builder, VirtualFileSystem.Builder> builderFunction) {
-        String src;
-        if (IS_WINDOWS) {
-            src = s.replace(VFS_UNIX_MOUNT_POINT, "X:\\\\test_win_mount_point");
-        } else {
-            src = s;
-        }
+        String src = patchMountPoint(s);
+
         getContext(builderFunction).eval(PYTHON, src);
+    }
+
+    private static String patchMountPoint(String src) {
+        if (IS_WINDOWS) {
+            return src.replace(VFS_UNIX_MOUNT_POINT, "X:\\\\test_win_mount_point");
+        }
+        return src;
     }
 
     private Context cachedContext;
@@ -444,28 +438,46 @@ public class VirtualFileSystemTest {
             builder = builderFunction.apply(builder);
         }
         VirtualFileSystem vfs = builder.build();
-        Context context = Context.newBuilder().//
-                        allowExperimentalOptions(false).//
-                        allowAllAccess(false).//
-                        allowHostAccess(HostAccess.ALL).//
-                        allowIO(IOAccess.newBuilder().//
-                                        allowHostSocketAccess(true).//
-                                        fileSystem(vfs).//
-                                        build()).//
-                        allowCreateThread(true).//
-                        allowNativeAccess(true).//
-                        allowPolyglotAccess(PolyglotAccess.ALL).//
-                        option("python.PosixModuleBackend", "java").//
-                        option("python.DontWriteBytecodeFlag", "true").//
-                        option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false").//
-                        option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE").//
-                        option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS")).//
-                        option("python.AlwaysRunExcepthook", "true").//
-                        option("python.ForceImportSite", "true").//
-                        option("engine.WarnInterpreterOnly", "false").build();
+        Context context = VirtualFileSystem.contextBuilder(vfs).build();
         if (builderFunction == null) {
             cachedContext = context;
         }
         return context;
+    }
+
+    @Test
+    public void builderTest() {
+        Context context = VirtualFileSystem.contextBuilder().allowAllAccess(true).allowHostAccess(HostAccess.ALL).build();
+        context.eval(PYTHON, "import java; java.type('java.lang.String')");
+
+        context = VirtualFileSystem.contextBuilder().allowAllAccess(false).allowHostAccess(HostAccess.NONE).build();
+        context.eval(PYTHON, """
+                        import java
+                        try:
+                            java.type('java.lang.String');
+                        except NotImplementedError:
+                            pass
+                        else:
+                            assert False, 'expected NotImplementedError'
+                        """);
+
+        VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
+                        unixMountPoint(VFS_MOUNT_POINT).//
+                        windowsMountPoint(VFS_WIN_MOUNT_POINT).//
+                        resourceLoadingClass(VirtualFileSystemTest.class).build();
+        context = VirtualFileSystem.contextBuilder(vfs).build();
+        context.eval(PYTHON, patchMountPoint("from os import listdir; listdir('/test_mount_point')"));
+
+        context = VirtualFileSystem.contextBuilder().build();
+        context.eval(PYTHON, "from os import listdir; listdir('.')");
+
+        context = VirtualFileSystem.contextBuilder().allowIO(IOAccess.NONE).build();
+        boolean gotPE = false;
+        try {
+            context.eval(PYTHON, "from os import listdir; listdir('.')");
+        } catch (PolyglotException pe) {
+            gotPE = true;
+        }
+        assert gotPE : "expected PolyglotException";
     }
 }

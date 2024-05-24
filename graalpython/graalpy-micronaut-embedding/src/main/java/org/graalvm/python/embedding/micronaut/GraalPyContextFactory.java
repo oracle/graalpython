@@ -43,10 +43,8 @@ package org.graalvm.python.embedding.micronaut;
 import io.micronaut.context.annotation.Factory;
 import jakarta.annotation.PreDestroy;
 import jakarta.inject.Singleton;
-import org.graalvm.polyglot.*;
-import org.graalvm.polyglot.io.IOAccess;
+import org.graalvm.polyglot.Context;
 import org.graalvm.python.embedding.vfs.VirtualFileSystem;
-import org.graalvm.polyglot.HostAccess;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -60,30 +58,7 @@ public final class GraalPyContextFactory {
 
     @Singleton
     Context createContext() {
-        VirtualFileSystem vfs = VirtualFileSystem.create();
-        context = Context.newBuilder()
-                .allowExperimentalOptions(false)
-                .allowAllAccess(false)
-                .allowHostAccess(HostAccess.ALL)
-                .allowIO(IOAccess.newBuilder()
-                        .allowHostSocketAccess(true)
-                        .fileSystem(vfs)
-                        .build())
-                .allowCreateThread(true)
-                .allowNativeAccess(true)
-                .allowPolyglotAccess(PolyglotAccess.ALL)
-                .option("python.PosixModuleBackend", "java")
-                .option("python.DontWriteBytecodeFlag", "true")
-                .option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false")
-                .option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE")
-                .option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS"))
-                .option("python.AlwaysRunExcepthook", "true")
-                .option("python.ForceImportSite", "true")
-                .option("python.Executable", vfs.vfsVenvPath() + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.exe" : "/bin/python"))
-                .option("python.PythonHome", vfs.vfsHomePath())
-                .option("engine.WarnInterpreterOnly", "false")
-                .option("python.PythonPath", vfs.vfsProjPath())
-                .build();
+        context = VirtualFileSystem.contextBuilder().build();
         context.initialize("python");
         return context;
     }

@@ -11,10 +11,11 @@
 //PIP termcolor
 |}
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.io.IOAccess;
-import org.graalvm.python.embedding.utils.VirtualFileSystem;
+import org.graalvm.python.embedding.vfs.VirtualFileSystem;
 
 public class {baseName} {
     public static void main(String[] args) {
@@ -42,47 +43,7 @@ public class {baseName} {
 
 final class VirtualGraalPyContext {
     public static Context getContext() {
-        VirtualFileSystem vfs = VirtualFileSystem.create();
-        var builder = Context.newBuilder()
-            // set true to allow experimental options
-            .allowExperimentalOptions(false)
-            // deny all privileges unless configured below
-            .allowAllAccess(false)
-            // allow access to the virtual and the host filesystem, as well as sockets
-            .allowIO(IOAccess.newBuilder()
-                            .allowHostSocketAccess(true)
-                            .fileSystem(vfs)
-                            .build())
-            // allow creating python threads
-            .allowCreateThread(true)
-            // allow running Python native extensions
-            .allowNativeAccess(true)
-            // allow exporting Python values to polyglot bindings and accessing Java from Python
-            .allowPolyglotAccess(PolyglotAccess.ALL)
-            // choose the backend for the POSIX module
-            .option("python.PosixModuleBackend", "java")
-            // equivalent to the Python -B flag
-            .option("python.DontWriteBytecodeFlag", "true")
-            // equivalent to the Python -v flag
-            .option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false")
-            // log level
-            .option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE")
-            // equivalent to setting the PYTHONWARNINGS environment variable
-            .option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS"))
-            // print Python exceptions directly
-            .option("python.AlwaysRunExcepthook", "true")
-            // Force to automatically import site.py module, to make Python packages available
-            .option("python.ForceImportSite", "true")
-            // The sys.executable path, a virtual path that is used by the interpreter to discover packages
-            .option("python.Executable", vfs.vfsVenvPath() + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.exe" : "/bin/python"))
-            // Do not warn if running without JIT. This can be desirable for short running scripts
-            // to reduce memory footprint.
-            .option("engine.WarnInterpreterOnly", "false");
-        if (System.getProperty("org.graalvm.nativeimage.imagecode") != null) {
-            // Set the python home to be read from the embedded resources
-            builder.option("python.PythonHome", vfs.vfsHomePath());
-        }
-        return builder.build();
+        return VirtualFileSystem.contextBuilder().build();
     }
 }
 
