@@ -332,7 +332,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PStructPasswd("struct_passwd", "pwd", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
     PStructRusage("struct_rusage", "resource", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
     PVersionInfo("version_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
-    PWindowsVersion("getwindowsversion", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
+    PWindowsVersion("windowsversion", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
     PFlags("flags", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
     PFloatInfo("float_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
     PIntInfo("int_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
