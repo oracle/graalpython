@@ -10,17 +10,6 @@ index d4b73eb..af90a68 100644
      try:
          import ctypes
          process_arch = ctypes.c_ushort()
---- a/vendored-meson/meson/mesonbuild/dependencies/python.py
-+++ b/vendored-meson/meson/mesonbuild/dependencies/python.py
-@@ -286,6 +286,8 @@ class PythonSystemDependency(SystemDependency, _PythonDependencyBase):
-                         libpath = Path(f'libpypy{verdot}-c.dll')
-                     else:
-                         libpath = Path(f'python{vernum}.dll')
-+                elif self.variables.get('SOABI', '').startswith('graalpy'):
-+                    libpath = Path('libs') / 'python-native.lib'
-                 else:
-                     if limited_api:
-                         vernum = vernum[0]
 --- a/numpy/core/include/numpy/ndarrayobject.h
 +++ b/numpy/core/include/numpy/ndarrayobject.h
 @@ -225,7 +225,7 @@ NPY_TITLE_KEY_check(PyObject *key, PyObject *value)

@@ -1320,9 +1320,7 @@ suite = {
                 "windows": {
                     "<others>": {
                         "layout": {
-                            "./META-INF/resources/<os>/<arch>/libs/": [
-                                "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/python-native.lib",
-                            ],
+                            "./META-INF/resources/<os>/<arch>/libs/python<py_ver:major_minor_nodot>.lib": "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/python-native.lib",
                             "./META-INF/resources/<os>/<arch>/lib-graalpython/": [
                                 {
                                     "source_type": "dependency",
