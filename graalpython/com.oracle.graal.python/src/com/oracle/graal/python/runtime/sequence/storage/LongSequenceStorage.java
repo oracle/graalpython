@@ -29,7 +29,6 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.util.PythonUtils;
 
 public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
 
@@ -61,11 +60,6 @@ public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
     protected void increaseCapacityExactWithCopy(int newCapacity) {
         values = Arrays.copyOf(values, newCapacity);
         capacity = values.length;
-    }
-
-    @Override
-    public SequenceStorage copy() {
-        return new LongSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override

@@ -67,11 +67,6 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     @Override
-    public SequenceStorage copy() {
-        return new ByteSequenceStorage(PythonUtils.arrayCopyOf(values, length));
-    }
-
-    @Override
     public ByteSequenceStorage createEmpty(int newCapacity) {
         return new ByteSequenceStorage(newCapacity);
     }

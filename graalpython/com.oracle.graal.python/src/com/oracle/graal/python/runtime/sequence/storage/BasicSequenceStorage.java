@@ -36,10 +36,6 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
 
     public abstract void insertItem(int idx, Object value) throws SequenceStoreException;
 
-    public abstract SequenceStorage copy();
-
-    public abstract SequenceStorage generalizeFor(Object value, SequenceStorage other);
-
     /**
      * Get internal array object without copying. Note: The length must be taken from the sequence
      * storage object.
@@ -48,7 +44,7 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
         this.length = length;
     }
 
-    protected final void incLength() {
+    public final void incLength() {
         this.length++;
     }
 

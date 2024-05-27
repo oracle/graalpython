@@ -49,7 +49,6 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -123,11 +122,6 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
 
     public TruffleString getClassName() {
         return className;
-    }
-
-    @Override
-    public SequenceStorage copy() {
-        return new MroSequenceStorage(getClassName(), PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override

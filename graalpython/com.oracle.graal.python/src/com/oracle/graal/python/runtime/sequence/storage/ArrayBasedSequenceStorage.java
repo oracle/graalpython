@@ -54,8 +54,7 @@ public abstract class ArrayBasedSequenceStorage extends BasicSequenceStorage {
 
     public abstract ArrayBasedSequenceStorage createEmpty(int newCapacity);
 
-    @Override
-    public ObjectSequenceStorage generalizeFor(Object value, SequenceStorage other) {
+    public ObjectSequenceStorage generalize() {
         return new ObjectSequenceStorage(getInternalArray());
     }
 

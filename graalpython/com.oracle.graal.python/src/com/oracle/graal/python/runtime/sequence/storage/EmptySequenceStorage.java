@@ -32,25 +32,17 @@ public final class EmptySequenceStorage extends SequenceStorage {
 
     public static final EmptySequenceStorage INSTANCE = new EmptySequenceStorage();
 
-    public SequenceStorage generalizeFor(Object value, SequenceStorage target) {
-        final SequenceStorage generalized;
+    public ArrayBasedSequenceStorage generalizeFor(Object value) {
+        final ArrayBasedSequenceStorage generalized;
 
         if (value instanceof Byte) {
             generalized = new ByteSequenceStorage(16);
         } else if (value instanceof Boolean) {
             generalized = new BoolSequenceStorage(16);
         } else if (value instanceof Integer) {
-            if (target instanceof ByteSequenceStorage) {
-                generalized = new ByteSequenceStorage(16);
-            } else {
-                generalized = new IntSequenceStorage();
-            }
+            generalized = new IntSequenceStorage();
         } else if (value instanceof Long) {
-            if (target instanceof ByteSequenceStorage) {
-                generalized = new ByteSequenceStorage(16);
-            } else {
-                generalized = new LongSequenceStorage();
-            }
+            generalized = new LongSequenceStorage();
         } else if (value instanceof Double) {
             generalized = new DoubleSequenceStorage();
         } else {

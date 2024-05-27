@@ -27,8 +27,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.util.PythonUtils;
-
 public final class IntSequenceStorage extends ArrayBasedSequenceStorage {
 
     private int[] values;
@@ -59,11 +57,6 @@ public final class IntSequenceStorage extends ArrayBasedSequenceStorage {
     protected void increaseCapacityExactWithCopy(int newCapacity) {
         values = Arrays.copyOf(values, newCapacity);
         capacity = values.length;
-    }
-
-    @Override
-    public SequenceStorage copy() {
-        return new IntSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override

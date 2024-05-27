@@ -31,6 +31,7 @@ import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelper
 import java.util.Arrays;
 
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 
 public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
 
@@ -80,11 +81,6 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     @Override
-    public SequenceStorage copy() {
-        return new ObjectSequenceStorage(getCopyOfInternalArray());
-    }
-
-    @Override
     public ArrayBasedSequenceStorage createEmpty(int newCapacity) {
         return new ObjectSequenceStorage(newCapacity);
     }
@@ -106,8 +102,8 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     @Override
-    public ObjectSequenceStorage generalizeFor(Object value, SequenceStorage other) {
-        return this;
+    public ObjectSequenceStorage generalize() {
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
