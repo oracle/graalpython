@@ -128,8 +128,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformExceptionToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
@@ -151,7 +149,6 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -174,7 +171,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -1224,88 +1220,6 @@ public final class PythonCextBuiltins {
         static PKeyword[] doKeywords(Node inliningTarget, Object kwargs,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode) {
             return expandKwargsNode.execute(inliningTarget, kwargs);
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {Pointer, Py_ssize_t, PyObject, ConstCharPtrAsTruffleString, Pointer, Pointer}, call = Ignored)
-    abstract static class PyTruffle_Arg_ParseArrayAndKeywords extends CApi6BuiltinNode {
-
-        @Specialization
-        static int doConvert(Object args, long argCount, Object nativeKwds, TruffleString formatString, Object nativeKwdnames, Object varargs,
-                        @Bind("this") Node inliningTarget,
-                        @Cached SplitFormatStringNode splitFormatStringNode,
-                        @CachedLibrary(limit = "2") InteropLibrary kwdnamesRefLib,
-                        @Cached CStructAccess.ReadObjectNode readNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached InlinedConditionProfile kwdsProfile,
-                        @Cached InlinedConditionProfile kwdnamesProfile,
-                        @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
-            // force 'format' to be a String
-            TruffleString[] split;
-            try {
-                split = splitFormatStringNode.execute(inliningTarget, formatString);
-                assert split.length == 2;
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException();
-            }
-
-            TruffleString format = split[0];
-            TruffleString functionName = split[1];
-
-            // sort out if kwds is native NULL
-            Object kwds;
-            if (kwdsProfile.profile(inliningTarget, PGuards.isNoValue(nativeKwds))) {
-                kwds = null;
-            } else {
-                kwds = nativeKwds;
-            }
-
-            // sort out if kwdnames is native NULL
-            Object kwdnames = kwdnamesProfile.profile(inliningTarget, kwdnamesRefLib.isNull(nativeKwdnames)) ? null : nativeKwdnames;
-
-            PTuple argv = factory.createTuple(readNode.readPyObjectArray(args, (int) argCount));
-
-            return parseTupleAndKeywordsNode.execute(functionName, argv, kwds, format, kwdnames, varargs);
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Pointer}, call = Ignored)
-    abstract static class PyTruffle_Arg_ParseTupleAndKeywords extends CApi5BuiltinNode {
-
-        @Specialization
-        static int doConvert(Object argv, Object nativeKwds, TruffleString formatString, Object nativeKwdnames, Object varargs,
-                        @Bind("this") Node inliningTarget,
-                        @Cached SplitFormatStringNode splitFormatStringNode,
-                        @CachedLibrary(limit = "2") InteropLibrary kwdnamesRefLib,
-                        @Cached InlinedConditionProfile kwdsProfile,
-                        @Cached InlinedConditionProfile kwdnamesProfile,
-                        @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
-            // force 'format' to be a String
-            TruffleString[] split;
-            try {
-                split = splitFormatStringNode.execute(inliningTarget, formatString);
-                assert split.length == 2;
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException();
-            }
-
-            TruffleString format = split[0];
-            TruffleString functionName = split[1];
-
-            // sort out if kwds is native NULL
-            Object kwds;
-            if (kwdsProfile.profile(inliningTarget, PGuards.isNoValue(nativeKwds))) {
-                kwds = null;
-            } else {
-                kwds = nativeKwds;
-            }
-
-            // sort out if kwdnames is native NULL
-            Object kwdnames = kwdnamesProfile.profile(inliningTarget, kwdnamesRefLib.isNull(nativeKwdnames)) ? null : nativeKwdnames;
-
-            return parseTupleAndKeywordsNode.execute(functionName, argv, kwds, format, kwdnames, varargs);
         }
     }
 

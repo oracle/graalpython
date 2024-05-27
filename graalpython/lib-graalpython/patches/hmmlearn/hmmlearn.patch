@@ -1,0 +1,12 @@
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000..1029a3a
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,6 @@
++[build-system]
++requires = ["setuptools >= 40.6.0", "wheel", "pybind11>=2.6", "setuptools_scm>=3.3"]
++build-backend = "setuptools.build_meta"
++
++[tool.setuptools_scm]
++version_file = "lib/hmmlearn/_version.py"

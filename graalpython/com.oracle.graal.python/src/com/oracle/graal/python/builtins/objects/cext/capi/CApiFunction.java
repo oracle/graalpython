@@ -193,6 +193,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyArg_UnpackTuple", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, Py_ssize_t, Py_ssize_t, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyArg_VaParse", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VA_LIST}, call = CImpl)
     @CApiBuiltin(name = "PyArg_VaParseTupleAndKeywords", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST, VA_LIST}, call = CImpl)
+    @CApiBuiltin(name = "PyArg_ValidateKeywordArguments", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyBool_FromLong", ret = PyObject, args = {Long}, call = CImpl)
     @CApiBuiltin(name = "PyBuffer_FillContiguousStrides", ret = Void, args = {Int, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR, Int, CHAR}, call = CImpl)
     @CApiBuiltin(name = "PyBuffer_FillInfo", ret = Int, args = {PY_BUFFER_PTR, PyObject, Pointer, Py_ssize_t, Int, Int}, call = CImpl)
@@ -526,10 +527,14 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyArg_BadArgument", ret = Void, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_CheckPositional", ret = Int, args = {ConstCharPtrAsTruffleString, Py_ssize_t, Py_ssize_t, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_NoKeywords", ret = Int, args = {ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "_PyArg_NoKwnames", ret = Int, args = {ConstCharPtr, PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_NoPositional", ret = Int, args = {ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_ParseStack", ret = Int, args = {PyObjectConstPtr, Py_ssize_t, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
+    @CApiBuiltin(name = "_PyArg_ParseStackAndKeywords", ret = Int, args = {PyObjectConstPtr, Py_ssize_t, PyObject, _PYARG_PARSER_PTR, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_ParseTupleAndKeywordsFast", ret = Int, args = {PyObject, PyObject, _PYARG_PARSER_PTR, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_UnpackKeywords", ret = PyObjectConstPtr, args = {PyObjectConstPtr, Py_ssize_t, PyObject, PyObject, _PYARG_PARSER_PTR, Int, Int, Int, PyObjectPtr}, call = CImpl)
+    @CApiBuiltin(name = "_PyArg_UnpackKeywordsWithVararg", ret = PyObjectConstPtr, args = {PyObjectConstPtr, Py_ssize_t, PyObject, PyObject, _PYARG_PARSER_PTR, Int, Int, Int, Int,
+                    PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_UnpackStack", ret = Int, args = {PyObjectConstPtr, Py_ssize_t, ConstCharPtrAsTruffleString, Py_ssize_t, Py_ssize_t, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "_PyArg_VaParseTupleAndKeywordsFast", ret = Int, args = {PyObject, PyObject, _PYARG_PARSER_PTR, VA_LIST}, call = CImpl)
     @CApiBuiltin(name = "_PyBytesWriter_Alloc", ret = Pointer, args = {_PYBYTESWRITER_PTR, Py_ssize_t}, call = CImpl)
@@ -642,7 +647,6 @@ public final class CApiFunction {
      * Functions that are not implemented at the moment:
      */
     @CApiBuiltin(name = "PyAIter_Check", ret = Int, args = {PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyArg_ValidateKeywordArguments", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyAsyncGen_New", ret = PyObject, args = {PyFrameObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_Concat", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_FromObject", ret = PyObject, args = {PyObject}, call = NotImplemented)
@@ -991,10 +995,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "Py_SetRecursionLimit", ret = Void, args = {Int}, call = NotImplemented)
     @CApiBuiltin(name = "Py_SetStandardStreamEncoding", ret = Int, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "Py_UniversalNewlineFgets", ret = CHAR_PTR, args = {CHAR_PTR, Int, FILE_PTR, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyArg_NoKwnames", ret = Int, args = {ConstCharPtr, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyArg_ParseStackAndKeywords", ret = Int, args = {PyObjectConstPtr, Py_ssize_t, PyObject, _PYARG_PARSER_PTR, VARARGS}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyArg_UnpackKeywordsWithVararg", ret = PyObjectConstPtr, args = {PyObjectConstPtr, Py_ssize_t, PyObject, PyObject, _PYARG_PARSER_PTR, Int, Int, Int, Int,
-                    PyObjectPtr}, call = NotImplemented)
     @CApiBuiltin(name = "_PyBytes_DecodeEscape", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString, CONST_CHAR_PTR_LIST}, call = NotImplemented)
     @CApiBuiltin(name = "_PyBytes_FormatEx", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "_PyBytes_FromHex", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)
