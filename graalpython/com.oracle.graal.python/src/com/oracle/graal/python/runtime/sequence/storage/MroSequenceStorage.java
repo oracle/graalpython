@@ -114,12 +114,6 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    @Override
-    @SuppressWarnings("unused")
-    public void insertItem(int idx, Object value) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
     public TruffleString getClassName() {
         return className;
     }

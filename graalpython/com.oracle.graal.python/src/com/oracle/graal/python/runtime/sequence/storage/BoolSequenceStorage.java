@@ -103,27 +103,6 @@ public final class BoolSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     @Override
-    public void insertItem(int idx, Object value) throws SequenceStoreException {
-        if (value instanceof Boolean) {
-            insertBoolItem(idx, (boolean) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
-    private void insertBoolItem(int idx, boolean value) {
-        ensureCapacity(length + 1);
-
-        // shifting tail to the right by one slot
-        for (int i = values.length - 1; i > idx; i--) {
-            values[i] = values[i - 1];
-        }
-
-        values[idx] = value;
-        length++;
-    }
-
-    @Override
     public Object getIndicativeValue() {
         return false;
     }

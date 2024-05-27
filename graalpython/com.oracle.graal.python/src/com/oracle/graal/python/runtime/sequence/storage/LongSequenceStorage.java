@@ -109,21 +109,6 @@ public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
         values[idx] = value;
     }
 
-    @Override
-    public void insertItem(int idx, Object val) throws SequenceStoreException {
-        long value;
-        if (val instanceof Integer) {
-            value = (int) val;
-        } else if (val instanceof BigInteger) {
-            value = PInt.longValue((BigInteger) val);
-        } else if (val instanceof Long) {
-            value = (long) val;
-        } else {
-            throw new SequenceStoreException(val);
-        }
-        insertLongItem(idx, value);
-    }
-
     public void insertLongItem(int idx, long value) {
         ensureCapacity(length + 1);
 

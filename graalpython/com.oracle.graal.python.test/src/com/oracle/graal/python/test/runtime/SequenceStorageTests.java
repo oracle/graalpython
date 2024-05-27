@@ -45,15 +45,6 @@ public class SequenceStorageTests {
         assertEquals(10, store.getItemNormalized(5));
     }
 
-    @Test
-    public void objectsInsert() {
-        ObjectSequenceStorage store = new ObjectSequenceStorage(getObjectValues());
-        store.insertItem(3, 42);
-        assertEquals(42, store.getItemNormalized(3));
-        assertEquals(6, store.getItemNormalized(6));
-        assertEquals(7, store.length());
-    }
-
     /**
      * IntSequenceStorage tests.
      */
@@ -67,14 +58,5 @@ public class SequenceStorageTests {
         assertEquals(4, store.getItemNormalized(3));
         store.setItemNormalized(5, 10);
         assertEquals(10, store.getItemNormalized(5));
-    }
-
-    @Test
-    public void intInsert() throws SequenceStoreException {
-        IntSequenceStorage store = new IntSequenceStorage(getIntValues());
-        store.insertItem(3, 42);
-        assertEquals(42, store.getItemNormalized(3));
-        assertEquals(6, store.getItemNormalized(6));
-        assertEquals(7, store.length());
     }
 }

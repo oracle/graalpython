@@ -3703,6 +3703,10 @@ public abstract class SequenceStorageNodes {
     @GenerateInline(inlineByDefault = true)
     public abstract static class InsertItemArrayBasedStorageNode extends Node {
 
+        public static SequenceStorage executeUncached(ArrayBasedSequenceStorage storage, int index, Object value) {
+            return SequenceStorageNodesFactory.InsertItemArrayBasedStorageNodeGen.getUncached().execute(null, storage, index, value);
+        }
+
         protected abstract SequenceStorage execute(Node inliningTarget, ArrayBasedSequenceStorage storage, int index, Object value);
 
         public final SequenceStorage executeCached(ArrayBasedSequenceStorage storage, int index, Object value) {

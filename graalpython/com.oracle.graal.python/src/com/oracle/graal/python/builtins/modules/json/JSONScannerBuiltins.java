@@ -23,6 +23,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.InsertItemArrayBasedStorageNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -161,7 +162,9 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                     idx = nextIdx.value;
 
                     if (hasPairsHook) {
-                        listStorage.insertItem(listStorage.length(), factory.createTuple(PythonBuiltinClassType.PTuple, tupleInstanceShape, new Object[]{key, val}));
+                        var index = listStorage.length();
+                        var value = factory.createTuple(PythonBuiltinClassType.PTuple, tupleInstanceShape, new Object[]{key, val});
+                        listStorage = (ObjectSequenceStorage) InsertItemArrayBasedStorageNode.executeUncached(listStorage, index, value);
                     } else {
                         HashingStorage newStorage = HashingStorageSetItem.executeUncached(mapStorage, key, val);
                         assert newStorage == mapStorage;
@@ -218,7 +221,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
 
                     /* read any JSON term */
                     Object val = scanOnceUnicode(scanner, string, idx, nextIdx);
-                    storage.insertItem(storage.length(), val);
+                    storage = (ObjectSequenceStorage) InsertItemArrayBasedStorageNode.executeUncached(storage, storage.length(), val);
                     idx = nextIdx.value;
 
                     /* skip whitespace between term and , */

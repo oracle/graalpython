@@ -104,15 +104,6 @@ public final class DoubleSequenceStorage extends ArrayBasedSequenceStorage {
         values[idx] = value;
     }
 
-    @Override
-    public void insertItem(int idx, Object value) throws SequenceStoreException {
-        if (value instanceof Double) {
-            insertDoubleItem(idx, (double) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
     public void insertDoubleItem(int idx, double value) {
         ensureCapacity(length + 1);
 

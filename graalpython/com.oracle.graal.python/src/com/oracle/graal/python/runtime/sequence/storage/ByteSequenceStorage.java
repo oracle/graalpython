@@ -116,17 +116,6 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
         values[idx] = value;
     }
 
-    @Override
-    public void insertItem(int idx, Object value) throws SequenceStoreException {
-        if (value instanceof Byte) {
-            insertByteItem(idx, (byte) value);
-        } else if (value instanceof Integer) {
-            insertByteItem(idx, ((Integer) value).byteValue());
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
     public void insertByteItem(int idx, byte value) {
         ensureCapacity(length + 1);
 

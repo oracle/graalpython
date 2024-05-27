@@ -68,19 +68,6 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     @Override
-    public void insertItem(int idx, Object value) {
-        ensureCapacity(length + 1);
-
-        // shifting tail to the right by one slot
-        for (int i = values.length - 1; i > idx; i--) {
-            values[i] = values[i - 1];
-        }
-
-        values[idx] = assertNoJavaString(value);
-        incLength();
-    }
-
-    @Override
     public ArrayBasedSequenceStorage createEmpty(int newCapacity) {
         return new ObjectSequenceStorage(newCapacity);
     }

@@ -104,15 +104,6 @@ public final class IntSequenceStorage extends ArrayBasedSequenceStorage {
         values[idx] = value;
     }
 
-    @Override
-    public void insertItem(int idx, Object value) throws SequenceStoreException {
-        if (value instanceof Integer) {
-            insertIntItem(idx, (int) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
     public void insertIntItem(int idx, int value) {
         ensureCapacity(length + 1);
 
