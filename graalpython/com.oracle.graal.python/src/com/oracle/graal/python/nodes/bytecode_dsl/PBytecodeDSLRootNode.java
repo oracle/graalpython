@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
+import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
@@ -294,6 +295,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     private transient boolean pythonInternal;
     @CompilationFinal private transient boolean internal;
 
+    // For deferred deprecation warnings
+    @CompilationFinal private transient RaisePythonExceptionErrorCallback parserErrorCallback;
+
     @SuppressWarnings("this-escape")
     protected PBytecodeDSLRootNode(TruffleLanguage<?> language, FrameDescriptor.Builder frameDescriptorBuilder) {
         super(language, frameDescriptorBuilder.info(new BytecodeDSLFrameInfo()).build());
@@ -304,13 +308,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return factory;
     }
 
-    public void setMetadata(BytecodeDSLCodeUnit co) {
+    public void setMetadata(BytecodeDSLCodeUnit co, RaisePythonExceptionErrorCallback parserErrorCallback) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         this.co = co;
         this.signature = co.computeSignature();
         this.classcellIndex = co.classcellIndex;
         this.selfIndex = co.selfIndex;
         this.internal = getSource().isInternal();
+        this.parserErrorCallback = parserErrorCallback;
     }
 
     @Override
@@ -325,6 +330,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     public void setPythonInternal(boolean pythonInternal) {
         this.pythonInternal = pythonInternal;
+    }
+
+    public void triggerDeferredDeprecationWarnings() {
+        if (parserErrorCallback != null) {
+            parserErrorCallback.triggerDeprecationWarnings();
+        }
     }
 
     @Override

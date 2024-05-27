@@ -9,7 +9,6 @@ import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
-import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
@@ -24,8 +23,8 @@ public class BytecodeDSLCompiler {
     public static final record BytecodeDSLCompilerResult(PBytecodeDSLRootNode rootNode, BytecodeDSLCodeUnit codeUnit) {
     }
 
-    public static BytecodeDSLCompilerResult compile(PythonLanguage language, PythonContext context, ModTy mod, Source source, int optimize, EnumSet<FutureFeature> futureFeatures) {
-        ErrorCallback errorCallback = new RaisePythonExceptionErrorCallback(source, false);
+    public static BytecodeDSLCompilerResult compile(PythonLanguage language, PythonContext context, ModTy mod, Source source, int optimize, RaisePythonExceptionErrorCallback errorCallback,
+                    EnumSet<FutureFeature> futureFeatures) {
         /**
          * Parse __future__ annotations before the analysis step. The analysis does extra validation
          * when __future__.annotations is imported.
@@ -37,7 +36,7 @@ public class BytecodeDSLCompiler {
         return compiler.compile();
     }
 
-    private static int parseFuture(ModTy mod, EnumSet<FutureFeature> futureFeatures, ErrorCallback errorCallback) {
+    private static int parseFuture(ModTy mod, EnumSet<FutureFeature> futureFeatures, RaisePythonExceptionErrorCallback errorCallback) {
         StmtTy[] stmts = null;
         if (mod instanceof ModTy.Module module) {
             stmts = module.body;
@@ -59,12 +58,12 @@ public class BytecodeDSLCompiler {
         public final int optimizationLevel;
         public final EnumSet<FutureFeature> futureFeatures;
         public final int futureLineNumber;
-        public final ErrorCallback errorCallback;
+        public final RaisePythonExceptionErrorCallback errorCallback;
         public final ScopeEnvironment scopeEnvironment;
         public final Map<Scope, String> qualifiedNames;
 
         public BytecodeDSLCompilerContext(PythonLanguage language, PythonContext context, ModTy mod, Source source, int optimizationLevel,
-                        EnumSet<FutureFeature> futureFeatures, int futureLineNumber, ErrorCallback errorCallback, ScopeEnvironment scopeEnvironment) {
+                        EnumSet<FutureFeature> futureFeatures, int futureLineNumber, RaisePythonExceptionErrorCallback errorCallback, ScopeEnvironment scopeEnvironment) {
             this.language = language;
             this.pythonContext = context;
             this.factory = context.factory();

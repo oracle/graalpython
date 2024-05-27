@@ -671,10 +671,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return PBytecodeRootNode.create(this, co, source, errorCallback);
     }
 
-    @SuppressWarnings("unused")
     private RootNode compileForBytecodeDSLInterpreter(PythonContext context, ModTy mod, Source source, int optimize,
                     RaisePythonExceptionErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
-        BytecodeDSLCompilerResult result = BytecodeDSLCompiler.compile(this, context, mod, source, optimize, futureFeatures);
+        BytecodeDSLCompilerResult result = BytecodeDSLCompiler.compile(this, context, mod, source, optimize, errorCallback, futureFeatures);
         return result.rootNode();
     }
 

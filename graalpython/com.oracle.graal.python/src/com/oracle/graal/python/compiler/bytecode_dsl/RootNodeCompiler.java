@@ -25,16 +25,15 @@ import com.oracle.graal.python.compiler.Compiler.ConstantCollection;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerContext;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
-import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.compiler.Unparser;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen.Builder;
-import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
+import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.Scope.DefUse;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
@@ -57,6 +56,7 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
+import com.oracle.graal.python.pegparser.sst.ExprTy.Constant;
 import com.oracle.graal.python.pegparser.sst.ExprTy.DictComp;
 import com.oracle.graal.python.pegparser.sst.ExprTy.GeneratorExp;
 import com.oracle.graal.python.pegparser.sst.ExprTy.Lambda;
@@ -94,7 +94,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
     private final CompilationScope scopeType;
     private final boolean isInteractive;
     private final EnumSet<FutureFeature> futureFeatures;
-    private final ErrorCallback errorCallback;
 
     // Immutable after construction
     private final HashMap<String, Integer> varnames;
@@ -120,7 +119,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         this.scopeType = getScopeType(scope, rootNode);
         this.isInteractive = rootNode instanceof ModTy.Interactive;
         this.futureFeatures = futureFeatures;
-        this.errorCallback = new RaisePythonExceptionErrorCallback(ctx.source, false);
 
         this.varnames = new HashMap<>();
         if (scope.isFunction()) {
@@ -261,7 +259,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                         selfIndex,
                         null,
                         nodes);
-        rootNode.setMetadata(codeUnit);
+        rootNode.setMetadata(codeUnit, ctx.errorCallback);
         return new BytecodeDSLCompilerResult(rootNode, codeUnit);
     }
 
@@ -306,12 +304,12 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
     protected final void checkForbiddenName(String id, NameOperation context) {
         if (context == NameOperation.BeginWrite) {
             if (id.equals("__debug__")) {
-                errorCallback.onError(ErrorType.Syntax, currentLocation, "cannot assign to __debug__");
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "cannot assign to __debug__");
             }
         }
         if (context == NameOperation.Delete) {
             if (id.equals("__debug__")) {
-                errorCallback.onError(ErrorType.Syntax, currentLocation, "cannot delete __debug__");
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "cannot delete __debug__");
             }
         }
     }
@@ -1225,10 +1223,10 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         @Override
         public Void visit(ExprTy.Await node) {
             if (!scope.isFunction()) {
-                errorCallback.onError(ErrorType.Syntax, currentLocation, "'await' outside function");
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'await' outside function");
             }
             if (scopeType != CompilationScope.AsyncFunction && scopeType != CompilationScope.Comprehension) {
-                errorCallback.onError(ErrorType.Syntax, currentLocation, "'await' outside async function");
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'await' outside async function");
             }
 
             beginSourceSection(node, b);
@@ -1365,7 +1363,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     checkForbiddenName(keywords[i].arg, NameOperation.BeginWrite);
                     for (int j = i + 1; j < keywords.length; j++) {
                         if (keywords[i].arg.equals(keywords[j].arg)) {
-                            errorCallback.onError(ErrorType.Syntax, currentLocation, "keyword argument repeated: " + keywords[i].arg);
+                            ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "keyword argument repeated: " + keywords[i].arg);
                         }
                     }
                 }
@@ -1563,6 +1561,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         @Override
         public Void visit(ExprTy.Compare node) {
             beginSourceSection(node, b);
+            checkCompare(node);
 
             boolean multipleComparisons = node.comparators.length > 1;
 
@@ -1598,6 +1597,36 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
             endSourceSection(b);
             return null;
+        }
+
+        private void warn(SSTNode node, String message, Object... arguments) {
+            ctx.errorCallback.onWarning(WarningType.Syntax, node.getSourceRange(), message, arguments);
+        }
+
+        private void checkCompare(ExprTy node) {
+            if (!(node instanceof ExprTy.Compare compare)) {
+                return;
+            }
+            boolean left = checkIsArg(compare.left);
+            int n = compare.ops == null ? 0 : compare.ops.length;
+            for (int i = 0; i < n; ++i) {
+                CmpOpTy op = compare.ops[i];
+                boolean right = checkIsArg(compare.comparators[i]);
+                if (op == CmpOpTy.Is || op == CmpOpTy.IsNot) {
+                    if (!right || !left) {
+                        warn(compare, op == CmpOpTy.Is ? "\"is\" with a literal. Did you mean \"==\"?" : "\"is not\" with a literal. Did you mean \"!=\"?");
+                    }
+                }
+                left = right;
+            }
+        }
+
+        private static boolean checkIsArg(ExprTy e) {
+            if (e instanceof ExprTy.Constant) {
+                ConstantValue.Kind kind = ((Constant) e).value.kind;
+                return kind == Kind.NONE || kind == Kind.BOOLEAN || kind == Kind.ELLIPSIS;
+            }
+            return true;
         }
 
         private void createConstant(ConstantValue value) {
@@ -2331,7 +2360,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     checkAnnSubscr(subscript.slice);
                 }
             } else {
-                errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "invalid node type for annotated assignment");
+                ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "invalid node type for annotated assignment");
             }
             if (!node.isSimple) {
                 /*
@@ -2744,10 +2773,10 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         @Override
         public Void visit(StmtTy.AsyncWith node) {
             if (!scope.isFunction()) {
-                errorCallback.onError(ErrorType.Syntax, currentLocation, "'async with' outside function");
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'async with' outside function");
             }
             if (scopeType != CompilationScope.AsyncFunction && scopeType != CompilationScope.Comprehension) {
-                errorCallback.onError(ErrorType.Syntax, currentLocation, "'async with' outside async function");
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'async with' outside async function");
             }
             beginSourceSection(node, b);
             visitWithRecurse(node.items, 0, node.body, true);
@@ -3230,7 +3259,6 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         @Override
         public Void visit(StmtTy.If node) {
             beginSourceSection(node, b);
-
             if (node.orElse == null || node.orElse.length == 0) {
                 b.beginIfThen();
                 visitCondition(node.test);
@@ -3321,7 +3349,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         public Void visit(StmtTy.ImportFrom node) {
             beginSourceSection(node, b);
             if (node.getSourceRange().startLine > ctx.futureLineNumber && "__future__".equals(node.module)) {
-                errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "from __future__ imports must occur at the beginning of the file");
+                ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "from __future__ imports must occur at the beginning of the file");
             }
 
             TruffleString tsModuleName = toTruffleStringUncached(node.module == null ? "" : node.module);
@@ -3409,7 +3437,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             }
 
             private void duplicateStoreError(String name) {
-                errorCallback.onError(ErrorType.Syntax, currentLocation, "multiple assignments to name '%s' in pattern", name);
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "multiple assignments to name '%s' in pattern", name);
             }
 
         }
@@ -3573,9 +3601,9 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 // If there's no pattern (e.g., _), it trivially matches. Ensure this is permitted.
                 if (!pc.allowIrrefutable) {
                     if (node.name != null) {
-                        errorCallback.onError(ErrorType.Syntax, currentLocation, "name capture '%s' makes remaining patterns unreachable", node.name);
+                        ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "name capture '%s' makes remaining patterns unreachable", node.name);
                     }
-                    errorCallback.onError(ErrorType.Syntax, currentLocation, "wildcard makes remaining patterns unreachable");
+                    ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "wildcard makes remaining patterns unreachable");
                 }
                 b.emitLoadConstant(true);
             } else {
@@ -3638,12 +3666,12 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 PatternTy pattern = patterns[i];
                 if (pattern instanceof PatternTy.MatchStar) {
                     if (seenStar) {
-                        errorCallback.onError(ErrorType.Syntax, currentLocation, "multiple starred expressions in sequence pattern");
+                        ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "multiple starred expressions in sequence pattern");
                     }
                     seenStar = true;
                     int countAfter = n - i - 1;
                     if (countAfter != (byte) countAfter) {
-                        errorCallback.onError(ErrorType.Syntax, currentLocation, "too many expressions in star-unpacking sequence pattern");
+                        ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "too many expressions in star-unpacking sequence pattern");
                     }
                     // If there's a star pattern, emit UnpackEx.
                     b.beginUnpackEx(i, countAfter);
@@ -3724,7 +3752,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 PatternTy pattern = node.patterns[i];
                 if (pattern instanceof PatternTy.MatchStar) {
                     if (star >= 0) {
-                        errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "multiple starred names in sequence pattern");
+                        ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "multiple starred names in sequence pattern");
                     }
                     starWildcard = wildcardStarCheck(pattern);
                     onlyWildcard &= starWildcard;
@@ -3820,7 +3848,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             } else if (node.value instanceof ExprTy.Constant || node.value instanceof ExprTy.Attribute) {
                 node.value.accept(this);
             } else {
-                errorCallback.onError(ErrorType.Syntax, currentLocation, "patterns may only match literals and attribute lookups");
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "patterns may only match literals and attribute lookups");
             }
             b.endEq();
         }
@@ -3955,7 +3983,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         @Override
         public Void visit(StmtTy.Return node) {
             if (!scope.isFunction()) {
-                errorCallback.onError(ErrorType.Syntax, currentLocation, "'return' outside function");
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'return' outside function");
             }
 
             beginSourceSection(node, b);
@@ -4147,7 +4175,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                                 for (ExceptHandlerTy h : node.handlers) {
                                     beginSourceSection(h, b);
                                     if (bareExceptRange != null) {
-                                        errorCallback.onError(ErrorType.Syntax, currentLocation, "default 'except:' must be last");
+                                        ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "default 'except:' must be last");
                                     }
 
                                     ExceptHandlerTy.ExceptHandler handler = (ExceptHandlerTy.ExceptHandler) h;
