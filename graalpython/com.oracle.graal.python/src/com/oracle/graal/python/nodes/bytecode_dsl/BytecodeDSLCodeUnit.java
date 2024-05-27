@@ -51,7 +51,7 @@ public class BytecodeDSLCodeUnit extends CodeUnit {
         BytecodeRootNodes<PBytecodeDSLRootNode> deserialized = MarshalModuleBuiltins.deserializeBytecodeNodes(context.getLanguage(), source, toDeserialize);
         assert deserialized.count() == 1;
         PBytecodeDSLRootNode result = deserialized.getNode(0);
-        result.setMetadata(this);
+        result.setMetadata(this, null);
         return result;
     }
 

@@ -179,7 +179,8 @@ public abstract class MaterializeFrameNode extends Node {
             return;
         }
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            if (location instanceof PBytecodeDSLRootNode) {
+            BytecodeNode bytecodeNode = BytecodeNode.get(location);
+            if (bytecodeNode == null) {
                 /**
                  * Sometimes we don't have a precise location (see
                  * {@link ReadCallerFrameNode#getFrame}). Set bci to -1 to mark the location as
@@ -188,8 +189,6 @@ public abstract class MaterializeFrameNode extends Node {
                 pyFrame.setBci(-1);
                 pyFrame.setLocation(location);
             } else {
-                BytecodeNode bytecodeNode = BytecodeNode.get(location);
-                assert bytecodeNode != null;
                 pyFrame.setBci(bytecodeNode.getBytecodeIndex(frameToMaterialize));
                 pyFrame.setLocation(bytecodeNode);
             }
