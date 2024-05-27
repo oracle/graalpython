@@ -2356,17 +2356,23 @@ public abstract class TypeNodes {
             long dictOffset = GetDictOffsetNode.executeUncached(base);
             long weakListOffset = GetWeakListOffsetNode.executeUncached(base);
             long itemSize = GetItemSizeNode.executeUncached(base);
-            if (ctx.addDict) {
-                if (itemSize != 0) {
-                    dictOffset = -SIZEOF_PY_OBJECT_PTR;
-                } else {
-                    dictOffset = slotOffset;
-                }
+            if (ctx.addDict && itemSize != 0) {
+                dictOffset = -SIZEOF_PY_OBJECT_PTR;
                 slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
             if (ctx.addWeak) {
                 weakListOffset = slotOffset;
                 slotOffset += SIZEOF_PY_OBJECT_PTR;
+            }
+            if (ctx.addDict && itemSize == 0) {
+                long flags = GetTypeFlagsNode.executeUncached(pythonClass) | MANAGED_DICT;
+                SetTypeFlagsNode.executeUncached(pythonClass, flags);
+                /*
+                 * Negative offsets are computed from the end of the structure. Our managed dict is
+                 * right before the start of the object. CPython has 3 fields there, so our formula
+                 * differs.
+                 */
+                dictOffset = -slotOffset - SIZEOF_PY_OBJECT_PTR;
             }
             SetDictOffsetNode.executeUncached(pythonClass, dictOffset);
             SetBasicSizeNode.executeUncached(pythonClass, slotOffset);
