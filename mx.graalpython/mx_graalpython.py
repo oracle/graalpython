@@ -2119,6 +2119,7 @@ def _python_checkpatchfiles():
             'numpy-1.23.2.patch',
             'numpy-1.23.5.patch',
             'numpy-1.26.4.patch',
+            'numpy-2.0.0.patch',
             # libcst is MIT
             'libcst-1.0.1.patch',
             # Empty license field, skip it. It's MIT
