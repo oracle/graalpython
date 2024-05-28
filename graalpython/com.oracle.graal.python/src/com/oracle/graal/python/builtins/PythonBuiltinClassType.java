@@ -333,6 +333,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PStructPasswd("struct_passwd", "pwd", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
     PStructRusage("struct_rusage", "resource", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
     PVersionInfo("version_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
+    PWindowsVersion("windowsversion", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
     PFlags("flags", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
     PFloatInfo("float_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
     PIntInfo("int_info", "sys", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
@@ -811,6 +812,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PStatvfsResult.redefinedSlots = repr;
         PFloatInfo.redefinedSlots = reprAndNew;
         PVersionInfo.redefinedSlots = repr;
+        PWindowsVersion.redefinedSlots = repr;
         PFlags.redefinedSlots = repr;
         PTerminalSize.redefinedSlots = reprAndNew;
 
@@ -921,6 +923,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PStructPasswd.base = PTuple;
         PStructRusage.base = PTuple;
         PVersionInfo.base = PTuple;
+        PWindowsVersion.base = PTuple;
         PFlags.base = PTuple;
         PFloatInfo.base = PTuple;
         PIntInfo.base = PTuple;

@@ -1,5 +1,15 @@
 diff --git a/numpy/core/include/numpy/ndarrayobject.h b/numpy/core/include/numpy/ndarrayobject.h
 index d4b73eb..af90a68 100644
+--- a/vendored-meson/meson/mesonbuild/utils/universal.py
++++ b/vendored-meson/meson/mesonbuild/utils/universal.py
+@@ -727,6 +727,7 @@ def windows_detect_native_arch() -> str:
+     """
+     if sys.platform != 'win32':
+         return ''
++    return 'amd64'  # Workaround for GraalPy bug on Windows with kernel32.GetCurrentProcess()
+     try:
+         import ctypes
+         process_arch = ctypes.c_ushort()
 --- a/numpy/core/include/numpy/ndarrayobject.h
 +++ b/numpy/core/include/numpy/ndarrayobject.h
 @@ -225,7 +225,7 @@ NPY_TITLE_KEY_check(PyObject *key, PyObject *value)

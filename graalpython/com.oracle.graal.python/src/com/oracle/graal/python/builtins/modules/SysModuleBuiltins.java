@@ -302,6 +302,27 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                                     "'alpha', 'beta', 'candidate', or 'final'", "Serial release number"},
                     false);
 
+    static final StructSequence.BuiltinTypeDescriptor WINDOWS_VER_DESC = new StructSequence.BuiltinTypeDescriptor(
+                    PythonBuiltinClassType.PWindowsVersion,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "sys.getwindowsversion\n" +
+                    "\n" +
+                    "Return info about the running version of Windows as a named tuple.",
+                    // @formatter:on
+                    5,
+                    new String[]{
+                                    "major", "minor", "build",
+                                    "platform", "service_pack",
+                                    "service_pack_major", "service_pack_minor",
+                                    "suite_mask", "product_type", "platform_version"},
+                    new String[]{
+                                    "Major version number", "Minor version number", "Build number",
+                                    "Operating system platform", "Latest Service Pack installed on the system",
+                                    "Service Pack major version number", "Service Pack minor version number",
+                                    "Bit mask identifying available product suites",
+                                    "System product type", "Diagnostic version number"},
+                    false);
+
     static final StructSequence.BuiltinTypeDescriptor FLAGS_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PFlags,
                     // @formatter:off The formatter joins these lines making it less readable
@@ -499,6 +520,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         StructSequence.initType(core, VERSION_INFO_DESC);
+        if (PythonOS.getPythonOS() == PLATFORM_WIN32) {
+            StructSequence.initType(core, WINDOWS_VER_DESC);
+        }
         StructSequence.initType(core, FLAGS_DESC);
         StructSequence.initType(core, FLOAT_INFO_DESC);
         StructSequence.initType(core, INT_INFO_DESC);
@@ -520,7 +544,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("api_version", PythonLanguage.API_VERSION);
         addBuiltinConstant("version", toTruffleStringUncached(PythonLanguage.VERSION +
                         " (" + COMPILE_TIME + ")" +
-                        "\n[Graal, " + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + "]"));
+                        "\n[Graal, " + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + " (" + System.getProperty("os.arch") + ")]"));
         addBuiltinConstant("float_info", factory.createStructSeq(FLOAT_INFO_DESC,
                         Double.MAX_VALUE,           // DBL_MAX
                         Double.MAX_EXPONENT + 1,    // DBL_MAX_EXP
@@ -2010,6 +2034,54 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return SetDlopenFlagsClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "getwindowsversion", minNumOfPositionalArgs = 0, os = PLATFORM_WIN32)
+    @GenerateNodeFactory
+    abstract static class Getwindowsversion extends PythonBuiltinNode {
+        static int[] CACHED_VERSION_INFO = null;
+        static int PLATFORM = 2;
+
+        @Specialization
+        PTuple getVersion(@Cached PythonObjectFactory factory) {
+            if (CACHED_VERSION_INFO == null) {
+                cacheVersion();
+            }
+            return factory.createStructSeq(WINDOWS_VER_DESC,
+                            CACHED_VERSION_INFO[0], CACHED_VERSION_INFO[1], CACHED_VERSION_INFO[2],
+                            PLATFORM, T_EMPTY_STRING, 0, 0, 0, 1,
+                            factory.createTuple(CACHED_VERSION_INFO));
+        }
+
+        @TruffleBoundary
+        static void cacheVersion() {
+            String[] winvers = System.getProperty("os.version", "10.0.20000").split("\\.");
+            int major = 0;
+            int minor = 0;
+            int build = 0;
+            if (winvers.length > 0) {
+                try {
+                    major = Integer.parseInt(winvers[0]);
+                } catch (NumberFormatException e) {
+                    // use default
+                }
+            }
+            if (winvers.length > 1) {
+                try {
+                    minor = Integer.parseInt(winvers[1]);
+                } catch (NumberFormatException e) {
+                    // use default
+                }
+            }
+            if (winvers.length > 2) {
+                try {
+                    build = Integer.parseInt(winvers[2]);
+                } catch (NumberFormatException e) {
+                    // use default
+                }
+            }
+            CACHED_VERSION_INFO = new int[]{major, minor, build};
         }
     }
 }

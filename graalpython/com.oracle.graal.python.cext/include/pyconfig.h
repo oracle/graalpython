@@ -55,7 +55,7 @@
 // relevant for code that is compiled without bitcode and will run only
 // natively. Since the pythonjni library contains all the trampolines to call
 // into the python-native.dll in this case, we must only depend on that.
-#  pragma comment(lib, "python-native.lib")
+#  pragma comment(lib, "python311.lib")
 # endif
 #endif
 
@@ -157,7 +157,6 @@
 #define HAVE_SYS_STAT_H 1
 #define HAVE_ERRNO_H 1
 #define HAVE_UTIME_H
-#define HAVE_UNISTD_H
 #define HAVE_SIGNAL_H
 #define HAVE_FCNTL_H
 
@@ -168,6 +167,7 @@
 #define WITH_THREAD 1
 
 #ifndef MS_WINDOWS
+#define HAVE_UNISTD_H
 #define HAVE_PTHREAD_H
 #define HAVE_SYS_WAIT_H
 #define HAVE_SYS_TIME_H

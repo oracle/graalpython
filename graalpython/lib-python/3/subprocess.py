@@ -72,7 +72,9 @@ try:
 except ModuleNotFoundError:
     _mswindows = False
 else:
-    _mswindows = True
+    # Truffle change
+    # _mswindows = True
+    _mswindows = False
 
 # wasm32-emscripten and wasm32-wasi do not support processes
 _can_fork_exec = sys.platform not in {"emscripten", "wasi"}
@@ -1824,20 +1826,21 @@ class Popen:
                         args = [comspec, "/u", "/c", *args]
                     else:
                         args = [comspec, "/u", "/c", list2cmdline(args)]
-                for idx, arg in enumerate(args):
-                    # Adapted per the quoting rules from
-                    # https://learn.microsoft.com/en-us/cpp/c-language/parsing-c-command-line-arguments
-                    if idx == 0:
-                        continue
-                    modified = False
-                    if '"' in args[idx]:
-                        args[idx] = args[idx].replace('"', '""')
-                        modified = True
-                    if '\\' in args[idx] and (shell or modified):
-                        args[idx] = args[idx].replace('\\', '\\\\')
-                        modified = True
-                    if modified:
-                        warnings.warn(f"Replacing\n\t{arg!r}\nwith\n\t{args[idx]!r}", RuntimeWarning)
+                else:
+                    for idx, arg in enumerate(args):
+                        # Adapted per the quoting rules from
+                        # https://learn.microsoft.com/en-us/cpp/c-language/parsing-c-command-line-arguments
+                        if idx == 0:
+                            continue
+                        modified = False
+                        if '\\' in args[idx] and (shell or modified):
+                            args[idx] = args[idx].replace('\\', '\\\\')
+                            modified = True
+                        if '"' in args[idx]:
+                            args[idx] = args[idx].replace('"', '\\"')
+                            modified = True
+                        if modified:
+                            warnings.warn(f"Replacing\n\t{arg!r}\nwith\n\t{args[idx]!r}", RuntimeWarning)
             # End Truffle change
 
             if shell:
@@ -1911,6 +1914,17 @@ class Popen:
                         executable_list = tuple(
                             os.path.join(os.fsencode(dir), executable)
                             for dir in os.get_exec_path(env))
+                    # Truffle change
+                    if sys.platform == 'win32':
+                        __exts = [os.fsencode(ext.lower()) for ext in os.environ.get("PATHEXT", "").split(";")]
+                        if (b"." + executable.split(b".")[-1].lower()) not in __exts:
+                            __new_executable_list = []
+                            for __exe in executable_list:
+                                __new_executable_list.append(__exe)
+                                for __ext in __exts:
+                                    __new_executable_list.append(__exe + __ext)
+                            executable_list = __new_executable_list
+                    # End truffle change
                     fds_to_keep = set(pass_fds)
                     fds_to_keep.add(errpipe_write)
                     self.pid = _fork_exec(
@@ -1994,6 +2008,11 @@ class Popen:
             if _WIFSTOPPED(sts):
                 self.returncode = -_WSTOPSIG(sts)
             else:
+                # Begin Truffle change
+                if sys.platform == 'win32':
+                    self.returncode = sts
+                    return
+                # End Truffle change
                 self.returncode = _waitstatus_to_exitcode(sts)
 
         def _internal_poll(self, _deadstate=None, _waitpid=_waitpid,

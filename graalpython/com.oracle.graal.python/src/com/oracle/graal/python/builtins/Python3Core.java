@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.modules.LsprofModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.MsvcrtModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.NtModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
@@ -525,6 +526,7 @@ public abstract class Python3Core {
                         new PosixModuleBuiltins(),
                         new NtModuleBuiltins(),
                         new WinregModuleBuiltins(),
+                        new MsvcrtModuleBuiltins(),
                         new WinapiModuleBuiltins(),
                         new CryptModuleBuiltins(),
                         new ScandirIteratorBuiltins(),

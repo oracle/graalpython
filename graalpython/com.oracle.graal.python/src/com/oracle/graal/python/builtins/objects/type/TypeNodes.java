@@ -2573,7 +2573,7 @@ public abstract class TypeNodes {
                         PIntInfo, PHashInfo, PThreadInfo, PUnraisableHookArgs, PIOBase, PFileIO, PBufferedIOBase,
                         PBufferedReader, PBufferedWriter, PBufferedRWPair, PBufferedRandom, PIncrementalNewlineDecoder,
                         PTextIOWrapper, CArgObject, CThunkObject, StgDict, Structure, Union, PyCPointer, PyCArray,
-                        PyCData, SimpleCData, PyCFuncPtr, CField, DictRemover, StructParam -> 8;
+                        PWindowsVersion, PyCData, SimpleCData, PyCFuncPtr, CField, DictRemover, StructParam -> 8;
                 case PythonClass -> 40;
                 default -> 0;
             };

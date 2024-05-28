@@ -754,7 +754,6 @@ PyErr_SetFromErrno(PyObject *exc)
     return PyErr_SetFromErrnoWithFilenameObjects(exc, NULL, NULL);
 }
 
-#if 0 // GraalPy change
 #ifdef MS_WINDOWS
 /* Windows specific error code handling */
 PyObject *PyErr_SetExcFromWindowsErrWithFilenameObject(
@@ -892,6 +891,7 @@ PyObject *PyErr_SetFromWindowsErrWithFilename(
 
 #endif /* MS_WINDOWS */
 
+#if 0 // GraalPy change
 PyObject *
 PyErr_SetImportErrorSubclass(PyObject *exception, PyObject *msg,
     PyObject *name, PyObject *path)
