@@ -258,6 +258,7 @@ target_compile_options(${TARGET_LIBPYTHON} PRIVATE ${CFLAGS_WARNINGS})
 
 if(WIN32)
     target_link_directories(${TARGET_LIBPYTHON} PRIVATE ${GRAALVM_LLVM_LIB_DIR})
+    target_compile_options(${TARGET_LIBPYTHON} PRIVATE "-fmsc-version=1920")
     target_link_libraries(${TARGET_LIBPYTHON} sulong-native graalvm-llvm)
 else()
     # Link to math library; required for functions like 'hypot' or similar
