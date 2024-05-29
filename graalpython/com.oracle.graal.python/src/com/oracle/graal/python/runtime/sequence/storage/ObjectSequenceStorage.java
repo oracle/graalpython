@@ -82,10 +82,15 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
         return PythonUtils.arrayCopyOf(values, length);
     }
 
-    @Override
     public void increaseCapacityExactWithCopy(int newCapacity) {
         values = PythonUtils.arrayCopyOf(values, newCapacity);
         capacity = values.length;
+    }
+
+    public void ensureCapacity(int newCapacity) throws ArithmeticException {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, newCapacity > capacity)) {
+            increaseCapacityExactWithCopy(capacityFor(newCapacity));
+        }
     }
 
     @Override

@@ -29,6 +29,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.truffle.api.CompilerDirectives;
 
 public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
 
@@ -56,10 +57,15 @@ public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
         this.length = 0;
     }
 
-    @Override
-    protected void increaseCapacityExactWithCopy(int newCapacity) {
+    private void increaseCapacityExactWithCopy(int newCapacity) {
         values = Arrays.copyOf(values, newCapacity);
         capacity = values.length;
+    }
+
+    public void ensureCapacity(int newCapacity) throws ArithmeticException {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, newCapacity > capacity)) {
+            increaseCapacityExactWithCopy(capacityFor(newCapacity));
+        }
     }
 
     @Override

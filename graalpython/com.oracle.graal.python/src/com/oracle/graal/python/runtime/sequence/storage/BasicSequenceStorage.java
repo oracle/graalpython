@@ -51,21 +51,9 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
     /**
      * The capacity we should allocate for a given length.
      */
-    private static int capacityFor(int length) throws ArithmeticException {
+    protected static int capacityFor(int length) throws ArithmeticException {
         return Math.max(16, Math.multiplyExact(length, 2));
     }
-
-    /**
-     * Ensure that the current capacity is big enough. If not, we increase capacity to the next
-     * designated size (not necessarily the requested one).
-     */
-    public final void ensureCapacity(int newCapacity) throws ArithmeticException {
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, newCapacity > capacity)) {
-            increaseCapacityExactWithCopy(capacityFor(newCapacity));
-        }
-    }
-
-    protected abstract void increaseCapacityExactWithCopy(int newCapacity);
 
     public void minimizeCapacity() {
         capacity = length;

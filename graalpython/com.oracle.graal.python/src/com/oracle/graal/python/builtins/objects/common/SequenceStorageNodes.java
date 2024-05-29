@@ -3004,11 +3004,12 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static BasicSequenceStorage doIt(Node inliningTarget, SequenceStorage s, int cap, int len,
+                        @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached GetElementType getElementType,
                         @Cached CreateEmptyForTypeNode createEmptyForTypeNode) {
             BasicSequenceStorage ss = createEmptyForTypeNode.execute(inliningTarget, getElementType.execute(inliningTarget, s), cap);
             if (len != -1) {
-                ss.ensureCapacity(len);
+                ensureCapacityNode.execute(inliningTarget, ss, len);
                 ss.setNewLength(len);
             }
             return ss;
@@ -3064,16 +3065,34 @@ public abstract class SequenceStorageNodes {
             // do nothing
         }
 
-        @Specialization(limit = "MAX_BASIC_STORAGES", guards = "s.getClass() == cachedClass")
-        static void doManaged(Node inliningTarget, BasicSequenceStorage s, int cap,
-                        @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
-            try {
-                BasicSequenceStorage profiled = cachedClass.cast(s);
-                profiled.ensureCapacity(cap);
-            } catch (OutOfMemoryError | ArithmeticException e) {
-                throw raiseNode.get(inliningTarget).raise(MemoryError);
-            }
+        @Specialization
+        static void doInt(IntSequenceStorage storage, int cap) {
+            storage.ensureCapacity(cap);
+        }
+
+        @Specialization
+        static void doLong(LongSequenceStorage storage, int cap) {
+            storage.ensureCapacity(cap);
+        }
+
+        @Specialization
+        static void doDouble(DoubleSequenceStorage storage, int cap) {
+            storage.ensureCapacity(cap);
+        }
+
+        @Specialization
+        static void doByte(ByteSequenceStorage storage, int cap) {
+            storage.ensureCapacity(cap);
+        }
+
+        @Specialization
+        static void doObject(ObjectSequenceStorage storage, int cap) {
+            storage.ensureCapacity(cap);
+        }
+
+        @Specialization
+        static void doBool(BoolSequenceStorage storage, int cap) {
+            storage.ensureCapacity(cap);
         }
 
         @Specialization
@@ -3081,6 +3100,11 @@ public abstract class SequenceStorageNodes {
         static void doNative(NativeSequenceStorage s, int cap,
                         @Cached(inline = false) EnsureCapacityNativeNode helper) {
             helper.execute(s, cap);
+        }
+
+        @Specialization
+        static void doMro(MroSequenceStorage storage, int cap) {
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         @GenerateInline(false)

@@ -132,12 +132,6 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         return values;
     }
 
-    @SuppressWarnings("unused")
-    @Override
-    public void increaseCapacityExactWithCopy(int newCapacity) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
     @Override
     public Object getIndicativeValue() {
         return null;
