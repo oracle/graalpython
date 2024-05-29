@@ -2158,8 +2158,11 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(ExprTy.Yield node) {
-            beginSourceSection(node, b);
+            if (!scope.isFunction()) {
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'yield' outside function");
+            }
 
+            beginSourceSection(node, b);
             emitYield((statementCompiler) -> {
                 if (node.value != null) {
                     node.value.accept(this);
@@ -2174,6 +2177,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(ExprTy.YieldFrom node) {
+            if (!scope.isFunction()) {
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'yield' outside function");
+            }
+            if (scopeType == CompilationScope.AsyncFunction) {
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'yield from' inside async function");
+            }
+
             beginSourceSection(node, b);
             emitYieldFrom(() -> {
                 b.beginGetYieldFromIter();
@@ -4486,22 +4496,24 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
 
         @Override
         public Void visit(StmtTy.Break aThis) {
+            if (breakLabel == null) {
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'break' outside loop");
+            }
+
             beginSourceSection(aThis, b);
-
-            assert breakLabel != null;
             b.emitBranch(breakLabel);
-
             endSourceSection(b);
             return null;
         }
 
         @Override
         public Void visit(StmtTy.Continue aThis) {
+            if (continueLabel == null) {
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'continue' not properly in loop");
+            }
+
             beginSourceSection(aThis, b);
-
-            assert continueLabel != null;
             b.emitBranch(continueLabel);
-
             endSourceSection(b);
             return null;
         }
