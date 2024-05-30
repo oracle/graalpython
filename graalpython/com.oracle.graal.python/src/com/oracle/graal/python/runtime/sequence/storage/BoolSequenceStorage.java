@@ -150,7 +150,6 @@ public final class BoolSequenceStorage extends ArrayBasedSequenceStorage {
         return Arrays.copyOf(values, length);
     }
 
-    @Override
     public Object[] getCopyOfInternalArray() {
         return getInternalArray();
     }

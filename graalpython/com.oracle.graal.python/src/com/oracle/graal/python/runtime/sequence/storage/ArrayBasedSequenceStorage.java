@@ -44,8 +44,6 @@ public abstract class ArrayBasedSequenceStorage extends BasicSequenceStorage {
 
     public abstract Object[] getInternalArray();
 
-    public abstract Object[] getCopyOfInternalArray();
-
     public abstract Object getInternalArrayObject();
 
     public abstract Object getCopyOfInternalArrayObject();

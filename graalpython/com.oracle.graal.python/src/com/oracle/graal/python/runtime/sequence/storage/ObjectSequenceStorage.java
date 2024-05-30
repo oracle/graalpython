@@ -91,7 +91,6 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
         return values;
     }
 
-    @Override
     public Object[] getCopyOfInternalArray() {
         return PythonUtils.arrayCopyOf(values, length);
     }

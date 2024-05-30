@@ -3191,10 +3191,39 @@ public abstract class SequenceStorageNodes {
             return SequenceStorageNodesFactory.CopyInternalArrayNodeGen.getUncached().execute(null, s);
         }
 
-        @Specialization(limit = "MAX_BASIC_STORAGES", guards = "s.getClass() == cachedClass")
-        static Object[] doArrayBased(ArrayBasedSequenceStorage s,
-                        @Cached("s.getClass()") Class<? extends ArrayBasedSequenceStorage> cachedClass) {
-            return cachedClass.cast(s).getCopyOfInternalArray();
+        @Specialization
+        static Object[] doInt(IntSequenceStorage storage) {
+            return storage.getCopyOfInternalArray();
+        }
+
+        @Specialization
+        static Object[] doDouble(DoubleSequenceStorage storage) {
+            return storage.getCopyOfInternalArray();
+        }
+
+        @Specialization
+        static Object[] doByte(ByteSequenceStorage storage) {
+            return storage.getCopyOfInternalArray();
+        }
+
+        @Specialization
+        static Object[] doLong(LongSequenceStorage storage) {
+            return storage.getCopyOfInternalArray();
+        }
+
+        @Specialization
+        static Object[] doObject(ObjectSequenceStorage storage) {
+            return storage.getCopyOfInternalArray();
+        }
+
+        @Specialization
+        static Object[] doBool(BoolSequenceStorage storage) {
+            return storage.getCopyOfInternalArray();
+        }
+
+        @Specialization
+        static Object[] doMro(MroSequenceStorage storage) {
+            return storage.getCopyOfInternalArray();
         }
 
         @Specialization
@@ -3582,7 +3611,7 @@ public abstract class SequenceStorageNodes {
             return s.getInternalArray();
         }
 
-        @Specialization
+        @Specialization(guards = "!isObjectStorage(s)")
         static Object[] doArrayBasedSequenceStorage(Node inliningTarget, ArrayBasedSequenceStorage s,
                         @Cached CopyInternalArrayNode copy) {
             Object[] internalArray = copy.execute(inliningTarget, s);
@@ -3613,6 +3642,10 @@ public abstract class SequenceStorageNodes {
                 barr[i] = getItemNode.execute(inliningTarget, s, i);
             }
             return barr;
+        }
+
+        protected static boolean isObjectStorage(ArrayBasedSequenceStorage storage) {
+            return storage instanceof ObjectSequenceStorage;
         }
     }
 

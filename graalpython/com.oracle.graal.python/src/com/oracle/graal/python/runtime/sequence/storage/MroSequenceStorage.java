@@ -243,7 +243,6 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         return true;
     }
 
-    @Override
     public Object[] getCopyOfInternalArray() {
         return getInternalArray();
     }

@@ -162,7 +162,6 @@ public final class DoubleSequenceStorage extends ArrayBasedSequenceStorage {
         return Arrays.copyOf(values, length);
     }
 
-    @Override
     public Object[] getCopyOfInternalArray() {
         return getInternalArray();
     }

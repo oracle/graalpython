@@ -162,7 +162,6 @@ public final class IntSequenceStorage extends ArrayBasedSequenceStorage {
         return Arrays.copyOf(values, length);
     }
 
-    @Override
     public Object[] getCopyOfInternalArray() {
         return getInternalArray();
     }
