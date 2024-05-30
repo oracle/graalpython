@@ -271,7 +271,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 @ShortCircuitOperation(name = "PrimitiveBoolOr", booleanConverter = PBytecodeDSLRootNode.BooleanIdentity.class, operator = Operator.OR_RETURN_CONVERTED)
 @SuppressWarnings("unused")
 public abstract class PBytecodeDSLRootNode extends PRootNode implements BytecodeRootNode {
-    private static final int EXPLODE_LOOP_THRESHOLD = 32;
+    public static final int EXPLODE_LOOP_THRESHOLD = 32;
     private static final BytecodeConfig TRACE_AND_PROFILE_CONFIG = PBytecodeDSLRootNodeGen.newConfigBuilder() //
                     .addInstrumentation(TraceOrProfileCall.class) //
                     .addInstrumentation(TraceLine.class) //
@@ -379,7 +379,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind("$root") PBytecodeDSLRootNode root,
                         @Bind("this") Node location) {
             if (ate instanceof PException pe) {
-                pe.notifyAddedTracebackFrame(!root.isPythonInternal());
+                pe.notifyAddedTracebackFrame(!root.isInternal());
             }
 
             if (root.needsTraceAndProfileInstrumentation()) {
@@ -1904,37 +1904,34 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ImportStatic({PBytecodeDSLRootNode.class})
     public static final class MakeSet {
-        @Specialization
-        public static PSet perform(VirtualFrame frame, Object[] elements,
+        @Specialization(guards = {"elements.length == length", "length <= EXPLODE_LOOP_THRESHOLD"}, limit = "1")
+        @ExplodeLoop
+        public static PSet performExploded(VirtualFrame frame, Object[] elements,
                         @Bind("$root") PBytecodeDSLRootNode rootNode,
                         @Bind("this") Node node,
-                        @Cached(value = "elements.length", neverDefault = false) int length,
-                        @Cached SetNodes.AddNode addNode,
-                        @Cached HashingCollectionNodes.SetItemNode setItemNode) {
-            assert elements.length == length;
-
+                        @Cached(value = "elements.length") int length,
+                        @Shared @Cached SetNodes.AddNode addNode,
+                        @Shared @Cached HashingCollectionNodes.SetItemNode setItemNode) {
             PSet set = rootNode.factory.createSet();
-            if (length <= EXPLODE_LOOP_THRESHOLD) {
-                doExploded(frame, set, elements, length, addNode, setItemNode);
-            } else {
-                doRegular(frame, set, elements, length, addNode, setItemNode);
+            for (int i = 0; i < length; i++) {
+                SetNodes.AddNode.add(frame, set, elements[i], addNode, setItemNode);
             }
             return set;
         }
 
-        @ExplodeLoop
-        private static void doExploded(VirtualFrame frame, PSet set, Object[] elements, int length, SetNodes.AddNode addNode, HashingCollectionNodes.SetItemNode setItemNode) {
-            CompilerAsserts.partialEvaluationConstant(length);
-            for (int i = 0; i < length; i++) {
+        @Specialization
+        public static PSet performRegular(VirtualFrame frame, Object[] elements,
+                        @Bind("$root") PBytecodeDSLRootNode rootNode,
+                        @Bind("this") Node node,
+                        @Shared @Cached SetNodes.AddNode addNode,
+                        @Shared @Cached HashingCollectionNodes.SetItemNode setItemNode) {
+            PSet set = rootNode.factory.createSet();
+            for (int i = 0; i < elements.length; i++) {
                 SetNodes.AddNode.add(frame, set, elements[i], addNode, setItemNode);
             }
-        }
-
-        private static void doRegular(VirtualFrame frame, PSet set, Object[] elements, int length, SetNodes.AddNode addNode, HashingCollectionNodes.SetItemNode setItemNode) {
-            for (int i = 0; i < length; i++) {
-                SetNodes.AddNode.add(frame, set, elements[i], addNode, setItemNode);
-            }
+            return set;
         }
     }
 
@@ -1999,54 +1996,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     public static final class MakeTuple {
         @Specialization
-        public static Object perform(@Variadic Object[] elements,
-                        @Cached(value = "elements.length", neverDefault = false) int length,
+        public static Object perform(Object[] elements,
                         @Bind("$root") PBytecodeDSLRootNode rootNode) {
-            assert elements.length == length;
-
-            Object[] elts;
-            if (length <= EXPLODE_LOOP_THRESHOLD) {
-                elts = doExploded(elements, length);
-            } else {
-                elts = doRegular(elements, length);
-            }
-            return rootNode.factory.createTuple(elts);
-        }
-
-        @ExplodeLoop
-        private static Object[] doExploded(Object[] elements, int length) {
-            CompilerAsserts.partialEvaluationConstant(length);
-            int totalLength = 0;
-            for (int i = 0; i < length; i++) {
-                totalLength += ((Object[]) elements[i]).length;
-            }
-
-            Object[] elts = new Object[totalLength];
-            int idx = 0;
-            for (int i = 0; i < length; i++) {
-                Object[] arr = (Object[]) elements[i];
-                int len = arr.length;
-                System.arraycopy(arr, 0, elts, idx, len);
-                idx += len;
-            }
-            return elts;
-        }
-
-        private static Object[] doRegular(Object[] elements, int length) {
-            int totalLength = 0;
-            for (int i = 0; i < length; i++) {
-                totalLength += ((Object[]) elements[i]).length;
-            }
-
-            Object[] elts = new Object[totalLength];
-            int idx = 0;
-            for (int i = 0; i < length; i++) {
-                Object[] arr = (Object[]) elements[i];
-                int len = arr.length;
-                System.arraycopy(arr, 0, elts, idx, len);
-                idx += len;
-            }
-            return elts;
+            return rootNode.factory.createTuple(elements);
         }
     }
 
@@ -3621,7 +3573,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 Object result = callExit.execute(frame, exit, contextManager, excType, pythonException, excTraceback);
                 if (!isTrue.execute(frame, inliningTarget, result)) {
                     if (exception instanceof PException pException) {
-                        throw pException.getExceptionForReraise(rootNode.isPythonInternal());
+                        throw pException.getExceptionForReraise(!rootNode.isInternal());
                     } else if (exception instanceof AbstractTruffleException ate) {
                         throw ate;
                     } else {
@@ -3723,7 +3675,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (!isTrue.execute(frame, inliningTarget, result)) {
                 if (exception instanceof PException) {
-                    throw ((PException) exception).getExceptionForReraise(rootNode.isPythonInternal());
+                    throw ((PException) exception).getExceptionForReraise(!rootNode.isInternal());
                 } else if (exception instanceof AbstractTruffleException) {
                     throw (AbstractTruffleException) exception;
                 } else {

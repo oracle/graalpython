@@ -1294,8 +1294,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private Source getSource() {
-            assert source != null;
-            return source;
+            if (source != null) {
+                return source;
+            } else {
+                // This should never happen when deserializing a bytecode DSL code unit, but could
+                // happen if the user tries to deserialize arbitrary bytes.
+                throw new MarshalError(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
+            }
         }
 
         private void writeSparseTable(int[][] table) {
@@ -1332,8 +1337,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private BytecodeCodeUnit readBytecodeCodeUnit() {
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                throw new AssertionError(
-                                "Attempted to deserialize a code object from the manual bytecode interpreter, but the DSL interpreter is enabled. Consider clearing or setting a different pycache folder.");
+                throw new MarshalError(ValueError,
+                                PythonUtils.tsLiteral(
+                                                "Attempted to deserialize a code object from the manual bytecode interpreter, but the DSL interpreter is enabled. Consider clearing or setting a different pycache folder."));
             }
 
             int fileVersion = readByte();
@@ -1377,8 +1383,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private BytecodeDSLCodeUnit readBytecodeDSLCodeUnit() {
             if (!PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                throw new AssertionError(
-                                "Attempted to deserialize a code object from the Bytecode DSL interpreter, but the manual interpreter is enabled. Consider clearing or setting a different pycache folder.");
+                throw new MarshalError(ValueError,
+                                PythonUtils.tsLiteral(
+                                                "Attempted to deserialize a code object from the Bytecode DSL interpreter, but the manual interpreter is enabled. Consider clearing or setting a different pycache folder."));
             }
 
             byte[] serialized = readBytes();
