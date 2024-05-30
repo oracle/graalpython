@@ -75,7 +75,7 @@ public class InsertItemNodeTest {
         }.getCallTarget().call();
 
         assertEquals(ObjectSequenceStorage.class, storage.getClass());
-        var objectStorage = ((ObjectSequenceStorage) storage).getInternalArray();
+        var objectStorage = ((ObjectSequenceStorage) storage).getInternalObjectArray();
         assertEquals(5, objectStorage[0]);
         assertEquals(6, objectStorage[1]);
         assertEquals(11, objectStorage[2]);

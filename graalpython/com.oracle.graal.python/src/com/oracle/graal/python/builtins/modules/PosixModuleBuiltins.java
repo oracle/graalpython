@@ -394,7 +394,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         public static PTuple generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
                         @Cached("create(STAT_RESULT_DESC)") StructSequence.NewNode newNode) {
             PTuple p = (PTuple) newNode.execute(frame, cls, sequence, dict);
-            Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalArray();
+            Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalObjectArray();
             for (int i = 7; i <= 9; i++) {
                 if (data[i + 3] == PNone.NONE) {
                     data[i + 3] = data[i];

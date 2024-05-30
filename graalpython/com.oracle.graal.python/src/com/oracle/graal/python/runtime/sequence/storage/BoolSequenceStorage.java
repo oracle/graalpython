@@ -69,20 +69,6 @@ public final class BoolSequenceStorage extends ArrayBasedSequenceStorage {
         return new BoolSequenceStorage(newLength);
     }
 
-    @Override
-    public Object[] getInternalArray() {
-        /*
-         * Have to box and copy.
-         */
-        Object[] boxed = new Object[length];
-
-        for (int i = 0; i < length; i++) {
-            boxed[i] = values[i];
-        }
-
-        return boxed;
-    }
-
     public void insertBoolItem(int idx, boolean value) {
         ensureCapacity(length + 1);
 
@@ -151,7 +137,16 @@ public final class BoolSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     public Object[] getCopyOfInternalArray() {
-        return getInternalArray();
+        /*
+         * Have to box and copy.
+         */
+        Object[] boxed = new Object[length];
+
+        for (int i = 0; i < length; i++) {
+            boxed[i] = values[i];
+        }
+
+        return boxed;
     }
 
     @Override

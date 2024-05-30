@@ -42,8 +42,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 public abstract class ArrayBasedSequenceStorage extends BasicSequenceStorage {
 
-    public abstract Object[] getInternalArray();
-
     public abstract Object getInternalArrayObject();
 
     public abstract Object getCopyOfInternalArrayObject();

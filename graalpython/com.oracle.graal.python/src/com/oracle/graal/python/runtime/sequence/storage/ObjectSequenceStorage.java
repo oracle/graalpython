@@ -86,8 +86,7 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
         return new ObjectSequenceStorage(newCapacity);
     }
 
-    @Override
-    public Object[] getInternalArray() {
+    public Object[] getInternalObjectArray() {
         return values;
     }
 

@@ -77,20 +77,6 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
         return new ByteSequenceStorage(newCapacity);
     }
 
-    @Override
-    public Object[] getInternalArray() {
-        /*
-         * Have to box and copy.
-         */
-        Object[] boxed = new Object[length];
-
-        for (int i = 0; i < length; i++) {
-            boxed[i] = values[i];
-        }
-
-        return boxed;
-    }
-
     public void reverse() {
         if (length > 0) {
             int head = 0;
@@ -178,7 +164,16 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     public Object[] getCopyOfInternalArray() {
-        return getInternalArray();
+        /*
+         * Have to box and copy.
+         */
+        Object[] boxed = new Object[length];
+
+        for (int i = 0; i < length; i++) {
+            boxed[i] = values[i];
+        }
+
+        return boxed;
     }
 
     @Override

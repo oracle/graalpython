@@ -123,11 +123,6 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         return new MroSequenceStorage(getClassName(), newCapacity);
     }
 
-    @Override
-    public Object[] getInternalArray() {
-        return values;
-    }
-
     public PythonAbstractClass[] getInternalClassArray() {
         return values;
     }

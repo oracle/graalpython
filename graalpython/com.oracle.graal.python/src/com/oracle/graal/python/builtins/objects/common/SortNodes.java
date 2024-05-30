@@ -236,7 +236,7 @@ public abstract class SortNodes {
 
         @TruffleBoundary
         private static void sortStrings(ObjectSequenceStorage storage, boolean reverse) {
-            Object[] array = storage.getInternalArray();
+            Object[] array = storage.getInternalObjectArray();
             int len = storage.length();
             Comparator<Object> comparator;
             if (reverse) {
@@ -250,7 +250,7 @@ public abstract class SortNodes {
         protected boolean isStringOnly(Node inliningTarget, ObjectSequenceStorage storage, InlinedLoopConditionProfile isStringOnlyLoopProfile,
                         InlinedCountingConditionProfile isStringOnlyBreakProfile) {
             int length = storage.length();
-            Object[] array = storage.getInternalArray();
+            Object[] array = storage.getInternalObjectArray();
             for (int i = 0; isStringOnlyLoopProfile.profile(inliningTarget, i < length); i++) {
                 Object value = array[i];
                 if (isStringOnlyBreakProfile.profile(inliningTarget, !(value instanceof TruffleString))) {
@@ -276,7 +276,7 @@ public abstract class SortNodes {
                 // specialized code with generic object storage code
                 sortStrings(storage, reverse);
             } else {
-                sortWithoutKey(frame, storage.getInternalArray(), storage.length(), reverse, callContext);
+                sortWithoutKey(frame, storage.getInternalObjectArray(), storage.length(), reverse, callContext);
             }
         }
 
@@ -284,7 +284,7 @@ public abstract class SortNodes {
         void sort(VirtualFrame frame, ObjectSequenceStorage storage, Object keyfunc, boolean reverse,
                         @Shared @Cached CallNode callNode,
                         @Shared @Cached CallContext callContext) {
-            sortWithKey(frame, storage.getInternalArray(), storage.length(), keyfunc, reverse, callNode, callContext);
+            sortWithKey(frame, storage.getInternalObjectArray(), storage.length(), keyfunc, reverse, callNode, callContext);
         }
 
         @Fallback

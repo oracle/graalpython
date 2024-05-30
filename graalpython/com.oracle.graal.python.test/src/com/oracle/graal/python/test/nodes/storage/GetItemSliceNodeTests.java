@@ -161,7 +161,7 @@ public class GetItemSliceNodeTests {
         assertEquals(ObjectSequenceStorage.class, storage.getClass());
         var objectStorage = (ObjectSequenceStorage) storage;
         for (int i = 0; i < 3; i++) {
-            assertEquals(i + 2, objectStorage.getInternalArray()[i]);
+            assertEquals(i + 2, objectStorage.getInternalObjectArray()[i]);
         }
     }
 

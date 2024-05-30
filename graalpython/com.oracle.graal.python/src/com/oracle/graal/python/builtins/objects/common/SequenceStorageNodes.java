@@ -677,7 +677,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static SequenceStorage doObjectSequenceStorage(ObjectSequenceStorage storage, int start, int stop, int step, int length) {
             Object[] newArray = new Object[length];
-            Object[] values = storage.getInternalArray();
+            Object[] values = storage.getInternalObjectArray();
 
             if (step == 1) {
                 PythonUtils.arraycopy(values, start, newArray, 0, length);
@@ -3150,7 +3150,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static SequenceStorage doObject(ObjectSequenceStorage storage) {
-            return new ObjectSequenceStorage(PythonUtils.arrayCopyOf(storage.getInternalArray(), storage.length()));
+            return new ObjectSequenceStorage(PythonUtils.arrayCopyOf(storage.getInternalObjectArray(), storage.length()));
         }
 
         @Specialization
@@ -3608,12 +3608,12 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static Object[] doObjectSequenceStorage(ObjectSequenceStorage s) {
-            return s.getInternalArray();
+            return s.getInternalObjectArray();
         }
 
         @Specialization
         static Object[] doMroSequenceStorage(MroSequenceStorage s) {
-            return s.getInternalArray();
+            return s.getInternalClassArray();
         }
 
         @Specialization(guards = "!isObjectStorage(s) || isMroStorage(s)")
