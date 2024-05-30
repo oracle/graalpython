@@ -162,9 +162,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                     idx = nextIdx.value;
 
                     if (hasPairsHook) {
-                        var index = listStorage.length();
-                        var value = factory.createTuple(PythonBuiltinClassType.PTuple, tupleInstanceShape, new Object[]{key, val});
-                        listStorage = (ObjectSequenceStorage) InsertItemArrayBasedStorageNode.executeUncached(listStorage, index, value);
+                        listStorage.insertItem(listStorage.length(), factory.createTuple(PythonBuiltinClassType.PTuple, tupleInstanceShape, new Object[]{key, val}));
                     } else {
                         HashingStorage newStorage = HashingStorageSetItem.executeUncached(mapStorage, key, val);
                         assert newStorage == mapStorage;
@@ -221,7 +219,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
 
                     /* read any JSON term */
                     Object val = scanOnceUnicode(scanner, string, idx, nextIdx);
-                    storage = (ObjectSequenceStorage) InsertItemArrayBasedStorageNode.executeUncached(storage, storage.length(), val);
+                    storage.insertItem(storage.length(), val);
                     idx = nextIdx.value;
 
                     /* skip whitespace between term and , */

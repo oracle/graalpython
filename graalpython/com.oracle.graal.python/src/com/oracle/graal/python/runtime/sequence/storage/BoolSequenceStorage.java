@@ -83,6 +83,32 @@ public final class BoolSequenceStorage extends ArrayBasedSequenceStorage {
         return boxed;
     }
 
+    public void insertBoolItem(int idx, boolean value) {
+        ensureCapacity(length + 1);
+
+        // shifting tail to the right by one slot
+        for (int i = values.length - 1; i > idx; i--) {
+            values[i] = values[i - 1];
+        }
+
+        values[idx] = value;
+        length++;
+    }
+
+    public void reverse() {
+        if (length > 0) {
+            int head = 0;
+            int tail = length - 1;
+            int middle = (length - 1) / 2;
+
+            for (; head <= middle; head++, tail--) {
+                boolean temp = values[head];
+                values[head] = values[tail];
+                values[tail] = temp;
+            }
+        }
+    }
+
     public boolean[] getInternalBoolArray() {
         return values;
     }

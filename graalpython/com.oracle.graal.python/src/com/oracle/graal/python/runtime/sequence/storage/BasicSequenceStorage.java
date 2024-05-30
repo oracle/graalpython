@@ -26,7 +26,6 @@
 package com.oracle.graal.python.runtime.sequence.storage;
 
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 
 public abstract class BasicSequenceStorage extends SequenceStorage {
 

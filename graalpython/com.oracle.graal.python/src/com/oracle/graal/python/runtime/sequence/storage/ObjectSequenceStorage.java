@@ -62,6 +62,20 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
         return values[idx];
     }
 
+    public void reverse() {
+        if (length > 0) {
+            int head = 0;
+            int tail = length - 1;
+            int middle = (length - 1) / 2;
+
+            for (; head <= middle; head++, tail--) {
+                Object temp = values[head];
+                values[head] = values[tail];
+                values[tail] = temp;
+            }
+        }
+    }
+
     @Override
     public void setItemNormalized(int idx, Object value) {
         values[idx] = assertNoJavaString(value);
@@ -80,6 +94,18 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
     @Override
     public Object[] getCopyOfInternalArray() {
         return PythonUtils.arrayCopyOf(values, length);
+    }
+
+    public void insertItem(int idx, Object value) {
+        ensureCapacity(length + 1);
+
+        // shifting tail to the right by one slot
+        for (int i = values.length - 1; i > idx; i--) {
+            values[i] = values[i - 1];
+        }
+
+        values[idx] = assertNoJavaString(value);
+        incLength();
     }
 
     public void increaseCapacityExactWithCopy(int newCapacity) {

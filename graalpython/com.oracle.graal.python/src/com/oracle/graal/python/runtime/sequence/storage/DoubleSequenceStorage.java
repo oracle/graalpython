@@ -85,6 +85,20 @@ public final class DoubleSequenceStorage extends ArrayBasedSequenceStorage {
         return boxed;
     }
 
+    public void reverse() {
+        if (length > 0) {
+            int head = 0;
+            int tail = length - 1;
+            int middle = (length - 1) / 2;
+
+            for (; head <= middle; head++, tail--) {
+                double temp = values[head];
+                values[head] = values[tail];
+                values[tail] = temp;
+            }
+        }
+    }
+
     public double[] getInternalDoubleArray() {
         return values;
     }

@@ -1425,104 +1425,32 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static void doIntStorage(IntSequenceStorage storage) {
-            final int length = storage.length();
-            final int[] values = storage.getInternalIntArray();
-            if (length > 0) {
-                int head = 0;
-                int tail = length - 1;
-                int middle = (length - 1) / 2;
-
-                for (; head <= middle; head++, tail--) {
-                    int temp = values[head];
-                    values[head] = values[tail];
-                    values[tail] = temp;
-                }
-            }
+            storage.reverse();
         }
 
         @Specialization
         static void doDoubleStorage(DoubleSequenceStorage storage) {
-            final int length = storage.length();
-            final double[] values = storage.getInternalDoubleArray();
-            if (length > 0) {
-                int head = 0;
-                int tail = length - 1;
-                int middle = (length - 1) / 2;
-
-                for (; head <= middle; head++, tail--) {
-                    double temp = values[head];
-                    values[head] = values[tail];
-                    values[tail] = temp;
-                }
-            }
+            storage.reverse();
         }
 
         @Specialization
         static void doLongStorage(LongSequenceStorage storage) {
-            final int length = storage.length();
-            final long[] values = storage.getInternalLongArray();
-            if (length > 0) {
-                int head = 0;
-                int tail = length - 1;
-                int middle = (length - 1) / 2;
-
-                for (; head <= middle; head++, tail--) {
-                    long temp = values[head];
-                    values[head] = values[tail];
-                    values[tail] = temp;
-                }
-            }
+            storage.reverse();
         }
 
         @Specialization
         static void doByteStorage(ByteSequenceStorage storage) {
-            final int length = storage.length();
-            final byte[] values = storage.getInternalByteArray();
-            if (length > 0) {
-                int head = 0;
-                int tail = length - 1;
-                int middle = (length - 1) / 2;
-
-                for (; head <= middle; head++, tail--) {
-                    byte temp = values[head];
-                    values[head] = values[tail];
-                    values[tail] = temp;
-                }
-            }
+            storage.reverse();
         }
 
         @Specialization
         static void doObjectStorage(ObjectSequenceStorage storage) {
-            final int length = storage.length();
-            final Object[] values = storage.getInternalArray();
-            if (length > 0) {
-                int head = 0;
-                int tail = length - 1;
-                int middle = (length - 1) / 2;
-
-                for (; head <= middle; head++, tail--) {
-                    Object temp = values[head];
-                    values[head] = values[tail];
-                    values[tail] = temp;
-                }
-            }
+            storage.reverse();
         }
 
         @Specialization
         static void doBoolStorage(BoolSequenceStorage storage) {
-            final int length = storage.length();
-            final boolean[] values = storage.getInternalBoolArray();
-            if (length > 0) {
-                int head = 0;
-                int tail = length - 1;
-                int middle = (length - 1) / 2;
-
-                for (; head <= middle; head++, tail--) {
-                    boolean temp = values[head];
-                    values[head] = values[tail];
-                    values[tail] = temp;
-                }
-            }
+            storage.reverse();
         }
 
         @Specialization
@@ -3182,7 +3110,6 @@ public abstract class SequenceStorageNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic(SequenceStorageBaseNode.class)
     public abstract static class CopyNode extends Node {
 
         public abstract SequenceStorage execute(Node node, SequenceStorage s);
@@ -3223,7 +3150,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static SequenceStorage doObject(ObjectSequenceStorage storage) {
-            return new ObjectSequenceStorage(PythonUtils.arrayCopyOf(storage.getCopyOfInternalArray(), storage.length()));
+            return new ObjectSequenceStorage(PythonUtils.arrayCopyOf(storage.getInternalArray(), storage.length()));
         }
 
         @Specialization
@@ -3738,100 +3665,56 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static SequenceStorage doIntStorage(Node inliningTarget, IntSequenceStorage storage, int idx, int value,
-                        @Shared @Cached EnsureCapacityNode ensureCapacityNode) {
-            final int length = storage.length();
-            ensureCapacityNode.execute(inliningTarget, storage, length + 1);
-            final int[] values = storage.getInternalIntArray();
-
-            // shifting tail to the right by one slot
-            for (int i = values.length - 1; i > idx; i--) {
-                values[i] = values[i - 1];
-            }
-
-            values[idx] = value;
-            storage.incLength();
+        static SequenceStorage doIntStorage(IntSequenceStorage storage, int idx, int value) {
+            storage.insertIntItem(idx, value);
             return storage;
         }
 
         @Specialization
-        static SequenceStorage doDoubleStorage(Node inliningTarget, DoubleSequenceStorage storage, int idx, double value,
-                        @Shared @Cached EnsureCapacityNode ensureCapacityNode) {
-            final int length = storage.length();
-            ensureCapacityNode.execute(inliningTarget, storage, length + 1);
-            final double[] values = storage.getInternalDoubleArray();
-
-            // shifting tail to the right by one slot
-            for (int i = values.length - 1; i > idx; i--) {
-                values[i] = values[i - 1];
-            }
-
-            values[idx] = value;
-            storage.incLength();
+        static SequenceStorage doDoubleStorage(DoubleSequenceStorage storage, int idx, double value) {
+            storage.insertDoubleItem(idx, value);
             return storage;
         }
 
         @Specialization
-        static SequenceStorage doLongWithLongStorage(Node inliningTarget, LongSequenceStorage storage, int idx, long value,
-                        @Shared @Cached EnsureCapacityNode ensureCapacityNode) {
-            return insertLong(inliningTarget, storage, idx, value, ensureCapacityNode);
-        }
-
-        @Specialization
-        static SequenceStorage doIntWithLongStorage(Node inliningTarget, LongSequenceStorage storage, int idx, int value,
-                        @Shared @Cached EnsureCapacityNode ensureCapacityNode) {
-            return insertLong(inliningTarget, storage, idx, value, ensureCapacityNode);
-        }
-
-        @Specialization
-        static SequenceStorage doBigIntWithLongStorage(Node inliningTarget, LongSequenceStorage storage, int idx, BigInteger value,
-                        @Shared @Cached EnsureCapacityNode ensureCapacityNode) {
-            return insertLong(inliningTarget, storage, idx, PInt.longValue(value), ensureCapacityNode);
-        }
-
-        @Specialization
-        static SequenceStorage doByteWithByteStorage(Node inliningTarget, ByteSequenceStorage storage, int idx, byte value,
-                        @Shared @Cached EnsureCapacityNode ensureCapacityNode) {
-            return insertByte(inliningTarget, storage, idx, value, ensureCapacityNode);
-        }
-
-        @Specialization
-        static SequenceStorage doIntWithByteStorage(Node inliningTarget, ByteSequenceStorage storage, int idx, int value,
-                        @Shared @Cached EnsureCapacityNode ensureCapacityNode) {
-            return insertByte(inliningTarget, storage, idx, (byte) value, ensureCapacityNode);
-        }
-
-        @Specialization
-        static SequenceStorage doBoolStorage(Node inliningTarget, BoolSequenceStorage storage, int idx, boolean value,
-                        @Shared @Cached EnsureCapacityNode ensureCapacityNode) {
-            final int length = storage.length();
-            ensureCapacityNode.execute(inliningTarget, storage, length + 1);
-            final boolean[] values = storage.getInternalBoolArray();
-
-            // shifting tail to the right by one slot
-            for (int i = values.length - 1; i > idx; i--) {
-                values[i] = values[i - 1];
-            }
-
-            values[idx] = value;
-            storage.incLength();
+        static SequenceStorage doLongWithLongStorage(LongSequenceStorage storage, int idx, long value) {
+            storage.insertLongItem(idx, value);
             return storage;
         }
 
         @Specialization
-        static SequenceStorage doObjectStorage(Node inliningTarget, ObjectSequenceStorage storage, int idx, Object value,
-                        @Shared @Cached EnsureCapacityNode ensureCapacityNode) {
-            final int length = storage.length();
-            ensureCapacityNode.execute(inliningTarget, storage, length + 1);
-            final Object[] values = storage.getInternalArray();
+        static SequenceStorage doIntWithLongStorage(LongSequenceStorage storage, int idx, int value) {
+            storage.insertLongItem(idx, value);
+            return storage;
+        }
 
-            // shifting tail to the right by one slot
-            for (int i = values.length - 1; i > idx; i--) {
-                values[i] = values[i - 1];
-            }
+        @Specialization
+        static SequenceStorage doBigIntWithLongStorage(LongSequenceStorage storage, int idx, BigInteger value) {
+            storage.insertLongItem(idx, PInt.longValue(value));
+            return storage;
+        }
 
-            values[idx] = assertNoJavaString(value);
-            storage.incLength();
+        @Specialization
+        static SequenceStorage doByteWithByteStorage(ByteSequenceStorage storage, int idx, byte value) {
+            storage.insertByteItem(idx, value);
+            return storage;
+        }
+
+        @Specialization
+        static SequenceStorage doIntWithByteStorage(ByteSequenceStorage storage, int idx, int value) {
+            storage.insertByteItem(idx, (byte) value);
+            return storage;
+        }
+
+        @Specialization
+        static SequenceStorage doBoolStorage(BoolSequenceStorage storage, int idx, boolean value) {
+            storage.insertBoolItem(idx, value);
+            return storage;
+        }
+
+        @Specialization
+        static SequenceStorage doObjectStorage(ObjectSequenceStorage storage, int idx, Object value) {
+            storage.insertItem(idx, value);
             return storage;
         }
 
@@ -3845,36 +3728,6 @@ public abstract class SequenceStorageNodes {
                         @Cached(inline = false) InsertItemArrayBasedStorageNode recursiveNode) {
             ObjectSequenceStorage newStorage = storage.generalize();
             return recursiveNode.executeCached(newStorage, idx, value);
-        }
-
-        private static SequenceStorage insertLong(Node inliningTarget, LongSequenceStorage storage, int idx, long value, EnsureCapacityNode ensureCapacityNode) {
-            final int length = storage.length();
-            ensureCapacityNode.execute(inliningTarget, storage, length + 1);
-            final long[] values = storage.getInternalLongArray();
-
-            // shifting tail to the right by one slot
-            for (int i = values.length - 1; i > idx; i--) {
-                values[i] = values[i - 1];
-            }
-
-            values[idx] = value;
-            storage.incLength();
-            return storage;
-        }
-
-        private static SequenceStorage insertByte(Node inliningTarget, ByteSequenceStorage storage, int idx, byte value, EnsureCapacityNode ensureCapacityNode) {
-            final int length = storage.length();
-            ensureCapacityNode.execute(inliningTarget, storage, length + 1);
-            final byte[] values = storage.getInternalByteArray();
-
-            // shifting tail to the right by one slot
-            for (int i = values.length - 1; i > idx; i--) {
-                values[i] = values[i - 1];
-            }
-
-            values[idx] = value;
-            storage.incLength();
-            return storage;
         }
     }
 
