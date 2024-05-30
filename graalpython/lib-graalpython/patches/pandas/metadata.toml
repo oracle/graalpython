@@ -1,4 +1,9 @@
 [[rules]]
+version = '== 2.2.2'
+patch = 'pandas-2.2.2.patch'
+dist-type = 'sdist'
+
+[[rules]]
 version = '== 1.5.2'
 patch = 'pandas-1.5.2.patch'
 dist-type = 'sdist'

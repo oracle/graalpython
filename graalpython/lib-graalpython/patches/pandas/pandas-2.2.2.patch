@@ -1,0 +1,52 @@
+diff --git a/pandas/_libs/include/pandas/vendored/klib/khash_python.h b/pandas/_libs/include/pandas/vendored/klib/khash_python.h
+index 5a933b4..f579fc6 100644
+--- a/pandas/_libs/include/pandas/vendored/klib/khash_python.h
++++ b/pandas/_libs/include/pandas/vendored/klib/khash_python.h
+@@ -173,13 +173,15 @@ static inline int floatobject_cmp(PyFloatObject *a, PyFloatObject *b) {
+ // PyObject_RichCompareBool for complexobjects has a different behavior
+ // needs to be replaced
+ static inline int complexobject_cmp(PyComplexObject *a, PyComplexObject *b) {
+-  return (Py_IS_NAN(a->cval.real) && Py_IS_NAN(b->cval.real) &&
+-          Py_IS_NAN(a->cval.imag) && Py_IS_NAN(b->cval.imag)) ||
+-         (Py_IS_NAN(a->cval.real) && Py_IS_NAN(b->cval.real) &&
+-          a->cval.imag == b->cval.imag) ||
+-         (a->cval.real == b->cval.real && Py_IS_NAN(a->cval.imag) &&
+-          Py_IS_NAN(b->cval.imag)) ||
+-         (a->cval.real == b->cval.real && a->cval.imag == b->cval.imag);
++  Py_complex a_cval = PyComplex_AsCComplex((PyObject*)a);
++  Py_complex b_cval = PyComplex_AsCComplex((PyObject*)b);
++  return (Py_IS_NAN(a_cval.real) && Py_IS_NAN(b_cval.real) &&
++          Py_IS_NAN(a_cval.imag) && Py_IS_NAN(b_cval.imag)) ||
++         (Py_IS_NAN(a_cval.real) && Py_IS_NAN(b_cval.real) &&
++          a_cval.imag == b_cval.imag) ||
++         (a_cval.real == b_cval.real && Py_IS_NAN(a_cval.imag) &&
++          Py_IS_NAN(b_cval.imag)) ||
++         (a_cval.real == b_cval.real && a_cval.imag == b_cval.imag);
+ }
+ 
+ static inline int pyobject_cmp(PyObject *a, PyObject *b);
+@@ -250,8 +252,9 @@ static inline Py_hash_t floatobject_hash(PyFloatObject *key) {
+ 
+ // replaces _Py_HashDouble with _Pandas_HashDouble
+ static inline Py_hash_t complexobject_hash(PyComplexObject *key) {
+-  Py_uhash_t realhash = (Py_uhash_t)_Pandas_HashDouble(key->cval.real);
+-  Py_uhash_t imaghash = (Py_uhash_t)_Pandas_HashDouble(key->cval.imag);
++  Py_complex cval = PyComplex_AsCComplex((PyObject*)key);
++  Py_uhash_t realhash = (Py_uhash_t)_Pandas_HashDouble(cval.real);
++  Py_uhash_t imaghash = (Py_uhash_t)_Pandas_HashDouble(cval.imag);
+   if (realhash == (Py_uhash_t)-1 || imaghash == (Py_uhash_t)-1) {
+     return -1;
+   }
+diff --git a/pyproject.toml b/pyproject.toml
+index db9f055..c191232 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -5,7 +5,7 @@ requires = [
+     "meson-python==0.13.1",
+     "meson==1.2.1",
+     "wheel",
+-    "Cython==3.0.5",  # Note: sync with setup.py, environment.yml and asv.conf.json
++    "Cython==3.0.10",  # Note: sync with setup.py, environment.yml and asv.conf.json
+     # Force numpy higher than 2.0rc1, so that built wheels are compatible
+     # with both numpy 1 and 2
+     "numpy>=2.0.0rc1",
