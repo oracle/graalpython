@@ -45,7 +45,7 @@ SOFTWARE.
   <modelVersion>4.0.0</modelVersion>
   
   <groupId>org.apache.maven.plugin.my.unit</groupId>
-  <artifactId>project-check-home</artifactId>
+  <artifactId>project-check-packages</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Test MyMojo</name>
@@ -73,7 +73,9 @@ SOFTWARE.
         <executions>
           <execution>
             <configuration>
+              <packages>
 
+              </packages>
             </configuration>
             <goals>
               <goal>process-graalpy-resources</goal>

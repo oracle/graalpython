@@ -142,6 +142,16 @@ public class ManageResourcesMojo extends AbstractMojo {
         manageNativeImageConfig();
     }
 
+    private void trim(List<String> l) {
+        Iterator<String> it = l.iterator();
+        while(it.hasNext()) {
+            String p = it.next();
+            if(p == null || p.trim().isEmpty()) {
+                it.remove();
+            }
+        }
+    }
+
     private void manageNativeImageConfig() throws MojoExecutionException {
         Path metaInf = getMetaInfDirectory(project);
         Path resourceConfig = metaInf.resolve("resource-config.json");
@@ -168,9 +178,23 @@ public class ManageResourcesMojo extends AbstractMojo {
     private void manageHome() throws MojoExecutionException {
         var homeDirectory = getHomeDirectory(project);
         if (pythonHome == null) {
-            delete(homeDirectory);
-            return;
+            pythonHome = new PythonHome();
+            pythonHome.includes = Arrays.asList(".*");
+            pythonHome.excludes = Collections.emptyList();
+        } else {
+            if (pythonHome.includes != null) {
+                trim(pythonHome.includes);
+            }
+            if (pythonHome.includes == null || pythonHome.includes.isEmpty()) {
+                pythonHome.includes = Arrays.asList(".*");
+            }
+            if (pythonHome.excludes == null) {
+                pythonHome.excludes = Collections.emptyList();
+            } else {
+                trim(pythonHome.excludes);
+            }
         }
+
         var tag = homeDirectory.resolve("tagfile");
         var graalPyVersion = getGraalPyVersion(project);
 
@@ -264,6 +288,9 @@ public class ManageResourcesMojo extends AbstractMojo {
 
         var venvDirectory = getVenvDirectory(project);
 
+        if(packages != null) {
+            trim(packages);
+        }
         if (packages == null || packages.isEmpty()) {
             getLog().info(String.format("No venv packages declared, deleting %s", venvDirectory));
             delete(venvDirectory);

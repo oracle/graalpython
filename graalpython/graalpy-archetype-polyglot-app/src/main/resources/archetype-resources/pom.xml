@@ -46,19 +46,20 @@
         <executions>
           <execution>
             <configuration>
-              <!-- specify python packages as if used with pip -->
+              <!-- specify python packages and their versions as if used with pip -->
               <packages>
                 <package>termcolor==2.2</package>
               </packages>
               <pythonHome>
-                <!-- java-like regular expression what file paths should be included into venv/home;
-                     default is all -->
                 <includes>
+                  <!-- java-like regular expression what file paths should be included into venv/home;
+                       if empty than default is all -->
                   <include>.*</include>
-                </includes>
+                </includes>                
+                <excludes>
                 <!-- java-like regular expression what file paths should be excluded from venv/home;
                      default is none -->
-                <excludes>
+                  <!-- <exclude></exclude> -->
                 </excludes>
               </pythonHome>
             </configuration>
