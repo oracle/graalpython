@@ -770,7 +770,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyImport_GetImporter", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyImport_GetMagicNumber", ret = Long, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyImport_GetMagicTag", ret = ConstCharPtrAsTruffleString, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyImport_GetModule", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyImport_ImportFrozenModule", ret = Int, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyImport_ImportFrozenModuleObject", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyImport_ReloadModule", ret = PyObject, args = {PyObject}, call = NotImplemented)
