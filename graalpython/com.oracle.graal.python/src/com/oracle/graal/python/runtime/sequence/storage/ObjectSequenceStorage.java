@@ -119,11 +119,6 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     @Override
-    public ObjectSequenceStorage generalize() {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
     public Object getIndicativeValue() {
         return null;
     }

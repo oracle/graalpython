@@ -33,10 +33,6 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
 
     public abstract void setItemNormalized(int idx, Object value) throws SequenceStoreException;
 
-    /**
-     * Get internal array object without copying. Note: The length must be taken from the sequence
-     * storage object.
-     */
     public final void setNewLength(int length) {
         this.length = length;
     }

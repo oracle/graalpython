@@ -243,10 +243,6 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         return true;
     }
 
-    public Object[] getCopyOfInternalArray() {
-        return getInternalArray();
-    }
-
     public boolean hasAttributeInMROFinalAssumptions() {
         return hasAttributesInMROFinalAssumptions;
     }

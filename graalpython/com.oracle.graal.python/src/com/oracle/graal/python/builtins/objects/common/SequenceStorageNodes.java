@@ -3223,7 +3223,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static Object[] doMro(MroSequenceStorage storage) {
-            return storage.getCopyOfInternalArray();
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         @Specialization
@@ -3611,7 +3611,12 @@ public abstract class SequenceStorageNodes {
             return s.getInternalArray();
         }
 
-        @Specialization(guards = "!isObjectStorage(s)")
+        @Specialization
+        static Object[] doMroSequenceStorage(MroSequenceStorage s) {
+            return s.getInternalArray();
+        }
+
+        @Specialization(guards = "!isObjectStorage(s) || isMroStorage(s)")
         static Object[] doArrayBasedSequenceStorage(Node inliningTarget, ArrayBasedSequenceStorage s,
                         @Cached CopyInternalArrayNode copy) {
             Object[] internalArray = copy.execute(inliningTarget, s);
@@ -3646,6 +3651,10 @@ public abstract class SequenceStorageNodes {
 
         protected static boolean isObjectStorage(ArrayBasedSequenceStorage storage) {
             return storage instanceof ObjectSequenceStorage;
+        }
+
+        protected static boolean isMroStorage(ArrayBasedSequenceStorage storage) {
+            return storage instanceof MroSequenceStorage;
         }
     }
 
@@ -3682,9 +3691,8 @@ public abstract class SequenceStorageNodes {
 
     }
 
-    @GenerateCached
     @GenerateUncached
-    @GenerateInline(inlineByDefault = true)
+    @GenerateInline
     public abstract static class InsertItemArrayBasedStorageNode extends Node {
 
         public static SequenceStorage executeUncached(ArrayBasedSequenceStorage storage, int index, Object value) {
@@ -3692,10 +3700,6 @@ public abstract class SequenceStorageNodes {
         }
 
         protected abstract SequenceStorage execute(Node inliningTarget, ArrayBasedSequenceStorage storage, int index, Object value);
-
-        public final SequenceStorage executeCached(ArrayBasedSequenceStorage storage, int index, Object value) {
-            return execute(this, storage, index, value);
-        }
 
         @Specialization
         static SequenceStorage doIntStorage(IntSequenceStorage storage, int idx, int value) {
@@ -3757,10 +3761,12 @@ public abstract class SequenceStorageNodes {
         }
 
         @Fallback
-        static SequenceStorage doGeneralization(ArrayBasedSequenceStorage storage, int idx, Object value,
-                        @Cached(inline = false) InsertItemArrayBasedStorageNode recursiveNode) {
-            ObjectSequenceStorage newStorage = storage.generalize();
-            return recursiveNode.executeCached(newStorage, idx, value);
+        static SequenceStorage doGeneralization(Node inliningTarget, ArrayBasedSequenceStorage storage, int idx, Object value,
+                        @Cached GetInternalObjectArrayNode getInternalObjectArrayNode) {
+            Object[] values = getInternalObjectArrayNode.execute(inliningTarget, storage);
+            ObjectSequenceStorage newStorage = new ObjectSequenceStorage(values);
+            newStorage.insertItem(idx, value);
+            return newStorage;
         }
     }
 

@@ -51,9 +51,4 @@ public abstract class ArrayBasedSequenceStorage extends BasicSequenceStorage {
     public abstract void setInternalArrayObject(Object arrayObject);
 
     public abstract ArrayBasedSequenceStorage createEmpty(int newCapacity);
-
-    public ObjectSequenceStorage generalize() {
-        return new ObjectSequenceStorage(getInternalArray());
-    }
-
 }
