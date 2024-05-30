@@ -2,11 +2,9 @@
 version = '== 3.0.10'
 patch = 'Cython-3.0.10.patch'
 
-# Prefer pre-3 version for now
 [[rules]]
 version = '== 0.29.37'
 patch = 'Cython-0.29.37.patch'
-install-priority = 2
 
 [[rules]]
 version = '== 0.29.32'
