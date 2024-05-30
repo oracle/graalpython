@@ -1411,7 +1411,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     b.emitLoadLocal(function);
                     b.endBlock();
 
-                    emitUnstar(args, receiver);
+                    emitUnstar(() -> b.emitLoadLocal(receiver), args);
                     emitKeywords(keywords, function);
                 } else {
                     assert len(keywords) == 0;
@@ -1665,9 +1665,11 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     break;
                 case TUPLE:
                     b.beginMakeTuple();
-                    for (ConstantValue cv : value.getFrozensetElements()) {
+                    b.beginMakeVariadic();
+                    for (ConstantValue cv : value.getTupleElements()) {
                         createConstant(cv);
                     }
+                    b.endMakeVariadic();
                     b.endMakeTuple();
                     break;
                 case FROZENSET:
@@ -1944,18 +1946,19 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
          * @param args the sequence of expressions
          */
         private void emitUnstar(ExprTy[] args) {
-            emitUnstar(args, null);
+            emitUnstar(null, args);
         }
 
         /**
-         * Same as above, but takes an optional receiver local. This is only used for method calls
-         * where the receiver needs to be included in the positional arguments.
+         * Same as above, but takes an optional Runnable to produce elements at the beginning of the
+         * sequence.
          *
+         * @param initialElementsProducer a runnable to produce the first element(s) of the
+         *            sequence.
          * @param args the sequence of expressions to unstar
-         * @param receiver an optional local storing the receiver
          */
-        private void emitUnstar(ExprTy[] args, BytecodeLocal receiver) {
-            if (len(args) == 0 && receiver == null) {
+        private void emitUnstar(Runnable initialElementsProducer, ExprTy[] args) {
+            if (len(args) == 0 && initialElementsProducer == null) {
                 b.emitLoadConstant(PythonUtils.EMPTY_OBJECT_ARRAY);
             } else if (anyIsStarred(args)) {
                 /**
@@ -1979,10 +1982,10 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 boolean inVariadic = false;
                 int numOperands = 0;
 
-                if (receiver != null) {
+                if (initialElementsProducer != null) {
                     b.beginMakeVariadic();
+                    initialElementsProducer.run();
                     inVariadic = true;
-                    b.emitLoadLocal(receiver);
                 }
 
                 for (int i = 0; i < args.length; i++) {
@@ -2015,8 +2018,8 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endUnstar(numOperands);
             } else {
                 b.beginMakeVariadic();
-                if (receiver != null) {
-                    b.emitLoadLocal(receiver);
+                if (initialElementsProducer != null) {
+                    initialElementsProducer.run();
                 }
                 visitSequence(args);
                 b.endMakeVariadic();
@@ -2925,13 +2928,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             b.emitLoadLocal(buildClassFunction);
 
             // positional args
-            b.beginMakeVariadic();
-            emitMakeFunction(node, node.name, null, null);
-            emitPythonConstant(toTruffleStringUncached(node.name), b);
-            visitSequence(node.bases);
-            b.endMakeVariadic();
+            emitUnstar(() -> {
+                emitMakeFunction(node, node.name, null, null);
+                emitPythonConstant(toTruffleStringUncached(node.name), b);
+            }, node.bases);
 
             // keyword args
+            validateKeywords(node.keywords);
             emitKeywords(node.keywords, buildClassFunction);
 
             b.endCallVarargsMethod();
