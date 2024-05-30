@@ -94,7 +94,7 @@ public final class MroShape {
         CompilerAsserts.neverPartOfCompilation();
         MroShape mroShape = lang.getMroShapeRoot();
         for (int i = mro.length() - 1; i >= 0; i--) {
-            PythonAbstractClass element = mro.getItemNormalized(i);
+            PythonAbstractClass element = mro.getPythonClassItemNormalized(i);
             if (PythonManagedClass.isInstance(element)) {
                 PythonManagedClass managedClass = PythonManagedClass.cast(element);
                 if (GetDictIfExistsNode.getUncached().execute(managedClass) != null) {
@@ -152,7 +152,7 @@ public final class MroShape {
             if (mroIndex == NOT_FOUND_INDEX) {
                 return PNone.NO_VALUE;
             } else {
-                Object item = mro.getItemNormalized(mroIndex);
+                PythonAbstractClass item = mro.getPythonClassItemNormalized(mroIndex);
                 if (!(item instanceof PythonObject)) {
                     // MroShape should only contain PythonManagedClass
                     transferToInterpreterAndInvalidate();
@@ -197,7 +197,7 @@ public final class MroShape {
         }
         MroShape mroShape = klass.getMroShape();
         for (int i = 0; i < mro.length(); i++) {
-            if (!(mro.getItemNormalized(i) instanceof PythonManagedClass)) {
+            if (!(mro.getPythonClassItemNormalized(i) instanceof PythonManagedClass)) {
                 // If there is a non-managed class, we give up on maintaining an MRO shape
                 assert mroShape == null : mro.getClassName();
                 return true;
@@ -209,7 +209,7 @@ public final class MroShape {
         }
         MroShape currMroShape = mroShape;
         for (int i = 0; i < mro.length(); i++) {
-            PythonManagedClass kls = (PythonManagedClass) mro.getItemNormalized(i);
+            PythonManagedClass kls = (PythonManagedClass) mro.getPythonClassItemNormalized(i);
             if (kls.getShape() != currMroShape.shape) {
                 String message = String.format("mro:%s,index:%d,curr klass:%s\nactual shape:\n%s,\nexpected shape:\n%s",
                                 mro.getClassName(), i, kls, kls.getShape(), currMroShape.shape);

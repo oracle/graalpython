@@ -89,11 +89,6 @@ public final class DoubleSequenceStorage extends ArrayBasedSequenceStorage {
         return values;
     }
 
-    @Override
-    public Object getItemNormalized(int idx) {
-        return getDoubleItemNormalized(idx);
-    }
-
     public double getDoubleItemNormalized(int idx) {
         return values[idx];
     }

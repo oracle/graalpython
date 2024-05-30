@@ -259,7 +259,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         MroSequenceStorage mro = getMro(klass);
         Assumption attrAssumption = mro.createAttributeInMROFinalAssumption(key);
         for (int i = 0; i < mro.length(); i++) {
-            PythonAbstractClass clsObj = mro.getItemNormalized(i);
+            PythonAbstractClass clsObj = mro.getPythonClassItemNormalized(i);
             if (i > 0) {
                 assert clsObj != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
                 getMro(clsObj).addAttributeInMROFinalAssumption(key, attrAssumption);
@@ -324,7 +324,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
                     @Exclusive @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                     @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
         for (int i = 0; i < mroLength; i++) {
-            Object kls = mro.getItemNormalized(i);
+            Object kls = mro.getPythonClassItemNormalized(i);
             if (skipNonStaticBase(kls, skipNonStaticBases, dylib)) {
                 continue;
             }
@@ -348,7 +348,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
                     @Exclusive @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                     @Cached("create(cachedMroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
         for (int i = 0; i < cachedMroLength; i++) {
-            Object kls = mro.getItemNormalized(i);
+            Object kls = mro.getPythonClassItemNormalized(i);
             if (skipNonStaticBase(kls, skipNonStaticBases, dylib)) {
                 continue;
             }
@@ -388,7 +388,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
 
     public static Object lookup(TruffleString key, MroSequenceStorage mro, ReadAttributeFromObjectNode readAttrNode, boolean skipNonStaticBases, DynamicObjectLibrary dylib) {
         for (int i = 0; i < mro.length(); i++) {
-            Object kls = mro.getItemNormalized(i);
+            Object kls = mro.getPythonClassItemNormalized(i);
             if (skipNonStaticBase(kls, skipNonStaticBases, dylib)) {
                 continue;
             }

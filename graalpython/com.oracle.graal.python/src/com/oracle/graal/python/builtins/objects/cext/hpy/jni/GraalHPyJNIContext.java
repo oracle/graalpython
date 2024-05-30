@@ -1872,7 +1872,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                     }
                     return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(lresult));
                 } else if (storage instanceof ObjectSequenceStorage) {
-                    Object result = ((ObjectSequenceStorage) storage).getItemNormalized(idx);
+                    Object result = ((ObjectSequenceStorage) storage).getObjectItemNormalized(idx);
                     if (result instanceof Integer) {
                         return GraalHPyBoxing.boxInt((int) result);
                     } else if (result instanceof Double) {

@@ -103,8 +103,7 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         this.attributesInMROFinalAssumptions = new HashMap<>();
     }
 
-    @Override
-    public PythonAbstractClass getItemNormalized(int idx) {
+    public PythonAbstractClass getPythonClassItemNormalized(int idx) {
         return values[idx];
     }
 

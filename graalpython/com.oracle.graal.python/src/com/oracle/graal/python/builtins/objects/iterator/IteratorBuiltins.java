@@ -170,7 +170,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         static Object next(Node inliningTarget, PObjectSequenceIterator self, boolean throwStopIteration,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (self.getIndex() < self.sequence.length()) {
-                return self.sequence.getItemNormalized(self.index++);
+                return self.sequence.getObjectItemNormalized(self.index++);
             }
             return stopIteration(inliningTarget, self, throwStopIteration, raiseNode);
         }

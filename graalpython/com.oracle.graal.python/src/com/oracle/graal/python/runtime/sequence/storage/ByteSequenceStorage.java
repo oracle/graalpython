@@ -91,11 +91,6 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
         }
     }
 
-    @Override
-    public Object getItemNormalized(int idx) {
-        return getIntItemNormalized(idx);
-    }
-
     public byte getByteItemNormalized(int idx) {
         return values[idx];
     }

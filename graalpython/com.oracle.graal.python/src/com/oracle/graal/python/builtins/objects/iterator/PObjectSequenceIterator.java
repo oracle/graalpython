@@ -39,7 +39,7 @@ public final class PObjectSequenceIterator extends PPrimitiveIterator {
 
     public Object next() {
         assert hasNext();
-        return this.sequence.getItemNormalized(this.index++);
+        return this.sequence.getObjectItemNormalized(this.index++);
     }
 
     @Override

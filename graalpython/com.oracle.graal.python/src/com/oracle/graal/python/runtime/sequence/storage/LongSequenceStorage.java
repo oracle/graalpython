@@ -90,11 +90,6 @@ public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
         return values;
     }
 
-    @Override
-    public Object getItemNormalized(int idx) {
-        return getLongItemNormalized(idx);
-    }
-
     public long getLongItemNormalized(int idx) {
         return values[idx];
     }

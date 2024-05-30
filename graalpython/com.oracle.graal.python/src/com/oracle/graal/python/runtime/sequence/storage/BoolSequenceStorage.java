@@ -99,11 +99,6 @@ public final class BoolSequenceStorage extends ArrayBasedSequenceStorage {
         return values;
     }
 
-    @Override
-    public Object getItemNormalized(int idx) {
-        return getBoolItemNormalized(idx);
-    }
-
     public boolean getBoolItemNormalized(int idx) {
         return values[idx];
     }

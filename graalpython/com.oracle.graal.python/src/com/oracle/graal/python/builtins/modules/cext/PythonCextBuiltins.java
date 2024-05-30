@@ -1103,7 +1103,7 @@ public final class PythonCextBuiltins {
             ArrayList<Object> l = new ArrayList<>();
             int mroLength = mro.length();
             for (int i = 0; i < mroLength; i++) {
-                PythonAbstractClass kls = mro.getItemNormalized(i);
+                PythonAbstractClass kls = mro.getPythonClassItemNormalized(i);
                 Object value = HiddenAttr.ReadNode.executeUncached((PythonAbstractObject) kls, NATIVE_SLOTS, null);
                 if (value != null) {
                     Object[] tuple = (Object[]) value;

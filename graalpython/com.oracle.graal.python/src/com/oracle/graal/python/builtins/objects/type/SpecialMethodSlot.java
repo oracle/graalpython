@@ -527,8 +527,8 @@ public enum SpecialMethodSlot {
         // we can just "extend" the slots of B with the new overrides in A. This fast-path seem to
         // handle large majority of the situations
         if (mro.length() >= 2 && klass.getBaseClasses().length <= 1) {
-            PythonAbstractClass firstType = mro.getItemNormalized(0);
-            PythonAbstractClass secondType = mro.getItemNormalized(1);
+            PythonAbstractClass firstType = mro.getPythonClassItemNormalized(0);
+            PythonAbstractClass secondType = mro.getPythonClassItemNormalized(1);
             if (firstType == klass && PythonManagedClass.isInstance(secondType)) {
                 PythonManagedClass managedBase = PythonManagedClass.cast(secondType);
                 if (managedBase.specialMethodSlots != null) {
@@ -553,7 +553,7 @@ public enum SpecialMethodSlot {
         // Check the last klass in MRO and use copy its slots for the beginning (if available)
         // In most cases this will be `object`, which contains most of the slots
         Object[] slots = null;
-        PythonAbstractClass lastType = mro.getItemNormalized(mro.length() - 1);
+        PythonAbstractClass lastType = mro.getPythonClassItemNormalized(mro.length() - 1);
         boolean slotsInitializedFromLast = false;
         if (PythonManagedClass.isInstance(lastType)) {
             PythonManagedClass lastClass = PythonManagedClass.cast(lastType);
@@ -570,7 +570,7 @@ public enum SpecialMethodSlot {
         // Traverse MRO in reverse order overriding the initial slots values if we find new override
         int skip = slotsInitializedFromLast ? 1 : 0;
         for (int i = mro.length() - skip - 1; i >= 0; i--) {
-            PythonAbstractClass base = mro.getItemNormalized(i);
+            PythonAbstractClass base = mro.getPythonClassItemNormalized(i);
             if (PythonManagedClass.isInstance(base)) {
                 setSlotsFromManaged(slots, PythonManagedClass.cast(base), language);
             } else {
@@ -591,7 +591,7 @@ public enum SpecialMethodSlot {
         boolean isMroSubtype = subTypeMro.length() == superTypeMro.length() - 1;
         if (isMroSubtype) {
             for (int i = 0; i < subTypeMro.length(); i++) {
-                if (superTypeMro.getItemNormalized(i + 1) != subTypeMro.getItemNormalized(i)) {
+                if (superTypeMro.getPythonClassItemNormalized(i + 1) != subTypeMro.getPythonClassItemNormalized(i)) {
                     isMroSubtype = false;
                     break;
                 }

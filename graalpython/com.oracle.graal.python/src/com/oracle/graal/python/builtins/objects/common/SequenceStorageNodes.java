@@ -540,12 +540,12 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static Object doObject(ObjectSequenceStorage storage, int idx) {
-            return storage.getItemNormalized(idx);
+            return storage.getObjectItemNormalized(idx);
         }
 
         @Specialization
         protected static Object doMro(MroSequenceStorage storage, int idx) {
-            return storage.getItemNormalized(idx);
+            return storage.getPythonClassItemNormalized(idx);
         }
 
         @InliningCutoff
@@ -2457,7 +2457,7 @@ public abstract class SequenceStorageNodes {
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 Object[] repeated = new Object[PythonUtils.multiplyExact(s.length(), times)];
-                Arrays.fill(repeated, s.getItemNormalized(0));
+                Arrays.fill(repeated, s.getObjectItemNormalized(0));
                 return new ObjectSequenceStorage(repeated);
             } catch (OutOfMemoryError e) {
                 throw raiseNode.raise(MemoryError);

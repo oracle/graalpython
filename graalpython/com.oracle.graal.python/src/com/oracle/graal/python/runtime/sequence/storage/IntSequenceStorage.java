@@ -89,11 +89,6 @@ public final class IntSequenceStorage extends ArrayBasedSequenceStorage {
         return values;
     }
 
-    @Override
-    public Object getItemNormalized(int idx) {
-        return getIntItemNormalized(idx);
-    }
-
     public int getIntItemNormalized(int idx) {
         return values[idx];
     }

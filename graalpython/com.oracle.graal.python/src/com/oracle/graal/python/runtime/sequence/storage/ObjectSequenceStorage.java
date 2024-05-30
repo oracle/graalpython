@@ -57,8 +57,7 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
         this.length = 0;
     }
 
-    @Override
-    public Object getItemNormalized(int idx) {
+    public Object getObjectItemNormalized(int idx) {
         return values[idx];
     }
 
