@@ -2115,6 +2115,7 @@ def _python_checkpatchfiles():
             'scipy-1.10.1.patch',
             # pandas puts the whole license text in the field. Its BSD-3-Clause
             'pandas-1.5.2.patch',
+            'pandas-2.2.2.patch',
             # numpy started putting the whole license text in the field. Its BSD-3-Clause
             'numpy-1.23.2.patch',
             'numpy-1.23.5.patch',
