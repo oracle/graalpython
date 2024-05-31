@@ -274,7 +274,7 @@ index 570a5581..feb1f95c 100644
      }
  
 diff --git a/third_party/pybind11/include/pybind11/pybind11.h b/third_party/pybind11/include/pybind11/pybind11.h
-index d46de579..2f015c6e 100644
+index 818115cc..b4b3bf93 100644
 --- a/third_party/pybind11/include/pybind11/pybind11.h
 +++ b/third_party/pybind11/include/pybind11/pybind11.h
 @@ -551,7 +551,7 @@ protected:
@@ -347,7 +347,7 @@ index 1293a0fd..dfb4385a 100644
 +            torch._C._DisableFuncTorch():
          return _str_intern(self, tensor_contents=tensor_contents)
 diff --git a/torch/csrc/Module.cpp b/torch/csrc/Module.cpp
-index b85e94d2..0168b101 100644
+index bbf99ce4..0168b101 100644
 --- a/torch/csrc/Module.cpp
 +++ b/torch/csrc/Module.cpp
 @@ -341,46 +341,16 @@ PyObject* THPModule_addDocStr(PyObject* _unused, PyObject* args) {
@@ -356,13 +356,13 @@ index b85e94d2..0168b101 100644
  
 -  if (Py_TYPE(obj) == &PyCFunction_Type) {
 -    PyCFunctionObject* f = (PyCFunctionObject*)obj;
--    if (PyObject_GetDoc((PyObject*)(f))) {
+-    if (GraalPyCFunction_GetDoc((PyObject*)(f))) {
 -      return PyErr_Format(
 -          PyExc_RuntimeError,
 -          "function '%s' already has a docstring",
 -          _PyCFunction_GetMethodDef((PyObject*)(f))->ml_name);
 -    }
--    PyObject_SetDoc((PyObject*)(f), doc_str);
+-    GraalPyCFunction_SetDoc((PyObject*)(f), doc_str);
 -  } else if (strcmp(Py_TYPE(obj)->tp_name, "method_descriptor") == 0) {
 -    PyMethodDescrObject* m = (PyMethodDescrObject*)obj;
 -    if (m->d_method->ml_doc) {

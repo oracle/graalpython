@@ -298,7 +298,7 @@ index b847129d..3219d1e1 100644
      def clone(self):
          return self.__class__(self.mode)
 diff --git a/torch/csrc/Module.cpp b/torch/csrc/Module.cpp
-index 3af2e723..df857f31 100644
+index 81e98428..df857f31 100644
 --- a/torch/csrc/Module.cpp
 +++ b/torch/csrc/Module.cpp
 @@ -257,50 +257,16 @@ PyObject* THPModule_addDocStr(PyObject* _unused, PyObject* args) {
@@ -307,13 +307,13 @@ index 3af2e723..df857f31 100644
  
 -  if (Py_TYPE(obj) == &PyCFunction_Type) {
 -    PyCFunctionObject* f = (PyCFunctionObject*)obj;
--    if (PyObject_GetDoc((PyObject*)(f))) {
+-    if (GraalPyCFunction_GetDoc((PyObject*)(f))) {
 -      return PyErr_Format(
 -          PyExc_RuntimeError,
 -          "function '%s' already has a docstring",
 -          _PyCFunction_GetMethodDef((PyObject*)(f))->ml_name);
 -    }
--    PyObject_SetDoc((PyObject*)(f), doc_str);
+-    GraalPyCFunction_SetDoc((PyObject*)(f), doc_str);
 -  } else if (strcmp(Py_TYPE(obj)->tp_name, "method_descriptor") == 0) {
 -    PyMethodDescrObject* m = (PyMethodDescrObject*)obj;
 -    if (m->d_method->ml_doc) {

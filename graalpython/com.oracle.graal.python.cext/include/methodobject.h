@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -124,6 +124,10 @@ PyAPI_FUNC(PyObject *) PyCMethod_New(PyMethodDef *, PyObject *,
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03090000
 #define METH_METHOD 0x0200
 #endif
+
+// GraalPy public API functions
+PyAPI_FUNC(const char*) GraalPyCFunction_GetDoc(PyObject *func);
+PyAPI_FUNC(void) GraalPyCFunction_SetDoc(PyObject *func, const char *doc);
 
 
 #ifndef Py_LIMITED_API
