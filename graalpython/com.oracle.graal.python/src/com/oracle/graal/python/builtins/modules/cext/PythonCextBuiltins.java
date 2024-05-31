@@ -1654,6 +1654,31 @@ public final class PythonCextBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
+    abstract static class PyTruffle_IsReferencedFromManaged extends CApiUnaryBuiltinNode {
+        @Specialization(guards = "isNativeAccessAllowed()")
+        static int doNative(Object pointer,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceToLongNode,
+                        @Cached GcNativePtrToPythonNode gcNativePtrToPythonNode) {
+            // guaranteed by the guard
+            assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
+            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+
+            long lPointer = coerceToLongNode.execute(inliningTarget, pointer);
+            // this upcall doesn't make sense for managed objects
+            assert !HandlePointerConverter.pointsToPyHandleSpace(lPointer);
+
+            Object object = gcNativePtrToPythonNode.execute(inliningTarget, lPointer);
+            return PInt.intValue(object != null);
+        }
+
+        @Specialization(guards = "!isNativeAccessAllowed()")
+        static Object doManaged(@SuppressWarnings("unused") Object pointer) {
+            return PInt.intValue(false);
+        }
+    }
+
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class PyTruffle_NotifyDealloc extends CApiUnaryBuiltinNode {
         private static final Level LEVEL = Level.FINE;
