@@ -739,7 +739,11 @@ static PyObject *
 time_alloc(PyTypeObject *type, Py_ssize_t aware)
 {
     size_t size = aware ? sizeof(PyDateTime_Time) : sizeof(_PyDateTime_BaseTime);
-    PyObject *self = (PyObject *)PyObject_Malloc(size);
+    /* GraalPy change: use PyObject_Calloc instead of PyObject_Malloc such that
+     * memory is zeroed because we don't initialized the object anywhere else.
+     * CPython does initialization in 'time_new'.
+     */
+    PyObject *self = (PyObject *)PyObject_Calloc(1, size);
     if (self == NULL) {
         return PyErr_NoMemory();
     }
@@ -751,7 +755,8 @@ static PyObject *
 datetime_alloc(PyTypeObject *type, Py_ssize_t aware)
 {
     size_t size = aware ? sizeof(PyDateTime_DateTime) : sizeof(_PyDateTime_BaseDateTime);
-    PyObject *self = (PyObject *)PyObject_Malloc(size);
+    // GraalPy change: PyObject_Calloc instead of PyObject_Malloc (see above)
+    PyObject *self = (PyObject *)PyObject_Calloc(1, size);
     if (self == NULL) {
         return PyErr_NoMemory();
     }
