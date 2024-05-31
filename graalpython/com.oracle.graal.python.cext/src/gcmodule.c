@@ -2758,7 +2758,6 @@ PyObject_GC_Del(void *op)
         }
 #endif
         gc_list_remove(g);
-        GraalPyTruffle_NotifyDealloc(op);
     }
     GCState *gcstate = get_gc_state();
     if (gcstate->generations[0].count > 0) {

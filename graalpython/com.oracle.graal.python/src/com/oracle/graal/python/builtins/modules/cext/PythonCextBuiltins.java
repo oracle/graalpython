@@ -1498,9 +1498,15 @@ public final class PythonCextBuiltins {
             assert lPointer != 0;
             Object object = gcNativePtrToPythonNode.execute(inliningTarget, lPointer);
 
+            /*
+             * If 'object' is null, there is no 'PythonAbstractNativeObject' wrapper for the native
+             * object. This means that the native object is not referenced from managed code. So, we
+             * don't need to replicate native references.
+             */
+
             Object repr = object;
             Object[] referents = null;
-            if (object instanceof PythonAbstractNativeObject || object instanceof PythonModule || object == null) {
+            if (object instanceof PythonAbstractNativeObject || object instanceof PythonModule) {
                 /*
                  * Note: it is important that we first collect the objects such that we have strong
                  * Java references to them on the Java stack and then we overwrite the
@@ -1516,18 +1522,10 @@ public final class PythonCextBuiltins {
                     }
                     oldReferents = nativeObject.getReplicatedNativeReferences();
                     nativeObject.setReplicatedNativeReferences(referents);
-                } else if (object instanceof PythonModule module) {
+                } else {
+                    PythonModule module = (PythonModule) object;
                     oldReferents = module.getReplicatedNativeReferences();
                     module.setReplicatedNativeReferences(referents);
-                } else {
-                    if (loggable) {
-                        repr = CApiContext.asHex(lPointer);
-                    }
-                    /*
-                     * TODO(fa): Here we could mark the native object that we need notification of
-                     * dealloc in order to release the associated replicated references.
-                     */
-                    oldReferents = PythonContext.get(inliningTarget).nativeContext.replicatedNativeRefs.put(lPointer, referents);
                 }
                 // 1. Collect referents (traverse native list and resolve pointers)
                 Object cur = listHead;
@@ -1566,9 +1564,12 @@ public final class PythonCextBuiltins {
                  * this point. Otherwise, weakly referenced managed objects could die.
                  */
                 java.lang.ref.Reference.reachabilityFence(oldReferents);
-            }
-            if (loggable) {
-                GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Replicated native refs of %s to managed: %s", repr, Arrays.toString(referents)));
+
+                if (loggable) {
+                    GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Replicated native refs of %s to managed: %s", repr, Arrays.toString(referents)));
+                }
+            } else if (object == null && loggable) {
+                GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Did not replicate native refs of %s: no wrapper", CApiContext.asHex(lPointer)));
             }
             return PNone.NO_VALUE;
         }
@@ -1685,29 +1686,6 @@ public final class PythonCextBuiltins {
         @Specialization(guards = "!isNativeAccessAllowed()")
         static Object doManaged(@SuppressWarnings("unused") Object pointer) {
             return PInt.intValue(false);
-        }
-    }
-
-    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
-    abstract static class PyTruffle_NotifyDealloc extends CApiUnaryBuiltinNode {
-        private static final Level LEVEL = Level.FINE;
-
-        @Specialization(guards = "isNativeAccessAllowed()")
-        static Object doNative(Object ptr,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
-            long lptr = coerceNativePointerToLongNode.execute(inliningTarget, ptr);
-            Object[] refs = HandleContext.removeShadowTable(PythonContext.get(inliningTarget).nativeContext.replicatedNativeRefs, lptr);
-
-            if (GC_LOGGER.isLoggable(LEVEL)) {
-                GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Removing replicated native refs of 0x%x: %s", lptr, Arrays.toString(refs)));
-            }
-            return PNone.NO_VALUE;
-        }
-
-        @Specialization(guards = "!isNativeAccessAllowed()")
-        static Object doNative(@SuppressWarnings("unused") Object ptr) {
-            return PNone.NO_VALUE;
         }
     }
 
