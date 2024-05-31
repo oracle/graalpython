@@ -121,32 +121,40 @@ public final class PythonCextImportBuiltins {
         private static final TruffleString T__LOCK_UNLOCK_MODULE = tsLiteral("_lock_unlock_module");
 
         @Specialization
-        @TruffleBoundary
-        Object getModule(Object name) {
-            PythonContext context = PythonContext.get(null);
+        Object getModule(Object name,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectGetItem getItem,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            PythonContext context = PythonContext.get(inliningTarget);
             PDict modules = context.getSysModules();
             Object m;
             try {
-                m = PyObjectGetItem.executeUncached(modules, name);
+                m = getItem.execute(null, inliningTarget, modules, name);
             } catch (PException e) {
                 return context.getNativeNull();
             }
             if (m != PNone.NONE) {
                 boolean initializing = false;
                 try {
-                    Object spec = PyObjectGetAttr.executeUncached(m, T___SPEC__);
-                    Object initializingObj = PyObjectGetAttr.executeUncached(spec, T___INITIALIZING__);
-                    if (PyObjectIsTrueNode.executeUncached(initializingObj)) {
+                    Object spec = getAttr.execute(null, inliningTarget, m, T___SPEC__);
+                    Object initializingObj = getAttr.execute(null, inliningTarget, spec, T___INITIALIZING__);
+                    if (isTrueNode.execute(null, inliningTarget, initializingObj)) {
                         initializing = true;
                     }
                 } catch (PException e) {
                     // ignore
                 }
                 if (initializing) {
-                    PyObjectCallMethodObjArgs.executeUncached(context.getImportlib(), T__LOCK_UNLOCK_MODULE, name);
+                    waitForInitialization(name, context);
                 }
             }
             return m;
+        }
+
+        @TruffleBoundary
+        private static void waitForInitialization(Object name, PythonContext context) {
+            PyObjectCallMethodObjArgs.executeUncached(context.getImportlib(), T__LOCK_UNLOCK_MODULE, name);
         }
     }
 }
