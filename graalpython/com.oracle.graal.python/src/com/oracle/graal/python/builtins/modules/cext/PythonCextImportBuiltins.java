@@ -52,15 +52,26 @@ import static com.oracle.graal.python.lib.PyImportImport.T_LEVEL;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_GLOBALS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LOCALS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___INITIALIZING__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SPEC__;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -101,6 +112,49 @@ public final class PythonCextImportBuiltins {
                             new PKeyword(T_GLOBALS, globals), new PKeyword(T_LOCALS, locals),
                             new PKeyword(T_FROMLIST, fromlist), new PKeyword(T_LEVEL, level)
             });
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    abstract static class PyImport_GetModule extends CApiUnaryBuiltinNode {
+
+        private static final TruffleString T__LOCK_UNLOCK_MODULE = tsLiteral("_lock_unlock_module");
+
+        @Specialization
+        Object getModule(Object name,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectGetItem getItem,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            PDict modules = context.getSysModules();
+            Object m;
+            try {
+                m = getItem.execute(null, inliningTarget, modules, name);
+            } catch (PException e) {
+                return context.getNativeNull();
+            }
+            if (m != PNone.NONE) {
+                boolean initializing = false;
+                try {
+                    Object spec = getAttr.execute(null, inliningTarget, m, T___SPEC__);
+                    Object initializingObj = getAttr.execute(null, inliningTarget, spec, T___INITIALIZING__);
+                    if (isTrueNode.execute(null, inliningTarget, initializingObj)) {
+                        initializing = true;
+                    }
+                } catch (PException e) {
+                    // ignore
+                }
+                if (initializing) {
+                    waitForInitialization(name, context);
+                }
+            }
+            return m;
+        }
+
+        @TruffleBoundary
+        private static void waitForInitialization(Object name, PythonContext context) {
+            PyObjectCallMethodObjArgs.executeUncached(context.getImportlib(), T__LOCK_UNLOCK_MODULE, name);
         }
     }
 }
