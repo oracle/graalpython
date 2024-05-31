@@ -25,9 +25,6 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
-import com.oracle.truffle.api.CompilerAsserts;
-
 public abstract class SequenceStorage {
 
     public enum StorageType {
@@ -41,20 +38,12 @@ public abstract class SequenceStorage {
         Generic;
 
         public boolean generalizesFrom(StorageType other) {
-            switch (this) {
-                case Uninitialized:
-                case Empty:
-                    return false;
-                case Boolean:
-                case Byte:
-                case Double:
-                case Int:
-                    return other == Uninitialized || other == Empty || other == Byte;
-                case Long:
-                    return other == Uninitialized || other == Empty || other == Byte || other == Int;
-                default:
-                    return true;
-            }
+            return switch (this) {
+                case Uninitialized, Empty -> false;
+                case Boolean, Byte, Double, Int -> other == Uninitialized || other == Empty || other == Byte;
+                case Long -> other == Uninitialized || other == Empty || other == Byte || other == Int;
+                default -> true;
+            };
         }
     }
 
@@ -83,19 +72,4 @@ public abstract class SequenceStorage {
     public abstract StorageType getElementType();
 
     public abstract Object getIndicativeValue();
-
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        StringBuilder str = new StringBuilder(getClass().getSimpleName()).append('[');
-        int len = length > 10 ? 10 : length;
-        for (int i = 0; i < len; i++) {
-            str.append(i == 0 ? "" : ", ");
-            str.append(GetItemScalarNode.executeUncached(this, i));
-        }
-        if (length > 10) {
-            str.append("...").append('(').append(length).append(')');
-        }
-        return str.append(']').toString();
-    }
 }

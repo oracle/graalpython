@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.truffle.api.CompilerAsserts;
+
 public abstract class ArrayBasedSequenceStorage extends SequenceStorage {
 
     public abstract Object getInternalArrayObject();
@@ -67,5 +70,20 @@ public abstract class ArrayBasedSequenceStorage extends SequenceStorage {
 
     public void minimizeCapacity() {
         capacity = length;
+    }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        StringBuilder str = new StringBuilder(getClass().getSimpleName()).append('[');
+        int len = length > 10 ? 10 : length;
+        for (int i = 0; i < len; i++) {
+            str.append(i == 0 ? "" : ", ");
+            str.append(SequenceStorageNodes.GetItemScalarNode.executeUncached(this, i));
+        }
+        if (length > 10) {
+            str.append("...").append('(').append(length).append(')');
+        }
+        return str.append(']').toString();
     }
 }

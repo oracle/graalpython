@@ -25,10 +25,9 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import java.math.BigInteger;
-import java.util.Arrays;
-
 import com.oracle.truffle.api.CompilerDirectives;
+
+import java.util.Arrays;
 
 public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
 
