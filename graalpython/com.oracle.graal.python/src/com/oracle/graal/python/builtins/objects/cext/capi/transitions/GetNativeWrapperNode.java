@@ -77,6 +77,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic({PGuards.class, CApiGuards.class})
 public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
+    public static PythonNativeWrapper executeUncached(Object value) {
+        return GetNativeWrapperNodeGen.getUncached().execute(value);
+    }
+
     public abstract PythonNativeWrapper execute(Object value);
 
     @Specialization

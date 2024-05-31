@@ -98,6 +98,10 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper.ToNativeStorageNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -267,6 +271,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("storage_to_native"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("dump_heap"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("is_native_object"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("get_handle_table_id"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("is_strong_handle_table_ref"), PNone.NO_VALUE);
         }
         if (PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS || !context.getOption(PythonOptions.RunViaLauncher)) {
             mod.setAttribute(tsLiteral("list_files"), PNone.NO_VALUE);
@@ -1013,6 +1019,31 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             return false;
         }
 
+    }
+
+    @Builtin(name = "get_handle_table_id", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetHandleTableID extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static int doManaged(Object object) {
+            if (object instanceof PythonAbstractNativeObject) {
+                return -1;
+            }
+            PythonNativeWrapper nativeWrapper = GetNativeWrapperNode.executeUncached(object);
+            return nativeWrapper.ref.getHandleTableIndex();
+        }
+    }
+
+    @Builtin(name = "is_strong_handle_table_ref", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsWeakHandleTableRef extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static boolean doGeneric(int id) {
+            PythonObjectReference ref = CApiTransitions.nativeStubLookupGet(PythonContext.get(null).nativeContext, 0, id);
+            return ref != null && ref.isStrongReference();
+        }
     }
 
     // This is only used from HPy
