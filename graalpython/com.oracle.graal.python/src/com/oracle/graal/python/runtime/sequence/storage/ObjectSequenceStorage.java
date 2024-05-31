@@ -75,8 +75,7 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
         }
     }
 
-    @Override
-    public void setItemNormalized(int idx, Object value) {
+    public void setObjectItemNormalized(int idx, Object value) {
         values[idx] = assertNoJavaString(value);
     }
 

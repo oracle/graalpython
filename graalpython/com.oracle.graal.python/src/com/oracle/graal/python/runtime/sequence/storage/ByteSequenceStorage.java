@@ -99,20 +99,6 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
         return values[idx] & 0xFF;
     }
 
-    @Override
-    public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
-        if (value instanceof Byte) {
-            setByteItemNormalized(idx, (byte) value);
-        } else if (value instanceof Integer) {
-            if ((int) value < 0 || (int) value >= 256) {
-                throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
-            }
-            setByteItemNormalized(idx, ((Integer) value).byteValue());
-        } else {
-            throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.INTEGER_REQUIRED);
-        }
-    }
-
     public void setByteItemNormalized(int idx, byte value) {
         values[idx] = value;
     }

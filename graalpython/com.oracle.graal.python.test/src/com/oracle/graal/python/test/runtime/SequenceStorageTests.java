@@ -41,7 +41,7 @@ public class SequenceStorageTests {
     public void objectsGetAndSet() {
         ObjectSequenceStorage store = new ObjectSequenceStorage(getObjectValues());
         assertEquals(4, store.getObjectItemNormalized(3));
-        store.setItemNormalized(5, 10);
+        store.setObjectItemNormalized(5, 10);
         assertEquals(10, store.getObjectItemNormalized(5));
     }
 
@@ -56,7 +56,7 @@ public class SequenceStorageTests {
     public void intGetAndSet() throws SequenceStoreException {
         IntSequenceStorage store = new IntSequenceStorage(getIntValues());
         assertEquals(4, store.getIntItemNormalized(3));
-        store.setItemNormalized(5, 10);
+        store.setIntItemNormalized(5, 10);
         assertEquals(10, store.getIntItemNormalized(5));
     }
 }

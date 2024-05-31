@@ -49,4 +49,23 @@ public abstract class ArrayBasedSequenceStorage extends BasicSequenceStorage {
     public abstract void setInternalArrayObject(Object arrayObject);
 
     public abstract ArrayBasedSequenceStorage createEmpty(int newCapacity);
+
+    public final void setNewLength(int length) {
+        this.length = length;
+    }
+
+    public final void incLength() {
+        this.length++;
+    }
+
+    /**
+     * The capacity we should allocate for a given length.
+     */
+    protected static int capacityFor(int length) throws ArithmeticException {
+        return Math.max(16, Math.multiplyExact(length, 2));
+    }
+
+    public void minimizeCapacity() {
+        capacity = length;
+    }
 }

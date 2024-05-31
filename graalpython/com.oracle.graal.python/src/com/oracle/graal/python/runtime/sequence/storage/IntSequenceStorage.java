@@ -93,15 +93,6 @@ public final class IntSequenceStorage extends ArrayBasedSequenceStorage {
         return values[idx];
     }
 
-    @Override
-    public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
-        if (value instanceof Integer) {
-            setIntItemNormalized(idx, (int) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
     public void setIntItemNormalized(int idx, int value) {
         values[idx] = value;
     }

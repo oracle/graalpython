@@ -136,6 +136,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -584,7 +585,7 @@ public abstract class PythonCextObjectBuiltins {
                         @Cached InlinedBranchProfile nativeProfile) {
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, obj);
             // Can't use SetLenNode as that decrefs items for native storages when shrinking
-            if (storage instanceof BasicSequenceStorage basicStorage) {
+            if (storage instanceof ArrayBasedSequenceStorage basicStorage) {
                 basicProfile.enter(inliningTarget);
                 basicStorage.setNewLength((int) size);
             } else if (storage instanceof NativeSequenceStorage nativeStorage) {

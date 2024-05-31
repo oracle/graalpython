@@ -27,26 +27,4 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 public abstract class BasicSequenceStorage extends SequenceStorage {
 
-    public abstract void setItemNormalized(int idx, Object value) throws SequenceStoreException;
-
-    public final void setNewLength(int length) {
-        this.length = length;
-    }
-
-    public final void incLength() {
-        this.length++;
-    }
-
-    public abstract BasicSequenceStorage createEmpty(int newCapacity);
-
-    /**
-     * The capacity we should allocate for a given length.
-     */
-    protected static int capacityFor(int length) throws ArithmeticException {
-        return Math.max(16, Math.multiplyExact(length, 2));
-    }
-
-    public void minimizeCapacity() {
-        capacity = length;
-    }
 }

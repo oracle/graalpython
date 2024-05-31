@@ -93,15 +93,6 @@ public final class DoubleSequenceStorage extends ArrayBasedSequenceStorage {
         return values[idx];
     }
 
-    @Override
-    public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
-        if (value instanceof Double) {
-            setDoubleItemNormalized(idx, (double) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
     public void setDoubleItemNormalized(int idx, double value) {
         values[idx] = value;
     }

@@ -94,17 +94,6 @@ public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
         return values[idx];
     }
 
-    @Override
-    public void setItemNormalized(int idx, Object val) throws SequenceStoreException {
-        Object value = (val instanceof Integer) ? BigInteger.valueOf((int) val).longValue() : val;
-        value = (val instanceof BigInteger) ? ((BigInteger) val).longValue() : value;
-        if (value instanceof Long) {
-            setLongItemNormalized(idx, (long) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
     public void setLongItemNormalized(int idx, long value) {
         values[idx] = value;
     }

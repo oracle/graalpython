@@ -1983,7 +1983,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             return true;
         } else if (storage instanceof ObjectSequenceStorage) {
             Object value = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(hValue));
-            ((ObjectSequenceStorage) storage).setItemNormalized(idx, value);
+            ((ObjectSequenceStorage) storage).setObjectItemNormalized(idx, value);
             return true;
         }
         // TODO: other storages...

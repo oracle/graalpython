@@ -115,7 +115,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -911,14 +910,14 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected SequenceStorage doScalarInt(IntSequenceStorage storage, int idx, int value) {
             int normalized = normalizeIndex(idx, storage);
-            storage.setItemNormalized(normalized, value);
+            storage.setIntItemNormalized(normalized, value);
             return storage;
         }
 
         @Specialization
         protected SequenceStorage doScalarInt(DoubleSequenceStorage storage, int idx, double value) {
             int normalized = normalizeIndex(idx, storage);
-            storage.setItemNormalized(normalized, value);
+            storage.setDoubleItemNormalized(normalized, value);
             return storage;
         }
 
@@ -1168,7 +1167,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static void doObject(@SuppressWarnings("unused") Node inliningTarget, ObjectSequenceStorage storage, int idx, Object value) {
-            storage.setItemNormalized(idx, value);
+            storage.setObjectItemNormalized(idx, value);
         }
 
         @Fallback
@@ -2499,7 +2498,7 @@ public abstract class SequenceStorageNodes {
             try {
                 int len = s.length();
                 int newLen = PythonUtils.multiplyExact(len, times);
-                BasicSequenceStorage repeated = createEmptyNode.execute(inliningTarget, s, newLen, -1);
+                ArrayBasedSequenceStorage repeated = createEmptyNode.execute(inliningTarget, s, newLen, -1);
 
                 for (int i = 0; i < len; i++) {
                     setItemNode.execute(inliningTarget, repeated, i, getItemNode.execute(inliningTarget, s, i));
@@ -2738,7 +2737,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static SequenceStorage doEmptyStorage(Node inliningTarget, @SuppressWarnings("unused") EmptySequenceStorage s, BasicSequenceStorage other,
+        static SequenceStorage doEmptyStorage(Node inliningTarget, @SuppressWarnings("unused") EmptySequenceStorage s, ArrayBasedSequenceStorage other,
                         @Exclusive @Cached InlinedExactClassProfile otherProfile) {
             return otherProfile.profile(inliningTarget, other).createEmpty(DEFAULT_CAPACITY);
         }
@@ -2928,14 +2927,14 @@ public abstract class SequenceStorageNodes {
     @GenerateCached(false)
     public abstract static class CreateEmptyNode extends SequenceStorageBaseNode {
 
-        public abstract BasicSequenceStorage execute(Node inliningTarget, SequenceStorage s, int cap, int len);
+        public abstract ArrayBasedSequenceStorage execute(Node inliningTarget, SequenceStorage s, int cap, int len);
 
         @Specialization
-        static BasicSequenceStorage doIt(Node inliningTarget, SequenceStorage s, int cap, int len,
+        static ArrayBasedSequenceStorage doIt(Node inliningTarget, SequenceStorage s, int cap, int len,
                         @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached GetElementType getElementType,
                         @Cached CreateEmptyForTypeNode createEmptyForTypeNode) {
-            BasicSequenceStorage ss = createEmptyForTypeNode.execute(inliningTarget, getElementType.execute(inliningTarget, s), cap);
+            ArrayBasedSequenceStorage ss = createEmptyForTypeNode.execute(inliningTarget, getElementType.execute(inliningTarget, s), cap);
             if (len != -1) {
                 ensureCapacityNode.execute(inliningTarget, ss, len);
                 ss.setNewLength(len);
@@ -2948,7 +2947,7 @@ public abstract class SequenceStorageNodes {
     @GenerateCached(false)
     abstract static class CreateEmptyForTypeNode extends SequenceStorageBaseNode {
 
-        public abstract BasicSequenceStorage execute(Node inliningTarget, StorageType type, int cap);
+        public abstract ArrayBasedSequenceStorage execute(Node inliningTarget, StorageType type, int cap);
 
         @Specialization(guards = "isBoolean(type)")
         static BoolSequenceStorage doBoolean(@SuppressWarnings("unused") StorageType type, int cap) {
@@ -3251,7 +3250,7 @@ public abstract class SequenceStorageNodes {
         public abstract void execute(Node inliningTarget, SequenceStorage s, int len);
 
         @Specialization
-        static void doBasic(BasicSequenceStorage s, int len) {
+        static void doBasic(ArrayBasedSequenceStorage s, int len) {
             s.setNewLength(len);
         }
 

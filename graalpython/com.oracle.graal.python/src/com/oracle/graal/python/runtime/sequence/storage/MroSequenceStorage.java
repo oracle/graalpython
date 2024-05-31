@@ -107,12 +107,6 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         return values[idx];
     }
 
-    @Override
-    @SuppressWarnings("unused")
-    public void setItemNormalized(int idx, Object value) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
     public TruffleString getClassName() {
         return className;
     }

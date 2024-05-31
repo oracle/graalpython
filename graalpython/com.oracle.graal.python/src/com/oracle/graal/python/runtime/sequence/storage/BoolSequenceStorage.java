@@ -103,15 +103,6 @@ public final class BoolSequenceStorage extends ArrayBasedSequenceStorage {
         return values[idx];
     }
 
-    @Override
-    public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
-        if (value instanceof Boolean) {
-            setBoolItemNormalized(idx, (boolean) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
     public void setBoolItemNormalized(int idx, boolean value) {
         values[idx] = value;
     }
