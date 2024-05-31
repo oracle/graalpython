@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.GC_LOGGER;
+import static com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.NEXT_MASK_UNREACHABLE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
@@ -1621,6 +1622,8 @@ public final class PythonCextBuiltins {
             // PyGC_Head *gc = GC_NEXT(head)
             long gcUntagged = HandlePointerConverter.pointerToStub(readI64Node.read(head, CFields.PyGC_Head___gc_next));
             while (gcUntagged != head) {
+                assert (gcUntagged & NEXT_MASK_UNREACHABLE) == 0;
+
                 // PyObject *op = FROM_GC(gc)
                 long op = HandlePointerConverter.stubToPointer(gcUntagged + CStructs.PyGC_Head.size());
 
@@ -1631,8 +1634,14 @@ public final class PythonCextBuiltins {
                     }
                     updateRefNode.execute(inliningTarget, abstractObjectNativeWrapper, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT);
                 }
+
                 // next = GC_NEXT(gc)
-                long nextUntagged = HandlePointerConverter.pointerToStub(readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next));
+                long nextTaggedWithMask = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next);
+                // we expect to process 'weak_candidates' which all have NEXT_MASK_UNREACHABLE set
+                // TODO(fa): investigate
+                //assert (nextTaggedWithMask & NEXT_MASK_UNREACHABLE) != 0;
+                // remove NEXT_MASK_UNREACHABLE flag; we don't need it anymore
+                long nextUntagged = HandlePointerConverter.pointerToStub(nextTaggedWithMask & ~NEXT_MASK_UNREACHABLE);
 
                 /*
                  * This is a "dirty" untrack since we just overwrite '_gc_prev' and '_gc_next' with

@@ -66,6 +66,8 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class CApiGCSupport {
     public static final CApiTiming VISIT_TIMING = CApiTiming.create(true, PExternalFunctionWrapper.VISITPROC);
 
+    public static final long NEXT_MASK_UNREACHABLE = 1;
+
     /* Bit 0 is set when tp_finalize is called */
     private static final long _PyGC_PREV_MASK_FINALIZED = 1;
 
