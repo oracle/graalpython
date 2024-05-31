@@ -63,8 +63,7 @@ public class GraalPy {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-
-            // eval the snipet __graalpython__.run_path() which executes what the option python.InputFilePath points to
+            
             context.eval(source);
 
             // retrieve the python PyHello class
