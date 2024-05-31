@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.list.PList.ListOrigin;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -261,7 +261,7 @@ abstract class SequenceFromStackNode extends PNodeWithContext {
         }
 
         @Override
-        public void reportUpdatedCapacity(BasicSequenceStorage newStore) {
+        public void reportUpdatedCapacity(ArrayBasedSequenceStorage newStore) {
             if (CompilerDirectives.inInterpreter()) {
                 if (PythonContext.get(this).getOption(PythonOptions.OverallocateLiteralLists)) {
                     if (newStore.getCapacity() > initialCapacity.estimate()) {

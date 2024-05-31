@@ -33,7 +33,7 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -243,7 +243,7 @@ public final class PList extends PSequence {
             }
         }
 
-        void reportUpdatedCapacity(BasicSequenceStorage newStore);
+        void reportUpdatedCapacity(ArrayBasedSequenceStorage newStore);
 
         SourceSection getSourceSection();
     }

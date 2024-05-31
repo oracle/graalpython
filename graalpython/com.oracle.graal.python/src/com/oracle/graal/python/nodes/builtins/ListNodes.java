@@ -78,7 +78,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -344,8 +344,8 @@ public abstract class ListNodes {
                 SequenceStorage newStore = SequenceStorageNodes.AppendNode.executeUncached(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
                 updateStoreProfile[0] = BranchProfile.create();
                 list.setSequenceStorage(newStore);
-                if (list.getOrigin() != null && newStore instanceof BasicSequenceStorage) {
-                    list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
+                if (list.getOrigin() != null && newStore instanceof ArrayBasedSequenceStorage newArrayBasedStore) {
+                    list.getOrigin().reportUpdatedCapacity(newArrayBasedStore);
                 }
             } else {
                 SequenceStorage newStore = appendNode.execute(inliningTarget, list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
@@ -353,8 +353,8 @@ public abstract class ListNodes {
                     updateStoreProfile[0].enter();
                     list.setSequenceStorage(newStore);
                 }
-                if (CompilerDirectives.inInterpreter() && list.getOrigin() != null && newStore instanceof BasicSequenceStorage) {
-                    list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
+                if (CompilerDirectives.inInterpreter() && list.getOrigin() != null && newStore instanceof ArrayBasedSequenceStorage newArrayBasedStore) {
+                    list.getOrigin().reportUpdatedCapacity(newArrayBasedStore);
                 }
             }
         }

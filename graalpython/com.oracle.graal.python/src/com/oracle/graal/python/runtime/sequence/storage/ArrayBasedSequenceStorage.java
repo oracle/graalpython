@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-public abstract class ArrayBasedSequenceStorage extends BasicSequenceStorage {
+public abstract class ArrayBasedSequenceStorage extends SequenceStorage {
 
     public abstract Object getInternalArrayObject();
 

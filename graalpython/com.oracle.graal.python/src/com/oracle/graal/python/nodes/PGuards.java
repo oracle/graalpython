@@ -108,7 +108,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -251,10 +250,6 @@ public abstract class PGuards {
 
     public static boolean isEmptyStorage(PSequence sequence) {
         return sequence.getSequenceStorage() instanceof EmptySequenceStorage;
-    }
-
-    public static boolean isBasicStorage(PSequence sequence) {
-        return sequence.getSequenceStorage() instanceof BasicSequenceStorage;
     }
 
     public static boolean isIntStorage(PSequence sequence) {
