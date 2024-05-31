@@ -56,6 +56,16 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
     private Object ptr;
     private NativeStorageReference reference;
 
+    /**
+     * Replicates the native references of this native sequence storage in Java.
+     * <p>
+     * Native sequence storages have references (if not empty) to other objects. Whenever the Python
+     * GC detects a possible reference cycle, we will replicate those native references in Java to
+     * give control to the Java GC when objects may die.
+     * </p>
+     */
+    private Object[] replicatedNativeReferences;
+
     NativeSequenceStorage(Object ptr, int length, int capacity) {
         super(length, capacity);
         this.ptr = ptr;
@@ -105,4 +115,16 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
     public String toString() {
         return getClass().getSimpleName() + "(ptr=" + CApiContext.asHex(ptr) + ", length=" + length + ", capacity=" + capacity + ", ownsMemory=" + hasReference() + ")";
     }
+
+    /**
+     * For a description, see {@link #replicatedNativeReferences}.
+     */
+    public void setReplicatedNativeReferences(Object[] replicatedNativeReferences) {
+        this.replicatedNativeReferences = replicatedNativeReferences;
+    }
+
+    public Object[] getReplicatedNativeReferences() {
+        return replicatedNativeReferences;
+    }
+
 }

@@ -130,7 +130,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateRefNode;
@@ -151,6 +150,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager;
@@ -160,6 +160,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -196,6 +197,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
@@ -1453,10 +1455,10 @@ public final class PythonCextBuiltins {
      * determined by traversing the primary object.
      * </p>
      * <p>
-     * If the primary object is a native object or a Python module, the native references will be
-     * replicated. Other object types may be added if they also have some native memory that may
-     * contain object references (e.g. a module object may store references in its native module
-     * state).
+     * If the primary object is a native object, a Python module (with native module state) or a
+     * list/tuple with a native storage, the native references will be replicated. Other object
+     * types may be added if they also have some native memory that may contain object references
+     * (e.g. a module object may store references in its native module state).
      * </p>
      * <p>
      * The pointers of the referents in the single linked list are resolved (in particular, this
@@ -1506,7 +1508,7 @@ public final class PythonCextBuiltins {
 
             Object repr = object;
             Object[] referents = null;
-            if (object instanceof PythonAbstractNativeObject || object instanceof PythonModule) {
+            if (object instanceof PythonAbstractNativeObject || object instanceof PythonModule || isTupleWithNativeStorage(object) || isListWithNativeStorage(object)) {
                 /*
                  * Note: it is important that we first collect the objects such that we have strong
                  * Java references to them on the Java stack and then we overwrite the
@@ -1522,10 +1524,14 @@ public final class PythonCextBuiltins {
                     }
                     oldReferents = nativeObject.getReplicatedNativeReferences();
                     nativeObject.setReplicatedNativeReferences(referents);
-                } else {
-                    PythonModule module = (PythonModule) object;
+                } else if (object instanceof PythonModule module) {
                     oldReferents = module.getReplicatedNativeReferences();
                     module.setReplicatedNativeReferences(referents);
+                } else {
+                    assert isTupleWithNativeStorage(object) || isListWithNativeStorage(object);
+                    NativeSequenceStorage nativeSequenceStorage = getNativeSequenceStorage(object);
+                    oldReferents = nativeSequenceStorage.getReplicatedNativeReferences();
+                    nativeSequenceStorage.setReplicatedNativeReferences(referents);
                 }
                 // 1. Collect referents (traverse native list and resolve pointers)
                 Object cur = listHead;
@@ -1574,6 +1580,19 @@ public final class PythonCextBuiltins {
             return PNone.NO_VALUE;
         }
 
+        private static NativeSequenceStorage getNativeSequenceStorage(Object object) {
+            NativeSequenceStorage nativeSequenceStorage;
+            if (object instanceof PTuple tuple) {
+                // cast is ensured by 'isTupleWithNativeStorage'
+                nativeSequenceStorage = (NativeSequenceStorage) tuple.getSequenceStorage();
+            } else {
+                assert object instanceof PList;
+                // casts are ensured by 'isListWithNativeStorage'
+                nativeSequenceStorage = (NativeSequenceStorage) ((PList) object).getSequenceStorage();
+            }
+            return nativeSequenceStorage;
+        }
+
         @Specialization(guards = "!isNativeAccessAllowed()")
         @SuppressWarnings("unused")
         static Object doManaged(Object pointer, Object listHead, int n) {
@@ -1596,6 +1615,14 @@ public final class PythonCextBuiltins {
                 }
             }
             return true;
+        }
+
+        private static boolean isTupleWithNativeStorage(Object object) {
+            return object instanceof PTuple tuple && tuple.getSequenceStorage() instanceof NativeSequenceStorage;
+        }
+
+        private static boolean isListWithNativeStorage(Object object) {
+            return object instanceof PList list && list.getSequenceStorage() instanceof NativeSequenceStorage;
         }
     }
 
