@@ -1062,7 +1062,7 @@ def bytecode_dsl_excluded(test):
     """
     try:
         if sys.implementation.name == 'graalpy' and __graalpython__.is_bytecode_dsl_interpreter:
-            return unittest.skip("implementation detail not available on the Bytecode DSL interpreter")
+            return unittest.skip("Not supported by the Bytecode DSL interpreter")
     except NameError:
         pass
     return test
