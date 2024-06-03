@@ -812,7 +812,7 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
     PyGC_Head *prev = young;
     PyGC_Head *gc = GC_NEXT(young);
     Py_ssize_t gc_refcnt;
-    GraalPyGC_Cycle cycle = { NULL, 0, weak_candidates };
+    GraalPyGC_Cycle cycle = { NULL, 0, young };
 
     assert (young != weak_candidates);
 
@@ -913,7 +913,6 @@ move_weak_reachable(PyGC_Head *young, PyGC_Head *weak_candidates)
     // previous elem in the young list, used for restore gc_prev.
     PyGC_Head *prev = young;
     PyGC_Head *gc = GC_NEXT(young);
-    GraalPyGC_Cycle cycle = { NULL, 0, weak_candidates };
 
     assert (young != weak_candidates);
     /* This phase is only necessary if managed objects take part in the Python
