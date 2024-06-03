@@ -121,6 +121,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("ITIMER_REAL", ITIMER_REAL);
         addBuiltinConstant("ITIMER_VIRTUAL", ITIMER_VIRTUAL);
         addBuiltinConstant("ITIMER_PROF", ITIMER_PROF);
+        addBuiltinConstant("NSIG", Signals.SIGMAX + 1);
         for (int i = 0; i < Signals.SIGNAL_NAMES.length; i++) {
             String name = Signals.SIGNAL_NAMES[i];
             if (name != null) {
@@ -539,7 +540,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
 final class Signals {
     static final int SIG_DFL = 0;
     static final int SIG_IGN = 1;
-    private static final int SIGMAX = 31;
+    static final int SIGMAX = 64;
     static final String[] SIGNAL_NAMES = new String[SIGMAX + 1];
 
     static {

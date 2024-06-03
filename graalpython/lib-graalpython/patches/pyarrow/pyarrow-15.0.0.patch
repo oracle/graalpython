@@ -140,10 +140,17 @@ index 0000000..955ac8d
 +        shutil.copyfile(wheel, wheel_directory / wheel.name)
 +        return str(wheel.name)
 diff --git a/pyproject.toml b/pyproject.toml
-index 437de10..bbae50f 100644
+index 437de10..a78c7ee 100644
 --- a/pyproject.toml
 +++ b/pyproject.toml
-@@ -23,3 +23,5 @@ requires = [
+@@ -17,9 +17,11 @@
+ 
+ [build-system]
+ requires = [
+-    "cython >= 0.29.31",
++    "cython >= 0.29.31, < 3",
+     "oldest-supported-numpy>=0.14",
+     "setuptools_scm < 8.0.0",
      "setuptools >= 40.1.0",
      "wheel"
  ]
