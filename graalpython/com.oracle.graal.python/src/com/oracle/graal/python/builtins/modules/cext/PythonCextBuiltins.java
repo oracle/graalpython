@@ -1646,14 +1646,25 @@ public final class PythonCextBuiltins {
             assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
             assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
 
-            long head = HandlePointerConverter.pointerToStub(coerceToLongNode.execute(inliningTarget, weakCandidates));
+            /*
+             * The list's head is a dummy node that can not be a tagged pointer because it is not an
+             * object and always allocated in native.
+             */
+            long head = coerceToLongNode.execute(inliningTarget, weakCandidates);
+            assert !HandlePointerConverter.pointsToPyHandleSpace(head);
+
             // PyGC_Head *gc = GC_NEXT(head)
-            long gcUntagged = HandlePointerConverter.pointerToStub(readI64Node.read(head, CFields.PyGC_Head___gc_next));
-            while (gcUntagged != head) {
-                assert (gcUntagged & NEXT_MASK_UNREACHABLE) == 0;
+            long gc = readI64Node.read(head, CFields.PyGC_Head___gc_next);
+            /*
+             * The list's head is not polluted with NEXT_MASK_UNREACHABLE. See 'move_weak_reachable'
+             * at the end of the function.
+             */
+            assert (gc & NEXT_MASK_UNREACHABLE) == 0;
+            while (gc != head) {
+                assert (gc & NEXT_MASK_UNREACHABLE) == 0;
 
                 // PyObject *op = FROM_GC(gc)
-                long op = HandlePointerConverter.stubToPointer(gcUntagged + CStructs.PyGC_Head.size());
+                long op = gc + CStructs.PyGC_Head.size();
 
                 PythonNativeWrapper wrapper = nativePtrToPythonWrapperNode.execute(inliningTarget, op, true);
                 if (wrapper instanceof PythonAbstractObjectNativeWrapper abstractObjectNativeWrapper) {
@@ -1664,12 +1675,15 @@ public final class PythonCextBuiltins {
                 }
 
                 // next = GC_NEXT(gc)
+                long gcUntagged = HandlePointerConverter.pointerToStub(gc);
                 long nextTaggedWithMask = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next);
-                // we expect to process 'weak_candidates' which all have NEXT_MASK_UNREACHABLE set
-                // TODO(fa): investigate
-                //assert (nextTaggedWithMask & NEXT_MASK_UNREACHABLE) != 0;
-                // remove NEXT_MASK_UNREACHABLE flag; we don't need it anymore
-                long nextUntagged = HandlePointerConverter.pointerToStub(nextTaggedWithMask & ~NEXT_MASK_UNREACHABLE);
+                // remove NEXT_MASK_UNREACHABLE flag
+                long next = nextTaggedWithMask & ~NEXT_MASK_UNREACHABLE;
+                /*
+                 * We expect to process 'weak_candidates' which all have NEXT_MASK_UNREACHABLE set
+                 * except of the list head (which is a dummy node)
+                 */
+                assert next == head || (nextTaggedWithMask & NEXT_MASK_UNREACHABLE) != 0;
 
                 /*
                  * This is a "dirty" untrack since we just overwrite '_gc_prev' and '_gc_next' with
@@ -1680,7 +1694,7 @@ public final class PythonCextBuiltins {
                 writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_next, 0);
                 writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_prev, 0);
 
-                gcUntagged = nextUntagged;
+                gc = next;
             }
             return PNone.NO_VALUE;
         }
