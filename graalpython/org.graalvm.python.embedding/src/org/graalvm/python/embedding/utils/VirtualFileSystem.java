@@ -77,7 +77,7 @@ import java.util.function.Predicate;
 import org.graalvm.polyglot.io.FileSystem;
 
 /**
- * @deprecated use org.graalvm.python.embedding.vfs.VirtualFileSystem instead
+ * @deprecated use GraalPyResources to create a FileSystem instead.
  */
 @Deprecated(since = "24.1.0")
 public final class VirtualFileSystem implements FileSystem, AutoCloseable {

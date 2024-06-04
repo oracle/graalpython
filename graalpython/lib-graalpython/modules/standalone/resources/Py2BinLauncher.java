@@ -46,7 +46,7 @@ import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Context.Builder;
-import org.graalvm.python.embedding.vfs.VirtualFileSystem;
+import org.graalvm.python.embedding.utils.GraalPyResources;
 
 /**
  * A simple launcher for Python. The launcher sets the filesystem up to read the Python core,
@@ -62,8 +62,7 @@ import org.graalvm.python.embedding.vfs.VirtualFileSystem;
 public class Py2BinLauncher {
 
     public static void main(String[] args) throws IOException {                       
-        VirtualFileSystem vfs = VirtualFileSystem.create();
-        Builder builder = VirtualFileSystem.contextBuilder()
+        Builder builder = GraalPyResources.contextBuilder()
             .allowExperimentalOptions(true)
             .allowAllAccess(true)
             .arguments("python", Stream.concat(Stream.of(getProgramName()), Stream.of(args)).toArray(String[]::new))

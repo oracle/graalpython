@@ -10,7 +10,7 @@ import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.io.IOAccess;
 import org.graalvm.python.embedding.micronaut.GraalPyContextFactory;
-import org.graalvm.python.embedding.vfs.VirtualFileSystem;
+import org.graalvm.python.embedding.utils.GraalPyResources;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -25,7 +25,7 @@ class ContextFactory {
     @Singleton
     @Replaces(value = Context.class, factory = GraalPyContextFactory.class)
     public Context createContext() {
-        context = VirtualFileSystem.contextBuilder().build();
+        context = GraalPyResources.createContext();
         context.initialize("python");
         System.out.println("=== CREATED REPLACE CONTEXT ===");
         return context;

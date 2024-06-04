@@ -44,7 +44,7 @@ import io.micronaut.context.annotation.Factory;
 import jakarta.annotation.PreDestroy;
 import jakarta.inject.Singleton;
 import org.graalvm.polyglot.Context;
-import org.graalvm.python.embedding.vfs.VirtualFileSystem;
+import org.graalvm.python.embedding.utils.GraalPyResources;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -58,7 +58,7 @@ public final class GraalPyContextFactory {
 
     @Singleton
     Context createContext() {
-        context = VirtualFileSystem.contextBuilder().build();
+        context = GraalPyResources.createContext();
         context.initialize("python");
         return context;
     }

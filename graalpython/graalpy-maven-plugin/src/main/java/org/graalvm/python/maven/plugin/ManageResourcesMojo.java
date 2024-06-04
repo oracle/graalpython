@@ -201,7 +201,7 @@ public class ManageResourcesMojo extends AbstractMojo {
         if(pythonResourcesDirectory == null) {
             homeDirectory = Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT, VFS_HOME);
         } else {
-            homeDirectory = Path.of(pythonResourcesDirectory);
+            homeDirectory = Path.of(pythonResourcesDirectory, VFS_HOME);
         }
         var tag = homeDirectory.resolve("tagfile");
         var graalPyVersion = getGraalPyVersion(project);
@@ -224,11 +224,10 @@ public class ManageResourcesMojo extends AbstractMojo {
                 getLog().info(String.format("Deleting GraalPy home due to changed includes or excludes"));
                 delete(homeDirectory);
             }
-        } else {
-            getLog().info(String.format("Creating GraalPy %s home", graalPyVersion));
         }
         try {
             if (!Files.exists(homeDirectory)) {
+                getLog().info(String.format("Creating GraalPy %s home in %s", graalPyVersion, homeDirectory));
                 Files.createDirectories(homeDirectory.getParent());
                 VFSUtils.copyGraalPyHome(calculateLauncherClasspath(project), homeDirectory, pythonHomeIncludes, pythonHomeExcludes, new MavenDelegateLog(getLog()));
             }

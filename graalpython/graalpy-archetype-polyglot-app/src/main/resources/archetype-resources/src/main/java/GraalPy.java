@@ -46,17 +46,13 @@ import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import java.io.IOException;
-import org.graalvm.python.embedding.vfs.VirtualFileSystem;
+import org.graalvm.python.embedding.utils.GraalPyResources;
 
 public class GraalPy {
     private static final String PYTHON = "python";
 
-    public static Context getContext() {        
-        return VirtualFileSystem.contextBuilder().build();
-    }
-
     public static void main(String[] args) {
-        try (Context context = getContext()) {
+        try (Context context = GraalPyResources.createContext()) {
             Source source;
             try {
                 source = Source.newBuilder(PYTHON, "import hello", "<internal>").internal(true).build();

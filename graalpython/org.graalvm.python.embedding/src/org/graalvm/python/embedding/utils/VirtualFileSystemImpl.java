@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.embedding.vfs;
+package org.graalvm.python.embedding.utils;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -74,19 +74,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.HostAccess;
-import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.io.FileSystem;
-import org.graalvm.polyglot.io.IOAccess;
 
-public final class VirtualFileSystem implements FileSystem, AutoCloseable {
+final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
-    private static final String VFS_ROOT = "org.graalvm.python.vfs";
-    private static final String VFS_FILESLIST = "fileslist.txt";
-    private static final String VFS_HOME = "home";
-    private static final String VFS_VENV = "venv";
-    private static final String VFS_PROJ = "proj";
+    static final String VFS_ROOT = "org.graalvm.python.vfs";
+    static final String VFS_FILESLIST = "fileslist.txt";
+    static final String VFS_HOME = "home";
+    static final String VFS_VENV = "venv";
+    static final String VFS_PROJ = "proj";
 
     private static final String VENV_PREFIX = "/" + VFS_ROOT + "/" + VFS_VENV;
     private static final String HOME_PREFIX = "/" + VFS_ROOT + "/" + VFS_HOME;
@@ -97,174 +93,6 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         NONE,
         READ,
         READ_WRITE,
-    }
-
-    /**
-     * Creates GraalPy context preconfigured with a virtual filesystem and other GraalPy and polygot
-     * Context configuration options optimized for the usage of the Python virtual environment
-     * contained in the virtual filesystem.
-     */
-    public static Context.Builder contextBuilder() {
-        VirtualFileSystem vfs = VirtualFileSystem.create();
-        return contextBuilder(vfs);
-    }
-
-    /**
-     * Creates GraalPy context preconfigured with the given virtual filesystem and other GraalPy and
-     * polygot Context configuration options optimized for the usage of the Python virtual
-     * environment contained in the virtual filesystem.
-     */
-    public static Context.Builder contextBuilder(VirtualFileSystem vfs) {
-        return Context.newBuilder().
-        // set true to allow experimental options
-                        allowExperimentalOptions(false).
-                        // setting false will deny all privileges unless configured below
-                        allowAllAccess(false).
-                        // allows python to access the java language
-                        allowHostAccess(HostAccess.ALL).
-                        // allow access to the virtual and the host filesystem, as well as sockets
-                        allowIO(IOAccess.newBuilder().allowHostSocketAccess(true).fileSystem(vfs).build()).
-                        // allow creating python threads
-                        allowCreateThread(true).
-                        // allow running Python native extensions
-                        allowNativeAccess(true).
-                        // allow exporting Python values to polyglot bindings and accessing Java
-                        // from Python
-                        allowPolyglotAccess(PolyglotAccess.ALL).
-                        // choose the backend for the POSIX module
-                        option("python.PosixModuleBackend", "java").
-                        // equivalent to the Python -B flag
-                        option("python.DontWriteBytecodeFlag", "true").
-                        // equivalent to the Python -v flag
-                        option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false").
-                        // log level
-                        option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE").
-                        // equivalent to setting the PYTHONWARNINGS environment variable
-                        option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS")).
-                        // print Python exceptions directly
-                        option("python.AlwaysRunExcepthook", "true").
-                        // Force to automatically import site.py module, to make Python packages
-                        // available
-                        option("python.ForceImportSite", "true").
-                        // The sys.executable path, a virtual path that is used by the interpreter
-                        // to discover packages
-                        option("python.Executable", vfs.vfsVenvPath() + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.exe" : "/bin/python")).
-                        // Set the python home to be read from the embedded resources
-                        option("python.PythonHome", vfs.vfsHomePath()).
-                        // Do not warn if running without JIT. This can be desirable for short
-                        // running scripts to reduce memory footprint.
-                        option("engine.WarnInterpreterOnly", "false").
-                        // Set python path to point to sources stored in
-                        // src/main/resources/org.graalvm.python.vfs/proj
-                        option("python.PythonPath", vfs.vfsProjPath()).
-                        // pass the path to be executed
-                        option("python.InputFilePath", vfs.vfsProjPath()).
-                        // causes the interpreter to always assume hash-based pycs are valid
-                        option("python.CheckHashPycsMode", "never");
-    }
-
-    public static final class Builder {
-        private static final Predicate<Path> DEFAULT_EXTRACT_FILTER = (p) -> {
-            var s = p.toString();
-            return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll") || s.endsWith(".ttf");
-        };
-
-        private String vfsPrefix = "/" + VFS_ROOT;
-        private String filesListPath = vfsPrefix + "/" + VFS_FILESLIST;
-        private String windowsMountPoint = "X:\\graalpy_vfs";
-        private String unixMountPoint = "/graalpy_vfs";
-        private Predicate<Path> extractFilter = DEFAULT_EXTRACT_FILTER;
-        private HostIO allowHostIO = HostIO.READ_WRITE;
-        private boolean caseInsensitive = isWindows();
-
-        private Class<?> resourceLoadingClass;
-
-        private Builder() {
-        }
-
-        /**
-         * Sets the file system to be case-insensitive. Defaults to true on Windows and false
-         * elsewhere.
-         */
-        public Builder caseInsensitive(boolean value) {
-            caseInsensitive = value;
-            return this;
-        }
-
-        /**
-         * Determines if and how much host IO is allowed outside of the virtual filesystem.
-         */
-        public Builder allowHostIO(HostIO b) {
-            allowHostIO = b;
-            return this;
-        }
-
-        /**
-         * The mount point for the virtual filesystem on Windows. This mount point shadows any real
-         * filesystem, so should be chosen to avoid clashes with the users machine, e.g. if set to
-         * "X:\graalpy_vfs", then a resource with path /org.graalvm.python.vfs/xyz/abc is visible as
-         * "X:\graalpy_vfs\xyz\abc". This needs to be an absolute path with platform-specific
-         * separators without any trailing separator. If that file or directory actually exists, it
-         * will not be accessible.
-         */
-        public Builder windowsMountPoint(String s) {
-            windowsMountPoint = s;
-            return this;
-        }
-
-        /**
-         * The mount point for the virtual filesystem on Unices. This mount point shadows any real
-         * filesystem, so should be chosen to avoid clashes with the users machine, e.g. if set to
-         * "/graalpy_vfs", then a resource with path /org.graalvm.python.vfs/xyz/abc is visible as
-         * "/graalpy_vfs/xyz/abc". This needs to be an absolute path with platform-specific
-         * separators without any trailing separator. If that file or directory actually exists, it
-         * will not be accessible.
-         */
-        public Builder unixMountPoint(String s) {
-            unixMountPoint = s;
-            return this;
-        }
-
-        /**
-         * By default virtual filesystem resources are loaded by delegating to
-         * VirtualFileSystem.class.getResource(name). Use resourceLoadingClass to determine where to
-         * locate resources in cases when for example VirtualFileSystem is on module path and the
-         * jar containing the resources is on class path.
-         */
-        public Builder resourceLoadingClass(Class<?> c) {
-            resourceLoadingClass = c;
-            return this;
-        }
-
-        /**
-         * This filter applied to files in the virtual filesystem treats them as symlinks to real
-         * files in the host filesystem. This is useful, for example, if files in the virtual
-         * filesystem need to be accessed outside the Truffle sandbox. They will be extracted to the
-         * Java temporary directory on demand. The default filter matches any DLLs, dynamic
-         * libraries, shared objects, and Python C extension files, because these need to be
-         * accessed by the operating system loader. Setting this filter to <code>null</code> denies
-         * any extraction. Any other filter is combined with the default filter.
-         */
-        public Builder extractFilter(Predicate<Path> filter) {
-            if (extractFilter == null) {
-                extractFilter = null;
-            } else {
-                extractFilter = (p) -> filter.test(p) || DEFAULT_EXTRACT_FILTER.test(p);
-            }
-            return this;
-        }
-
-        public VirtualFileSystem build() {
-            return new VirtualFileSystem(extractFilter, vfsPrefix, filesListPath, windowsMountPoint, unixMountPoint, allowHostIO, resourceLoadingClass, caseInsensitive);
-        }
-    }
-
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static VirtualFileSystem create() {
-        return newBuilder().build();
     }
 
     /*
@@ -302,11 +130,11 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             this.platformPath = platformPath;
         }
 
-        public String getPlatformPath() {
+        String getPlatformPath() {
             return platformPath;
         }
 
-        public String getResourcePath() {
+        String getResourcePath() {
             return platformPathToResourcePath(platformPath);
         }
     }
@@ -318,7 +146,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             super(path);
         }
 
-        public byte[] getData() throws IOException {
+        private byte[] getData() throws IOException {
             if (data == null) {
                 data = readResource(getResourcePath());
             }
@@ -329,7 +157,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     private final class DirEntry extends BaseEntry {
         List<BaseEntry> entries = new ArrayList<>();
 
-        public DirEntry(String platformPath) {
+        DirEntry(String platformPath) {
             super(platformPath);
         }
     }
@@ -358,7 +186,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     private static final class DeleteTempDir extends Thread {
         private final Path extractDir;
 
-        public DeleteTempDir(Path extractDir) {
+        DeleteTempDir(Path extractDir) {
             this.extractDir = extractDir;
         }
 
@@ -400,7 +228,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
      * {@link #toAbsolutePath(Path) absolute path} is computed. This argument may be {@code null}
      * causing that no extraction will happen.
      */
-    private VirtualFileSystem(Predicate<Path> extractFilter,
+    VirtualFileSystemImpl(Predicate<Path> extractFilter,
                     String resourcesPrefix,
                     String fileListResource,
                     String windowsMountPoint,
@@ -411,7 +239,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         if (resourceLoadingClass != null) {
             this.resourceLoadingClass = resourceLoadingClass;
         } else {
-            this.resourceLoadingClass = VirtualFileSystem.class;
+            this.resourceLoadingClass = VirtualFileSystemImpl.class;
         }
         this.vfsPrefix = resourcesPrefix;
         this.filesListPath = fileListResource;
@@ -452,19 +280,19 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         }
     }
 
-    public static boolean isWindows() {
+    static boolean isWindows() {
         return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
     }
 
-    private String vfsHomePath() {
+    String vfsHomePath() {
         return resourcePathToPlatformPath(HOME_PREFIX);
     }
 
-    private String vfsProjPath() {
+    String vfsProjPath() {
         return resourcePathToPlatformPath(PROJ_PREFIX);
     }
 
-    private String vfsVenvPath() {
+    String vfsVenvPath() {
         return resourcePathToPlatformPath(VENV_PREFIX);
     }
 
@@ -576,13 +404,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         return vfsEntries.get(toCaseComparable(path.toString()));
     }
 
-    /**
-     * The mount point for the virtual filesystem.
-     *
-     * @see Builder#windowsMountPoint(String)
-     * @see Builder#unixMountPoint(String)
-     */
-    public String getMountPoint() {
+    String getMountPoint() {
         return this.mountPoint.toString();
     }
 
