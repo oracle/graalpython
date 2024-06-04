@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,20 +43,26 @@ package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.nodes.HiddenAttr;
+import com.oracle.truffle.api.strings.TruffleString;
 
-public final class HiddenAttrDescriptor extends PythonBuiltinObject {
-    private final HiddenAttr attr;
+public final class IndexedSlotDescriptor extends PythonBuiltinObject {
+    private final TruffleString name;
+    private final int index;
     private final Object type;
 
-    public HiddenAttrDescriptor(PythonLanguage lang, HiddenAttr attr, Object type) {
+    public IndexedSlotDescriptor(PythonLanguage lang, TruffleString name, int index, Object type) {
         super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape(lang));
-        this.attr = attr;
+        this.name = name;
+        this.index = index;
         this.type = type;
     }
 
-    public HiddenAttr getAttr() {
-        return attr;
+    public TruffleString getName() {
+        return name;
+    }
+
+    public int getIndex() {
+        return index;
     }
 
     public Object getType() {

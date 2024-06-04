@@ -96,7 +96,7 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object doHiddenAttrDescriptor(HiddenAttrDescriptor self) {
+        static Object doIndexedSlotDescriptor(IndexedSlotDescriptor self) {
             return self.getType();
         }
     }
@@ -113,11 +113,11 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        TruffleString repr(HiddenAttrDescriptor descr,
+        TruffleString repr(IndexedSlotDescriptor descr,
                         @Bind("this") Node inliningTarget,
                         @Shared("gerName") @Cached GetNameNode getName,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getAttr().getName(), getName.execute(inliningTarget, descr.getType()));
+            return simpleTruffleStringFormatNode.format("<attribute '%s' of '%s' objects>", descr.getName(), getName.execute(inliningTarget, descr.getType()));
         }
     }
 
@@ -140,11 +140,11 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(obj)")
-        static Object doHiddenAttrDescriptor(VirtualFrame frame, HiddenAttrDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
+        static Object doIndexedSlotDescriptor(VirtualFrame frame, IndexedSlotDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached DescriptorCheckNode descriptorCheckNode,
                         @Shared @Cached DescrGetNode getNode) {
-            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getAttr(), obj);
+            descriptorCheckNode.execute(inliningTarget, descr.getType(), descr.getName(), obj);
             return getNode.execute(frame, descr, obj);
         }
     }
@@ -164,11 +164,11 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 GetSetDescriptor getSet = (GetSetDescriptor) descr;
                 type = getSet.getType();
                 name = getSet.getName();
-            } else if (descr instanceof HiddenAttrDescriptor hidden) {
+            } else if (descr instanceof IndexedSlotDescriptor hidden) {
                 type = hidden.getType();
-                name = hidden.getAttr();
+                name = hidden.getName();
             } else {
-                throw CompilerDirectives.shouldNotReachHere("Not a GetSetDescriptor nor HiddenAttrDescriptor");
+                throw CompilerDirectives.shouldNotReachHere("Not a GetSetDescriptor nor IndexedSlotDescriptor");
             }
             descriptorCheckNode.execute(inliningTarget, type, name, obj);
             setNode.execute(frame, descr, obj, value);
@@ -186,11 +186,11 @@ public final class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 GetSetDescriptor getSet = (GetSetDescriptor) descr;
                 type = getSet.getType();
                 name = getSet.getName();
-            } else if (descr instanceof HiddenAttrDescriptor hidden) {
+            } else if (descr instanceof IndexedSlotDescriptor hidden) {
                 type = hidden.getType();
-                name = hidden.getAttr();
+                name = hidden.getName();
             } else {
-                throw CompilerDirectives.shouldNotReachHere("Not a GetSetDescriptor nor HiddenAttrDescriptor");
+                throw CompilerDirectives.shouldNotReachHere("Not a GetSetDescriptor nor IndexedSlotDescriptor");
             }
             descriptorCheckNode.execute(inliningTarget, type, name, obj);
             deleteNode.execute(frame, descr, obj);

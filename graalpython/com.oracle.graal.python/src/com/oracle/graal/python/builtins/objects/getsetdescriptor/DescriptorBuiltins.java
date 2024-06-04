@@ -56,9 +56,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetIndexedSlotsCountNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -106,10 +106,10 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static TruffleString doHiddenAttrDescriptor(VirtualFrame frame, HiddenAttrDescriptor self,
+        static TruffleString doIndexedSlotDescriptor(VirtualFrame frame, IndexedSlotDescriptor self,
                         @Shared @Cached("create(T___QUALNAME__)") GetFixedAttributeNode readQualNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.executeObject(frame, self.getType())), self.getAttr().getName());
+            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.executeObject(frame, self.getType())), self.getName());
         }
 
         @TruffleBoundary
@@ -128,9 +128,8 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static TruffleString doHiddenAttrDescriptor(HiddenAttrDescriptor self,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            return fromJavaStringNode.execute(self.getAttr().getName(), TS_ENCODING);
+        static TruffleString doIndexedSlotDescriptor(IndexedSlotDescriptor self) {
+            return self.getName();
         }
     }
 
@@ -172,15 +171,16 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doHiddenAttrDescriptor(HiddenAttrDescriptor descr, PythonAbstractObject obj,
+        Object doIndexedSlotDescriptor(IndexedSlotDescriptor descr, PythonAbstractObject obj,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached HiddenAttr.ReadNode readNode) {
-            Object val = readNode.execute(inliningTarget, obj, descr.getAttr(), PNone.NO_VALUE);
-            if (val != PNone.NO_VALUE) {
+                        @Cached GetOrCreateIndexedSlots getSlotsNode) {
+            Object[] slots = getSlotsNode.execute(inliningTarget, obj);
+            Object val = slots[descr.getIndex()];
+            if (val != null) {
                 return val;
             }
-            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, descr.getType(), descr.getAttr().getName());
+            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, descr.getType(), descr.getName());
         }
     }
 
@@ -202,10 +202,10 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object doHiddenAttrDescriptor(HiddenAttrDescriptor descr, PythonAbstractObject obj, Object value,
+        static Object doIndexedSlotDescriptor(IndexedSlotDescriptor descr, PythonAbstractObject obj, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.WriteNode writeNode) {
-            writeNode.execute(inliningTarget, obj, descr.getAttr(), value);
+                        @Cached GetOrCreateIndexedSlots getSlotsNode) {
+            getSlotsNode.execute(inliningTarget, obj)[descr.getIndex()] = value;
             return true;
         }
     }
@@ -239,18 +239,41 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doHiddenAttrDescriptor(HiddenAttrDescriptor descr, PythonAbstractObject obj,
+        Object doIndexedSlotDescriptor(IndexedSlotDescriptor descr, PythonAbstractObject obj,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached HiddenAttr.WriteNode writeNode,
-                        @Cached HiddenAttr.ReadNode readNode,
+                        @Cached GetOrCreateIndexedSlots getSlotsNode,
                         @Cached InlinedConditionProfile profile) {
             // PyMember_SetOne - Check if the attribute is set.
-            if (profile.profile(inliningTarget, readNode.execute(inliningTarget, obj, descr.getAttr(), PNone.NO_VALUE) != PNone.NO_VALUE)) {
-                writeNode.execute(inliningTarget, obj, descr.getAttr(), PNone.NO_VALUE);
+            Object[] slots = getSlotsNode.execute(inliningTarget, obj);
+            if (profile.profile(inliningTarget, slots[descr.getIndex()] != null)) {
+                slots[descr.getIndex()] = null;
                 return PNone.NONE;
             }
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError, ErrorMessages.S, descr.getAttr().getName());
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError, ErrorMessages.S, descr.getName());
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    abstract static class GetOrCreateIndexedSlots extends Node {
+        abstract Object[] execute(Node inliningTarget, PythonAbstractObject object);
+
+        @Specialization(guards = "object.getIndexedSlots() != null")
+        static Object[] doGet(PythonAbstractObject object) {
+            return object.getIndexedSlots();
+        }
+
+        @Specialization(guards = "object.getIndexedSlots() == null")
+        static Object[] doCreate(Node inliningTarget, PythonAbstractObject object,
+                        @Cached GetIndexedSlotsCountNode getIndexedSlotsCountNode,
+                        @Cached GetClassNode getClassNode) {
+            Object cls = getClassNode.execute(inliningTarget, object);
+            int slotCount = getIndexedSlotsCountNode.execute(inliningTarget, cls);
+            Object[] slots = new Object[slotCount];
+            object.setIndexedSlots(slots);
+            return slots;
         }
     }
 }

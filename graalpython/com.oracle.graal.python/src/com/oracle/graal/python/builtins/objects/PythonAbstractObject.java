@@ -198,6 +198,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     protected static final Shape ABSTRACT_SHAPE = Shape.newBuilder().build();
 
+    private Object[] indexedSlots;
+
     protected PythonAbstractObject(Shape shape) {
         super(shape);
     }
@@ -221,6 +223,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     public final void clearNativeWrapper() {
         nativeWrapper = null;
+    }
+
+    public Object[] getIndexedSlots() {
+        return indexedSlots;
+    }
+
+    public void setIndexedSlots(Object[] indexedSlots) {
+        this.indexedSlots = indexedSlots;
     }
 
     @ExportMessage

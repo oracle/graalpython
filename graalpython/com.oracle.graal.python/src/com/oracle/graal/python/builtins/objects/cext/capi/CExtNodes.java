@@ -215,6 +215,7 @@ public abstract class CExtNodes {
 
     private static final String J_UNICODE = "unicode";
     private static final String J_SUBTYPE_NEW = "_subtype_new";
+    private static final long SIZEOF_PY_OBJECT_PTR = Long.BYTES;
 
     /**
      * For some builtin classes, the CPython approach to creating a subclass instance is to just
@@ -939,6 +940,8 @@ public abstract class CExtNodes {
         MroSequenceStorage mroStorage = GetMroStorageNode.executeUncached(cls);
         int n = mroStorage.length();
 
+        boolean isBasicsizeOrWeaklistoffset = nativeMemberName == CFields.PyTypeObject__tp_basicsize || nativeMemberName == CFields.PyTypeObject__tp_weaklistoffset;
+        long indexedSlotsSize = isBasicsizeOrWeaklistoffset && cls instanceof PythonManagedClass pmc ? pmc.getIndexedSlotCount() * SIZEOF_PY_OBJECT_PTR : 0;
         for (int i = 0; i < n; i++) {
             PythonAbstractClass mroCls = (PythonAbstractClass) SequenceStorageNodes.GetItemDynamicNode.executeUncached(mroStorage, i);
 
@@ -951,6 +954,10 @@ public abstract class CExtNodes {
                 }
                 if (attr != NO_VALUE) {
                     return PyNumberAsSizeNode.executeExactUncached(attr);
+                } else if (indexedSlotsSize != 0) {
+                    // managed class with __slots__, but no precomputed
+                    // basicsize/dictoffset/weaklistoffset
+                    break;
                 }
             } else {
                 assert PGuards.isNativeClass(mroCls) : "invalid class inheritance structure; expected native class";
@@ -958,7 +965,7 @@ public abstract class CExtNodes {
             }
         }
         // return the value from PyBaseObject - assumed to be 0 for vectorcall_offset
-        return nativeMemberName == CFields.PyTypeObject__tp_basicsize || nativeMemberName == CFields.PyTypeObject__tp_weaklistoffset ? CStructs.PyObject.size() : 0L;
+        return isBasicsizeOrWeaklistoffset ? indexedSlotsSize + CStructs.PyObject.size() : 0L;
     }
 
     /**
@@ -986,6 +993,8 @@ public abstract class CExtNodes {
             CompilerAsserts.partialEvaluationConstant(builtinCallback);
 
             Object current = cls;
+            boolean isBasicsizeOrWeaklistoffset = nativeMember == CFields.PyTypeObject__tp_basicsize || nativeMember == CFields.PyTypeObject__tp_weaklistoffset;
+            long indexedSlotsSize = isBasicsizeOrWeaklistoffset && cls instanceof PythonManagedClass pmc ? pmc.getIndexedSlotCount() * SIZEOF_PY_OBJECT_PTR : 0;
             do {
                 if (current instanceof PythonBuiltinClassType pbct) {
                     current = PythonContext.get(inliningTarget).lookupType(pbct);
@@ -996,6 +1005,10 @@ public abstract class CExtNodes {
                     Object attr = readAttrNode.execute(inliningTarget, (PythonObject) current, managedMemberName, null);
                     if (attr != null) {
                         return asSizeNode.executeExact(null, inliningTarget, attr);
+                    } else if (indexedSlotsSize != 0) {
+                        // managed class with __slots__, but no precomputed
+                        // basicsize/dictoffset/weaklistoffset
+                        break;
                     }
                 } else {
                     assert PGuards.isNativeClass(current) : "invalid class inheritance structure; expected native class";
@@ -1004,7 +1017,7 @@ public abstract class CExtNodes {
                 current = getBaseClassNode.execute(inliningTarget, current);
             } while (current != null);
             // return the value from PyBaseObject - assumed to be 0 for vectorcall_offset
-            return nativeMember == CFields.PyTypeObject__tp_basicsize || nativeMember == CFields.PyTypeObject__tp_weaklistoffset ? CStructs.PyObject.size() : 0L;
+            return isBasicsizeOrWeaklistoffset ? indexedSlotsSize + CStructs.PyObject.size() : 0L;
         }
     }
 

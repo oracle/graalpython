@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
@@ -374,8 +373,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     /** For fast access to the PythonThreadState object by the owning thread. */
     private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
-
-    public final ConcurrentHashMap<String, HiddenAttr> typeHiddenAttrs = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_ATTRS);
 
     private final MroShape mroShapeRoot = MroShape.createRoot();
 
