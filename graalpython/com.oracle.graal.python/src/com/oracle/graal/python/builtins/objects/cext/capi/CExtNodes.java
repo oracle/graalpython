@@ -953,11 +953,15 @@ public abstract class CExtNodes {
                     attr = ReadAttributeFromObjectNode.getUncachedForceType().execute(mroCls, CompilerDirectives.castExact(managedMemberName, TruffleString.class));
                 }
                 if (attr != NO_VALUE) {
-                    return indexedSlotsSize + PyNumberAsSizeNode.executeExactUncached(attr);
+                    return PyNumberAsSizeNode.executeExactUncached(attr);
+                } else if (indexedSlotsSize != 0) {
+                    // managed class with __slots__, but no precomputed
+                    // basicsize/dictoffset/weaklistoffset
+                    break;
                 }
             } else {
                 assert PGuards.isNativeClass(mroCls) : "invalid class inheritance structure; expected native class";
-                return indexedSlotsSize + CStructAccess.ReadI64Node.getUncached().readFromObj((PythonNativeClass) mroCls, nativeMemberName);
+                return CStructAccess.ReadI64Node.getUncached().readFromObj((PythonNativeClass) mroCls, nativeMemberName);
             }
         }
         // return the value from PyBaseObject - assumed to be 0 for vectorcall_offset
@@ -1000,11 +1004,15 @@ public abstract class CExtNodes {
                 } else if (PGuards.isManagedClass(current)) {
                     Object attr = readAttrNode.execute(inliningTarget, (PythonObject) current, managedMemberName, null);
                     if (attr != null) {
-                        return indexedSlotsSize + asSizeNode.executeExact(null, inliningTarget, attr);
+                        return asSizeNode.executeExact(null, inliningTarget, attr);
+                    } else if (indexedSlotsSize != 0) {
+                        // managed class with __slots__, but no precomputed
+                        // basicsize/dictoffset/weaklistoffset
+                        break;
                     }
                 } else {
                     assert PGuards.isNativeClass(current) : "invalid class inheritance structure; expected native class";
-                    return indexedSlotsSize + getTypeMemberNode.readFromObj((PythonNativeClass) current, nativeMember);
+                    return getTypeMemberNode.readFromObj((PythonNativeClass) current, nativeMember);
                 }
                 current = getBaseClassNode.execute(inliningTarget, current);
             } while (current != null);
