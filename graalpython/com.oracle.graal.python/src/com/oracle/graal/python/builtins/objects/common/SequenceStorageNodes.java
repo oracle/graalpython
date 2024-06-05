@@ -40,7 +40,6 @@ import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.S
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType.Uninitialized;
 
 import java.lang.reflect.Array;
-import java.math.BigInteger;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -703,7 +702,7 @@ public abstract class SequenceStorageNodes {
                 newArray[j] = values[i];
             }
 
-            return new MroSequenceStorage(storage.getClassName(), newArray);
+            return new ObjectSequenceStorage(newArray);
         }
 
         @Specialization
@@ -3153,7 +3152,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static SequenceStorage doMro(MroSequenceStorage storage) {
-            return new MroSequenceStorage(storage.getClassName(), PythonUtils.arrayCopyOf(storage.getInternalClassArray(), storage.length()));
+            return new ObjectSequenceStorage(PythonUtils.arrayCopyOf(storage.getInternalClassArray(), storage.length()));
         }
 
         @Specialization
@@ -3221,7 +3220,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static Object[] doMro(MroSequenceStorage storage) {
-            throw CompilerDirectives.shouldNotReachHere();
+            return storage.getCopyOfInternalArray();
         }
 
         @Specialization
@@ -3614,7 +3613,7 @@ public abstract class SequenceStorageNodes {
             return s.getInternalClassArray();
         }
 
-        @Specialization(guards = "!isObjectStorage(s) || isMroStorage(s)")
+        @Specialization(guards = {"!isObjectStorage(s)", "!isMroStorage(s)"})
         static Object[] doArrayBasedSequenceStorage(Node inliningTarget, ArrayBasedSequenceStorage s,
                         @Cached CopyInternalArrayNode copy) {
             Object[] internalArray = copy.execute(inliningTarget, s);
@@ -3633,7 +3632,7 @@ public abstract class SequenceStorageNodes {
             return PythonUtils.EMPTY_OBJECT_ARRAY;
         }
 
-        @Specialization(replaces = {"doObjectSequenceStorage", "doArrayBasedSequenceStorage", "doNativeObject", "doEmptySequenceStorage"})
+        @Specialization(guards = {"!isObjectStorage(s)", "!isMroStorage(s)"}, replaces = {"doArrayBasedSequenceStorage", "doNativeObject", "doEmptySequenceStorage"})
         static Object[] doGeneric(Node inliningTarget, SequenceStorage s,
                         @Exclusive @Cached GetItemScalarNode getItemNode) {
             return materializeGeneric(inliningTarget, s, s.length(), getItemNode);
@@ -3647,11 +3646,11 @@ public abstract class SequenceStorageNodes {
             return barr;
         }
 
-        protected static boolean isObjectStorage(ArrayBasedSequenceStorage storage) {
+        protected static boolean isObjectStorage(SequenceStorage storage) {
             return storage instanceof ObjectSequenceStorage;
         }
 
-        protected static boolean isMroStorage(ArrayBasedSequenceStorage storage) {
+        protected static boolean isMroStorage(SequenceStorage storage) {
             return storage instanceof MroSequenceStorage;
         }
     }
@@ -3691,6 +3690,7 @@ public abstract class SequenceStorageNodes {
 
     @GenerateUncached
     @GenerateInline
+    @ImportStatic(PInt.class)
     public abstract static class InsertItemArrayBasedStorageNode extends Node {
 
         public static SequenceStorage executeUncached(ArrayBasedSequenceStorage storage, int index, Object value) {
@@ -3723,21 +3723,15 @@ public abstract class SequenceStorageNodes {
             return storage;
         }
 
-        @Specialization
-        static SequenceStorage doBigIntWithLongStorage(LongSequenceStorage storage, int idx, BigInteger value) {
-            storage.insertLongItem(idx, PInt.longValue(value));
+        @Specialization(guards = "isIntRange(value)")
+        static SequenceStorage doLongWithIntStorage(IntSequenceStorage storage, int idx, long value) {
+            storage.insertIntItem(idx, (int) value);
             return storage;
         }
 
         @Specialization
         static SequenceStorage doByteWithByteStorage(ByteSequenceStorage storage, int idx, byte value) {
             storage.insertByteItem(idx, value);
-            return storage;
-        }
-
-        @Specialization
-        static SequenceStorage doIntWithByteStorage(ByteSequenceStorage storage, int idx, int value) {
-            storage.insertByteItem(idx, (byte) value);
             return storage;
         }
 

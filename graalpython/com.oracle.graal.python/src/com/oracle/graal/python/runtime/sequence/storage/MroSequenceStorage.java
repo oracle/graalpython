@@ -41,7 +41,6 @@
 package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +48,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -132,7 +132,11 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
 
     @Override
     public Object getCopyOfInternalArrayObject() {
-        return Arrays.copyOf(values, length);
+        return getCopyOfInternalArray();
+    }
+
+    public Object[] getCopyOfInternalArray() {
+        return PythonUtils.arrayCopyOf(values, length);
     }
 
     @SuppressWarnings("unused")
