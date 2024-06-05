@@ -746,6 +746,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 return factory.createNativeVoidPtr(((CtypesModuleBuiltins) self.getBuiltins()).rtldDefault);
             }
 
+            // The loaded library can link against libpython, so we have to make sure it is loaded
+            CApiContext.ensureCapiWasLoaded();
+
             int mode = m != Integer.MIN_VALUE ? m : RTLD_LOCAL.getValueIfDefined();
             mode |= RTLD_NOW.getValueIfDefined();
             PythonContext context = PythonContext.get(inliningTarget);
