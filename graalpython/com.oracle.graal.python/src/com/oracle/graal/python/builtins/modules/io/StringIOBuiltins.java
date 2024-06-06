@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -118,6 +118,7 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -656,8 +657,9 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            Object[] array = getArray.execute(inliningTarget, state.getSequenceStorage());
-            if (array.length < 4) {
+            SequenceStorage storage = state.getSequenceStorage();
+            Object[] array = getArray.execute(inliningTarget, storage);
+            if (storage.length() < 4) {
                 return notTuple(self, state, raiseNode.get(inliningTarget));
             }
             initNode.execute(frame, self, array[0], array[1]);

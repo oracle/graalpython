@@ -87,6 +87,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -256,8 +257,9 @@ public class MultibyteCodecUtil {
             boolean isUnicode = false;
             if (!isError) {
                 PTuple tuple = (PTuple) retobj;
-                Object[] array = getArray.execute(inliningTarget, tuple.getSequenceStorage());
-                isError = array.length != 2;
+                SequenceStorage storage = tuple.getSequenceStorage();
+                Object[] array = getArray.execute(inliningTarget, storage);
+                isError = storage.length() != 2;
                 if (!isError) {
                     tobj = array[0];
                     newposobj = array[1];
@@ -390,8 +392,9 @@ public class MultibyteCodecUtil {
             Object newposobj = null;
             if (!isError) {
                 PTuple tuple = (PTuple) retobj;
-                Object[] array = getArray.execute(inliningTarget, tuple.getSequenceStorage());
-                isError = array.length != 2;
+                SequenceStorage storage = tuple.getSequenceStorage();
+                Object[] array = getArray.execute(inliningTarget, storage);
+                isError = storage.length() != 2;
                 if (!isError) {
                     retuni = array[0];
                     newposobj = array[1];

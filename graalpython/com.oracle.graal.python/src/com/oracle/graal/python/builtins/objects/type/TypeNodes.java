@@ -933,10 +933,11 @@ public abstract class TypeNodes {
                         @Cached InlinedExactClassProfile resultTypeProfile,
                         @Cached GetInternalObjectArrayNode toArrayNode) {
             Object result = resultTypeProfile.profile(inliningTarget, getTpBasesNode.readFromObj(obj, PyTypeObject__tp_bases));
-            if (result instanceof PTuple) {
-                Object[] values = toArrayNode.execute(inliningTarget, ((PTuple) result).getSequenceStorage());
+            if (result instanceof PTuple tuple) {
+                SequenceStorage storage = tuple.getSequenceStorage();
+                Object[] values = toArrayNode.execute(inliningTarget, storage);
                 try {
-                    return cast(values);
+                    return cast(values, storage);
                 } catch (ClassCastException e) {
                     throw raise.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.UNSUPPORTED_OBJ_IN, "tp_bases");
                 }
@@ -945,9 +946,9 @@ public abstract class TypeNodes {
         }
 
         // TODO: get rid of this
-        private static PythonAbstractClass[] cast(Object[] arr) {
-            PythonAbstractClass[] bases = new PythonAbstractClass[arr.length];
-            for (int i = 0; i < arr.length; i++) {
+        private static PythonAbstractClass[] cast(Object[] arr, SequenceStorage storage) {
+            PythonAbstractClass[] bases = new PythonAbstractClass[storage.length()];
+            for (int i = 0; i < storage.length(); i++) {
                 bases[i] = (PythonAbstractClass) arr[i];
             }
             return bases;
@@ -1616,7 +1617,8 @@ public abstract class TypeNodes {
                 if (mroMeth instanceof PFunction) {
                     Object mroObj = CallUnaryMethodNode.getUncached().executeObject(mroMeth, cls);
                     if (mroObj instanceof PSequence mroSequence) {
-                        return mroCheck(cls, GetInternalObjectArrayNode.executeUncached(mroSequence.getSequenceStorage()));
+                        SequenceStorage mroStorage = mroSequence.getSequenceStorage();
+                        return mroCheck(cls, GetInternalObjectArrayNode.executeUncached(mroStorage), mroStorage);
                     }
                     throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, cls);
                 }
@@ -1663,10 +1665,10 @@ public abstract class TypeNodes {
             return currentMRO;
         }
 
-        private static PythonAbstractClass[] mroCheck(Object cls, Object[] mro) {
-            List<PythonAbstractClass> resultMro = new ArrayList<>(mro.length);
+        private static PythonAbstractClass[] mroCheck(Object cls, Object[] mro, SequenceStorage storage) {
+            List<PythonAbstractClass> resultMro = new ArrayList<>(storage.length());
             Object solid = GetSolidBaseNode.executeUncached(cls);
-            for (int i = 0; i < mro.length; i++) {
+            for (int i = 0; i < storage.length(); i++) {
                 Object object = mro[i];
                 if (object == null) {
                     continue;

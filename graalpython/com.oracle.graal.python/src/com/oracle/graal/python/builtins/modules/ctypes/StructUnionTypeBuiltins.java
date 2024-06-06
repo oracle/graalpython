@@ -105,6 +105,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -347,8 +348,9 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                 if (!PGuards.isPTuple(pair)) {
                     fieldsError(raiseNode.get(inliningTarget));
                 }
-                Object[] tuple = getArray.execute(inliningTarget, ((PTuple) pair).getSequenceStorage());
-                int tupleLen = tuple.length;
+                SequenceStorage storage = ((PTuple) pair).getSequenceStorage();
+                Object[] tuple = getArray.execute(inliningTarget, storage);
+                int tupleLen = storage.length();
                 if (tupleLen < 2 || !PGuards.isString(tuple[0]) || (tupleLen > 2 && !PGuards.isInteger(tuple[2]))) {
                     fieldsError(raiseNode.get(inliningTarget));
                 }
@@ -557,8 +559,9 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                     if (!PGuards.isPTuple(pair)) {
                         fieldsError(raiseNode.get(inliningTarget));
                     }
-                    Object[] tuple = getArray.execute(inliningTarget, ((PTuple) pair).getSequenceStorage());
-                    int tupleLen = tuple.length;
+                    SequenceStorage storage = ((PTuple) pair).getSequenceStorage();
+                    Object[] tuple = getArray.execute(inliningTarget, storage);
+                    int tupleLen = storage.length();
                     if (tupleLen < 2 || !PGuards.isString(tuple[0]) || (tupleLen > 2 && !PGuards.isInteger(tuple[2]))) {
                         fieldsError(raiseNode.get(inliningTarget));
                     }

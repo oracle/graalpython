@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,6 +78,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -168,8 +169,9 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                 if (!PGuards.isPTuple(ob)) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
                 }
-                Object[] obtuple = getArray.execute(inliningTarget, ((PTuple) ob).getSequenceStorage());
-                Object[] converters = converters_from_argtypes(frame, inliningTarget, obtuple, raiseNode, lookupAttr);
+                SequenceStorage storage = ((PTuple) ob).getSequenceStorage();
+                Object[] obtuple = getArray.execute(inliningTarget, storage);
+                Object[] converters = converters_from_argtypes(frame, inliningTarget, obtuple, storage.length(), raiseNode, lookupAttr);
                 stgdict.argtypes = obtuple;
                 stgdict.converters = converters;
             }
@@ -188,10 +190,9 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             return result;
         }
 
-        static Object[] converters_from_argtypes(VirtualFrame frame, Node inliningTarget, Object[] args,
+        static Object[] converters_from_argtypes(VirtualFrame frame, Node inliningTarget, Object[] args, int nArgs,
                         PRaiseNode.Lazy raiseNode,
                         PyObjectLookupAttr lookupAttr) {
-            int nArgs = args.length;
             Object[] converters = new Object[nArgs];
 
             for (int i = 0; i < nArgs; ++i) {
