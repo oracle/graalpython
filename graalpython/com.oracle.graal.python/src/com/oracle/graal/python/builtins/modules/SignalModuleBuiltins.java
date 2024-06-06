@@ -360,7 +360,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "set_wakeup_fd", minNumOfPositionalArgs = 1, parameterNames = {"", "warn_on_full_buffer"})
+    @Builtin(name = "set_wakeup_fd", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"fd", "warn_on_full_buffer"})
     @GenerateNodeFactory
     abstract static class SetWakeupFdNode extends PythonBuiltinNode {
         @Specialization

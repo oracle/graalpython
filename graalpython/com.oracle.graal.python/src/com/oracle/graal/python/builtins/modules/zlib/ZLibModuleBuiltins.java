@@ -402,7 +402,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
     }
 
     // zlib.adler32(data[, value])
-    @Builtin(name = "adler32", minNumOfPositionalArgs = 1, parameterNames = {"", "value"})
+    @Builtin(name = "adler32", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"data", "value"})
     @ArgumentClinic(name = "value", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "PNone.NO_VALUE", useDefaultForNone = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory

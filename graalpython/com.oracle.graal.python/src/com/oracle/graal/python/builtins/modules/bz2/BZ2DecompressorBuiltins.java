@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -105,7 +105,7 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "decompress", minNumOfPositionalArgs = 1, parameterNames = {"$self", "", "max_length"})
+    @Builtin(name = "decompress", minNumOfPositionalArgs = 1, parameterNames = {"$self", "data", "max_length"})
     @ArgumentClinic(name = "max_length", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class DecompressNode extends PythonTernaryClinicBuiltinNode {

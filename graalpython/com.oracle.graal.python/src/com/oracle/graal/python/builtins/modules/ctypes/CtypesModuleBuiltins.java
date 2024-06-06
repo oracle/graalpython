@@ -630,7 +630,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "resize", minNumOfPositionalArgs = 2, parameterNames = {"", "size"})
+    @Builtin(name = "resize", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"obj", "size"})
     @ArgumentClinic(name = "size", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     protected abstract static class ResizeNode extends PythonBinaryClinicBuiltinNode {
@@ -989,7 +989,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "byref", minNumOfPositionalArgs = 1, parameterNames = {"", "offset"})
+    @Builtin(name = "byref", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"instance", "offset"})
     @ArgumentClinic(name = "offset", conversion = ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory
     protected abstract static class ByRefNode extends PythonBinaryClinicBuiltinNode {
