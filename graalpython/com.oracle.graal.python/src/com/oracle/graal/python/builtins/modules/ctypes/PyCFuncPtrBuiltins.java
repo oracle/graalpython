@@ -135,6 +135,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -445,8 +446,9 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Shared @Cached PyObjectLookupAttr lookupAttr,
                         @Shared @Cached GetInternalObjectArrayNode getArray,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            SequenceStorage storage = value.getSequenceStorage();
             Object[] ob = getArray.execute(inliningTarget, value.getSequenceStorage());
-            self.converters = converters_from_argtypes(frame, inliningTarget, ob, raiseNode, lookupAttr);
+            self.converters = converters_from_argtypes(frame, inliningTarget, ob, storage.length(), raiseNode, lookupAttr);
             self.argtypes = ob;
             return PNone.NONE;
         }
@@ -457,8 +459,9 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Shared @Cached PyObjectLookupAttr lookupAttr,
                         @Shared @Cached GetInternalObjectArrayNode getArray,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            SequenceStorage storage = value.getSequenceStorage();
             Object[] ob = getArray.execute(inliningTarget, value.getSequenceStorage());
-            self.converters = converters_from_argtypes(frame, inliningTarget, ob, raiseNode, lookupAttr);
+            self.converters = converters_from_argtypes(frame, inliningTarget, ob, storage.length(), raiseNode, lookupAttr);
             self.argtypes = ob;
             return PNone.NONE;
         }
@@ -646,9 +649,10 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
                  * This way seems to be ~2 us faster than the PyArg_ParseTuple calls below.
                  */
                 /* We HAVE already checked that the tuple can be parsed with "i|ZO", so... */
-                Object[] item = getArray.execute(inliningTarget, ((PTuple) paramflags[i]).getSequenceStorage());
+                SequenceStorage storage = ((PTuple) paramflags[i]).getSequenceStorage();
+                Object[] item = getArray.execute(inliningTarget, storage);
                 Object ob;
-                int tsize = item.length;
+                int tsize = storage.length();
                 int flag = castToJavaIntExactNode.execute(inliningTarget, item[0]);
                 TruffleString name = tsize > 1 ? castToTruffleStringNode.execute(inliningTarget, item[1]) : null;
                 Object defval = tsize > 2 ? item[2] : null;

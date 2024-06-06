@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -107,6 +107,7 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -768,10 +769,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     }
                 } else if (PyListCheckExactNode.executeUncached(v)) {
                     writeByte(TYPE_LIST | flag);
+                    SequenceStorage storage = SequenceNodes.GetSequenceStorageNode.executeUncached(v);
                     Object[] items = GetInternalObjectArrayNode.executeUncached(SequenceNodes.GetSequenceStorageNode.executeUncached(v));
-                    writeSize(items.length);
-                    for (Object item : items) {
-                        writeObject(item);
+                    writeSize(storage.length());
+                    for (int i = 0; i < storage.length(); i++) {
+                        writeObject(items[i]);
                     }
                 } else if (v instanceof PDict && PyDictCheckExactNode.executeUncached(v)) {
                     HashingStorage dictStorage = ((PDict) v).getDictStorage();

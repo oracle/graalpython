@@ -115,6 +115,7 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -651,8 +652,9 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
-            Object[] array = getArray.execute(inliningTarget, state.getSequenceStorage());
-            if (array.length < 3) {
+            SequenceStorage storage = state.getSequenceStorage();
+            Object[] array = getArray.execute(inliningTarget, storage);
+            if (storage.length() < 3) {
                 return notTuple(self, state, raiseNode.get(inliningTarget));
             }
             /*

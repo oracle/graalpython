@@ -495,12 +495,13 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                 Object exceptionObject = raiseDecodingErrorNode.makeDecodeException(inliningTarget, decoder, inputObject);
                 Object restuple = callNode.execute(errorHandler, exceptionObject);
 
-                Object[] t = null;
-                if (PGuards.isPTuple(restuple)) {
-                    t = getArray.execute(inliningTarget, ((PTuple) restuple).getSequenceStorage());
+                if (!PGuards.isPTuple(restuple)) {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
                 }
+                SequenceStorage storage = ((PTuple) restuple).getSequenceStorage();
+                Object[] t = getArray.execute(inliningTarget, storage);
 
-                if (t == null || t.length != 2) {
+                if (storage.length() != 2) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
                 }
                 int newpos = asIntNode.execute(null, inliningTarget, t[1]);
