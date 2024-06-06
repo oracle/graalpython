@@ -709,6 +709,9 @@ def update_unittest_tags(args):
         'test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one',
         'test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_killed_child',
         'test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_idle_thread_reuse',
+        'graalpython.lib-python.3.test.test_threading.ThreadTests.test_join_nondaemon_on_shutdown',
+        'graalpython.lib-python.3.test.test_threading.ThreadTests.test_import_from_another_thread',
+        'graalpython.lib-python.3.test.test_threading.ThreadTests.test_finalization_shutdown',
         # Transiently times out GR-52666
         'test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_submit_after_interpreter_shutdown',
         'test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_del_shutdown',

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -102,9 +102,9 @@ final class Validator implements SSTreeVisitor<Void> {
     private Validator() {
     }
 
-    //////////////////////////////
+    /*-
     // ModTy validation
-    //////////////////////////////
+    */
 
     // Equivalent of _PyAST_Validate - entry point of the validation
     static void validateMod(ModTy mod) {
@@ -137,9 +137,9 @@ final class Validator implements SSTreeVisitor<Void> {
         return null;
     }
 
-    //////////////////////////////
+    /*-
     // StmtTy validation
-    //////////////////////////////
+    */
 
     // Equivalent of validate_stmt
     private void validateStmt(StmtTy stmt) {
@@ -399,9 +399,9 @@ final class Validator implements SSTreeVisitor<Void> {
         return null;
     }
 
-    //////////////////////////////
+    /*-
     // ExprTy validation
-    //////////////////////////////
+    */
 
     // Equivalent of validate_expr
     private void validateExpr(ExprTy expr, ExprContextTy context) {
@@ -667,9 +667,9 @@ final class Validator implements SSTreeVisitor<Void> {
         return null;
     }
 
-    //////////////////////////////
+    /*-
     // PatternTy validation
-    //////////////////////////////
+    */
 
     boolean isStarPatternOk;
 
@@ -871,9 +871,9 @@ final class Validator implements SSTreeVisitor<Void> {
         return null;
     }
 
-    //////////////////////////////
+    /*-
     // Other visitors
-    //////////////////////////////
+    */
 
     @Override
     public Void visit(ComprehensionTy node) {
@@ -948,9 +948,9 @@ final class Validator implements SSTreeVisitor<Void> {
         return null;
     }
 
-    //////////////////////////////
+    /*-
     // Validation of sequences
-    //////////////////////////////
+    */
 
     // Equivalent of validate_stmts
     private void validateStmts(StmtTy[] stmts) {
@@ -1039,9 +1039,9 @@ final class Validator implements SSTreeVisitor<Void> {
         }
     }
 
-    //////////////////////////////
+    /*-
     // Helpers
-    //////////////////////////////
+    */
 
     // Equivalent of asdl_seq_LEN
     private static int seqLen(Object[] seq) {
