@@ -57,12 +57,10 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
-import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -111,17 +109,15 @@ public abstract class PySequenceSizeNode extends Node {
         return lenNode.execute(inliningTarget, object.getDictStorage());
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    @Specialization(guards = "isBuiltinPString(object)")
     @InliningCutoff
-    static int doPString(Node inliningTarget, PString object,
-                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+    static int doPString(PString object,
                     @Cached(inline = false) StringNodes.StringLenNode lenNode) {
         return lenNode.execute(object);
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
-    static int doPBytes(Node inliningTarget, PBytesLike object,
-                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+    @Specialization(guards = "isBuiltinBytesLike(object)")
+    static int doPBytes(PBytesLike object) {
         return object.getSequenceStorage().length();
     }
 

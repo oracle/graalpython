@@ -51,7 +51,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -73,11 +72,10 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class UnpackSequenceNode extends PNodeWithContext {
     public abstract int execute(Frame frame, int stackTop, Object collection, int count);
 
-    @Specialization(guards = {"cannotBeOverridden(sequence, inliningTarget, getClassNode)", "!isPString(sequence)"}, limit = "1")
+    @Specialization(guards = "isBuiltinSequence(sequence)")
     @ExplodeLoop
     static int doUnpackSequence(VirtualFrame frame, int initialStackTop, PSequence sequence, int count,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {

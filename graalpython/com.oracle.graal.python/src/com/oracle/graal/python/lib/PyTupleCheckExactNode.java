@@ -43,6 +43,7 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -69,12 +70,7 @@ public abstract class PyTupleCheckExactNode extends PNodeWithContext {
         return true;
     }
 
-    @Specialization(guards = "!isBuiltinTuple(tuple)")
-    static boolean doOtherTuple(@SuppressWarnings("unused") PTuple tuple) {
-        return false;
-    }
-
-    @Specialization(guards = "!isPTuple(object)")
+    @Fallback
     static boolean doOther(@SuppressWarnings("unused") Object object) {
         return false;
     }

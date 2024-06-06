@@ -42,6 +42,7 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -68,12 +69,7 @@ public abstract class PyFrozenSetCheckExactNode extends Node {
         return true;
     }
 
-    @Specialization(guards = "!isBuiltinFrozenSet(frozenSet)")
-    static boolean doOtherFrozenSet(@SuppressWarnings("unused") PFrozenSet frozenSet) {
-        return false;
-    }
-
-    @Specialization(guards = "!isPFrozenSet(object)")
+    @Fallback
     static boolean doOther(@SuppressWarnings("unused") Object object) {
         return false;
     }

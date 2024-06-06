@@ -108,7 +108,7 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
                     @Cached BuiltinPyLongAsLongAndOverflowNode recursive) throws OverflowException {
         Object result = indexNode.execute(frame, inliningTarget, object);
         // PyNumberIndexNode guarantees that the result is a builtin integer
-        assert PyLongCheckExactNode.canBeBuiltinInt(result);
+        assert PyLongCheckExactNode.executeUncached(result);
         return recursive.execute(frame, inliningTarget, result);
     }
 

@@ -104,7 +104,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -605,26 +604,6 @@ public abstract class PGuards {
         throw new UnexpectedResultException(result);
     }
 
-    /**
-     * Tests if the class of a Python object is a builtin class, i.e., any magic methods cannot be
-     * overridden.
-     */
-    public static boolean cannotBeOverridden(Object clazz) {
-        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
-    }
-
-    @InliningCutoff
-    public static boolean cannotBeOverridden(Object object, Node inliningTarget, GetClassNode getClassNode) {
-        Object clazz = getClassNode.execute(inliningTarget, object);
-        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
-    }
-
-    @InliningCutoff
-    public static boolean cannotBeOverridden(PythonObject object, Node inliningTarget, GetPythonObjectClassNode getClassNode) {
-        Object clazz = getClassNode.execute(inliningTarget, object);
-        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
-    }
-
     public static boolean isBuiltinDict(PythonObject dict) {
         /*
          * dict's __class__ cannot be reassigned and other objects cannot have their class assigned
@@ -662,8 +641,27 @@ public abstract class PGuards {
         return isBuiltinDict(hashingCollection) || isBuiltinSet(hashingCollection) || isBuiltinFrozenSet(hashingCollection);
     }
 
+    public static boolean isBuiltinPString(PString string) {
+        // See isBuiltinDict for explanation
+        return string.getInitialPythonClass() == PythonBuiltinClassType.PString;
+    }
+
+    public static boolean isBuiltinBytes(PythonObject bytes) {
+        // See isBuiltinDict for explanation
+        return bytes.getInitialPythonClass() == PythonBuiltinClassType.PBytes;
+    }
+
+    public static boolean isBuiltinByteArray(PythonObject byteArray) {
+        // See isBuiltinDict for explanation
+        return byteArray.getInitialPythonClass() == PythonBuiltinClassType.PByteArray;
+    }
+
+    public static boolean isBuiltinBytesLike(PythonObject object) {
+        return isBuiltinBytes(object) || isBuiltinByteArray(object);
+    }
+
     public static boolean isBuiltinSequence(PythonObject sequence) {
-        return isBuiltinList(sequence) || isBuiltinTuple(sequence);
+        return isBuiltinList(sequence) || isBuiltinTuple(sequence) || isBuiltinBytesLike(sequence);
     }
 
     public static boolean isKindOfBuiltinClass(Object clazz) {

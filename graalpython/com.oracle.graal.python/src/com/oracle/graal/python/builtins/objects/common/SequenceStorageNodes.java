@@ -2264,11 +2264,10 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = {"hasStorage(seq)", "cannotBeOverridden(seq, inliningTarget, getClassNode)"}, limit = "1")
+        @Specialization(guards = {"hasStorage(seq)", "isBuiltinSequence(seq)"})
         @SuppressWarnings("truffle-static-method")
         SequenceStorage doWithStorage(SequenceStorage left, PSequence seq, int len,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
                         @Cached GetSequenceStorageNode getStorageNode,
                         @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached ConcatBaseNode concatStoragesNode) {
@@ -2295,12 +2294,11 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(iterable, inliningTarget, getClassNode)", limit = "1")
+        @Fallback
         @SuppressWarnings("truffle-static-method")
         @InliningCutoff
         SequenceStorage doWithoutStorage(VirtualFrame frame, SequenceStorage left, Object iterable, int len,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
                         @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached GetNextNode getNextNode,

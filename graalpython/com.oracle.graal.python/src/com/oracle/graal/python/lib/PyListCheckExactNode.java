@@ -42,6 +42,7 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -68,12 +69,7 @@ public abstract class PyListCheckExactNode extends Node {
         return true;
     }
 
-    @Specialization(guards = "!isBuiltinList(list)")
-    static boolean doOtherList(@SuppressWarnings("unused") PList list) {
-        return false;
-    }
-
-    @Specialization(guards = "!isList(object)")
+    @Fallback
     static boolean doOther(@SuppressWarnings("unused") Object object) {
         return false;
     }

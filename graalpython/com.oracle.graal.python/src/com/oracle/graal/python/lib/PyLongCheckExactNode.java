@@ -43,6 +43,7 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -56,7 +57,7 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateInline
 @GenerateCached(false)
 public abstract class PyLongCheckExactNode extends PNodeWithContext {
-    public static final boolean executeUncached(Object object) {
+    public static boolean executeUncached(Object object) {
         return PyLongCheckExactNodeGen.getUncached().execute(null, object);
     }
 
@@ -77,24 +78,14 @@ public abstract class PyLongCheckExactNode extends PNodeWithContext {
         return true;
     }
 
-    @Specialization(guards = "!isBuiltinPInt(object)")
-    static boolean doOtherPInt(@SuppressWarnings("unused") PInt object) {
-        return false;
-    }
-
-    @Specialization(guards = "!canBeBuiltinInt(object)")
-    static boolean doOther(@SuppressWarnings("unused") Object object) {
-        return false;
-    }
-
     @Specialization
     static boolean doNativePtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
         return true;
     }
 
-    protected static boolean canBeBuiltinInt(Object object) {
-        // Boolean is a subclass, don't put it here
-        return object instanceof Integer || object instanceof Long || object instanceof PInt || object instanceof PythonNativeVoidPtr;
+    @Fallback
+    static boolean doOther(@SuppressWarnings("unused") Object object) {
+        return false;
     }
 
     public static PyLongCheckExactNode getUncached() {

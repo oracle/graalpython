@@ -42,6 +42,7 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -68,12 +69,7 @@ public abstract class PyDictCheckExactNode extends Node {
         return true;
     }
 
-    @Specialization(guards = "!isBuiltinDict(dict)")
-    static boolean doOtherDict(@SuppressWarnings("unused") PDict dict) {
-        return false;
-    }
-
-    @Specialization(guards = "!isDict(object)")
+    @Fallback
     static boolean doOther(@SuppressWarnings("unused") Object object) {
         return false;
     }

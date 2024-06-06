@@ -55,7 +55,6 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
@@ -99,10 +98,9 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
         return avoidNegative1(hashCodeNode.execute(object, TS_ENCODING));
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "isBuiltinPString(object)")
     @InliningCutoff
-    static long hash(@SuppressWarnings("unused") Node inliningTarget, PString object,
-                    @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+    static long hash(Node inliningTarget, PString object,
                     @Cached CastToTruffleStringNode cast,
                     @Shared @Cached(inline = false) TruffleString.HashCodeNode hashCodeNode) {
         return hash(cast.execute(inliningTarget, object), hashCodeNode);

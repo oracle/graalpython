@@ -153,16 +153,14 @@ public abstract class IteratorNodes {
             return lenNode.execute(inliningTarget, object.getDictStorage());
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
-        static int doPString(Node inliningTarget, PString object,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+        @Specialization(guards = "isBuiltinPString(object)")
+        static int doPString(PString object,
                         @Cached(inline = false) StringNodes.StringLenNode lenNode) {
             return lenNode.execute(object);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
-        static int doPBytes(Node inliningTarget, PBytesLike object,
-                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+        @Specialization(guards = "isBuiltinBytesLike(object)")
+        static int doPBytes(PBytesLike object) {
             return object.getSequenceStorage().length();
         }
 
