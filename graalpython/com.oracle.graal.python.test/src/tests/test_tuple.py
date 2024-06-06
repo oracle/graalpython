@@ -2,9 +2,11 @@
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+import sys
+
 import seq_tests
-#import pickle
 from compare import CompareTest
+
 
 class TupleTest(seq_tests.CommonTest):
 
@@ -21,6 +23,9 @@ class TupleTest(seq_tests.CommonTest):
         self.assertEqual(tuple([0, 1, 2, 3]), (0, 1, 2, 3))
         self.assertEqual(tuple(''), ())
         self.assertEqual(tuple('spam'), ('s', 'p', 'a', 'm'))
+
+    def test_from_subclass(self):
+        self.assertIs(type(tuple(sys.version_info)), tuple)
 
     def test_literal(self):
         self.assertEqual((1,2,3), (*[1,2,3],))
