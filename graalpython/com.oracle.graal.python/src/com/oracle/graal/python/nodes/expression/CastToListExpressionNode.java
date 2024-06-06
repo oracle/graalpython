@@ -60,7 +60,6 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNodeGen.CastToListNodeGen;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -101,11 +100,9 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
             return PythonLanguage.get(this);
         }
 
-        @Specialization(guards = {"cannotBeOverridden(v, inliningTarget, getClassNode)", "cachedLength == getLength(v)", "cachedLength < 32"}, limit = "2")
+        @Specialization(guards = {"isBuiltinTuple(v)", "cachedLength == getLength(v)", "cachedLength < 32"}, limit = "2")
         @ExplodeLoop
         static PList starredTupleCachedLength(PTuple v,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                         @Exclusive @Cached PythonObjectFactory factory,
                         @Cached("getLength(v)") int cachedLength,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
@@ -117,16 +114,15 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
             return factory.createList(array);
         }
 
-        @Specialization(replaces = "starredTupleCachedLength", guards = "cannotBeOverridden(v, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(replaces = "starredTupleCachedLength", guards = "isBuiltinTuple(v)")
         static PList starredTuple(PTuple v,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                         @Exclusive @Cached PythonObjectFactory factory,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             return factory.createList(getObjectArrayNode.execute(inliningTarget, v).clone());
         }
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(v)")
+        @Specialization(guards = "isBuiltinList(v)")
         protected static PList starredList(PList v) {
             return v;
         }

@@ -40,14 +40,41 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
+import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PySet_CheckExact}.
  */
-public abstract class PySetCheckExactNode {
+@GenerateUncached
+@GenerateCached(false)
+@GenerateInline
+@ImportStatic(PGuards.class)
+public abstract class PySetCheckExactNode extends Node {
     public static boolean executeUncached(Object object) {
-        return IsBuiltinObjectExactProfile.profileObjectUncached(object, PythonBuiltinClassType.PSet);
+        return PySetCheckExactNodeGen.getUncached().execute(null, object);
+    }
+
+    public abstract boolean execute(Node inliningTarget, Object object);
+
+    @Specialization(guards = "isBuiltinSet(set)")
+    static boolean doBuiltinSet(@SuppressWarnings("unused") PSet set) {
+        return true;
+    }
+
+    @Specialization(guards = "!isBuiltinSet(set)")
+    static boolean doOtherSet(@SuppressWarnings("unused") PSet set) {
+        return false;
+    }
+
+    @Specialization(guards = "!isPSet(object)")
+    static boolean doOther(@SuppressWarnings("unused") Object object) {
+        return false;
     }
 }

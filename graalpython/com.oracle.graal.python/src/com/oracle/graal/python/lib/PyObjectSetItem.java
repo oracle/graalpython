@@ -86,7 +86,7 @@ public abstract class PyObjectSetItem extends Node {
 
     public abstract void execute(Frame frame, Node inliningTarget, Object container, Object index, Object item);
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinList(object)")
     static void doList(VirtualFrame frame, PList object, Object key, Object value,
                     @Cached(inline = false) ListBuiltins.SetItemNode setItemNode) {
         setItemNode.execute(frame, object, key, value);

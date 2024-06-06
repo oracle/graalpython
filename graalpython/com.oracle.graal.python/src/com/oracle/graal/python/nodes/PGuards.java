@@ -625,35 +625,45 @@ public abstract class PGuards {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 
-    public static boolean cannotBeOverriddenForImmutableType(PList object) {
-        return cannotBeOverriddenForImmutableType((PythonObject) object);
-    }
-
-    public static boolean cannotBeOverriddenForImmutableType(PDict object) {
-        return cannotBeOverriddenForImmutableType((PythonObject) object);
-    }
-
-    public static boolean cannotBeOverriddenForImmutableType(PTuple object) {
-        return cannotBeOverriddenForImmutableType((PythonObject) object);
-    }
-
-    /**
-     * Tests if the class of this Python object is a builtin class. This method is supposed to be
-     * used for builtin types that do not support __class__ assignment at all, so we can safely read
-     * the initialPythonClass field and assume that is the current class as well.
-     */
-    public static boolean cannotBeOverriddenForImmutableType(PythonObject object) {
-        Object clazz = object.getInitialPythonClass();
-        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
-    }
-
-    public static boolean isBuiltinDict(PDict dict) {
+    public static boolean isBuiltinDict(PythonObject dict) {
         /*
          * dict's __class__ cannot be reassigned and other objects cannot have their class assigned
          * to builtin dict, so it is enough to look at the initial class. PDict constructor ensures
          * that it cannot be PythonBuiltinClass.
          */
         return dict.getInitialPythonClass() == PythonBuiltinClassType.PDict;
+    }
+
+    public static boolean isBuiltinTuple(PythonObject tuple) {
+        // See isBuiltinDict for explanation
+        return tuple.getInitialPythonClass() == PythonBuiltinClassType.PTuple;
+    }
+
+    public static boolean isBuiltinList(PythonObject list) {
+        // See isBuiltinDict for explanation
+        return list.getInitialPythonClass() == PythonBuiltinClassType.PList;
+    }
+
+    public static boolean isBuiltinSet(PythonObject set) {
+        // See isBuiltinDict for explanation
+        return set.getInitialPythonClass() == PythonBuiltinClassType.PSet;
+    }
+
+    public static boolean isBuiltinFrozenSet(PythonObject frozenSet) {
+        // See isBuiltinDict for explanation
+        return frozenSet.getInitialPythonClass() == PythonBuiltinClassType.PFrozenSet;
+    }
+
+    public static boolean isBuiltinAnySet(PythonObject set) {
+        return isBuiltinSet(set) || isBuiltinFrozenSet(set);
+    }
+
+    public static boolean isBuiltinHashingCollection(PythonObject hashingCollection) {
+        return isBuiltinDict(hashingCollection) || isBuiltinSet(hashingCollection) || isBuiltinFrozenSet(hashingCollection);
+    }
+
+    public static boolean isBuiltinSequence(PythonObject sequence) {
+        return isBuiltinList(sequence) || isBuiltinTuple(sequence);
     }
 
     public static boolean isKindOfBuiltinClass(Object clazz) {

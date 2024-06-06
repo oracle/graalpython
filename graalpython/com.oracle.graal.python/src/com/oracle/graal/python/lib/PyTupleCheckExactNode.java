@@ -40,12 +40,13 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -53,18 +54,28 @@ import com.oracle.truffle.api.nodes.Node;
  * Equivalent of CPython's {@code PyTuple_CheckExact}.
  */
 @GenerateUncached
-@GenerateInline
 @GenerateCached(false)
-public abstract class PyTupleCheckExactNode extends Node {
-    public static boolean executeUncached(Object obj) {
-        return PyTupleCheckExactNodeGen.getUncached().execute(null, obj);
+@GenerateInline
+@ImportStatic(PGuards.class)
+public abstract class PyTupleCheckExactNode extends PNodeWithContext {
+    public static boolean executeUncached(Object object) {
+        return PyTupleCheckExactNodeGen.getUncached().execute(null, object);
     }
 
     public abstract boolean execute(Node inliningTarget, Object object);
 
-    @Specialization
-    static boolean doGeneric(Node inliningTarget, Object object,
-                    @Cached IsBuiltinObjectExactProfile isBuiltin) {
-        return isBuiltin.profileObject(inliningTarget, object, PythonBuiltinClassType.PTuple);
+    @Specialization(guards = "isBuiltinTuple(tuple)")
+    static boolean doBuiltinTuple(@SuppressWarnings("unused") PTuple tuple) {
+        return true;
+    }
+
+    @Specialization(guards = "!isBuiltinTuple(tuple)")
+    static boolean doOtherTuple(@SuppressWarnings("unused") PTuple tuple) {
+        return false;
+    }
+
+    @Specialization(guards = "!isPTuple(object)")
+    static boolean doOther(@SuppressWarnings("unused") Object object) {
+        return false;
     }
 }

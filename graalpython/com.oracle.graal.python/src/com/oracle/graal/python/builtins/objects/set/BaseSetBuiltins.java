@@ -100,7 +100,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -340,11 +339,10 @@ public final class BaseSetBuiltins extends PythonBuiltins {
             return lenNode.execute(inliningTarget, self.getDictStorage()) == 0;
         }
 
-        @Specialization(guards = {"self != other", "cannotBeOverridden(other, inliningTarget, getClassNode)"}, limit = "1")
+        @Specialization(guards = {"self != other", "isBuiltinAnySet(other)"})
         static boolean isDisjointFastPath(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageAreDisjoint disjointNode,
-                        @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+                        @Cached HashingStorageAreDisjoint disjointNode) {
             return disjointNode.execute(frame, inliningTarget, self.getDictStorage(), other.getDictStorage());
         }
 

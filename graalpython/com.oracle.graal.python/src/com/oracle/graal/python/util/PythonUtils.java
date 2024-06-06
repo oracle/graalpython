@@ -65,6 +65,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.VMRuntime;
 import org.graalvm.polyglot.io.ByteSequence;
@@ -827,6 +828,13 @@ public final class PythonUtils {
             profiles[i] = ConditionProfile.create();
         }
         return profiles;
+    }
+
+    public static Object builtinClassToType(Object cls) {
+        if (cls instanceof PythonBuiltinClass builtinClass) {
+            return builtinClass.getType();
+        }
+        return cls;
     }
 
     public static final class NodeCounterWithLimit implements NodeVisitor {

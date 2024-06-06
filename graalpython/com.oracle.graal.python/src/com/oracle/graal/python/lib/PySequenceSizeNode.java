@@ -95,19 +95,18 @@ public abstract class PySequenceSizeNode extends Node {
         return codePointLengthNode.execute(str, TS_ENCODING);
     }
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinList(object)")
     static int doList(PList object) {
         return object.getSequenceStorage().length();
     }
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinTuple(object)")
     static int doTuple(PTuple object) {
         return object.getSequenceStorage().length();
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    @Specialization(guards = "isBuiltinAnySet(object)")
     static int doSet(Node inliningTarget, PBaseSet object,
-                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @Cached HashingStorageNodes.HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage());
     }

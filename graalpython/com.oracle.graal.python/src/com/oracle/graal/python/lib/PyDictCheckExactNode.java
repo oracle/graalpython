@@ -41,10 +41,11 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -54,7 +55,8 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 @GenerateCached(false)
 @GenerateInline
-public abstract class PyDictCheckExactNode extends PNodeWithContext {
+@ImportStatic(PGuards.class)
+public abstract class PyDictCheckExactNode extends Node {
     public static boolean executeUncached(Object object) {
         return PyDictCheckExactNodeGen.getUncached().execute(null, object);
     }

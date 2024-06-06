@@ -40,17 +40,41 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyList_CheckExact}.
  */
 @GenerateUncached
+@GenerateCached(false)
+@GenerateInline
+@ImportStatic(PGuards.class)
 public abstract class PyListCheckExactNode extends Node {
     public static boolean executeUncached(Object object) {
-        return IsBuiltinObjectExactProfile.profileObjectUncached(object, PythonBuiltinClassType.PList);
+        return PyListCheckExactNodeGen.getUncached().execute(null, object);
+    }
+
+    public abstract boolean execute(Node inliningTarget, Object object);
+
+    @Specialization(guards = "isBuiltinList(list)")
+    static boolean doBuiltinList(@SuppressWarnings("unused") PList list) {
+        return true;
+    }
+
+    @Specialization(guards = "!isBuiltinList(list)")
+    static boolean doOtherList(@SuppressWarnings("unused") PList list) {
+        return false;
+    }
+
+    @Specialization(guards = "!isList(object)")
+    static boolean doOther(@SuppressWarnings("unused") Object object) {
+        return false;
     }
 }

@@ -25,16 +25,18 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
+import static com.oracle.graal.python.util.PythonUtils.builtinClassToType;
+
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PSet extends PBaseSet {
 
     public PSet(Object clazz, Shape instanceShape) {
-        super(clazz, instanceShape);
+        super(builtinClassToType(clazz), instanceShape);
     }
 
     public PSet(Object clazz, Shape instanceShape, HashingStorage store) {
-        super(clazz, instanceShape, store);
+        super(builtinClassToType(clazz), instanceShape, store);
     }
 }
