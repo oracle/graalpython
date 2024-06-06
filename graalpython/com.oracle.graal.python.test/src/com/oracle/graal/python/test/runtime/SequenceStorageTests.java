@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -40,28 +40,9 @@ public class SequenceStorageTests {
     @Test
     public void objectsGetAndSet() {
         ObjectSequenceStorage store = new ObjectSequenceStorage(getObjectValues());
-        assertEquals(4, store.getItemNormalized(3));
-        store.setItemNormalized(5, 10);
-        assertEquals(10, store.getItemNormalized(5));
-    }
-
-    @Test
-    public void objectsGetSlice() {
-        ObjectSequenceStorage store = new ObjectSequenceStorage(getObjectValues());
-        ObjectSequenceStorage slice = store.getSliceInBound(1, 4, 1, 3);
-
-        for (int i = 0; i < 3; i++) {
-            assertEquals(i + 2, slice.getItemNormalized(i));
-        }
-    }
-
-    @Test
-    public void objectsInsert() {
-        ObjectSequenceStorage store = new ObjectSequenceStorage(getObjectValues());
-        store.insertItem(3, 42);
-        assertEquals(42, store.getItemNormalized(3));
-        assertEquals(6, store.getItemNormalized(6));
-        assertEquals(7, store.length());
+        assertEquals(4, store.getObjectItemNormalized(3));
+        store.setObjectItemNormalized(5, 10);
+        assertEquals(10, store.getObjectItemNormalized(5));
     }
 
     /**
@@ -74,27 +55,8 @@ public class SequenceStorageTests {
     @Test
     public void intGetAndSet() throws SequenceStoreException {
         IntSequenceStorage store = new IntSequenceStorage(getIntValues());
-        assertEquals(4, store.getItemNormalized(3));
-        store.setItemNormalized(5, 10);
-        assertEquals(10, store.getItemNormalized(5));
-    }
-
-    @Test
-    public void intGetSlice() {
-        IntSequenceStorage store = new IntSequenceStorage(getIntValues());
-        IntSequenceStorage slice = store.getSliceInBound(1, 4, 1, 3);
-
-        for (int i = 0; i < 3; i++) {
-            assertEquals(i + 2, slice.getItemNormalized(i));
-        }
-    }
-
-    @Test
-    public void intInsert() throws SequenceStoreException {
-        IntSequenceStorage store = new IntSequenceStorage(getIntValues());
-        store.insertItem(3, 42);
-        assertEquals(42, store.getItemNormalized(3));
-        assertEquals(6, store.getItemNormalized(6));
-        assertEquals(7, store.length());
+        assertEquals(4, store.getIntItemNormalized(3));
+        store.setIntItemNormalized(5, 10);
+        assertEquals(10, store.getIntItemNormalized(5));
     }
 }

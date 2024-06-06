@@ -48,7 +48,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -84,7 +84,7 @@ public final class PySequenceArrayWrapper {
         }
 
         @Specialization(guards = "!isMroSequenceStorage(s)")
-        static NativeSequenceStorage doManaged(Node inliningTarget, BasicSequenceStorage s, boolean isBytesLike,
+        static NativeSequenceStorage doManaged(Node inliningTarget, ArrayBasedSequenceStorage s, boolean isBytesLike,
                         @Exclusive @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
             Object array;

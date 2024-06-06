@@ -460,7 +460,7 @@ public class StructSequence {
                         @Cached GetClassNode getClass,
                         @Cached PythonObjectFactory factory) {
             assert self.getSequenceStorage() instanceof ObjectSequenceStorage;
-            Object[] data = CompilerDirectives.castExact(self.getSequenceStorage(), ObjectSequenceStorage.class).getInternalArray();
+            Object[] data = CompilerDirectives.castExact(self.getSequenceStorage(), ObjectSequenceStorage.class).getInternalObjectArray();
             assert data.length == fieldNames.length;
             PTuple seq;
             PDict dict;

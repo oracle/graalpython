@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -170,7 +170,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         static Object next(Node inliningTarget, PObjectSequenceIterator self, boolean throwStopIteration,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (self.getIndex() < self.sequence.length()) {
-                return self.sequence.getItemNormalized(self.index++);
+                return self.sequence.getObjectItemNormalized(self.index++);
             }
             return stopIteration(inliningTarget, self, throwStopIteration, raiseNode);
         }

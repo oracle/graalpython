@@ -38,52 +38,64 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.sequence.storage;
+package com.oracle.graal.python.test.nodes.storage;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.InsertItemNode;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public abstract class ArrayBasedSequenceStorage extends SequenceStorage {
+import static org.junit.Assert.assertEquals;
 
-    public abstract Object getInternalArrayObject();
+public class InsertItemNodeTest {
 
-    public abstract Object getCopyOfInternalArrayObject();
-
-    public abstract void setInternalArrayObject(Object arrayObject);
-
-    public abstract ArrayBasedSequenceStorage createEmpty(int newCapacity);
-
-    public final void setNewLength(int length) {
-        this.length = length;
+    @Before
+    public void setUp() {
+        PythonTests.enterContext();
     }
 
-    public final void incLength() {
-        this.length++;
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
     }
 
-    /**
-     * The capacity we should allocate for a given length.
-     */
-    protected static int capacityFor(int length) throws ArithmeticException {
-        return Math.max(16, Math.multiplyExact(length, 2));
+    @Test
+    public void objectInsert() {
+        var storage = new RootNode(null) {
+            @Override
+            public Object execute(VirtualFrame frame) {
+                var objectStorage = new ObjectSequenceStorage(new Object[]{5, 6});
+                return InsertItemNode.executeUncached(objectStorage, 2, 11);
+            }
+        }.getCallTarget().call();
+
+        assertEquals(ObjectSequenceStorage.class, storage.getClass());
+        var objectStorage = ((ObjectSequenceStorage) storage).getInternalObjectArray();
+        assertEquals(5, objectStorage[0]);
+        assertEquals(6, objectStorage[1]);
+        assertEquals(11, objectStorage[2]);
     }
 
-    public void minimizeCapacity() {
-        capacity = length;
+    @Test
+    public void intInsert() {
+        var storage = new RootNode(null) {
+            @Override
+            public Object execute(VirtualFrame frame) {
+                var intStorage = new IntSequenceStorage(new int[]{5, 6});
+                return InsertItemNode.executeUncached(intStorage, 2, 15);
+            }
+        }.getCallTarget().call();
+
+        assertEquals(IntSequenceStorage.class, storage.getClass());
+        int[] intStorage = ((IntSequenceStorage) storage).getInternalIntArray();
+        assertEquals(5, intStorage[0]);
+        assertEquals(6, intStorage[1]);
+        assertEquals(15, intStorage[2]);
     }
 
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        StringBuilder str = new StringBuilder(getClass().getSimpleName()).append('[');
-        int len = length > 10 ? 10 : length;
-        for (int i = 0; i < len; i++) {
-            str.append(i == 0 ? "" : ", ");
-            str.append(SequenceStorageNodes.GetItemScalarNode.executeUncached(this, i));
-        }
-        if (length > 10) {
-            str.append("...").append('(').append(length).append(')');
-        }
-        return str.append(']').toString();
-    }
 }

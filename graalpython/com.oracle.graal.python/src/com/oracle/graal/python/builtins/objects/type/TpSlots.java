@@ -605,7 +605,7 @@ public record TpSlots(TpSlot nb_bool, //
         assert klass.getTpSlots() == null;
         Builder klassSlots = newBuilder();
         for (int i = 0; i < mro.length(); i++) {
-            PythonAbstractClass type = mro.getItemNormalized(i);
+            PythonAbstractClass type = mro.getPythonClassItemNormalized(i);
             TpSlots slots = GetTpSlotsNode.executeUncached(type);
             assert slots != null || type == klass;
             if (slots != null) {

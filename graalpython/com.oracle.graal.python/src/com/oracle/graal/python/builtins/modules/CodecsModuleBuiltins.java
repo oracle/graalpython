@@ -1086,7 +1086,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached AsciiDecodeNode asciiDecodeNode) {
             PTuple decodeResult = (PTuple) asciiDecodeNode.execute(frame, encoding, PNone.NO_VALUE);
             ObjectSequenceStorage resultStorage = (ObjectSequenceStorage) decodeResult.getSequenceStorage();
-            forget((TruffleString) resultStorage.getItemNormalized(0));
+            forget((TruffleString) resultStorage.getObjectItemNormalized(0));
             return PNone.NONE;
         }
 

@@ -1,16 +1,9 @@
-/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 package com.oracle.graal.python.builtins.modules.json;
-
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-
-import java.math.BigInteger;
-import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -51,6 +44,13 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
+
+import java.math.BigInteger;
+import java.util.List;
+
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.JSONScanner)
 public final class JSONScannerBuiltins extends PythonBuiltins {

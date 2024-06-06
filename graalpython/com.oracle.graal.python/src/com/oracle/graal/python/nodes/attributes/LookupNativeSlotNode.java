@@ -91,7 +91,7 @@ public abstract class LookupNativeSlotNode extends PNodeWithContext {
         var overlappingSlot = slot.overlappingSlot;
         Object foundNativeSlotOverlap = null;
         for (int i = 0; i < mro.length(); i++) {
-            PythonAbstractClass kls = mro.getItemNormalized(i);
+            PythonAbstractClass kls = mro.getPythonClassItemNormalized(i);
             Object value = readSlot(slot, kls, readAttrNode, readPointerNode, interopLibrary);
             if (value != null) {
                 if (foundNativeSlotOverlap != null && kls instanceof PythonManagedClass) {

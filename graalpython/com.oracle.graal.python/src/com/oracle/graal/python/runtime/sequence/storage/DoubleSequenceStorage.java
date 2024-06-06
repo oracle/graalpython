@@ -25,11 +25,11 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import com.oracle.truffle.api.CompilerDirectives;
+
 import java.util.Arrays;
 
-import com.oracle.graal.python.util.PythonUtils;
-
-public final class DoubleSequenceStorage extends TypedSequenceStorage {
+public final class DoubleSequenceStorage extends ArrayBasedSequenceStorage {
 
     private double[] values;
 
@@ -55,15 +55,15 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         this.length = 0;
     }
 
-    @Override
-    protected void increaseCapacityExactWithCopy(int newCapacity) {
+    private void increaseCapacityExactWithCopy(int newCapacity) {
         values = Arrays.copyOf(values, newCapacity);
         capacity = values.length;
     }
 
-    @Override
-    public SequenceStorage copy() {
-        return new DoubleSequenceStorage(PythonUtils.arrayCopyOf(values, length));
+    public void ensureCapacity(int newCapacity) throws ArithmeticException {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, newCapacity > capacity)) {
+            increaseCapacityExactWithCopy(capacityFor(newCapacity));
+        }
     }
 
     @Override
@@ -71,53 +71,30 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         return new DoubleSequenceStorage(newCapacity);
     }
 
-    @Override
-    public Object[] getInternalArray() {
-        /*
-         * Have to box and copy.
-         */
-        Object[] boxed = new Object[length];
+    public void reverse() {
+        if (length > 0) {
+            int head = 0;
+            int tail = length - 1;
+            int middle = (length - 1) / 2;
 
-        for (int i = 0; i < length; i++) {
-            boxed[i] = values[i];
+            for (; head <= middle; head++, tail--) {
+                double temp = values[head];
+                values[head] = values[tail];
+                values[tail] = temp;
+            }
         }
-
-        return boxed;
     }
 
     public double[] getInternalDoubleArray() {
         return values;
     }
 
-    @Override
-    public Object getItemNormalized(int idx) {
-        return getDoubleItemNormalized(idx);
-    }
-
     public double getDoubleItemNormalized(int idx) {
         return values[idx];
     }
 
-    @Override
-    public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
-        if (value instanceof Double) {
-            setDoubleItemNormalized(idx, (double) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
     public void setDoubleItemNormalized(int idx, double value) {
         values[idx] = value;
-    }
-
-    @Override
-    public void insertItem(int idx, Object value) throws SequenceStoreException {
-        if (value instanceof Double) {
-            insertDoubleItem(idx, (double) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
     }
 
     public void insertDoubleItem(int idx, double value) {
@@ -132,22 +109,6 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         length++;
     }
 
-    @Override
-    public DoubleSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
-        double[] newArray = new double[sliceLength];
-
-        if (step == 1) {
-            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
-            return new DoubleSequenceStorage(newArray);
-        }
-
-        for (int i = start, j = 0; j < sliceLength; i += step, j++) {
-            newArray[j] = values[i];
-        }
-
-        return new DoubleSequenceStorage(newArray);
-    }
-
     public int indexOfDouble(double value) {
         for (int i = 0; i < length; i++) {
             if (Double.compare(values[i], value) == 0) {
@@ -156,21 +117,6 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         }
 
         return -1;
-    }
-
-    @Override
-    public void reverse() {
-        if (length > 0) {
-            int head = 0;
-            int tail = length - 1;
-            int middle = (length - 1) / 2;
-
-            for (; head <= middle; head++, tail--) {
-                double temp = values[head];
-                values[head] = values[tail];
-                values[tail] = temp;
-            }
-        }
     }
 
     @Override
@@ -188,9 +134,17 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         return Arrays.copyOf(values, length);
     }
 
-    @Override
     public Object[] getCopyOfInternalArray() {
-        return getInternalArray();
+        /*
+         * Have to box and copy.
+         */
+        Object[] boxed = new Object[length];
+
+        for (int i = 0; i < length; i++) {
+            boxed[i] = values[i];
+        }
+
+        return boxed;
     }
 
     @Override

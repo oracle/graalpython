@@ -31,6 +31,7 @@ import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelper
 import java.util.Arrays;
 
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 
 public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
 
@@ -56,72 +57,10 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
         this.length = 0;
     }
 
-    @Override
-    public Object getItemNormalized(int idx) {
+    public Object getObjectItemNormalized(int idx) {
         return values[idx];
     }
 
-    @Override
-    public void setItemNormalized(int idx, Object value) {
-        values[idx] = assertNoJavaString(value);
-    }
-
-    @Override
-    public void insertItem(int idx, Object value) {
-        ensureCapacity(length + 1);
-
-        // shifting tail to the right by one slot
-        for (int i = values.length - 1; i > idx; i--) {
-            values[i] = values[i - 1];
-        }
-
-        values[idx] = assertNoJavaString(value);
-        incLength();
-    }
-
-    @Override
-    public ObjectSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
-        Object[] newArray = new Object[sliceLength];
-
-        if (step == 1) {
-            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
-            return new ObjectSequenceStorage(newArray);
-        }
-
-        for (int i = start, j = 0; j < sliceLength; i += step, j++) {
-            newArray[j] = values[i];
-        }
-
-        return new ObjectSequenceStorage(newArray);
-    }
-
-    @Override
-    public SequenceStorage copy() {
-        return new ObjectSequenceStorage(getCopyOfInternalArray());
-    }
-
-    @Override
-    public ArrayBasedSequenceStorage createEmpty(int newCapacity) {
-        return new ObjectSequenceStorage(newCapacity);
-    }
-
-    @Override
-    public Object[] getInternalArray() {
-        return values;
-    }
-
-    @Override
-    public Object[] getCopyOfInternalArray() {
-        return PythonUtils.arrayCopyOf(values, length);
-    }
-
-    @Override
-    public void increaseCapacityExactWithCopy(int newCapacity) {
-        values = PythonUtils.arrayCopyOf(values, newCapacity);
-        capacity = values.length;
-    }
-
-    @Override
     public void reverse() {
         if (length > 0) {
             int head = 0;
@@ -136,9 +75,44 @@ public final class ObjectSequenceStorage extends ArrayBasedSequenceStorage {
         }
     }
 
+    public void setObjectItemNormalized(int idx, Object value) {
+        values[idx] = assertNoJavaString(value);
+    }
+
     @Override
-    public ObjectSequenceStorage generalizeFor(Object value, SequenceStorage other) {
-        return this;
+    public ArrayBasedSequenceStorage createEmpty(int newCapacity) {
+        return new ObjectSequenceStorage(newCapacity);
+    }
+
+    public Object[] getInternalObjectArray() {
+        return values;
+    }
+
+    public Object[] getCopyOfInternalArray() {
+        return PythonUtils.arrayCopyOf(values, length);
+    }
+
+    public void insertItem(int idx, Object value) {
+        ensureCapacity(length + 1);
+
+        // shifting tail to the right by one slot
+        for (int i = values.length - 1; i > idx; i--) {
+            values[i] = values[i - 1];
+        }
+
+        values[idx] = assertNoJavaString(value);
+        incLength();
+    }
+
+    public void increaseCapacityExactWithCopy(int newCapacity) {
+        values = PythonUtils.arrayCopyOf(values, newCapacity);
+        capacity = values.length;
+    }
+
+    public void ensureCapacity(int newCapacity) throws ArithmeticException {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, newCapacity > capacity)) {
+            increaseCapacityExactWithCopy(capacityFor(newCapacity));
+        }
     }
 
     @Override
