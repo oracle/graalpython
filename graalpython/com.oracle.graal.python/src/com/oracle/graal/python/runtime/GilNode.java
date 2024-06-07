@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -88,7 +88,18 @@ public abstract class GilNode extends Node {
         @Override
         public boolean acquire(PythonContext context, Node location) {
             if (binaryProfile.profile(!context.ownsGil())) {
-                TruffleSafepoint.setBlockedThreadInterruptible(location, PythonContext::acquireGil, context);
+                try {
+                    TruffleSafepoint.setBlockedThreadInterruptible(location, PythonContext::acquireGil, context);
+                } catch (Throwable t) {
+                    /*
+                     * Safepoint actions may throw exceptions, so we need to make sure that we
+                     * really acquire the GIL in the end before we hand the exception to python. And
+                     * let's not allow safepoint actions anymore so the exception doesn't get
+                     * swallowed.
+                     */
+                    context.ensureGilAfterFailure();
+                    throw t;
+                }
                 return true;
             }
             return false;
@@ -128,7 +139,18 @@ public abstract class GilNode extends Node {
         public final boolean acquire(PythonContext context, Node location) {
             if (!context.ownsGil()) {
                 if (!context.tryAcquireGil()) {
-                    TruffleSafepoint.setBlockedThreadInterruptible(location, PythonContext::acquireGil, context);
+                    try {
+                        TruffleSafepoint.setBlockedThreadInterruptible(location, PythonContext::acquireGil, context);
+                    } catch (Throwable t) {
+                        /*
+                         * Safepoint actions may throw exceptions, so we need to make sure that we
+                         * really acquire the GIL in the end before we hand the exception to python.
+                         * And let's not allow safepoint actions anymore so the exception doesn't
+                         * get swallowed.
+                         */
+                        context.ensureGilAfterFailure();
+                        throw t;
+                    }
                 }
                 return true;
             }
