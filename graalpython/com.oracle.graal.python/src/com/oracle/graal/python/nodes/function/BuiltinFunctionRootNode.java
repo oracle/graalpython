@@ -217,6 +217,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                     PythonUtils.arraycopy(parameterNames, 0, parameterNames, 1, parameterNames.length - 1);
                     parameterNames[0] = constructsClass ? T_DOLLAR_DECL_TYPE : T_DOLLAR_SELF;
                 }
+                for (TruffleString name : parameterNames) {
+                    assert !name.isEmpty() : "empty parameter name not allowed on " + factory;
+                }
             }
         }
         assert canUseSpecialBuiltinNode(builtin) || !usesSpecialBuiltinNode(factory.getNodeClass()) : factory.getNodeClass().getName() +
