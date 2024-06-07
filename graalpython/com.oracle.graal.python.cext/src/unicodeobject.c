@@ -3533,6 +3533,7 @@ PyUnicode_AsEncodedUnicode(PyObject *unicode,
   onError:
     return NULL;
 }
+#endif // GraalPy change
 
 static PyObject*
 unicode_decode_locale(const char *str, Py_ssize_t len,
@@ -3598,7 +3599,6 @@ PyUnicode_DecodeFSDefault(const char *s) {
     return PyUnicode_DecodeFSDefaultAndSize(s, size);
 }
 
-#endif // GraalPy change
 PyObject*
 PyUnicode_DecodeFSDefaultAndSize(const char *s, Py_ssize_t size)
 {

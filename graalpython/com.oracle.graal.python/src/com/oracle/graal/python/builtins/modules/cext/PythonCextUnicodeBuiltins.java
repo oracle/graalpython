@@ -828,24 +828,6 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
-    abstract static class PyUnicode_DecodeFSDefault extends CApiUnaryBuiltinNode {
-
-        // TODO: this implementation does not honor Py_FileSystemDefaultEncoding and
-        // Py_FileSystemDefaultEncodeErrors
-
-        @Specialization
-        static PString run(TruffleString str,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createString(str);
-        }
-
-        @Specialization
-        static PString run(PString str) {
-            return str;
-        }
-    }
-
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyUnicode_Contains extends CApiBinaryBuiltinNode {
         @Specialization
@@ -1137,6 +1119,11 @@ public final class PythonCextUnicodeBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ErrorHandlers.GetErrorHandlerNode getErrorHandlerNode) {
             return getErrorHandlerNode.execute(inliningTarget, errors).getNativeValue();
+        }
+
+        @Specialization
+        static Object doNull(@SuppressWarnings("unused") PNone noValue) {
+            return ErrorHandlers.ErrorHandler.STRICT.getNativeValue();
         }
     }
 

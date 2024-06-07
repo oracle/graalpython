@@ -36,8 +36,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import codecs
+import locale
 import re
 import sys
 
@@ -620,6 +620,28 @@ class TestPyUnicode(CPyExtTestCase):
         resultspec="O",
         argspec='y#yi',
         arguments=["char* bytes", "Py_ssize_t size", "char* errors", "int byteorder"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_DecodeLocaleAndSize = CPyExtFunction(
+        lambda args: args[0].decode(locale.getencoding(), errors=args[1].decode('ascii')),
+        lambda: (
+            ('skål'.encode(locale.getencoding()), b'strict'),
+        ),
+        resultspec="O",
+        argspec='y#y',
+        arguments=["char* bytes", "Py_ssize_t size", "char* errors"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_DecodeLocale = CPyExtFunction(
+        lambda args: args[0].decode(locale.getencoding(), errors=args[1].decode('ascii')),
+        lambda: (
+            ('skål'.encode(locale.getencoding()), b'strict'),
+        ),
+        resultspec="O",
+        argspec='yy',
+        arguments=["char* bytes", "char* errors"],
         cmpfunc=unhandled_error_compare
     )
 
