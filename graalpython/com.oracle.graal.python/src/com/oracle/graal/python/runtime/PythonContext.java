@@ -2100,7 +2100,7 @@ public final class PythonContext extends Python3Core {
                 return;
             }
             try {
-                CallNode.getUncached().execute(null, attrShutdown);
+                CallNode.executeUncached(attrShutdown);
             } catch (Exception | StackOverflowError e) {
                 try {
                     boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;

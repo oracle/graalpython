@@ -88,7 +88,7 @@ public final class PythonCextContextBuiltins {
         @Specialization
         static Object doGeneric(TruffleString name, Object def,
                         @Cached CallNode callContextvar) {
-            return callContextvar.execute(PythonBuiltinClassType.ContextVar, name, def);
+            return callContextvar.executeWithoutFrame(PythonBuiltinClassType.ContextVar, name, def);
         }
 
         @Specialization

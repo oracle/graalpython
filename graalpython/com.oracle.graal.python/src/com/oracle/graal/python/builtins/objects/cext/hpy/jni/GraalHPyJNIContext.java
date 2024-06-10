@@ -2657,7 +2657,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 keywords = PKeyword.EMPTY_KEYWORDS;
             }
 
-            Object result = CallNode.getUncached().execute(callableObj, argsArr, keywords);
+            Object result = CallNode.executeUncached(callableObj, argsArr, keywords);
             return context.pythonObjectAsBits(result);
         } catch (PException e) {
             HPyTransformExceptionToNativeNode.executeUncached(e);

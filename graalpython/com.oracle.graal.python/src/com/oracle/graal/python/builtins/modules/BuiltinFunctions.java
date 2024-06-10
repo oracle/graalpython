@@ -2487,7 +2487,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             // uncached PythonContext get, since this code path is slow in any case
             Object module = PythonContext.get(null).lookupBuiltinModule(T___GRAALPYTHON__);
             Object buildFunction = PyObjectLookupAttr.executeUncached(module, T_BUILD_JAVA_CLASS);
-            return CallNode.getUncached().execute(buildFunction, namespace, name, base);
+            return CallNode.executeUncached(buildFunction, namespace, name, base);
         }
 
         @Specialization

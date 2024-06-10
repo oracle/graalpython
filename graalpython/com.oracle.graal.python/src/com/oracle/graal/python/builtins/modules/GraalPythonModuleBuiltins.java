@@ -370,7 +370,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     int numHooks = storage.length();
                     for (int i = 0; i < numHooks; i++) {
                         try {
-                            importer = CallNode.getUncached().execute(hooks[i], inputFilePath);
+                            importer = CallNode.executeUncached(hooks[i], inputFilePath);
                             break;
                         } catch (PException e) {
                             if (!IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(e.getUnreifiedException()), ImportError)) {

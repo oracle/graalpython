@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -538,13 +538,13 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
         CompilerAsserts.neverPartOfCompilation();
         Object module = AbstractImportNode.importModule(toTruffleStringUncached("json.decoder"));
         Object errorClass = PyObjectLookupAttr.executeUncached(module, T_JSON_DECODE_ERROR);
-        Object exception = CallNode.getUncached().execute(errorClass, format, toTruffleStringUncached(jsonString), pos);
+        Object exception = CallNode.executeUncached(errorClass, format, toTruffleStringUncached(jsonString), pos);
         throw PRaiseNode.raiseExceptionObject(raisingNode, exception, false);
     }
 
     private static RuntimeException stopIteration(Node raisingNode, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        Object exception = CallNode.getUncached().execute(PythonContext.get(raisingNode).lookupType(PythonBuiltinClassType.StopIteration), value);
+        Object exception = CallNode.executeUncached(PythonContext.get(raisingNode).lookupType(PythonBuiltinClassType.StopIteration), value);
         throw PRaiseNode.raiseExceptionObject(raisingNode, exception, false);
     }
 }

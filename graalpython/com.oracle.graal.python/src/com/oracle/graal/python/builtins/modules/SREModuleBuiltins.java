@@ -420,7 +420,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                             int position = sourceSection.getCharIndex();
                             PythonModule module = context.lookupBuiltinModule(BuiltinNames.T__SRE);
                             Object errorConstructor = PyObjectLookupAttr.executeUncached(module, T_ERROR);
-                            PBaseException exception = (PBaseException) CallNode.getUncached().execute(errorConstructor, reason, originalPattern, position);
+                            PBaseException exception = (PBaseException) CallNode.executeUncached(errorConstructor, reason, originalPattern, position);
                             return PRaiseNode.getUncached().raiseExceptionObject(exception);
                         }
                     }
@@ -673,8 +673,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             reCheckInputTypeNode.execute(frame, input, tRegexCache.isBinary());
 
             if (fallbackProfile.profile(inliningTarget, libCompiledRegex.isNull(compiledRegex))) {
-                Object fallbackRegex = getCallFallbackCompileNode().execute(getGetFallbackCompileNode().executeObject(frame, pattern));
-                return getCallFallbackMethodNode().execute(getFallbackMethodNode.executeObject(frame, fallbackRegex), input, pos, endPos);
+                Object fallbackRegex = getCallFallbackCompileNode().executeWithoutFrame(getGetFallbackCompileNode().executeObject(frame, pattern));
+                return getCallFallbackMethodNode().executeWithoutFrame(getFallbackMethodNode.executeObject(frame, fallbackRegex), input, pos, endPos);
             }
 
             Object truncatedInput = input;

@@ -1627,7 +1627,7 @@ public abstract class CExtNodes {
         @TruffleBoundary
         private static Object callBuiltin(PythonContext context, TruffleString builtinName, Object object) {
             Object attribute = PyObjectLookupAttr.executeUncached(context.getBuiltins(), builtinName);
-            return CastToJavaStringNodeGen.getUncached().execute(CallNode.getUncached().execute(null, attribute, object));
+            return CastToJavaStringNodeGen.getUncached().execute(CallNode.executeUncached(attribute, object));
         }
     }
 

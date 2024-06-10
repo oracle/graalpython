@@ -718,7 +718,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 if (checkMapping.execute(inliningTarget, this)) {
                     Object keysMethod = lookupKeys.execute(null, inliningTarget, this, T_KEYS);
                     if (keysMethod != PNone.NO_VALUE) {
-                        PList mapKeys = castToList.executeWithGlobalState(callKeys.execute(keysMethod));
+                        PList mapKeys = castToList.executeWithGlobalState(callKeys.executeWithoutFrame(keysMethod));
                         int len = lenNode.execute(inliningTarget, mapKeys);
                         for (int i = 0; i < len; i++) {
                             Object key = getItemNode.execute(null, inliningTarget, mapKeys, i);
@@ -1421,7 +1421,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (toStringUsed.profile(inliningTarget, builtins != null)) {
                 toStrAttr = readStr.execute(builtins, names);
                 try {
-                    result = castStr.execute(inliningTarget, callNode.execute(toStrAttr, receiver));
+                    result = castStr.execute(inliningTarget, callNode.executeWithoutFrame(toStrAttr, receiver));
                 } catch (CannotCastException e) {
                     // do nothing
                 }

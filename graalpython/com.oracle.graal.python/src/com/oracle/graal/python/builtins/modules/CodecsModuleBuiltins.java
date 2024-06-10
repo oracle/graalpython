@@ -248,7 +248,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
             if (!fixed) {
                 int start = encoder.getInputPosition();
                 int end = start + encoder.getErrorLength();
-                Object exception = lazyCallNode.execute(UnicodeEncodeError, encoder.getEncodingName(), inputObject, start, end, encoder.getErrorReason());
+                Object exception = lazyCallNode.executeWithoutFrame(UnicodeEncodeError, encoder.getEncodingName(), inputObject, start, end, encoder.getErrorReason());
                 if (exception instanceof PBaseException) {
                     throw raiseNode.get(inliningTarget).raiseExceptionObject((PBaseException) exception);
                 } else {
@@ -370,7 +370,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode.Lazy raiseNode) {
             int start = decoder.getInputPosition();
             int end = start + decoder.getErrorLength();
-            Object exception = callNode.execute(UnicodeDecodeError, decoder.getEncodingName(), inputObject, start, end, decoder.getErrorReason());
+            Object exception = callNode.executeWithoutFrame(UnicodeDecodeError, decoder.getEncodingName(), inputObject, start, end, decoder.getErrorReason());
             if (justMakeExcept) {
                 return exception;
             }

@@ -2900,7 +2900,7 @@ public abstract class GraalHPyNodes {
                     ReadAttributeFromObjectNode readAttr,
                     CallNode callNode) {
         Object builtinFunction = readAttr.execute(graalHPyContext.getContext().getBuiltins(), func);
-        return callNode.execute(builtinFunction, pythonArguments, PKeyword.EMPTY_KEYWORDS);
+        return callNode.executeWithoutFrame(builtinFunction, pythonArguments, PKeyword.EMPTY_KEYWORDS);
     }
 
     @ImportStatic(PGuards.class)

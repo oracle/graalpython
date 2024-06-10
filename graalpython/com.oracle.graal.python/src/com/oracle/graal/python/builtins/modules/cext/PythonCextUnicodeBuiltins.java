@@ -423,7 +423,7 @@ public final class PythonCextUnicodeBuiltins {
                 throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
             }
             Object getItemCallable = lookupAttrNode.execute(null, inliningTarget, s, T___GETITEM__);
-            return callNode.execute(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
+            return callNode.executeWithoutFrame(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
         }
 
         @Specialization(guards = {"!isTruffleString(s)", "isStringSubtype(s, inliningTarget, getClassNode, isSubtypeNode)"}, limit = "1")
@@ -539,7 +539,7 @@ public final class PythonCextUnicodeBuiltins {
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             Object getItemCallable = lookupAttrNode.execute(null, inliningTarget, string, T___GETITEM__);
-            Object slice = callNode.execute(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
+            Object slice = callNode.executeWithoutFrame(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
             return (boolean) endsWith.execute(null, slice, substring, start, end) ? 1 : 0;
         }
 
@@ -553,7 +553,7 @@ public final class PythonCextUnicodeBuiltins {
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             Object getItemCallable = lookupAttrNode.execute(null, inliningTarget, string, T___GETITEM__);
-            Object slice = callNode.execute(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
+            Object slice = callNode.executeWithoutFrame(getItemCallable, sliceNode.execute(inliningTarget, start, end, PNone.NONE));
             return (boolean) startsWith.execute(null, slice, substring, start, end) ? 1 : 0;
         }
 
@@ -1157,7 +1157,7 @@ public final class PythonCextUnicodeBuiltins {
             } catch (OverflowException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
             }
-            return callNode.execute(UnicodeDecodeError, encoding, bytes, start, end, reason);
+            return callNode.executeWithoutFrame(UnicodeDecodeError, encoding, bytes, start, end, reason);
         }
     }
 

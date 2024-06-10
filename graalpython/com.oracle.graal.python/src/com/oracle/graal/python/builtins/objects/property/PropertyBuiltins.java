@@ -260,7 +260,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
                 PropertyInitNode.doGeneric(copy, get, set, del, doc);
                 return copy;
             }
-            PProperty newProp = (PProperty) CallNode.getUncached().execute(type, get, set, del, doc);
+            PProperty newProp = (PProperty) CallNode.executeUncached(type, get, set, del, doc);
             newProp.setPropertyName(pold.getPropertyName());
             return newProp;
         }

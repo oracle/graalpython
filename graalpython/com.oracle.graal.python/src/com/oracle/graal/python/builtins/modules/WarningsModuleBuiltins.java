@@ -752,8 +752,8 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
 
             assert message != null && category != null && filename != null && source != null;
             assert message != PNone.NO_VALUE && category != PNone.NO_VALUE && source != PNone.NO_VALUE;
-            Object msg = CallNode.getUncached().execute(warnmsgCls, message, category, filename, lineno, PNone.NONE, PNone.NONE, source);
-            CallNode.getUncached().execute(showFn, msg);
+            Object msg = CallNode.executeUncached(warnmsgCls, message, category, filename, lineno, PNone.NONE, PNone.NONE, source);
+            CallNode.executeUncached(showFn, msg);
         }
 
         /**
@@ -1182,7 +1182,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 } catch (IllegalFormatException e) {
                     throw CompilerDirectives.shouldNotReachHere("error while formatting \"" + format + "\"", e);
                 }
-                CallNode.getUncached().execute(warn, message, category, stackLevel, source);
+                CallNode.executeUncached(warn, message, category, stackLevel, source);
             }
         }
     }

@@ -281,7 +281,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
                 PythonModule sysModule = context.getSysModule();
                 Object loadLibraryMethod = ReadAttributeFromObjectNode.getUncached().execute(ctypesModule, toTruffleStringUncached("LoadLibrary"));
-                Object pythonLib = CallNode.getUncached().execute(loadLibraryMethod, toTruffleStringUncached(GraalHPyJNIContext.getJNILibrary()), 0);
+                Object pythonLib = CallNode.executeUncached(loadLibraryMethod, toTruffleStringUncached(GraalHPyJNIContext.getJNILibrary()), 0);
                 WriteAttributeToPythonObjectNode.getUncached().execute(sysModule, toTruffleStringUncached("dllhandle"), pythonLib);
             }
         } else {
@@ -1838,7 +1838,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             Object src = readPythonObject.execute(inliningTarget, srcObj);
             Object ctype = readPythonObject.execute(inliningTarget, ctypeObj);
             castCheckPtrTypeNode.execute(inliningTarget, ctype);
-            CDataObject result = (CDataObject) callNode.execute(ctype);
+            CDataObject result = (CDataObject) callNode.executeWithoutFrame(ctype);
 
             /*
              * The casted objects '_objects' member:
