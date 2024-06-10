@@ -73,7 +73,7 @@ FILES_LIST_PATH = VFS_PREFIX + "/" + FILES_LIST_NAME
 VFS_HOME = "home"
 VFS_HOME_PREFIX = f"{VFS_PREFIX}/{VFS_HOME}"
 VFS_VENV_PREFIX = VFS_PREFIX + "/venv"
-VFS_PROJ_PREFIX = VFS_PREFIX + "/proj"
+VFS_SRC_PREFIX = VFS_PREFIX + "/src"
 
 NATIVE_EXEC_LAUNCHER = "Py2BinLauncher"
 NATIVE_EXEC_LAUNCHER_FILE = f"{NATIVE_EXEC_LAUNCHER}.java"
@@ -255,12 +255,12 @@ def bundle_python_resources(target_dir, project, venv=None):
         copy_folder_to_target(target_dir, venv, VFS_VENV_PREFIX)
 
     if project and os.path.isdir(project):
-        copy_folder_to_target(target_dir, project, VFS_PROJ_PREFIX)
+        copy_folder_to_target(target_dir, project, VFS_SRC_PREFIX)
     else:
         with tempfile.TemporaryDirectory() as tmpdir:
             name = os.path.join(tmpdir, "__main__.py")
             shutil.copy(project, name)
-            copy_folder_to_target(target_dir, tmpdir, VFS_PROJ_PREFIX)
+            copy_folder_to_target(target_dir, tmpdir, VFS_SRC_PREFIX)
             os.unlink(name)
 
 

@@ -49,6 +49,7 @@ import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.polyglot.io.IOAccess;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Predicate;
@@ -72,7 +73,7 @@ import java.util.function.Predicate;
  * library</li>
  * <li><code>/org.graalvm.python.vfs/venv</code> - is a directory with a python virtual environment
  * holding third-party packages</li>
- * <li><code>/org.graalvm.python.vfs/proj</code> - is a directory with additional user files - e.g.
+ * <li><code>/org.graalvm.python.vfs/src</code> - is a directory with additional user files - e.g.
  * python sources files</li>
  * </ul>
  * </p>
@@ -85,7 +86,7 @@ import java.util.function.Predicate;
  * library</li>
  * <li><code>{resourcesRootDirectory}/venv</code> - is a directory with a python virtual environment
  * holding third-party packages</li>
- * <li><code>{resourcesRootDirectory}/proj</code> - is a directory with additional user files - e.g.
+ * <li><code>{resourcesRootDirectory}/src</code> - is a directory with additional user files - e.g.
  * python sources files</li>
  * </ul>
  */
@@ -127,10 +128,10 @@ public class GraalPyResources {
                         // Set the python home to be read from the embedded resources
                         option("python.PythonHome", vfs.vfsHomePath()).
                         // Set python path to point to sources stored in
-                        // src/main/resources/org.graalvm.python.vfs/proj
-                        option("python.PythonPath", vfs.vfsProjPath()).
+                        // src/main/resources/org.graalvm.python.vfs/src
+                        option("python.PythonPath", vfs.vfsSrcPath() + File.pathSeparator + vfs.vfsProjPath()).
                         // pass the path to be executed
-                        option("python.InputFilePath", vfs.vfsProjPath());
+                        option("python.InputFilePath", vfs.vfsSrcPath());
     }
 
     /**
@@ -140,10 +141,10 @@ public class GraalPyResources {
      * @param resourcesPath the root directory with GraalPy specific embedding resources
      */
     public static Context.Builder contextBuilder(Path resourcesPath) {
-        return createContextBuilder().allowIO(IOAccess.ALL) //
-                        .option("python.Executable", resourcesPath.resolve(VirtualFileSystemImpl.VFS_VENV + "/bin/python").toAbsolutePath().toString()) //
-                        .option("python.PythonHome", resourcesPath.resolve(VirtualFileSystemImpl.VFS_HOME).toAbsolutePath().toString()) //
-                        .option("python.PythonPath", resourcesPath.resolve(VirtualFileSystemImpl.VFS_SRC).toAbsolutePath().toString());
+        return createContextBuilder().allowIO(IOAccess.ALL). //
+                        option("python.Executable", resourcesPath.resolve(VirtualFileSystemImpl.VFS_VENV + "/bin/python").toAbsolutePath().toString()). //
+                        option("python.PythonHome", resourcesPath.resolve(VirtualFileSystemImpl.VFS_HOME).toAbsolutePath().toString()). //
+                        option("python.PythonPath", resourcesPath.resolve(VirtualFileSystemImpl.VFS_SRC).toAbsolutePath().toString());
     }
 
     private static Context.Builder createContextBuilder() {

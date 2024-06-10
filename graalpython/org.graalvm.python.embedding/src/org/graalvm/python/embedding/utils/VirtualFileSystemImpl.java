@@ -83,10 +83,12 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     static final String VFS_HOME = "home";
     static final String VFS_VENV = "venv";
     static final String VFS_PROJ = "proj";
+    static final String VFS_SRC = "src";
 
     private static final String VENV_PREFIX = "/" + VFS_ROOT + "/" + VFS_VENV;
     private static final String HOME_PREFIX = "/" + VFS_ROOT + "/" + VFS_HOME;
     private static final String PROJ_PREFIX = "/" + VFS_ROOT + "/" + VFS_PROJ;
+    private static final String SRC_PREFIX = "/" + VFS_ROOT + "/" + VFS_SRC;
     private boolean extractOnStartup = "true".equals(System.getProperty("graalpy.vfs.extractOnStartup"));
 
     public static enum HostIO {
@@ -290,6 +292,10 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     String vfsProjPath() {
         return resourcePathToPlatformPath(PROJ_PREFIX);
+    }
+
+    String vfsSrcPath() {
+        return resourcePathToPlatformPath(SRC_PREFIX);
     }
 
     String vfsVenvPath() {
