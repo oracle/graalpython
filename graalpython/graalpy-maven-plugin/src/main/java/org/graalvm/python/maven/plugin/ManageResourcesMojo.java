@@ -55,6 +55,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -149,6 +150,13 @@ public class ManageResourcesMojo extends AbstractMojo {
         manageVenv();
         listGraalPyResources();
         manageNativeImageConfig();
+
+        for(Resource r : project.getBuild().getResources()) {
+            if (Files.exists(Path.of(r.getDirectory(), VFS_ROOT, "proj"))) {
+                getLog().warn(String.format("usage of %s is deprecated, use %s instead", Path.of(VFS_ROOT, "proj"), Path.of(VFS_ROOT, "src")));
+            }
+        }
+
     }
 
     private void trim(List<String> l) {
