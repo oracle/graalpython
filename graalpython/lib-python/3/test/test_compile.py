@@ -9,7 +9,7 @@ import tempfile
 import types
 import textwrap
 from test import support
-from test.support import script_helper, requires_debug_ranges, impl_detail
+from test.support import script_helper, requires_debug_ranges, impl_detail, bytecode_dsl_excluded
 from test.support.os_helper import FakePath
 
 
@@ -108,6 +108,7 @@ class TestSpecifics(unittest.TestCase):
         exec('z = a', g, d)
         self.assertEqual(d['z'], 12)
 
+    @bytecode_dsl_excluded
     def test_extended_arg(self):
         # default: 1000 * 2.5 = 2500 repetitions
         repeat = int(sys.getrecursionlimit() * 2.5)
@@ -770,6 +771,7 @@ if 1:
         compile("42", FakePath("test_compile_pathlike"), "single")
 
     @support.requires_resource('cpu')
+    @bytecode_dsl_excluded
     def test_stack_overflow(self):
         # bpo-31113: Stack overflow when compile a long sequence of
         # complex statements.
@@ -1019,6 +1021,7 @@ if 1:
         code_lines = self.get_code_lines(test.__code__)
         self.assertEqual(expected_lines, code_lines)
 
+    @bytecode_dsl_excluded
     def test_big_dict_literal(self):
         # The compiler has a flushing point in "compiler_dict" that calls compiles
         # a portion of the dictionary literal when the loop that iterates over the items

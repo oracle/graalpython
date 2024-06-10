@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
@@ -64,6 +65,7 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -72,8 +74,8 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -98,24 +100,34 @@ public final class ExceptionUtils {
             if (location == null) {
                 location = rootNode;
             }
-            int lineno = getLineno(frameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY));
+            int lineno = getLineno(frameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY), location, frameInstance);
             appendStackLine(stack, location, rootNode, true, lineno);
             return null;
         });
         printStack(new PrintWriter(System.err, true), stack);
     }
 
-    private static int getLineno(Frame frame) {
-        int lineno = -1;
-        if (frame != null) {
-            FrameDescriptor fd = frame.getFrameDescriptor();
-            if (fd.getInfo() instanceof FrameInfo) {
-                FrameInfo frameInfo = (FrameInfo) fd.getInfo();
-                int bci = frameInfo.getBci(frame);
-                lineno = frameInfo.getRootNode().bciToLine(bci);
+    private static int getLineno(Frame frame, Node location, FrameInstance frameInstance) {
+        if (frame != null && frame.getFrameDescriptor().getInfo() instanceof FrameInfo frameInfo) {
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                BytecodeNode bytecodeNode = null;
+                if (frameInstance != null) {
+                    bytecodeNode = BytecodeNode.get(frameInstance);
+                } else {
+                    // NB: This fails for the top stack frame, which has no BytecodeNode.
+                    bytecodeNode = BytecodeNode.get(location);
+                }
+
+                if (bytecodeNode != null) {
+                    int bci = bytecodeNode.getBytecodeIndex(frame);
+                    return bytecodeNode.getBytecodeLocation(bci).getSourceLocation().getStartLine();
+                }
+            } else {
+                return ((BytecodeFrameInfo) frameInfo).getLine(frame);
             }
         }
-        return lineno;
+        return -1;
+
     }
 
     @TruffleBoundary
@@ -149,7 +161,7 @@ public final class ExceptionUtils {
             for (TruffleStackTraceElement frame : stackTrace) {
                 Node location = frame.getLocation();
                 RootNode rootNode = frame.getTarget().getRootNode();
-                int lineno = getLineno(frame.getFrame());
+                int lineno = getLineno(frame.getFrame(), location, null);
                 appendStackLine(stack, location, rootNode, false, lineno);
             }
             printStack(p, stack);

@@ -53,6 +53,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -62,12 +63,13 @@ import com.oracle.truffle.api.strings.TruffleString;
 @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
 public abstract class ReadNameNode extends PNodeWithContext implements AccessNameNode {
     public final Object execute(VirtualFrame frame, TruffleString attributeId) {
-        CompilerAsserts.partialEvaluationConstant(attributeId);
+        CompilerAsserts.compilationConstant(attributeId);
         return executeImpl(frame, attributeId);
     }
 
     public abstract Object executeImpl(VirtualFrame frame, TruffleString attributeId);
 
+    @NeverDefault
     public static ReadNameNode create() {
         return ReadNameNodeGen.create();
     }

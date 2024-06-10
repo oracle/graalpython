@@ -75,6 +75,7 @@ public abstract class LookupAndCallInplaceNode extends PNodeWithContext implemen
         this.arithmetic = arithmetic;
     }
 
+    @NeverDefault
     public static LookupAndCallInplaceNode create(InplaceArithmetic arithmetic) {
         return LookupAndCallInplaceNodeGen.create(arithmetic);
     }
