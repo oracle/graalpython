@@ -103,12 +103,12 @@ import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerReference;
@@ -1246,7 +1246,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            return getResultNode.execute(restype, rtype, result, checker);
+            return getResultNode.execute(frame, restype, rtype, result, checker);
         }
 
         static Object callManagedFunction(Node inliningTarget, NativeFunction pProc, Object[] argarray, InteropLibrary ilib, PRaiseNode.Lazy raiseNode) {
@@ -1368,7 +1368,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 25
     abstract static class GetResultNode extends Node {
 
-        abstract Object execute(Object restype, FFIType rtype, Object result, Object checker);
+        abstract Object execute(VirtualFrame frame, Object restype, FFIType rtype, Object result, Object checker);
 
         /*
          * Convert the C value in result into a Python object, depending on restype.
@@ -1395,21 +1395,21 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"restype != null", "!isNone(restype)", "dict == null"}, limit = "1")
-        static Object callResType(Object restype, @SuppressWarnings("unused") FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
+        static Object callResType(VirtualFrame frame, Object restype, @SuppressWarnings("unused") FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("result") InteropLibrary ilib,
                         @SuppressWarnings("unused") @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @SuppressWarnings("unused") @Bind("getStgDict(inliningTarget, restype, pyTypeStgDictNode)") StgDictObject dict,
                         @Shared @Cached CallNode callNode) {
             try {
-                return callNode.execute(restype, ilib.asInt(result));
+                return callNode.execute(frame, restype, ilib.asInt(result));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
         @Specialization(guards = {"restype != null", "!isNone(restype)", "dict != null"}, limit = "1")
-        static Object callGetFunc(Object restype, FFIType rtype, Object result, Object checker,
+        static Object callGetFunc(VirtualFrame frame, Object restype, FFIType rtype, Object result, Object checker,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("result") InteropLibrary ilib,
                         @SuppressWarnings("unused") @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -1466,7 +1466,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             if (PGuards.isPNone(checker) || checker == null) {
                 return retval;
             }
-            return callNode.execute(checker, retval);
+            return callNode.execute(frame, checker, retval);
         }
 
         protected static StgDictObject getStgDict(Node inliningTarget, Object restype, PyTypeStgDictNode pyTypeStgDictNode) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -108,7 +108,7 @@ public abstract class PyImportImport extends Node {
 
         // Call the __import__ function with the proper argument list Always use absolute import
         // here. Calling for side-effect of import.
-        callNode.execute(importFunc, new Object[]{moduleName}, new PKeyword[]{
+        callNode.execute(frame, importFunc, new Object[]{moduleName}, new PKeyword[]{
                         new PKeyword(T_GLOBALS, globals), new PKeyword(T_LOCALS, globals),
                         new PKeyword(T_FROMLIST, factory.createList()), new PKeyword(T_LEVEL, 0)
         });

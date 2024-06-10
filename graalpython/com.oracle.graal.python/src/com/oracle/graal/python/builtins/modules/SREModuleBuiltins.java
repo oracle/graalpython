@@ -518,7 +518,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "getTRegexCache(pattern).isLocaleSensitive()"}, limit = "SPECIALIZATION_LIMIT", replaces = "cached")
         @SuppressWarnings("truffle-static-method")
-        Object localeSensitive(PythonObject pattern, PythonMethod method, boolean mustAdvance,
+        Object localeSensitive(VirtualFrame frame, PythonObject pattern, PythonMethod method, boolean mustAdvance,
                         @Bind("this") Node inliningTarget,
                         @Cached("method") @SuppressWarnings("unused") PythonMethod cachedMethod,
                         @Cached("mustAdvance") @SuppressWarnings("unused") boolean cachedMustAdvance,
@@ -526,7 +526,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached CallNode callGetLocale,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             TRegexCache tRegexCache = getTRegexCache(pattern);
-            TruffleString locale = castToTruffleStringNode.execute(inliningTarget, callGetLocale.execute(getLocale));
+            TruffleString locale = castToTruffleStringNode.execute(inliningTarget, callGetLocale.execute(frame, getLocale));
             final Object tRegex = tRegexCache.getLocaleSensitiveRegexp(method, mustAdvance, locale);
             if (tRegex != null) {
                 return tRegex;

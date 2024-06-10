@@ -420,7 +420,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     // "lazily", i.e., not on all code-paths
     @GenerateInline(false)
     public abstract static class HandleDecodingErrorNode extends Node {
-        public abstract void execute(TruffleDecoder decoder, TruffleString errorAction, Object inputObject);
+        public abstract void execute(VirtualFrame frame, TruffleDecoder decoder, TruffleString errorAction, Object inputObject);
 
         @Specialization(guards = "errorAction == T_STRICT")
         static void doStrict(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
@@ -476,7 +476,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        static void doCustom(TruffleDecoder decoder, TruffleString errorAction, Object inputObject,
+        static void doCustom(VirtualFrame frame, TruffleDecoder decoder, TruffleString errorAction, Object inputObject,
                         @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached BaseExceptionAttrNode attrNode,
@@ -493,7 +493,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                     throw raiseNode.get(inliningTarget).raise(LookupError, UNKNOWN_ERROR_HANDLER, errorAction);
                 }
                 Object exceptionObject = raiseDecodingErrorNode.makeDecodeException(inliningTarget, decoder, inputObject);
-                Object restuple = callNode.execute(errorHandler, exceptionObject);
+                Object restuple = callNode.execute(frame, errorHandler, exceptionObject);
 
                 Object[] t = null;
                 if (PGuards.isPTuple(restuple)) {
@@ -705,7 +705,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                 try {
                     decoder = new TruffleDecoder(normalizedEncoding, charset, bytes, len, errorAction);
                     while (!decoder.decodingStep(finalData)) {
-                        errorHandler.execute(decoder, internErrorAction.execute(inliningTarget, errors), factory.createBytes(bytes, len));
+                        errorHandler.execute(frame, decoder, internErrorAction.execute(inliningTarget, errors), factory.createBytes(bytes, len));
                     }
                 } catch (OutOfMemoryError e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();

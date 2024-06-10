@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -170,14 +170,16 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
          *            one
          * @return either {@code exceptionObject} if provided or a new exception object
          */
-        public abstract PBaseException execute(Node inliningTarget, PBaseException exceptionObject, TruffleString encoding, TruffleString inputObject, int startPos, int endPos, TruffleString reason);
+        public abstract PBaseException execute(VirtualFrame frame, Node inliningTarget, PBaseException exceptionObject, TruffleString encoding, TruffleString inputObject, int startPos, int endPos,
+                        TruffleString reason);
 
         @Specialization(guards = "exceptionObject == null")
-        static PBaseException createNew(Node inliningTarget, @SuppressWarnings("unused") PBaseException exceptionObject, TruffleString encoding, TruffleString inputObject, int startPos, int endPos,
+        static PBaseException createNew(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PBaseException exceptionObject, TruffleString encoding, TruffleString inputObject,
+                        int startPos, int endPos,
                         TruffleString reason,
                         @Cached(inline = false) CallNode callNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            Object obj = callNode.execute(UnicodeEncodeError, encoding, inputObject, startPos, endPos, reason);
+            Object obj = callNode.execute(frame, UnicodeEncodeError, encoding, inputObject, startPos, endPos, reason);
             if (obj instanceof PBaseException exception) {
                 return exception;
             }
