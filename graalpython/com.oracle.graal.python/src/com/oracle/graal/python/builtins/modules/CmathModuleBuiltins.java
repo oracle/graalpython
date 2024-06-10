@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -47,6 +47,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.utilities.MathUtils;
 
 @CoreFunctions(defineModule = "cmath")
 public final class CmathModuleBuiltins extends PythonBuiltins {
@@ -634,7 +635,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                 ComplexValue s1 = SqrtNode.compute(inliningTarget, 1.0 - real, -imag, raiseNode);
                 ComplexValue s2 = SqrtNode.compute(inliningTarget, 1.0 + real, imag, raiseNode);
                 rreal = 2.0 * Math.atan2(s1.real, s2.real);
-                rimag = MathModuleBuiltins.AsinhNode.compute(s2.real * s1.imag - s2.imag * s1.real);
+                rimag = MathUtils.asinh(s2.real * s1.imag - s2.imag * s1.real);
             }
             return new ComplexValue(rreal, rimag);
         }
@@ -677,7 +678,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             } else {
                 ComplexValue s1 = SqrtNode.compute(inliningTarget, real - 1.0, imag, raiseNode);
                 ComplexValue s2 = SqrtNode.compute(inliningTarget, real + 1.0, imag, raiseNode);
-                rreal = MathModuleBuiltins.AsinhNode.compute(s1.real * s2.real + s1.imag * s2.imag);
+                rreal = MathUtils.asinh(s1.real * s2.real + s1.imag * s2.imag);
                 rimag = 2.0 * Math.atan2(s1.imag, s2.real);
             }
             return new ComplexValue(rreal, rimag);
@@ -743,7 +744,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             } else {
                 ComplexValue s1 = SqrtNode.compute(inliningTarget, 1.0 + imag, -real, raiseNode);
                 ComplexValue s2 = SqrtNode.compute(inliningTarget, 1.0 - imag, real, raiseNode);
-                rreal = MathModuleBuiltins.AsinhNode.compute(s1.real * s2.imag - s2.real * s1.imag);
+                rreal = MathUtils.asinh(s1.real * s2.imag - s2.real * s1.imag);
                 rimag = Math.atan2(imag, s1.real * s2.real - s1.imag * s2.imag);
             }
             return new ComplexValue(rreal, rimag);
