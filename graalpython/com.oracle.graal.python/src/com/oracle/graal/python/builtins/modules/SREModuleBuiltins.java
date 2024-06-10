@@ -605,7 +605,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             try {
                 if (matchProfile.profile(inliningTarget, (boolean) libResult.readMember(regexResult, "isMatch"))) {
                     Object indexGroup = lookupIndexGroupNode.execute(frame, inliningTarget, pattern, T__PATTERN__INDEXGROUP);
-                    return constructResultNode.execute(matchConstructor, pattern, pos, endPos, regexResult, input, indexGroup);
+                    return constructResultNode.execute(frame, matchConstructor, pattern, pos, endPos, regexResult, input, indexGroup);
                 } else {
                     return PNone.NONE;
                 }
