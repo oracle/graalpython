@@ -226,6 +226,60 @@ class PolyglotAppTest(unittest.TestCase):
             util.check_ouput("java.lang.NoClassDefFoundError", out, False)
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
+    def test_generated_app_external_resources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target_name = "generated_app_ext_resources_test"
+            target_dir = os.path.join(str(tmpdir), target_name)
+            self.generate_app(tmpdir, target_dir, target_name)
+
+            # patch project to use external directory for resources
+            resources_dir = os.path.join(target_dir, "python")
+            os.makedirs(resources_dir, exist_ok=True)
+            src_dir = os.path.join(resources_dir, "src")
+            os.makedirs(src_dir, exist_ok=True)
+            # copy hello.py
+            shutil.copyfile(os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs", "src", "hello.py"), os.path.join(src_dir, "hello.py"))
+            shutil.rmtree(os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs"))
+            # patch GraalPy.java
+            replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
+                "package it.pkg;",
+                "package it.pkg;\nimport java.nio.file.Path;")
+            replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
+                "GraalPyResources.createContext()",
+                "GraalPyResources.contextBuilder(Path.of(\"python\")).build()")
+
+            # patch pom.xml
+            replace_in_file(os.path.join(target_dir, "pom.xml"),
+                "<packages>",
+                "<pythonResourcesDirectory>${project.basedir}/python</pythonResourcesDirectory>\n<packages>")
+
+            mvnw_cmd = util.get_mvn_wrapper(target_dir, self.env)
+
+            # build
+            cmd = mvnw_cmd + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+
+            # execute and check native image
+            cmd = [os.path.join(target_dir, "target", target_name)]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("hello java", out)
+
+            # 2.) check java build and exec
+            # run with java asserts on
+            if self.env.get("MAVEN_OPTS"):
+                self.env["MAVEN_OPTS"] = self.env.get("MAVEN_OPTS") + " -ea -esa"
+            else:
+                self.env["MAVEN_OPTS"] = "-ea -esa"
+
+            # build and exec
+            cmd = mvnw_cmd + ["package", "exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("hello java", out)
+
+
+    @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_fail_without_graalpy_dep(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_name = "fail_without_graalpy_dep_test"
