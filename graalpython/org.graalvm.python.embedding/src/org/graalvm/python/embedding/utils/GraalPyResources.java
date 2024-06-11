@@ -50,45 +50,101 @@ import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.polyglot.io.IOAccess;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Predicate;
 
 /**
- * This class provides utilities related to specific GraalPy resources used with GraalPy embedding
+ * This class provides utilities related to GraalPy specific resources used in embedding
  * scenarios.</br>
- *
  * <p>
- * Resource file access during runtime is provided either:
  * <ul>
- * <li>from a virtual {@link FileSystem} - if distributed in a jar file or as a native image</li>
- * <li>or from a real filesystem</li>
- * </ul>
- *
- * <h3>Virtual File System usage</h3> Resource files in a virtual {@link FileSystem} are accessed as
- * a java resource located in a jar and expected to have the root directory
- * <code>/org.graalvm.python.vfs</code>, where:
- * <ul>
- * <li><code>/org.graalvm.python.vfs/home</code> - is a directory with the GraalPy standard
- * library</li>
- * <li><code>/org.graalvm.python.vfs/venv</code> - is a directory with a python virtual environment
- * holding third-party packages</li>
- * <li><code>/org.graalvm.python.vfs/src</code> - is a directory with additional user files - e.g.
- * python sources files</li>
+ * <li>The GraalPy standard library</li>
+ * <li>The python virtual environment providing third party python packages</li>
+ * <li>Additional python files</li>
  * </ul>
  * </p>
  *
- * <h3>Real File System usage</h3> Instead of distributing GraalPy embedding resources embedded in a
- * jar file, it is also possible to keep them a real filesystem directory with the same
- * sub-structure as in the case of a virtual {@link FileSystem}.
+ * Resource files can be distributed either in a jar file or as part of a native image executable or
+ * in an external filesystem directory.
+ * </ul>
+ *
+ * <h3>Virtual File System</h3>
+ * <p>
+ * Resources distributed in one application file (either jar or native image) are accessed in
+ * runtime through a virtual {@link FileSystem} and expected to have the root directory
+ * <code>/org.graalvm.python.vfs</code>, where then:<br/>
+ * </p>
  * <ul>
- * <li><code>{resourcesRootDirectory}/home</code> - is a directory with the GraalPy standard
+ * <li><code>/org.graalvm.python.vfs/home</code> - is the directory with the GraalPy standard
  * library</li>
- * <li><code>{resourcesRootDirectory}/venv</code> - is a directory with a python virtual environment
- * holding third-party packages</li>
- * <li><code>{resourcesRootDirectory}/src</code> - is a directory with additional user files - e.g.
+ * <li><code>/org.graalvm.python.vfs/venv</code> - is the directory with a python virtual
+ * environment holding third-party packages</li>
+ * <li><code>/org.graalvm.python.vfs/src</code> - is the directory with additional user files - e.g.
  * python sources files</li>
  * </ul>
+ * </p>
+ * <b>Example</b> creating a GraalPy context configured for the usage with a virtual
+ * {@link FileSystem}:
+ * 
+ * <pre>
+ * try (Context context = GraalPyResources.createContext()) {
+ *     context.eval("python", "print('Hello World')");
+ * } catch (PolyglotException e) {
+ *     if (e.isExit()) {
+ *         System.exit(e.getExitStatus());
+ *     } else {
+ *         throw e;
+ *     }
+ * }
+ * </pre>
+ * 
+ * In this example we:
+ * <ul>
+ * <li>create a GraalPy context preconfigured with a virtual {@link FileSystem}</li>
+ * <li>use the context to invoke a python snippet</li>
+ * </ul>
+ *
+ * <h3>External resource directory</h3>
+ * <p>
+ * Instead of distributing GraalPy embedding resources embedded in one application file, it is also
+ * possible to keep them in a external directory with the same sub-structure as in the case of a
+ * virtual {@link FileSystem}:
+ * </p>
+ * <ul>
+ * <li><code>{resourcesRootDirectory}/home</code> - is the directory with the GraalPy standard
+ * library</li>
+ * <li><code>{resourcesRootDirectory}/venv</code> - is the directory with a python virtual
+ * environment holding third-party packages</li>
+ * <li><code>{resourcesRootDirectory}/src</code> - is the directory with additional user files -
+ * e.g. python sources files</li>
+ * </ul>
+ *
+ * <b>Example</b> creating a GraalPy context configured for the usage with an external resource
+ * directory:
+ * 
+ * <pre>
+ * try (Context context = GraalPyResources.contextBuilder(Path.of("python")).build()) {
+ *     context.eval("python", "import mymodule; mymodule.print_hello_world()");
+ * } catch (PolyglotException e) {
+ *     if (e.isExit()) {
+ *         System.exit(e.getExitStatus());
+ *     } else {
+ *         throw e;
+ *     }
+ * }
+ * </pre>
+ * 
+ * In this example we:
+ * <ul>
+ * <li>create a GraalPy context which is preconfigured with GraalPy resources in an external
+ * resource directory</li>
+ * <li>use the context to import the python module <code>mymodule</code>, which should be either
+ * located in <code>/python/src</code> or in a python package installed in <code>/python/venv</code>
+ * (python virtual environment)</li>
+ * </ul>
+ *
  */
 public class GraalPyResources {
 
@@ -141,10 +197,22 @@ public class GraalPyResources {
      * @param resourcesPath the root directory with GraalPy specific embedding resources
      */
     public static Context.Builder contextBuilder(Path resourcesPath) {
-        return createContextBuilder().allowIO(IOAccess.ALL). //
-                        option("python.Executable", resourcesPath.resolve(VirtualFileSystemImpl.VFS_VENV + "/bin/python").toAbsolutePath().toString()). //
-                        option("python.PythonHome", resourcesPath.resolve(VirtualFileSystemImpl.VFS_HOME).toAbsolutePath().toString()). //
-                        option("python.PythonPath", resourcesPath.resolve(VirtualFileSystemImpl.VFS_SRC).toAbsolutePath().toString());
+        String execPath = resourcesPath.resolve(VirtualFileSystemImpl.VFS_VENV + "/bin/python").toAbsolutePath().toString();
+        String homePath = resourcesPath.resolve(VirtualFileSystemImpl.VFS_HOME).toAbsolutePath().toString();
+        String srcPath = resourcesPath.resolve(VirtualFileSystemImpl.VFS_SRC).toAbsolutePath().toString();
+        return createContextBuilder().
+        // allow all IO access
+                        allowIO(IOAccess.ALL).
+                        // The sys.executable path, a virtual path that is used by the interpreter
+                        // to discover packages
+                        option("python.Executable", execPath).//
+                        // Set the python home to be read from the embedded resources
+                        option("python.PythonHome", homePath).//
+                        // Set python path to point to sources stored in
+                        // src/main/resources/org.graalvm.python.vfs/src
+                        option("python.PythonPath", srcPath).
+                        // pass the path to be executed
+                        option("python.InputFilePath", srcPath);
     }
 
     private static Context.Builder createContextBuilder() {
@@ -306,6 +374,17 @@ public class GraalPyResources {
 
     /**
      * Determines a native executable path if running in {@link ImageInfo#inImageRuntimeCode()}.
+     * <p>
+     * <b>Example </b> creating a GraalPy context precofigured with an external resource directory
+     * located next to a native image executable.
+     * 
+     * <pre>
+     * Path resourcesDir = GraalPyResources.getNativeExecutablePath().getParent().resolve("python");
+     * try (Context context = GraalPyResources.contextBuilder(resourcesDir).build()) {
+     *     context.eval("python", "print('hello world')");
+     * }
+     * </pre>
+     * </p>
      *
      * @return the native executable path if it could be retrieved, otherwise <code>null</code>.
      */
