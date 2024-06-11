@@ -113,7 +113,6 @@ def add_graalpython_core():
         "__graalpython__",
         "_interop_behavior",
         "_sre",
-        "_struct",
         "_sysconfig",
         "_weakref",
         "builtins",

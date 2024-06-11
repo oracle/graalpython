@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -80,7 +80,7 @@ public class AsyncActionThreadingTest extends PythonTests {
         Context c = PythonTests.enterContext();
         try {
             Runnable poll = c.getPolyglotBindings().getMember("PollPythonAsyncActions").asHostObject();
-            c.eval("python", "import re, itertools, functools, _struct; _struct.pack('i', 1)");
+            c.eval("python", "import re, itertools, functools, _testcapi");
             assertTrue("manual async actions create no threads " + threadNames(), threadCount == pythonThreadCount());
             c.eval("python", "import threading; t = threading.Thread(target=lambda: 1); t.start(); t.join()");
             assertTrue("manual async actions create no thread for gil release " + threadNames(), threadCount == pythonThreadCount());

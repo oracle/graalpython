@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -330,7 +330,7 @@ public final class NumericSupport {
         } else if (srcBytes < numBytes) {
             // perform sign extension
             if (value.signum() < 0) {
-                for (int i = 0; i < numBytes - srcBytes; i++) {
+                for (int i = index; i < index + numBytes - srcBytes; i++) {
                     buffer[i] = -1;
                 }
             }
@@ -388,7 +388,7 @@ public final class NumericSupport {
                 break;
             case 4:
                 final float fValue = (float) value;
-                if (Float.isInfinite(fValue)) {
+                if (Float.isInfinite(fValue) && Double.isFinite(value)) {
                     throw raiseNode.get(inliningTarget).raise(OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT, "f");
                 }
                 putFloat(buffer, index, fValue);

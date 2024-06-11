@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,7 +58,7 @@ public class MultiContextTest extends PythonTests {
     }
 
     @Test
-    public void testSharingWithStruct() {
+    public void testSharingWithCpythonSre() {
         // With the default value of NativeModules=true, this test is going to use the NFI C API
         // backend for the first context, but then it is going to use the Sulong backend for
         // consecutive contexts (as long as this is the only test that executes native code,
@@ -68,8 +68,7 @@ public class MultiContextTest extends PythonTests {
         Engine engine = Engine.newBuilder().build();
         for (int i = 0; i < 10; i++) {
             try (Context context = newContext(engine)) {
-                context.eval("python", "import struct\n" +
-                                "n = struct.unpack('<q', struct.pack('<d', 1.1))[0]\n");
+                context.eval("python", "import _cpython_sre\nassert _cpython_sre.ascii_tolower(88) == 120\n");
             }
         }
     }

@@ -870,7 +870,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
         launcher = os.path.join(python_home, 'bin', _graalpy_launcher(enterprise))
         out = mx.OutputCapture()
-        import_managed_status = mx.run([launcher, "-c", "import __graalpython_enterprise__"], nonZeroIsFatal=False, out=out, err=out)
+        import_managed_status = mx.run([launcher, "-c", "import sys; assert 'Oracle GraalVM' in sys.version"], nonZeroIsFatal=False, out=out, err=out)
         if enterprise != (import_managed_status == 0):
             mx.abort(f"GRAALPY_HOME is not compatible with requested distribution kind ({import_managed_status=}, {enterprise=}, {out=}).")
         return python_home
@@ -1348,8 +1348,7 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
     print(f"with PYTHONPATH={python_path}")
 
     if checkIfWithGraalPythonEE:
-        mx.run([python_binary, "-c", "import __graalpython_enterprise__"])
-        print("with graalpy EE")
+        mx.run([python_binary, "-c", "import sys; print(sys.version)"])
     run_python_unittests(
         python_binary,
         args=["-v"],
