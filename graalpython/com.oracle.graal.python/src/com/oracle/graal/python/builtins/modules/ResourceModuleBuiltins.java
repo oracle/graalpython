@@ -42,41 +42,39 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
-import java.lang.management.ThreadMXBean;
 import java.util.List;
-
-import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.PosixConstants;
+import com.oracle.graal.python.runtime.PosixSupport;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "resource")
 public final class ResourceModuleBuiltins extends PythonBuiltins {
-
-    static int RUSAGE_CHILDREN = -1;
-    static int RUSAGE_SELF = 0;
-    static int RUSAGE_THREAD = 1;
 
     static int RLIMIT_CPU = 0;
     static int RLIMIT_FSIZE = 1;
@@ -129,9 +127,13 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
 
         addBuiltinConstant("error", PythonBuiltinClassType.OSError);
 
-        addBuiltinConstant("RUSAGE_CHILDREN", RUSAGE_CHILDREN);
-        addBuiltinConstant("RUSAGE_SELF", RUSAGE_SELF);
-        addBuiltinConstant("RUSAGE_THREAD", RUSAGE_THREAD);
+        if (PosixConstants.RUSAGE_CHILDREN.defined) {
+            addBuiltinConstant("RUSAGE_CHILDREN", PosixConstants.RUSAGE_CHILDREN.getValueIfDefined());
+        }
+        addBuiltinConstant("RUSAGE_SELF", PosixConstants.RUSAGE_SELF.value);
+        if (PosixConstants.RUSAGE_THREAD.defined) {
+            addBuiltinConstant("RUSAGE_THREAD", PosixConstants.RUSAGE_THREAD.getValueIfDefined());
+        }
 
         addBuiltinConstant("RLIMIT_CPU", RLIMIT_CPU);
         addBuiltinConstant("RLIMIT_FSIZE", RLIMIT_FSIZE);
@@ -154,119 +156,29 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
     @ImportStatic(ResourceModuleBuiltins.class)
     abstract static class GetRuUsageNode extends PythonBuiltinNode {
 
-        @Specialization(guards = {"who == RUSAGE_THREAD"})
-        @TruffleBoundary
-        PTuple getruusageThread(@SuppressWarnings("unused") int who) {
-            long id = PThread.getThreadId(Thread.currentThread());
-            Runtime runtime = Runtime.getRuntime();
-
-            double ru_utime = 0; // time in user mode (float)
-            double ru_stime = 0; // time in system mode (float)
-            long ru_maxrss; // maximum resident set size
-
-            if (!ImageInfo.inImageCode()) {
-                ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-                if (threadMXBean.isCurrentThreadCpuTimeSupported()) {
-                    ru_utime = threadMXBean.getThreadUserTime(id) / 1000000000.0;
-                    ru_stime = Math.max(0, (threadMXBean.getThreadCpuTime(id) - threadMXBean.getThreadUserTime(id))) / 1000000000.0;
-                }
-
-                if (threadMXBean instanceof com.sun.management.ThreadMXBean) {
-                    com.sun.management.ThreadMXBean thMxBean = (com.sun.management.ThreadMXBean) threadMXBean;
-                    ru_maxrss = thMxBean.getThreadAllocatedBytes(id);
+        @Specialization
+        static PTuple getruusage(VirtualFrame frame, int who,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+            RusageResult rusage;
+            try {
+                rusage = posixLib.getrusage(posixSupport, who);
+            } catch (PosixException e) {
+                if (e.getErrorCode() == OSErrorEnum.EINVAL.getNumber()) {
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.RUSAGE_INVALID_WHO);
                 } else {
-                    ru_maxrss = runtime.maxMemory();
+                    throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
-            } else {
-                ru_maxrss = runtime.maxMemory();
             }
 
-            String osName = System.getProperty("os.name");
-            if (osName.contains("Linux")) {
-                // peak memory usage (kilobytes on Linux
-                ru_maxrss /= 1024;
-            }
-
-            long ru_ixrss = -1; // shared memory size
-            long ru_idrss = -1; // unshared memory size
-            long ru_isrss = -1; // unshared stack size
-            long ru_minflt = -1; // page faults not requiring I/O
-            long ru_majflt = -1;  // page faults requiring I/O
-            long ru_nswap = -1;  // number of swap outs
-            long ru_inblock = -1; // block input operations
-            long ru_oublock = -1;  // block output operations
-            long ru_msgsnd = -1; // messages sent
-            long ru_msgrcv = -1; // messages received
-            long ru_nsignals = -1; // signals received
-            long ru_nvcsw = -1; // voluntary context switches
-            long ru_nivcsw = -1; // nvoluntary context switches
-            return PythonObjectFactory.getUncached().createStructSeq(STRUCT_RUSAGE_DESC, ru_utime, ru_stime, ru_maxrss, ru_ixrss, ru_idrss, ru_isrss,
-                            ru_minflt, ru_majflt, ru_nswap, ru_inblock, ru_oublock, ru_msgsnd, ru_msgrcv, ru_nsignals,
-                            ru_nvcsw, ru_nivcsw);
-        }
-
-        @Specialization(guards = {"who == RUSAGE_SELF"})
-        @TruffleBoundary
-        PTuple getruusageSelf(@SuppressWarnings("unused") int who) {
-            Runtime runtime = Runtime.getRuntime();
-
-            double ru_utime = 0; // time in user mode (float)
-            double ru_stime = 0; // time in system mode (float)
-            long ru_maxrss;
-
-            if (!ImageInfo.inImageCode()) {
-                ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-                if (threadMXBean.isThreadCpuTimeSupported()) {
-                    for (long thId : threadMXBean.getAllThreadIds()) {
-                        long tu = threadMXBean.getThreadUserTime(thId);
-                        long tc = threadMXBean.getThreadCpuTime(thId);
-
-                        if (tu != -1) {
-                            ru_utime += tu / 1000000000.0;
-                        }
-
-                        if (tu != -1 && tc != -1) {
-                            ru_stime += Math.max(0, tc - tu) / 1000000000.0;
-                        }
-                    }
-                }
-
-                MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
-                MemoryUsage heapMemoryUsage = memoryMXBean.getHeapMemoryUsage();
-                MemoryUsage nonHeapMemoryUsage = memoryMXBean.getNonHeapMemoryUsage();
-                ru_maxrss = heapMemoryUsage.getCommitted() + nonHeapMemoryUsage.getCommitted();
-            } else {
-                ru_maxrss = runtime.maxMemory();
-            }
-
-            String osName = System.getProperty("os.name");
-            if (osName.contains("Linux")) {
-                // peak memory usage (kilobytes on Linux
-                ru_maxrss /= 1024;
-            }
-
-            long ru_ixrss = -1; // shared memory size
-            long ru_idrss = -1; // unshared memory size
-            long ru_isrss = -1; // unshared stack size
-            long ru_minflt = -1; // page faults not requiring I/O
-            long ru_majflt = -1;  // page faults requiring I/O
-            long ru_nswap = -1;  // number of swap outs
-            long ru_inblock = -1; // block input operations
-            long ru_oublock = -1;  // block output operations
-            long ru_msgsnd = -1; // messages sent
-            long ru_msgrcv = -1; // messages received
-            long ru_nsignals = -1; // signals received
-            long ru_nvcsw = -1; // voluntary context switches
-            long ru_nivcsw = -1; // nvoluntary context switches
-            return PythonObjectFactory.getUncached().createStructSeq(STRUCT_RUSAGE_DESC, ru_utime, ru_stime, ru_maxrss, ru_ixrss, ru_idrss, ru_isrss,
-                            ru_minflt, ru_majflt, ru_nswap, ru_inblock, ru_oublock, ru_msgsnd, ru_msgrcv, ru_nsignals,
-                            ru_nvcsw, ru_nivcsw);
-        }
-
-        @Fallback
-        static PTuple getruusage(@SuppressWarnings("unused") Object who,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.RUSAGE_NOT_YET_IMPLEMENED);
+            return PythonObjectFactory.getUncached().createStructSeq(STRUCT_RUSAGE_DESC,
+                            rusage.ru_utime(), rusage.ru_stime(),
+                            rusage.ru_maxrss(), rusage.ru_ixrss(), rusage.ru_idrss(), rusage.ru_isrss(),
+                            rusage.ru_minflt(), rusage.ru_majflt(), rusage.ru_nswap(), rusage.ru_inblock(), rusage.ru_oublock(),
+                            rusage.ru_msgsnd(), rusage.ru_msgrcv(), rusage.ru_nsignals(), rusage.ru_nvcsw(), rusage.ru_nivcsw());
         }
     }
 

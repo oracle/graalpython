@@ -845,7 +845,7 @@ public abstract class ErrorMessages {
     public static final TruffleString GETPWUID_NOT_FOUND = tsLiteral("getpwuid(): uid not found");
     public static final TruffleString EXPECTED_INT_MESSAGE = tsLiteral("Expected an int as second argument to ldexp.");
     public static final TruffleString NOT_IMPLEMENTED = tsLiteral("not implemented");
-    public static final TruffleString RUSAGE_NOT_YET_IMPLEMENED = tsLiteral("rusage usage not yet implemented for specified arg.");
+    public static final TruffleString RUSAGE_INVALID_WHO = tsLiteral("invalid who parameter");
     public static final TruffleString SOCKADDR_RESOLVED_TO_MULTIPLE_ADDRESSES = tsLiteral("sockaddr resolved to multiple addresses");
     public static final TruffleString IPV4_MUST_BE_2_TUPLE = tsLiteral("IPv4 sockaddr must be 2 tuple");
     public static final TruffleString GETNAMEINFO_ARG1_MUST_BE_TUPLE = tsLiteral("getnameinfo() argument 1 must be a tuple");
