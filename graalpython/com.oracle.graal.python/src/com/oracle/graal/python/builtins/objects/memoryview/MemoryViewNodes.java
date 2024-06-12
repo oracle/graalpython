@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -644,7 +644,7 @@ public class MemoryViewNodes {
         @Specialization
         static void doCExtBuffer(NativeBufferLifecycleManagerFromSlot buffer,
                         @Cached(inline = false) CallNode callNode) {
-            callNode.execute(buffer.releaseFunction, buffer.self, buffer.buffer);
+            callNode.executeWithoutFrame(buffer.releaseFunction, buffer.self, buffer.buffer);
         }
 
         @Fallback

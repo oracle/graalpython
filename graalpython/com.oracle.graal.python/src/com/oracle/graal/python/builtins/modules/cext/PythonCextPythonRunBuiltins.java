@@ -102,9 +102,9 @@ public final class PythonCextPythonRunBuiltins {
             } else {
                 throw raiseNode.get(inliningTarget).raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
             }
-            Object code = callNode.execute(compileCallable, source, stype, stype);
+            Object code = callNode.executeWithoutFrame(compileCallable, source, stype, stype);
             Object execCallable = lookupNode.execute(null, inliningTarget, builtins, type == Py_eval_input ? T_EVAL : T_EXEC);
-            return callNode.execute(execCallable, code, globals, locals);
+            return callNode.executeWithoutFrame(execCallable, code, globals, locals);
         }
 
         @Specialization(guards = "!isString(source) || !isDict(globals)")
@@ -170,7 +170,7 @@ public final class PythonCextPythonRunBuiltins {
             }
             int defaultFlags = 0;
             boolean dontInherit = false;
-            return callNode.execute(compileCallable, source, filename, stype, defaultFlags, dontInherit, optimizationLevel);
+            return callNode.executeWithoutFrame(compileCallable, source, filename, stype, defaultFlags, dontInherit, optimizationLevel);
         }
 
         @SuppressWarnings("unused")

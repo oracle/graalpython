@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -887,7 +887,7 @@ public final class ErrorHandlers {
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             cache.errorHandlerObject = cache.errorHandlerObject == null ? lookupErrorNode.execute(inliningTarget, errors) : cache.errorHandlerObject;
-            cache.exceptionObject = makeDecodeExceptionNode.execute(inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
+            cache.exceptionObject = makeDecodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
             Object resultObj = callNode.execute(frame, cache.errorHandlerObject, cache.exceptionObject);
             DecodingErrorHandlerResult result = parseResultNode.execute(frame, inliningTarget, resultObj);
             result.newSrcObj = getObjectNode.execute(inliningTarget, cache.exceptionObject);
@@ -965,7 +965,7 @@ public final class ErrorHandlers {
                         @Cached PRaiseNode.Lazy raiseNode) {
             cache.errorHandlerObject = cache.errorHandlerObject == null ? lookupErrorNode.execute(inliningTarget, errors) : cache.errorHandlerObject;
             int len = codePointLengthNode.execute(srcObj, TS_ENCODING);
-            cache.exceptionObject = makeEncodeExceptionNode.execute(inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
+            cache.exceptionObject = makeEncodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
             Object resultObj = callNode.execute(frame, cache.errorHandlerObject, cache.exceptionObject);
             EncodingErrorHandlerResult result = parseResultNode.execute(inliningTarget, resultObj);
             result.newPos = adjustAndCheckPos(result.newPos, len, inliningTarget, raiseNode);
@@ -978,13 +978,13 @@ public final class ErrorHandlers {
     @GenerateCached(false)
     abstract static class RaiseEncodeException extends Node {
 
-        abstract void execute(Node inliningTarget, ErrorHandlerCache cache, TruffleString encoding, TruffleString srcObj, int startPos, int endPos, TruffleString reason);
+        abstract void execute(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString encoding, TruffleString srcObj, int startPos, int endPos, TruffleString reason);
 
         @Specialization
-        static void doIt(Node inliningTarget, ErrorHandlerCache cache, TruffleString encoding, TruffleString srcObj, int startPos, int endPos, TruffleString reason,
+        static void doIt(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString encoding, TruffleString srcObj, int startPos, int endPos, TruffleString reason,
                         @Cached MakeEncodeExceptionNode makeEncodeExceptionNode,
                         @Cached(inline = false) PRaiseNode raiseNode) {
-            cache.exceptionObject = makeEncodeExceptionNode.execute(inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
+            cache.exceptionObject = makeEncodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
             raiseNode.raiseExceptionObject(cache.exceptionObject);
         }
     }

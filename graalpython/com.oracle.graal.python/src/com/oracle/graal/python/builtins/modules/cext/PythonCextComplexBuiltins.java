@@ -130,7 +130,7 @@ public final class PythonCextComplexBuiltins {
                 name = T___FLOAT__;
             }
             try {
-                return callNode.execute(getAttr.execute(null, inliningTarget, obj, name));
+                return callNode.executeWithoutFrame(getAttr.execute(null, inliningTarget, obj, name));
             } catch (PException e) {
                 throw raiseNode.get(inliningTarget).raise(TypeError);
             }
@@ -155,7 +155,7 @@ public final class PythonCextComplexBuiltins {
                         @Cached CallNode callNode,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return callNode.execute(getAttr.execute(null, inliningTarget, obj, T_IMAG));
+            return callNode.executeWithoutFrame(getAttr.execute(null, inliningTarget, obj, T_IMAG));
         }
 
         @SuppressWarnings("unused")

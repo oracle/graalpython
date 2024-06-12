@@ -504,7 +504,7 @@ public final class PythonCextErrBuiltins {
                         GetItemNode getItemNode, PythonModule sys, PyErr_Display errDisplayNode) {
             CompilerAsserts.neverPartOfCompilation();
             try {
-                CallNode.getUncached().execute(exceptHook, type, val, tb);
+                CallNode.executeUncached(exceptHook, type, val, tb);
             } catch (PException e) {
                 PTuple sysInfo = excInfoNode.execute(null);
                 Object type1 = getItemNode.execute(null, sysInfo, 0);
@@ -513,9 +513,9 @@ public final class PythonCextErrBuiltins {
                 // not quite the same as 'PySys_WriteStderr' but close
                 Object stdErr = ((SysModuleBuiltins) sys.getBuiltins()).getStdErr();
                 Object writeMethod = PyObjectGetAttr.executeUncached(stdErr, T_WRITE);
-                CallNode.getUncached().execute(null, writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, "Error in sys.excepthook:\n"));
+                CallNode.executeUncached(writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, "Error in sys.excepthook:\n"));
                 errDisplayNode.execute(type1, val1, tb1);
-                CallNode.getUncached().execute(null, writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, "\nOriginal exception was:\n"));
+                CallNode.executeUncached(writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, "\nOriginal exception was:\n"));
                 errDisplayNode.execute(type, val, tb);
                 PyObjectCallMethodObjArgs.executeUncached(stdErr, T_FLUSH);
             }
@@ -542,7 +542,7 @@ public final class PythonCextErrBuiltins {
                 } else {
                     Object stdOut = sys.getStdOut();
                     Object writeMethod = PyObjectGetAttr.executeUncached(stdOut, T_WRITE);
-                    CallNode.getUncached().execute(null, writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, returnObject));
+                    CallNode.executeUncached(writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, returnObject));
                     PyObjectCallMethodObjArgs.executeUncached(stdOut, T_FLUSH);
                 }
             }

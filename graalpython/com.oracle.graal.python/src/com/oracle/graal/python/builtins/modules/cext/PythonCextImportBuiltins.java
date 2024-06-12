@@ -108,7 +108,7 @@ public final class PythonCextImportBuiltins {
             // Get the __import__ function from the builtins
             Object importFunc = getAttrNode.execute(null, inliningTarget, getContext().getBuiltins(), T___IMPORT__);
             // Call the __import__ function with the proper argument list
-            return callNode.execute(importFunc, new Object[]{name}, new PKeyword[]{
+            return callNode.executeWithoutFrame(importFunc, new Object[]{name}, new PKeyword[]{
                             new PKeyword(T_GLOBALS, globals), new PKeyword(T_LOCALS, locals),
                             new PKeyword(T_FROMLIST, fromlist), new PKeyword(T_LEVEL, level)
             });

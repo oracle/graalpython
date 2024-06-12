@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -108,8 +108,12 @@ public abstract class CallNode extends PNodeWithContext {
      * current thread state will be read from the context, so calls through this entry point are
      * potentially slower than if a frame is available.
      */
-    public final Object execute(Object callableObject, Object[] arguments, PKeyword[] keywords) {
+    public final Object executeWithoutFrame(Object callableObject, Object[] arguments, PKeyword[] keywords) {
         return executeInternal(null, callableObject, arguments, keywords);
+    }
+
+    public static Object executeUncached(Object callableObject, Object[] arguments, PKeyword[] keywords) {
+        return getUncached().executeInternal(null, callableObject, arguments, keywords);
     }
 
     /**
@@ -117,8 +121,12 @@ public abstract class CallNode extends PNodeWithContext {
      * current thread state will be read from the context, so calls through this entry point are
      * potentially slower than if a frame is available.
      */
-    public final Object execute(Object callableObject, Object... arguments) {
+    public final Object executeWithoutFrame(Object callableObject, Object... arguments) {
         return executeInternal(null, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
+    }
+
+    public static Object executeUncached(Object callableObject, Object... arguments) {
+        return getUncached().executeInternal(null, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
     public final Object execute(Frame frame, Object callableObject, Object[] arguments, PKeyword[] keywords) {

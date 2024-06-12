@@ -266,7 +266,7 @@ public abstract class PythonCextObjectBuiltins {
             if (filled < args.length) {
                 args = PythonUtils.arrayCopyOf(args, filled);
             }
-            return callNode.execute(callable, args);
+            return callNode.executeWithoutFrame(callable, args);
         }
     }
 

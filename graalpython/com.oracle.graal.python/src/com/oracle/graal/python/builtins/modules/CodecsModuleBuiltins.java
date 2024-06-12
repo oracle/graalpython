@@ -248,7 +248,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
             if (!fixed) {
                 int start = encoder.getInputPosition();
                 int end = start + encoder.getErrorLength();
-                Object exception = lazyCallNode.execute(UnicodeEncodeError, encoder.getEncodingName(), inputObject, start, end, encoder.getErrorReason());
+                Object exception = lazyCallNode.executeWithoutFrame(UnicodeEncodeError, encoder.getEncodingName(), inputObject, start, end, encoder.getErrorReason());
                 if (exception instanceof PBaseException) {
                     throw raiseNode.get(inliningTarget).raiseExceptionObject((PBaseException) exception);
                 } else {
@@ -370,7 +370,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode.Lazy raiseNode) {
             int start = decoder.getInputPosition();
             int end = start + decoder.getErrorLength();
-            Object exception = callNode.execute(UnicodeDecodeError, decoder.getEncodingName(), inputObject, start, end, decoder.getErrorReason());
+            Object exception = callNode.executeWithoutFrame(UnicodeDecodeError, decoder.getEncodingName(), inputObject, start, end, decoder.getErrorReason());
             if (justMakeExcept) {
                 return exception;
             }
@@ -420,7 +420,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     // "lazily", i.e., not on all code-paths
     @GenerateInline(false)
     public abstract static class HandleDecodingErrorNode extends Node {
-        public abstract void execute(TruffleDecoder decoder, TruffleString errorAction, Object inputObject);
+        public abstract void execute(VirtualFrame frame, TruffleDecoder decoder, TruffleString errorAction, Object inputObject);
 
         @Specialization(guards = "errorAction == T_STRICT")
         static void doStrict(TruffleDecoder decoder, @SuppressWarnings("unused") TruffleString errorAction, Object inputObject,
@@ -476,7 +476,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        static void doCustom(TruffleDecoder decoder, TruffleString errorAction, Object inputObject,
+        static void doCustom(VirtualFrame frame, TruffleDecoder decoder, TruffleString errorAction, Object inputObject,
                         @Bind("this") Node inliningTarget,
                         @Cached CallNode callNode,
                         @Cached BaseExceptionAttrNode attrNode,
@@ -493,7 +493,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                     throw raiseNode.get(inliningTarget).raise(LookupError, UNKNOWN_ERROR_HANDLER, errorAction);
                 }
                 Object exceptionObject = raiseDecodingErrorNode.makeDecodeException(inliningTarget, decoder, inputObject);
-                Object restuple = callNode.execute(errorHandler, exceptionObject);
+                Object restuple = callNode.execute(frame, errorHandler, exceptionObject);
 
                 if (!PGuards.isPTuple(restuple)) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
@@ -706,7 +706,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                 try {
                     decoder = new TruffleDecoder(normalizedEncoding, charset, bytes, len, errorAction);
                     while (!decoder.decodingStep(finalData)) {
-                        errorHandler.execute(decoder, internErrorAction.execute(inliningTarget, errors), factory.createBytes(bytes, len));
+                        errorHandler.execute(frame, decoder, internErrorAction.execute(inliningTarget, errors), factory.createBytes(bytes, len));
                     }
                 } catch (OutOfMemoryError e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();

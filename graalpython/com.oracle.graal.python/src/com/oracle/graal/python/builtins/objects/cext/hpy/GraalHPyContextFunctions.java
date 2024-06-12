@@ -1547,7 +1547,7 @@ public abstract class GraalHPyContextFunctions {
             if (isExcValueSubtypeNode.execute(getClassNode.execute(inliningTarget, valueObj), PythonBuiltinClassType.PBaseException)) {
                 exception = valueObj;
             } else {
-                exception = callExceptionConstructorNode.execute(errTypeObj, valueObj);
+                exception = callExceptionConstructorNode.executeWithoutFrame(errTypeObj, valueObj);
             }
 
             if (exceptionCheckNode.execute(inliningTarget, exception)) {
@@ -1573,7 +1573,7 @@ public abstract class GraalHPyContextFunctions {
             if (!(PGuards.isPythonClass(errTypeObj) && isSubtypeNode.execute(errTypeObj, PythonBuiltinClassType.PBaseException))) {
                 return raiseNode.raise(SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION, errTypeObj);
             }
-            Object exception = callExceptionConstructorNode.execute(errTypeObj, fromCharPointerNode.execute(charPtr));
+            Object exception = callExceptionConstructorNode.executeWithoutFrame(errTypeObj, fromCharPointerNode.execute(charPtr));
 
             if (exceptionCheckNode.execute(isSubtypeNode, exception)) {
                 throw raiseNode.raiseExceptionObject(exception);
@@ -1606,11 +1606,11 @@ public abstract class GraalHPyContextFunctions {
             Object exception = null;
             if (!isNullNode.execute(hpyContext, errMessagePtr)) {
                 TruffleString filename_fsencoded = fromCharPointerNode.execute(hpyContext, errMessagePtr, true);
-                exception = callExceptionConstructorNode.execute(errTypeObj, i, message, filename_fsencoded);
+                exception = callExceptionConstructorNode.executeWithoutFrame(errTypeObj, i, message, filename_fsencoded);
             }
 
             if (exception == null) {
-                exception = callExceptionConstructorNode.execute(errTypeObj, i, message);
+                exception = callExceptionConstructorNode.executeWithoutFrame(errTypeObj, i, message);
             }
 
             if (exceptionCheckNode.execute(inliningTarget, exception)) {
@@ -1643,14 +1643,14 @@ public abstract class GraalHPyContextFunctions {
             Object exception = null;
             if (filenameObject1 != NULL_HANDLE_DELEGATE) {
                 if (filenameObject2 != NULL_HANDLE_DELEGATE) {
-                    exception = callExceptionConstructorNode.execute(errTypeObj, i, message, filenameObject1, 0, filenameObject2);
+                    exception = callExceptionConstructorNode.executeWithoutFrame(errTypeObj, i, message, filenameObject1, 0, filenameObject2);
                 } else {
-                    exception = callExceptionConstructorNode.execute(errTypeObj, i, message, filenameObject1);
+                    exception = callExceptionConstructorNode.executeWithoutFrame(errTypeObj, i, message, filenameObject1);
                 }
             }
 
             if (exception == null) {
-                exception = callExceptionConstructorNode.execute(errTypeObj, i, message);
+                exception = callExceptionConstructorNode.executeWithoutFrame(errTypeObj, i, message);
             }
 
             if (exceptionCheckNode.execute(inliningTarget, exception)) {
@@ -2859,7 +2859,7 @@ public abstract class GraalHPyContextFunctions {
             Object[] args = castArgs(argsObject, expandArgsNode, raiseNode);
             // check and expand kwargs
             PKeyword[] keywords = castKwargs(inliningTarget, kwargsObject, lenNode, expandKwargsNode, raiseNode);
-            return callNode.execute(callable, args, keywords);
+            return callNode.executeWithoutFrame(callable, args, keywords);
         }
 
         private static Object[] castArgs(Object args,
@@ -2937,7 +2937,7 @@ public abstract class GraalHPyContextFunctions {
              * 'AbstractCallMethodNode.callerExceedsMaxSize' assumes that a call node is always
              * under a root node. However, in cross-language calls, this may not be the case.
              */
-            return CallNode.getUncached().execute(callable, positionalArgs, keywords);
+            return CallNode.executeUncached(callable, positionalArgs, keywords);
         }
     }
 
@@ -2976,7 +2976,7 @@ public abstract class GraalHPyContextFunctions {
             } else {
                 keywords = PKeyword.EMPTY_KEYWORDS;
             }
-            return callNode.execute(callable, positionalArgs, keywords);
+            return callNode.executeWithoutFrame(callable, positionalArgs, keywords);
         }
     }
 
@@ -3113,7 +3113,7 @@ public abstract class GraalHPyContextFunctions {
                 bases = factory.createTuple(new Object[]{base});
             }
 
-            return callTypeConstructorNode.execute(PythonBuiltinClassType.PythonClass, substringNode.execute(name, dotIdx + 1, len - dotIdx - 1, TS_ENCODING, false), bases, dict);
+            return callTypeConstructorNode.executeWithoutFrame(PythonBuiltinClassType.PythonClass, substringNode.execute(name, dotIdx + 1, len - dotIdx - 1, TS_ENCODING, false), bases, dict);
         }
     }
 
@@ -3499,7 +3499,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CallNode callContextvar) {
             TruffleString name = fromCharPointerNode.execute(namePtr);
-            return callContextvar.execute(PythonBuiltinClassType.ContextVar, name, def);
+            return callContextvar.executeWithoutFrame(PythonBuiltinClassType.ContextVar, name, def);
         }
     }
 
@@ -3657,7 +3657,7 @@ public abstract class GraalHPyContextFunctions {
             if (sourceKind == null) {
                 throw raiseNode.raise(SystemError, ErrorMessages.HPY_INVALID_SOURCE_KIND);
             }
-            return callNode.execute(builtinFunction, src, filename, sourceKind.getMode());
+            return callNode.executeWithoutFrame(builtinFunction, src, filename, sourceKind.getMode());
         }
     }
 

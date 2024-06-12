@@ -522,7 +522,7 @@ public final class PythonCextAbstractBuiltins {
                         @Cached PySliceNew sliceNode,
                         @Cached CallNode callNode) {
             Object getItemCallable = lookupAttrNode.execute(null, inliningTarget, obj, T___GETITEM__);
-            return callNode.execute(getItemCallable, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE));
+            return callNode.executeWithoutFrame(getItemCallable, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE));
         }
 
         @Specialization(guards = "!checkNode.execute(inliningTarget, obj)", limit = "1")
@@ -580,7 +580,7 @@ public final class PythonCextAbstractBuiltins {
                         @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode) {
             Object imulCallable = lookupNode.execute(null, inliningTarget, obj, T___IMUL__);
             if (imulCallable != PNone.NO_VALUE) {
-                Object ret = callNode.execute(imulCallable, n);
+                Object ret = callNode.executeWithoutFrame(imulCallable, n);
                 return ret;
             }
             return mulNode.executeObject(null, obj, n);
@@ -635,7 +635,7 @@ public final class PythonCextAbstractBuiltins {
                         @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode) {
             Object iaddCallable = lookupNode.execute(null, inliningTarget, s1, T___IADD__);
             if (iaddCallable != PNone.NO_VALUE) {
-                return callNode.execute(iaddCallable, s2);
+                return callNode.executeWithoutFrame(iaddCallable, s2);
             }
             return addNode.executeObject(null, s1, s2);
         }
@@ -824,7 +824,7 @@ public final class PythonCextAbstractBuiltins {
                         @Cached CallNode callNode,
                         @Shared @Cached ConstructListNode listNode) {
             Object attr = getAttrNode.execute(inliningTarget, obj, T_ITEMS);
-            return listNode.execute(null, callNode.execute(attr));
+            return listNode.execute(null, callNode.executeWithoutFrame(attr));
         }
     }
 
@@ -846,7 +846,7 @@ public final class PythonCextAbstractBuiltins {
                         @Cached PRaiseNode.Lazy raiseNode) {
             checkNonNullArg(inliningTarget, obj, raiseNode);
             Object attr = getAttrNode.execute(inliningTarget, obj, T_VALUES);
-            return listNode.execute(null, callNode.execute(attr));
+            return listNode.execute(null, callNode.executeWithoutFrame(attr));
         }
     }
 

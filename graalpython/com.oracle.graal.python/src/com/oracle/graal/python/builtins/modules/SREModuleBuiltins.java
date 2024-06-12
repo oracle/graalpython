@@ -420,7 +420,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                             int position = sourceSection.getCharIndex();
                             PythonModule module = context.lookupBuiltinModule(BuiltinNames.T__SRE);
                             Object errorConstructor = PyObjectLookupAttr.executeUncached(module, T_ERROR);
-                            PBaseException exception = (PBaseException) CallNode.getUncached().execute(errorConstructor, reason, originalPattern, position);
+                            PBaseException exception = (PBaseException) CallNode.executeUncached(errorConstructor, reason, originalPattern, position);
                             return PRaiseNode.getUncached().raiseExceptionObject(exception);
                         }
                     }
@@ -518,7 +518,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "getTRegexCache(pattern).isLocaleSensitive()"}, limit = "SPECIALIZATION_LIMIT", replaces = "cached")
         @SuppressWarnings("truffle-static-method")
-        Object localeSensitive(PythonObject pattern, PythonMethod method, boolean mustAdvance,
+        Object localeSensitive(VirtualFrame frame, PythonObject pattern, PythonMethod method, boolean mustAdvance,
                         @Bind("this") Node inliningTarget,
                         @Cached("method") @SuppressWarnings("unused") PythonMethod cachedMethod,
                         @Cached("mustAdvance") @SuppressWarnings("unused") boolean cachedMustAdvance,
@@ -526,7 +526,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached CallNode callGetLocale,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             TRegexCache tRegexCache = getTRegexCache(pattern);
-            TruffleString locale = castToTruffleStringNode.execute(inliningTarget, callGetLocale.execute(getLocale));
+            TruffleString locale = castToTruffleStringNode.execute(inliningTarget, callGetLocale.execute(frame, getLocale));
             final Object tRegex = tRegexCache.getLocaleSensitiveRegexp(method, mustAdvance, locale);
             if (tRegex != null) {
                 return tRegex;
@@ -673,8 +673,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             reCheckInputTypeNode.execute(frame, input, tRegexCache.isBinary());
 
             if (fallbackProfile.profile(inliningTarget, libCompiledRegex.isNull(compiledRegex))) {
-                Object fallbackRegex = getCallFallbackCompileNode().execute(getGetFallbackCompileNode().executeObject(frame, pattern));
-                return getCallFallbackMethodNode().execute(getFallbackMethodNode.executeObject(frame, fallbackRegex), input, pos, endPos);
+                Object fallbackRegex = getCallFallbackCompileNode().executeWithoutFrame(getGetFallbackCompileNode().executeObject(frame, pattern));
+                return getCallFallbackMethodNode().executeWithoutFrame(getFallbackMethodNode.executeObject(frame, fallbackRegex), input, pos, endPos);
             }
 
             Object truncatedInput = input;

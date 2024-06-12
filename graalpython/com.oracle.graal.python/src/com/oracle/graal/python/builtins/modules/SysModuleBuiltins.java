@@ -1809,7 +1809,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
 
-            return callNode.execute(hook, args, keywords);
+            return callNode.execute(frame, hook, args, keywords);
         }
     }
 

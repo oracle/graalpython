@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -210,7 +210,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         public PList executeWithGlobalState(Object list) {
             Object builtins = PythonContext.get(this).getBuiltins();
             Object listType = ReadAttributeFromObjectNode.getUncached().execute(builtins, BuiltinNames.T_LIST);
-            return (PList) CallNode.getUncached().execute(null, LookupInheritedAttributeNode.Dynamic.executeUncached(listType, SpecialMethodNames.T___CALL__), listType, list);
+            return (PList) CallNode.executeUncached(LookupInheritedAttributeNode.Dynamic.executeUncached(listType, SpecialMethodNames.T___CALL__), listType, list);
         }
 
         @Override

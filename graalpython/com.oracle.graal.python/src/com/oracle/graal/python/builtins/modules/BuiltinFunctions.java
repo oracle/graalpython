@@ -1292,7 +1292,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     CodecsModuleBuiltins.TruffleDecoder decoder = new CodecsModuleBuiltins.TruffleDecoder(pythonEncodingNameFromJavaName, charset, bytes, bytesLen, CodingErrorAction.REPORT);
                     if (!decoder.decodingStep(true)) {
                         try {
-                            handleDecodingErrorNode.execute(decoder, T_STRICT, factory.createBytes(bytes, bytesLen));
+                            handleDecodingErrorNode.execute(frame, decoder, T_STRICT, factory.createBytes(bytes, bytesLen));
                             throw CompilerDirectives.shouldNotReachHere();
                         } catch (PException e) {
                             throw raiseInvalidSyntax(filename, "(unicode error) %s", asStrNode.execute(frame, inliningTarget, e.getEscapedException()));
@@ -2487,7 +2487,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             // uncached PythonContext get, since this code path is slow in any case
             Object module = PythonContext.get(null).lookupBuiltinModule(T___GRAALPYTHON__);
             Object buildFunction = PyObjectLookupAttr.executeUncached(module, T_BUILD_JAVA_CLASS);
-            return CallNode.getUncached().execute(buildFunction, namespace, name, base);
+            return CallNode.executeUncached(buildFunction, namespace, name, base);
         }
 
         @Specialization
