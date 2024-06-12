@@ -479,6 +479,8 @@ public abstract class CApiTransitions {
                                      * ID which could resolve to another object.
                                      */
                                     CStructAccess.WriteIntNode.writeUncached(stubPointer, CFields.GraalPyObject__handle_table_index, 0);
+                                    // this can only happen if the object is a GC object
+                                    assert reference.gc;
                                     /*
                                      * Since the managed object is already dead (only the native
                                      * object stub is still alive), we need to remove the object
