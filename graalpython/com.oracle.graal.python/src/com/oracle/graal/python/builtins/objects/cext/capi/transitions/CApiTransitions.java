@@ -1250,6 +1250,7 @@ public abstract class CApiTransitions {
 
         @Specialization
         Object doNative(PythonAbstractNativeObject obj,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached InlinedBranchProfile inlinedBranchProfile,
                         @Cached UpdateRefNode updateRefNode) {
@@ -1268,11 +1269,11 @@ public abstract class CApiTransitions {
                  * the replicated native references.
                  */
                 if (newRefcnt == MANAGED_REFCNT + 1 && obj.getReplicatedNativeReferences() != null) {
-                    inlinedBranchProfile.enter(this);
+                    inlinedBranchProfile.enter(inliningTarget);
                     for (Object referent : obj.getReplicatedNativeReferences()) {
                         if (referent instanceof PythonObject pythonObject) {
                             PythonAbstractObjectNativeWrapper nativeWrapper = pythonObject.getNativeWrapper();
-                            updateRefNode.execute(this, nativeWrapper, nativeWrapper.getRefCount());
+                            updateRefNode.execute(inliningTarget, nativeWrapper, nativeWrapper.getRefCount());
                         }
                     }
                 }
