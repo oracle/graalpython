@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_GET_REGISTERED_INTERO
 import static com.oracle.graal.python.nodes.BuiltinNames.J_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_REGISTER_INTEROP_BEHAVIOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_JAVA_INTEROP_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_CANNOT_HAVE_S;
@@ -769,6 +770,27 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             // the receiver is passed in a hidden keyword argument
             // in a pure python decorator this would be passed as a cell
             return new PKeyword[]{new PKeyword(KW_RECEIVER, receiver)};
+        }
+    }
+
+    @Builtin(name = J_REGISTER_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class RegisterJavaInteropTypeNode extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        Object register(TruffleString javaClassName, PythonClass pythonClass,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.IsTypeNode isClassTypeNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (isClassTypeNode.execute(inliningTarget, pythonClass)) {
+                // Get registry for custom interop types from PythonContext
+                Map<Object, PythonClass> interopTypeRegistry =  PythonContext.get(this).getInteropTypeRegistry();
+                interopTypeRegistry.put(javaClassName.toString(), pythonClass);
+                return PNone.NONE;
+            } else {
+                throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "second", "a python class", pythonClass);
+            }
         }
     }
 
