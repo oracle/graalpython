@@ -51,6 +51,7 @@ import org.graalvm.polyglot.io.IOAccess;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Predicate;
@@ -125,7 +126,7 @@ import java.util.function.Predicate;
  * directory:
  * 
  * <pre>
- * try (Context context = GraalPyResources.contextBuilder(Path.of("python")).build()) {
+ * try (Context context = GraalPyResources.contextBuilder(Path.of("python-resources")).build()) {
  *     context.eval("python", "import mymodule; mymodule.print_hello_world()");
  * } catch (PolyglotException e) {
  *     if (e.isExit()) {
@@ -205,9 +206,9 @@ public class GraalPyResources {
                         allowIO(IOAccess.ALL).
                         // The sys.executable path, a virtual path that is used by the interpreter
                         // to discover packages
-                        option("python.Executable", execPath).//
+                        option("python.Executable", execPath).
                         // Set the python home to be read from the embedded resources
-                        option("python.PythonHome", homePath).//
+                        option("python.PythonHome", homePath).
                         // Set python path to point to sources stored in
                         // src/main/resources/org.graalvm.python.vfs/src
                         option("python.PythonPath", srcPath).
@@ -379,7 +380,7 @@ public class GraalPyResources {
      * located next to a native image executable.
      * 
      * <pre>
-     * Path resourcesDir = GraalPyResources.getNativeExecutablePath().getParent().resolve("python");
+     * Path resourcesDir = GraalPyResources.getNativeExecutablePath().getParent().resolve("python-resources");
      * try (Context context = GraalPyResources.contextBuilder(resourcesDir).build()) {
      *     context.eval("python", "print('hello world')");
      * }
@@ -387,6 +388,7 @@ public class GraalPyResources {
      * </p>
      *
      * @return the native executable path if it could be retrieved, otherwise <code>null</code>.
+     * @see #contextBuilder(Path)
      */
     public static Path getNativeExecutablePath() {
         if (ImageInfo.inImageRuntimeCode()) {
@@ -401,5 +403,32 @@ public class GraalPyResources {
             }
         }
         return null;
+    }
+
+    /**
+     * Extract the contents of the given virtual filesystem into a directory. This can be useful to
+     * manage and ship resources with the Maven workflow, but use them (cached) from the real
+     * filesystem for better compatibility.
+     * <p>
+     * <b>Example</b>
+     * 
+     * <pre>
+     * Path resourcesDir = Path.of(System.getProperty("user.home"), ".cache", "my.java.python.app.resources");
+     * FileSystem fs = GraalPyResources.createVirtualFileSystem();
+     * GraalPyResources.extractVirtualFileSystemResources(fs, resourcesDir);
+     * try (Context context = GraalPyResources.contextBuilder(resourcesDir).build()) {
+     *     context.eval("python", "print('hello world')");
+     * }
+     * </pre>
+     * </p>
+     * 
+     * @see #getNativeExecutablePath()
+     */
+    public static void extractVirtualFileSystemResources(FileSystem fs, Path destDir) throws IOException {
+        assert fs instanceof VirtualFileSystemImpl : "can extract resources only from filessytems created with VirtualFileSystemBuilder";
+        if (Files.exists(destDir) && !Files.isDirectory(destDir)) {
+            throw new IOException(String.format("%s has to be a directory", destDir.toString()));
+        }
+        ((VirtualFileSystemImpl) fs).extractResources(destDir);
     }
 }

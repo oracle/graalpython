@@ -45,8 +45,11 @@ import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -450,7 +453,7 @@ public class VirtualFileSystemTest {
     }
 
     @Test
-    public void builderTest() {
+    public void vfsBuilderTest() {
         Context context = GraalPyResources.contextBuilder().allowAllAccess(true).allowHostAccess(HostAccess.ALL).build();
         context.eval(PYTHON, "import java; java.type('java.lang.String')");
 
@@ -484,4 +487,36 @@ public class VirtualFileSystemTest {
         }
         assert gotPE : "expected PolyglotException";
     }
+
+    @Test
+    public void externalResourcesBuilderTest() throws IOException {
+        FileSystem fs = GraalPyResources.virtualFileSystemBuilder().resourceLoadingClass(VirtualFileSystemTest.class).build();
+        Path resourcesDir = Files.createTempDirectory("vfs-test-resources");
+
+        // extract VFS
+        GraalPyResources.extractVirtualFileSystemResources(fs, resourcesDir);
+
+        // check extracted contents
+        InputStream stream = VirtualFileSystemTest.class.getResourceAsStream("/org.graalvm.python.vfs/fileslist.txt");
+        BufferedReader br = new BufferedReader(new InputStreamReader(stream));
+        String line;
+        while ((line = br.readLine()) != null) {
+            line = line.substring("/org.graalvm.python.vfs/".length());
+            if (line.length() == 0) {
+                continue;
+            }
+            Path extractedFile = resourcesDir.resolve(line);
+            assert Files.exists(extractedFile);
+            if (line.endsWith("/")) {
+                assert Files.isDirectory(extractedFile);
+            }
+        }
+        checkExtractedFile(resourcesDir.resolve(Path.of("file1")), new String[]{"text1", "text2"});
+
+        // create context with extracted resource dir and check if we can see the extracted file
+        try (Context context = GraalPyResources.contextBuilder(resourcesDir).build()) {
+            context.eval("python", "import os; assert os.path.exists('" + resourcesDir.resolve("file1").toString().replace("\\", "\\\\") + "')");
+        }
+    }
+
 }
