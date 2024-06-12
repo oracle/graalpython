@@ -38,44 +38,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.sequence.storage;
+package com.oracle.graal.python.runtime.sequence.storage.native2;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
+import com.oracle.graal.python.util.PythonUtils;
+import sun.misc.Unsafe;
 
-public abstract class ArrayBasedSequenceStorage extends SequenceStorage {
+import java.lang.ref.ReferenceQueue;
+import java.util.concurrent.ConcurrentHashMap;
 
-    public abstract Object getInternalArrayObject();
+public class NativeBufferDeallocatorRunnable implements Runnable {
 
-    public abstract Object getCopyOfInternalArrayObject();
+    private static final Unsafe unsafe = PythonUtils.initUnsafe();
 
-    public abstract void setInternalArrayObject(Object arrayObject);
+    private final ReferenceQueue<NativeBuffer> referenceQueue;
+    private final ConcurrentHashMap<NativeBufferReference, NativeBufferReference> references;
 
-    public abstract ArrayBasedSequenceStorage createEmpty(int newCapacity);
-
-    /**
-     * The capacity we should allocate for a given length.
-     */
-    protected static int capacityFor(int length) throws ArithmeticException {
-        return Math.max(16, Math.multiplyExact(length, 2));
-    }
-
-    public void minimizeCapacity() {
-        capacity = length;
+    public NativeBufferDeallocatorRunnable(ReferenceQueue<NativeBuffer> referenceQueue, ConcurrentHashMap<NativeBufferReference, NativeBufferReference> references) {
+        this.referenceQueue = referenceQueue;
+        this.references = references;
     }
 
     @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        StringBuilder str = new StringBuilder(getClass().getSimpleName()).append('[');
-        int len = length > 10 ? 10 : length;
-        for (int i = 0; i < len; i++) {
-            str.append(i == 0 ? "" : ", ");
-            str.append(SequenceStorageNodes.GetItemScalarNode.executeUncached(this, i));
+    public void run() {
+        try {
+            PythonContext pythonContext = PythonContext.get(null);
+            PythonLanguage language = pythonContext.getLanguage();
+
+            while (!pythonContext.getThreadState(language).isShuttingDown()) {
+                NativeBufferReference phantomRef = (NativeBufferReference) referenceQueue.remove();
+                if (phantomRef != null) {
+                    unsafe.freeMemory(phantomRef.getMemoryAddress());
+                    references.remove(phantomRef);
+                }
+            }
+        } catch (PythonThreadKillException | InterruptedException e) {
+            // TODO log it here
         }
-        if (length > 10) {
-            str.append("...").append('(').append(length).append(')');
-        }
-        return str.append(']').toString();
     }
 }

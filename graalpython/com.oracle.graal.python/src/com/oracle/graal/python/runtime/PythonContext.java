@@ -210,6 +210,7 @@ public final class PythonContext extends Python3Core {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
 
     public final HandleContext nativeContext = new HandleContext(DEBUG_CAPI);
+    public final NativeBufferContext nativeBufferContext = new NativeBufferContext();
     private volatile boolean finalizing;
 
     @TruffleBoundary
@@ -2019,6 +2020,7 @@ public final class PythonContext extends Python3Core {
             disposeThreadStates();
         }
         cleanupHPyResources();
+        nativeBufferContext.finalizeContext();
         for (int fd : getChildContextFDs()) {
             if (!getSharedMultiprocessingData().decrementFDRefCount(fd)) {
                 getSharedMultiprocessingData().closePipe(fd);

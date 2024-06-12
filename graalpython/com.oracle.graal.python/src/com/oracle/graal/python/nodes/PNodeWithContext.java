@@ -81,6 +81,11 @@ public abstract class PNodeWithContext extends Node {
         return PythonContext.get(this);
     }
 
+    @NonIdempotent
+    public static PythonContext getContext(Node node) {
+        return PythonContext.get(node);
+    }
+
     @Idempotent
     public final boolean isSingleContext() {
         return getLanguage().isSingleContext();

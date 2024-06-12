@@ -109,6 +109,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -129,6 +130,9 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
+import com.oracle.graal.python.runtime.sequence.storage.native2.ArrowSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.native2.IntArrowSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.native2.NativeBuffer;
 import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -163,6 +167,7 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+import sun.misc.Unsafe;
 
 public abstract class SequenceStorageNodes {
 
@@ -611,6 +616,11 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
+        protected static int doArrowInt(IntArrowSequenceStorage storage, int idx) {
+            return storage.getIntItemNormalized(idx);
+        }
+
+        @Specialization
         protected static Object doMro(MroSequenceStorage storage, int idx) {
             return storage.getPythonClassItemNormalized(idx);
         }
@@ -776,6 +786,13 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
+        protected static SequenceStorage doArrowInt(IntArrowSequenceStorage storage, int start, int stop, int step, int length,
+                        @Bind("this") Node node) {
+            var newBuffer = doNativeSliceInBound(node, start, step, length, storage);
+            return new IntArrowSequenceStorage(newBuffer, length);
+        }
+
+        @Specialization
         protected static SequenceStorage doNativeByte(NativeByteSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached CStructAccess.ReadByteNode readNode) {
 
@@ -795,6 +812,28 @@ public abstract class SequenceStorageNodes {
                 newArray[j] = toJavaNode.execute(readNode.readArrayElement(storage.getPtr(), i));
             }
             return new ObjectSequenceStorage(newArray);
+        }
+
+        private static NativeBuffer doNativeSliceInBound(Node node, int start, int step, int sliceLength, ArrowSequenceStorage storage) {
+            long typeWidth = storage.getTypeWidth();
+            var context = PythonContext.get(node);
+            var unsafe = context.getUnsafe();
+            long sizeInBytes = sliceLength * typeWidth;
+            var destNativeBuffer = context.nativeBufferContext.createNativeBuffer(sizeInBytes);
+
+            if (step == 1) {
+                var startAddress = storage.getNativeBuffer().getMemoryAddress() + (start * typeWidth);
+                unsafe.copyMemory(startAddress, destNativeBuffer.getMemoryAddress(), sizeInBytes);
+                return destNativeBuffer;
+            }
+
+            var stepInBytes = step * typeWidth;
+            for (long srcAddr = storage.getNativeBuffer().getMemoryAddress() + (start * typeWidth), destAddr = destNativeBuffer.getMemoryAddress(),
+                            j = 0; j < sliceLength; srcAddr += stepInBytes, destAddr += typeWidth, j++) {
+                unsafe.copyMemory(srcAddr, destAddr, typeWidth);
+            }
+
+            return destNativeBuffer;
         }
 
         @NeverDefault
@@ -1183,6 +1222,11 @@ public abstract class SequenceStorageNodes {
             storage.setIntItemNormalized(idx, value);
         }
 
+        @Specialization
+        protected static void doArrowInt(@SuppressWarnings("unused") Node inliningTarget, IntArrowSequenceStorage storage, int idx, int value) {
+            storage.setIntItemNormalized(idx, value);
+        }
+
         @Specialization(rewriteOn = OverflowException.class)
         protected static void doIntL(@SuppressWarnings("unused") Node inliningTarget, IntSequenceStorage storage, int idx, long value) throws OverflowException {
             storage.setIntItemNormalized(idx, PInt.intValueExact(value));
@@ -1513,6 +1557,23 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static void doObjectStorage(ObjectSequenceStorage storage) {
             storage.reverse();
+        }
+
+        @Specialization
+        static void doArrow(Node inliningTarget, ArrowSequenceStorage storage) {
+            var length = storage.length();
+            var unsafe = PythonContext.get(inliningTarget).getUnsafe();
+            long typeWidth = storage.getTypeWidth();
+            long startAddress = storage.getNativeBuffer().getMemoryAddress();
+            long endAddress = startAddress + ((length - 1) * typeWidth);
+            byte[] tempBuffer = new byte[(int) typeWidth];
+            while (startAddress < endAddress) {
+                unsafe.copyMemory(null, startAddress, tempBuffer, Unsafe.ARRAY_BYTE_BASE_OFFSET, typeWidth);
+                unsafe.copyMemory(endAddress, startAddress, typeWidth);
+                unsafe.copyMemory(tempBuffer, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, endAddress, typeWidth);
+                startAddress += typeWidth;
+                endAddress -= typeWidth;
+            }
         }
 
         @Specialization
@@ -3084,6 +3145,19 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
+        static void doArrow(Node inliningTarget, ArrowSequenceStorage storage, int cap) {
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, cap > storage.getCapacity())) {
+                var context = getContext(inliningTarget);
+                long newCapacityInBytes = storage.getTypeWidth() * cap;
+                var oldNativeBuffer = storage.getNativeBuffer();
+                var newNativeBuffer = context.nativeBufferContext.createNativeBuffer(newCapacityInBytes);
+                context.getUnsafe().copyMemory(oldNativeBuffer.getMemoryAddress(), newNativeBuffer.getMemoryAddress(), oldNativeBuffer.getCapacityInBytes());
+                storage.setCapacity(cap);
+                storage.setNativeBuffer(newNativeBuffer);
+            }
+        }
+
+        @Specialization
         static void doBool(BoolSequenceStorage storage, int cap) {
             storage.ensureCapacity(cap);
         }
@@ -3177,7 +3251,7 @@ public abstract class SequenceStorageNodes {
     @GenerateCached(false)
     public abstract static class CopyNode extends Node {
 
-        public abstract SequenceStorage execute(Node node, SequenceStorage s);
+        public abstract SequenceStorage execute(Node inliningTarget, SequenceStorage s);
 
         public static SequenceStorage executeUncached(SequenceStorage s) {
             return SequenceStorageNodesFactory.CopyNodeGen.getUncached().execute(null, s);
@@ -3224,6 +3298,12 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
+        static SequenceStorage doArrowInt(Node inliningTarget, IntArrowSequenceStorage storage) {
+            var copiedBuffer = copyNativeBuffer(inliningTarget, storage.getNativeBuffer());
+            return new IntArrowSequenceStorage(copiedBuffer, storage.length());
+        }
+
+        @Specialization
         static SequenceStorage doNativeBytes(NativeByteSequenceStorage s,
                         @Shared @Cached(inline = false) GetNativeItemScalarNode getItem) {
             byte[] bytes = new byte[s.length()];
@@ -3241,6 +3321,16 @@ public abstract class SequenceStorageNodes {
                 objects[i] = getItem.execute(s, i);
             }
             return new ObjectSequenceStorage(objects);
+        }
+
+        private static NativeBuffer copyNativeBuffer(Node inliningTarget, NativeBuffer buffer) {
+            var context = PythonContext.get(inliningTarget);
+            var unsafe = context.getUnsafe();
+            var newBuffer = context.nativeBufferContext.createNativeBuffer(buffer.getCapacityInBytes());
+
+            unsafe.copyMemory(buffer.getMemoryAddress(), newBuffer.getMemoryAddress(), buffer.getCapacityInBytes());
+
+            return newBuffer;
         }
     }
 
@@ -3329,6 +3419,11 @@ public abstract class SequenceStorageNodes {
         static void doNative(NativeSequenceStorage s, int len,
                         @Cached(inline = false) SetNativeLenNode setLen) {
             setLen.execute(s, len);
+        }
+
+        @Specialization
+        static void doArrow(ArrowSequenceStorage s, int len) {
+            s.setNewLength(len);
         }
     }
 
@@ -3441,7 +3536,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "isLastItem(s, idx)")
         static void doLastItem(Node inliningTarget, SequenceStorage s, @SuppressWarnings("unused") int idx,
-                        @Shared @Cached SetLenNode setLenNode) {
+                        @Exclusive @Cached SetLenNode setLenNode) {
             setLenNode.execute(inliningTarget, s, s.length() - 1);
         }
 
@@ -3449,7 +3544,7 @@ public abstract class SequenceStorageNodes {
         static void doGeneric(Node inliningTarget, SequenceStorage s, int idx,
                         @Cached GetItemScalarNode getItemNode,
                         @Cached SetItemScalarNode setItemNode,
-                        @Shared @Cached SetLenNode setLenNode) {
+                        @Exclusive @Cached SetLenNode setLenNode) {
             int len = s.length();
 
             for (int i = idx; i < len - 1; i++) {
@@ -3860,9 +3955,29 @@ public abstract class SequenceStorageNodes {
 
         }
 
+        // TODO introduce something similar to InsertItemArrayBasedStorageNode
+        @Specialization
+        static SequenceStorage doArrowInt(Node inliningTarget, IntArrowSequenceStorage storage, int index, int value,
+                        @Exclusive @Cached EnsureCapacityNode ensureCapacity) {
+            int length = storage.length();
+            var context = PythonContext.get(inliningTarget);
+            var unsafe = context.getUnsafe();
+            long typeWidth = storage.getTypeWidth();
+            ensureCapacity.execute(inliningTarget, storage, length + 1);
+            // shifting tail to the right by one slot
+            long startAddr = storage.getNativeBuffer().getMemoryAddress() + (index * typeWidth);
+            long endAddr = startAddr + typeWidth;
+            long sizeInBytes = (length - index) * typeWidth;
+            unsafe.copyMemory(startAddr, endAddr, sizeInBytes);
+
+            storage.setIntItemNormalized(index, value);
+            storage.incLength();
+            return storage;
+        }
+
         @Specialization
         protected static SequenceStorage doNativeStorage(Node inliningTarget, NativeSequenceStorage storage, int index, Object value,
-                        @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached(inline = false) GetItemScalarNode getItem,
                         @Cached SetItemScalarNode setItem) {
             int newLength = storage.length() + 1;

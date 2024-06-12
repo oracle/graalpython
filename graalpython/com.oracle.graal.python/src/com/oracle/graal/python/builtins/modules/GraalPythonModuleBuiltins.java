@@ -78,6 +78,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.runtime.sequence.storage.native2.ArrowSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.native2.ToArrowStorageNode;
 import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -163,6 +165,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -840,6 +843,29 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         Object toNative(PSequence sequence) {
             CApiContext.ensureCapiWasLoaded();
             NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(sequence.getSequenceStorage(), sequence instanceof PBytesLike);
+            sequence.setSequenceStorage(newStorage);
+            return sequence;
+        }
+    }
+
+    @Builtin(name = "storage_to_arrow", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class StorageToArrow extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static Object doArray(PArray array,
+                        @Shared @Cached ToArrowStorageNode toArrowStorageNode,
+                        @Bind("this") Node inliningTarget) {
+            ArrowSequenceStorage newStorage = toArrowStorageNode.execute(inliningTarget, array.getSequenceStorage());
+            array.setSequenceStorage(newStorage);
+            return array;
+        }
+
+        @Specialization
+        Object doSequence(PSequence sequence,
+                        @Shared @Cached ToArrowStorageNode toArrowStorageNode,
+                        @Bind("this") Node inliningTarget) {
+            ArrowSequenceStorage newStorage = toArrowStorageNode.execute(inliningTarget, sequence.getSequenceStorage());
             sequence.setSequenceStorage(newStorage);
             return sequence;
         }

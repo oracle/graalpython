@@ -38,44 +38,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.sequence.storage;
+package com.oracle.graal.python.runtime.sequence.storage.native2;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.truffle.api.CompilerAsserts;
+public class IntArrowSequenceStorage extends ArrowSequenceStorage {
 
-public abstract class ArrayBasedSequenceStorage extends SequenceStorage {
+    private static final long TYPE_WIDTH = Integer.BYTES;
 
-    public abstract Object getInternalArrayObject();
-
-    public abstract Object getCopyOfInternalArrayObject();
-
-    public abstract void setInternalArrayObject(Object arrayObject);
-
-    public abstract ArrayBasedSequenceStorage createEmpty(int newCapacity);
-
-    /**
-     * The capacity we should allocate for a given length.
-     */
-    protected static int capacityFor(int length) throws ArithmeticException {
-        return Math.max(16, Math.multiplyExact(length, 2));
-    }
-
-    public void minimizeCapacity() {
-        capacity = length;
+    public IntArrowSequenceStorage(NativeBuffer nativeBuffer, int length) {
+        super(nativeBuffer, length, TYPE_WIDTH);
     }
 
     @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        StringBuilder str = new StringBuilder(getClass().getSimpleName()).append('[');
-        int len = length > 10 ? 10 : length;
-        for (int i = 0; i < len; i++) {
-            str.append(i == 0 ? "" : ", ");
-            str.append(SequenceStorageNodes.GetItemScalarNode.executeUncached(this, i));
-        }
-        if (length > 10) {
-            str.append("...").append('(').append(length).append(')');
-        }
-        return str.append(']').toString();
+    public StorageType getElementType() {
+        return StorageType.Int;
+    }
+
+    @Override
+    public Object getIndicativeValue() {
+        return 0;
+    }
+
+    public int getIntItemNormalized(int idx) {
+        long indexInBytes = idx * TYPE_WIDTH;
+        return nativeBuffer.getInt(indexInBytes);
+    }
+
+    public void setIntItemNormalized(int idx, int value) {
+        long indexInBytes = idx * TYPE_WIDTH;
+        nativeBuffer.setInt(indexInBytes, value);
     }
 }

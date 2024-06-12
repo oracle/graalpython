@@ -54,6 +54,7 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.native2.ArrowSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
@@ -83,7 +84,9 @@ public final class PySequenceArrayWrapper {
             return ToNativeStorageNodeGen.getUncached().execute(null, object, isBytesLike);
         }
 
+        // TODO Ivo REMOVE warning
         @Specialization(guards = "!isMroSequenceStorage(s)")
+        @SuppressWarnings("truffle-sharing")
         static NativeSequenceStorage doManaged(Node inliningTarget, ArrayBasedSequenceStorage s, boolean isBytesLike,
                         @Exclusive @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
@@ -94,6 +97,16 @@ public final class PySequenceArrayWrapper {
             } else {
                 array = getInternalArrayNode.execute(inliningTarget, s);
             }
+            return storageToNativeNode.execute(inliningTarget, array, s.length());
+        }
+
+        // TODO Ivo TEMPORAL
+        @Specialization
+        @SuppressWarnings("truffle-sharing")
+        static NativeSequenceStorage doArrow(Node inliningTarget, ArrowSequenceStorage s, boolean isBytesLike,
+                        @Exclusive @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
+                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
+            Object array = getInternalArrayNode.execute(inliningTarget, s);
             return storageToNativeNode.execute(inliningTarget, array, s.length());
         }
 

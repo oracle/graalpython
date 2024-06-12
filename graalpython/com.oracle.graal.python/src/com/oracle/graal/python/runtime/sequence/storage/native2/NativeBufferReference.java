@@ -38,44 +38,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.sequence.storage;
+package com.oracle.graal.python.runtime.sequence.storage.native2;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.truffle.api.CompilerAsserts;
+import java.lang.ref.PhantomReference;
+import java.lang.ref.ReferenceQueue;
 
-public abstract class ArrayBasedSequenceStorage extends SequenceStorage {
+public class NativeBufferReference extends PhantomReference<NativeBuffer> {
 
-    public abstract Object getInternalArrayObject();
+    private final long memoryAddress;
 
-    public abstract Object getCopyOfInternalArrayObject();
-
-    public abstract void setInternalArrayObject(Object arrayObject);
-
-    public abstract ArrayBasedSequenceStorage createEmpty(int newCapacity);
-
-    /**
-     * The capacity we should allocate for a given length.
-     */
-    protected static int capacityFor(int length) throws ArithmeticException {
-        return Math.max(16, Math.multiplyExact(length, 2));
+    public NativeBufferReference(NativeBuffer referent, ReferenceQueue<NativeBuffer> q) {
+        super(referent, q);
+        this.memoryAddress = referent.getMemoryAddress();
     }
 
-    public void minimizeCapacity() {
-        capacity = length;
+    public long getMemoryAddress() {
+        return memoryAddress;
     }
 
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        StringBuilder str = new StringBuilder(getClass().getSimpleName()).append('[');
-        int len = length > 10 ? 10 : length;
-        for (int i = 0; i < len; i++) {
-            str.append(i == 0 ? "" : ", ");
-            str.append(SequenceStorageNodes.GetItemScalarNode.executeUncached(this, i));
-        }
-        if (length > 10) {
-            str.append("...").append('(').append(length).append(')');
-        }
-        return str.append(']').toString();
-    }
 }

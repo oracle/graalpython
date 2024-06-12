@@ -38,44 +38,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.sequence.storage;
+package com.oracle.graal.python.runtime.sequence.storage.native2;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.util.PythonUtils;
+import sun.misc.Unsafe;
 
-public abstract class ArrayBasedSequenceStorage extends SequenceStorage {
+public class NativeBuffer {
 
-    public abstract Object getInternalArrayObject();
+    private static final Unsafe unsafe = PythonUtils.initUnsafe();
+    private final long memoryAddress;
+    private final long capacityInBytes;
 
-    public abstract Object getCopyOfInternalArrayObject();
-
-    public abstract void setInternalArrayObject(Object arrayObject);
-
-    public abstract ArrayBasedSequenceStorage createEmpty(int newCapacity);
-
-    /**
-     * The capacity we should allocate for a given length.
-     */
-    protected static int capacityFor(int length) throws ArithmeticException {
-        return Math.max(16, Math.multiplyExact(length, 2));
+    private NativeBuffer(long memoryAddress, long capacityInBytes) {
+        this.memoryAddress = memoryAddress;
+        this.capacityInBytes = capacityInBytes;
     }
 
-    public void minimizeCapacity() {
-        capacity = length;
+    public static NativeBuffer allocateNew(long capacityInBytes) {
+        assert capacityInBytes >= 0;
+        long adr = unsafe.allocateMemory(capacityInBytes);
+        return new NativeBuffer(adr, capacityInBytes);
     }
 
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        StringBuilder str = new StringBuilder(getClass().getSimpleName()).append('[');
-        int len = length > 10 ? 10 : length;
-        for (int i = 0; i < len; i++) {
-            str.append(i == 0 ? "" : ", ");
-            str.append(SequenceStorageNodes.GetItemScalarNode.executeUncached(this, i));
-        }
-        if (length > 10) {
-            str.append("...").append('(').append(length).append(')');
-        }
-        return str.append(']').toString();
+    public long getMemoryAddress() {
+        return memoryAddress;
+    }
+
+    public long getCapacityInBytes() {
+        return capacityInBytes;
+    }
+
+    //
+    public int getInt(long index) {
+        return unsafe.getInt(memoryAddress + index);
+    }
+
+    public void setInt(long index, int value) {
+        unsafe.putInt(memoryAddress + index, value);
     }
 }
