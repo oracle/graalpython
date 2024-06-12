@@ -314,11 +314,11 @@ public final class PythonCextListBuiltins {
                 ObjectSequenceStorage objectStorage = (ObjectSequenceStorage) sequenceStorage;
 
                 for (int i = objectStorage.length(); --i >= 0;) {
-                    Object item = objectStorage.getItemNormalized(i);
+                    Object item = objectStorage.getObjectItemNormalized(i);
                     if (item instanceof PythonAbstractNativeObject nativeObject) {
                         xDecRefPointerNode.execute(inliningTarget, nativeObject.getPtr());
                         // replace the item to avoid re-visiting
-                        objectStorage.setItemNormalized(i, PNone.NONE);
+                        objectStorage.setObjectItemNormalized(i, PNone.NONE);
                     }
                 }
             }
