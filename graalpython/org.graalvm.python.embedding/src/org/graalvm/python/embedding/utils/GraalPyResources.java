@@ -190,8 +190,6 @@ public class GraalPyResources {
             return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll") || s.endsWith(".ttf");
         };
 
-        private String vfsPrefix = "/" + VirtualFileSystemImpl.VFS_ROOT;
-        private String filesListPath = vfsPrefix + "/" + VirtualFileSystemImpl.VFS_FILESLIST;
         private String windowsMountPoint = "X:\\graalpy_vfs";
         private String unixMountPoint = "/graalpy_vfs";
         private Predicate<Path> extractFilter = DEFAULT_EXTRACT_FILTER;
@@ -276,7 +274,7 @@ public class GraalPyResources {
         }
 
         public FileSystem build() {
-            return new VirtualFileSystemImpl(extractFilter, vfsPrefix, filesListPath, windowsMountPoint, unixMountPoint, allowHostIO, resourceLoadingClass, caseInsensitive);
+            return new VirtualFileSystemImpl(extractFilter, windowsMountPoint, unixMountPoint, allowHostIO, resourceLoadingClass, caseInsensitive);
         }
     }
 

@@ -231,8 +231,6 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
      * causing that no extraction will happen.
      */
     VirtualFileSystemImpl(Predicate<Path> extractFilter,
-                    String resourcesPrefix,
-                    String fileListResource,
                     String windowsMountPoint,
                     String unixMountPoint,
                     HostIO allowHostIO,
@@ -243,8 +241,9 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         } else {
             this.resourceLoadingClass = VirtualFileSystemImpl.class;
         }
-        this.vfsPrefix = resourcesPrefix;
-        this.filesListPath = fileListResource;
+        this.vfsPrefix = "/" + VirtualFileSystemImpl.VFS_ROOT;
+        this.filesListPath = vfsPrefix + "/" + VirtualFileSystemImpl.VFS_FILESLIST;
+
         this.caseInsensitive = caseInsensitive;
         String mp = System.getenv("GRAALPY_VFS_MOUNT_POINT");
         if (mp == null) {
