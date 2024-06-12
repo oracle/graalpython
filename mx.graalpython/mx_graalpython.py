@@ -410,21 +410,16 @@ def punittest(ars, report=False):
     if skip_leak_tests:
         return
 
-    common_args = ["--lang", "python",
-                   "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
-                   "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
-
-    if not all([
-        # test leaks with Python code only
-        run_leak_launcher(common_args + ["--code", "pass", ]),
-        # test leaks when some C module code is involved
-        run_leak_launcher(common_args + ["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)']),
-        # test leaks with shared engine Python code only
-        run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
-        # test leaks with shared engine when some C module code is involved
-        run_leak_launcher(common_args + ["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
-    ]):
-        mx.abort(1)
+    # test leaks with Python code only
+    run_leak_launcher(["--code", "pass", ]),
+    run_leak_launcher(["--repeat-and-check-size", "--code", "--null-stdout", "print('hello')"]),
+    # test leaks when some C module code is involved
+    run_leak_launcher(["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)']),
+    # test leaks with shared engine Python code only
+    run_leak_launcher(["--shared-engine", "--code", "pass"]),
+    run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "--code", "--null-stdout", "print('hello')"]),
+    # test leaks with shared engine when some C module code is involved
+    run_leak_launcher(["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
 
 
 PYTHON_ARCHIVES = ["GRAALPYTHON_GRAALVM_SUPPORT"]
@@ -2996,7 +2991,10 @@ def update_hpy_import_cmd(args):
 def run_leak_launcher(input_args):
     print(shlex.join(["mx", "python-leak-test", *input_args]))
 
-    args = input_args
+    args = ["--lang", "python",
+            "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
+            "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
+    args += input_args
     args = [
         "--keep-dump",
         "--experimental-options",
@@ -3015,24 +3013,25 @@ def run_leak_launcher(input_args):
     vm_args.append("com.oracle.graal.python.test.advanced.LeakTest")
     out = mx.OutputCapture()
     retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False, out=mx.TeeOutputCapture(out))
-    dump_path = out.data.strip().partition("Dump file:")[2].strip()
+    dump_paths = re.findall(r'Dump file: (\S+)', out.data.strip())
     if retval == 0:
         print("PASSED")
-        if dump_path:
+        if dump_paths:
             print("Removing heapdump for passed test")
-            os.unlink(dump_path)
-        return True
+            for p in dump_paths:
+                os.unlink(p)
     else:
         print("FAILED")
-        if 'CI' in os.environ and dump_path:
-            save_path = os.path.join(SUITE.dir, "dumps", "leak_test")
-            try:
-                os.makedirs(save_path)
-            except OSError:
-                pass
-            dest = shutil.copy(dump_path, save_path)
-            print(f"Heapdump file kept in {dest}")
-        return False
+        if 'CI' in os.environ and dump_paths:
+            for i, dump_path in enumerate(dump_paths):
+                save_path = os.path.join(SUITE.dir, "dumps", f"leak_test{i}")
+                try:
+                    os.makedirs(save_path)
+                except OSError:
+                    pass
+                dest = shutil.copy(dump_path, save_path)
+                print(f"Heapdump file {dump_path} kept in {dest}")
+        mx.abort(1)
 
 
 def no_return(fn):
