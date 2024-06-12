@@ -1465,22 +1465,6 @@ public final class PythonCextBuiltins {
      * means that it ensures the existence of a {@link PythonAbstractNativeObject} for each native
      * object) and then stored in a Java object array which is then attached to the primary object.
      * </p>
-     * <p>
-     * Further, the native references are <emph>stolen</emph>. This is important because otherwise
-     * we would still keep potential reference cycles in native and the Java GC cannot collect them.
-     * As a consequence, the refcount of a native object may temporarily be lower than
-     * {@link PythonAbstractObjectNativeWrapper#MANAGED_REFCNT MANAGED_REFCNT}. This is best
-     * explained by an example: Assume there is a native object {@code p0} that has a field
-     * {@code PyObject *obj}. If native object {@code p1} is assigned to {@code p0->obj}, an incref
-     * needs to be done. Now, if the Python GC runs, we will replicate the reference to Java and do
-     * a decref. Since the corresponding {@link PythonAbstractNativeObject} then exist, the refcount
-     * will be at least {@link PythonAbstractObjectNativeWrapper#MANAGED_REFCNT MANAGED_REFCNT}.
-     * Now, another object {@code p2} is assigned to {@code p0->obj} which means the previous
-     * {@code p1} will be decref'd. The refcount is at this point
-     * {@link PythonAbstractObjectNativeWrapper#MANAGED_REFCNT MANAGED_REFCNT - 1} although there is
-     * a managed reference to {@code p1}. This will be fixed in the next Python GC run as soon as we
-     * see the update.
-     * </p>
      */
     @CApiBuiltin(ret = Void, args = {Pointer, Pointer, Int}, call = Ignored)
     abstract static class PyTruffleObject_ReplicateNativeReferences extends CApiTernaryBuiltinNode {
@@ -1533,38 +1517,13 @@ public final class PythonCextBuiltins {
                     oldReferents = nativeSequenceStorage.getReplicatedNativeReferences();
                     nativeSequenceStorage.setReplicatedNativeReferences(referents);
                 }
-                // 1. Collect referents (traverse native list and resolve pointers)
+                // Collect referents (traverse native list and resolve pointers)
                 Object cur = listHead;
                 for (int i = 0; i < n; i++) {
                     referents[i] = readObjectNode.read(cur, GraalPyGC_CycleNode__item);
                     cur = readPointerNode.read(cur, GraalPyGC_CycleNode__next);
                 }
 
-                /*
-                 * 2. Compare old and new referents. We optimize for the case where the arrays are
-                 * equal. In this case, we don't need to do anything. If the arrays differ, we will
-                 * give the stolen reference back (by doing an incref) and we will steal the
-                 * reference which is up to be replicated.
-                 */
-                if (!arrayEquals(oldReferents, referents)) {
-                    int oldLen = oldReferents != null ? oldReferents.length : 0;
-                    int maxLen = Math.max(oldLen, referents.length);
-                    for (int i = 0; i < maxLen; i++) {
-                        Object oldReferent = i < oldLen ? oldReferents[i] : null;
-                        Object referent = i < referents.length ? referents[i] : null;
-                        assert oldReferent != null || referent != null;
-                        if (oldReferent != referent) {
-                            if (oldReferent instanceof PythonAbstractNativeObject nativeObject) {
-                                long lItemPointer = coerceNativePointerToLongNode.execute(inliningTarget, nativeObject.getPtr());
-                                CApiTransitions.addNativeRefCount(lItemPointer, 1);
-                            }
-                            if (referent instanceof PythonAbstractNativeObject nativeObject) {
-                                long lItemPointer = coerceNativePointerToLongNode.execute(inliningTarget, nativeObject.getPtr());
-                                CApiTransitions.subNativeRefCount(lItemPointer, 1);
-                            }
-                        }
-                    }
-                }
                 /*
                  * As described above: Ensure that the 'old' replicated references are strong until
                  * this point. Otherwise, weakly referenced managed objects could die.
