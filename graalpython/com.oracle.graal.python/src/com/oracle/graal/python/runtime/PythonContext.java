@@ -100,6 +100,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -848,6 +849,16 @@ public final class PythonContext extends Python3Core {
     private final NativePointer nativeNull = NativePointer.createNull();
 
     public RootCallTarget signatureContainer;
+
+    private Map<Object, PythonClass> interopTypeRegistry;
+
+    public Map<Object, PythonClass> getInteropTypeRegistry() {
+        if (interopTypeRegistry == null) {
+            // lazy init when needed
+            interopTypeRegistry = new WeakHashMap<>();
+        }
+        return interopTypeRegistry;
+    }
 
     public TruffleString getPyPackageContext() {
         return pyPackageContext;

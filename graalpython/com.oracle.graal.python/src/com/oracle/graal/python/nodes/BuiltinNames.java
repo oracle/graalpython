@@ -334,6 +334,10 @@ public abstract class BuiltinNames {
 
     public static final String J___GRAALPYTHON_INTEROP_BEHAVIOR__ = "__graalpython_interop_behavior__";
 
+    public static final String J_JAVA_INTEROP_TYPE = "java_interop_type";
+    public static final String J_REGISTER_JAVA_INTEROP_TYPE = "register_java_interop_type";
+    public static final TruffleString T_REGISTER_JAVA_INTEROP_TYPE = tsLiteral(J_REGISTER_JAVA_INTEROP_TYPE);
+
     public static final String J__CODECS = "_codecs";
     public static final TruffleString T__CODECS = tsLiteral(J__CODECS);
 
