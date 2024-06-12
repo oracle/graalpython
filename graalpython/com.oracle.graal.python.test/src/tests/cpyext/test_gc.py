@@ -193,6 +193,7 @@ ID_OBJ10 = 8
 ID_OBJ11 = 9
 ID_OBJ12 = 10
 ID_OBJ13 = 11
+ID_OBJ14 = 12
 
 # don't rely on deterministic Java GC behavior by default on GraalPy
 RELY_ON_GC = os.environ.get("RELY_ON_GC", not GRAALPY)
@@ -337,12 +338,16 @@ class TestGCRefCycles:
         assert_is_alive(ID_OBJ1)
 
         del obj1
+        ####################################### GC #######################################
         self._trigger_gc()
+        ##################################################################################
         assert_is_alive(ID_OBJ0)
         assert_is_alive(ID_OBJ1)
 
         del obj0
+        ####################################### GC #######################################
         self._trigger_gc()
+        ##################################################################################
         assert_is_freed(ID_OBJ0)
         assert_is_freed(ID_OBJ1)
 
@@ -356,6 +361,7 @@ class TestGCRefCycles:
         obj9 = TestCycle0(ID_OBJ9)
         obj10 = TestCycle0(ID_OBJ10)
         obj11 = TestCycle0(ID_OBJ11)
+        obj14 = TestCycle0(ID_OBJ14)
 
         # Legend
         # '=>'
@@ -385,6 +391,8 @@ class TestGCRefCycles:
         # update_refs:       10      1         11
         # subtract_refs:     10      0         10
         # move_unreachable:  10      0         10
+        # update_refs:       10      11        11
+        # subtract_refs:     10      10        10
         # commit_weak_cand: obj2 => obj3 =ht-> l => obj2
         obj2.set_obj(obj3)
         l = [obj2]
@@ -400,7 +408,9 @@ class TestGCRefCycles:
         # establish cycle:  obj4 => obj5 =ht=> l1 => obj4
         # update_refs:       10      1         11
         # subtract_refs:     10      0         10
-        # move_unreachable:  10      10        10
+        # move_unreachable:  10      1         10
+        # update_refs:       10      11        11
+        # subtract_refs:     10      10        10
         # commit_weak_cand: obj4 => obj5 =ht-> l1 => obj4
         obj4.set_obj(obj5)
         l1 = [obj4]
@@ -422,6 +432,8 @@ class TestGCRefCycles:
         # update_refs:             1         11
         # subtract_refs:           1         10
         # move_unreachable:        1         10
+        # update_refs:             1         11
+        # subtract_refs:           1         10
         # commit_weak_cand: N => obj10 =ht=> l2
         l2 = ["hello"]
         obj10.set_obj(l2)
@@ -433,13 +445,27 @@ class TestGCRefCycles:
         # update_refs:               11        11
         # subtract_refs:             11        10
         # move_unreachable:          11        10
-        # commit_weak_cand:   N => obj11 =ht=> l3
+        # update_refs:               11        11
+        # subtract_refs:             11        10
+        # commit_weak_cand: J/N => obj11 =ht=> l3
         l3 = ["hello"]
         obj11.set_obj(l3)
         TestCycle0.set_global_obj(1, obj11)
         htid_l3 = get_handle_table_id(l3)
         del l3
         # difference to previous situation: obj11 is still reachable from Java
+
+        #                   J => obj14 =ht=> l3
+        # update_refs:             10        11
+        # subtract_refs:           10        10
+        # move_unreachable:        10        10
+        # update_refs:             10        11
+        # subtract_refs:           10        10
+        # commit_weak_cand: J/N => obj11 =ht=> l3
+        l4 = ["world"]
+        obj14.set_obj(l4)
+        htid_l4 = get_handle_table_id(l4)
+        del l4
 
         # everything should still be alive
         assert_is_alive(ID_OBJ2)
@@ -452,17 +478,21 @@ class TestGCRefCycles:
         assert_is_alive(ID_OBJ9)
         assert_is_alive(ID_OBJ10)
         assert_is_alive(ID_OBJ11)
+        assert_is_alive(ID_OBJ14)
         assert is_strong_handle_table_ref(htid_l)
         assert is_strong_handle_table_ref(htid_l1)
         assert is_strong_handle_table_ref(htid_l2)
         assert is_strong_handle_table_ref(htid_l3)
+        assert is_strong_handle_table_ref(htid_l4)
         assert is_strong_handle_table_ref(htid_d0)
 
         del obj2, l, obj3
         del obj4, obj5
         del obj6, d0, obj7
 
+        ####################################### GC #######################################
         self._trigger_gc()
+        ##################################################################################
 
         # Delete Java ref after GC. This will provoke the situation where 'PythonAbstractNativeObject' of obj11 will
         # die after references where potentially replicated. This tests if dangling pointers appear for the managed
@@ -479,19 +509,29 @@ class TestGCRefCycles:
         assert_is_alive(ID_OBJ8)
         assert_is_alive(ID_OBJ9)
         assert_is_alive(ID_OBJ10)
+        assert_is_alive(ID_OBJ14)
         assert is_strong_handle_table_ref(htid_l2)
         assert is_strong_handle_table_ref(htid_l3)
         assert not is_strong_handle_table_ref(htid_l)
         assert not is_strong_handle_table_ref(htid_l1)
+        assert not is_strong_handle_table_ref(htid_l4)
         assert not is_strong_handle_table_ref(htid_d0)
 
         rescued_obj4 = l1[0]
         del l1
+
+        __graalpython__.tdebug("uff")
+        TestCycle0.set_global_obj(2, obj14)
+        del obj14
+        ####################################### GC #######################################
         self._trigger_gc()
+        ##################################################################################
         # still reachable
         assert_is_alive(ID_OBJ4)
         assert_is_alive(ID_OBJ5)
+        assert_is_alive(ID_OBJ14)
         assert rescued_obj4.get_obj().get_obj()[0] is rescued_obj4
+        assert is_strong_handle_table_ref(htid_l4)
 
         del rescued_obj4
 
@@ -516,7 +556,9 @@ class TestGCRefCycles:
 
         del obj12, obj13, l2, l3
 
+        ####################################### GC #######################################
         self._trigger_gc()
+        ##################################################################################
 
         assert_is_freed(ID_OBJ4)
         assert_is_freed(ID_OBJ5)
