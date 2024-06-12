@@ -160,14 +160,14 @@ def get_download_dir(parsed_args):
 
 def create_native_exec(parsed_args):
     artifacts = ["org.graalvm.python.python-embedding"]
-    if parsed_args.ce:
-        artifacts.append("org.graalvm.polyglot.python-community")
-    else:
-        artifacts.append("org.graalvm.polyglot.python")
 
     target_dir = tempfile.mkdtemp()
     try:
         ni, jc = get_tools(target_dir, parsed_args)
+        if parsed_args.ce:
+            artifacts.append("org.graalvm.polyglot.python-community")
+        else:
+            artifacts.append("org.graalvm.polyglot.python")
 
         modules_path = get_download_dir(parsed_args)
         for artifact in artifacts:
@@ -359,6 +359,12 @@ def get_tools(target_dir, parsed_args):
             graalvm_url = get_graalvm_url()
             print(f"GraalVM downloaded from {graalvm_url} has no native image or javac")
         sys.exit(1)
+
+    # When building with a CE native image, we need to use community options
+    if "GraalVM CE" in subprocess.check_output([ni, "--version"], text=True):
+        if parsed_args.verbose and not parsed_args.ce:
+            print("Using GraalVM CE, disabling Oracle GraalVM-specific options")
+        parsed_args.ce = True
 
     return ni, jc
 
