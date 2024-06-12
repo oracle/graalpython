@@ -186,7 +186,7 @@ public abstract class PythonCextObjectBuiltins {
 
             /*
              * It may happen that due to several inc- and decrefs applied to a borrowed reference,
-             * that the same pointer is in the list several times. To avoid crashed, we do the
+             * that the same pointer is in the list several times. To avoid crashes, we do the
              * processing in two phases: first, we resolve the pointers to wrappers and second, we
              * update the reference counts. In this way, we avoid that a reference is made weak when
              * processed the first time and may then be invalid if processed the second time.

@@ -156,8 +156,12 @@ _Py_IncRef(PyObject *o)
     if (refcnt != IMMORTAL_REFCNT)
     {
         Py_SET_REFCNT(o, refcnt + 1);
-        if (points_to_py_handle_space(o) && refcnt == MANAGED_REFCNT) {
-            GraalPyTruffle_NotifyRefCount(o, refcnt + 1);
+        if (refcnt == MANAGED_REFCNT) {
+            if (points_to_py_handle_space(o)) {
+                GraalPyTruffle_NotifyRefCount(o, refcnt + 1);
+            } else if (_PyObject_IS_GC(o)) {
+                _GraalPyObject_GC_NotifyOwnershipTransfer(o);
+            }
         }
     }
 }

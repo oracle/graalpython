@@ -164,6 +164,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_GC_COLLECT_NO_FAIL("_PyGC_CollectNoFail", Py_ssize_t, PyThreadState),
     FUN_GRAALPY_GC_COLLECT("GraalPyGC_Collect", Py_ssize_t, Int),
     FUN_SUBTYPE_TRAVERSE("subtype_traverse", Int, PyObject, Pointer, Pointer),
+    FUN_GRAALPYOBJECT_GC_NOTIFYOWNERSHIPTRANSFER("_GraalPyObject_GC_NotifyOwnershipTransfer", Void, PyObject),
 
     /* PyDateTime_CAPI */
 

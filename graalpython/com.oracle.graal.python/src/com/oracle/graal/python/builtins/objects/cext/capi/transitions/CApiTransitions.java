@@ -73,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.GcNativePtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonTransferNodeGen;
@@ -91,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeN
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
@@ -1250,10 +1250,32 @@ public abstract class CApiTransitions {
 
         @Specialization
         Object doNative(PythonAbstractNativeObject obj,
-                        @CachedLibrary(limit = "2") InteropLibrary lib) {
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached InlinedBranchProfile inlinedBranchProfile,
+                        @Cached UpdateRefNode updateRefNode) {
             if (needsTransfer() && getContext().isNativeAccessAllowed()) {
                 long ptr = PythonUtils.coerceToLong(obj.getPtr(), lib);
-                CApiTransitions.addNativeRefCount(ptr, 1);
+                long newRefcnt = CApiTransitions.addNativeRefCount(ptr, 1);
+                /*
+                 * If a native object was only referenced from managed (i.e. refcnt ==
+                 * MANAGED_REFCNT), it may be that its native references were already replicated to
+                 * Java and the referents are only weakly referenced because of that. If we now
+                 * incref, the assumption under which the Python GC made the references weak, do no
+                 * longer hold (the assumption is documented in 'gcmodule.c: move_weak_reachable').
+                 * Since we incref'd and now give the object to native, it may happen that the Java
+                 * wrapper dies and so it's references would die although the object is still
+                 * referenced from native code. To avoid this, we need to update the references of
+                 * the replicated native references.
+                 */
+                if (newRefcnt == MANAGED_REFCNT + 1 && obj.getReplicatedNativeReferences() != null) {
+                    inlinedBranchProfile.enter(this);
+                    for (Object referent : obj.getReplicatedNativeReferences()) {
+                        if (referent instanceof PythonObject pythonObject) {
+                            PythonAbstractObjectNativeWrapper nativeWrapper = pythonObject.getNativeWrapper();
+                            updateRefNode.execute(this, nativeWrapper, nativeWrapper.getRefCount());
+                        }
+                    }
+                }
             }
             return obj.getPtr();
         }

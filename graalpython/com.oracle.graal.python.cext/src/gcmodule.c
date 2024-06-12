@@ -578,6 +578,19 @@ visit_weak_reachable(PyObject *op, PyGC_Head *reachable)
     return 0;
 }
 
+static int
+visit_strong_reachable(PyObject *op, void *unused)
+{
+    if (!is_managed(op) || !_PyObject_IS_GC(op)) {
+        return 0;
+    }
+
+    if (!_PyObject_GC_IS_TRACKED(op)) {
+        _PyObject_GC_TRACK(op);
+    }
+    GraalPyTruffle_NotifyRefCount(op, Py_REFCNT(op));
+}
+
 /* Performs an upcall to test if the given object is referenced from managed
  * code.
  */
@@ -2799,4 +2812,13 @@ PyAPI_FUNC(Py_ssize_t)
 GraalPyGC_Collect(int generation)
 {
     return gc_collect_impl(NULL, generation);
+}
+
+PyAPI_FUNC(void)
+_GraalPyObject_GC_NotifyOwnershipTransfer(PyObject *op)
+{
+    if (!is_managed(op) && _PyObject_IS_GC(op) && _PyObject_GC_IS_TRACKED(op)) {
+        traverseproc traverse = Py_TYPE(op)->tp_traverse;
+        CALL_TRAVERSE(traverse, op, visit_strong_reachable, NULL);
+    }
 }
