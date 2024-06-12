@@ -340,23 +340,16 @@ PyDoc_STRVAR(slice_doc,
 slice(start, stop[, step])\n\
 \n\
 Create a slice object.  This is used for extended slicing (e.g. a[0:10:2]).");
+#endif // GraalPy change
 
 static void
 slice_dealloc(PySliceObject *r)
 {
-    PyInterpreterState *interp = _PyInterpreterState_GET();
-    _PyObject_GC_UNTRACK(r);
-    Py_DECREF(r->step);
-    Py_DECREF(r->start);
-    Py_DECREF(r->stop);
-    if (interp->slice_cache == NULL) {
-        interp->slice_cache = r;
-    }
-    else {
-        PyObject_GC_Del(r);
-    }
+    // GraalPy change: different implementation
+    GraalPyObject_GC_Del(r);
 }
 
+#if 0 // GraalPy change
 static PyObject *
 slice_repr(PySliceObject *r)
 {
@@ -646,7 +639,7 @@ PyTypeObject PySlice_Type = {
     "slice",                    /* Name of this type */
     sizeof(PySliceObject),      /* Basic object size */
     0,                          /* Item size for varobject */
-    0,                                          /* tp_dealloc */ // GraalPy change: nulled
+    (destructor)slice_dealloc,                  /* tp_dealloc */
     0,                                          /* tp_vectorcall_offset */
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
