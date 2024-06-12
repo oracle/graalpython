@@ -1379,6 +1379,9 @@ PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* type, Py_ssize_t nitems) {
 
 void PyTruffle_Tuple_Dealloc(PyTupleObject* self) {
     PyObject_GC_UnTrack(self);
+    if (points_to_py_handle_space(self)) {
+        return;
+    }
     Py_TRASHCAN_BEGIN(self, PyTruffle_Tuple_Dealloc)
     Py_ssize_t len =  PyTuple_GET_SIZE(self);
     if (len > 0) {
