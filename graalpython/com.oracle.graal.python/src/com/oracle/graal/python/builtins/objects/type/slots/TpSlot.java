@@ -298,8 +298,8 @@ public abstract class TpSlot {
      * Convenience base class for Python slots that has only one callable.
      */
     public static final class TpSlotPythonSingle extends TpSlotPython {
-        final TruffleWeakReference<Object> callable;
-        final TruffleWeakReference<Object> type;
+        private final TruffleWeakReference<Object> callable;
+        private final TruffleWeakReference<Object> type;
         private final TruffleString name;
 
         public TpSlotPythonSingle(Object callable, Object type, TruffleString name) {

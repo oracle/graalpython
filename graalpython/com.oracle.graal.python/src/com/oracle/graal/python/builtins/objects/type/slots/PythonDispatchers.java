@@ -62,6 +62,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
 abstract class PythonDispatchers {
     private PythonDispatchers() {
@@ -87,7 +88,13 @@ abstract class PythonDispatchers {
     @GenerateCached(false)
     @ImportStatic(PGuards.class)
     abstract static class UnaryPythonSlotDispatcherNode extends PythonSlotDispatcherNodeBase {
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self);
+        final Object execute(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self) {
+            assert !(callable instanceof TruffleWeakReference<?>);
+            assert !(type instanceof TruffleWeakReference<?>);
+            return executeImpl(frame, inliningTarget, callable, type, self);
+        }
+
+        abstract Object executeImpl(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self);
 
         @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 1)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         protected static Object doCachedPFunction(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self,
@@ -121,7 +128,13 @@ abstract class PythonDispatchers {
     @GenerateInline
     @GenerateCached(false)
     abstract static class BinaryPythonSlotDispatcherNode extends PythonSlotDispatcherNodeBase {
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1);
+        final Object execute(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1) {
+            assert !(callable instanceof TruffleWeakReference<?>);
+            assert !(type instanceof TruffleWeakReference<?>);
+            return executeImpl(frame, inliningTarget, callable, type, self, arg1);
+        }
+
+        abstract Object executeImpl(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1);
 
         @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 2)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         protected static Object doCachedPFunction(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self, Object arg1,
@@ -156,7 +169,13 @@ abstract class PythonDispatchers {
     @GenerateInline
     @GenerateCached(false)
     abstract static class TernaryOrBinaryPythonSlotDispatcherNode extends PythonSlotDispatcherNodeBase {
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, boolean callTernary, Object callable, Object type, Object self, Object arg1, Object arg2);
+        final Object execute(VirtualFrame frame, Node inliningTarget, boolean callTernary, Object callable, Object type, Object self, Object arg1, Object arg2) {
+            assert !(callable instanceof TruffleWeakReference<?>);
+            assert !(type instanceof TruffleWeakReference<?>);
+            return executeImpl(frame, inliningTarget, callTernary, callable, type, self, arg1, arg2);
+        }
+
+        abstract Object executeImpl(VirtualFrame frame, Node inliningTarget, boolean callTernary, Object callable, Object type, Object self, Object arg1, Object arg2);
 
         @Idempotent
         static int getArgsCount(boolean callTernary) {

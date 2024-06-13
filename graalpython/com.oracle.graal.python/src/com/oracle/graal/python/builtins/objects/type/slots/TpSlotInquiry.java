@@ -158,7 +158,7 @@ public abstract class TpSlotInquiry {
             // TODO: it is not clear to me why CPython lookups __len__ in the slot wrapper although
             // the slow wrapper is assigned only in the presence of __bool__ magic method and not
             // __len__. We ignore the __len__ lookup for now.
-            Object result = dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.type, self);
+            Object result = dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self);
             if (!pyBoolCheckNode.execute(inliningTarget, result)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BOOL_SHOULD_RETURN_BOOL, result);
             }

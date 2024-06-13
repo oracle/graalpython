@@ -241,7 +241,7 @@ public abstract class TpSlotLen {
                         @Cached CastToJavaIntLossyNode castLossy,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             // See CPython: slot_sq_length
-            Object result = dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.type, self);
+            Object result = dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self);
             if (!genericCheck.wasEntered(inliningTarget)) {
                 try {
                     return checkLen(inliningTarget, raiseNode, PGuards.expectInteger(result));
