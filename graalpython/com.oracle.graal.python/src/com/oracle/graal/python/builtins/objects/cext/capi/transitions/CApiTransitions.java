@@ -1251,12 +1251,13 @@ public abstract class CApiTransitions {
         }
 
         @Specialization
-        Object doNative(PythonAbstractNativeObject obj,
+        static Object doNative(PythonAbstractNativeObject obj,
                         @Bind("this") Node inliningTarget,
+                        @Bind("needsTransfer()") boolean needsTransfer,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached InlinedBranchProfile inlinedBranchProfile,
-                        @Cached UpdateRefNode updateRefNode) {
-            if (needsTransfer() && getContext().isNativeAccessAllowed()) {
+                        @Exclusive @Cached UpdateRefNode updateRefNode) {
+            if (needsTransfer && PythonContext.get(inliningTarget).isNativeAccessAllowed()) {
                 long ptr = PythonUtils.coerceToLong(obj.getPtr(), lib);
                 long newRefcnt = CApiTransitions.addNativeRefCount(ptr, 1);
                 /*
@@ -1308,7 +1309,7 @@ public abstract class CApiTransitions {
                         @Cached GetNativeWrapperNode getWrapper,
                         @Cached GetReplacementNode getReplacementNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached UpdateRefNode updateRefNode) {
+                        @Exclusive @Cached UpdateRefNode updateRefNode) {
             CompilerAsserts.partialEvaluationConstant(needsTransfer);
             assert PythonContext.get(inliningTarget).ownsGil();
             pollReferenceQueue();
