@@ -244,6 +244,11 @@ public abstract class BuiltinMethodDescriptor {
                 public boolean forceSplitDirectCalls() {
                     return false;
                 }
+
+                @Override
+                public boolean autoRegister() {
+                    return false;
+                }
             });
         }
         assert builtinAnnotation != null && !builtinAnnotation.needsFrame();

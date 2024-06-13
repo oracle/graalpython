@@ -100,6 +100,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -261,7 +262,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "strict_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "strict_errors", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class StrictErrorHandlerNode extends ErrorHandlerBaseNode {
         @Specialization
         static Object doException(PBaseException exception,
@@ -276,7 +278,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "ignore_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "ignore_errors", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class IgnoreErrorHandlerNode extends ErrorHandlerBaseNode {
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doDecodeException(PBaseException exception,
@@ -305,7 +308,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "replace_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "replace_errors", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class ReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
         private static final TruffleString T_REPLACEMENT = tsLiteral("\uFFFD");
@@ -345,7 +349,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "xmlcharrefreplace_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "xmlcharrefreplace_errors", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class XmlCharRefReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -384,7 +389,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "backslashreplace_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "backslashreplace_errors", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class BackslashReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -468,7 +474,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "namereplace_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "namereplace_errors", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class NameReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -520,7 +527,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "surrogatepass", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "surrogatepass", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class SurrogatePassErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -656,7 +664,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "surrogateescape", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "surrogateescape", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class SurrogateEscapeErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")

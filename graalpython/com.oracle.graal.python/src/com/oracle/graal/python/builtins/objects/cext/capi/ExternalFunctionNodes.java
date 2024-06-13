@@ -465,7 +465,7 @@ public abstract class ExternalFunctionNodes {
 
         @TruffleBoundary
         static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, TruffleString name, boolean doArgAndResultConversion, boolean isStatic) {
-            Class<?> nodeKlass;
+            Class<? extends PRootNode> nodeKlass;
             Function<PythonLanguage, RootNode> rootNodeFunction;
             switch (sig) {
                 case ALLOC:
