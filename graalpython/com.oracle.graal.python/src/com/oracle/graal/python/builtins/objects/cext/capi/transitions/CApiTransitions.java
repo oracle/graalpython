@@ -1839,11 +1839,11 @@ public abstract class CApiTransitions {
                 int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
                 PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer, idx);
                 PythonNativeWrapper wrapper;
-                if (reference == null) {
+                if (strict && reference == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was freed: " + Long.toHexString(pointer));
                 }
-                wrapper = reference.get();
+                wrapper = reference == null ? null : reference.get();
                 if (strict && wrapper == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));

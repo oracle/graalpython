@@ -2664,14 +2664,17 @@ PyTruffle_SET_SIZE(PyVarObject *a, Py_ssize_t b)
     }
 }
 
-#define DEFERRED_NOTIFY_SIZE 16
+#define DEFERRED_NOTIFY_SIZE 1
+#if DEFERRED_NOTIFY_SIZE > 1
 static PyObject *deferred_notify_ops[DEFERRED_NOTIFY_SIZE];
 static int deferred_notify_cur = 0;
+#endif
 
 static inline void
 _decref_notify(const PyObject *op, const Py_ssize_t updated_refcnt)
 {
     if (points_to_py_handle_space(op) && updated_refcnt <= MANAGED_REFCNT) {
+#if DEFERRED_NOTIFY_SIZE > 1
         if (PyTruffle_Debug_CAPI() && updated_refcnt < MANAGED_REFCNT) {
             Py_FatalError("Refcount of native stub fell below MANAGED_REFCNT");
         }
@@ -2681,6 +2684,9 @@ _decref_notify(const PyObject *op, const Py_ssize_t updated_refcnt)
             deferred_notify_cur = 0;
             GraalPyTruffle_BulkNotifyRefCount(deferred_notify_ops, DEFERRED_NOTIFY_SIZE);
         }
+#else
+        GraalPyTruffle_BulkNotifyRefCount(&op, 1);
+#endif
     }
 }
 
