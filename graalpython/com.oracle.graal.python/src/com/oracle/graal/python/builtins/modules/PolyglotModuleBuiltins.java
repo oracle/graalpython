@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_INTEROP_BEHA
 import static com.oracle.graal.python.nodes.BuiltinNames.T_REGISTER_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_JAVA_INTEROP_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
+import static com.oracle.graal.python.nodes.ErrorMessages.INTEROP_TYPE_ALREADY_REGISTERED;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_CANNOT_HAVE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_DOES_NOT_TAKE_VARARGS;
@@ -62,6 +63,7 @@ import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_SHORT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_READABLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_WRITABLE;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -773,24 +775,43 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_REGISTER_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2)
+    @Builtin(name = J_REGISTER_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, takesVarArgs = true, keywordOnlyNames = "overwrite", doc = """
+        register_java_interop_type(javaClassName, pythonClass, overwrite=None)
+        
+        Example registering a custom interop type for the Java ArrayList
+
+        >>> from polyglot import register_java_interop_type
+
+        >>> class jArrayList(__graalpython__.ForeignType):
+        ...     def append(self, element):
+        ...         self.add(element)
+
+        >>> register_java_interop_type("java.util.ArrayList", jArrayList)
+        
+        For subsequent registrations with overwrite behavior use
+        >>> register_java_interop_type("java.util.ArrayList", newJArrayList, overwrite=True)
+        """)
     @GenerateNodeFactory
     public abstract static class RegisterJavaInteropTypeNode extends PythonBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        Object register(TruffleString javaClassName, PythonClass pythonClass,
+        Object register(TruffleString javaClassName, PythonClass pythonClass, Object overwrite,
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isClassTypeNode,
                         @Cached PRaiseNode raiseNode) {
-            if (isClassTypeNode.execute(inliningTarget, pythonClass)) {
-                // Get registry for custom interop types from PythonContext
-                Map<Object, PythonClass> interopTypeRegistry =  PythonContext.get(this).getInteropTypeRegistry();
-                interopTypeRegistry.put(javaClassName.toString(), pythonClass);
-                return PNone.NONE;
-            } else {
+            if (!isClassTypeNode.execute(inliningTarget, pythonClass)) {
                 throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "second", "a python class", pythonClass);
             }
+            // Get registry for custom interop types from PythonContext
+            Map<Object, PythonClass> interopTypeRegistry =  PythonContext.get(this).getInteropTypeRegistry();
+            String javaClassNameAsString = javaClassName.toString();
+            // Check if already registered and if overwrite is configured
+            if (interopTypeRegistry.containsKey(javaClassNameAsString) && !Boolean.TRUE.equals(overwrite)) {
+                throw raiseNode.raise(KeyError, INTEROP_TYPE_ALREADY_REGISTERED, javaClassNameAsString);
+            }
+            interopTypeRegistry.put(javaClassNameAsString, pythonClass);
+            return PNone.NONE;
         }
     }
 
