@@ -2493,7 +2493,8 @@ PyGC_Collect(void)
     return n;
 }
 
-Py_ssize_t
+// GraalPy change: exported sym because called from Java
+PyAPI_FUNC(Py_ssize_t)
 _PyGC_CollectNoFail(PyThreadState *tstate)
 {
     /* Ideally, this function is only called on interpreter shutdown,
