@@ -42,9 +42,11 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_GET_REGISTERED_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_INTEROP_BEHAVIOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_JAVA_INTEROP_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_REGISTER_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_JAVA_INTEROP_TYPE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_REGISTER_JAVA_INTEROP_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEROP_TYPE_ALREADY_REGISTERED;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_S_NOT_P;
@@ -804,7 +806,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "second", "a python class", pythonClass);
             }
             // Get registry for custom interop types from PythonContext
-            Map<Object, PythonClass> interopTypeRegistry =  PythonContext.get(this).getInteropTypeRegistry();
+            Map<Object, PythonClass> interopTypeRegistry = PythonContext.get(this).getInteropTypeRegistry();
             String javaClassNameAsString = javaClassName.toString();
             // Check if already registered and if overwrite is configured
             if (interopTypeRegistry.containsKey(javaClassNameAsString) && !Boolean.TRUE.equals(overwrite)) {
@@ -812,6 +814,86 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             }
             interopTypeRegistry.put(javaClassNameAsString, pythonClass);
             return PNone.NONE;
+        }
+    }
+    @Builtin(name = J_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class JavaInteropTypeDecoratorNode extends PythonUnaryBuiltinNode {
+        static final TruffleString WRAPPER = tsLiteral("wrapper");
+        public static final TruffleString KW_RECEIVER = tsLiteral("$receiver");
+
+        static class RegisterWrapperRootNode extends PRootNode {
+            static final TruffleString[] KEYWORDS_HIDDEN_RECEIVER = new TruffleString[]{KW_RECEIVER};
+            private static final Signature SIGNATURE = new Signature(1, false, -1, false, tsArray("pythonClass"), KEYWORDS_HIDDEN_RECEIVER);
+            private static final TruffleString MODULE_POLYGLOT = tsLiteral("polyglot");
+            @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
+            @Child private PRaiseNode raiseNode = PRaiseNode.create();
+            @Child private TypeBuiltins.DirNode dirNode = TypeBuiltins.DirNode.create();
+            @Child private PyObjectGetAttr getAttr = PyObjectGetAttr.create();
+            @Child private CallVarargsMethodNode callVarargsMethod = CallVarargsMethodNode.create();
+
+            protected RegisterWrapperRootNode(TruffleLanguage<?> language) {
+                super(language);
+            }
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                calleeContext.enter(frame);
+                Object[] frameArguments = frame.getArguments();
+                Object pythonClass = PArguments.getArgument(frameArguments, 0);
+                // note: the hidden kwargs are stored at the end of the positional args
+                Object javaClassName = PArguments.getArgument(frameArguments, 1);
+                try {
+                    if (pythonClass instanceof PythonClass klass) {
+                        PythonModule polyglotModule = PythonContext.get(this).lookupBuiltinModule(MODULE_POLYGLOT);
+                        Object register = getAttr.executeCached(frame, polyglotModule, T_REGISTER_JAVA_INTEROP_TYPE);
+                        callVarargsMethod.execute(frame, register, new Object[]{javaClassName, pythonClass}, PKeyword.EMPTY_KEYWORDS);
+                        return klass;
+                    }
+                    throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a python class", pythonClass);
+                } finally {
+                    calleeContext.exit(frame, this);
+                }
+            }
+
+            @Override
+            public Signature getSignature() {
+                return SIGNATURE;
+            }
+
+            @Override
+            public boolean isPythonInternal() {
+                return true;
+            }
+
+            @Override
+            public boolean isInternal() {
+                return true;
+            }
+
+            @Override
+            public boolean setsUpCalleeContext() {
+                return true;
+            }
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public Object decorate(TruffleString receiver,
+                               @Bind("this") Node inliningTarget,
+                               @Cached TypeNodes.IsTypeNode isTypeNode,
+                               @Cached PRaiseNode raiseNode,
+                               @Cached PythonObjectFactory factory) {
+
+            RootCallTarget callTarget = getContext().getLanguage().createCachedCallTarget(RegisterWrapperRootNode::new, RegisterWrapperRootNode.class);
+            return factory.createBuiltinFunction(WRAPPER, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(receiver), 0, callTarget);
+
+        }
+
+        public static PKeyword[] createKwDefaults(Object receiver) {
+            // the receiver is passed in a hidden keyword argument
+            // in a pure python decorator this would be passed as a cell
+            return new PKeyword[]{new PKeyword(KW_RECEIVER, receiver)};
         }
     }
 
