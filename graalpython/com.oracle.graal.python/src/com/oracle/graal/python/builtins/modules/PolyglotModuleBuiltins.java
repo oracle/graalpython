@@ -42,10 +42,15 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_GET_REGISTERED_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_INTEROP_BEHAVIOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_JAVA_INTEROP_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_INTEROP_BEHAVIOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_REMOVE_JAVA_INTEROP_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_REGISTER_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_JAVA_INTEROP_TYPE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_REGISTER_JAVA_INTEROP_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
+import static com.oracle.graal.python.nodes.ErrorMessages.INTEROP_TYPE_ALREADY_REGISTERED;
+import static com.oracle.graal.python.nodes.ErrorMessages.INTEROP_TYPE_NOT_REGISTERED;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_CANNOT_HAVE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_DOES_NOT_TAKE_VARARGS;
@@ -744,7 +749,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_REGISTER_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, takesVarArgs = true, keywordOnlyNames = "overwrite", doc = """
+    @Builtin(name = J_REGISTER_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, takesVarKeywordArgs = true, keywordOnlyNames = {"overwrite" }, doc = """
         register_java_interop_type(javaClassName, pythonClass, overwrite=None)
         
         Example registering a custom interop type for the Java ArrayList
@@ -773,7 +778,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "second", "a python class", pythonClass);
             }
             // Get registry for custom interop types from PythonContext
-            Map<Object, PythonClass> interopTypeRegistry =  PythonContext.get(this).getInteropTypeRegistry();
+            Map<Object, PythonClass> interopTypeRegistry = PythonContext.get(this).getInteropTypeRegistry();
             String javaClassNameAsString = javaClassName.toString();
             // Check if already registered and if overwrite is configured
             if (interopTypeRegistry.containsKey(javaClassNameAsString) && !Boolean.TRUE.equals(overwrite)) {
@@ -781,6 +786,131 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             }
             interopTypeRegistry.put(javaClassNameAsString, pythonClass);
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = J_REMOVE_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, doc = """
+        remove_java_interop_type(javaClassName)
+        
+        Remove registration of java interop type. Future registration don't need overwrite flag anymore.
+        Example removes the custom interop type for the ArrayList
+        
+        >>> from polyglot import remove_java_interop_type
+        
+        >>> remove_java_interop_type("java.util.ArrayList")
+        """)
+    @GenerateNodeFactory
+    public abstract static class RemoveJavaInteropTypeNode extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        Object register(TruffleString javaClassName,
+                        @Cached PRaiseNode raiseNode) {
+            // Get registry for custom interop types from PythonContext
+            Map<Object, PythonClass> interopTypeRegistry = PythonContext.get(this).getInteropTypeRegistry();
+            String javaClassNameAsString = javaClassName.toString();
+            // Check if already registered and if overwrite is configured
+            if (!interopTypeRegistry.containsKey(javaClassNameAsString)) {
+                throw raiseNode.raise(KeyError, INTEROP_TYPE_NOT_REGISTERED, javaClassNameAsString);
+            }
+            interopTypeRegistry.remove(javaClassNameAsString);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = J_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true, keywordOnlyNames = {"overwrite"}, doc = """
+       @java_interop_type(javaClassName, overwrite=None)
+        
+       Example registering a custom interop type for the Java ArrayList
+
+       >>> from polyglot import register_java_interop_type
+
+       >>> @java_interop_type("java.util.ArrayList")
+       ... class jArrayList(__graalpython__.ForeignType):
+       ...     def append(self, element):
+       ...         self.add(element)
+        
+       For subsequent registrations with overwrite behavior use
+       >>> @java_interop_type("java.util.ArrayList", overwrite=True)
+       ... class jArrayList(__graalpython__.ForeignType):
+       ...     pass
+       """)
+    @GenerateNodeFactory
+    public abstract static class JavaInteropTypeDecoratorNode extends PythonBuiltinNode {
+        static final TruffleString WRAPPER = tsLiteral("wrapper");
+        public static final TruffleString KW_J_CLASS_NAME = tsLiteral("javaClassName");
+
+        public static final TruffleString KW_OVERWRITE = tsLiteral("overwrite");
+
+        static class RegisterWrapperRootNode extends PRootNode {
+            static final TruffleString[] KEYWORDS_HIDDEN_RECEIVER = new TruffleString[]{KW_J_CLASS_NAME, KW_OVERWRITE};
+            private static final Signature SIGNATURE = new Signature(1, false, -1, false, tsArray("pythonClass"), KEYWORDS_HIDDEN_RECEIVER);
+            private static final TruffleString MODULE_POLYGLOT = tsLiteral("polyglot");
+            @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
+            @Child private PRaiseNode raiseNode = PRaiseNode.create();
+            @Child private PyObjectGetAttr getAttr = PyObjectGetAttr.create();
+            @Child private CallVarargsMethodNode callVarargsMethod = CallVarargsMethodNode.create();
+
+            protected RegisterWrapperRootNode(TruffleLanguage<?> language) {
+                super(language);
+            }
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                calleeContext.enter(frame);
+                Object[] frameArguments = frame.getArguments();
+                Object pythonClass = PArguments.getArgument(frameArguments, 0);
+                // note: the hidden kwargs are stored at the end of the positional args
+                Object javaClassName = PArguments.getArgument(frameArguments, 1);
+                Object overwrite = PArguments.getArgument(frameArguments, 2);
+                try {
+                    if (pythonClass instanceof PythonClass klass) {
+                        PythonModule polyglotModule = PythonContext.get(this).lookupBuiltinModule(MODULE_POLYGLOT);
+                        Object register = getAttr.executeCached(frame, polyglotModule, T_REGISTER_JAVA_INTEROP_TYPE);
+                        callVarargsMethod.execute(frame, register, new Object[]{javaClassName, pythonClass}, new PKeyword[]{new PKeyword(KW_OVERWRITE, overwrite)});
+                        return klass;
+                    }
+                    throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a python class", pythonClass);
+                } finally {
+                    calleeContext.exit(frame, this);
+                }
+            }
+
+            @Override
+            public Signature getSignature() {
+                return SIGNATURE;
+            }
+
+            @Override
+            public boolean isPythonInternal() {
+                return true;
+            }
+
+            @Override
+            public boolean isInternal() {
+                return true;
+            }
+
+            @Override
+            public boolean setsUpCalleeContext() {
+                return true;
+            }
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public Object decorate(TruffleString receiver, Object overwrite,
+                               @Cached PythonObjectFactory factory) {
+
+            RootCallTarget callTarget = getContext().getLanguage().createCachedCallTarget(RegisterWrapperRootNode::new, RegisterWrapperRootNode.class);
+            return factory.createBuiltinFunction(WRAPPER, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(receiver, overwrite), 0, callTarget);
+
+        }
+
+        public static PKeyword[] createKwDefaults(Object receiver, Object overwrite) {
+            // the receiver is passed in a hidden keyword argument
+            // in a pure python decorator this would be passed as a cell
+            return new PKeyword[]{new PKeyword(KW_J_CLASS_NAME, receiver), new PKeyword(KW_OVERWRITE, overwrite)};
         }
     }
 
