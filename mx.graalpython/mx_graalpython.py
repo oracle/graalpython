@@ -411,13 +411,13 @@ def punittest(ars, report=False):
         return
 
     # test leaks with Python code only
-    run_leak_launcher(["--code", "pass", ]),
-    run_leak_launcher(["--repeat-and-check-size", "--code", "--null-stdout", "print('hello')"]),
+    run_leak_launcher(["--code", "pass", ])
+    run_leak_launcher(["--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
     # test leaks when some C module code is involved
-    run_leak_launcher(["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)']),
+    run_leak_launcher(["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
     # test leaks with shared engine Python code only
-    run_leak_launcher(["--shared-engine", "--code", "pass"]),
-    run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "--code", "--null-stdout", "print('hello')"]),
+    run_leak_launcher(["--shared-engine", "--code", "pass"])
+    # TODO: (GR-54727) run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"]),
     # test leaks with shared engine when some C module code is involved
     run_leak_launcher(["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
 

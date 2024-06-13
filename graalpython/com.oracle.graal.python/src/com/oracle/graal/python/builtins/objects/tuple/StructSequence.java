@@ -230,13 +230,12 @@ public class StructSequence {
             if (this == o) {
                 return true;
             }
-            if (!(o instanceof BuiltinTypeDescriptor)) {
+            if (!(o instanceof BuiltinTypeDescriptor that)) {
                 return false;
             }
             if (!super.equals(o)) {
                 return false;
             }
-            BuiltinTypeDescriptor that = (BuiltinTypeDescriptor) o;
             return type == that.type;
         }
 
@@ -258,6 +257,12 @@ public class StructSequence {
 
     @TruffleBoundary
     public static void initType(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Descriptor desc) {
+        // TODO: (GR-54701) some builtin nodes created here close over the "desc" object - it should
+        // be their key for the call targets cache in language, but one can create new Descriptor
+        // object at runtime via C API and those are context specific. There are no runtime data, so
+        // we can cache Descriptor instances in language, but it should be weak cache and we should
+        // make sure that once the type that is initialized is GC'ed, they can be GC'ed too.
+
         assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
 
         long flags = TypeNodes.GetTypeFlagsNode.executeUncached(klass);
