@@ -126,9 +126,9 @@ public class TpSlotGetAttr {
     }
 
     public static final class TpSlotGetAttrPython extends TpSlotPython {
-        final TruffleWeakReference<Object> getattr;
-        final TruffleWeakReference<Object> getattribute;
-        final TruffleWeakReference<Object> type;
+        private final TruffleWeakReference<Object> getattr;
+        private final TruffleWeakReference<Object> getattribute;
+        private final TruffleWeakReference<Object> type;
 
         public TpSlotGetAttrPython(Object getattribute, Object getattr, Object type) {
             this.getattr = asWeakRef(getattr);
@@ -154,6 +154,10 @@ public class TpSlotGetAttr {
 
         public Object getGetattr() {
             return safeGet(getattr);
+        }
+
+        public boolean hasGetattr() {
+            return getattr != null;
         }
 
         public Object getGetattribute() {
@@ -283,15 +287,15 @@ public class TpSlotGetAttr {
             return slotNode.executeGetAttr(frame, self, name);
         }
 
-        @Specialization(guards = "isNoValue(slot.getattr)")
+        @Specialization(guards = "!slot.hasGetattr()")
         static Object callPythonSimple(VirtualFrame frame, Node inliningTarget, TpSlotGetAttrPython slot, Object self, Object name,
                         @Exclusive @Cached BinaryPythonSlotDispatcherNode callPythonFun) {
             // equivalent of typeobject.c:slot_tp_getattro, which is used if there is no __getattr__
             // hook
-            return callPythonFun.execute(frame, inliningTarget, slot.getattribute, slot.type, self, name);
+            return callPythonFun.execute(frame, inliningTarget, slot.getGetattribute(), slot.getType(), self, name);
         }
 
-        @Specialization(guards = "!isNoValue(slot.getattr)")
+        @Specialization(guards = "slot.hasGetattr()")
         static Object callPythonSimple(VirtualFrame frame, Node inliningTarget, TpSlotGetAttrPython slot, Object self, Object name,
                         @Exclusive @Cached BinaryPythonSlotDispatcherNode callPythonFun,
                         @Cached IsBuiltinObjectProfile errorProfile) {

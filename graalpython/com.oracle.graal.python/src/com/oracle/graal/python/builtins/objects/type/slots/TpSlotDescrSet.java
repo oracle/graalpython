@@ -127,9 +127,9 @@ public abstract class TpSlotDescrSet {
     }
 
     public static final class TpSlotDescrSetPython extends TpSlotPython {
-        final TruffleWeakReference<Object> setCallable;
-        final TruffleWeakReference<Object> delCallable;
-        final TruffleWeakReference<Object> type;
+        private final TruffleWeakReference<Object> setCallable;
+        private final TruffleWeakReference<Object> delCallable;
+        private final TruffleWeakReference<Object> type;
 
         public TpSlotDescrSetPython(Object setCallable, Object delCallable, Object type) {
             this.setCallable = asWeakRef(setCallable);
