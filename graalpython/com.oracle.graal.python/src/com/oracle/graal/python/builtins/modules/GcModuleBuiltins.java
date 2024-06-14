@@ -89,7 +89,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
-        static int collect(VirtualFrame frame, PythonModule self, @SuppressWarnings("unused") Object level,
+        static PNone collect(VirtualFrame frame, PythonModule self, @SuppressWarnings("unused") Object level,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectGetIter getIter,
@@ -105,30 +105,35 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             if (cb != null) {
                 phase = START;
                 info = factory.createDict(new PKeyword[]{
-                        new PKeyword(GENERATION, 2),
-                        new PKeyword(COLLECTED, 0),
-                        new PKeyword(UNCOLLECTABLE, 0),
+                                new PKeyword(GENERATION, 2),
+                                new PKeyword(COLLECTED, 0),
+                                new PKeyword(UNCOLLECTABLE, 0),
                 });
                 do {
                     call.executeObject(frame, cb, phase, info);
                 } while ((cb = next.execute(frame, iter)) != null);
             }
-            try {
-                return javaCollect(inliningTarget, gil);
-            } finally {
-                if (phase != null) {
-                    phase = STOP;
-                    iter = getIter.execute(frame, inliningTarget, callbacks);
-                    while ((cb = next.execute(frame, iter)) != null) {
-                        call.executeObject(frame, cb, phase, info);
-                    }
+            long freedMemory = javaCollect(inliningTarget, gil);
+            if (phase != null) {
+                phase = STOP;
+                info = factory.createDict(new PKeyword[]{
+                                new PKeyword(GENERATION, 2),
+                                new PKeyword(COLLECTED, freedMemory),
+                                new PKeyword(UNCOLLECTABLE, 0),
+                });
+                iter = getIter.execute(frame, inliningTarget, callbacks);
+                while ((cb = next.execute(frame, iter)) != null) {
+                    call.executeObject(frame, cb, phase, info);
                 }
             }
+            return PNone.NONE;
         }
 
         @TruffleBoundary
-        static int javaCollect(Node inliningTarget, GilNode gil) {
+        static long javaCollect(Node inliningTarget, GilNode gil) {
             gil.release(true);
+            Runtime runtime = Runtime.getRuntime();
+            long freeMemory = runtime.freeMemory();
             try {
                 PythonUtils.forceFullGC();
                 try {
@@ -142,7 +147,12 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             // collect some weak references now
             PythonContext.triggerAsyncActions(inliningTarget);
             CApiTransitions.pollReferenceQueue();
-            return 0;
+            /*
+             * CPython's GC returns the number of collected cycles. This is not something we can
+             * determine, but to return some useful info to the Python program, we return the amount
+             * of memory gained.
+             */
+            return Math.max(0, runtime.freeMemory() - freeMemory);
         }
     }
 
