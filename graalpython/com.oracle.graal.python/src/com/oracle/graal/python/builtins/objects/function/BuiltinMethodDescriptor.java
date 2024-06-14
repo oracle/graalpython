@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
 
 /**
@@ -251,6 +252,11 @@ public abstract class BuiltinMethodDescriptor {
 
     private static BuiltinMethodDescriptor get(String name, NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type, Builtin builtinAnnotation) {
         CompilerAsserts.neverPartOfCompilation();
+        if (factory.getClass().getAnnotation(GeneratedBy.class) == null) {
+            // For non-generated factories, we do not assume that they are singletons, so we cannot
+            // use them for our cache that must be bounded in size
+            return null;
+        }
         Class<? extends PythonBuiltinBaseNode> nodeClass = factory.getNodeClass();
         BuiltinMethodDescriptor result = null;
         if (PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
@@ -349,6 +355,10 @@ public abstract class BuiltinMethodDescriptor {
             return false;
         }
         BuiltinMethodDescriptor that = (BuiltinMethodDescriptor) o;
+        // Rudimentary check of the assumption that builtin node factories are singletons, if we
+        // create&cache BuiltinMethodDescriptors with non-singleton factories, we do not have the
+        // guarantee that the cache size is bounded
+        assert (factory.getNodeClass() == that.factory.getNodeClass()) == (factory == that.factory) : name;
         return factory == that.factory && type == that.type && name.equals(that.name);
     }
 
