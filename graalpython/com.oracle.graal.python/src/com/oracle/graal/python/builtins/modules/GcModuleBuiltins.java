@@ -36,8 +36,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyIterNextNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -45,14 +51,25 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "gc")
 public final class GcModuleBuiltins extends PythonBuiltins {
+
+    private static final TruffleString CALLBACKS = PythonUtils.tsLiteral("callbacks");
+    private static final TruffleString START = PythonUtils.tsLiteral("start");
+    private static final TruffleString STOP = PythonUtils.tsLiteral("stop");
+    private static final TruffleString GENERATION = PythonUtils.tsLiteral("generation");
+    private static final TruffleString COLLECTED = PythonUtils.tsLiteral("collected");
+    private static final TruffleString UNCOLLECTABLE = PythonUtils.tsLiteral("uncollectable");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -63,16 +80,54 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         addBuiltinConstant("DEBUG_LEAK", 0);
         addBuiltinConstant("DEBUG_UNCOLLECTABLE", 0);
+        addBuiltinConstant("DEBUG_UNCOLLECTABLE", 0);
+        addBuiltinConstant(CALLBACKS, PythonObjectFactory.getUncached().createList());
         super.initialize(core);
     }
 
-    @Builtin(name = "collect", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
+    @Builtin(name = "collect", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        int collect(@SuppressWarnings("unused") Object level,
+        static int collect(VirtualFrame frame, PythonModule self, @SuppressWarnings("unused") Object level,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached(neverDefault = true) PyIterNextNode next,
+                        @Cached PythonObjectFactory factory,
+                        @Cached CallBinaryMethodNode call,
                         @Cached GilNode gil) {
+            Object callbacks = getAttr.execute(frame, inliningTarget, self, CALLBACKS);
+            Object iter = getIter.execute(frame, inliningTarget, callbacks);
+            Object cb = next.execute(frame, iter);
+            TruffleString phase = null;
+            Object info = null;
+            if (cb != null) {
+                phase = START;
+                info = factory.createDict(new PKeyword[]{
+                        new PKeyword(GENERATION, 2),
+                        new PKeyword(COLLECTED, 0),
+                        new PKeyword(UNCOLLECTABLE, 0),
+                });
+                do {
+                    call.executeObject(frame, cb, phase, info);
+                } while ((cb = next.execute(frame, iter)) != null);
+            }
+            try {
+                return javaCollect(inliningTarget, gil);
+            } finally {
+                if (phase != null) {
+                    phase = STOP;
+                    iter = getIter.execute(frame, inliningTarget, callbacks);
+                    while ((cb = next.execute(frame, iter)) != null) {
+                        call.executeObject(frame, cb, phase, info);
+                    }
+                }
+            }
+        }
+
+        @TruffleBoundary
+        static int javaCollect(Node inliningTarget, GilNode gil) {
             gil.release(true);
             try {
                 PythonUtils.forceFullGC();
@@ -85,7 +140,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                 gil.acquire();
             }
             // collect some weak references now
-            PythonContext.triggerAsyncActions(this);
+            PythonContext.triggerAsyncActions(inliningTarget);
             CApiTransitions.pollReferenceQueue();
             return 0;
         }
