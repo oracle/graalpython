@@ -777,7 +777,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_REGISTER_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, takesVarArgs = true, keywordOnlyNames = "overwrite", doc = """
+    @Builtin(name = J_REGISTER_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, takesVarKeywordArgs = true, keywordOnlyNames = {"overwrite" }, doc = """
         register_java_interop_type(javaClassName, pythonClass, overwrite=None)
         
         Example registering a custom interop type for the Java ArrayList
@@ -816,19 +816,20 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
     }
-    @Builtin(name = J_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @Builtin(name = J_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true, keywordOnlyNames = {"overwrite"})
     @GenerateNodeFactory
-    public abstract static class JavaInteropTypeDecoratorNode extends PythonUnaryBuiltinNode {
+    public abstract static class JavaInteropTypeDecoratorNode extends PythonBuiltinNode {
         static final TruffleString WRAPPER = tsLiteral("wrapper");
-        public static final TruffleString KW_RECEIVER = tsLiteral("$receiver");
+        public static final TruffleString KW_J_CLASS_NAME = tsLiteral("javaClassName");
+
+        public static final TruffleString KW_OVERWRITE = tsLiteral("overwrite");
 
         static class RegisterWrapperRootNode extends PRootNode {
-            static final TruffleString[] KEYWORDS_HIDDEN_RECEIVER = new TruffleString[]{KW_RECEIVER};
+            static final TruffleString[] KEYWORDS_HIDDEN_RECEIVER = new TruffleString[]{KW_J_CLASS_NAME, KW_OVERWRITE};
             private static final Signature SIGNATURE = new Signature(1, false, -1, false, tsArray("pythonClass"), KEYWORDS_HIDDEN_RECEIVER);
             private static final TruffleString MODULE_POLYGLOT = tsLiteral("polyglot");
             @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
             @Child private PRaiseNode raiseNode = PRaiseNode.create();
-            @Child private TypeBuiltins.DirNode dirNode = TypeBuiltins.DirNode.create();
             @Child private PyObjectGetAttr getAttr = PyObjectGetAttr.create();
             @Child private CallVarargsMethodNode callVarargsMethod = CallVarargsMethodNode.create();
 
@@ -843,11 +844,12 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 Object pythonClass = PArguments.getArgument(frameArguments, 0);
                 // note: the hidden kwargs are stored at the end of the positional args
                 Object javaClassName = PArguments.getArgument(frameArguments, 1);
+                Object overwrite = PArguments.getArgument(frameArguments, 2);
                 try {
                     if (pythonClass instanceof PythonClass klass) {
                         PythonModule polyglotModule = PythonContext.get(this).lookupBuiltinModule(MODULE_POLYGLOT);
                         Object register = getAttr.executeCached(frame, polyglotModule, T_REGISTER_JAVA_INTEROP_TYPE);
-                        callVarargsMethod.execute(frame, register, new Object[]{javaClassName, pythonClass}, PKeyword.EMPTY_KEYWORDS);
+                        callVarargsMethod.execute(frame, register, new Object[]{javaClassName, pythonClass}, new PKeyword[]{new PKeyword(KW_OVERWRITE, overwrite)});
                         return klass;
                     }
                     throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a python class", pythonClass);
@@ -879,21 +881,18 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object decorate(TruffleString receiver,
-                               @Bind("this") Node inliningTarget,
-                               @Cached TypeNodes.IsTypeNode isTypeNode,
-                               @Cached PRaiseNode raiseNode,
+        public Object decorate(TruffleString receiver, Object overwrite,
                                @Cached PythonObjectFactory factory) {
 
             RootCallTarget callTarget = getContext().getLanguage().createCachedCallTarget(RegisterWrapperRootNode::new, RegisterWrapperRootNode.class);
-            return factory.createBuiltinFunction(WRAPPER, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(receiver), 0, callTarget);
+            return factory.createBuiltinFunction(WRAPPER, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(receiver, overwrite), 0, callTarget);
 
         }
 
-        public static PKeyword[] createKwDefaults(Object receiver) {
+        public static PKeyword[] createKwDefaults(Object receiver, Object overwrite) {
             // the receiver is passed in a hidden keyword argument
             // in a pure python decorator this would be passed as a cell
-            return new PKeyword[]{new PKeyword(KW_RECEIVER, receiver)};
+            return new PKeyword[]{new PKeyword(KW_J_CLASS_NAME, receiver), new PKeyword(KW_OVERWRITE, overwrite)};
         }
     }
 
