@@ -90,20 +90,20 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
 
     public abstract Object execute(Frame frame, Node inliningTarget, Object object, Object key);
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinList(object)")
     static Object doList(VirtualFrame frame, PList object, Object key,
                     @Cached ListBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);
     }
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinTuple(object)")
     static Object doTuple(VirtualFrame frame, PTuple object, Object key,
                     @Cached TupleBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);
     }
 
     @InliningCutoff // TODO: inline this probably?
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinDict(object)")
     static Object doDict(VirtualFrame frame, PDict object, Object key,
                     @Cached DictBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);

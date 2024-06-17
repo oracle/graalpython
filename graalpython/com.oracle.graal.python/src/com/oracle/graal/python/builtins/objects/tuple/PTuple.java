@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
+import static com.oracle.graal.python.util.PythonUtils.builtinClassToType;
+
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -45,12 +47,12 @@ public final class PTuple extends PSequence {
     private long hash = -1;
 
     public PTuple(Object cls, Shape instanceShape, Object[] elements) {
-        super(cls, instanceShape);
+        super(builtinClassToType(cls), instanceShape);
         this.store = new ObjectSequenceStorage(elements);
     }
 
     public PTuple(Object cls, Shape instanceShape, SequenceStorage store) {
-        super(cls, instanceShape);
+        super(builtinClassToType(cls), instanceShape);
         this.store = store;
     }
 

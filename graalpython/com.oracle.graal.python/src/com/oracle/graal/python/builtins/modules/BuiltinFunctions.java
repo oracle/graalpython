@@ -232,7 +232,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -464,26 +463,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AllNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+        @Specialization(guards = "isBuiltinList(object)")
         static boolean doList(VirtualFrame frame, PList object,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetPythonObjectClassNode getClassNode,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+        @Specialization(guards = "isBuiltinTuple(object)")
         static boolean doTuple(VirtualFrame frame, PTuple object,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetPythonObjectClassNode getClassNode,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+        @Specialization(guards = "isBuiltinHashingCollection(object)")
         static boolean doHashColl(VirtualFrame frame, PHashingCollection object,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetPythonObjectClassNode getClassNode,
                         @Cached AllOrAnyHashingStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AnyOrAllNodeType.ALL);
         }
@@ -521,26 +516,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AnyNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+        @Specialization(guards = "isBuiltinList(object)")
         static boolean doList(VirtualFrame frame, PList object,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetPythonObjectClassNode getClassNode,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+        @Specialization(guards = "isBuiltinTuple(object)")
         static boolean doTuple(VirtualFrame frame, PTuple object,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetPythonObjectClassNode getClassNode,
                         @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, inliningTarget, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
         }
 
-        @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+        @Specialization(guards = "isBuiltinHashingCollection(object)")
         static boolean doHashColl(VirtualFrame frame, PHashingCollection object,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetPythonObjectClassNode getClassNode,
                         @Cached AllOrAnyHashingStorageNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AnyOrAllNodeType.ANY);
         }

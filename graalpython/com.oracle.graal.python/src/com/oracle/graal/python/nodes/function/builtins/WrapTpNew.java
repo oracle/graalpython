@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,7 +59,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 /**
@@ -185,19 +184,5 @@ public final class WrapTpNew extends SlotWrapper {
             raiseNode = insert(PRaiseNode.create());
         }
         return raiseNode;
-    }
-
-    @Override
-    public NodeCost getCost() {
-        if (isType == null) {
-            // only run with owner
-            return NodeCost.MONOMORPHIC;
-        } else if (state == 0) {
-            // no error states, but we did see a subtype
-            return NodeCost.POLYMORPHIC;
-        } else {
-            // error states
-            return NodeCost.MEGAMORPHIC;
-        }
     }
 }

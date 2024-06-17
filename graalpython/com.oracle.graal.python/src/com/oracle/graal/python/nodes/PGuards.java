@@ -104,7 +104,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -605,55 +604,63 @@ public abstract class PGuards {
         throw new UnexpectedResultException(result);
     }
 
-    /**
-     * Tests if the class of a Python object is a builtin class, i.e., any magic methods cannot be
-     * overridden.
-     */
-    public static boolean cannotBeOverridden(Object clazz) {
-        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
-    }
-
-    @InliningCutoff
-    public static boolean cannotBeOverridden(Object object, Node inliningTarget, GetClassNode getClassNode) {
-        Object clazz = getClassNode.execute(inliningTarget, object);
-        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
-    }
-
-    @InliningCutoff
-    public static boolean cannotBeOverridden(PythonObject object, Node inliningTarget, GetPythonObjectClassNode getClassNode) {
-        Object clazz = getClassNode.execute(inliningTarget, object);
-        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
-    }
-
-    public static boolean cannotBeOverriddenForImmutableType(PList object) {
-        return cannotBeOverriddenForImmutableType((PythonObject) object);
-    }
-
-    public static boolean cannotBeOverriddenForImmutableType(PDict object) {
-        return cannotBeOverriddenForImmutableType((PythonObject) object);
-    }
-
-    public static boolean cannotBeOverriddenForImmutableType(PTuple object) {
-        return cannotBeOverriddenForImmutableType((PythonObject) object);
-    }
-
-    /**
-     * Tests if the class of this Python object is a builtin class. This method is supposed to be
-     * used for builtin types that do not support __class__ assignment at all, so we can safely read
-     * the initialPythonClass field and assume that is the current class as well.
-     */
-    public static boolean cannotBeOverriddenForImmutableType(PythonObject object) {
-        Object clazz = object.getInitialPythonClass();
-        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
-    }
-
-    public static boolean isBuiltinDict(PDict dict) {
+    private static boolean isBuiltinImmutableTypeInstance(PythonObject dict, PythonBuiltinClassType type) {
         /*
-         * dict's __class__ cannot be reassigned and other objects cannot have their class assigned
-         * to builtin dict, so it is enough to look at the initial class. PDict constructor ensures
-         * that it cannot be PythonBuiltinClass.
+         * Immutable types' __class__ cannot be reassigned and other objects cannot have their class
+         * assigned to immutable types, so it is enough to look at the initial class. The Java
+         * constructor of the object must ensure that it cannot be PythonBuiltinClass, see PDict for
+         * an example.
          */
-        return dict.getInitialPythonClass() == PythonBuiltinClassType.PDict;
+        assert !(dict.getInitialPythonClass() instanceof PythonBuiltinClass pbc) || pbc.getType() != type;
+        return dict.getInitialPythonClass() == type;
+    }
+
+    public static boolean isBuiltinDict(PythonObject dict) {
+        return isBuiltinImmutableTypeInstance(dict, PythonBuiltinClassType.PDict);
+    }
+
+    public static boolean isBuiltinTuple(PythonObject tuple) {
+        return isBuiltinImmutableTypeInstance(tuple, PythonBuiltinClassType.PTuple);
+    }
+
+    public static boolean isBuiltinList(PythonObject list) {
+        return isBuiltinImmutableTypeInstance(list, PythonBuiltinClassType.PList);
+    }
+
+    public static boolean isBuiltinSet(PythonObject set) {
+        return isBuiltinImmutableTypeInstance(set, PythonBuiltinClassType.PSet);
+    }
+
+    public static boolean isBuiltinFrozenSet(PythonObject frozenSet) {
+        return isBuiltinImmutableTypeInstance(frozenSet, PythonBuiltinClassType.PFrozenSet);
+    }
+
+    public static boolean isBuiltinAnySet(PythonObject set) {
+        return isBuiltinSet(set) || isBuiltinFrozenSet(set);
+    }
+
+    public static boolean isBuiltinHashingCollection(PythonObject hashingCollection) {
+        return isBuiltinDict(hashingCollection) || isBuiltinSet(hashingCollection) || isBuiltinFrozenSet(hashingCollection);
+    }
+
+    public static boolean isBuiltinPString(PString string) {
+        return isBuiltinImmutableTypeInstance(string, PythonBuiltinClassType.PString);
+    }
+
+    public static boolean isBuiltinBytes(PythonObject bytes) {
+        return isBuiltinImmutableTypeInstance(bytes, PythonBuiltinClassType.PBytes);
+    }
+
+    public static boolean isBuiltinByteArray(PythonObject byteArray) {
+        return isBuiltinImmutableTypeInstance(byteArray, PythonBuiltinClassType.PByteArray);
+    }
+
+    public static boolean isBuiltinBytesLike(PythonObject object) {
+        return isBuiltinBytes(object) || isBuiltinByteArray(object);
+    }
+
+    public static boolean isBuiltinSequence(PythonObject sequence) {
+        return isBuiltinList(sequence) || isBuiltinTuple(sequence) || isBuiltinBytesLike(sequence);
     }
 
     public static boolean isKindOfBuiltinClass(Object clazz) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -106,40 +105,37 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
         return codePointLengthNode.execute(str, TS_ENCODING);
     }
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinList(object)")
     static int doList(PList object) {
         return object.getSequenceStorage().length();
     }
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinTuple(object)")
     static int doTuple(PTuple object) {
         return object.getSequenceStorage().length();
     }
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinDict(object)")
     static int doDict(Node inliningTarget, PDict object,
                     @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage());
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    @Specialization(guards = "isBuiltinAnySet(object)")
     static int doSet(Node inliningTarget, PSet object,
-                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                     @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage());
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
+    @Specialization(guards = "isBuiltinPString(object)")
     @InliningCutoff
-    static int doPString(Node inliningTarget, PString object,
-                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+    static int doPString(PString object,
                     @Cached(inline = false) StringNodes.StringLenNode lenNode) {
         return lenNode.execute(object);
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)")
-    static int doPBytes(Node inliningTarget, PBytesLike object,
-                    @Shared("getClass") @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode) {
+    @Specialization(guards = "isBuiltinBytesLike(object)")
+    static int doPBytes(PBytesLike object) {
         return object.getSequenceStorage().length();
     }
 

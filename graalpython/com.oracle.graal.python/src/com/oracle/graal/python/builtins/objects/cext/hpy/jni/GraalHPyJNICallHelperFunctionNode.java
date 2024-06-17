@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCallHelperFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNINodes.HPyJNIFromCharPointerNode;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.nodes.NodeCost;
 
 /**
  * This is the implementation of {@link HPyCallHelperFunctionNode} for the JNI backend. This node
@@ -68,11 +67,6 @@ final class GraalHPyJNICallHelperFunctionNode extends HPyCallHelperFunctionNode 
             case GRAAL_HPY_STRLEN -> HPyJNIFromCharPointerNode.strlen((long) args[0]);
             default -> throw CompilerDirectives.shouldNotReachHere("not yet implemented");
         };
-    }
-
-    @Override
-    public NodeCost getCost() {
-        return NodeCost.MONOMORPHIC;
     }
 
     @Override

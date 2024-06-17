@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
+import static com.oracle.graal.python.util.PythonUtils.builtinClassToType;
 
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
@@ -48,11 +49,11 @@ import com.oracle.truffle.api.object.Shape;
 public final class PBytes extends PBytesLike {
 
     public PBytes(Object cls, Shape instanceShape, byte[] bytes) {
-        super(cls, instanceShape, bytes);
+        super(builtinClassToType(cls), instanceShape, bytes);
     }
 
     public PBytes(Object cls, Shape instanceShape, SequenceStorage store) {
-        super(cls, instanceShape, store);
+        super(builtinClassToType(cls), instanceShape, store);
     }
 
     @Override

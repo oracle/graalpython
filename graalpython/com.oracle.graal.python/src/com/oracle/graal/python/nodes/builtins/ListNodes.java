@@ -144,7 +144,7 @@ public abstract class ListNodes {
             return factory.createList(cls);
         }
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(list)")
+        @Specialization(guards = "isBuiltinList(list)")
         // Don't use PSequence, that might copy storages that we don't allow for lists
         static PList fromList(Object cls, PList list,
                         @Bind("this") Node inliningTarget,
@@ -188,9 +188,8 @@ public abstract class ListNodes {
 
         public abstract PSequence execute(Frame frame, Node inliningTarget, Object value);
 
-        @Specialization(guards = "cannotBeOverridden(value, inliningTarget, getClassNode)", limit = "1")
-        protected static PSequence doPList(@SuppressWarnings("unused") Node inliningTarget, PSequence value,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+        @Specialization(guards = "isBuiltinList(value)")
+        protected static PSequence doPList(PSequence value) {
             return value;
         }
 
