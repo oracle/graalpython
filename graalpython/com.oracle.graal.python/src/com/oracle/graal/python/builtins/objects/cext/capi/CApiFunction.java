@@ -221,6 +221,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyCMethod_New", ret = PyObject, args = {PyMethodDef, PyObject, PyObject, PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyCode_New", ret = PyCodeObject, args = {Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject,
                     PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyCodec_StrictErrors", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyComplex_AsCComplex", ret = PY_COMPLEX, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyComplex_FromCComplex", ret = PyObject, args = {PY_COMPLEX}, call = CImpl)
     @CApiBuiltin(name = "PyComplex_ImagAsDouble", ret = ArgDescriptor.Double, args = {PyObject}, call = CImpl)
@@ -680,7 +681,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyCodec_ReplaceErrors", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_StreamReader", ret = PyObject, args = {ConstCharPtrAsTruffleString, PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_StreamWriter", ret = PyObject, args = {ConstCharPtrAsTruffleString, PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "PyCodec_StrictErrors", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_Unregister", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCodec_XMLCharRefReplaceErrors", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCompile_OpcodeStackEffect", ret = Int, args = {Int, Int}, call = NotImplemented)
