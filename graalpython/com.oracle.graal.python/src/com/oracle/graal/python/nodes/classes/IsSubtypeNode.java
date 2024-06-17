@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,11 +69,9 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
-@NodeInfo(shortName = "cpython://Objects/abstract.c/recursive_issubclass")
 @ImportStatic({PythonOptions.class, PGuards.class})
 @SuppressWarnings("truffle-inlining")       // footprint reduction 84 -> 67
 public abstract class IsSubtypeNode extends PNodeWithContext {

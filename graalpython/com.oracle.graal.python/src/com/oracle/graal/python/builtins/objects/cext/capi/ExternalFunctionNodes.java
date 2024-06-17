@@ -159,7 +159,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -1076,12 +1075,6 @@ public abstract class ExternalFunctionNodes {
         @Override
         public String getName() {
             return name.toJavaStringUncached();
-        }
-
-        @Override
-        public NodeCost getCost() {
-            // this is just a thin argument shuffling wrapper
-            return NodeCost.NONE;
         }
 
         @Override

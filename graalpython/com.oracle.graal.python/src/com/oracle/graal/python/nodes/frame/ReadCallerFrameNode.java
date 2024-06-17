@@ -59,11 +59,9 @@ import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@NodeInfo(shortName = "read_caller_fame")
 public final class ReadCallerFrameNode extends Node {
     public enum FrameSelector {
         ALL_PYTHON_FRAMES {

@@ -184,7 +184,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -1703,11 +1702,6 @@ public abstract class GraalHPyNodes {
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.NONE;
-        }
-
-        @Override
         public boolean isAdoptable() {
             return this != UNCACHED;
         }
@@ -2883,11 +2877,6 @@ public abstract class GraalHPyNodes {
         public Object execute(GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType) {
             assert InteropLibrary.getUncached().isExecutable(pointerObject);
             return pointerObject;
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.MONOMORPHIC;
         }
 
         @Override

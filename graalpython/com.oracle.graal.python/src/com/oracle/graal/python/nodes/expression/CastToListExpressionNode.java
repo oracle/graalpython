@@ -78,7 +78,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeCost;
 
 @GenerateInline(inlineByDefault = true)
 @GenerateCached
@@ -207,11 +206,6 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
             Object builtins = PythonContext.get(this).getBuiltins();
             Object listType = ReadAttributeFromObjectNode.getUncached().execute(builtins, BuiltinNames.T_LIST);
             return (PList) CallNode.executeUncached(LookupInheritedAttributeNode.Dynamic.executeUncached(listType, SpecialMethodNames.T___CALL__), listType, list);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.MEGAMORPHIC;
         }
 
         @Override
