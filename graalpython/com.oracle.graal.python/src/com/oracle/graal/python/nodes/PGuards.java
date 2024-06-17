@@ -604,33 +604,35 @@ public abstract class PGuards {
         throw new UnexpectedResultException(result);
     }
 
-    public static boolean isBuiltinDict(PythonObject dict) {
+    private static boolean isBuiltinImmutableTypeInstance(PythonObject dict, PythonBuiltinClassType type) {
         /*
-         * dict's __class__ cannot be reassigned and other objects cannot have their class assigned
-         * to builtin dict, so it is enough to look at the initial class. PDict constructor ensures
-         * that it cannot be PythonBuiltinClass.
+         * Immutable types' __class__ cannot be reassigned and other objects cannot have their class
+         * assigned to immutable types, so it is enough to look at the initial class. The Java
+         * constructor of the object must ensure that it cannot be PythonBuiltinClass, see PDict for
+         * an example.
          */
-        return dict.getInitialPythonClass() == PythonBuiltinClassType.PDict;
+        assert !(dict.getInitialPythonClass() instanceof PythonBuiltinClass pbc) || pbc.getType() != type;
+        return dict.getInitialPythonClass() == type;
+    }
+
+    public static boolean isBuiltinDict(PythonObject dict) {
+        return isBuiltinImmutableTypeInstance(dict, PythonBuiltinClassType.PDict);
     }
 
     public static boolean isBuiltinTuple(PythonObject tuple) {
-        // See isBuiltinDict for explanation
-        return tuple.getInitialPythonClass() == PythonBuiltinClassType.PTuple;
+        return isBuiltinImmutableTypeInstance(tuple, PythonBuiltinClassType.PTuple);
     }
 
     public static boolean isBuiltinList(PythonObject list) {
-        // See isBuiltinDict for explanation
-        return list.getInitialPythonClass() == PythonBuiltinClassType.PList;
+        return isBuiltinImmutableTypeInstance(list, PythonBuiltinClassType.PList);
     }
 
     public static boolean isBuiltinSet(PythonObject set) {
-        // See isBuiltinDict for explanation
-        return set.getInitialPythonClass() == PythonBuiltinClassType.PSet;
+        return isBuiltinImmutableTypeInstance(set, PythonBuiltinClassType.PSet);
     }
 
     public static boolean isBuiltinFrozenSet(PythonObject frozenSet) {
-        // See isBuiltinDict for explanation
-        return frozenSet.getInitialPythonClass() == PythonBuiltinClassType.PFrozenSet;
+        return isBuiltinImmutableTypeInstance(frozenSet, PythonBuiltinClassType.PFrozenSet);
     }
 
     public static boolean isBuiltinAnySet(PythonObject set) {
@@ -642,18 +644,15 @@ public abstract class PGuards {
     }
 
     public static boolean isBuiltinPString(PString string) {
-        // See isBuiltinDict for explanation
-        return string.getInitialPythonClass() == PythonBuiltinClassType.PString;
+        return isBuiltinImmutableTypeInstance(string, PythonBuiltinClassType.PString);
     }
 
     public static boolean isBuiltinBytes(PythonObject bytes) {
-        // See isBuiltinDict for explanation
-        return bytes.getInitialPythonClass() == PythonBuiltinClassType.PBytes;
+        return isBuiltinImmutableTypeInstance(bytes, PythonBuiltinClassType.PBytes);
     }
 
     public static boolean isBuiltinByteArray(PythonObject byteArray) {
-        // See isBuiltinDict for explanation
-        return byteArray.getInitialPythonClass() == PythonBuiltinClassType.PByteArray;
+        return isBuiltinImmutableTypeInstance(byteArray, PythonBuiltinClassType.PByteArray);
     }
 
     public static boolean isBuiltinBytesLike(PythonObject object) {
