@@ -206,18 +206,18 @@ public record TpSlots(TpSlot nb_bool, //
      */
     @FunctionalInterface
     private interface NativeWrapperFactory {
-        PyProcsWrapper create(TpSlotManaged slot);
+        TpSlotWrapper create(TpSlotManaged slot);
 
         final class Unimplemented implements NativeWrapperFactory {
             @Override
-            public PyProcsWrapper create(TpSlotManaged slot) {
+            public TpSlotWrapper create(TpSlotManaged slot) {
                 throw new IllegalStateException("TODO: " + slot);
             }
         }
 
         record ShouldNotReach(String slotName) implements NativeWrapperFactory {
             @Override
-            public PyProcsWrapper create(TpSlotManaged slot) {
+            public TpSlotWrapper create(TpSlotManaged slot) {
                 throw new IllegalStateException(String.format("Slot %s should never be assigned a managed slot value.", slotName));
             }
         }
@@ -406,7 +406,7 @@ public record TpSlots(TpSlot nb_bool, //
             return field;
         }
 
-        public PyProcsWrapper createNativeWrapper(TpSlotManaged slot) {
+        public TpSlotWrapper createNativeWrapper(TpSlotManaged slot) {
             return nativeWrapperFactory.create(slot);
         }
 

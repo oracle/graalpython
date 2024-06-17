@@ -169,14 +169,6 @@ def compile_ext(name):
         )
 '''
 
-# language=C
-C_SOURCE_HEADER = '''
-#include <Python.h>
-
-PyObject *global_stash1;
-PyObject *global_stash2;
-'''
-
 
 def write_all(filename, text):
     with open(filename, 'w+') as f:
@@ -212,6 +204,14 @@ class Slot:
 
 NO_GROUP = 'top'
 
+# language=C
+C_SOURCE_HEADER = '''
+#include <Python.h>
+
+PyObject *global_stash1;
+PyObject *global_stash2;
+'''
+
 SLOTS = [
     Slot('tp_as_number', 'nb_bool', 'int $name$(PyObject* self)', ['1', '0', None]),
     Slot('tp_as_sequence', 'sq_length', 'Py_ssize_t $name$(PyObject* self)', ['0', '1', '42', None]),
@@ -235,13 +235,14 @@ SLOTS = [
             global_stash1 = value;
             return 0;
         ''']),
-    Slot(NO_GROUP, 'tp_setattr', 'int $name$(PyObject* self, char *name, PyObject *value)', ['0', None,
-        '''
-            Py_IncRef(value);
-            Py_XDECREF(global_stash1);
-            global_stash1 = value;
-            return 0;
-        ''']),
+    # Disabled due to incompatibilities with Carlo Verre hack in some very specific corner cases
+    # Slot(NO_GROUP, 'tp_setattr', 'int $name$(PyObject* self, char *name, PyObject *value)', ['0', None,
+    #     '''
+    #         Py_IncRef(value);
+    #         Py_XDECREF(global_stash1);
+    #         global_stash1 = value;
+    #         return 0;
+    #     ''']),
     Slot(NO_GROUP, 'tp_descr_get', 'PyObject* $name$(PyObject* self, PyObject* key, PyObject* type)', ['Py_RETURN_NONE', 'Py_NewRef(key)', None,
         '''
             if (global_stash2 == NULL) Py_RETURN_NONE;
@@ -257,26 +258,33 @@ SLOTS = [
         '''])
 ]
 
+PY_GLOBALS = '''
+global_dict1 = dict()
+global_descr_val = None
+'''
 
 MAGIC = {
     '__bool__(self)': ['True', 'False', None],
     '__len__(self)': ['0', '1', '42', None],
-    '__getattribute__(self,name)': ['name', '42', 'self._dict[name]', None],
-    '__getattr__(self,name)': ['name+"abc"', 'False', 'self._dict[name]', None],
-    '__get__(self,obj,objtype=None)': ['obj', 'True', 'self.descr_value', None],
-    '__set__(self,obj,value)': ['self.descr_value = value\nreturn None', None],
+    '__getattribute__(self,name)': ['name', '42', 'global_dict1[name]', None],
+    '__getattr__(self,name)': ['name+"abc"', 'False', 'global_dict1[name]', None],
+    '__get__(self,obj,objtype=None)': ['obj', 'True', 'global_descr_val', None],
+    '__set__(self,obj,value)': [None,
+                                '''
+                                global global_descr_val
+                                global_descr_val = value
+                                return None
+                                '''],
     '__setattr__(self,name,value)': [None,
                                     '''
-                                    if not self._dict:
-                                        self._dict = dict()
-                                    self._dict[name] = value
+                                    global global_dict1 # not using self._dict, because attr lookup can be something funky...
+                                    global_dict1[name] = value
                                     return None
                                     '''],
     '__delattr__(self,name,value)': [None,
                                      '''
-                                     if not self._dict:
-                                         self._dict = dict()
-                                     del self._dict[name]
+                                     global global_dict1
+                                     del global_dict1[name]
                                      return None
                                      '''],
 }
@@ -446,7 +454,7 @@ for test_case_idx in range(args.iterations):
     classes = []
     test_module_name = f"test{test_case_idx}"
     c_source = C_SOURCE_HEADER
-    py_source = SLOTS_TESTER
+    py_source = SLOTS_TESTER + PY_GLOBALS
     native_classes = []
     for i in range(classes_count):
         base = choose_random(classes) if classes else 'object'
