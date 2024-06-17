@@ -586,8 +586,9 @@ public abstract class ErrorMessages {
     public static final TruffleString PACKED_IP_WRONG_LENGTH = tsLiteral("packed IP wrong length for %s");
     public static final TruffleString PATTERNS_MAY_ONLY_MATCH_LITERALS_AND_ATTRIBUTE_LOOKUPS = tsLiteral("patterns may only match literals and attribute lookups");
     public static final TruffleString POLYGLOT_ACCESS_NOT_ALLOWED = tsLiteral("polyglot access is not allowed");
-    public static final TruffleString POLYGLOT_EVAL_MUST_PASS_STRINGS = tsLiteral("polyglot.eval must pass strings as either 'path' or a 'string' keyword");
-    public static final TruffleString POLYGLOT_EVAL_WITH_STRING_MUST_PASS_LANG = tsLiteral("polyglot.eval with a string argument must pass a language or mime-type");
+    public static final TruffleString POLYGLOT_ACCESS_NOT_ALLOWED_FOR_LANGUAGE_S = tsLiteral("polyglot access is not allowed for language '%s'");
+    public static final TruffleString POLYGLOT_EVAL_MUST_PASS_STRING_OR_PATH = tsLiteral("polyglot.eval() must pass either 'path' or 'string' keyword argument");
+    public static final TruffleString POLYGLOT_EVAL_MUST_PASS_LANG = tsLiteral("polyglot.eval() must pass 'language' keyword argument");
     public static final TruffleString POP_FROM_EMPTY_SET = tsLiteral("pop from an emtpy set");
     public static final TruffleString POP_INDEX_OUT_OF_RANGE = tsLiteral("pop index out of range");
     public static final TruffleString POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS = tsLiteral("position %d from error handler out of bounds");
@@ -782,7 +783,7 @@ public abstract class ErrorMessages {
     public static final TruffleString X_NOT_IN_TUPLE = tsLiteral("tuple.index(x): x not in tuple");
     public static final TruffleString S_IS_AN_INVALID_ARG_FOR_S = tsLiteral("'%s' is an invalid keyword argument for %s");
     public static final TruffleString YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH = tsLiteral("%s: you may specify either '%s' or '%s' but not both");
-    public static final TruffleString ACCESS_TO_INTERNAL_LANG_NOT_PERMITTED = tsLiteral("access to internal language %s is not permitted");
+    public static final TruffleString POLYGLOT_LANGUAGE_S_NOT_FOUND = tsLiteral("polyglot language '%s' not found");
     public static final TruffleString POW_BASE_NOT_INVERTIBLE = tsLiteral("base is not invertible for the given modulus");
     public static final TruffleString POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER = tsLiteral("0.0 cannot be raised to a negative power");
     public static final TruffleString S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT = tsLiteral("'%c' alignment flag is not allowed in complex format specifier");
