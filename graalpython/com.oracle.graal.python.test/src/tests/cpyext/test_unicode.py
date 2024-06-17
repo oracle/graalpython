@@ -626,7 +626,7 @@ class TestPyUnicode(CPyExtTestCase):
     test_PyUnicode_DecodeLocaleAndSize = CPyExtFunction(
         lambda args: args[0].decode(locale.getencoding(), errors=args[1].decode('ascii')),
         lambda: (
-            ('skål'.encode(locale.getencoding()), b'strict'),
+            (b'hello', b'strict'),
         ),
         resultspec="O",
         argspec='y#y',
@@ -637,7 +637,7 @@ class TestPyUnicode(CPyExtTestCase):
     test_PyUnicode_DecodeLocale = CPyExtFunction(
         lambda args: args[0].decode(locale.getencoding(), errors=args[1].decode('ascii')),
         lambda: (
-            ('skål'.encode(locale.getencoding()), b'strict'),
+            (b'hello', b'strict'),
         ),
         resultspec="O",
         argspec='yy',
