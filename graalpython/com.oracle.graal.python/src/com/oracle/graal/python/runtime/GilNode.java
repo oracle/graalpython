@@ -41,6 +41,8 @@
 
 package com.oracle.graal.python.runtime;
 
+import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -90,6 +92,8 @@ public abstract class GilNode extends Node {
             if (binaryProfile.profile(!context.ownsGil())) {
                 try {
                     TruffleSafepoint.setBlockedThreadInterruptible(location, PythonContext::acquireGil, context);
+                } catch (PythonThreadKillException | PythonExitException | ThreadDeath e) {
+                    throw e;
                 } catch (Throwable t) {
                     /*
                      * Safepoint actions may throw exceptions, so we need to make sure that we
@@ -141,6 +145,8 @@ public abstract class GilNode extends Node {
                 if (!context.tryAcquireGil()) {
                     try {
                         TruffleSafepoint.setBlockedThreadInterruptible(location, PythonContext::acquireGil, context);
+                    } catch (PythonThreadKillException | PythonExitException | ThreadDeath e) {
+                        throw e;
                     } catch (Throwable t) {
                         /*
                          * Safepoint actions may throw exceptions, so we need to make sure that we
