@@ -121,10 +121,14 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.Builder;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.HasSameConstructorNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -1134,10 +1138,10 @@ public abstract class GraalHPyNodes {
     @GenerateInline(false) // footprint reduction 44 -> 25
     public abstract static class HPyCreateSlotNode extends PNodeWithContext {
 
-        public abstract Object execute(GraalHPyContext context, PythonClass enclosingType, Object slotDef);
+        public abstract Object execute(GraalHPyContext context, PythonClass enclosingType, TpSlots.Builder tpSlotsBuilder, Object slotDef);
 
         @Specialization
-        static Object doIt(GraalHPyContext context, PythonClass enclosingType, Object slotDef,
+        static Object doIt(GraalHPyContext context, PythonClass enclosingType, TpSlots.Builder tpSlotsBuilder, Object slotDef,
                         @Bind("this") Node inliningTarget,
                         @Cached HPyReadSlotNode readSlotNode,
                         @Cached PythonObjectFactory factory,
@@ -1147,6 +1151,15 @@ public abstract class GraalHPyNodes {
             assert enclosingType.isHPyType();
             HPySlotData slotData = readSlotNode.execute(inliningTarget, context, slotDef);
             HPySlot slot = slotData.slot;
+
+            TpSlotMeta tpSlot = slot.getTpSlot();
+            if (tpSlot != null) {
+                // Slot that directly maps to a CPython compatible slot
+                Object boundExecutable = CExtContext.ensureExecutable(slotData.impl(), tpSlot.getNativeSignature());
+                tpSlotsBuilder.set(tpSlot, TpSlotNative.createHPySlot(boundExecutable));
+                return null;
+            }
+
             HPyProperty property = null;
             Object[] methodNames = slot.getAttributeKeys();
             HPySlotWrapper[] slotWrappers = slot.getSignatures();
@@ -1176,7 +1189,7 @@ public abstract class GraalHPyNodes {
 
                     Object enclosingTypeForFun = HPY_TP_NEW.equals(slot) ? null : enclosingType;
                     PythonLanguage language = PythonLanguage.get(raiseNode);
-                    Object function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, slotData.impl(), enclosingTypeForFun, factory);
+                    Object function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, null, null, methodNameStr, slotData.impl(), enclosingTypeForFun, factory);
                     property = new HPyProperty(methodName, function, property);
                 }
             }
@@ -1214,10 +1227,10 @@ public abstract class GraalHPyNodes {
     @GenerateInline(false) // footprint reduction 80 -> 61
     public abstract static class HPyCreateLegacySlotNode extends PNodeWithContext {
 
-        public abstract boolean execute(GraalHPyContext context, Object enclosingType, Object slotDefArrPtr, int i);
+        public abstract boolean execute(GraalHPyContext context, Object enclosingType, TpSlots.Builder tpSlotsBuilder, Object slotDefArrPtr, int i);
 
         @Specialization
-        static boolean doIt(GraalHPyContext context, Object enclosingType, Object slotDefArrPtr, int i,
+        static boolean doIt(GraalHPyContext context, Object enclosingType, TpSlots.Builder tpSlotsBuilder, Object slotDefArrPtr, int i,
                         @Bind("this") Node inliningTarget,
                         @Cached(parameters = "context") GraalHPyCAccess.ReadGenericNode readGenericNode,
                         @Cached(parameters = "context") GraalHPyCAccess.ReadPointerNode readPointerNode,
@@ -1248,6 +1261,15 @@ public abstract class GraalHPyNodes {
             // computes '&(slotDefArrPtr[i].pfunc)'
             long pfuncOffset = ReadGenericNode.getElementPtr(context, i, context.getCTypeSize(HPyContextSignatureType.PyType_Slot), GraalHPyCField.PyType_Slot__pfunc);
             Object pfuncPtr = readPointerNode.execute(context, slotDefArrPtr, pfuncOffset);
+
+            TpSlotMeta tpSlot = slot.getTpSlot();
+            if (tpSlot != null) {
+                // Note: not a HPy native slot, just plain native slot, because it is legacy and
+                // expects PyObject* arguments
+                Object boundExecutable = CExtContext.ensureExecutable(pfuncPtr, tpSlot.getNativeSignature());
+                tpSlotsBuilder.set(tpSlot, TpSlotNative.createCExtSlot(boundExecutable));
+                return true;
+            }
 
             // treatment for special slots 'Py_tp_members', 'Py_tp_getset', 'Py_tp_methods'
             switch (slot) {
@@ -1280,6 +1302,7 @@ public abstract class GraalHPyNodes {
                     break;
                 default:
                     // this is the generic slot case
+                    // TODO: when all CPython compatible slots are implemented, this should go away
                     TruffleString attributeKey = slot.getAttributeKey();
                     if (attributeKey != null) {
                         if (!HPyProperty.keyExists(readAttributeToObjectNode, enclosingType, attributeKey)) {
@@ -2370,6 +2393,8 @@ public abstract class GraalHPyNodes {
 
                 boolean seenNew = false;
                 boolean needsTpTraverse = ((flags & GraalHPyDef.HPy_TPFLAGS_HAVE_GC) != 0);
+                // The builder will collect both the HPy and legacy slots
+                Builder tpSlotsBuilder = TpSlots.newBuilder();
 
                 // process defines
                 Object defines = readPointerNode.read(context, typeSpec, GraalHPyCField.HPyType_Spec__defines);
@@ -2388,7 +2413,7 @@ public abstract class GraalHPyNodes {
                                 property = new HPyProperty(fun.getName(), fun);
                                 break;
                             case GraalHPyDef.HPY_DEF_KIND_SLOT:
-                                Object addSlotResult = addSlotNode.execute(context, newType, def);
+                                Object addSlotResult = addSlotNode.execute(context, newType, tpSlotsBuilder, def);
                                 if (HPY_TP_TRAVERSE.equals(addSlotResult)) {
                                     needsTpTraverse = false;
                                 } else if (addSlotResult instanceof HPyProperty) {
@@ -2437,11 +2462,19 @@ public abstract class GraalHPyNodes {
                         throw raiseNode.raise(TypeError, ErrorMessages.HPY_CANNOT_SPECIFY_LEG_SLOTS_WO_SETTING_LEG);
                     }
                     for (int i = 0;; i++) {
-                        if (!createLegacySlotNode.execute(context, newType, legacySlotsArrPtr, i)) {
+                        if (!createLegacySlotNode.execute(context, newType, tpSlotsBuilder, legacySlotsArrPtr, i)) {
                             break;
                         }
                     }
                 }
+
+                // These are the slots for the type we are creating as specified by the user:
+                TpSlots newSlots = tpSlotsBuilder.build();
+                // Slots inheritance:
+                newType.setTpSlots(newType.getTpSlots().copy().override(newSlots).build());
+                // Create descriptors wrapping the slots, but only the new slots:
+                newSlots.addOperators(newType);
+                TpSlots.fixupSlotDispatchers(newType);
 
                 /*
                  * If 'basicsize > 0' and no explicit constructor is given, the constructor of the

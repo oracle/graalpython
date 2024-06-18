@@ -389,10 +389,52 @@ def test_sq_len_and_item():
                              ''',
                              sq_length="&my_sq_len",
                              sq_item="my_sq_item")
-    x = MySqLenItem()
-    assert x[5] == 5
-    assert x.__getitem__(5) == 5
-    assert x[-1] == 9
-    assert x.__getitem__(-1) == 9
-    assert x[-20] == -10
-    assert x.__getitem__(-20) == -10
+    MySqItemAddDunderLen = CPyExtHeapType("MySqItemAddDunderLen",
+                              code = '''
+                                        PyObject* my_sq_item(PyObject* self, Py_ssize_t index) { return PyLong_FromSsize_t(index); }
+                                        ''',
+                              slots=[
+                                  '{Py_sq_item, &my_sq_item}',
+                              ])
+    MySqItemAddDunderLen.__len__ = lambda self: 10
+
+    def verify(x):
+        assert x[5] == 5
+        assert x.__getitem__(5) == 5
+        assert x[-1] == 9
+        assert x.__getitem__(-1) == 9
+        assert x[-20] == -10
+        assert x.__getitem__(-20) == -10
+
+    verify(MySqLenItem())
+    verify(MySqItemAddDunderLen())
+
+
+def test_mp_len_and_sq_item():
+    MyMpLenSqItem = CPyExtType("MyMpLenSqItem",
+                             '''
+                             Py_ssize_t my_mp_len(PyObject* a) { return 10; }
+                             PyObject* my_sq_item(PyObject* self, Py_ssize_t index) { return PyLong_FromSsize_t(index); }
+                             ''',
+                             mp_length="&my_mp_len",
+                             sq_item="my_sq_item")
+    MyMpLenSqItemHeap = CPyExtHeapType("MyMpLenSqItemHeap",
+                                       code = '''
+                                        Py_ssize_t my_mp_len(PyObject* a) { return 10; }
+                                        PyObject* my_sq_item(PyObject* self, Py_ssize_t index) { return PyLong_FromSsize_t(index); }
+                                        ''',
+                                       slots=[
+                                           '{Py_mp_length, &my_mp_len}',
+                                           '{Py_sq_item, &my_sq_item}',
+                                       ])
+    def verify(x):
+        assert x[5] == 5
+        assert x.__getitem__(5) == 5
+        # no sq_length, negative index is just passed to sq_item
+        assert x[-1] == -1
+        assert x.__getitem__(-1) == -1
+        assert x[-20] == -20
+        assert x.__getitem__(-20) == -20
+
+    verify(MyMpLenSqItem())
+    verify(MyMpLenSqItemHeap())

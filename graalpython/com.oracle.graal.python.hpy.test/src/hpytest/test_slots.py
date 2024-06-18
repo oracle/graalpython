@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -633,7 +633,10 @@ class TestSqSlots(HPyTest):
         assert len(p) == 1234
         assert p[4] == 8
         assert p[21] == 42
-        assert p[-1] == 1233 * 2
+        assert p[-1] == 1233 * 2, str(p[-1])
+        assert p.__getitem__(4) == 8
+        assert p.__getitem__(21) == 42
+        assert p.__getitem__(-1) == 1233 * 2
 
     def test_sq_ass_item(self):
         import pytest
