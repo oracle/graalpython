@@ -317,7 +317,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     }
 
     @Override
-    public boolean isCaptureFramesForTrace() {
+    public boolean isCaptureFramesForTrace(Node node) {
         return false;
     }
 
