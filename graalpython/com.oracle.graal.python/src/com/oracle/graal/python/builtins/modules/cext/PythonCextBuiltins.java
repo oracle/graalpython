@@ -1531,7 +1531,7 @@ public final class PythonCextBuiltins {
                 java.lang.ref.Reference.reachabilityFence(oldReferents);
 
                 if (loggable) {
-                    GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Replicated native refs of %s to managed: %s", repr, Arrays.toString(referents)));
+                    GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Replicated native refs of %s to managed: %s", repr, arraysToString(referents)));
                 }
             } else if (object == null && loggable) {
                 GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Did not replicate native refs of %s: no wrapper", CApiContext.asHex(lPointer)));
@@ -1558,22 +1558,9 @@ public final class PythonCextBuiltins {
             return PNone.NO_VALUE;
         }
 
-        private static boolean arrayEquals(Object[] a, Object[] b) {
-            if (a == null || b == null) {
-                return false;
-            }
-
-            int length = a.length;
-            if (b.length != length) {
-                return false;
-            }
-
-            for (int i = 0; i < length; i++) {
-                if (a[i] != b[i]) {
-                    return false;
-                }
-            }
-            return true;
+        @TruffleBoundary
+        private static String arraysToString(Object[] arr) {
+            return Arrays.toString(arr);
         }
 
         private static boolean isTupleWithNativeStorage(Object object) {
