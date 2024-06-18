@@ -280,10 +280,11 @@ graalpython/com.oracle.graal.python.cext/modules/termios.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/testcapi_long.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodedata_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodename_db.h,python.copyright
+graalpython/com.oracle.graal.python.cext/src/_warnings.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/abstract.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/boolobject.c,python.copyright
-graalpython/com.oracle.graal.python.cext/src/bytesobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/bytearrayobject.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/bytesobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/call.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/capsule.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/codeobject.c,python.copyright
@@ -293,6 +294,7 @@ graalpython/com.oracle.graal.python.cext/src/dictobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/dtoa.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/errors.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/fileobject.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/fileutils.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/floatobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/gcmodule.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getargs.c,python.copyright
@@ -320,7 +322,6 @@ graalpython/com.oracle.graal.python.cext/src/typeobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodectype.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodeobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodetype_db.h,python.copyright
-graalpython/com.oracle.graal.python.cext/src/_warnings.c,python.copyright
 graalpython/com.oracle.graal.python.frozen/freeze_modules.py,python.copyright
 graalpython/com.oracle.graal.python.hpy.llvm/include/hpy.h,hpy.copyright
 graalpython/com.oracle.graal.python.hpy.llvm/include/hpy/autogen_hpyfunc_declare.h,hpy.copyright

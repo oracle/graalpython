@@ -2234,18 +2234,16 @@ public final class PythonContext extends Python3Core {
     }
 
     /**
-     * This method is intended to be called to re-acquire the GIL after a {@link StackOverflowError}
-     * was catched. To reduce the probability that re-acquiring the GIL causes again a
-     * {@link StackOverflowError}, it is important to keep this method as simple as possible. In
-     * particular, do not add calls if there is a way to avoid it.
+     * Acquire GIL after the normal GIL acquisition failed or there is a possibility that finally
+     * blocks were skipped, such as after a {@link StackOverflowError}. To reduce the probability
+     * that re-acquiring the GIL causes again a {@link StackOverflowError}, it is important to keep
+     * this method as simple as possible. In particular, do not add calls if there is a way to avoid
+     * it.
      */
-    public void reacquireGilAfterStackOverflow() {
-        while (!ownsGil()) {
-            try {
-                acquireGil();
-            } catch (InterruptedException ignored) {
-                // just keep trying
-            }
+    @TruffleBoundary
+    public void ensureGilAfterFailure() {
+        if (!ownsGil()) {
+            globalInterpreterLock.lock();
         }
     }
 
