@@ -1127,6 +1127,7 @@ _PyDict_HasOnlyStringKeys(PyObject *dict)
 void
 _PyDict_MaybeUntrack(PyObject *op)
 {
+#if 0 // GraalPy change
     PyDictObject *mp;
     PyObject *value;
     Py_ssize_t i, numentries;
@@ -1138,7 +1139,6 @@ _PyDict_MaybeUntrack(PyObject *op)
     if (!GraalPyTruffleDict_MaybeUntrack(op))
         return;
 
-#if 0 // GraalPy change
     mp = (PyDictObject *) op;
     numentries = mp->ma_keys->dk_nentries;
     if (_PyDict_HasSplitTable(mp)) {
@@ -1171,8 +1171,8 @@ _PyDict_MaybeUntrack(PyObject *op)
             }
         }
     }
-#endif // GraalPy change
     _PyObject_GC_UNTRACK(op);
+#endif // GraalPy change
 }
 
 #if 0 // GraalPy change
