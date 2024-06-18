@@ -494,7 +494,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SSLSyscallError("SSLSyscallError", J__SSL, Flags.EXCEPTION),
     SSLEOFError("SSLEOFError", J__SSL, Flags.EXCEPTION),
     SSLCertVerificationError("SSLCertVerificationError", J__SSL, Flags.EXCEPTION),
-    PForeignException("ForeignException", Flags.FOREIGN_EXCEPTION),
+    PForeignException("ForeignException", J_POLYGLOT, Flags.FOREIGN_EXCEPTION),
 
     // todo: all OS errors
 
