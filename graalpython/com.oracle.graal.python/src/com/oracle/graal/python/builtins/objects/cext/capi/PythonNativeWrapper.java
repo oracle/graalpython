@@ -220,11 +220,6 @@ public abstract class PythonNativeWrapper implements TruffleObject {
                 long updatedRefCount = refCount - 1;
                 CApiTransitions.writeNativeRefCount(pointer, updatedRefCount);
                 assert updatedRefCount >= PythonAbstractObjectNativeWrapper.MANAGED_REFCNT : "invalid refcnt " + updatedRefCount + " during decRef in " + Long.toHexString(getNativePointer());
-                if (updatedRefCount == PythonAbstractObjectNativeWrapper.MANAGED_REFCNT && ref != null) {
-                    // make weak
-                    assert ref.isStrongReference();
-                    ref.setStrongReference(null);
-                }
                 return updatedRefCount;
             }
             return refCount;

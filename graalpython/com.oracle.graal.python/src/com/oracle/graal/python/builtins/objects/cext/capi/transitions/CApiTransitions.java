@@ -1172,14 +1172,15 @@ public abstract class CApiTransitions {
         @Specialization
         static PythonNativeWrapper doGeneric(Node inliningTarget, long pointer,
                         @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
-                        @Cached InlinedExactClassProfile profile) {
+                        @Cached InlinedExactClassProfile profile,
+                        @Cached UpdateRefNode updateRefNode) {
             HandleContext nativeContext = PythonContext.get(inliningTarget).nativeContext;
             int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
             PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer, idx);
             PythonNativeWrapper wrapper = profile.profile(inliningTarget, reference.get());
             assert wrapper != null : "reference was collected: " + Long.toHexString(pointer);
             if (wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                objectNativeWrapper.incRef();
+                updateRefNode.execute(inliningTarget, objectNativeWrapper, objectNativeWrapper.incRef());
             }
             return wrapper;
         }
@@ -1428,8 +1429,9 @@ public abstract class CApiTransitions {
         @Specialization
         static Object doWrapper(PythonNativeWrapper value,
                         @Bind("$node") Node inliningTarget,
-                        @Exclusive @Cached InlinedExactClassProfile wrapperProfile) {
-            return handleWrapper(inliningTarget, wrapperProfile, false, value);
+                        @Exclusive @Cached InlinedExactClassProfile wrapperProfile,
+                        @Cached UpdateRefNode updateRefNode) {
+            return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, false, value);
         }
 
         @Specialization(guards = "!isNativeWrapper(value)", limit = "3")
@@ -1444,7 +1446,8 @@ public abstract class CApiTransitions {
                         @Cached InlinedConditionProfile isNativeProfile,
                         @Cached InlinedConditionProfile isNativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile,
-                        @Exclusive @Cached InlinedExactClassProfile wrapperProfile) {
+                        @Exclusive @Cached InlinedExactClassProfile wrapperProfile,
+                        @Cached UpdateRefNode updateRefNode) {
             assert !(value instanceof TruffleString);
             assert !(value instanceof PythonAbstractObject);
             assert !(value instanceof Number);
@@ -1506,7 +1509,7 @@ public abstract class CApiTransitions {
                     return createAbstractNativeObject(nativeContext, value, needsTransfer(), pointer);
                 }
             }
-            return handleWrapper(inliningTarget, wrapperProfile, needsTransfer(), wrapper);
+            return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, needsTransfer(), wrapper);
         }
 
         /**
@@ -1518,7 +1521,7 @@ public abstract class CApiTransitions {
          * @param wrapper The native wrapper to unwrap.
          * @return The Python value contained in the native wrapper.
          */
-        static Object handleWrapper(Node node, InlinedExactClassProfile wrapperProfile, boolean transfer, PythonNativeWrapper wrapper) {
+        static Object handleWrapper(Node node, InlinedExactClassProfile wrapperProfile, UpdateRefNode updateRefNode, boolean transfer, PythonNativeWrapper wrapper) {
             PythonNativeWrapper profiledWrapper = wrapperProfile.profile(node, wrapper);
             if (transfer && profiledWrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
                 /*
@@ -1532,7 +1535,7 @@ public abstract class CApiTransitions {
                  * MANAGED_REFCNT.
                  */
                 assert objectNativeWrapper.getRefCount() > MANAGED_REFCNT;
-                objectNativeWrapper.decRef();
+                updateRefNode.execute(node, objectNativeWrapper, objectNativeWrapper.decRef());
             }
             if (profiledWrapper instanceof PrimitiveNativeWrapper primitive) {
                 if (primitive.isBool()) {
@@ -1626,7 +1629,8 @@ public abstract class CApiTransitions {
                         @Cached InlinedConditionProfile isNativeProfile,
                         @Cached InlinedConditionProfile isNativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile,
-                        @Cached InlinedExactClassProfile wrapperProfile) {
+                        @Cached InlinedExactClassProfile wrapperProfile,
+                        @Cached UpdateRefNode updateRefNode) {
 
             assert PythonContext.get(null).ownsGil();
             CompilerAsserts.partialEvaluationConstant(stealing);
@@ -1672,7 +1676,7 @@ public abstract class CApiTransitions {
                     return createAbstractNativeObject(nativeContext, new NativePointer(pointer), stealing, pointer);
                 }
             }
-            return NativeToPythonNode.handleWrapper(inliningTarget, wrapperProfile, stealing, wrapper);
+            return NativeToPythonNode.handleWrapper(inliningTarget, wrapperProfile, updateRefNode, stealing, wrapper);
         }
     }
 

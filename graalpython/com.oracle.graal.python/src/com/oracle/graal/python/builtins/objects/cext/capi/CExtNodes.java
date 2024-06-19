@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ResolveHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
@@ -1188,6 +1189,7 @@ public abstract class CExtNodes {
                         @Cached(inline = false) CApiTransitions.ToPythonWrapperNode toPythonWrapperNode,
                         @Cached InlinedBranchProfile isWrapperProfile,
                         @Cached InlinedBranchProfile isNativeObject,
+                        @Cached UpdateRefNode updateRefNode,
                         @Cached(inline = false) CStructAccess.ReadI64Node readRefcount,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeRefcount,
                         @Cached(inline = false) PCallCapiFunction callDealloc) {
@@ -1212,7 +1214,7 @@ public abstract class CExtNodes {
             PythonNativeWrapper wrapper = toPythonWrapperNode.executeWrapper(pointer, false);
             if (wrapper instanceof PythonAbstractObjectNativeWrapper objectWrapper) {
                 isWrapperProfile.enter(inliningTarget);
-                objectWrapper.decRef();
+                updateRefNode.execute(inliningTarget, objectWrapper, objectWrapper.decRef());
             } else if (wrapper == null) {
                 isNativeObject.enter(inliningTarget);
                 assert NativeToPythonNode.executeUncached(new NativePointer(pointer)) instanceof PythonAbstractNativeObject;
@@ -1292,11 +1294,12 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object resolveLongCached(Node inliningTarget, long pointer,
-                        @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
+                        @Exclusive @Cached ResolveHandleNode resolveHandleNode,
+                        @Cached UpdateRefNode updateRefNode) {
             Object lookup = CApiTransitions.lookupNative(pointer);
             if (lookup != null) {
                 if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                    objectNativeWrapper.incRef();
+                    updateRefNode.execute(inliningTarget, objectNativeWrapper, objectNativeWrapper.incRef());
                 }
                 return lookup;
             }
@@ -1309,7 +1312,8 @@ public abstract class CExtNodes {
         @Specialization(guards = "!isLong(pointerObject)")
         static Object resolveGeneric(Node inliningTarget, Object pointerObject,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
+                        @Exclusive @Cached ResolveHandleNode resolveHandleNode,
+                        @Cached UpdateRefNode updateRefNode) {
             if (lib.isPointer(pointerObject)) {
                 Object lookup;
                 long pointer;
@@ -1321,7 +1325,7 @@ public abstract class CExtNodes {
                 lookup = CApiTransitions.lookupNative(pointer);
                 if (lookup != null) {
                     if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                        objectNativeWrapper.incRef();
+                        updateRefNode.execute(inliningTarget, objectNativeWrapper, objectNativeWrapper.incRef());
                     }
                     return lookup;
                 }
