@@ -63,19 +63,19 @@ public class NativeBufferDeallocatorRunnable implements Runnable {
 
     @Override
     public void run() {
-        try {
-            PythonContext pythonContext = PythonContext.get(null);
-            PythonLanguage language = pythonContext.getLanguage();
+        PythonContext pythonContext = PythonContext.get(null);
+        PythonLanguage language = pythonContext.getLanguage();
 
-            while (!pythonContext.getThreadState(language).isShuttingDown()) {
+        while (!pythonContext.getThreadState(language).isShuttingDown()) {
+            try {
                 NativeBufferReference phantomRef = (NativeBufferReference) referenceQueue.remove();
-                if (phantomRef != null) {
-                    unsafe.freeMemory(phantomRef.getMemoryAddress());
-                    references.remove(phantomRef);
-                }
+                unsafe.freeMemory(phantomRef.getMemoryAddress());
+                references.remove(phantomRef);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
             }
-        } catch (PythonThreadKillException | InterruptedException e) {
-            // TODO log it here
         }
+
     }
 }

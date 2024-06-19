@@ -382,6 +382,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "If true, use the system's toolchain for native extension compilation. Otherwise, use the LLVM Toolchain included with GraalVM.") //
     public static final OptionKey<Boolean> UseSystemToolchain = new OptionKey<>(true);
 
+    @EngineOption @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "If true, uses native storage strategy for primitive types") //
+    public static final OptionKey<Boolean> UseNativeStorageStrategy = new OptionKey<>(false);
+
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 
     @CompilationFinal(dimensions = 1) private static final OptionKey<?>[] ENGINE_OPTION_KEYS;

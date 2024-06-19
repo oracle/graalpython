@@ -42,7 +42,7 @@ package com.oracle.graal.python.runtime.sequence.storage.native2;
 
 public class IntArrowSequenceStorage extends ArrowSequenceStorage {
 
-    private static final long TYPE_WIDTH = Integer.BYTES;
+    private static final byte TYPE_WIDTH = Integer.BYTES;
 
     public IntArrowSequenceStorage(NativeBuffer nativeBuffer, int length) {
         super(nativeBuffer, length, TYPE_WIDTH);
@@ -59,12 +59,12 @@ public class IntArrowSequenceStorage extends ArrowSequenceStorage {
     }
 
     public int getIntItemNormalized(int idx) {
-        long indexInBytes = idx * TYPE_WIDTH;
+        long indexInBytes = (long) idx * (long) TYPE_WIDTH;
         return nativeBuffer.getInt(indexInBytes);
     }
 
     public void setIntItemNormalized(int idx, int value) {
-        long indexInBytes = idx * TYPE_WIDTH;
+        long indexInBytes = (long) idx * (long) TYPE_WIDTH;
         nativeBuffer.setInt(indexInBytes, value);
     }
 }

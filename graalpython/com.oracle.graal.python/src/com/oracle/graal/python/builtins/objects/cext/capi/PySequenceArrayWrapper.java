@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import java.util.logging.Level;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapperFactory.ToNativeStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -78,18 +79,18 @@ public final class PySequenceArrayWrapper {
     @GenerateUncached
     public abstract static class ToNativeStorageNode extends Node {
 
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ToNativeStorageNode.class);
+
         public abstract NativeSequenceStorage execute(Node inliningTarget, SequenceStorage object, boolean isBytesLike);
 
         public static NativeSequenceStorage executeUncached(SequenceStorage object, boolean isBytesLike) {
             return ToNativeStorageNodeGen.getUncached().execute(null, object, isBytesLike);
         }
 
-        // TODO Ivo REMOVE warning
         @Specialization(guards = "!isMroSequenceStorage(s)")
-        @SuppressWarnings("truffle-sharing")
         static NativeSequenceStorage doManaged(Node inliningTarget, ArrayBasedSequenceStorage s, boolean isBytesLike,
                         @Exclusive @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
-                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
+                        @Exclusive @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
             Object array;
             if (isBytesLike) {
                 ByteSequenceStorage byteStorage = (ByteSequenceStorage) s;
@@ -100,12 +101,11 @@ public final class PySequenceArrayWrapper {
             return storageToNativeNode.execute(inliningTarget, array, s.length());
         }
 
-        // TODO Ivo TEMPORAL
         @Specialization
-        @SuppressWarnings("truffle-sharing")
         static NativeSequenceStorage doArrow(Node inliningTarget, ArrowSequenceStorage s, boolean isBytesLike,
                         @Exclusive @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
-                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
+                        @Exclusive @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
+            LOGGER.warning("The sequence backed by Arrow Storage is being converted to the Native Storage strategy. This operation is slow and should not typically occur.");
             Object array = getInternalArrayNode.execute(inliningTarget, s);
             return storageToNativeNode.execute(inliningTarget, array, s.length());
         }
