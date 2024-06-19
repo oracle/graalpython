@@ -1684,7 +1684,11 @@ public abstract class CApiTransitions {
      * Very similar to {@link NativePtrToPythonNode}, this node resolves a native pointer (given as
      * Java {@code long}) to a Python object. However, it will never create a fresh
      * {@link PythonAbstractNativeObject} for a native object (it will only return one if it already
-     * exists).
+     * exists). Also, this node won't fail if a tagged pointer is given and the underlying managed
+     * object was collected in the meantime. This is because it may happen that the native object
+     * stub of a managed object is in the GC list and while processing it (e.g. replicating the
+     * native references), the Java GC may collect it. In such cases, we don't want to fail but
+     * return {@code null}.
      */
     @GenerateUncached
     @GenerateInline
@@ -1709,15 +1713,15 @@ public abstract class CApiTransitions {
                 int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
                 PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer, idx);
                 if (reference == null) {
+                    /*
+                     * This should really not happen since it most likely means that we accessed
+                     * free'd memory to read the handle table index.
+                     */
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was freed: " + Long.toHexString(pointer));
                 }
                 PythonNativeWrapper wrapper = reference.get();
-                if (wrapper == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
-                }
-                return wrapper.getDelegate();
+                return wrapper != null ? wrapper.getDelegate() : null;
             } else {
                 IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
                 Object referent;
