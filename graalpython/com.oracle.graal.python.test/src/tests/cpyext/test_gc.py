@@ -206,15 +206,13 @@ if GRAALPY_NATIVE and RELY_ON_GC:
 
 if GRAALPY_NATIVE:
     get_handle_table_id = __graalpython__.get_handle_table_id
-    is_strong_handle_table_ref = __graalpython__.is_strong_handle_table_ref
+    def assert_is_strong(x): assert __graalpython__.is_strong_handle_table_ref(x)
+    def assert_is_weak(x): assert not __graalpython__.is_strong_handle_table_ref(x)
 else:
     # just that the test is compatible with CPython
-    def get_handle_table_id(object):
-        return -1
-
-
-    def is_strong_handle_table_ref(id):
-        return False
+    def get_handle_table_id(object): return -1
+    def assert_is_strong(x): pass
+    def assert_is_weak(x): pass
 
 class TestGCRefCycles:
     def _trigger_gc(self):
@@ -479,12 +477,12 @@ class TestGCRefCycles:
         assert_is_alive(ID_OBJ10)
         assert_is_alive(ID_OBJ11)
         assert_is_alive(ID_OBJ14)
-        assert is_strong_handle_table_ref(htid_l)
-        assert is_strong_handle_table_ref(htid_l1)
-        assert is_strong_handle_table_ref(htid_l2)
-        assert is_strong_handle_table_ref(htid_l3)
-        assert is_strong_handle_table_ref(htid_l4)
-        assert is_strong_handle_table_ref(htid_d0)
+        assert_is_strong(htid_l)
+        assert_is_strong(htid_l1)
+        assert_is_strong(htid_l2)
+        assert_is_strong(htid_l3)
+        assert_is_strong(htid_l4)
+        assert_is_strong(htid_d0)
 
         del obj2, l, obj3
         del obj4, obj5
@@ -510,12 +508,12 @@ class TestGCRefCycles:
         assert_is_alive(ID_OBJ9)
         assert_is_alive(ID_OBJ10)
         assert_is_alive(ID_OBJ14)
-        assert is_strong_handle_table_ref(htid_l2)
-        assert is_strong_handle_table_ref(htid_l3)
-        assert not is_strong_handle_table_ref(htid_l)
-        assert not is_strong_handle_table_ref(htid_l1)
-        assert not is_strong_handle_table_ref(htid_l4)
-        assert not is_strong_handle_table_ref(htid_d0)
+        assert_is_strong(htid_l2)
+        assert_is_strong(htid_l3)
+        assert_is_weak(htid_l)
+        assert_is_weak(htid_l1)
+        assert_is_weak(htid_l4)
+        assert_is_weak(htid_d0)
 
         rescued_obj4 = l1[0]
         del l1
@@ -531,7 +529,7 @@ class TestGCRefCycles:
         assert_is_alive(ID_OBJ5)
         assert_is_alive(ID_OBJ14)
         assert rescued_obj4.get_obj().get_obj()[0] is rescued_obj4
-        assert is_strong_handle_table_ref(htid_l4)
+        assert_is_strong(htid_l4)
 
         del rescued_obj4
 
@@ -551,8 +549,8 @@ class TestGCRefCycles:
 
         assert_is_alive(ID_OBJ12)
         assert_is_alive(ID_OBJ13)
-        assert is_strong_handle_table_ref(htid_l2)
-        assert is_strong_handle_table_ref(htid_l3)
+        assert_is_strong(htid_l2)
+        assert_is_strong(htid_l3)
 
         del obj12, obj13, l2, l3
 
@@ -564,8 +562,8 @@ class TestGCRefCycles:
         assert_is_freed(ID_OBJ5)
         assert_is_freed(ID_OBJ12)
         assert_is_freed(ID_OBJ13)
-        assert not is_strong_handle_table_ref(htid_l2)
-        assert not is_strong_handle_table_ref(htid_l3)
+        assert_is_weak(htid_l2)
+        assert_is_weak(htid_l3)
 
 
     @skipIf(GRAALPY and not GRAALPY_NATIVE, "Python GC only used in native mode")
@@ -634,24 +632,36 @@ class TestGCRefCycles:
                                tp_flags='Py_TPFLAGS_DEFAULT',
                                tp_dealloc='(destructor)tc_dealloc',
                                )
+        if RELY_ON_GC:
+            def assert_is_alive(id):
+                assert not TestCycle.is_freed(id)
+            def assert_is_freed(id):
+                assert TestCycle.is_freed(id)
+        else:
+            def assert_is_alive(id): pass
+            def assert_is_freed(id): pass
+
         l0, l1 = TestCycle.set_list_item(0)
+        htid_l0 = get_handle_table_id(l0)
+        htid_l1 = get_handle_table_id(l1)
 
         ml0, ml1 = list(), list()
         ml0.append(ml1)
         ml0.append(TestCycle(1))
         ml1.append(ml0)
 
-        assert not TestCycle.is_freed(0)
-        assert not TestCycle.is_freed(1)
-        assert l0[0] == l1
-        assert l1[0] == l0
-        assert ml0[0] == ml1
-        assert ml1[0] == ml0
+        assert_is_alive(0)
+        assert_is_alive(1)
+        assert_is_strong(htid_l0)
+        assert_is_strong(htid_l1)
+        assert l0[0] is l1
+        assert l1[0] is l0
+        assert ml0[0] is ml1
+        assert ml1[0] is ml0
 
-        del l0
-        del l1
-        del ml0
-        del ml1
+        del l0, l1, ml0, ml1
         self._trigger_gc()
-        assert TestCycle.is_freed(0)
-        assert TestCycle.is_freed(1)
+        assert_is_freed(0)
+        assert_is_freed(1)
+        assert_is_weak(htid_l0)
+        assert_is_weak(htid_l1)
