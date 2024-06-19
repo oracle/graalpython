@@ -168,6 +168,10 @@ _PyTuple_MaybeUntrack(PyObject *op)
     PyTupleObject *t;
     Py_ssize_t i, n;
 
+    // GraalPy change
+    if (points_to_py_handle_space(op))
+        return;
+
     if (!PyTuple_CheckExact(op) || !_PyObject_GC_IS_TRACKED(op))
         return;
     t = (PyTupleObject *) op;
