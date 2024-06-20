@@ -41,15 +41,18 @@
 package com.oracle.graal.python.runtime.sequence.storage.native2;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.TruffleLogger;
 import sun.misc.Unsafe;
 
 import java.lang.ref.ReferenceQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NativeBufferDeallocatorRunnable implements Runnable {
+    private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(NativeBufferDeallocatorRunnable.class);
 
     private static final Unsafe unsafe = PythonUtils.initUnsafe();
 
@@ -73,9 +76,10 @@ public class NativeBufferDeallocatorRunnable implements Runnable {
                 references.remove(phantomRef);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                LOGGER.fine("Native buffer reference cleaner thread was interrupted and is exiting");
                 return;
             }
         }
-
+        LOGGER.fine("Native buffer reference cleaner thread is exiting.");
     }
 }

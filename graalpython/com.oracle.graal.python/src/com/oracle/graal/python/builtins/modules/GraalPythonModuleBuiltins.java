@@ -78,8 +78,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.runtime.sequence.storage.native2.ArrowSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.native2.ToArrowStorageNode;
 import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -165,7 +163,6 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
