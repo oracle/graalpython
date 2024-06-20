@@ -848,29 +848,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "storage_to_arrow", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class StorageToArrow extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        static Object doArray(PArray array,
-                        @Shared @Cached ToArrowStorageNode toArrowStorageNode,
-                        @Bind("this") Node inliningTarget) {
-            ArrowSequenceStorage newStorage = toArrowStorageNode.execute(inliningTarget, array.getSequenceStorage());
-            array.setSequenceStorage(newStorage);
-            return array;
-        }
-
-        @Specialization
-        Object doSequence(PSequence sequence,
-                        @Shared @Cached ToArrowStorageNode toArrowStorageNode,
-                        @Bind("this") Node inliningTarget) {
-            ArrowSequenceStorage newStorage = toArrowStorageNode.execute(inliningTarget, sequence.getSequenceStorage());
-            sequence.setSequenceStorage(newStorage);
-            return sequence;
-        }
-    }
-
     @Builtin(name = J_EXTEND, minNumOfPositionalArgs = 1, doc = "Extends Java class and return HostAdapterCLass")
     @GenerateNodeFactory
     public abstract static class JavaExtendNode extends PythonUnaryBuiltinNode {
