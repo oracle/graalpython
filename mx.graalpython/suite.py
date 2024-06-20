@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "7.19.0",
+    "mxversion": "7.27.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -106,7 +106,7 @@ suite = {
             "urls": [
                 "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/setuptools-40.6.3.zip",
             ],
-            "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
+            "digest": "sha512:16920fd41f398696c563417049472c0d81abb2d293ecb45bbbe97c12651669833e34eac238e2e4a6f8761ea58fb39806425d2741e88e8c3097fe2b5457ebf488",
         },
         "XZ-5.2.6": {
             "urls": [
