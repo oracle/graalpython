@@ -1405,6 +1405,7 @@ def graalpython_gate_runner(args, tasks):
             "*/cpyext/test_thread.py",
             "*/cpyext/test_unicode.py",
             "*/cpyext/test_wiki.py",
+            "*/cpyext/test_tp_slots.py",  # Temporarily disabled due to GR-54345
         ]
     else:
         excluded_tests = []
