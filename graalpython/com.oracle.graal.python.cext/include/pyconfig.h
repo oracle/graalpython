@@ -165,6 +165,7 @@
 #define HAVE_WCHAR_H 1
 
 #define WITH_THREAD 1
+#define WITH_DOC_STRINGS 1
 
 #ifndef MS_WINDOWS
 #define HAVE_UNISTD_H
