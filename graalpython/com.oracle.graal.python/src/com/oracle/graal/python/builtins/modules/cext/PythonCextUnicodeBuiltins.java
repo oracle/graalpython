@@ -127,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
+import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -630,9 +631,10 @@ public final class PythonCextUnicodeBuiltins {
     abstract static class PyUnicode_AsUnicodeEscapeString extends CApiUnaryBuiltinNode {
         @Specialization(guards = "isString(s)")
         static Object escape(Object s,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached CodecsEncodeNode encodeNode,
-                        @Shared @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode getItemNode) {
-            return getItemNode.execute(null, encodeNode.execute(null, s, T_UNICODE_ESCAPE, PNone.NO_VALUE), 0);
+                        @Shared @Cached PyTupleGetItem getItemNode) {
+            return getItemNode.execute(inliningTarget, encodeNode.execute(null, s, T_UNICODE_ESCAPE, PNone.NO_VALUE), 0);
         }
 
         @Specialization(guards = {"!isString(s)", "isStringSubtype(inliningTarget, s, getClassNode, isSubtypeNode)"})
@@ -641,8 +643,8 @@ public final class PythonCextUnicodeBuiltins {
                         @Shared @Cached CodecsEncodeNode encodeNode,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
-                        @Shared @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode getItemNode) {
-            return escape(s, encodeNode, getItemNode);
+                        @Shared @Cached PyTupleGetItem getItemNode) {
+            return escape(s, inliningTarget, encodeNode, getItemNode);
         }
 
         @Specialization(guards = {"!isString(obj)", "!isStringSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})

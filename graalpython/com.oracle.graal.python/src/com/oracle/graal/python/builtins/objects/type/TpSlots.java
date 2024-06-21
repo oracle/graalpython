@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
@@ -69,14 +70,18 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.BinarySlotFuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrGetFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrSetFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.GetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InquiryWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.LenfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetattrWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeargfuncSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WritePointerNode;
@@ -86,10 +91,13 @@ import com.oracle.graal.python.builtins.objects.type.TpSlotsFactory.GetTpSlotsNo
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotHPyNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.TpSlotBinaryFuncBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.TpSlotDescrGetBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.TpSlotDescrSetBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.TpSlotDescrSetPython;
@@ -99,11 +107,14 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.TpSlotI
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.TpSlotLenBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.TpSlotSetAttrBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.TpSlotSetAttrPython;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.TpSlotSizeArgFunBuiltin;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.InlineWeakValueProfile;
@@ -129,7 +140,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * This is GraalPy equivalent of the same fields in CPython's {@code PyTypeObject}.
  * <p>
  * Summary of the interactions:
- * 
+ *
  * <pre>
  *     Builtins:
  *      - initialization of the slots: static ctor of {@link PythonBuiltinClassType}
@@ -173,13 +184,15 @@ import com.oracle.truffle.api.strings.TruffleString;
  * <p>
  * Note: fields with "combined" prefix, such as {@link #combined_sq_mp_length()}, are optimization:
  * the value is {@link #sq_length()} if non-null otherwise {@link #mp_length()}.
- * 
+ *
  * @param tp_getattr Note: in CPython, this slot is considered deprecated and the preferred slot
  *            should be {@link #tp_getattro()}. We assume that no builtins define this slot.
  */
 public record TpSlots(TpSlot nb_bool, //
                 TpSlot sq_length, //
+                TpSlot sq_item, //
                 TpSlot mp_length, //
+                TpSlot mp_subscript, //
                 TpSlot combined_sq_mp_length, //
                 TpSlot combined_mp_sq_length, //
                 TpSlot tp_descr_get, //
@@ -189,7 +202,10 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot combined_tp_getattro_getattr, //
                 TpSlot tp_setattro, //
                 TpSlot tp_setattr,
-                TpSlot combined_tp_setattro_setattr) {
+                TpSlot combined_tp_setattro_setattr,
+                boolean has_as_number,
+                boolean has_as_sequence,
+                boolean has_as_mapping) {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(TpSlot.class);
 
@@ -248,6 +264,19 @@ public record TpSlots(TpSlot nb_bool, //
         }
     }
 
+    public enum TpSlotGroup {
+        NO_GROUP(null),
+        AS_NUMBER(CFields.PyTypeObject__tp_as_number),
+        AS_SEQUENCE(CFields.PyTypeObject__tp_as_sequence),
+        AS_MAPPING(CFields.PyTypeObject__tp_as_mapping);
+
+        private final CFields cField;
+
+        TpSlotGroup(CFields cField) {
+            this.cField = cField;
+        }
+    }
+
     /**
      * Metadata for each slot field.
      */
@@ -256,7 +285,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlots::nb_bool,
                         TpSlotPythonSingle.class,
                         TpSlotInquiryBuiltin.class,
-                        CFields.PyTypeObject__tp_as_number,
+                        TpSlotGroup.AS_NUMBER,
                         CFields.PyNumberMethods__nb_bool,
                         PExternalFunctionWrapper.INQUIRY,
                         InquiryWrapper::new),
@@ -264,64 +293,80 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlots::sq_length,
                         TpSlotPythonSingle.class,
                         TpSlotLenBuiltin.class,
-                        CFields.PyTypeObject__tp_as_sequence,
+                        TpSlotGroup.AS_SEQUENCE,
                         CFields.PySequenceMethods__sq_length,
                         PExternalFunctionWrapper.LENFUNC,
                         LenfuncWrapper::new),
+        SQ_ITEM(
+                        TpSlots::sq_item,
+                        TpSlotPythonSingle.class,
+                        TpSlotSizeArgFunBuiltin.class,
+                        TpSlotGroup.AS_SEQUENCE,
+                        CFields.PySequenceMethods__sq_item,
+                        PExternalFunctionWrapper.GETITEM,
+                        SsizeargfuncSlotWrapper::new),
         MP_LENGTH(
                         TpSlots::mp_length,
                         TpSlotPythonSingle.class,
                         TpSlotLenBuiltin.class,
-                        CFields.PyTypeObject__tp_as_mapping,
+                        TpSlotGroup.AS_MAPPING,
                         CFields.PyMappingMethods__mp_length,
                         PExternalFunctionWrapper.LENFUNC,
                         LenfuncWrapper::new),
+        MP_SUBSCRIPT(
+                        TpSlots::mp_subscript,
+                        TpSlotPythonSingle.class,
+                        TpSlotBinaryFuncBuiltin.class,
+                        TpSlotGroup.AS_MAPPING,
+                        CFields.PyMappingMethods__mp_subscript,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinarySlotFuncWrapper::new),
         TP_DESCR_GET(
                         TpSlots::tp_descr_get,
                         TpSlotPythonSingle.class,
                         TpSlotDescrGetBuiltin.class,
+                        TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_descr_get,
-                        null,
                         PExternalFunctionWrapper.DESCR_GET,
                         DescrGetFunctionWrapper::new),
         TP_DESCR_SET(
                         TpSlots::tp_descr_set,
                         TpSlotDescrSetPython.class,
                         TpSlotDescrSetBuiltin.class,
+                        TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_descr_set,
-                        null,
                         PExternalFunctionWrapper.DESCR_SET,
                         DescrSetFunctionWrapper::new),
         TP_GETATTRO(
                         TpSlots::tp_getattro,
                         TpSlotGetAttrPython.class,
                         TpSlotGetAttrBuiltin.class,
+                        TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_getattro,
-                        null,
                         PExternalFunctionWrapper.BINARYFUNC,
                         GetAttrWrapper::new),
         TP_GETATTR(
                         TpSlots::tp_getattr,
                         null,
                         null,
+                        TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_getattr,
-                        null,
                         PExternalFunctionWrapper.GETATTR,
                         new NativeWrapperFactory.ShouldNotReach("tp_getattr")),
         TP_SETATTRO(
                         TpSlots::tp_setattro,
                         TpSlotSetAttrPython.class,
                         TpSlotSetAttrBuiltin.class,
+                        TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_setattro,
-                        null,
                         PExternalFunctionWrapper.SETATTRO,
                         SetattrWrapper::new),
         TP_SETATTR(
                         TpSlots::tp_setattr,
                         null,
                         null,
+                        TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_setattr,
-                        null,
                         PExternalFunctionWrapper.SETATTR,
                         new NativeWrapperFactory.ShouldNotReach("tp_setattr"));
 
@@ -330,20 +375,27 @@ public record TpSlots(TpSlot nb_bool, //
         private final TpSlotGetter getter;
         private final Class<? extends TpSlotPython> permittedPythonSlotClass;
         @SuppressWarnings("rawtypes") private final Class<? extends TpSlotBuiltin> permittedBuiltinSlotClass;
+        private final TpSlotGroup group;
         private final CFields nativeGroupOrField;
         private final CFields nativeField;
         private final PExternalFunctionWrapper nativeSignature;
         private final NativeWrapperFactory nativeWrapperFactory;
 
         TpSlotMeta(TpSlotGetter getter, Class<? extends TpSlotPython> permittedPythonSlotClass, @SuppressWarnings("rawtypes") Class<? extends TpSlotBuiltin> permittedBuiltinSlotClass,
-                        CFields nativeGroupOrField, CFields nativeField, PExternalFunctionWrapper nativeSignature, NativeWrapperFactory nativeWrapperFactory) {
+                        TpSlotGroup group, CFields nativeField, PExternalFunctionWrapper nativeSignature, NativeWrapperFactory nativeWrapperFactory) {
             this.permittedPythonSlotClass = permittedPythonSlotClass;
             this.permittedBuiltinSlotClass = permittedBuiltinSlotClass;
             this.nativeWrapperFactory = nativeWrapperFactory;
-            assert nativeGroupOrField != null;
             this.getter = getter;
-            this.nativeGroupOrField = nativeGroupOrField;
-            this.nativeField = nativeField;
+            assert group != null;
+            this.group = group;
+            if (group == TpSlotGroup.NO_GROUP) {
+                this.nativeGroupOrField = nativeField;
+                this.nativeField = null;
+            } else {
+                this.nativeGroupOrField = group.cField;
+                this.nativeField = nativeField;
+            }
             this.nativeSignature = nativeSignature;
         }
 
@@ -414,6 +466,14 @@ public record TpSlots(TpSlot nb_bool, //
         public boolean hasNativeWrapperFactory() {
             return !(nativeWrapperFactory instanceof NativeWrapperFactory.Unimplemented);
         }
+
+        public PExternalFunctionWrapper getNativeSignature() {
+            return nativeSignature;
+        }
+
+        public TpSlotGroup getGroup() {
+            return group;
+        }
     }
 
     /**
@@ -425,13 +485,22 @@ public record TpSlots(TpSlot nb_bool, //
      * @param functionFactory {@code descrobject.h:wrapperbase#function}
      * @param wrapper {@code descrobject.h:wrapperbase#wrapper}
      */
-    public record TpSlotDef(TruffleString name, PythonFunctionFactory functionFactory, PExternalFunctionWrapper wrapper) {
+    public record TpSlotDef(TruffleString name, PythonFunctionFactory functionFactory,
+                    PExternalFunctionWrapper wrapper, HPySlotWrapper hpyWrapper) {
+        public static TpSlotDef withoutHPy(TruffleString name, PythonFunctionFactory functionFactory, PExternalFunctionWrapper wrapper) {
+            return new TpSlotDef(name, functionFactory, wrapper, null);
+        }
+
         public static TpSlotDef withSimpleFunction(TruffleString name, PExternalFunctionWrapper wrapper) {
-            return new TpSlotDef(name, SimplePythonWrapper.INSTANCE, wrapper);
+            return new TpSlotDef(name, SimplePythonWrapper.INSTANCE, wrapper, null);
+        }
+
+        public static TpSlotDef withSimpleFunction(TruffleString name, PExternalFunctionWrapper wrapper, HPySlotWrapper hpyWrapper) {
+            return new TpSlotDef(name, SimplePythonWrapper.INSTANCE, wrapper, hpyWrapper);
         }
 
         public static TpSlotDef withNoFunctionNoWrapper(TruffleString name) {
-            return new TpSlotDef(name, null, null);
+            return new TpSlotDef(name, null, null, null);
         }
     }
 
@@ -458,18 +527,20 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotDef.withNoFunctionNoWrapper(T___SETATTR__),
                         TpSlotDef.withNoFunctionNoWrapper(T___DELATTR__));
         addSlotDef(s, TpSlotMeta.TP_GETATTRO,
-                        new TpSlotDef(T___GETATTRIBUTE__, TpSlotGetAttrPython::create, PExternalFunctionWrapper.BINARYFUNC),
-                        new TpSlotDef(T___GETATTR__, TpSlotGetAttrPython::create, null));
+                        TpSlotDef.withoutHPy(T___GETATTRIBUTE__, TpSlotGetAttrPython::create, PExternalFunctionWrapper.BINARYFUNC),
+                        TpSlotDef.withoutHPy(T___GETATTR__, TpSlotGetAttrPython::create, null));
         addSlotDef(s, TpSlotMeta.TP_SETATTRO,
-                        new TpSlotDef(T___SETATTR__, TpSlotSetAttrPython::create, PExternalFunctionWrapper.SETATTRO),
-                        new TpSlotDef(T___DELATTR__, TpSlotSetAttrPython::create, PExternalFunctionWrapper.DELATTRO));
+                        TpSlotDef.withoutHPy(T___SETATTR__, TpSlotSetAttrPython::create, PExternalFunctionWrapper.SETATTRO),
+                        TpSlotDef.withoutHPy(T___DELATTR__, TpSlotSetAttrPython::create, PExternalFunctionWrapper.DELATTRO));
         addSlotDef(s, TpSlotMeta.TP_DESCR_GET, TpSlotDef.withSimpleFunction(T___GET__, PExternalFunctionWrapper.DESCR_GET));
         addSlotDef(s, TpSlotMeta.TP_DESCR_SET, //
-                        new TpSlotDef(T___SET__, TpSlotDescrSetPython::create, PExternalFunctionWrapper.DESCR_SET), //
-                        new TpSlotDef(T___DELETE__, TpSlotDescrSetPython::create, PExternalFunctionWrapper.DESCR_DELETE));
+                        TpSlotDef.withoutHPy(T___SET__, TpSlotDescrSetPython::create, PExternalFunctionWrapper.DESCR_SET), //
+                        TpSlotDef.withoutHPy(T___DELETE__, TpSlotDescrSetPython::create, PExternalFunctionWrapper.DESCR_DELETE));
         addSlotDef(s, TpSlotMeta.NB_BOOL, TpSlotDef.withSimpleFunction(T___BOOL__, PExternalFunctionWrapper.INQUIRY));
-        addSlotDef(s, TpSlotMeta.MP_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC));
-        addSlotDef(s, TpSlotMeta.SQ_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC));
+        addSlotDef(s, TpSlotMeta.MP_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC, HPySlotWrapper.LENFUNC));
+        addSlotDef(s, TpSlotMeta.MP_SUBSCRIPT, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.SQ_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC, HPySlotWrapper.LENFUNC));
+        addSlotDef(s, TpSlotMeta.SQ_ITEM, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.GETITEM, HPySlotWrapper.SQ_ITEM));
 
         SLOTDEFS = s;
         SPECIAL2SLOT = new HashMap<>(SLOTDEFS.size() * 2);
@@ -480,14 +551,6 @@ public record TpSlots(TpSlot nb_bool, //
                 SPECIAL2SLOTDEF.computeIfAbsent(slotDef.name(), k -> new HashSet<>()).add(e);
             }
         }
-    }
-
-    public boolean hasMappingGroup() {
-        return mp_length() != null;
-    }
-
-    public boolean hasSequenceGroup() {
-        return sq_length() != null;
     }
 
     public static TpSlots createEmpty() {
@@ -564,7 +627,7 @@ public record TpSlots(TpSlot nb_bool, //
             // There is no mapping from this pointer to existing TpSlot, we create a new
             // TpSlotNative wrapping the executable
             Object executable = CExtContext.ensureExecutable(field, def.nativeSignature);
-            builder.set(def, new TpSlotNative(executable));
+            builder.set(def, TpSlotNative.createCExtSlot(executable));
         }
         return builder.build();
     }
@@ -749,7 +812,7 @@ public record TpSlots(TpSlot nb_bool, //
                 }
                 // Is the value a builtin function (in CPython PyWrapperDescr_Type) that wraps a
                 // builtin or native slot?
-                if (decr instanceof PBuiltinFunction builtin) {
+                if (decr instanceof PBuiltinFunction builtin && builtin.getSlot() != null) {
                     /*
                      * CPython source comment: if the special method is a wrapper_descriptor with
                      * the correct name but the type has precisely one slot set for that name and
@@ -877,6 +940,56 @@ public record TpSlots(TpSlot nb_bool, //
         }
     }
 
+    /**
+     * Version of CPython's {@code add_operators} that assumes only native slots. This is useful for
+     * the HPy case where users cannot "steal" other type's slots or builtin slots. TODO: (GR-53923)
+     * extend this to support python/builtin slots, use it instead of PyTruffleType_AddSlot upcalls.
+     */
+    @TruffleBoundary
+    public void addOperators(PythonClass type) {
+        // Current version assumes no dict and writes to the object directly
+        assert GetDictIfExistsNode.getUncached().execute(type) == null;
+
+        PythonContext context = PythonContext.get(null);
+        var factory = context.factory();
+        PythonLanguage language = context.getLanguage();
+        for (Entry<TpSlotMeta, TpSlotDef[]> slotDefEntry : SLOTDEFS.entrySet()) {
+            TpSlotMeta tpSlotMeta = slotDefEntry.getKey();
+            for (TpSlotDef tpSlotDef : slotDefEntry.getValue()) {
+                if (tpSlotDef.wrapper == null) {
+                    continue;
+                }
+                TpSlot value = tpSlotMeta.getValue(this);
+                if (value == null) {
+                    continue;
+                }
+                Object existingValue = ReadAttributeFromObjectNode.getUncachedForceType().execute(type, tpSlotDef.name);
+                if (!PGuards.isNoValue(existingValue)) {
+                    continue;
+                }
+                // TODO: special case for PyObject_HashNotImplemented once we have tp_hash
+                Object wrapperDescriptor = null;
+                if (value instanceof TpSlotBuiltin<?> builtinSlot) {
+                    wrapperDescriptor = builtinSlot.createBuiltin(context, type, tpSlotDef.name, tpSlotDef.wrapper);
+                } else if (value instanceof TpSlotPython) {
+                    // TODO: see CExtNodes$CreateFunctionNode
+                    throw new IllegalStateException("addOperators: TpSlotPython not implemented yet");
+                } else if (value instanceof TpSlotNative nativeSlot) {
+                    if (nativeSlot instanceof TpSlotHPyNative hpySlot) {
+                        wrapperDescriptor = HPyExternalFunctionNodes.createWrapperFunction(language, context.getHPyContext(), tpSlotDef.hpyWrapper, hpySlot, tpSlotDef.wrapper, tpSlotDef.name,
+                                        nativeSlot.getCallable(), type,
+                                        factory);
+                    } else {
+                        wrapperDescriptor = PExternalFunctionWrapper.createWrapperFunction(tpSlotDef.name, (TpSlotCExtNative) nativeSlot, type, tpSlotDef.wrapper, language, factory);
+                    }
+                }
+                assert wrapperDescriptor != null;
+                // TODO: optionally take TpDict and write into it if provided
+                WriteAttributeToPythonObjectNode.executeUncached(type, tpSlotDef.name, wrapperDescriptor);
+            }
+        }
+    }
+
     public Builder copy() {
         var result = new Builder();
         for (TpSlotMeta def : TpSlotMeta.VALUES) {
@@ -948,6 +1061,15 @@ public record TpSlots(TpSlot nb_bool, //
             return values[s.ordinal()];
         }
 
+        private boolean hasGroup(TpSlotGroup group) {
+            for (TpSlotMeta def : TpSlotMeta.VALUES) {
+                if (def.group == group && values[def.ordinal()] != null) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public TpSlots build() {
             TpSlot sq_mp_length = fistNonNull(TpSlotMeta.SQ_LENGTH, TpSlotMeta.MP_LENGTH);
             TpSlot mp_sq_length = fistNonNull(TpSlotMeta.MP_LENGTH, TpSlotMeta.SQ_LENGTH);
@@ -956,7 +1078,9 @@ public record TpSlots(TpSlot nb_bool, //
             return new TpSlots(
                             get(TpSlotMeta.NB_BOOL), //
                             get(TpSlotMeta.SQ_LENGTH), //
+                            get(TpSlotMeta.SQ_ITEM), //
                             get(TpSlotMeta.MP_LENGTH), //
+                            get(TpSlotMeta.MP_SUBSCRIPT), //
                             sq_mp_length, //
                             mp_sq_length, //
                             get(TpSlotMeta.TP_DESCR_GET), //
@@ -966,7 +1090,10 @@ public record TpSlots(TpSlot nb_bool, //
                             tp_get_attro_attr,
                             get(TpSlotMeta.TP_SETATTRO),
                             get(TpSlotMeta.TP_SETATTR),
-                            tp_set_attro_attr);
+                            tp_set_attro_attr,
+                            hasGroup(TpSlotGroup.AS_NUMBER),
+                            hasGroup(TpSlotGroup.AS_SEQUENCE),
+                            hasGroup(TpSlotGroup.AS_MAPPING));
         }
     }
 

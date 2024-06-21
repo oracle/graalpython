@@ -33,7 +33,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
@@ -74,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyDictSetDefault;
@@ -98,6 +98,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -265,24 +266,34 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.mp_subscript, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetItemNode extends MpSubscriptBuiltinNode {
         @Child private DispatchMissingNode missing;
 
         @Specialization
         Object getItem(VirtualFrame frame, PDict self, Object key,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingStorageGetItem getItem) {
+                        @Cached InlinedConditionProfile notFoundProfile,
+                        @Cached HashingStorageGetItem getItem,
+                        @Cached PRaiseNode raiseNode) {
             final Object result = getItem.execute(frame, inliningTarget, self.getDictStorage(), key);
-            if (result == null) {
+            if (notFoundProfile.profile(inliningTarget, result == null)) {
+                return handleMissing(frame, self, key, raiseNode);
+            }
+            return result;
+        }
+
+        @InliningCutoff
+        private Object handleMissing(VirtualFrame frame, PDict self, Object key, PRaiseNode raiseNode) {
+            if (!PGuards.isBuiltinDict(self)) {
                 if (missing == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     missing = insert(DispatchMissingNodeGen.create());
                 }
                 return missing.execute(frame, self, key);
             }
-            return result;
+            throw raiseNode.raise(KeyError, new Object[]{key});
         }
     }
 

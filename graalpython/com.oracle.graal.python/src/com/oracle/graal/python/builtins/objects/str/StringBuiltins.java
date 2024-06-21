@@ -41,7 +41,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
@@ -133,7 +132,9 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -2464,10 +2465,23 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_item, isComplex = true)
+    @GenerateNodeFactory
+    public abstract static class StrSqItemNode extends SqItemBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object self, int index,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringCheckedNode castToString,
+                        @Cached TruffleString.SubstringNode substringNode) {
+            TruffleString str = castToString.cast(inliningTarget, self, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETITEM__, "str", self);
+            return substringNode.execute(str, index, 1, TS_ENCODING, false);
+        }
+    }
+
+    @Slot(value = SlotKind.mp_subscript, isComplex = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class StrGetItemNode extends PythonBinaryBuiltinNode {
+    public abstract static class StrGetItemNode extends MpSubscriptBuiltinNode {
 
         @Specialization
         static TruffleString doString(VirtualFrame frame, Object self, PSlice slice,

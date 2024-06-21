@@ -29,7 +29,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
@@ -68,15 +67,17 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CmpNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ConcatNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageMpSubscriptNode;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -84,9 +85,9 @@ import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
@@ -274,54 +275,39 @@ public final class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
-    @ImportStatic({MathGuards.class, PGuards.class})
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Slot(value = SlotKind.sq_item, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
-
-        public abstract Object execute(VirtualFrame frame, PTuple tuple, Object index);
-
-        public abstract Object execute(VirtualFrame frame, PTuple tuple, int index);
-
+    public abstract static class TupleSqItem extends SqItemBuiltinNode {
         @Specialization
-        static Object doInBounds(PTuple tuple, int index,
-                        @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(tuple.getSequenceStorage(), index);
+        static Object doIt(Object self, int index,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyTupleGetItem getItem) {
+            return getItem.execute(inliningTarget, self, index);
         }
+    }
 
-        @InliningCutoff
-        @Specialization(guards = "indexCheck.execute(this, key)")
-        static Object doIndex(VirtualFrame frame, PTuple tuple, Object key,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheck,
-                        @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
-        }
-
-        @InliningCutoff
+    // TODO: replace calls to GetItemNode with TupleSqItem where appropriate
+    @Slot(value = SlotKind.mp_subscript, isComplex = true)
+    @GenerateNodeFactory
+    public abstract static class GetItemNode extends MpSubscriptBuiltinNode {
         @Specialization
-        static Object doSlice(VirtualFrame frame, PTuple tuple, PSlice key,
-                        @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
+        static Object doIt(VirtualFrame frame, Object self, Object idx,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile validProfile,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached GetTupleStorage getTupleStorage,
+                        @Cached SequenceStorageMpSubscriptNode subscriptNode) {
+            if (!validProfile.profile(inliningTarget, SequenceStorageMpSubscriptNode.isValidIndex(inliningTarget, idx, indexCheckNode))) {
+                raiseNonIntIndex(inliningTarget, raiseNode, idx);
+            }
+            return subscriptNode.execute(frame, inliningTarget, getTupleStorage.execute(inliningTarget, self), idx,
+                            ErrorMessages.TUPLE_OUT_OF_BOUNDS, PythonObjectFactory::createTuple);
         }
 
         @InliningCutoff
-        @Specialization(guards = "indexCheck.execute(inliningTarget, key) || isPSlice(key)")
-        static Object doNative(VirtualFrame frame, PythonAbstractNativeObject tuple, Object key,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheck,
-                        @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached GetNativeTupleStorage asNativeStorage) {
-            return getItemNode.execute(frame, asNativeStorage.execute(tuple), key);
-        }
-
-        @SuppressWarnings("unused")
-        @InliningCutoff
-        @Fallback
-        static Object doError(VirtualFrame frame, Object tuple, Object key,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "tuple", key);
+        private static void raiseNonIntIndex(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object index) {
+            raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "tuple", index);
         }
     }
 

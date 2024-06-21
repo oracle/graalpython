@@ -86,6 +86,8 @@ public abstract class ErrorMessages {
     public static final TruffleString ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P = tsLiteral("argument should be bytes, buffer or ASCII string, not '%p'");
     public static final TruffleString ARRAY_ASSIGN_OUT_OF_BOUNDS = tsLiteral("array assignment index out of range");
     public static final TruffleString ARRAY_OUT_OF_BOUNDS = tsLiteral("array index out of range");
+    public static final TruffleString S_INDEX_OUT_OF_RANGE = tsLiteral("%s index out of range");
+    public static final TruffleString ARRAY_INDICES_MUST_BE_INTS = tsLiteral("array indices must be integers");
     public static final TruffleString AST_IDENTIFIER_MUST_BE_OF_TYPE_STR = tsLiteral("AST identifier must be of type str");
     public static final TruffleString AST_STRING_MUST_BE_OF_TYPE_STR = tsLiteral("AST string must be of type str");
     public static final TruffleString ATTEMPTING_READ_FROM_OFFSET_D = tsLiteral("Attempting to read from offset %d but object '%s' has no associated native space.");
@@ -137,6 +139,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BYTECODE_VERSION_MISMATCH = tsLiteral("Bytecode version mismatch, expected %d actual %d");
     public static final TruffleString BYTE_STR_IS_TOO_LARGE = tsLiteral("byte string is too large");
     public static final TruffleString BYTEARRAY_OUT_OF_BOUNDS = tsLiteral("bytearray index out of range");
+    public static final TruffleString BYTES_OUT_OF_BOUNDS = tsLiteral("bytes index out of range");
     public static final TruffleString BYTEORDER_MUST_BE_LITTLE_OR_BIG = tsLiteral("byteorder must be either 'little' or 'big'");
     public static final TruffleString BYTESLIKE_OBJ_REQUIRED = tsLiteral("a bytes-like object is required, not '%p'");
     public static final TruffleString BYTE_STRING_OF_LEN_ONE_ONLY = tsLiteral("%s argument 2 must be a byte string of length 1, not %s");
@@ -1628,4 +1631,6 @@ public abstract class ErrorMessages {
     public static final TruffleString LINENO_MUST_BE_AN_INTEGER = tsLiteral("lineno must be an integer");
 
     public static final TruffleString LINENO_OUT_OF_RANGE = tsLiteral("lineno out of range");
+
+    public static final TruffleString SEQUENCE_INDEX_MUST_BE_INT_NOT_P = tsLiteral("sequence index must be integer, not '%p'");
 }

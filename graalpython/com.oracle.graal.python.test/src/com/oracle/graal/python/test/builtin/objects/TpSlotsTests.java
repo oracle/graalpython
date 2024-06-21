@@ -40,11 +40,14 @@
  */
 package com.oracle.graal.python.test.builtin.objects;
 
+import java.util.EnumSet;
+
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.Builder;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotGroup;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
@@ -57,7 +60,7 @@ public class TpSlotsTests {
         for (TpSlotMeta def : TpSlotMeta.VALUES) {
             // Use the TpSlotMeta as dummy "callable" object to verify that the slot values were
             // properly assigned to the right fields of TpSlots record
-            builder.set(def, new TpSlotNative(def));
+            builder.set(def, TpSlotNative.createCExtSlot(def));
         }
 
         TpSlots slots = builder.build();
@@ -72,9 +75,9 @@ public class TpSlotsTests {
     @Test
     public void testBuilderOptimizations1() {
         Builder builder = TpSlots.newBuilder();
-        builder.set(TpSlotMeta.MP_LENGTH, new TpSlotNative(TpSlotMeta.MP_LENGTH));
-        builder.set(TpSlotMeta.TP_GETATTR, new TpSlotNative(TpSlotMeta.TP_GETATTR));
-        builder.set(TpSlotMeta.TP_SETATTR, new TpSlotNative(TpSlotMeta.TP_SETATTR));
+        builder.set(TpSlotMeta.MP_LENGTH, TpSlotNative.createCExtSlot(TpSlotMeta.MP_LENGTH));
+        builder.set(TpSlotMeta.TP_GETATTR, TpSlotNative.createCExtSlot(TpSlotMeta.TP_GETATTR));
+        builder.set(TpSlotMeta.TP_SETATTR, TpSlotNative.createCExtSlot(TpSlotMeta.TP_SETATTR));
 
         TpSlots slots = builder.build();
         verifySlots(slots, def -> def == TpSlotMeta.MP_LENGTH || def == TpSlotMeta.TP_GETATTR || def == TpSlotMeta.TP_SETATTR);
@@ -88,7 +91,7 @@ public class TpSlotsTests {
     @Test
     public void testBuilderOptimizations2() {
         Builder builder = TpSlots.newBuilder();
-        builder.set(TpSlotMeta.SQ_LENGTH, new TpSlotNative(TpSlotMeta.SQ_LENGTH));
+        builder.set(TpSlotMeta.SQ_LENGTH, TpSlotNative.createCExtSlot(TpSlotMeta.SQ_LENGTH));
 
         TpSlots slots = builder.build();
         verifySlots(slots, def -> def == TpSlotMeta.SQ_LENGTH);
@@ -99,12 +102,23 @@ public class TpSlotsTests {
     }
 
     private static void verifySlots(TpSlots slots, Function<TpSlotMeta, Boolean> checkNonNullValue) {
+        var groupsSeen = EnumSet.noneOf(TpSlotGroup.class);
         for (TpSlotMeta def : TpSlotMeta.VALUES) {
             TpSlot slotValue = def.getValue(slots);
             if (checkNonNullValue.apply(def)) {
                 checkSlotValue(def, slotValue);
+                groupsSeen.add(def.getGroup());
             } else {
                 Assert.assertNull(def.name(), slotValue);
+            }
+        }
+        for (TpSlotGroup group : TpSlotGroup.values()) {
+            switch (group) {
+                case NO_GROUP -> {
+                }
+                case AS_NUMBER -> Assert.assertEquals(slots.has_as_number(), groupsSeen.contains(group));
+                case AS_SEQUENCE -> Assert.assertEquals(slots.has_as_sequence(), groupsSeen.contains(group));
+                case AS_MAPPING -> Assert.assertEquals(slots.has_as_mapping(), groupsSeen.contains(group));
             }
         }
     }

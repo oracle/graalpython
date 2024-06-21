@@ -105,7 +105,7 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
         if (Py_TYPE(cm->cm_callable)->tp_descr_get != NULL) {
             return Py_TYPE(cm->cm_callable)->tp_descr_get(cm->cm_callable, type, type);
         }
-
+        
         Additionally, in CPython tp_descrget is not shared between classmethod_descriptor and classmethod,
         we should investigate if we can really share the implementation
         */

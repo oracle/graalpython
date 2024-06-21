@@ -32,7 +32,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
@@ -54,6 +53,8 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -66,18 +67,22 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.FindNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.HexStringToBytesNode;
-import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageMpSubscriptNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageSqItemNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyByteArrayCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -132,6 +137,8 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PByteArray)
 public final class ByteArrayBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = ByteArrayBuiltinsSlotsGen.SLOTS;
 
     private static final TruffleString T_LATIN_1 = tsLiteral("latin-1");
 
@@ -193,27 +200,42 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_item, isComplex = true)
     @GenerateNodeFactory
-    abstract static class GetitemNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isPSlice(key) || indexCheckNode.execute(inliningTarget, key)", limit = "1")
-        static Object doSlice(VirtualFrame frame, PBytesLike self, Object key,
+    abstract static class GetitemNode extends SqItemBuiltinNode {
+        @Specialization
+        static Object doInt(Object self, int key,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
-            return getSequenceItemNode.execute(frame, self.getSequenceStorage(), key);
+                        @Cached BytesNodes.GetBytesStorage getBytesStorage,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached SequenceStorageSqItemNode sqItemNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
+            return sqItemNode.execute(inliningTarget, storage, key, ErrorMessages.BYTEARRAY_OUT_OF_BOUNDS);
+        }
+    }
+
+    @Slot(value = SlotKind.mp_subscript, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class ByteArraySubcript extends MpSubscriptBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object self, Object idx,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile validProfile,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached BytesNodes.GetBytesStorage getBytesStorage,
+                        @Cached SequenceStorageMpSubscriptNode subscriptNode) {
+            if (!validProfile.profile(inliningTarget, SequenceStorageMpSubscriptNode.isValidIndex(inliningTarget, idx, indexCheckNode))) {
+                throw raiseNonIntIndex(inliningTarget, raiseNode, idx);
+            }
+            return subscriptNode.execute(frame, inliningTarget, getBytesStorage.execute(inliningTarget, self), idx,
+                            ErrorMessages.LIST_INDEX_OUT_OF_RANGE, PythonObjectFactory::createByteArray);
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        static Object doSlice(VirtualFrame frame, Object self, Object key,
-                        @Cached PRaiseNode raiseNode) {
-            return raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", key);
-        }
-
-        @NeverDefault
-        protected static SequenceStorageNodes.GetItemNode createGetItem() {
-            return SequenceStorageNodes.GetItemNode.create(IndexNodes.NormalizeIndexNode.create(), (s, f) -> f.createByteArray(s));
+        @InliningCutoff
+        private static PException raiseNonIntIndex(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object index) {
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", index);
         }
     }
 

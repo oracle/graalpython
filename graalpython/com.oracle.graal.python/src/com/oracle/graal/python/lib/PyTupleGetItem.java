@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,63 +40,31 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageSqItemNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
-import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
 
-/**
- * Equivalent of CPython's {@code PySequence_Check}.
- */
-@GenerateUncached
-@GenerateCached(false)
 @GenerateInline
-public abstract class PySequenceCheckNode extends PNodeWithContext {
-    public abstract boolean execute(Node inliningTarget, Object object);
-
-    public static boolean executeUncached(Object object) {
-        return PySequenceCheckNodeGen.getUncached().execute(null, object);
+@GenerateCached(false)
+@GenerateUncached
+public abstract class PyTupleGetItem extends PNodeWithContext {
+    public static Object executeUncached(Object tuple, int index) {
+        return PyTupleGetItemNodeGen.getUncached().execute(null, tuple, index);
     }
+
+    public abstract Object execute(Node inliningTarget, Object tuple, int index);
 
     @Specialization
-    static boolean doSequence(@SuppressWarnings("unused") PSequence object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doString(@SuppressWarnings("unused") TruffleString object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doDict(@SuppressWarnings("unused") PDict object) {
-        return false;
-    }
-
-    @Fallback
-    static boolean doGeneric(Node inliningTarget, Object object,
-                    @Cached PyDictCheckNode dictCheckNode,
-                    @Cached GetClassNode getClassNode,
-                    @Cached GetCachedTpSlotsNode getSlotsNode,
-                    @Cached LazyInteropLibrary lazyLib) {
-        if (dictCheckNode.execute(inliningTarget, object)) {
-            return false;
-        }
-        Object type = getClassNode.execute(inliningTarget, object);
-        if (type == PythonBuiltinClassType.ForeignObject) {
-            return lazyLib.get(inliningTarget).hasArrayElements(object);
-        }
-        return getSlotsNode.execute(inliningTarget, type).sq_item() != null;
+    static Object doIt(Node inliningTarget, Object tuple, int index,
+                    @Cached GetTupleStorage getTupleStorage,
+                    @Cached SequenceStorageSqItemNode sqItemNode) {
+        return sqItemNode.execute(inliningTarget, getTupleStorage.execute(inliningTarget, tuple), index, ErrorMessages.TUPLE_OUT_OF_BOUNDS);
     }
 }

@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AITE
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEXT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MP_ASS_SUBSCRIPT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MP_SUBSCRIPT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_AND;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_DIVMOD;
@@ -66,7 +65,6 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_TRUE
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_XOR;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_ASS_ITEM;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_CONTAINS;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_ITEM;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHODS_FLAGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
@@ -89,7 +87,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
@@ -227,7 +224,6 @@ public enum SpecialMethodSlot {
     Subclasscheck(T___SUBCLASSCHECK__),
     Call(T___CALL__, NO_BUILTIN_DESCRIPTORS),
 
-    GetItem(T___GETITEM__, SQ_ITEM | MP_SUBSCRIPT),
     SetItem(T___SETITEM__, SQ_ASS_ITEM | MP_ASS_SUBSCRIPT),
     DelItem(T___DELITEM__, SQ_ASS_ITEM | MP_ASS_SUBSCRIPT),
 
@@ -847,9 +843,6 @@ public enum SpecialMethodSlot {
         int x = codePointAtIndexNode.execute(name, 2, TS_ENCODING) * 26 + codePointAtIndexNode.execute(name, 3, TS_ENCODING);
         switch (x) {
             case 'g' * 26 + 'e':    // ge
-                if (eqNode.execute(name, T___GETITEM__, TS_ENCODING)) {
-                    return GetItem;
-                }
                 if (eqNode.execute(name, T___GE__, TS_ENCODING)) {
                     return Ge;
                 }

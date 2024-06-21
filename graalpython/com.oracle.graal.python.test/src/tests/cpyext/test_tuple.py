@@ -246,9 +246,7 @@ class TestPyTuple(CPyExtTestCase):
 
 
 class TestNativeSubclass(unittest.TestCase):
-    def test_builtins(self):
-        t = TupleSubclass(1, 2, 3)
-        assert type(t) == TupleSubclass
+    def _verify(self, t):
         assert is_native_object(t)
         assert t
         assert len(t) == 3
@@ -265,8 +263,16 @@ class TestNativeSubclass(unittest.TestCase):
         assert t.index(2) == 1
         assert t.count(2) == 1
 
+    def test_builtins(self):
+        t = TupleSubclass(1, 2, 3)
+        assert type(t) == TupleSubclass
+        self._verify(t)
+
     def test_managed_sublclass(self):
         class ManagedSubclass(TupleSubclass):
             pass
 
-        assert is_native_object(ManagedSubclass(1, 2, 3))
+        t = ManagedSubclass(1, 2, 3)
+        assert is_native_object(t)
+        assert type(t) == ManagedSubclass
+        self._verify(t)

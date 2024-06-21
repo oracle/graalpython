@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotHPyNative;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -233,7 +234,8 @@ public abstract class HPyExternalFunctionNodes {
      * @return A {@link PBuiltinFunction} implementing the semantics of the specified slot wrapper.
      */
     @TruffleBoundary
-    static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPySlotWrapper wrapper, TruffleString name, Object callable, Object enclosingType,
+    public static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPySlotWrapper wrapper, TpSlotHPyNative slot, PExternalFunctionWrapper legacySlotWrapper,
+                    TruffleString name, Object callable, Object enclosingType,
                     PythonObjectFactory factory) {
         assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
         RootCallTarget callTarget = language.createCachedCallTarget(l -> createSlotRootNode(l, wrapper, name), wrapper, name);
@@ -255,7 +257,7 @@ public abstract class HPyExternalFunctionNodes {
             kwDefaults = createKwDefaults(callable, context);
 
         }
-        return factory.createBuiltinFunction(name, enclosingType, defaults, kwDefaults, 0, callTarget);
+        return factory.createWrapperDescriptor(name, enclosingType, defaults, kwDefaults, 0, callTarget, slot, legacySlotWrapper);
     }
 
     private static PRootNode createSlotRootNode(PythonLanguage language, HPySlotWrapper wrapper, TruffleString name) {
@@ -338,7 +340,7 @@ public abstract class HPyExternalFunctionNodes {
      * Invokes an HPy C function. It takes care of argument and result conversion and always passes
      * the HPy context as a first parameter.
      */
-    abstract static class HPyExternalFunctionInvokeNode extends Node {
+    public abstract static class HPyExternalFunctionInvokeNode extends Node {
 
         @Child private HPyConvertArgsToSulongNode toSulongNode;
         @Child private HPyCheckFunctionResultNode checkFunctionResultNode;

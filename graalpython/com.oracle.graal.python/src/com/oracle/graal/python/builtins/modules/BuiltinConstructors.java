@@ -109,9 +109,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory.FloatNodeFactory.NonPrimitiveFloatNodeGen;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory.ObjectNodeFactory.ReportAbstractClassNodeGen;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -404,6 +404,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // data filled in subsequent __init__ call - see BytesCommonBuiltins.InitNode
             return factory.createByteArray(cls, PythonUtils.EMPTY_BYTE_ARRAY);
         }
+
+        // TODO: native allocation?
     }
 
     // complex([real[, imag]])
