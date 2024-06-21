@@ -4045,10 +4045,11 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                  */
                 BytecodeLocal uncaughtException = b.createLocal();
                 BytecodeLocal handlerException = b.createLocal();
-                b.beginFinallyTryCatch(uncaughtException);
+                b.beginFinallyTryCatch(uncaughtException, () -> {
                     b.beginBlock(); // finally
                         visitSequence(node.finalBody);
-                    b.endBlock(); // finally
+                    b.endBlock();
+                });
 
                     emitTryExceptElse(node); // try
 
@@ -4061,9 +4062,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                             b.emitLoadLocal(uncaughtException);
                         b.endMarkExceptionAsCaught();
 
-                        b.beginFinallyTryCatch(handlerException);
-                            emitSetCurrentException(savedException); // finally
-
+                        b.beginFinallyTryCatch(handlerException, () -> emitSetCurrentException(savedException));
                             b.beginBlock(); // try
                                 visitSequence(node.finalBody);
                             b.endBlock(); // try
@@ -4180,9 +4179,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                         b.endMarkExceptionAsCaught();
 
                         BytecodeLocal handlerException = b.createLocal();
-                        b.beginFinallyTryCatch(handlerException);
-                            emitSetCurrentException(savedException); // finally
-
+                        b.beginFinallyTryCatch(handlerException, () -> emitSetCurrentException(savedException));
                             b.beginBlock(); // try
                                 SourceRange bareExceptRange = null;
                                 for (ExceptHandlerTy h : node.handlers) {
@@ -4212,9 +4209,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                                             b.endUnwrapException();
                                         endStoreLocal(handler.name, b);
 
-                                        b.beginFinallyTryCatch(handlerException);
-                                            emitUnbindHandlerVariable(handler); // finally
-
+                                        b.beginFinallyTryCatch(handlerException, () -> emitUnbindHandlerVariable(handler));
                                             b.beginBlock(); // try
                                                 visitSequence(handler.body);
                                             b.endBlock(); // try
@@ -4416,12 +4411,9 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             }
 
             BytecodeLocal ex = b.createLocal();
-            b.beginFinallyTryCatch(ex);
-            b.beginBlock(); // finally
-            // regular exit
+            Runnable finallyHandler;
             if (async) {
-                // call and await __aexit__
-                emitAwait(() -> {
+                finallyHandler = () -> emitAwait(() -> {
                     b.beginAsyncContextManagerCallExit();
                     b.emitLoadConstant(PNone.NONE);
                     b.emitLoadLocal(exit);
@@ -4429,15 +4421,16 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     b.endAsyncContextManagerCallExit();
                 });
             } else {
-                // call __exit__
-                b.beginContextManagerExit();
-                b.emitLoadConstant(PNone.NONE);
-                b.emitLoadLocal(exit);
-                b.emitLoadLocal(contextManager);
-                b.endContextManagerExit();
+                finallyHandler = () -> {
+                    // call __exit__
+                    b.beginContextManagerExit();
+                    b.emitLoadConstant(PNone.NONE);
+                    b.emitLoadLocal(exit);
+                    b.emitLoadLocal(contextManager);
+                    b.endContextManagerExit();
+                };
             }
-            b.endBlock(); // finally
-
+            b.beginFinallyTryCatch(ex, finallyHandler);
             b.beginBlock(); // try
             if (item.optionalVars != null) {
                 item.optionalVars.accept(new StoreVisitor(() -> b.emitLoadLocal(value)));
