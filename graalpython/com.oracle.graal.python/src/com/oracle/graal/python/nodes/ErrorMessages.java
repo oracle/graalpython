@@ -387,6 +387,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INTERMEDIATE_OVERFLOW_IN = tsLiteral("intermediate overflow in %s");
     public static final TruffleString CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION = tsLiteral("Cannot set property on interop exception");
     public static final TruffleString INTEROP_TYPE_ALREADY_REGISTERED = tsLiteral("interop type for '%s' already registered");
+    public static final TruffleString INTEROP_TYPE_NOT_REGISTERED = tsLiteral("interop type for '%s' is not registered");
     public static final TruffleString INVALD_OR_UNREADABLE_CLASSPATH = tsLiteral("invalid or unreadable classpath: '%s' - %m");
     public static final TruffleString INVALID_ARGS = tsLiteral("%s: invalid arguments");
     public static final TruffleString INVALID_BASE_TYPE_OBJ_FOR_CLASS = tsLiteral("Invalid base type object for class %s (base type was '%p' object).");

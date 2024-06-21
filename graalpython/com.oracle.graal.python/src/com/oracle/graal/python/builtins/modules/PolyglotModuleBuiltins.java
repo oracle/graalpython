@@ -44,11 +44,13 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_GET_REGISTERED_INTERO
 import static com.oracle.graal.python.nodes.BuiltinNames.J_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_JAVA_INTEROP_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_INTEROP_BEHAVIOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_REMOVE_JAVA_INTEROP_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_REGISTER_INTEROP_BEHAVIOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_JAVA_INTEROP_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_REGISTER_JAVA_INTEROP_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEROP_TYPE_ALREADY_REGISTERED;
+import static com.oracle.graal.python.nodes.ErrorMessages.INTEROP_TYPE_NOT_REGISTERED;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_CANNOT_HAVE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_DOES_NOT_TAKE_VARARGS;
@@ -816,6 +818,36 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
     }
+
+    @Builtin(name = J_REMOVE_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, doc = """
+        remove_java_interop_type(javaClassName)
+        
+        Remove registration of java interop type. Future registration don't need overwrite flag anymore.
+        Example removes the custom interop type for the ArrayList
+        
+        >>> from polyglot import remove_java_interop_type
+        
+        >>> remove_java_interop_type("java.util.ArrayList")
+        """)
+    @GenerateNodeFactory
+    public abstract static class RemoveJavaInteropTypeNode extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        Object register(TruffleString javaClassName,
+                        @Cached PRaiseNode raiseNode) {
+            // Get registry for custom interop types from PythonContext
+            Map<Object, PythonClass> interopTypeRegistry = PythonContext.get(this).getInteropTypeRegistry();
+            String javaClassNameAsString = javaClassName.toString();
+            // Check if already registered and if overwrite is configured
+            if (!interopTypeRegistry.containsKey(javaClassNameAsString)) {
+                throw raiseNode.raise(KeyError, INTEROP_TYPE_NOT_REGISTERED, javaClassNameAsString);
+            }
+            interopTypeRegistry.remove(javaClassNameAsString);
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = J_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true, keywordOnlyNames = {"overwrite"}, doc = """
        @java_interop_type(javaClassName, overwrite=None)
         
