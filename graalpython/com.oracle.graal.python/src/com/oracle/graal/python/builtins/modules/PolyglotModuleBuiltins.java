@@ -816,7 +816,23 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
     }
-    @Builtin(name = J_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true, keywordOnlyNames = {"overwrite"})
+    @Builtin(name = J_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true, keywordOnlyNames = {"overwrite"}, doc = """
+       @java_interop_type(javaClassName, overwrite=None)
+        
+       Example registering a custom interop type for the Java ArrayList
+
+       >>> from polyglot import register_java_interop_type
+
+       >>> @java_interop_type("java.util.ArrayList")
+       ... class jArrayList(__graalpython__.ForeignType):
+       ...     def append(self, element):
+       ...         self.add(element)
+        
+       For subsequent registrations with overwrite behavior use
+       >>> @java_interop_type("java.util.ArrayList", overwrite=True)
+       ... class jArrayList(__graalpython__.ForeignType):
+       ...     pass
+       """)
     @GenerateNodeFactory
     public abstract static class JavaInteropTypeDecoratorNode extends PythonBuiltinNode {
         static final TruffleString WRAPPER = tsLiteral("wrapper");
