@@ -89,6 +89,18 @@ index 97515cb..143790d 100644
  [tool.black]
  line-length = 120
  # NOTE: Do not extend the exclude list. Edit .lintrunner.toml instead
+diff --git a/requirements.txt.in b/requirements.txt.in
+index 8924206..a9c1327 100644
+--- a/requirements.txt.in
++++ b/requirements.txt.in
+@@ -1,6 +1,6 @@
+ coloredlogs
+ flatbuffers
+-numpy >= @Python_NumPy_VERSION@
++numpy
+ packaging
+ protobuf
+ sympy
 diff --git a/tools/ci_build/build.py b/tools/ci_build/build.py
 index 31f242c..300211b 100644
 --- a/tools/ci_build/build.py
