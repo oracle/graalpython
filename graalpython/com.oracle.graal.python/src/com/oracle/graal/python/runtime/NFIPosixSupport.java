@@ -110,6 +110,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
@@ -249,6 +250,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_getsid("(sint64):sint64"),
         call_setsid("():sint64"),
         call_getgroups("(sint64, [sint64]):sint32"),
+        call_getrusage("(sint32, [sint64]):sint32"),
         call_openpty("([sint32]):sint32"),
         call_ctermid("([sint8]):sint32"),
         call_setenv("([sint8], [sint8], sint32):sint32"),
@@ -1296,6 +1298,20 @@ public final class NFIPosixSupport extends PosixSupport {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return groups;
+    }
+
+    @ExportMessage
+    public RusageResult getrusage(int who,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long[] result = new long[16];
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_getrusage, who, wrap(result));
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return new RusageResult(Double.longBitsToDouble(result[0]), Double.longBitsToDouble(result[1]),
+                        result[2], result[3], result[4], result[5],
+                        result[6], result[7], result[8], result[9], result[10],
+                        result[11], result[12], result[13], result[14], result[15]);
     }
 
     @ExportMessage

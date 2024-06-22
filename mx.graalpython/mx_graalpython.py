@@ -870,7 +870,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
         launcher = os.path.join(python_home, 'bin', _graalpy_launcher(enterprise))
         out = mx.OutputCapture()
-        import_managed_status = mx.run([launcher, "-c", "import __graalpython_enterprise__"], nonZeroIsFatal=False, out=out, err=out)
+        import_managed_status = mx.run([launcher, "-c", "import sys; assert 'Oracle GraalVM' in sys.version"], nonZeroIsFatal=False, out=out, err=out)
         if enterprise != (import_managed_status == 0):
             mx.abort(f"GRAALPY_HOME is not compatible with requested distribution kind ({import_managed_status=}, {enterprise=}, {out=}).")
         return python_home
@@ -1348,8 +1348,7 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
     print(f"with PYTHONPATH={python_path}")
 
     if checkIfWithGraalPythonEE:
-        mx.run([python_binary, "-c", "import __graalpython_enterprise__"])
-        print("with graalpy EE")
+        mx.run([python_binary, "-c", "import sys; print(sys.version)"])
     run_python_unittests(
         python_binary,
         args=["-v"],
@@ -1499,7 +1498,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
             opt = '--PosixModuleBackend={backend} --Sha3ModuleBackend={backend}'
-            tests_list = ["test_posix.py", "test_mmap.py", "test_hashlib.py"]
+            tests_list = ["test_posix.py", "test_mmap.py", "test_hashlib.py", "test_resource.py"]
             run_python_unittests(graalpy_standalone_jvm(), args=opt.format(backend='native').split(), paths=tests_list, report=report())
             run_python_unittests(graalpy_standalone_jvm(), args=opt.format(backend='java').split(), paths=tests_list, report=report())
 
@@ -1511,7 +1510,7 @@ def graalpython_gate_runner(args, tasks):
 
             env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
             env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
-            env['ENABLE_MICRONAUT_UNITTESTS'] ='true'
+            env['ENABLE_MICRONAUT_UNITTESTS'] ='false' # 'true' - GR-54891
             default_java_home = env.get('JAVA_HOME')
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home

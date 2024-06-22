@@ -142,6 +142,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator
 import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PStructUnpackIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
@@ -201,6 +202,9 @@ import com.oracle.graal.python.builtins.objects.ssl.PSSLSocket;
 import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.struct.FormatAlignment;
+import com.oracle.graal.python.builtins.objects.struct.FormatCode;
+import com.oracle.graal.python.builtins.objects.struct.PStruct;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
@@ -1680,6 +1684,19 @@ public abstract class PythonObjectFactory extends Node {
 
     public PUnpicklerMemoProxy createUnpicklerMemoProxy(PUnpickler unpickler, Object cls) {
         return trace(new PUnpicklerMemoProxy(cls, getShape(cls), unpickler));
+    }
+
+    public PStruct createStruct(PStruct.StructInfo structInfo) {
+        return trace(new PStruct(PythonBuiltinClassType.PStruct, getShape(PythonBuiltinClassType.PStruct), structInfo));
+    }
+
+    public PStruct createStruct(byte[] format, int size, int len, FormatAlignment formatAlignment, FormatCode[] codes) {
+        return trace(new PStruct(PythonBuiltinClassType.PStruct, getShape(PythonBuiltinClassType.PStruct), format, size, len, formatAlignment, codes));
+    }
+
+    public PStructUnpackIterator createStructUnpackIterator(PStruct struct, Object buffer) {
+        return trace(
+                        new PStructUnpackIterator(PythonBuiltinClassType.PStructUnpackIterator, getShape(PythonBuiltinClassType.PStructUnpackIterator), struct, buffer));
     }
 
     @GenerateInline

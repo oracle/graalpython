@@ -848,7 +848,7 @@ public abstract class ErrorMessages {
     public static final TruffleString GETPWUID_NOT_FOUND = tsLiteral("getpwuid(): uid not found");
     public static final TruffleString EXPECTED_INT_MESSAGE = tsLiteral("Expected an int as second argument to ldexp.");
     public static final TruffleString NOT_IMPLEMENTED = tsLiteral("not implemented");
-    public static final TruffleString RUSAGE_NOT_YET_IMPLEMENED = tsLiteral("rusage usage not yet implemented for specified arg.");
+    public static final TruffleString RUSAGE_INVALID_WHO = tsLiteral("invalid who parameter");
     public static final TruffleString SOCKADDR_RESOLVED_TO_MULTIPLE_ADDRESSES = tsLiteral("sockaddr resolved to multiple addresses");
     public static final TruffleString IPV4_MUST_BE_2_TUPLE = tsLiteral("IPv4 sockaddr must be 2 tuple");
     public static final TruffleString GETNAMEINFO_ARG1_MUST_BE_TUPLE = tsLiteral("getnameinfo() argument 1 must be a tuple");
@@ -1633,4 +1633,24 @@ public abstract class ErrorMessages {
     public static final TruffleString LINENO_OUT_OF_RANGE = tsLiteral("lineno out of range");
 
     public static final TruffleString SEQUENCE_INDEX_MUST_BE_INT_NOT_P = tsLiteral("sequence index must be integer, not '%p'");
+    public static final TruffleString ARG_MUST_BE_STR_OR_BYTES = tsLiteral("%s argument 1 must be a str or bytes object, not %p");
+    public static final TruffleString REPEAT_COUNT_WITHOUT_FMT = tsLiteral("repeat count given without format specifier");
+    public static final TruffleString BAD_CHR_IN_STRUCT_FMT = tsLiteral("bad char in struct format: %s");
+    public static final TruffleString ARG_NOT_T = tsLiteral("required argument is not %s");
+    public static final TruffleString ARG_O_O_RANGE = tsLiteral("argument out of range");
+    public static final TruffleString ARG_FOR_N_MUST_BE = tsLiteral("argument for %s must be a % object");
+    public static final TruffleString FMT_REQ_RANGE = tsLiteral("%s format requires %d <= number <= %d");
+    public static final TruffleString STRUCT_CHR_FMT_BYTES_1 = tsLiteral("char format requires a bytes object of length 1");
+    public static final TruffleString STRUCT_FMT_NOT_YET_SUPPORTED = tsLiteral("format code: '%s' not yet supported");
+    public static final TruffleString STRUCT_PACK_EXPECTED_N_ITEMS_GOT_K = tsLiteral("pack expected %d items for packing (got %d)");
+    public static final TruffleString STRUCT_NO_SPACE_TO_PACK_N_BYTES = tsLiteral("no space to pack %d bytes at offset %d");
+    public static final TruffleString STRUCT_NOT_ENOUGH_DATA_TO_UNPACK_N_BYTES = tsLiteral("not enough data to unpack %d bytes at offset %d");
+    public static final TruffleString STRUCT_OFFSET_OUT_OF_RANGE = tsLiteral("offset %d out of range for %d-byte buffer");
+    public static final TruffleString STRUCT_PACK_INTO_REQ_BUFFER_TO_PACK = tsLiteral("pack_into requires a buffer of at least %d bytes for packing %d bytes at offset %d (actual buffer size is %d)");
+    public static final TruffleString STRUCT_UNPACK_FROM_REQ_AT_LEAST_N_BYTES = tsLiteral(
+                    "unpack_from requires a buffer of at least %d bytes for unpacking %d bytes at offset %d (actual buffer size is %d)");
+    public static final TruffleString UNPACK_REQ_A_BUFFER_OF_N_BYTES = tsLiteral("unpack requires a buffer of %d bytes");
+    public static final TruffleString STRUCT_ITER_CANNOT_UNPACK_FROM_STRUCT_OF_SIZE_0 = tsLiteral("cannot iteratively unpack with a struct of length 0");
+    public static final TruffleString STRUCT_ITER_UNPACK_REQ_A_BUFFER_OF_A_MUL_OF_BYTES = tsLiteral("iterative unpacking requires a buffer of a multiple of %d bytes");
+    public static final TruffleString CANNOT_CREATE_P_OBJECTS = tsLiteral("Cannot create %p objects");
 }

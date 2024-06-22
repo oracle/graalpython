@@ -83,6 +83,9 @@
 #include <pty.h>
 #endif
 
+#ifndef _WIN32
+#include <sys/resource.h>
+#endif
 
 int64_t call_getpid() {
     return getpid();
@@ -631,6 +634,39 @@ int32_t call_getgroups(int64_t size, int64_t* out) {
     }
 }
 
+int32_t call_getrusage(int32_t who, uint64_t* out) {
+#ifndef _WIN32
+    struct rusage ru;
+    int result = getrusage(who, &ru);
+    if (result != 0) {
+        return result;
+    }
+    int offset = 0;
+    // POSIX prescribes only ru_utime and ru_stime members, macOS and Linux
+    // have (at least) all those below
+# define COPYVAL(v) memcpy(&out[offset++], &v, sizeof(v))
+    COPYVAL(ru.ru_utime.tv_sec);
+    COPYVAL(ru.ru_stime.tv_sec);
+    COPYVAL(ru.ru_maxrss);
+    COPYVAL(ru.ru_ixrss);
+    COPYVAL(ru.ru_idrss);
+    COPYVAL(ru.ru_isrss);
+    COPYVAL(ru.ru_minflt);
+    COPYVAL(ru.ru_majflt);
+    COPYVAL(ru.ru_nswap);
+    COPYVAL(ru.ru_inblock);
+    COPYVAL(ru.ru_oublock);
+    COPYVAL(ru.ru_msgsnd);
+    COPYVAL(ru.ru_msgrcv);
+    COPYVAL(ru.ru_nsignals);
+    COPYVAL(ru.ru_nvcsw);
+    COPYVAL(ru.ru_nivcsw);
+    return 0;
+# undef COPYVAL
+#else
+    return -1;
+#endif
+}
 
 int32_t call_openpty(int32_t *outvars) {
     return openpty(outvars, outvars + 1, NULL, NULL, NULL);

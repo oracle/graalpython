@@ -86,7 +86,7 @@ GRAALVM_URL_BASE = "https://download.oracle.com/graalvm/"
 
 MVN_REPOSITORY = os.getenv("MVN_REPOSITORY")
 MVN_GRAALPY_VERSION = os.getenv("MVN_GRAALPY_VERSION") if os.getenv("MVN_GRAALPY_VERSION") else __graalpython__.get_graalvm_version()
- 
+
 CMD_NATIVE_EXECUTABLE = "native"
 CMD_JAVA_PYTHON_APP = "polyglot_app"
 ATTR_STANDALONE_CMD = "command"
@@ -141,7 +141,7 @@ def create_polyglot_app(parsed_args):
 
 def get_download_dir(parsed_args):
     subdir = "downloaded_standalone_resources"
-    mp = os.path.join(__graalpython__.home, subdir)  
+    mp = os.path.join(__graalpython__.home, subdir)
     try:
         if not os.path.exists(mp):
             os.mkdir(mp)
@@ -160,22 +160,22 @@ def get_download_dir(parsed_args):
 
 def create_native_exec(parsed_args):
     artifacts = ["org.graalvm.python.python-embedding"]
-    if parsed_args.ce:
-        artifacts.append("org.graalvm.polyglot.python-community")
-    else:
-        artifacts.append("org.graalvm.polyglot.python")
 
     target_dir = tempfile.mkdtemp()
     try:
         ni, jc = get_tools(target_dir, parsed_args)
-                
+        if parsed_args.ce:
+            artifacts.append("org.graalvm.polyglot.python-community")
+        else:
+            artifacts.append("org.graalvm.polyglot.python")
+
         modules_path = get_download_dir(parsed_args)
         for artifact in artifacts:
             download_maven_artifact(modules_path, artifact, parsed_args)
-        
-        launcher_file = os.path.join(target_dir, NATIVE_EXEC_LAUNCHER_FILE)    
+
+        launcher_file = os.path.join(target_dir, NATIVE_EXEC_LAUNCHER_FILE)
         create_target_directory(target_dir, launcher_file, parsed_args)
-        
+
         index_vfs(target_dir)
         build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args)
     finally:
@@ -183,9 +183,9 @@ def create_native_exec(parsed_args):
             shutil.rmtree(target_dir)
 
 
-def index_vfs(target_dir):   
+def index_vfs(target_dir):
     files_list_path = os.path.join(target_dir, FILES_LIST_PATH)
-    dir_to_list = os.path.join(target_dir, VFS_PREFIX)        
+    dir_to_list = os.path.join(target_dir, VFS_PREFIX)
     target_dir_len = len(target_dir)
     with open(files_list_path, "w") as files_list:
         def f(dir_path, names, line_end):
@@ -193,7 +193,7 @@ def index_vfs(target_dir):
             for name in names:
                 vfs_path = os.path.join(rel_path, name).replace(os.sep, '/')
                 files_list.write(f"{vfs_path}{line_end}")
-        w = os.walk(dir_to_list)            
+        w = os.walk(dir_to_list)
         for (dir_path, dir_names, file_names) in w:
             f(dir_path, dir_names, "/\n")
             f(dir_path, file_names, "\n")
@@ -360,6 +360,12 @@ def get_tools(target_dir, parsed_args):
             print(f"GraalVM downloaded from {graalvm_url} has no native image or javac")
         sys.exit(1)
 
+    # When building with a CE native image, we need to use community options
+    if "GraalVM CE" in subprocess.check_output([ni, "--version"], text=True):
+        if parsed_args.verbose and not parsed_args.ce:
+            print("Using GraalVM CE, disabling Oracle GraalVM-specific options")
+        parsed_args.ce = True
+
     return ni, jc
 
 
@@ -393,7 +399,7 @@ def build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args):
     output = os.path.abspath(parsed_args.output)
     os.chdir(target_dir)
 
-    try:        
+    try:
         cmd = [jc, "-cp", f"{modules_path}/*", launcher_file]
         if parsed_args.verbose:
             print(f"Compiling code for Python standalone entry point: {' '.join(cmd)}")
@@ -411,9 +417,6 @@ def build_binary(target_dir, ni, jc, modules_path, launcher_file, parsed_args):
                 "-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime",
                 "-Dpolyglot.engine.WarnInterpreterOnly=false",
             ]
-            # Remove once GR-48563 is fixed
-            if "Oracle GraalVM" in subprocess.check_output([ni, "--version"], text=True):
-                cmd.append("-H:-OptConditionalMoves")
         cmd += [
             "--no-fallback",
             "-H:-CopyLanguageResources",
@@ -469,7 +472,7 @@ def main(args):
     parser_app = subparsers.add_parser(
         CMD_JAVA_PYTHON_APP,
         help="Create a polyglot Java-Python maven project skeleton preconfigured to build native binaries.",
-    )    
+    )
 
     parser_app.add_argument(
         "-g",

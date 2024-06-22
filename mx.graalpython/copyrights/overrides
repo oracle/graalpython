@@ -216,7 +216,6 @@ graalpython/com.oracle.graal.python.cext/modules/_cpython_sre/sre.h,python.copyr
 graalpython/com.oracle.graal.python.cext/modules/_cpython_sre/sre_constants.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_sre/sre_lib.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_sre/sre_targets.h,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.h,python.copyright
@@ -269,7 +268,6 @@ graalpython/com.oracle.graal.python.cext/modules/_testcapi.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testbuffer.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testmultiphase.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_bz2module.c.h,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_testmultiphase.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/memoryobject.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/pyexpat.c.h,python.copyright
@@ -583,6 +581,12 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/json/JSONEncoderBuiltins.java,python.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/json/JSONModuleBuiltins.java,python.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/json/JSONScannerBuiltins.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/StructModuleBuiltins.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PStructUnpackIterator.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/struct/PStruct.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/struct/StructBuiltins.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/struct/StructNodes.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/struct/StructUnpackIteratorBuiltins.java,python.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/PNone.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/PNotImplemented.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/array/ArrayBuiltins.java,zippy.copyright

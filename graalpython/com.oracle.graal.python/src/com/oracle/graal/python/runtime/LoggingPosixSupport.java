@@ -58,6 +58,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
@@ -940,6 +941,17 @@ public class LoggingPosixSupport extends PosixSupport {
             return logExit("getgroups", "%s", lib.getgroups(delegate));
         } catch (PosixException e) {
             throw logException("getgroups", e);
+        }
+    }
+
+    @ExportMessage
+    final RusageResult getrusage(int who,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getrusage", "%d", who);
+        try {
+            return logExit("getrusage", "%s", lib.getrusage(delegate, who));
+        } catch (PosixException e) {
+            throw logException("getrusage", e);
         }
     }
 

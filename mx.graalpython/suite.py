@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "e3f8f87793cd913453b44b3b315fb3da1f648257",
+                "version": "b593f95a9f4cea3c9305cfe984dff80a6d82b447",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "e3f8f87793cd913453b44b3b315fb3da1f648257",
+                "version": "b593f95a9f4cea3c9305cfe984dff80a6d82b447",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "e3f8f87793cd913453b44b3b315fb3da1f648257",
+                "version": "b593f95a9f4cea3c9305cfe984dff80a6d82b447",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "e3f8f87793cd913453b44b3b315fb3da1f648257",
+                "version": "b593f95a9f4cea3c9305cfe984dff80a6d82b447",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -677,7 +677,6 @@ suite = {
                             "bin/modules/_sqlite3<graalpy_ext:native>",
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
-                            "bin/modules/_cpython_struct<graalpy_ext:native>",
                             "bin/modules/_sha3<graalpy_ext:native>",
                         ],
                     },
@@ -697,7 +696,6 @@ suite = {
                             "bin/modules/_sqlite3<graalpy_ext:native>",
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
-                            "bin/modules/_cpython_struct<graalpy_ext:native>",
                             "bin/modules/_sha3<graalpy_ext:native>",
                             "bin/modules/_testcapi<graalpy_ext:native>",
                             "bin/modules/_testbuffer<graalpy_ext:native>",

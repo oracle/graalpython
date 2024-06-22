@@ -59,6 +59,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
@@ -724,6 +725,13 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
         return nativeLib.getgroups(nativePosixSupport);
+    }
+
+    @ExportMessage
+    final RusageResult getrusage(int who,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.getrusage(nativePosixSupport, who);
     }
 
     @ExportMessage
