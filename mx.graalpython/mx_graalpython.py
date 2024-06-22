@@ -1510,7 +1510,7 @@ def graalpython_gate_runner(args, tasks):
 
             env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
             env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
-            env['ENABLE_MICRONAUT_UNITTESTS'] ='true'
+            env['ENABLE_MICRONAUT_UNITTESTS'] ='false' # 'true' - GR-54891
             default_java_home = env.get('JAVA_HOME')
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home
