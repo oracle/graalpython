@@ -130,9 +130,8 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
-import com.oracle.graal.python.runtime.sequence.storage.native2.ArrowSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.native2.IntArrowSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.native2.NativeBuffer;
+import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeIntSequenceStorage;
 import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -616,7 +615,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static int doArrowInt(IntArrowSequenceStorage storage, int idx) {
+        protected static int doNativeInt(NativeIntSequenceStorage storage, int idx) {
             return storage.getIntItemNormalized(idx);
         }
 
@@ -786,10 +785,11 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static SequenceStorage doArrowInt(IntArrowSequenceStorage storage, int start, int stop, int step, int length,
+        protected static SequenceStorage doNativeInt(NativeIntSequenceStorage storage, int start, int stop, int step, int length,
                         @Bind("this") Node node) {
-            var newBuffer = doNativeSliceInBound(node, start, step, length, storage);
-            return new IntArrowSequenceStorage(newBuffer, length);
+            var valueBufferAddr = doNativePrimitiveSliceInBound(node, start, step, length, storage);
+            long sizeInBytes = length * storage.getItemSize();
+            return PythonContext.get(node).nativeBufferContext.wrapToIntStorage(valueBufferAddr, sizeInBytes, length);
         }
 
         @Specialization
@@ -814,26 +814,25 @@ public abstract class SequenceStorageNodes {
             return new ObjectSequenceStorage(newArray);
         }
 
-        private static NativeBuffer doNativeSliceInBound(Node node, int start, int step, int sliceLength, ArrowSequenceStorage storage) {
-            long typeWidth = storage.getTypeWidth();
-            var context = PythonContext.get(node);
-            var unsafe = context.getUnsafe();
-            long sizeInBytes = sliceLength * typeWidth;
-            var destNativeBuffer = context.nativeBufferContext.createNativeBuffer(sizeInBytes);
+        private static long doNativePrimitiveSliceInBound(Node node, int start, int step, int sliceLength, NativePrimitiveSequenceStorage storage) {
+            long itemSize = storage.getItemSize();
+            var nativeContext = PythonContext.get(node).nativeBufferContext;
+            long sizeInBytes = sliceLength * itemSize;
+            long toAddr = nativeContext.allocateNativeMemory(sizeInBytes);
 
             if (step == 1) {
-                var startAddress = storage.getNativeBuffer().getMemoryAddress() + (start * typeWidth);
-                unsafe.copyMemory(startAddress, destNativeBuffer.getMemoryAddress(), sizeInBytes);
-                return destNativeBuffer;
+                var startAddress = storage.getValueBufferAddr() + (start * itemSize);
+                nativeContext.copyMemory(startAddress, toAddr, sizeInBytes);
+                return toAddr;
             }
 
-            var stepInBytes = step * typeWidth;
-            for (long srcAddr = storage.getNativeBuffer().getMemoryAddress() + (start * typeWidth), destAddr = destNativeBuffer.getMemoryAddress(),
-                            j = 0; j < sliceLength; srcAddr += stepInBytes, destAddr += typeWidth, j++) {
-                unsafe.copyMemory(srcAddr, destAddr, typeWidth);
+            var stepInBytes = step * itemSize;
+            for (long srcAddr = storage.getValueBufferAddr() + (start * itemSize), destAddr = toAddr,
+                            j = 0; j < sliceLength; srcAddr += stepInBytes, destAddr += itemSize, j++) {
+                nativeContext.copyMemory(srcAddr, destAddr, itemSize);
             }
 
-            return destNativeBuffer;
+            return toAddr;
         }
 
         @NeverDefault
@@ -1223,7 +1222,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static void doArrowInt(@SuppressWarnings("unused") Node inliningTarget, IntArrowSequenceStorage storage, int idx, int value) {
+        protected static void doNativeInt(@SuppressWarnings("unused") Node inliningTarget, NativeIntSequenceStorage storage, int idx, int value) {
             storage.setIntItemNormalized(idx, value);
         }
 
@@ -1560,19 +1559,19 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static void doArrow(Node inliningTarget, ArrowSequenceStorage storage) {
+        static void doNativePrimitive(Node inliningTarget, NativePrimitiveSequenceStorage storage) {
             var length = storage.length();
             var unsafe = PythonContext.get(inliningTarget).getUnsafe();
-            long typeWidth = storage.getTypeWidth();
-            long startAddress = storage.getNativeBuffer().getMemoryAddress();
-            long endAddress = startAddress + ((length - 1) * typeWidth);
-            byte[] tempBuffer = new byte[(int) typeWidth];
+            long itemSize = storage.getItemSize();
+            long startAddress = storage.getValueBufferAddr();
+            long endAddress = startAddress + ((length - 1) * itemSize);
+            byte[] tempBuffer = new byte[(int) itemSize];
             while (startAddress < endAddress) {
-                unsafe.copyMemory(null, startAddress, tempBuffer, Unsafe.ARRAY_BYTE_BASE_OFFSET, typeWidth);
-                unsafe.copyMemory(endAddress, startAddress, typeWidth);
-                unsafe.copyMemory(tempBuffer, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, endAddress, typeWidth);
-                startAddress += typeWidth;
-                endAddress -= typeWidth;
+                unsafe.copyMemory(null, startAddress, tempBuffer, Unsafe.ARRAY_BYTE_BASE_OFFSET, itemSize);
+                unsafe.copyMemory(endAddress, startAddress, itemSize);
+                unsafe.copyMemory(tempBuffer, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, endAddress, itemSize);
+                startAddress += itemSize;
+                endAddress -= itemSize;
             }
         }
 
@@ -3145,15 +3144,14 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static void doArrow(Node inliningTarget, ArrowSequenceStorage storage, int cap) {
+        static void doNativePrimitive(Node inliningTarget, NativePrimitiveSequenceStorage storage, int cap) {
             if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, cap > storage.getCapacity())) {
-                var context = getContext(inliningTarget);
-                long newCapacityInBytes = storage.getTypeWidth() * cap;
-                var oldNativeBuffer = storage.getNativeBuffer();
-                var newNativeBuffer = context.nativeBufferContext.createNativeBuffer(newCapacityInBytes);
-                context.getUnsafe().copyMemory(oldNativeBuffer.getMemoryAddress(), newNativeBuffer.getMemoryAddress(), oldNativeBuffer.getCapacityInBytes());
-                storage.setCapacity(cap);
-                storage.setNativeBuffer(newNativeBuffer);
+                var nativeContext = getContext(inliningTarget).nativeBufferContext;
+                long newCapacityInBytes = storage.getItemSize() * cap;
+                var oldAddr = storage.getValueBufferAddr();
+                var newAddr = nativeContext.allocateNativeMemory(newCapacityInBytes);
+                nativeContext.copyMemory(oldAddr, newAddr, storage.getCapacityInBytes());
+                nativeContext.setNewValueAddrToStorage(storage, newAddr, newCapacityInBytes);
             }
         }
 
@@ -3298,9 +3296,13 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static SequenceStorage doArrowInt(Node inliningTarget, IntArrowSequenceStorage storage) {
-            var copiedBuffer = copyNativeBuffer(inliningTarget, storage.getNativeBuffer());
-            return new IntArrowSequenceStorage(copiedBuffer, storage.length());
+        static SequenceStorage doNativeInt(Node inliningTarget, NativeIntSequenceStorage storage) {
+            var nativeContext = PythonContext.get(inliningTarget).getContext().nativeBufferContext;
+            var capacityInBytes = storage.getCapacityInBytes();
+            var toAddr = nativeContext.allocateNativeMemory(capacityInBytes);
+            nativeContext.copyMemory(storage.getValueBufferAddr(), toAddr, capacityInBytes);
+
+            return nativeContext.wrapToIntStorage(toAddr, capacityInBytes, storage.length());
         }
 
         @Specialization
@@ -3321,16 +3323,6 @@ public abstract class SequenceStorageNodes {
                 objects[i] = getItem.execute(s, i);
             }
             return new ObjectSequenceStorage(objects);
-        }
-
-        private static NativeBuffer copyNativeBuffer(Node inliningTarget, NativeBuffer buffer) {
-            var context = PythonContext.get(inliningTarget);
-            var unsafe = context.getUnsafe();
-            var newBuffer = context.nativeBufferContext.createNativeBuffer(buffer.getCapacityInBytes());
-
-            unsafe.copyMemory(buffer.getMemoryAddress(), newBuffer.getMemoryAddress(), buffer.getCapacityInBytes());
-
-            return newBuffer;
         }
     }
 
@@ -3422,7 +3414,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static void doArrow(ArrowSequenceStorage s, int len) {
+        static void doNativePrimitive(NativePrimitiveSequenceStorage s, int len) {
             s.setNewLength(len);
         }
     }
@@ -3957,17 +3949,17 @@ public abstract class SequenceStorageNodes {
 
         // TODO introduce something similar to InsertItemArrayBasedStorageNode
         @Specialization
-        static SequenceStorage doArrowInt(Node inliningTarget, IntArrowSequenceStorage storage, int index, int value,
+        static SequenceStorage doNativeInt(Node inliningTarget, NativeIntSequenceStorage storage, int index, int value,
                         @Exclusive @Cached EnsureCapacityNode ensureCapacity) {
             int length = storage.length();
             var context = PythonContext.get(inliningTarget);
             var unsafe = context.getUnsafe();
-            long typeWidth = storage.getTypeWidth();
+            long itemSize = storage.getItemSize();
             ensureCapacity.execute(inliningTarget, storage, length + 1);
             // shifting tail to the right by one slot
-            long startAddr = storage.getNativeBuffer().getMemoryAddress() + (index * typeWidth);
-            long endAddr = startAddr + typeWidth;
-            long sizeInBytes = (length - index) * typeWidth;
+            long startAddr = storage.getValueBufferAddr() + (index * itemSize);
+            long endAddr = startAddr + itemSize;
+            long sizeInBytes = (length - index) * itemSize;
             unsafe.copyMemory(startAddr, endAddr, sizeInBytes);
 
             storage.setIntItemNormalized(index, value);

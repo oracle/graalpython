@@ -38,42 +38,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.sequence.storage.native2;
+package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.graal.python.util.PythonUtils;
-import sun.misc.Unsafe;
+public class NativeIntSequenceStorage extends NativePrimitiveSequenceStorage {
 
-public class NativeBuffer {
-
-    private static final Unsafe unsafe = PythonUtils.initUnsafe();
-    private final long memoryAddress;
-    private final long capacityInBytes;
-
-    private NativeBuffer(long memoryAddress, long capacityInBytes) {
-        this.memoryAddress = memoryAddress;
-        this.capacityInBytes = capacityInBytes;
+    public NativeIntSequenceStorage(long valueBufferAddr, long bufferCapacityInBytes, int length) {
+        super(valueBufferAddr, bufferCapacityInBytes, length, Integer.BYTES);
     }
 
-    public static NativeBuffer allocateNew(long capacityInBytes) {
-        assert capacityInBytes >= 0;
-        long adr = unsafe.allocateMemory(capacityInBytes);
-        return new NativeBuffer(adr, capacityInBytes);
+    @Override
+    public StorageType getElementType() {
+        return StorageType.Int;
     }
 
-    public long getMemoryAddress() {
-        return memoryAddress;
+    @Override
+    public Object getIndicativeValue() {
+        return 0;
     }
 
-    public long getCapacityInBytes() {
-        return capacityInBytes;
+    public int getIntItemNormalized(int idx) {
+        long indexInBytes = (long) idx * this.itemSize;
+        return unsafe.getInt(this.valueBufferAddr + indexInBytes);
     }
 
-    //
-    public int getInt(long index) {
-        return unsafe.getInt(memoryAddress + index);
-    }
-
-    public void setInt(long index, int value) {
-        unsafe.putInt(memoryAddress + index, value);
+    public void setIntItemNormalized(int idx, int value) {
+        long indexInBytes = (long) idx * this.itemSize;
+        unsafe.putInt(this.valueBufferAddr + indexInBytes, value);
     }
 }

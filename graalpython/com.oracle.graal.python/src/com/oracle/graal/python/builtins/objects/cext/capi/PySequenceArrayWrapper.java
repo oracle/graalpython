@@ -55,7 +55,7 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.native2.ArrowSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
@@ -101,11 +101,14 @@ public final class PySequenceArrayWrapper {
             return storageToNativeNode.execute(inliningTarget, array, s.length());
         }
 
+        /*
+         * TODO This can be optimized further. Now we are converting NativePrimitiveSequenceStorage
+         * to ObjectArrayStorage and then to NativeStorageStrategy
+         */
         @Specialization
-        static NativeSequenceStorage doArrow(Node inliningTarget, ArrowSequenceStorage s, boolean isBytesLike,
+        static NativeSequenceStorage doNativePrimitive(Node inliningTarget, NativePrimitiveSequenceStorage s, boolean isBytesLike,
                         @Exclusive @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
                         @Exclusive @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
-            LOGGER.warning("The sequence backed by Arrow Storage is being converted to the Native Storage strategy. This operation is slow and should not typically occur.");
             Object array = getInternalArrayNode.execute(inliningTarget, s);
             return storageToNativeNode.execute(inliningTarget, array, s.length());
         }

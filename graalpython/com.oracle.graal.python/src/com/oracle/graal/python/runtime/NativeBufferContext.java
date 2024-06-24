@@ -40,25 +40,29 @@
  */
 package com.oracle.graal.python.runtime;
 
-import com.oracle.graal.python.runtime.sequence.storage.native2.NativeBuffer;
-import com.oracle.graal.python.runtime.sequence.storage.native2.NativeBufferDeallocatorRunnable;
-import com.oracle.graal.python.runtime.sequence.storage.native2.NativeBufferReference;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.runtime.sequence.storage.NativeIntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLogger;
 import sun.misc.Unsafe;
 
+import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NativeBufferContext {
     private static final Unsafe unsafe = PythonUtils.initUnsafe();
 
-    @CompilationFinal private ReferenceQueue<NativeBuffer> referenceQueue;
+    @CompilationFinal private ReferenceQueue<NativePrimitiveSequenceStorage> referenceQueue;
     // We need to keep around the references since Phantom References are one way bound
-    private ConcurrentHashMap<NativeBufferReference, NativeBufferReference> phantomReferences;
+    // Key: MemoryAddr, Value: PhantomReference
+    private ConcurrentHashMap<Long, NativePrimitiveReference> phantomReferences;
 
     private Thread nativeBufferReferenceCleanerThread;
 
@@ -72,19 +76,44 @@ public class NativeBufferContext {
             var runnable = new NativeBufferDeallocatorRunnable(referenceQueue, this.phantomReferences);
             Thread thread = env.newTruffleThreadBuilder(runnable).build();
             thread.setDaemon(true);
-            // TODO Do I need to do something? If the thread is daemon it should be cleaned
             thread.start();
             this.nativeBufferReferenceCleanerThread = thread;
         }
     }
 
-    @TruffleBoundary
-    public NativeBuffer createNativeBuffer(long capacityInBytes) {
-        var buf = NativeBuffer.allocateNew(capacityInBytes);
-        var phantomRef = new NativeBufferReference(buf, getReferenceQueue());
-        phantomReferences.put(phantomRef, phantomRef);
+    public long allocateNativeMemory(long capacityInBytes) {
+        assert capacityInBytes >= 0;
+        return unsafe.allocateMemory(capacityInBytes);
+    }
 
-        return buf;
+    public void copyMemory(long fromAddress, long toAddress, long capacityInBytes) {
+        assert capacityInBytes >= 0;
+        unsafe.copyMemory(fromAddress, toAddress, capacityInBytes);
+    }
+
+    @TruffleBoundary
+    public void releaseMemory(long memoryAddr) {
+        NativePrimitiveReference ref = phantomReferences.remove(memoryAddr);
+        ref.release(unsafe);
+    }
+
+    @TruffleBoundary
+    public void setNewValueAddrToStorage(NativePrimitiveSequenceStorage storage, long valueAddr, long capacityInBytes) {
+        assert capacityInBytes >= 0;
+        releaseMemory(storage.getValueBufferAddr());
+        storage.setValueBufferAddr(valueAddr, capacityInBytes);
+        var phantomRef = new NativePrimitiveReference(storage, getReferenceQueue());
+        phantomReferences.put(valueAddr, phantomRef);
+    }
+
+    @TruffleBoundary
+    public NativeIntSequenceStorage wrapToIntStorage(long valueBufferAddr, long capacityInBytes, int length) {
+        assert capacityInBytes >= 0;
+        var storage = new NativeIntSequenceStorage(valueBufferAddr, capacityInBytes, length);
+        var phantomRef = new NativePrimitiveReference(storage, getReferenceQueue());
+        phantomReferences.put(storage.getValueBufferAddr(), phantomRef);
+
+        return storage;
     }
 
     public void finalizeContext() {
@@ -101,22 +130,77 @@ public class NativeBufferContext {
         }
     }
 
-    public NativeBuffer toNativeBuffer(int[] arr) {
+    public NativeIntSequenceStorage toNativeIntStorage(int[] arr) {
         long sizeInBytes = (long) arr.length * (long) Integer.BYTES;
-        var buffer = createNativeBuffer(sizeInBytes);
+        long addr = allocateNativeMemory(sizeInBytes);
 
-        unsafe.copyMemory(arr, Unsafe.ARRAY_INT_BASE_OFFSET, null, buffer.getMemoryAddress(), sizeInBytes);
-
-        return buffer;
-
+        unsafe.copyMemory(arr, Unsafe.ARRAY_INT_BASE_OFFSET, null, addr, sizeInBytes);
+        return wrapToIntStorage(addr, sizeInBytes, arr.length);
     }
 
-    private ReferenceQueue<NativeBuffer> getReferenceQueue() {
+    private ReferenceQueue<NativePrimitiveSequenceStorage> getReferenceQueue() {
+        assert PythonContext.get(null).ownsGil();
         if (referenceQueue == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             initReferenceQueue();
         }
 
         return referenceQueue;
+    }
+
+    static final class NativeBufferDeallocatorRunnable implements Runnable {
+        private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(NativeBufferDeallocatorRunnable.class);
+
+        private static final Unsafe unsafe = PythonUtils.initUnsafe();
+
+        private final ReferenceQueue<NativePrimitiveSequenceStorage> referenceQueue;
+        private final ConcurrentHashMap<Long, NativePrimitiveReference> references;
+
+        public NativeBufferDeallocatorRunnable(ReferenceQueue<NativePrimitiveSequenceStorage> referenceQueue,
+                        ConcurrentHashMap<Long, NativePrimitiveReference> references) {
+            this.referenceQueue = referenceQueue;
+            this.references = references;
+        }
+
+        @Override
+        public void run() {
+            PythonContext pythonContext = PythonContext.get(null);
+            PythonLanguage language = pythonContext.getLanguage();
+
+            while (!pythonContext.getThreadState(language).isShuttingDown()) {
+                try {
+                    NativePrimitiveReference phantomRef = (NativePrimitiveReference) referenceQueue.remove();
+                    phantomRef.release(unsafe);
+                    references.remove(phantomRef.getMemoryAddress());
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    LOGGER.fine("Native buffer reference cleaner thread was interrupted and is exiting");
+                    return;
+                }
+            }
+            LOGGER.fine("Native buffer reference cleaner thread is exiting.");
+        }
+    }
+
+    static final class NativePrimitiveReference extends PhantomReference<NativePrimitiveSequenceStorage> {
+
+        private final long memoryAddress;
+        private boolean released = false;
+
+        public NativePrimitiveReference(NativePrimitiveSequenceStorage referent, ReferenceQueue<NativePrimitiveSequenceStorage> q) {
+            super(referent, q);
+            this.memoryAddress = referent.getValueBufferAddr();
+        }
+
+        public void release(Unsafe unsafe) {
+            if (!released) {
+                unsafe.freeMemory(memoryAddress);
+                released = true;
+            }
+        }
+
+        public long getMemoryAddress() {
+            return memoryAddress;
+        }
     }
 }

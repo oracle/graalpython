@@ -38,11 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.sequence.storage.native2;
+package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -52,20 +53,18 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateInline
 @GenerateCached(false)
 @GenerateUncached
-public abstract class ToArrowStorageNode extends Node {
+public abstract class ToNativePrimitiveStorageNode extends Node {
 
-    public abstract ArrowSequenceStorage execute(Node inliningTarget, SequenceStorage storage);
+    public abstract NativePrimitiveSequenceStorage execute(Node inliningTarget, SequenceStorage storage);
 
-    public static ArrowSequenceStorage executeUncached(SequenceStorage storage) {
-        return ToArrowStorageNodeGen.getUncached().execute(null, storage);
+    public static NativePrimitiveSequenceStorage executeUncached(SequenceStorage storage) {
+        return ToNativePrimitiveStorageNodeGen.getUncached().execute(null, storage);
     }
 
     @Specialization
-    static ArrowSequenceStorage doInt(Node inliningTarget, IntSequenceStorage storage) {
+    static NativePrimitiveSequenceStorage doInt(Node inliningTarget, IntSequenceStorage storage) {
         int[] arr = storage.getInternalIntArray();
-        var buffer = PythonContext.get(inliningTarget).nativeBufferContext.toNativeBuffer(arr);
-
-        return new IntArrowSequenceStorage(buffer, storage.length());
+        return PythonContext.get(inliningTarget).nativeBufferContext.toNativeIntStorage(arr);
     }
 
 }

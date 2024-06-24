@@ -383,7 +383,7 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> UseSystemToolchain = new OptionKey<>(true);
 
     @EngineOption @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "If true, uses native storage strategy for primitive types") //
-    public static final OptionKey<Boolean> UseNativeStorageStrategy = new OptionKey<>(false);
+    public static final OptionKey<Boolean> UseNativePrimitiveStorageStrategy = new OptionKey<>(false);
 
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 

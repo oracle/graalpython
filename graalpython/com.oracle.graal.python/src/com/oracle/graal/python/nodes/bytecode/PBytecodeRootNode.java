@@ -208,7 +208,6 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.native2.IntArrowSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -5037,13 +5036,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         assert kind == CollectionBits.KIND_LIST || kind == CollectionBits.KIND_TUPLE;
         boolean list = kind == CollectionBits.KIND_LIST;
         var context = PythonContext.get(this);
-        boolean useNativeStorageStrategy = context.getLanguage().getEngineOption(PythonOptions.UseNativeStorageStrategy);
+        boolean useNativePrimitiveStorage = context.getLanguage().getEngineOption(PythonOptions.UseNativePrimitiveStorageStrategy);
         switch (CollectionBits.elementType(typeAndKind)) {
             case CollectionBits.ELEMENT_INT: {
                 int[] a = (int[]) array;
-                if (useNativeStorageStrategy) {
-                    var nativeBuffer = context.nativeBufferContext.toNativeBuffer(a);
-                    storage = new IntArrowSequenceStorage(nativeBuffer, a.length);
+                if (useNativePrimitiveStorage) {
+                    storage = context.nativeBufferContext.toNativeIntStorage(a);
                 } else {
                     if (list) {
                         a = PythonUtils.arrayCopyOf(a, a.length);

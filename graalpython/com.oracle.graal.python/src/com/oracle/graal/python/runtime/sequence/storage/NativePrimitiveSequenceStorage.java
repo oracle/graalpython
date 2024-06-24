@@ -38,40 +38,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.sequence.storage.native2;
+package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.NativeBufferContext;
+import com.oracle.graal.python.util.PythonUtils;
+import sun.misc.Unsafe;
 
-public abstract class ArrowSequenceStorage extends SequenceStorage {
+public abstract class NativePrimitiveSequenceStorage extends SequenceStorage {
 
-    protected NativeBuffer nativeBuffer;
-    private final long typeWidth;
+    protected static final Unsafe unsafe = PythonUtils.initUnsafe();
+    protected long valueBufferAddr;
+    private long capacityInBytes;
+    protected final long itemSize;
 
-    public ArrowSequenceStorage(NativeBuffer nativeBuffer, int length, long typeWidth) {
-        this.nativeBuffer = nativeBuffer;
+    public NativePrimitiveSequenceStorage(long valueBufferAddr, long capacityInBytes, int length, long itemSize) {
+        this.valueBufferAddr = valueBufferAddr;
         this.length = length;
-        this.typeWidth = typeWidth;
-        this.capacity = calculateCapacity(nativeBuffer.getCapacityInBytes());
+        this.capacityInBytes = capacityInBytes;
+        this.itemSize = itemSize;
+        this.capacity = calculateCapacity(capacityInBytes);
+    }
+
+    /**
+     * Should not be used directly because we need to associate valueAddr to the storage itself.
+     * Instead of this use {@link NativeBufferContext#setNewValueAddrToStorage}
+     */
+    public void setValueBufferAddr(long valueBufferAddr, long bufferCapacityInBytes) {
+        this.valueBufferAddr = valueBufferAddr;
+        this.capacityInBytes = bufferCapacityInBytes;
+        this.capacity = calculateCapacity(bufferCapacityInBytes);
+    }
+
+    public long getValueBufferAddr() {
+        return valueBufferAddr;
+    }
+
+    public long getCapacityInBytes() {
+        return capacityInBytes;
+    }
+
+    public long getItemSize() {
+        return itemSize;
     }
 
     private int calculateCapacity(long capacityInBytes) {
-        return Math.toIntExact(capacityInBytes / typeWidth);
+        return Math.toIntExact(capacityInBytes / itemSize);
     }
-
-    public NativeBuffer getNativeBuffer() {
-        return nativeBuffer;
-    }
-
-    public void setNativeBuffer(NativeBuffer nativeBuffer) {
-        this.nativeBuffer = nativeBuffer;
-    }
-
-    public void setCapacity(int capacity) {
-        this.capacity = capacity;
-    }
-
-    public long getTypeWidth() {
-        return typeWidth;
-    }
-
 }
