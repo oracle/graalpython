@@ -96,6 +96,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     private static final String FILES_LIST_PATH = VFS_ROOT + "/fileslist.txt";
     private static final String VENV_PREFIX = VFS_ROOT + "/" + VFS_VENV;
     private static final String HOME_PREFIX = VFS_ROOT + "/" + VFS_HOME;
+    // TODO see GR-54915, deprecated and should be removed after 24.2.0
     private static final String PROJ_PREFIX = VFS_ROOT + "/" + VFS_PROJ;
     private static final String SRC_PREFIX = VFS_ROOT + "/" + VFS_SRC;
 
