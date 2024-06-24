@@ -324,15 +324,10 @@ public abstract class ExternalFunctionNodes {
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached NativeToPythonNode nativeToPythonNode) {
             Object result = nativeToPythonNode.execute(object);
-            if (result instanceof TruffleString) {
+            if (result == PNone.NO_VALUE) {
                 return result;
-            } else if (result instanceof PString) {
-                return castToStringNode.execute(inliningTarget, result);
-            } else if (result == PNone.NO_VALUE) {
-                return result;
-            } else {
-                throw CompilerDirectives.shouldNotReachHere();
             }
+            return castToStringNode.castKnownString(inliningTarget, result);
         }
 
         @NeverDefault

@@ -98,13 +98,17 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
@@ -1024,12 +1028,36 @@ public final class PythonCextUnicodeBuiltins {
         static Object doUnicode(PString s,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile profile,
-                        @Cached _PyUnicode_AsUTF8String asUTF8String) {
+                        @Shared @Cached _PyUnicode_AsUTF8String asUTF8String) {
             if (profile.profile(inliningTarget, s.getUtf8Bytes() == null)) {
                 PBytes bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
                 s.setUtf8Bytes(bytes);
             }
             return PySequenceArrayWrapper.ensureNativeSequence(s.getUtf8Bytes());
+        }
+
+        @Specialization
+        static Object doNative(PythonAbstractNativeObject s,
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
+                        @Cached CStructAccess.AllocateNode allocateNode,
+                        @Cached CStructAccess.WriteByteNode writeByteNode,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
+                        @Shared @Cached _PyUnicode_AsUTF8String asUTF8String) {
+            Object utf8 = readPointerNode.readFromObj(s, CFields.PyCompactUnicodeObject__utf8);
+            if (lib.isNull(utf8)) {
+                PBytes bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
+                int len = bufferLib.getBufferLength(bytes);
+                // TODO leaked?
+                Object mem = allocateNode.alloc(len + 1);
+                writeByteNode.writeByteArray(mem, bufferLib.getInternalByteArray(bytes), len, 0, 0);
+                writePointerNode.writeToObj(s, CFields.PyCompactUnicodeObject__utf8, mem);
+                writeLongNode.writeToObject(s, CFields.PyCompactUnicodeObject__utf8_length, len);
+                return mem;
+            }
+            return utf8;
         }
 
         @Fallback
@@ -1046,6 +1074,13 @@ public final class PythonCextUnicodeBuiltins {
         Object doUnicode(PString s) {
             // PyTruffle_Unicode_AsUTF8AndSize_CharPtr must have been be called before
             return s.getUtf8Bytes().getSequenceStorage().length();
+        }
+
+        @Specialization
+        Object doNative(PythonAbstractNativeObject s,
+                        @Cached CStructAccess.ReadI64Node readI64Node) {
+            // PyTruffle_Unicode_AsUTF8AndSize_CharPtr must have been be called before
+            return readI64Node.readFromObj(s, CFields.PyCompactUnicodeObject__utf8_length);
         }
     }
 

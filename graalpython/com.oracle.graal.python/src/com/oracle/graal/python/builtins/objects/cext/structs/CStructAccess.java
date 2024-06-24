@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.structs;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -1178,6 +1179,10 @@ public class CStructAccess {
         public final void write(Object pointer, CFields field, Object value) {
             assert accepts(field);
             execute(pointer, field.offset(), value);
+        }
+
+        public final void writeToObj(PythonAbstractNativeObject obj, CFields field, Object value) {
+            write(obj.getPtr(), field, value);
         }
 
         public final void write(Object pointer, Object value) {
