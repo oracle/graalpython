@@ -333,11 +333,13 @@ public class LeakTest extends AbstractLanguageLauncher {
                     }
                 }
             }
-            // the check at the end will make a dump anyway, so no createHeapDump flag here
             long currentSize = getJavaHeapSize(false);
             System.out.printf("Heap size after all repetitions: %,d\n", currentSize);
             if (currentSize > initialSize * 1.1) {
                 System.err.printf("Heap size grew too much after repeated context creations and invocations. From %,d bytes to %,d bytes.\n", initialSize, currentSize);
+                if (keepDump) {
+                    dumpHeap(ManagementFactory.getPlatformMBeanServer(), true);
+                }
                 System.exit(255);
             }
         }

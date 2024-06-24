@@ -169,7 +169,7 @@ public abstract class HPyExternalFunctionNodes {
     static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPyFuncSignature signature, TruffleString name, Object callable, Object enclosingType,
                     PythonObjectFactory factory) {
         assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
-        RootCallTarget callTarget = language.createCachedCallTarget(l -> createRootNode(l, signature, name), signature, name);
+        RootCallTarget callTarget = language.createCachedCallTarget(l -> createRootNode(l, signature, name), signature, name, true);
 
         Object[] defaults;
         if (signature == HPyFuncSignature.TERNARYFUNC) {

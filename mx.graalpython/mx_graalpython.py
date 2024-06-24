@@ -417,7 +417,7 @@ def punittest(ars, report=False):
     run_leak_launcher(["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
     # test leaks with shared engine Python code only
     run_leak_launcher(["--shared-engine", "--code", "pass"])
-    # TODO: (GR-54727) run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"]),
+    run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
     # test leaks with shared engine when some C module code is involved
     run_leak_launcher(["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
 
@@ -2988,6 +2988,12 @@ def update_hpy_import_cmd(args):
 
 
 def run_leak_launcher(input_args):
+    args = input_args
+    keep_dumps_on_success = False
+    if '--keep-dump-on-success' in input_args:
+        args.remove('--keep-dump-on-success')
+        args.append('--keep-dump')
+        keep_dumps_on_success = True
     print(shlex.join(["mx", "python-leak-test", *input_args]))
 
     args = ["--lang", "python",
@@ -3015,7 +3021,7 @@ def run_leak_launcher(input_args):
     dump_paths = re.findall(r'Dump file: (\S+)', out.data.strip())
     if retval == 0:
         print("PASSED")
-        if dump_paths:
+        if dump_paths and not keep_dumps_on_success:
             print("Removing heapdump for passed test")
             for p in dump_paths:
                 os.unlink(p)

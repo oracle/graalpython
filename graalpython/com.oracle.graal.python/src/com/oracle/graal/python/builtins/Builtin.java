@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -109,4 +109,14 @@ public @interface Builtin {
     String raiseErrorName() default StringLiterals.J_EMPTY_STRING;
 
     boolean forceSplitDirectCalls() default false;
+
+    /**
+     * If set to {@code true}, then this builtin will be initialized and registered in
+     * {@link PythonBuiltins#initialize(Python3Core)}. Otherwise, it will be ignored even when it
+     * has a generated node factory. This is useful when we want to initialize the builtin manually
+     * in different way (e.g., wrap it in method, descriptor, ...). By convention set this to
+     * {@code false} also for builtins declared outside of {@link PythonBuiltins} subclass to
+     * document the intent to not initialize them automatically.
+     */
+    boolean autoRegister() default true;
 }

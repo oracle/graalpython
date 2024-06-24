@@ -60,6 +60,8 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -74,8 +76,10 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQualifiedClassNameNode;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.DisabledNewNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.NewNodeGen;
@@ -93,6 +97,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -108,9 +113,11 @@ import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.PythonUtils.PrototypeNodeFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -143,7 +150,7 @@ public class StructSequence {
      * The equivalent of {@code PyStructSequence_Desc} except of the {@code name}. We don't need the
      * type's name in the descriptor and this will improve code sharing.
      */
-    public static class Descriptor {
+    public static sealed class Descriptor permits BuiltinTypeDescriptor {
         public final TruffleString docString;
         public final int inSequence;
         public final TruffleString[] fieldNames;
@@ -213,6 +220,7 @@ public class StructSequence {
      */
     public static final class BuiltinTypeDescriptor extends Descriptor {
         public final PythonBuiltinClassType type;
+        private final boolean initializedInBuildTime = ImageInfo.inImageBuildtimeCode();
 
         public BuiltinTypeDescriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings, boolean allowInstances) {
             super(docString == null ? null : toTruffleStringUncached(docString), inSequence, toTruffleStringArrayUncached(fieldNames), toTruffleStringArrayUncached(fieldDocStrings), allowInstances);
@@ -243,6 +251,13 @@ public class StructSequence {
         public int hashCode() {
             return Objects.hash(super.hashCode(), type);
         }
+
+        public boolean wasInitializedAtBuildTime() {
+            return initializedInBuildTime;
+        }
+    }
+
+    public record DescriptorCallTargets(RootCallTarget reprBuiltin, RootCallTarget reduceBuiltin, RootCallTarget newBuiltin) {
     }
 
     @TruffleBoundary
@@ -257,12 +272,6 @@ public class StructSequence {
 
     @TruffleBoundary
     public static void initType(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Descriptor desc) {
-        // TODO: (GR-54701) some builtin nodes created here close over the "desc" object - it should
-        // be their key for the call targets cache in language, but one can create new Descriptor
-        // object at runtime via C API and those are context specific. There are no runtime data, so
-        // we can cache Descriptor instances in language, but it should be weak cache and we should
-        // make sure that once the type that is initialized is GC'ed, they can be GC'ed too.
-
         assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
 
         long flags = TypeNodes.GetTypeFlagsNode.executeUncached(klass);
@@ -282,8 +291,15 @@ public class StructSequence {
             }
         }
 
-        createMethod(factory, language, klass, desc, ReprNode.class, ReprNodeGen::create);
-        createMethod(factory, language, klass, desc, ReduceNode.class, ReduceNodeGen::create);
+        DescriptorCallTargets callTargets = language.getOrCreateStructSequenceCallTargets(desc, d -> new DescriptorCallTargets(
+                        createBuiltinCallTarget(language, desc, ReprNode.class, ReprNodeGen::create, true),
+                        createBuiltinCallTarget(language, desc, ReduceNode.class, ReduceNodeGen::create, true),
+                        desc.allowInstances ? //
+                                        createBuiltinCallTarget(language, desc, NewNode.class, NewNodeGen::create, false) : //
+                                        createBuiltinCallTarget(language, desc, DisabledNewNode.class, ignore -> DisabledNewNodeGen.create(), false)));
+
+        createMethod(factory, klass, ReprNode.class, callTargets.reprBuiltin);
+        createMethod(factory, klass, ReduceNode.class, callTargets.reduceBuiltin);
 
         WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.getUncached(true);
         /*
@@ -298,11 +314,8 @@ public class StructSequence {
         writeAttrNode.execute(klass, T_N_UNNAMED_FIELDS, unnamedFields);
 
         if (ReadAttributeFromObjectNode.getUncachedForceType().execute(klass, T___NEW__) == PNone.NO_VALUE) {
-            if (desc.allowInstances) {
-                createConstructor(factory, language, klass, desc, NewNode.class, NewNodeGen::create);
-            } else {
-                createConstructor(factory, language, klass, desc, DisabledNewNode.class, d -> DisabledNewNodeGen.create());
-            }
+            Builtin builtin = NewNode.class.getAnnotation(Builtin.class);
+            PythonUtils.createConstructor(factory, klass, builtin, callTargets.newBuiltin);
         }
         if ((flags & TypeFlags.IMMUTABLETYPE) != 0) {
             // Restore flags
@@ -310,18 +323,25 @@ public class StructSequence {
         }
     }
 
+    private static <T extends PythonBuiltinBaseNode> RootCallTarget createBuiltinCallTarget(PythonLanguage l, Descriptor descriptor, Class<T> nodeClass, Function<Descriptor, T> nodeFactory,
+                    boolean declaresExplicitSelf) {
+        Builtin builtin = nodeClass.getAnnotation(Builtin.class);
+        return new BuiltinFunctionRootNode(l, builtin, new PrototypeNodeFactory<T>(nodeFactory.apply(descriptor)), declaresExplicitSelf).getCallTarget();
+    }
+
     private static void createMember(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, TruffleString name, TruffleString doc, int idx) {
-        PythonUtils.createMember(factory, language, klass, GetStructMemberNode.class, name, doc, idx, (l) -> new GetStructMemberNode(l, idx));
+        RootCallTarget callTarget = language.createStructSeqIndexedMemberAccessCachedCallTarget((l) -> new GetStructMemberNode(l, idx), idx);
+        PBuiltinFunction getter = factory.createBuiltinFunction(name, klass, 0, 0, callTarget);
+        GetSetDescriptor callable = factory.createGetSetDescriptor(getter, null, name, klass, false);
+        if (doc != null) {
+            callable.setAttribute(T___DOC__, doc);
+        }
+        WriteAttributeToObjectNode.getUncached(true).execute(klass, name, callable);
     }
 
-    private static void createMethod(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Descriptor desc, Class<?> nodeClass,
-                    Function<Descriptor, PythonBuiltinBaseNode> nodeSupplier) {
-        PythonUtils.createMethod(factory, language, klass, nodeClass, PythonBuiltinClassType.PTuple, 0, () -> nodeSupplier.apply(desc), desc);
-    }
-
-    private static void createConstructor(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Descriptor desc, Class<?> nodeClass,
-                    Function<Descriptor, PythonBuiltinBaseNode> nodeSupplier) {
-        PythonUtils.createConstructor(factory, language, klass, nodeClass, () -> nodeSupplier.apply(desc), desc);
+    private static void createMethod(PythonObjectSlowPathFactory factory, Object klass, Class<? extends PythonBuiltinBaseNode> nodeClass, RootCallTarget callTarget) {
+        Builtin builtin = nodeClass.getAnnotation(Builtin.class);
+        PythonUtils.createMethod(factory, klass, builtin, callTarget, PythonBuiltinClassType.PTuple, 0);
     }
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
