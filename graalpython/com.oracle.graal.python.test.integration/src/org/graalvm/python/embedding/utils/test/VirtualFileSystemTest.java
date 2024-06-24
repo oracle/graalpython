@@ -61,7 +61,7 @@ import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.polyglot.io.IOAccess;
 import org.graalvm.python.embedding.utils.GraalPyResources;
-import org.graalvm.python.embedding.utils.GraalPyResources.VirtualFileSystemBuilder;
+import org.graalvm.python.embedding.utils.VirtualFileSystem;
 import org.junit.Test;
 
 public class VirtualFileSystemTest {
@@ -74,26 +74,26 @@ public class VirtualFileSystemTest {
 
     @Test
     public void defaultValues() throws Exception {
-        FileSystem fs = GraalPyResources.createVirtualFileSystem();
-        FileSystem fs2 = GraalPyResources.createVirtualFileSystem();
+        VirtualFileSystem fs = VirtualFileSystem.create();
+        VirtualFileSystem fs2 = VirtualFileSystem.create();
 
-        assertEquals(GraalPyResources.getMountPoint(fs), GraalPyResources.getMountPoint(fs2));
+        assertEquals(fs.getMountPoint(), fs2.getMountPoint());
 
-        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs" : "/graalpy_vfs", GraalPyResources.getMountPoint(fs));
+        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs" : "/graalpy_vfs", fs.getMountPoint());
     }
 
     @Test
     public void mountPoints() throws Exception {
-        FileSystem fs = GraalPyResources.virtualFileSystemBuilder().//
+        VirtualFileSystem fs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).build();
 
-        assertEquals(VFS_MOUNT_POINT, GraalPyResources.getMountPoint(fs));
+        assertEquals(VFS_MOUNT_POINT, fs.getMountPoint());
     }
 
     @Test
     public void toRealPath() throws Exception {
-        FileSystem fs = GraalPyResources.virtualFileSystemBuilder().//
+        FileSystem fs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().equals("file1")).//
@@ -111,7 +111,7 @@ public class VirtualFileSystemTest {
 
     @Test
     public void toAbsolutePath() throws Exception {
-        FileSystem fs = GraalPyResources.virtualFileSystemBuilder().//
+        FileSystem fs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().equals("file1") || p.getFileName().toString().equals("file2")).//
@@ -131,7 +131,7 @@ public class VirtualFileSystemTest {
 
     @Test
     public void libsExtract() throws Exception {
-        FileSystem fs = GraalPyResources.virtualFileSystemBuilder().//
+        FileSystem fs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().endsWith(".tso")).//
@@ -417,7 +417,7 @@ public class VirtualFileSystemTest {
         eval(s, null);
     }
 
-    private void eval(String s, Function<VirtualFileSystemBuilder, VirtualFileSystemBuilder> builderFunction) {
+    private void eval(String s, Function<VirtualFileSystem.Builder, VirtualFileSystem.Builder> builderFunction) {
         String src = patchMountPoint(s);
 
         getContext(builderFunction).eval(PYTHON, src);
@@ -432,11 +432,11 @@ public class VirtualFileSystemTest {
 
     private Context cachedContext;
 
-    public Context getContext(Function<VirtualFileSystemBuilder, VirtualFileSystemBuilder> builderFunction) {
+    public Context getContext(Function<VirtualFileSystem.Builder, VirtualFileSystem.Builder> builderFunction) {
         if (builderFunction == null && cachedContext != null) {
             return cachedContext;
         }
-        VirtualFileSystemBuilder builder = GraalPyResources.virtualFileSystemBuilder().//
+        VirtualFileSystem.Builder builder = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().endsWith(".tso")).//
@@ -444,7 +444,7 @@ public class VirtualFileSystemTest {
         if (builderFunction != null) {
             builder = builderFunction.apply(builder);
         }
-        FileSystem fs = builder.build();
+        VirtualFileSystem fs = builder.build();
         Context context = GraalPyResources.contextBuilder(fs).build();
         if (builderFunction == null) {
             cachedContext = context;
@@ -468,11 +468,11 @@ public class VirtualFileSystemTest {
                             assert False, 'expected NotImplementedError'
                         """);
 
-        FileSystem vfs = GraalPyResources.virtualFileSystemBuilder().//
+        VirtualFileSystem fs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build();
-        context = GraalPyResources.contextBuilder(vfs).build();
+        context = GraalPyResources.contextBuilder(fs).build();
         context.eval(PYTHON, patchMountPoint("from os import listdir; listdir('/test_mount_point')"));
 
         context = GraalPyResources.createContext();
@@ -490,7 +490,7 @@ public class VirtualFileSystemTest {
 
     @Test
     public void externalResourcesBuilderTest() throws IOException {
-        FileSystem fs = GraalPyResources.virtualFileSystemBuilder().resourceLoadingClass(VirtualFileSystemTest.class).build();
+        VirtualFileSystem fs = VirtualFileSystem.newBuilder().resourceLoadingClass(VirtualFileSystemTest.class).build();
         Path resourcesDir = Files.createTempDirectory("vfs-test-resources");
 
         // extract VFS

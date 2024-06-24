@@ -64,7 +64,7 @@ import zipfile
 
 assert sys.pycache_prefix is None
 
-# Prefix and filelist match the defaults in org.graalvm.python.embedding.utils.VirtualFileSystem
+# Prefix and filelist match the defaults in org.graalvm.python.embedding.utils.VirtualFileSystemImpl
 VFS_PREFIX = "org.graalvm.python.vfs"
 FILES_LIST_NAME = "fileslist.txt"
 FILES_LIST_PATH = VFS_PREFIX + "/" + FILES_LIST_NAME
