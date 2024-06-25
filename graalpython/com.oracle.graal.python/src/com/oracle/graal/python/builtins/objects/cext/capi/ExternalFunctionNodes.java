@@ -887,7 +887,7 @@ public abstract class ExternalFunctionNodes {
                  * Special case after calling a C function: transfer caught exception back to frame
                  * to simulate the global state semantics.
                  */
-                if (frame != null) {
+                if (frame != null && threadState.getCaughtException() != null) {
                     PArguments.setException(frame, threadState.getCaughtException());
                 }
                 IndirectCallContext.exit(frame, threadState, state);
