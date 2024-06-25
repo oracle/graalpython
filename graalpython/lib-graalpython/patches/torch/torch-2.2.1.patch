@@ -115,6 +115,19 @@ index 21f0a166..ab2497c5 100644
      return Slice<mpy::handle>((mpy::handle*)begin, (mpy::handle*) (begin + tv.size()));
  }
  
+diff --git a/pyproject.toml b/pyproject.toml
+index ffbf640d..114051f9 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -3,7 +3,7 @@ requires = [
+     "setuptools",
+     "wheel",
+     "astunparse",
+-    "numpy",
++    "numpy<2",
+     "ninja",
+     "pyyaml",
+     "cmake",
 diff --git a/test/test_overrides.py b/test/test_overrides.py
 index f9988197..cde6b114 100644
 --- a/test/test_overrides.py
