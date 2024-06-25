@@ -63,12 +63,13 @@ import java.nio.file.Paths;
  * </p>
  *
  * <p>
- * If they are part of a <b>jar file</b> or a <b>native image</b> executable then at runtime they
- * will be accessed as standard Java resources through GraalPy {@link VirtualFileSystem}. This will
- * be transparent to Python code running in GraalPy so that it has to use only standard Python IO.
- * Note that in order to make this work, it is necessary for those embedded resources to have their
- * <b>root directory</b> set to <code>/org.graalvm.python.vfs</code> which in python code will be
- * mapped to the virtual filesystem mount point, by default <code>/graalpy_vfs</code>. Refer to
+ * If the resource files are part of a <b>jar file</b> or a <b>native image</b> executable, then at
+ * runtime they will be accessed as standard Java resources through GraalPy
+ * {@link VirtualFileSystem}. This will be transparent to Python code running in GraalPy so that it
+ * can use standard Python IO to access those files. Note that in order to make this work, it is
+ * necessary for those embedded resources to have their <b>root directory</b> set to
+ * <code>/org.graalvm.python.vfs</code> which in python code will be mapped to the virtual
+ * filesystem mount point, by default <code>/graalpy_vfs</code>. Refer to
  * {@link VirtualFileSystem.Builder} documentation for more details.
  * </p>
  * <p>
