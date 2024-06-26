@@ -66,6 +66,8 @@ import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
 public class GraalPythonMain extends AbstractLanguageLauncher {
 
+    private static final boolean IS_WINDOWS = System.getProperty("os.name") != null && System.getProperty("os.name").toLowerCase().contains("windows");
+
     private static final String SHORT_HELP = "usage: python [option] ... [-c cmd | -m mod | file | -] [arg] ...\n" +
                     "Try `python -h' for more information.";
 
@@ -552,6 +554,25 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         return resolvedProgramName.toString();
                     }
 
+                    // On windows, the program name may be without the extension
+                    if (IS_WINDOWS) {
+                        String pathExtEnvvar = getEnv("PATHEXT");
+                        if (pathExtEnvvar != null) {
+                            // default extensions are defined
+                            String resolvedStr = resolvedProgramName.toString();
+                            if (resolvedStr.length() <= 3 || resolvedStr.charAt(resolvedStr.length() - 4) != '.') {
+                                // program has no file extension
+                                String[] pathExts = pathExtEnvvar.toLowerCase().split(";");
+                                for (String pathExt : pathExts) {
+                                    resolvedProgramName = Path.of(resolvedStr + pathExt);
+                                    if (isExecutable.apply(resolvedProgramName)) {
+                                        return resolvedProgramName.toString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // next start is the char after the separator because we have "path0:path1" and
                     // 'i' points to ':'
                     previous = i + 1;
@@ -768,8 +789,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             contextBuilder.option("python.PyCachePrefix", cachePrefix);
         }
 
-        String osName = System.getProperty("os.name");
-        if (osName != null && osName.toLowerCase().contains("windows")) {
+        if (IS_WINDOWS) {
             contextBuilder.option("python.PosixModuleBackend", "java");
         }
 
