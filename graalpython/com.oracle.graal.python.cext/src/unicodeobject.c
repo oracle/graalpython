@@ -3722,18 +3722,28 @@ PyUnicode_FSDecoder(PyObject* arg, void* addr)
 
 
 static int unicode_fill_utf8(PyObject *unicode);
-#endif // GraalPy change
 
 const char *
 PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize)
 {
-    // GraalPy change: different implementation
-    const char* charptr = GraalPyTruffle_Unicode_AsUTF8AndSize_CharPtr(unicode);
-    if (charptr && psize) {
-        *psize = GraalPyTruffle_Unicode_AsUTF8AndSize_Size(unicode);
+    if (!PyUnicode_Check(unicode)) {
+        PyErr_BadArgument();
+        return NULL;
     }
-    return charptr;
+    if (PyUnicode_READY(unicode) == -1)
+        return NULL;
+
+    if (PyUnicode_UTF8(unicode) == NULL) {
+        if (unicode_fill_utf8(unicode) == -1) {
+            return NULL;
+        }
+    }
+
+    if (psize)
+        *psize = PyUnicode_UTF8_LENGTH(unicode);
+    return PyUnicode_UTF8(unicode);
 }
+#endif // GraalPy change
 
 const char *
 PyUnicode_AsUTF8(PyObject *unicode)
