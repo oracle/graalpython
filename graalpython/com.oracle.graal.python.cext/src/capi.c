@@ -103,6 +103,8 @@ typedef struct {
     PyObject *weakreflist;
 } PyPickleBufferObject;
 
+// defined in 'unicodeobject.c'
+void unicode_dealloc(PyObject *unicode);
 
 static void object_dealloc(PyObject *self) {
     Py_TYPE(self)->tp_free(self);

@@ -224,7 +224,6 @@ UnicodeSubclass = CPyExtType(
     "UnicodeSubclass",
     '',
     struct_base='PyUnicodeObject base;',
-    tp_itemsize='sizeof(char)',
     tp_base='&PyUnicode_Type',
     tp_new='0',
     tp_alloc='0',

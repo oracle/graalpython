@@ -1050,8 +1050,7 @@ public final class PythonCextUnicodeBuiltins {
             if (lib.isNull(utf8)) {
                 PBytes bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
                 int len = bufferLib.getBufferLength(bytes);
-                // TODO leaked?
-                Object mem = allocateNode.alloc(len + 1);
+                Object mem = allocateNode.alloc(len + 1, true);
                 writeByteNode.writeByteArray(mem, bufferLib.getInternalByteArray(bytes), len, 0, 0);
                 writePointerNode.writeToObj(s, CFields.PyCompactUnicodeObject__utf8, mem);
                 writeLongNode.writeToObject(s, CFields.PyCompactUnicodeObject__utf8_length, len);

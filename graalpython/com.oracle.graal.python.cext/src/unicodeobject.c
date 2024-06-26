@@ -119,7 +119,6 @@ extern "C" {
 #  define _PyUnicode_CHECK(op) PyUnicode_Check(op)
 #endif
 
-#if 0 // GraalPy change
 #define _PyUnicode_UTF8(op)                             \
     (_PyCompactUnicodeObject_CAST(op)->utf8)
 #define PyUnicode_UTF8(op)                              \
@@ -190,7 +189,6 @@ extern "C" {
     ((_PyUnicode_WSTR(op) &&                            \
       (!PyUnicode_IS_READY(op) ||                       \
        _PyUnicode_WSTR(op) != PyUnicode_DATA(op))))
-#endif // GraalPy change
 
 /* Generic helper macro to convert characters of different types.
    from_type and to_type have to be valid type names, begin and end
@@ -1715,8 +1713,8 @@ _PyUnicode_Ready(PyObject *unicode)
     return 0;
 }
 
-#if 0 // GraalPy change
-static void
+// GraalPy change: export
+PyAPI_FUNC(void)
 unicode_dealloc(PyObject *unicode)
 {
 #ifdef Py_DEBUG
@@ -1725,6 +1723,7 @@ unicode_dealloc(PyObject *unicode)
     }
 #endif
 
+#if 0 // GraalPy change
     switch (PyUnicode_CHECK_INTERNED(unicode)) {
     case SSTATE_NOT_INTERNED:
         break;
@@ -1753,6 +1752,7 @@ unicode_dealloc(PyObject *unicode)
     default:
         Py_UNREACHABLE();
     }
+#endif // GraalPy change
 
     if (_PyUnicode_HAS_WSTR_MEMORY(unicode)) {
         PyObject_Free(_PyUnicode_WSTR(unicode));
@@ -1767,6 +1767,7 @@ unicode_dealloc(PyObject *unicode)
     Py_TYPE(unicode)->tp_free(unicode);
 }
 
+#if 0 // GraalPy change
 #ifdef Py_DEBUG
 static int
 unicode_is_singleton(PyObject *unicode)
@@ -14466,24 +14467,6 @@ unicode_new_impl(PyTypeObject *type, PyObject *x, const char *encoding,
 PyAPI_FUNC(PyObject *) // GraalPy change: export for downcall
 unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
 {
-    // GraalPy change: temporarily define struct access macros
-#define _PyUnicode_STATE(op)                            \
-    (_PyASCIIObject_CAST(op)->state)
-#define _PyUnicode_DATA_ANY(op)                         \
-    (_PyUnicodeObject_CAST(op)->data.any)
-#define _PyUnicode_LENGTH(op)                           \
-    (_PyASCIIObject_CAST(op)->length)
-#define _PyUnicode_HASH(op)                             \
-    (_PyASCIIObject_CAST(op)->hash)
-#define _PyUnicode_UTF8(op)                             \
-    (_PyCompactUnicodeObject_CAST(op)->utf8)
-#define _PyUnicode_UTF8_LENGTH(op)                      \
-    (_PyCompactUnicodeObject_CAST(op)->utf8_length)
-#define _PyUnicode_WSTR(op)                             \
-    (_PyASCIIObject_CAST(op)->wstr)
-#define _PyUnicode_WSTR_LENGTH(op)                      \
-    (_PyCompactUnicodeObject_CAST(op)->wstr_length)
-
     PyObject *self;
     Py_ssize_t length, char_size;
     int share_wstr, share_utf8;
@@ -14569,15 +14552,6 @@ unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
 onError:
     Py_DECREF(self);
     return NULL;
-// GraalPy change
-#undef _PyUnicode_STATE
-#undef _PyUnicode_DATA_ANY
-#undef _PyUnicode_LENGTH
-#undef _PyUnicode_HASH
-#undef _PyUnicode_UTF8
-#undef _PyUnicode_UTF8_LENGTH
-#undef _PyUnicode_WSTR
-#undef _PyUnicode_WSTR_LENGTH
 }
 
 #if 0 // GraalPy change
