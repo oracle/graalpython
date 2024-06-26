@@ -923,7 +923,6 @@ suite = {
                 "name": "org.graalvm.python.embedding",
                 "exports": [
                     "org.graalvm.python.embedding.utils",
-                    "org.graalvm.python.embedding.vfs",
                 ]
             },
             "useModulePath": True,

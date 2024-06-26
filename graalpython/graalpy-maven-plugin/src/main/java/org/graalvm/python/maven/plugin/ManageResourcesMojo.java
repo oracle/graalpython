@@ -55,6 +55,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -110,7 +111,15 @@ public class ManageResourcesMojo extends AbstractMojo {
     MavenProject project;
 
     @Parameter
+    String pythonResourcesDirectory;
+
+    @Parameter
     List<String> packages;
+
+    public static class PythonHome {
+        private List<String> includes;
+        private List<String> excludes;
+    }
 
     @Parameter
     PythonHome pythonHome;
@@ -123,23 +132,31 @@ public class ManageResourcesMojo extends AbstractMojo {
 
     private Set<String> launcherClassPath;
 
-    static Path getHomeDirectory(MavenProject project) {
-        return Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT, VFS_HOME);
-    }
-
-    static Path getVenvDirectory(MavenProject project) {
-        return Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT, VFS_VENV);
-    }
-
     static Path getMetaInfDirectory(MavenProject project) {
         return Path.of(project.getBuild().getOutputDirectory(), "META-INF", "native-image", GRAALPY_GROUP_ID, GRAALPY_MAVEN_PLUGIN_ARTIFACT_ID);
     }
 
     public void execute() throws MojoExecutionException {
+
+        if(pythonResourcesDirectory != null) {
+            if(pythonResourcesDirectory.trim().isEmpty()) {
+                pythonResourcesDirectory = null;
+            } else {
+                pythonResourcesDirectory = pythonResourcesDirectory.trim();
+            }
+        }
+
         manageHome();
         manageVenv();
         listGraalPyResources();
         manageNativeImageConfig();
+
+        for(Resource r : project.getBuild().getResources()) {
+            if (Files.exists(Path.of(r.getDirectory(), VFS_ROOT, "proj"))) {
+                getLog().warn(String.format("usage of %s is deprecated, use %s instead", Path.of(VFS_ROOT, "proj"), Path.of(VFS_ROOT, "src")));
+            }
+        }
+
     }
 
     private void trim(List<String> l) {
@@ -165,18 +182,12 @@ public class ManageResourcesMojo extends AbstractMojo {
         try {
             Files.createDirectories(nativeImageProperties.getParent());
             Files.writeString(nativeImageProperties, NATIVE_IMAGE_ARGS, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        } catch (IOException  e) {
+        } catch (IOException e) {
             throw new MojoExecutionException(String.format("failed to write %s", nativeImageProperties), e);
         }
     }
 
-    public static class PythonHome {
-        private List<String> includes;
-        private List<String> excludes;
-    }
-
     private void manageHome() throws MojoExecutionException {
-        var homeDirectory = getHomeDirectory(project);
         if (pythonHome == null) {
             pythonHome = new PythonHome();
             pythonHome.includes = Arrays.asList(".*");
@@ -194,7 +205,12 @@ public class ManageResourcesMojo extends AbstractMojo {
                 trim(pythonHome.excludes);
             }
         }
-
+        Path homeDirectory;
+        if(pythonResourcesDirectory == null) {
+            homeDirectory = Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT, VFS_HOME);
+        } else {
+            homeDirectory = Path.of(pythonResourcesDirectory, VFS_HOME);
+        }
         var tag = homeDirectory.resolve("tagfile");
         var graalPyVersion = getGraalPyVersion(project);
 
@@ -216,11 +232,10 @@ public class ManageResourcesMojo extends AbstractMojo {
                 getLog().info(String.format("Deleting GraalPy home due to changed includes or excludes"));
                 delete(homeDirectory);
             }
-        } else {
-            getLog().info(String.format("Creating GraalPy %s home", graalPyVersion));
         }
         try {
             if (!Files.exists(homeDirectory)) {
+                getLog().info(String.format("Creating GraalPy %s home in %s", graalPyVersion, homeDirectory));
                 Files.createDirectories(homeDirectory.getParent());
                 VFSUtils.copyGraalPyHome(calculateLauncherClasspath(project), homeDirectory, pythonHomeIncludes, pythonHomeExcludes, new MavenDelegateLog(getLog()));
             }
@@ -275,23 +290,31 @@ public class ManageResourcesMojo extends AbstractMojo {
     }
 
     private void listGraalPyResources() throws MojoExecutionException {
-        Path vfs = getVenvDirectory(project).getParent();
-        try {
-            VFSUtils.generateVFSFilesList(vfs);
-        } catch(IOException e) {
-            throw new MojoExecutionException(String.format("Failed to generate files list in '%s'", vfs.toString()), e);
+        Path vfs = Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT);
+        if (Files.exists(vfs)) {
+            try {
+                VFSUtils.generateVFSFilesList(vfs);
+            } catch (IOException e) {
+                throw new MojoExecutionException(String.format("Failed to generate files list in '%s'", vfs.toString()), e);
+            }
         }
     }
 
     private void manageVenv() throws MojoExecutionException {
         generateLaunchers();
 
-        var venvDirectory = getVenvDirectory(project);
+        Path venvDirectory;
+        if(pythonResourcesDirectory == null) {
+            venvDirectory = Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT, VFS_VENV);
+        } else {
+            venvDirectory = Path.of(pythonResourcesDirectory, VFS_VENV);
+        }
 
         if(packages != null) {
             trim(packages);
         }
-        if (packages == null || packages.isEmpty()) {
+
+        if (packages == null && pythonResourcesDirectory == null) {
             getLog().info(String.format("No venv packages declared, deleting %s", venvDirectory));
             delete(venvDirectory);
             return;
