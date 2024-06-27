@@ -355,8 +355,8 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "If native memory tracing is enabled, also capture stack.") //
     public static final OptionKey<Boolean> TraceNativeMemoryCalls = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "<bytes>", help = "Max native memory heap size (default: 2 GB).") //
-    public static final OptionKey<Long> MaxNativeMemory = new OptionKey<>(1L << 31);
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "<bytes>", help = "Max native memory heap size (default: 8 GB).") //
+    public static final OptionKey<Long> MaxNativeMemory = new OptionKey<>(1L << 33);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "<bytes>", help = "Initial native memory heap size that triggers a GC (default: 256 MB).") //
     public static final OptionKey<Long> InitialNativeMemory = new OptionKey<>(1L << 28);
