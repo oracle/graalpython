@@ -3759,12 +3759,25 @@ PyUnicode_AsUTF8(PyObject *unicode)
 Py_UNICODE *
 PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size)
 {
-    // GraalPy change: different implementation
-    Py_UNICODE* charptr = GraalPyTruffle_Unicode_AsUnicodeAndSize_CharPtr(unicode);
-    if (charptr && size) {
-        *size = GraalPyTruffle_Unicode_AsUnicodeAndSize_Size(unicode);
+    if (!PyUnicode_Check(unicode)) {
+        PyErr_BadArgument();
+        return NULL;
     }
-    return charptr;
+    // GraalPy change: upcall for managed objects
+    if (points_to_py_handle_space(unicode)) {
+        return GraalPyTruffleUnicode_AsUnicodeAndSize(unicode, size);
+    }
+    Py_UNICODE *w = _PyUnicode_WSTR(unicode);
+    if (w == NULL) {
+        // GraalPy change: upcall
+        if (GraalPyTruffleUnicode_FillUnicode(unicode) == -1) {
+            return NULL;
+        }
+        w = _PyUnicode_WSTR(unicode);
+    }
+    if (size != NULL)
+        *size = PyUnicode_WSTR_LENGTH(unicode);
+    return w;
 }
 
 /* Deprecated APIs */

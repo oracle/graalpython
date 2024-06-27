@@ -738,6 +738,8 @@ class TestPyUnicode(CPyExtTestCase):
         lambda: (
             ("hello", b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00',
              b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
+            (UnicodeSubclass("hello"), b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00',
+             b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
         ),
         code=""" PyObject* wrap_PyUnicode_AsUnicode(PyObject* unicodeObj, PyObject* expected_16, PyObject* expected_32) {
             Py_ssize_t n = Py_UNICODE_SIZE == 2 ? PyBytes_Size(expected_16) : PyBytes_Size(expected_32);
@@ -764,6 +766,8 @@ class TestPyUnicode(CPyExtTestCase):
         lambda args: True,
         lambda: (
             ("hello", b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00',
+             b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
+            (UnicodeSubclass("hello"), b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00',
              b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
         ),
         code=""" PyObject* wrap_PyUnicode_AsUnicodeAndSize(PyObject* unicodeObj, PyObject* expected_16, PyObject* expected_32) {
