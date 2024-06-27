@@ -50,8 +50,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.graalvm.polyglot.Context;
@@ -771,6 +773,21 @@ public class JavaInteropTest {
                             "suite.py").build();
             Value foo = context.eval(suitePy);
             foo.execute(new UnsupportedProxyArray());
+        }
+
+        @Test
+        public void recursiveJavaListRepr() throws IOException {
+            Source source = Source.newBuilder("python", """
+                            def foo(obj):
+                                return repr(obj)
+                            foo
+                            """, "input").build();
+            Value foo = context.eval(source);
+            List<Object> recursiveList = new ArrayList<>();
+            recursiveList.add(1);
+            recursiveList.add(recursiveList);
+            Value result = foo.execute(recursiveList);
+            assertEquals(result.as(String.class), "[1, [...]]");
         }
     }
 
