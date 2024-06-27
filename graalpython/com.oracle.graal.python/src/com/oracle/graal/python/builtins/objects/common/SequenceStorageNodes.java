@@ -3321,6 +3321,11 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
+        static void doEmpty(@SuppressWarnings("unused") EmptySequenceStorage s, int len) {
+            assert len == 0;
+        }
+
+        @Specialization
         static void doNative(NativeSequenceStorage s, int len,
                         @Cached(inline = false) SetNativeLenNode setLen) {
             setLen.execute(s, len);

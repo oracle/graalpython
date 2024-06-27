@@ -283,13 +283,20 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class StrFormatNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "isString(self)")
+        @Specialization
         static TruffleString format(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached BuiltinFunctions.FormatNode format,
-                        @Cached CastToTruffleStringNode castToStringNode) {
-            TemplateFormatter template = new TemplateFormatter(castToStringNode.execute(inliningTarget, self));
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached PRaiseNode raiseNode) {
+            TruffleString string;
+            try {
+                string = castToStringNode.execute(inliningTarget, self);
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T_FORMAT, "str", self);
+            }
+            TemplateFormatter template = new TemplateFormatter(string);
             PythonLanguage language = PythonLanguage.get(inliningTarget);
             PythonContext context = PythonContext.get(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
@@ -298,13 +305,6 @@ public final class StringBuiltins extends PythonBuiltins {
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
-        }
-
-        @Specialization(guards = "!isString(self)")
-        @SuppressWarnings("unused")
-        static TruffleString generic(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T_FORMAT, "str", self);
         }
     }
 

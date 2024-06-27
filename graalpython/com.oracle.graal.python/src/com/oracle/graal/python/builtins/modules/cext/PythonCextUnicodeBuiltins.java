@@ -58,6 +58,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UCS4;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UNICODE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
@@ -98,13 +99,17 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
@@ -1017,67 +1022,107 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ConstCharPtr, args = {PyObject}, call = Direct)
-    abstract static class PyTruffle_Unicode_AsUTF8AndSize_CharPtr extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = ConstCharPtr, args = {PyObject, PY_SSIZE_T_PTR}, call = Ignored)
+    abstract static class PyTruffleUnicode_AsUTF8AndSize extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object doUnicode(PString s,
+        static Object doUnicode(PString s, Object sizePtr,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile profile,
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached InlinedConditionProfile hasSizeProfile,
+                        @Cached InlinedConditionProfile hasUtf8Profile,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached _PyUnicode_AsUTF8String asUTF8String) {
-            if (profile.profile(inliningTarget, s.getUtf8Bytes() == null)) {
+            if (hasUtf8Profile.profile(inliningTarget, s.getUtf8Bytes() == null)) {
                 PBytes bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
                 s.setUtf8Bytes(bytes);
+            }
+            if (hasSizeProfile.profile(inliningTarget, !lib.isNull(sizePtr))) {
+                writeLongNode.write(sizePtr, s.getUtf8Bytes().getSequenceStorage().length());
             }
             return PySequenceArrayWrapper.ensureNativeSequence(s.getUtf8Bytes());
         }
 
         @Fallback
-        static Object doError(@SuppressWarnings("unused") Object s,
+        @SuppressWarnings("unused")
+        static Object doError(Object s, Object sizePtr,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    abstract static class PyTruffle_Unicode_AsUTF8AndSize_Size extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffleUnicode_FillUtf8 extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object doUnicode(PString s) {
-            // PyTruffle_Unicode_AsUTF8AndSize_CharPtr must have been be called before
-            return s.getUtf8Bytes().getSequenceStorage().length();
+        static Object doNative(PythonAbstractNativeObject s,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
+                        @Cached _PyUnicode_AsUTF8String asUTF8String,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
+                        @Cached CStructAccess.AllocateNode allocateNode,
+                        @Cached CStructAccess.WriteByteNode writeByteNode) {
+            PBytes bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
+            int len = bufferLib.getBufferLength(bytes);
+            Object mem = allocateNode.alloc(len + 1, true);
+            writeByteNode.writeByteArray(mem, bufferLib.getInternalOrCopiedByteArray(bytes), len, 0, 0);
+            writePointerNode.writeToObj(s, CFields.PyCompactUnicodeObject__utf8, mem);
+            writeLongNode.writeToObject(s, CFields.PyCompactUnicodeObject__utf8_length, len);
+            return 0;
         }
     }
 
-    @CApiBuiltin(ret = PY_UNICODE_PTR, args = {PyObject}, call = Direct)
-    abstract static class PyTruffle_Unicode_AsUnicodeAndSize_CharPtr extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = PY_UNICODE_PTR, args = {PyObject, PY_SSIZE_T_PTR}, call = Ignored)
+    abstract static class PyTruffleUnicode_AsUnicodeAndSize extends CApiBinaryBuiltinNode {
 
         @Specialization
-        Object doUnicode(PString s,
+        static Object doUnicode(PString s, Object sizePtr,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile profile,
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached InlinedConditionProfile hasSizeProfile,
+                        @Cached InlinedConditionProfile hasUnicodeProfile,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached UnicodeAsWideCharNode asWideCharNode) {
-            if (profile.profile(inliningTarget, s.getWCharBytes() == null)) {
-                PBytes bytes = asWideCharNode.executeNativeOrder(inliningTarget, s, CStructs.wchar_t.size());
+            int wcharSize = CStructs.wchar_t.size();
+            if (hasUnicodeProfile.profile(inliningTarget, s.getWCharBytes() == null)) {
+                PBytes bytes = asWideCharNode.executeNativeOrder(inliningTarget, s, wcharSize);
                 s.setWCharBytes(bytes);
+            }
+            if (hasSizeProfile.profile(inliningTarget, !lib.isNull(sizePtr))) {
+                writeLongNode.write(sizePtr, s.getWCharBytes().getSequenceStorage().length() / wcharSize);
             }
             return PySequenceArrayWrapper.ensureNativeSequence(s.getWCharBytes());
         }
 
         @Fallback
-        static Object doError(@SuppressWarnings("unused") Object s,
+        @SuppressWarnings("unused")
+        static Object doError(Object s, Object sizePtr,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    abstract static class PyTruffle_Unicode_AsUnicodeAndSize_Size extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffleUnicode_FillUnicode extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object doUnicode(PString s) {
-            // PyTruffle_Unicode_AsUnicodeAndSize_CharPtr must have been be called before
-            return s.getWCharBytes().getSequenceStorage().length() / CStructs.wchar_t.size();
+        static Object doNative(PythonAbstractNativeObject s,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringNode cast,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
+                        @Cached UnicodeAsWideCharNode asWideCharNode,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
+                        @Cached CStructAccess.AllocateNode allocateNode,
+                        @Cached CStructAccess.WriteByteNode writeByteNode) {
+            int wcharSize = CStructs.wchar_t.size();
+            PBytes bytes = asWideCharNode.executeNativeOrder(inliningTarget, cast.castKnownString(inliningTarget, s), wcharSize);
+            int len = bufferLib.getBufferLength(bytes);
+            Object mem = allocateNode.alloc(len + wcharSize, true);
+            writeByteNode.writeByteArray(mem, bufferLib.getInternalOrCopiedByteArray(bytes), len, 0, 0);
+            writePointerNode.writeToObj(s, CFields.PyASCIIObject__wstr, mem);
+            writeLongNode.writeToObject(s, CFields.PyCompactUnicodeObject__wstr_length, len / wcharSize);
+            return 0;
         }
     }
 

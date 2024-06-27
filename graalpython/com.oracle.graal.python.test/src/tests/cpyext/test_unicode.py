@@ -41,7 +41,8 @@ import locale
 import re
 import sys
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON, CPyExtFunctionOutVars
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON, CPyExtFunctionOutVars, \
+    is_native_object
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -219,6 +220,17 @@ def gen_intern_args():
         return args
 
 
+UnicodeSubclass = CPyExtType(
+    "UnicodeSubclass",
+    '',
+    struct_base='PyUnicodeObject base;',
+    tp_base='&PyUnicode_Type',
+    tp_new='0',
+    tp_alloc='0',
+    tp_free='0',
+)
+
+
 class TestPyUnicode(CPyExtTestCase):
 
     test_PyUnicode_FromObject = CPyExtFunction(
@@ -229,6 +241,7 @@ class TestPyUnicode(CPyExtTestCase):
             (b"hello",),
             (Dummy(),),
             (str,),
+            (UnicodeSubclass("asdf"),),
         ),
         resultspec="O",
         argspec='O',
@@ -408,6 +421,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("hello",),
             ("world",),
             ("this is a longer text also cöntaining weird Ümläuts",),
+            (UnicodeSubclass("asdf"),),
         ),
         resultspec="n",
         argspec='O',
@@ -421,6 +435,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("hello", ", world"),
             ("", "world"),
             ("this is a longer text also cöntaining weird Ümläuts", ""),
+            (UnicodeSubclass("asdf"), "gh"),
         ),
         resultspec="O",
         argspec='OO',
@@ -477,6 +492,7 @@ class TestPyUnicode(CPyExtTestCase):
         lambda: (
             ("hello",),
             ("hellö",),
+            (UnicodeSubclass("asdf"),),
         ),
         resultspec="s",
         argspec='O',
@@ -489,6 +505,8 @@ class TestPyUnicode(CPyExtTestCase):
         lambda: (
             ("hello",),
             ("hellö",),
+            (UnicodeSubclass("asdf"),),
+            (UnicodeSubclass("žluťoučký kůň"),),
         ),
         resultspec="O",
         argspec='O',
@@ -501,6 +519,8 @@ class TestPyUnicode(CPyExtTestCase):
         lambda: (
             ("hello",),
             ("hellö",),
+            (UnicodeSubclass("asdf"),),
+            (UnicodeSubclass("žluťoučký kůň"),),
         ),
         resultspec="yn",
         resulttype='const char*',
@@ -650,6 +670,7 @@ class TestPyUnicode(CPyExtTestCase):
         lambda: (
             ("hello",),
             ("hellö",),
+            (UnicodeSubclass("asdf"),),
         ),
         resultspec="O",
         argspec='O',
@@ -662,6 +683,7 @@ class TestPyUnicode(CPyExtTestCase):
         lambda: (
             ("hello",),
             ("hellö",),
+            (UnicodeSubclass("asdf"),),
         ),
         resultspec="O",
         argspec='O',
@@ -676,6 +698,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("hellö, %s", ("wörld",)),
             ("%s, %r", ("hello", "world")),
             ("nothing else", tuple()),
+            (UnicodeSubclass("%s, %r"), ("hello", "world")),
         ),
         resultspec="O",
         argspec='OO',
@@ -691,6 +714,7 @@ class TestPyUnicode(CPyExtTestCase):
             (b"hello",),
             ("hellö",),
             (['a', 'b', 'c'],),
+            (UnicodeSubclass("asdf"),),
         ),
         resultspec="i",
         argspec='O',
@@ -713,6 +737,8 @@ class TestPyUnicode(CPyExtTestCase):
         lambda args: True,
         lambda: (
             ("hello", b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00',
+             b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
+            (UnicodeSubclass("hello"), b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00',
              b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
         ),
         code=""" PyObject* wrap_PyUnicode_AsUnicode(PyObject* unicodeObj, PyObject* expected_16, PyObject* expected_32) {
@@ -740,6 +766,8 @@ class TestPyUnicode(CPyExtTestCase):
         lambda args: True,
         lambda: (
             ("hello", b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00',
+             b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
+            (UnicodeSubclass("hello"), b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00',
              b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
         ),
         code=""" PyObject* wrap_PyUnicode_AsUnicodeAndSize(PyObject* unicodeObj, PyObject* expected_16, PyObject* expected_32) {
@@ -798,6 +826,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("hello", 0, 1),
             ("hello", 4, 5),
             ("hello", 1, 4),
+            (UnicodeSubclass("asdf"), 2, 4),
         ),
         resultspec="O",
         argspec='Onn',
@@ -826,6 +855,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("a", "b"),
             ("a", None),
             ("a", 1),
+            (UnicodeSubclass("asdf"), "asdf"),
         ),
         resultspec="i",
         argspec='OO',
@@ -840,6 +870,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("a", "b"),
             ("a", "ab"),
             ("ab", "a"),
+            (UnicodeSubclass("asdf"), "asdf"),
         ),
         resultspec="i",
         argspec='Os',
@@ -907,6 +938,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("öüä", "ascii", "ignore"),
             ("öüä", "ascii", "replace"),
             (1, "ascii", "replace"),
+            (UnicodeSubclass("asdf"), "ascii", "report"),
         ),
         resultspec="O",
         argspec='Oss',
@@ -920,6 +952,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("abcd",),
             ("öüä",),
             (1,),
+            (UnicodeSubclass("asdf"),),
         ),
         resultspec="O",
         argspec='O',
@@ -991,6 +1024,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("hello", 100),
             ("hello", -1),
             ("höllö", 4),
+            (UnicodeSubclass("asdf"), 1),
         ),
         code='''PyObject* wrap_PyUnicode_ReadChar(PyObject* unicode, Py_ssize_t index) {
             Py_UCS4 res = PyUnicode_ReadChar(unicode, index);
@@ -1012,6 +1046,7 @@ class TestPyUnicode(CPyExtTestCase):
         lambda: (
             ("aaa", "bbb"),
             ("aaa", "a"),
+            (UnicodeSubclass("asdf"), "s"),
         ),
         resultspec="i",
         argspec='OO',
@@ -1024,6 +1059,7 @@ class TestPyUnicode(CPyExtTestCase):
         lambda: (
             ("foo.bar.baz", ".", 0),
             ("foo.bar.baz", ".", 1),
+            (UnicodeSubclass("foo.bar.baz"), ".", 1),
             ("foo.bar.baz", 7, 0),
         ),
         resultspec="O",
@@ -1080,6 +1116,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("ššš",),
             ("すごい",),
             ("😂",),
+            (UnicodeSubclass("asdf"),)
         ),
         code='''
         PyObject* wrap_PyUnicode_DATA(PyObject* string) {
@@ -1129,3 +1166,22 @@ class TestUnicodeObject(object):
         s2 = b'some text'.decode('ascii')
         assert tester.set_intern_str(s1) == s2
         assert tester.check_is_same_str_ptr(s2)
+
+
+class TestNativeUnicodeSubclass:
+    def test_builtins(self):
+        s = UnicodeSubclass("asdf")
+        assert is_native_object(s)
+        assert type(s) is UnicodeSubclass
+        assert len(s) == 4
+        assert s[1] == 's'
+        assert s == "asdf"
+        assert s + "gh" == "asdfgh"
+        assert s > "asc"
+        assert s >= "asdf"
+        assert s < "b"
+        assert s <= "asdf"
+        assert s[1:] == "sdf"
+        assert "sd" in s
+        assert UnicodeSubclass("<{}>").format("asdf") == "<asdf>"
+        assert UnicodeSubclass("<%s>") % "asdf" == "<asdf>"

@@ -156,7 +156,7 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
             if (lib.isPointer(data) || data instanceof Long) {
                 return fromNative.execute(data, 0, bytes, encoding, false);
             }
-            byte[] result = readByte.readByteArray(pointer, bytes);
+            byte[] result = readByte.readByteArray(data, bytes);
             return fromBytes.execute(result, encoding, false);
         }
     }

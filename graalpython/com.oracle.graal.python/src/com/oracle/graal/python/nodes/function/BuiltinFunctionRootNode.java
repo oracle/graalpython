@@ -64,7 +64,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -274,7 +273,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     }
 
     @Override
-    public boolean isCaptureFramesForTrace(Node node) {
+    public boolean isCaptureFramesForTrace(boolean compiledFrame) {
         return false;
     }
 

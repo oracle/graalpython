@@ -2118,6 +2118,7 @@ def _python_checkpatchfiles():
             # numpy started putting the whole license text in the field. Its BSD-3-Clause
             'numpy-1.23.2.patch',
             'numpy-1.23.5.patch',
+            'numpy-1.24.3.patch',
             'numpy-1.26.4.patch',
             'numpy-2.0.0.patch',
             # libcst is MIT
