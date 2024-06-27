@@ -1022,17 +1022,17 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ConstCharPtr, args = {PyObject, PY_SSIZE_T_PTR}, call = Direct)
-    abstract static class PyUnicode_AsUTF8AndSize extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = ConstCharPtr, args = {PyObject, PY_SSIZE_T_PTR}, call = Ignored)
+    abstract static class PyTruffleUnicode_AsUTF8AndSize extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doUnicode(PString s, Object sizePtr,
                         @Bind("this") Node inliningTarget,
-                        @Shared @CachedLibrary(limit = "2") InteropLibrary lib,
-                        @Shared @Cached InlinedConditionProfile hasSizeProfile,
-                        @Shared @Cached InlinedConditionProfile hasUtf8Profile,
-                        @Shared @Cached CStructAccess.WriteLongNode writeLongNode,
-                        @Shared @Cached _PyUnicode_AsUTF8String asUTF8String) {
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached InlinedConditionProfile hasSizeProfile,
+                        @Cached InlinedConditionProfile hasUtf8Profile,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
+                        @Cached _PyUnicode_AsUTF8String asUTF8String) {
             if (hasUtf8Profile.profile(inliningTarget, s.getUtf8Bytes() == null)) {
                 PBytes bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
                 s.setUtf8Bytes(bytes);
@@ -1043,45 +1043,32 @@ public final class PythonCextUnicodeBuiltins {
             return PySequenceArrayWrapper.ensureNativeSequence(s.getUtf8Bytes());
         }
 
-        @Specialization
-        static Object doNative(PythonAbstractNativeObject s, Object sizePtr,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @CachedLibrary(limit = "2") InteropLibrary lib,
-                        @Shared @Cached InlinedConditionProfile hasSizeProfile,
-                        @Shared @Cached InlinedConditionProfile hasUtf8Profile,
-                        @Shared @Cached CStructAccess.WriteLongNode writeLongNode,
-                        @Shared @Cached _PyUnicode_AsUTF8String asUTF8String,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached CStructAccess.ReadPointerNode readPointerNode,
-                        @Cached CStructAccess.WritePointerNode writePointerNode,
-                        @Cached CStructAccess.AllocateNode allocateNode,
-                        @Cached CStructAccess.WriteByteNode writeByteNode,
-                        @Cached CStructAccess.ReadI64Node readI64Node) {
-            Object utf8 = readPointerNode.readFromObj(s, CFields.PyCompactUnicodeObject__utf8);
-            if (hasUtf8Profile.profile(inliningTarget, lib.isNull(utf8))) {
-                PBytes bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
-                int len = bufferLib.getBufferLength(bytes);
-                Object mem = allocateNode.alloc(len + 1, true);
-                writeByteNode.writeByteArray(mem, bufferLib.getInternalOrCopiedByteArray(bytes), len, 0, 0);
-                writePointerNode.writeToObj(s, CFields.PyCompactUnicodeObject__utf8, mem);
-                writeLongNode.writeToObject(s, CFields.PyCompactUnicodeObject__utf8_length, len);
-                if (hasSizeProfile.profile(inliningTarget, !lib.isNull(sizePtr))) {
-                    writeLongNode.write(sizePtr, len);
-                }
-                return mem;
-            } else {
-                if (hasSizeProfile.profile(inliningTarget, !lib.isNull(sizePtr))) {
-                    writeLongNode.write(sizePtr, readI64Node.readFromObj(s, CFields.PyCompactUnicodeObject__utf8_length));
-                }
-                return utf8;
-            }
-        }
-
         @Fallback
         @SuppressWarnings("unused")
         static Object doError(Object s, Object sizePtr,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffleUnicode_FillUtf8 extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static Object doNative(PythonAbstractNativeObject s,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
+                        @Cached _PyUnicode_AsUTF8String asUTF8String,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
+                        @Cached CStructAccess.AllocateNode allocateNode,
+                        @Cached CStructAccess.WriteByteNode writeByteNode) {
+            PBytes bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
+            int len = bufferLib.getBufferLength(bytes);
+            Object mem = allocateNode.alloc(len + 1, true);
+            writeByteNode.writeByteArray(mem, bufferLib.getInternalOrCopiedByteArray(bytes), len, 0, 0);
+            writePointerNode.writeToObj(s, CFields.PyCompactUnicodeObject__utf8, mem);
+            writeLongNode.writeToObject(s, CFields.PyCompactUnicodeObject__utf8_length, len);
+            return 0;
         }
     }
 

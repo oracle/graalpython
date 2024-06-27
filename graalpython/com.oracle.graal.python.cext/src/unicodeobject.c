@@ -3722,6 +3722,7 @@ PyUnicode_FSDecoder(PyObject* arg, void* addr)
 
 
 static int unicode_fill_utf8(PyObject *unicode);
+#endif // GraalPy change
 
 const char *
 PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize)
@@ -3730,11 +3731,16 @@ PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize)
         PyErr_BadArgument();
         return NULL;
     }
+    // GraalPy change: upcall for managed objects
+    if (points_to_py_handle_space(unicode)) {
+        return GraalPyTruffleUnicode_AsUTF8AndSize(unicode, psize);
+    }
     if (PyUnicode_READY(unicode) == -1)
         return NULL;
 
     if (PyUnicode_UTF8(unicode) == NULL) {
-        if (unicode_fill_utf8(unicode) == -1) {
+        // GraalPy change: upcall
+        if (GraalPyTruffleUnicode_FillUtf8(unicode) == -1) {
             return NULL;
         }
     }
@@ -3743,7 +3749,6 @@ PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize)
         *psize = PyUnicode_UTF8_LENGTH(unicode);
     return PyUnicode_UTF8(unicode);
 }
-#endif // GraalPy change
 
 const char *
 PyUnicode_AsUTF8(PyObject *unicode)

@@ -477,6 +477,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnicode_AsUCS4", ret = PY_UCS4_PTR, args = {PyObject, PY_UCS4_PTR, Py_ssize_t, Int}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_AsUCS4Copy", ret = PY_UCS4_PTR, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_AsUTF8", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyUnicode_AsUTF8AndSize", ret = ConstCharPtrAsTruffleString, args = {PyObject, PY_SSIZE_T_PTR}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_AsUTF8String", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_AsUnicode", ret = PY_UNICODE_PTR, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_AsUnicodeAndSize", ret = PY_UNICODE_PTR, args = {PyObject, PY_SSIZE_T_PTR}, call = CImpl)
