@@ -77,7 +77,7 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
         return executeInternal(frame, cls);
     }
 
-    @Specialization(guards = "!isUncached()")
+    @Specialization(guards = "!isUncachedNode()")
     static PTuple getBasesCached(VirtualFrame frame, Object cls,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetAttr getAttributeNode,
