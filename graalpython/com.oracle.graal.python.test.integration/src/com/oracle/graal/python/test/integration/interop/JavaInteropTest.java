@@ -789,6 +789,35 @@ public class JavaInteropTest {
             Value result = foo.execute(recursiveList);
             assertEquals(result.as(String.class), "[1, [...]]");
         }
+
+        @Test
+        public void testMetaParents() throws IOException {
+            Source source = Source.newBuilder("python", """
+                            class Foo:
+                                pass
+                            class Bar(Foo):
+                                pass
+                            Bar
+                            """, "input").build();
+            Value bar = context.eval(source);
+            assertTrue(bar.isMetaObject());
+            assertEquals(bar.getMetaSimpleName(), "Bar");
+            assertTrue(bar.hasMetaParents());
+            Value barParents = bar.getMetaParents();
+            assertTrue(barParents.hasArrayElements());
+            assertEquals(barParents.getArraySize(), 1);
+            Value foo = barParents.getArrayElement(0);
+            assertTrue(foo.isMetaObject());
+            assertEquals(foo.getMetaSimpleName(), "Foo");
+            assertTrue(foo.hasMetaParents());
+            Value fooParents = foo.getMetaParents();
+            assertTrue(fooParents.hasArrayElements());
+            assertEquals(fooParents.getArraySize(), 1);
+            Value object = fooParents.getArrayElement(0);
+            assertTrue(object.isMetaObject());
+            assertEquals(object.getMetaSimpleName(), "object");
+            assertFalse(object.hasMetaParents());
+        }
     }
 
     @RunWith(Parameterized.class)

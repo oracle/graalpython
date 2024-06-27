@@ -149,6 +149,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -1493,6 +1494,41 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             return getClass.executeCached(this);
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public boolean hasMetaParents(
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
+                    @Exclusive @Cached TypeNodes.GetBaseClassesNode getBaseClassNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isTypeNode.execute(inliningTarget, this) && getBaseClassNode.execute(inliningTarget, this).length > 0;
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public Object getMetaParents(
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached PythonObjectFactory factory,
+                    @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
+                    @Exclusive @Cached TypeNodes.GetBaseClassesNode getBaseClassNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (isTypeNode.execute(inliningTarget, this)) {
+                var bases = getBaseClassNode.execute(inliningTarget, this);
+                if (bases.length > 0) {
+                    return factory.createTuple(bases);
+                }
+            }
+            throw UnsupportedMessageException.create();
         } finally {
             gil.release(mustRelease);
         }
