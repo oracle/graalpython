@@ -2165,6 +2165,8 @@ def _python_checkpatchfiles():
             'autopep8.patch',
             # Whole license in the field. It's MIT
             'tiktoken-0.7.0.patch',
+            # License field is null. It's PSF
+            'typing_extensions.patch',
         }
         allowed_licenses = [
             "MIT",
