@@ -42,6 +42,7 @@ package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.runtime.native_memory.NativeBuffer;
 import com.oracle.graal.python.runtime.sequence.storage.NativeIntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -59,10 +60,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class NativeBufferContext {
     private static final Unsafe unsafe = PythonUtils.initUnsafe();
 
-    @CompilationFinal private ReferenceQueue<NativePrimitiveSequenceStorage> referenceQueue;
+    private ReferenceQueue<NativePrimitiveSequenceStorage> referenceQueue;
     // We need to keep around the references since Phantom References are one way bound
     // Key: MemoryAddr, Value: PhantomReference
-    private ConcurrentHashMap<Long, NativePrimitiveReference> phantomReferences;
+    private ConcurrentHashMap<NativePrimitiveReference, NativePrimitiveReference> phantomReferences;
 
     private Thread nativeBufferReferenceCleanerThread;
 
@@ -81,37 +82,11 @@ public class NativeBufferContext {
         }
     }
 
-    public long allocateNativeMemory(long capacityInBytes) {
-        assert capacityInBytes >= 0;
-        return unsafe.allocateMemory(capacityInBytes);
-    }
-
-    public void copyMemory(long fromAddress, long toAddress, long capacityInBytes) {
-        assert capacityInBytes >= 0;
-        unsafe.copyMemory(fromAddress, toAddress, capacityInBytes);
-    }
-
     @TruffleBoundary
-    public void releaseMemory(long memoryAddr) {
-        NativePrimitiveReference ref = phantomReferences.remove(memoryAddr);
-        ref.release(unsafe);
-    }
-
-    @TruffleBoundary
-    public void setNewValueAddrToStorage(NativePrimitiveSequenceStorage storage, long valueAddr, long capacityInBytes) {
-        assert capacityInBytes >= 0;
-        releaseMemory(storage.getValueBufferAddr());
-        storage.setValueBufferAddr(valueAddr, capacityInBytes);
+    public NativeIntSequenceStorage createNativeIntStorage(NativeBuffer valueBuffer, int length) {
+        var storage = new NativeIntSequenceStorage(valueBuffer, length);
         var phantomRef = new NativePrimitiveReference(storage, getReferenceQueue());
-        phantomReferences.put(valueAddr, phantomRef);
-    }
-
-    @TruffleBoundary
-    public NativeIntSequenceStorage wrapToIntStorage(long valueBufferAddr, long capacityInBytes, int length) {
-        assert capacityInBytes >= 0;
-        var storage = new NativeIntSequenceStorage(valueBufferAddr, capacityInBytes, length);
-        var phantomRef = new NativePrimitiveReference(storage, getReferenceQueue());
-        phantomReferences.put(storage.getValueBufferAddr(), phantomRef);
+        phantomReferences.put(phantomRef, phantomRef);
 
         return storage;
     }
@@ -132,10 +107,10 @@ public class NativeBufferContext {
 
     public NativeIntSequenceStorage toNativeIntStorage(int[] arr) {
         long sizeInBytes = (long) arr.length * (long) Integer.BYTES;
-        long addr = allocateNativeMemory(sizeInBytes);
+        NativeBuffer nativeBuffer = NativeBuffer.allocateNew(sizeInBytes);
 
-        unsafe.copyMemory(arr, Unsafe.ARRAY_INT_BASE_OFFSET, null, addr, sizeInBytes);
-        return wrapToIntStorage(addr, sizeInBytes, arr.length);
+        unsafe.copyMemory(arr, Unsafe.ARRAY_INT_BASE_OFFSET, null, nativeBuffer.getMemoryAddress(), sizeInBytes);
+        return createNativeIntStorage(nativeBuffer, arr.length);
     }
 
     private ReferenceQueue<NativePrimitiveSequenceStorage> getReferenceQueue() {
@@ -151,13 +126,11 @@ public class NativeBufferContext {
     static final class NativeBufferDeallocatorRunnable implements Runnable {
         private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(NativeBufferDeallocatorRunnable.class);
 
-        private static final Unsafe unsafe = PythonUtils.initUnsafe();
-
         private final ReferenceQueue<NativePrimitiveSequenceStorage> referenceQueue;
-        private final ConcurrentHashMap<Long, NativePrimitiveReference> references;
+        private final ConcurrentHashMap<NativePrimitiveReference, NativePrimitiveReference> references;
 
         public NativeBufferDeallocatorRunnable(ReferenceQueue<NativePrimitiveSequenceStorage> referenceQueue,
-                        ConcurrentHashMap<Long, NativePrimitiveReference> references) {
+                        ConcurrentHashMap<NativePrimitiveReference, NativePrimitiveReference> references) {
             this.referenceQueue = referenceQueue;
             this.references = references;
         }
@@ -170,8 +143,8 @@ public class NativeBufferContext {
             while (!pythonContext.getThreadState(language).isShuttingDown()) {
                 try {
                     NativePrimitiveReference phantomRef = (NativePrimitiveReference) referenceQueue.remove();
-                    phantomRef.release(unsafe);
-                    references.remove(phantomRef.getMemoryAddress());
+                    phantomRef.release();
+                    references.remove(phantomRef);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     LOGGER.fine("Native buffer reference cleaner thread was interrupted and is exiting");
@@ -184,23 +157,15 @@ public class NativeBufferContext {
 
     static final class NativePrimitiveReference extends PhantomReference<NativePrimitiveSequenceStorage> {
 
-        private final long memoryAddress;
-        private boolean released = false;
+        private final NativeBuffer buffer;
 
         public NativePrimitiveReference(NativePrimitiveSequenceStorage referent, ReferenceQueue<NativePrimitiveSequenceStorage> q) {
             super(referent, q);
-            this.memoryAddress = referent.getValueBufferAddr();
+            this.buffer = referent.getValueBuffer();
         }
 
-        public void release(Unsafe unsafe) {
-            if (!released) {
-                unsafe.freeMemory(memoryAddress);
-                released = true;
-            }
-        }
-
-        public long getMemoryAddress() {
-            return memoryAddress;
+        public void release() {
+            buffer.release();
         }
     }
 }

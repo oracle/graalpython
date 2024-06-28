@@ -112,6 +112,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.native_memory.NativeBuffer;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
@@ -787,9 +788,8 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static SequenceStorage doNativeInt(NativeIntSequenceStorage storage, int start, int stop, int step, int length,
                         @Bind("this") Node node) {
-            var valueBufferAddr = doNativePrimitiveSliceInBound(node, start, step, length, storage);
-            long sizeInBytes = length * storage.getItemSize();
-            return PythonContext.get(node).nativeBufferContext.wrapToIntStorage(valueBufferAddr, sizeInBytes, length);
+            NativeBuffer sliceValueBuffer = doNativePrimitiveSliceInBound(PythonContext.get(node), start, step, length, storage);
+            return PythonContext.get(node).nativeBufferContext.createNativeIntStorage(sliceValueBuffer, length);
         }
 
         @Specialization
@@ -814,25 +814,25 @@ public abstract class SequenceStorageNodes {
             return new ObjectSequenceStorage(newArray);
         }
 
-        private static long doNativePrimitiveSliceInBound(Node node, int start, int step, int sliceLength, NativePrimitiveSequenceStorage storage) {
+        private static NativeBuffer doNativePrimitiveSliceInBound(PythonContext pythonCtx, int start, int step, int sliceLength, NativePrimitiveSequenceStorage storage) {
+            var unsafe = pythonCtx.getUnsafe();
             long itemSize = storage.getItemSize();
-            var nativeContext = PythonContext.get(node).nativeBufferContext;
             long sizeInBytes = sliceLength * itemSize;
-            long toAddr = nativeContext.allocateNativeMemory(sizeInBytes);
+            NativeBuffer sliceBuffer = NativeBuffer.allocateNew(sizeInBytes);
 
             if (step == 1) {
                 var startAddress = storage.getValueBufferAddr() + (start * itemSize);
-                nativeContext.copyMemory(startAddress, toAddr, sizeInBytes);
-                return toAddr;
+                unsafe.copyMemory(startAddress, sliceBuffer.getMemoryAddress(), sizeInBytes);
+                return sliceBuffer;
             }
 
             var stepInBytes = step * itemSize;
-            for (long srcAddr = storage.getValueBufferAddr() + (start * itemSize), destAddr = toAddr,
+            for (long srcAddr = storage.getValueBufferAddr() + (start * itemSize), destAddr = sliceBuffer.getMemoryAddress(),
                             j = 0; j < sliceLength; srcAddr += stepInBytes, destAddr += itemSize, j++) {
-                nativeContext.copyMemory(srcAddr, destAddr, itemSize);
+                unsafe.copyMemory(srcAddr, destAddr, itemSize);
             }
 
-            return toAddr;
+            return sliceBuffer;
         }
 
         @NeverDefault
@@ -3144,14 +3144,9 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static void doNativePrimitive(Node inliningTarget, NativePrimitiveSequenceStorage storage, int cap) {
+        static void doNativePrimitive(NativePrimitiveSequenceStorage storage, int cap) {
             if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, cap > storage.getCapacity())) {
-                var nativeContext = getContext(inliningTarget).nativeBufferContext;
-                long newCapacityInBytes = storage.getItemSize() * cap;
-                var oldAddr = storage.getValueBufferAddr();
-                var newAddr = nativeContext.allocateNativeMemory(newCapacityInBytes);
-                nativeContext.copyMemory(oldAddr, newAddr, storage.getCapacityInBytes());
-                nativeContext.setNewValueAddrToStorage(storage, newAddr, newCapacityInBytes);
+                storage.reallocate(cap);
             }
         }
 
@@ -3298,11 +3293,9 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static SequenceStorage doNativeInt(Node inliningTarget, NativeIntSequenceStorage storage) {
             var nativeContext = PythonContext.get(inliningTarget).getContext().nativeBufferContext;
-            var capacityInBytes = storage.getCapacityInBytes();
-            var toAddr = nativeContext.allocateNativeMemory(capacityInBytes);
-            nativeContext.copyMemory(storage.getValueBufferAddr(), toAddr, capacityInBytes);
+            var copiedBuffer = storage.getValueBuffer().copy();
 
-            return nativeContext.wrapToIntStorage(toAddr, capacityInBytes, storage.length());
+            return nativeContext.createNativeIntStorage(copiedBuffer, storage.length());
         }
 
         @Specialization

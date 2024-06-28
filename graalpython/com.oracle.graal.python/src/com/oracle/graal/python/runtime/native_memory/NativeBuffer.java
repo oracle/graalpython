@@ -38,33 +38,61 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.sequence.storage;
+package com.oracle.graal.python.runtime.native_memory;
 
-import com.oracle.graal.python.runtime.native_memory.NativeBuffer;
+import com.oracle.graal.python.util.PythonUtils;
+import sun.misc.Unsafe;
 
-public class NativeIntSequenceStorage extends NativePrimitiveSequenceStorage {
+public class NativeBuffer {
 
-    public NativeIntSequenceStorage(NativeBuffer valueBuffer, int length) {
-        super(valueBuffer, length, Integer.BYTES);
+    private static final Unsafe unsafe = PythonUtils.initUnsafe();
+    private long memoryAddress;
+    private long capacityInBytes;
+
+    private NativeBuffer(long memoryAddress, long capacityInBytes) {
+        this.memoryAddress = memoryAddress;
+        this.capacityInBytes = capacityInBytes;
     }
 
-    @Override
-    public StorageType getElementType() {
-        return StorageType.Int;
+    public void reallocate(long newCapacityInBytes) {
+        assert newCapacityInBytes >= 0;
+        long newMemoryAddr = unsafe.allocateMemory(newCapacityInBytes);
+        unsafe.copyMemory(memoryAddress, newMemoryAddr, newCapacityInBytes);
+        unsafe.freeMemory(memoryAddress);
+        memoryAddress = newMemoryAddr;
+        capacityInBytes = newCapacityInBytes;
     }
 
-    @Override
-    public Object getIndicativeValue() {
-        return 0;
+    public NativeBuffer copy() {
+        long newAddr = unsafe.allocateMemory(capacityInBytes);
+        unsafe.copyMemory(memoryAddress, newAddr, capacityInBytes);
+
+        return new NativeBuffer(newAddr, capacityInBytes);
     }
 
-    public int getIntItemNormalized(int idx) {
-        long indexInBytes = (long) idx * Integer.BYTES;
-        return unsafe.getInt(getValueBufferAddr() + indexInBytes);
+    public NativeBuffer copy(long newCapacityInBytes) {
+        assert newCapacityInBytes >= 0;
+        long newAddr = unsafe.allocateMemory(newCapacityInBytes);
+        unsafe.copyMemory(memoryAddress, newAddr, capacityInBytes);
+
+        return new NativeBuffer(newAddr, newCapacityInBytes);
     }
 
-    public void setIntItemNormalized(int idx, int value) {
-        long indexInBytes = (long) idx * Integer.BYTES;
-        unsafe.putInt(getValueBufferAddr() + indexInBytes, value);
+    public void release() {
+        unsafe.freeMemory(memoryAddress);
+    }
+
+    public static NativeBuffer allocateNew(long capacityInBytes) {
+        assert capacityInBytes >= 0;
+        long adr = unsafe.allocateMemory(capacityInBytes);
+        return new NativeBuffer(adr, capacityInBytes);
+    }
+
+    public long getMemoryAddress() {
+        return memoryAddress;
+    }
+
+    public long getCapacityInBytes() {
+        return capacityInBytes;
     }
 }

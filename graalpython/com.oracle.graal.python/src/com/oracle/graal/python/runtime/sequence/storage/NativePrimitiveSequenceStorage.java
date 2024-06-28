@@ -40,45 +40,42 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.graal.python.runtime.NativeBufferContext;
+import com.oracle.graal.python.runtime.native_memory.NativeBuffer;
 import com.oracle.graal.python.util.PythonUtils;
 import sun.misc.Unsafe;
 
 public abstract class NativePrimitiveSequenceStorage extends SequenceStorage {
 
     protected static final Unsafe unsafe = PythonUtils.initUnsafe();
-    protected long valueBufferAddr;
-    private long capacityInBytes;
+    private final NativeBuffer valueBuffer;
+    private long valueBufferAddr;
     protected final long itemSize;
 
-    public NativePrimitiveSequenceStorage(long valueBufferAddr, long capacityInBytes, int length, long itemSize) {
-        this.valueBufferAddr = valueBufferAddr;
+    public NativePrimitiveSequenceStorage(NativeBuffer valueBuffer, int length, long itemSize) {
+        this.valueBuffer = valueBuffer;
+        this.valueBufferAddr = valueBuffer.getMemoryAddress();
         this.length = length;
-        this.capacityInBytes = capacityInBytes;
         this.itemSize = itemSize;
-        this.capacity = calculateCapacity(capacityInBytes);
+        this.capacity = calculateCapacity(valueBuffer.getCapacityInBytes());
     }
 
-    /**
-     * Should not be used directly because we need to associate valueAddr to the storage itself.
-     * Instead of this use {@link NativeBufferContext#setNewValueAddrToStorage}
-     */
-    public void setValueBufferAddr(long valueBufferAddr, long bufferCapacityInBytes) {
-        this.valueBufferAddr = valueBufferAddr;
-        this.capacityInBytes = bufferCapacityInBytes;
-        this.capacity = calculateCapacity(bufferCapacityInBytes);
-    }
-
-    public long getValueBufferAddr() {
+    public final long getValueBufferAddr() {
+        assert valueBuffer.getMemoryAddress() == valueBufferAddr;
         return valueBufferAddr;
     }
 
-    public long getCapacityInBytes() {
-        return capacityInBytes;
+    public final void reallocate(int capacity) {
+        long newCapacityInBytes = itemSize * capacity;
+        valueBuffer.reallocate(newCapacityInBytes);
+        this.valueBufferAddr = valueBuffer.getMemoryAddress();
     }
 
     public long getItemSize() {
         return itemSize;
+    }
+
+    public NativeBuffer getValueBuffer() {
+        return valueBuffer;
     }
 
     private int calculateCapacity(long capacityInBytes) {
