@@ -60,8 +60,7 @@ public class NativeBufferContext {
     private static final Unsafe unsafe = PythonUtils.initUnsafe();
 
     private ReferenceQueue<NativePrimitiveSequenceStorage> referenceQueue;
-    // We need to keep around the references since Phantom References are one way bound
-    // Key: MemoryAddr, Value: PhantomReference
+    // Storing references here to keep them alive
     private ConcurrentHashMap<NativePrimitiveReference, NativePrimitiveReference> phantomReferences;
 
     private Thread nativeBufferReferenceCleanerThread;
