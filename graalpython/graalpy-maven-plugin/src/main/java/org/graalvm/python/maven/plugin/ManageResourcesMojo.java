@@ -155,6 +155,14 @@ public class ManageResourcesMojo extends AbstractMojo {
             if (Files.exists(Path.of(r.getDirectory(), VFS_ROOT, "proj"))) {
                 getLog().warn(String.format("usage of %s is deprecated, use %s instead", Path.of(VFS_ROOT, "proj"), Path.of(VFS_ROOT, "src")));
             }
+            if (!Files.exists(Path.of(r.getDirectory(), VFS_ROOT)) && Files.exists(Path.of(r.getDirectory(), "vfs", "proj"))) {
+                // there isn't the actual vfs resource root "org.graalvm.python.vfs" (VFS_ROOT), and there is only the outdated "vfs/proj"
+                // => looks like a project created < 24.1.0
+                throw new MojoExecutionException(String.format(
+                        "Wrong virtual filesystem root!\n" +
+                        "Since 24.1.0 the virtual filesystem root has to be '%s'.\n" +
+                        "Please rename the resource directory '%s' to '%s'", VFS_ROOT, Path.of(r.getDirectory(), "vfs"), Path.of(r.getDirectory(), VFS_ROOT)));
+            }
         }
 
     }
