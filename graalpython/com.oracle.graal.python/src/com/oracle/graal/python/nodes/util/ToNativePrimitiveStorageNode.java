@@ -38,44 +38,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.sequence.storage;
+package com.oracle.graal.python.nodes.util;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
-public abstract class ArrayBasedSequenceStorage extends SequenceStorage {
+@GenerateInline
+@GenerateCached(false)
+@GenerateUncached
+public abstract class ToNativePrimitiveStorageNode extends Node {
 
-    public abstract Object getInternalArrayObject();
+    public abstract NativePrimitiveSequenceStorage execute(Node inliningTarget, SequenceStorage storage);
 
-    public abstract Object getCopyOfInternalArrayObject();
-
-    public abstract void setInternalArrayObject(Object arrayObject);
-
-    public abstract ArrayBasedSequenceStorage createEmpty(int newCapacity);
-
-    /**
-     * The capacity we should allocate for a given length.
-     */
-    protected static int capacityFor(int length) throws ArithmeticException {
-        return Math.max(16, Math.multiplyExact(length, 2));
+    public static NativePrimitiveSequenceStorage executeUncached(SequenceStorage storage) {
+        return ToNativePrimitiveStorageNodeGen.getUncached().execute(null, storage);
     }
 
-    public void minimizeCapacity() {
-        capacity = length;
+    @Specialization
+    static NativePrimitiveSequenceStorage doInt(Node inliningTarget, IntSequenceStorage storage) {
+        int[] arr = storage.getInternalIntArray();
+        return PythonContext.get(inliningTarget).nativeBufferContext.toNativeIntStorage(arr);
     }
 
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        StringBuilder str = new StringBuilder(getClass().getSimpleName()).append('[');
-        int len = length > 10 ? 10 : length;
-        for (int i = 0; i < len; i++) {
-            str.append(i == 0 ? "" : ", ");
-            str.append(SequenceStorageNodes.GetItemScalarNode.executeUncached(this, i));
-        }
-        if (length > 10) {
-            str.append("...").append('(').append(length).append(')');
-        }
-        return str.append(']').toString();
-    }
 }

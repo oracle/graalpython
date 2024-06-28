@@ -61,6 +61,14 @@ public abstract class SequenceStorage {
         this.capacity = capacity;
     }
 
+    public void setNewLength(int length) {
+        this.length = length;
+    }
+
+    public final void incLength() {
+        this.length++;
+    }
+
     public final int length() {
         return length;
     }

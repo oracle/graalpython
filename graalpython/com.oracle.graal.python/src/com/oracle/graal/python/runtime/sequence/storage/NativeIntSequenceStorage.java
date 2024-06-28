@@ -40,42 +40,31 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.runtime.native_memory.NativeBuffer;
 
-public abstract class ArrayBasedSequenceStorage extends SequenceStorage {
+public class NativeIntSequenceStorage extends NativePrimitiveSequenceStorage {
 
-    public abstract Object getInternalArrayObject();
-
-    public abstract Object getCopyOfInternalArrayObject();
-
-    public abstract void setInternalArrayObject(Object arrayObject);
-
-    public abstract ArrayBasedSequenceStorage createEmpty(int newCapacity);
-
-    /**
-     * The capacity we should allocate for a given length.
-     */
-    protected static int capacityFor(int length) throws ArithmeticException {
-        return Math.max(16, Math.multiplyExact(length, 2));
-    }
-
-    public void minimizeCapacity() {
-        capacity = length;
+    public NativeIntSequenceStorage(NativeBuffer valueBuffer, int length) {
+        super(valueBuffer, length, Integer.BYTES);
     }
 
     @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        StringBuilder str = new StringBuilder(getClass().getSimpleName()).append('[');
-        int len = length > 10 ? 10 : length;
-        for (int i = 0; i < len; i++) {
-            str.append(i == 0 ? "" : ", ");
-            str.append(SequenceStorageNodes.GetItemScalarNode.executeUncached(this, i));
-        }
-        if (length > 10) {
-            str.append("...").append('(').append(length).append(')');
-        }
-        return str.append(']').toString();
+    public StorageType getElementType() {
+        return StorageType.Int;
+    }
+
+    @Override
+    public Object getIndicativeValue() {
+        return 0;
+    }
+
+    public int getIntItemNormalized(int idx) {
+        long indexInBytes = (long) idx * Integer.BYTES;
+        return unsafe.getInt(getValueBufferAddr() + indexInBytes);
+    }
+
+    public void setIntItemNormalized(int idx, int value) {
+        long indexInBytes = (long) idx * Integer.BYTES;
+        unsafe.putInt(getValueBufferAddr() + indexInBytes, value);
     }
 }

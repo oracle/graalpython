@@ -40,42 +40,45 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.runtime.native_memory.NativeBuffer;
+import com.oracle.graal.python.util.PythonUtils;
+import sun.misc.Unsafe;
 
-public abstract class ArrayBasedSequenceStorage extends SequenceStorage {
+public abstract class NativePrimitiveSequenceStorage extends SequenceStorage {
 
-    public abstract Object getInternalArrayObject();
+    protected static final Unsafe unsafe = PythonUtils.initUnsafe();
+    private final NativeBuffer valueBuffer;
+    private long valueBufferAddr;
+    protected final long itemSize;
 
-    public abstract Object getCopyOfInternalArrayObject();
-
-    public abstract void setInternalArrayObject(Object arrayObject);
-
-    public abstract ArrayBasedSequenceStorage createEmpty(int newCapacity);
-
-    /**
-     * The capacity we should allocate for a given length.
-     */
-    protected static int capacityFor(int length) throws ArithmeticException {
-        return Math.max(16, Math.multiplyExact(length, 2));
+    public NativePrimitiveSequenceStorage(NativeBuffer valueBuffer, int length, long itemSize) {
+        this.valueBuffer = valueBuffer;
+        this.valueBufferAddr = valueBuffer.getMemoryAddress();
+        this.length = length;
+        this.itemSize = itemSize;
+        this.capacity = calculateCapacity(valueBuffer.getCapacityInBytes());
     }
 
-    public void minimizeCapacity() {
-        capacity = length;
+    public final long getValueBufferAddr() {
+        assert valueBuffer.getMemoryAddress() == valueBufferAddr;
+        return valueBufferAddr;
     }
 
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        StringBuilder str = new StringBuilder(getClass().getSimpleName()).append('[');
-        int len = length > 10 ? 10 : length;
-        for (int i = 0; i < len; i++) {
-            str.append(i == 0 ? "" : ", ");
-            str.append(SequenceStorageNodes.GetItemScalarNode.executeUncached(this, i));
-        }
-        if (length > 10) {
-            str.append("...").append('(').append(length).append(')');
-        }
-        return str.append(']').toString();
+    public final void reallocate(int capacity) {
+        long newCapacityInBytes = itemSize * capacity;
+        valueBuffer.reallocate(newCapacityInBytes);
+        this.valueBufferAddr = valueBuffer.getMemoryAddress();
+    }
+
+    public long getItemSize() {
+        return itemSize;
+    }
+
+    public NativeBuffer getValueBuffer() {
+        return valueBuffer;
+    }
+
+    private int calculateCapacity(long capacityInBytes) {
+        return Math.toIntExact(capacityInBytes / itemSize);
     }
 }

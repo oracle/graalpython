@@ -446,6 +446,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         // common and specialized cases --------------------
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         boolean doIt(VirtualFrame frame, Object self, Object substrs, int start, int end,
                         @Bind("this") Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage,
