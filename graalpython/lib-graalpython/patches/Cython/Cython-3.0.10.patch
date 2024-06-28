@@ -303,7 +303,7 @@ index 0a50bc5..f93b3cc 100644
  #else
      if (s1 == s2) {
 diff --git a/Cython/Utility/arrayarray.h b/Cython/Utility/arrayarray.h
-index a9e4923..cf704c9 100644
+index a9e4923..be07e56 100644
 --- a/Cython/Utility/arrayarray.h
 +++ b/Cython/Utility/arrayarray.h
 @@ -32,30 +32,31 @@ typedef struct arraydescr {
@@ -329,7 +329,7 @@ index a9e4923..cf704c9 100644
 +    unsigned short *as_ushorts;
 +    Py_UNICODE *as_pyunicodes;
 +    void *as_voidptr;
-+} __data_union
++} __data_union;
  
  struct arrayobject {
      PyObject_HEAD

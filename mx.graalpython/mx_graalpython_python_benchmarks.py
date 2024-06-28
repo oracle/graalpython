@@ -89,8 +89,6 @@ DEFAULT_PANDAS_BENCHMARKS = [
 
 SKIPPED_PANDAS_BENCHMARKS = [
     "replace.ReplaceDict.time_replace_series",  # Times out
-    "replace.ReplaceList.time_replace_list",  # OOM, WIP msimacek
-    "replace.ReplaceList.time_replace_list_one_match",  # OOM, WIP msimacek
     "reshape.Crosstab.time_crosstab_normalize_margins",  # Times out
     "reshape.Cut.peakmem_cut_interval",  # Times out
     "reshape.Cut.time_cut_interval",  # Times out
