@@ -109,9 +109,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory.FloatNodeFactory.NonPrimitiveFloatNodeGen;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory.ObjectNodeFactory.ReportAbstractClassNodeGen;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -1081,7 +1081,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // float([x])
     @Builtin(name = J_FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat, doc = "Convert a string or number to a floating point number, if possible.")
     @GenerateNodeFactory
-    @ReportPolymorphism
     abstract static class FloatNode extends PythonBinaryBuiltinNode {
 
         @Child NonPrimitiveFloatNode nonPrimitiveFloatNode;
@@ -1874,7 +1873,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     The builtins True and False are the only two instances of the class bool.
                     The class bool is a subclass of the class int, and cannot be subclassed.""")
     @GenerateNodeFactory
-    @ReportPolymorphism
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
         @Specialization
         public static boolean bool(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
