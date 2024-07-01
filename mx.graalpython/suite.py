@@ -982,6 +982,7 @@ suite = {
                 "sdk:LAUNCHER_COMMON",
                 "sdk:JLINE3",
                 "sdk:MAVEN_DOWNLOADER",
+                "sdk:NATIVEIMAGE",
             ],
             "description": "GraalPython launcher",
             "maven": {
