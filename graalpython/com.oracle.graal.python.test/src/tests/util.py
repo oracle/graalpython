@@ -44,3 +44,17 @@ def storage_to_native(s):
     if sys.implementation.name == 'graalpy':
         assert hasattr(__graalpython__, 'storage_to_native'), "Needs to be run with --python.EnableDebuggingBuiltins"
         __graalpython__.storage_to_native(s)
+
+
+def assert_raises(err, fn, *args, err_check=None, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err as e:
+        raised = True
+        if err_check:
+            if isinstance(err_check, str):
+                assert err_check in str(e), f"Substring '{err_check}' not found in '{str(e)}'"
+            else:
+                assert err_check(e)
+    assert raised
