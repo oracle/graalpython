@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,9 @@ package com.oracle.graal.python.builtins.objects.dict;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COLON_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_BRACES;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACE;
@@ -59,9 +61,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
@@ -76,7 +78,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -101,24 +103,20 @@ public final class DictReprBuiltin extends PythonBuiltins {
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        private static final TruffleString T_ELLIPSIS = tsLiteral("{...}");
-        private static final TruffleString T_COLONSPACE = tsLiteral(": ");
         private static final TruffleString T_LPAREN_BRACKET = tsLiteral("([");
         private static final TruffleString T_RPAREN_BRACKET = tsLiteral("])");
 
         @Override
         public abstract TruffleString execute(VirtualFrame VirtualFrame, Object arg);
 
-        @CompilerDirectives.ValueType
+        @ValueType
         protected static final class ReprState {
             private final Object self;
-            private final HashingStorage dictStorage;
             private final TruffleStringBuilder result;
             private final int initialLength;
 
-            ReprState(Object self, HashingStorage dictStorage, TruffleStringBuilder result) {
+            ReprState(Object self, TruffleStringBuilder result) {
                 this.self = self;
-                this.dictStorage = dictStorage;
                 this.result = result;
                 initialLength = result.byteLength();
             }
@@ -142,7 +140,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             LookupAndCallUnaryDynamicNode reprNode,
                             CastToTruffleStringNode castStr,
                             PRaiseNode.Lazy raiseNode) {
-                Object reprObj = s == null || obj != s.self ? reprNode.executeObject(obj, T___REPR__) : T_ELLIPSIS;
+                Object reprObj = s == null || obj != s.self ? reprNode.executeObject(obj, T___REPR__) : T_ELLIPSIS_IN_BRACES;
                 try {
                     return castStr.execute(inliningTarget, reprObj);
                 } catch (CannotCastException e) {
@@ -172,7 +170,8 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Cached HashingStorageIteratorKey itKey,
                             @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
                 appendSeparator(inliningTarget, s, lengthCheck, appendStringNode);
-                appendStringNode.execute(s.result, getReprString(inliningTarget, itKey.execute(inliningTarget, storage, it), null, reprNode, castStr, raiseNode));
+                Object key = itKey.execute(inliningTarget, storage, it);
+                appendStringNode.execute(s.result, getReprString(inliningTarget, key, null, reprNode, castStr, raiseNode));
                 return s;
             }
         }
@@ -189,12 +188,11 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Cached CastToTruffleStringNode castStr,
                             @Cached PRaiseNode.Lazy raiseNode,
                             @Cached InlinedConditionProfile lengthCheck,
-                            @Cached HashingStorageIteratorKey itKey,
-                            @Cached HashingStorageGetItem getItem,
+                            @Cached HashingStorageIteratorValue itValue,
                             @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
                 appendSeparator(inliningTarget, s, lengthCheck, appendStringNode);
-                Object key = itKey.execute(inliningTarget, storage, it);
-                appendStringNode.execute(s.result, getReprString(inliningTarget, getItem.execute(frame, inliningTarget, s.dictStorage, key), s, reprNode, castStr, raiseNode));
+                Object value = itValue.execute(inliningTarget, storage, it);
+                appendStringNode.execute(s.result, getReprString(inliningTarget, value, s, reprNode, castStr, raiseNode));
                 return s;
             }
         }
@@ -213,14 +211,15 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Cached PRaiseNode.Lazy raiseNode,
                             @Cached InlinedConditionProfile lengthCheck,
                             @Cached HashingStorageIteratorKey itKey,
-                            @Cached HashingStorageGetItem getItem,
+                            @Cached HashingStorageIteratorValue itValue,
                             @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
                 appendSeparator(inliningTarget, s, lengthCheck, appendStringNode);
                 appendStringNode.execute(s.result, T_LPAREN);
                 Object key = itKey.execute(inliningTarget, storage, it);
+                Object value = itValue.execute(inliningTarget, storage, it);
                 appendStringNode.execute(s.result, getReprString(inliningTarget, key, null, keyReprNode, castStr, raiseNode));
                 appendStringNode.execute(s.result, T_COMMA_SPACE);
-                appendStringNode.execute(s.result, getReprString(inliningTarget, getItem.execute(frame, inliningTarget, s.dictStorage, key), s, valueReprNode, castStr, raiseNode));
+                appendStringNode.execute(s.result, getReprString(inliningTarget, value, s, valueReprNode, castStr, raiseNode));
                 appendStringNode.execute(s.result, T_RPAREN);
                 return s;
             }
@@ -240,35 +239,38 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Cached PRaiseNode.Lazy raiseNode,
                             @Cached InlinedConditionProfile lengthCheck,
                             @Cached HashingStorageIteratorKey itKey,
-                            @Cached HashingStorageGetItem getItem,
+                            @Cached HashingStorageIteratorValue itValue,
                             @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
                 Object key = itKey.execute(inliningTarget, storage, it);
+                Object value = itValue.execute(inliningTarget, storage, it);
                 TruffleString keyReprString = getReprString(inliningTarget, key, null, keyReprNode, castStr, raiseNode);
-                TruffleString valueReprString = getReprString(inliningTarget, getItem.execute(frame, inliningTarget, s.dictStorage, key), s, valueReprNode, castStr, raiseNode);
+                TruffleString valueReprString = getReprString(inliningTarget, value, s, valueReprNode, castStr, raiseNode);
                 appendSeparator(inliningTarget, s, lengthCheck, appendStringNode);
                 appendStringNode.execute(s.result, keyReprString);
-                appendStringNode.execute(s.result, T_COLONSPACE);
+                appendStringNode.execute(s.result, T_COLON_SPACE);
                 appendStringNode.execute(s.result, valueReprString);
                 return s;
             }
         }
 
-        @Specialization // use same limit as for EachRepr nodes library
-        public static TruffleString repr(PDict dict,
+        @Specialization(guards = "!isDictView(dict)") // use same limit as for EachRepr nodes
+                                                      // library
+        public static TruffleString repr(Object dict,
                         @Bind("this") Node inliningTarget,
+                        @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached("create(3)") ForEachDictRepr consumerNode,
                         @Shared @Cached HashingStorageForEach forEachNode,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             PythonContext ctxt = PythonContext.get(forEachNode);
             if (!ctxt.reprEnter(dict)) {
-                return T_ELLIPSIS;
+                return T_ELLIPSIS_IN_BRACES;
             }
             try {
                 TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
                 appendStringNode.execute(sb, T_LBRACE);
-                HashingStorage dictStorage = dict.getDictStorage();
-                forEachNode.execute(null, inliningTarget, dictStorage, consumerNode, new ReprState(dict, dictStorage, sb));
+                var storage = getStorageNode.execute(inliningTarget, dict);
+                forEachNode.execute(null, inliningTarget, storage, consumerNode, new ReprState(dict, sb));
                 appendStringNode.execute(sb, T_RBRACE);
                 return toStringNode.execute(sb);
             } finally {
@@ -320,8 +322,8 @@ public final class DictReprBuiltin extends PythonBuiltins {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             appendStringNode.execute(sb, type);
             appendStringNode.execute(sb, T_LPAREN_BRACKET);
-            HashingStorage dictStorage = view.getWrappedDict().getDictStorage();
-            forEachNode.execute(null, inliningTarget, dictStorage, consumerNode, new ReprState(view, dictStorage, sb));
+            HashingStorage dictStorage = view.getWrappedStorage();
+            forEachNode.execute(null, inliningTarget, dictStorage, consumerNode, new ReprState(view, sb));
             appendStringNode.execute(sb, T_RPAREN_BRACKET);
             return toStringNode.execute(sb);
         }

@@ -52,6 +52,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @SuppressWarnings("truffle-abstract-export")
@@ -597,6 +598,15 @@ public final class PInt extends PythonBuiltinObject {
 
     public static boolean isIntRange(long val) {
         return val == (int) val;
+    }
+
+    public static int long2int(Node inliningTarget, long size, InlinedBranchProfile errorProfile) {
+        int intSize = (int) size;
+        if (intSize != size) {
+            errorProfile.enter(inliningTarget);
+            throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
+        }
+        return intSize;
     }
 
     public static Object abs(int v) {

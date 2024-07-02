@@ -55,11 +55,13 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
+/** NOTE: self can either be PNone.NONE or a foreign null (isNull()) */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PNone)
 public final class NoneBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = NoneBuiltinsSlotsGen.SLOTS;
@@ -74,8 +76,8 @@ public final class NoneBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BoolNode extends NbBoolBuiltinNode {
         @Specialization
-        static boolean doNone(PNone none) {
-            assert none == PNone.NONE;
+        static boolean doNone(Object none) {
+            assert none == PNone.NONE || IsForeignObjectNode.executeUncached(none);
             return false;
         }
     }
@@ -84,8 +86,8 @@ public final class NoneBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doNone(PNone none) {
-            assert none == PNone.NONE;
+        static Object doNone(Object none) {
+            assert none == PNone.NONE || IsForeignObjectNode.executeUncached(none);
             return T_NONE;
         }
     }

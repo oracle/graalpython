@@ -203,7 +203,7 @@ public final class ReversedBuiltins extends PythonBuiltins {
                         @Cached("create(T___REDUCE__)") LookupAndCallUnaryNode callReduce,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            Object content = callReduce.executeObject(frame, self.getPSequence());
+            Object content = callReduce.executeObject(frame, self.getObject());
             return reduceInternal(inliningTarget, self, content, self.index, getClassNode, factory);
         }
 

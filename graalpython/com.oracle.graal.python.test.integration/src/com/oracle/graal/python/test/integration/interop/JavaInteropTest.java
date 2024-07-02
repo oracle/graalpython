@@ -584,7 +584,7 @@ public class JavaInteropTest {
             Map<String, String> source = Map.of("source", "foo");
             context.getBindings("python").getMember("enrich").execute(source);
             assertEquals("" +
-                            "<class 'foreign'>\n" +
+                            "<class 'polyglot.ForeignDict'>\n" +
                             "True\n" +
                             "True\n", out.toString("UTF-8"));
         }

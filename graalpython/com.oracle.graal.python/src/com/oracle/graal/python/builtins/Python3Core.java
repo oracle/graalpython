@@ -56,6 +56,8 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.nodes.object.GetForeignObjectClassNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -274,7 +276,6 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.MemberDescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.iterator.ForeignIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
@@ -502,7 +503,6 @@ public abstract class Python3Core {
                         new NoneBuiltins(),
                         new EllipsisBuiltins(),
                         new SentinelIteratorBuiltins(),
-                        new ForeignIteratorBuiltins(),
                         new GeneratorBuiltins(),
                         new CoroutineBuiltins(),
                         new CoroutineWrapperBuiltins(),
@@ -816,6 +816,8 @@ public abstract class Python3Core {
     @CompilationFinal private PInt pyTrue;
     @CompilationFinal private PInt pyFalse;
     @CompilationFinal private PFloat pyNaN;
+
+    @CompilationFinal(dimensions = 1) public final PythonManagedClass[] polyglotForeignClasses = new PythonManagedClass[GetForeignObjectClassNode.Trait.COMBINATIONS];
 
     private final SysModuleState sysModuleState = new SysModuleState();
 

@@ -240,7 +240,7 @@ public final class PythonCextDictBuiltins {
                 writePointerNode.write(valuePtr, toNativeNode.execute(value));
             }
             if (!lib.isNull(hashPtr)) {
-                long hash = itKeyHash.execute(inliningTarget, storage, it);
+                long hash = itKeyHash.execute(null, inliningTarget, storage, it);
                 writeLongNode.write(hashPtr, hash);
             }
             return 1;
@@ -547,7 +547,7 @@ public final class PythonCextDictBuiltins {
             HashingStorage aStorage = a.getDictStorage();
             while (loopProfile.profile(inliningTarget, itBNext.execute(inliningTarget, bStorage, bIt))) {
                 Object key = itBKey.execute(inliningTarget, bStorage, bIt);
-                long hash = itBKeyHash.execute(inliningTarget, bStorage, bIt);
+                long hash = itBKeyHash.execute(null, inliningTarget, bStorage, bIt);
                 if (getAItem.execute(null, inliningTarget, aStorage, key, hash) != null) {
                     setAItem.execute(null, inliningTarget, aStorage, key, hash, itBValue.execute(inliningTarget, bStorage, bIt));
                 }

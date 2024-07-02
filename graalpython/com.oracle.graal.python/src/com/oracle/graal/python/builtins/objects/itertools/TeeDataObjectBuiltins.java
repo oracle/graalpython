@@ -124,7 +124,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
             self.setNextlink(nxt);
         }
 
-        @Specialization(guards = "isList(values)")
+        @Specialization
         static Object init(VirtualFrame frame, PTeeDataObject self, Object it, PList values, Object nxt,
                         @Bind("this") Node inliningTarget,
                         @Cached LenNode lenNode,

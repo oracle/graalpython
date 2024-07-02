@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -172,8 +172,7 @@ public abstract class SetNodes {
                         @Cached BaseSetBuiltins.ConvertKeyNode conv,
                         @Cached HashingStorageDelItem delItem) {
             Object checkedKey = conv.execute(inliningTarget, key);
-            Object found = delItem.executePop(frame, inliningTarget, self.getDictStorage(), checkedKey, self);
-            return found != null;
+            return delItem.execute(frame, inliningTarget, self.getDictStorage(), checkedKey, self);
         }
     }
 }

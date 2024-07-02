@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,6 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.truffle.api.dsl.Cached;
@@ -61,14 +60,9 @@ public abstract class PyListCheckNode extends Node {
         return true;
     }
 
-    @Specialization
-    static boolean doNative(PythonAbstractNativeObject object,
-                    @Cached(inline = false) IsBuiltinObjectProfile check) {
-        return check.profileObjectCached(object, PythonBuiltinClassType.PList);
-    }
-
     @Fallback
-    static boolean other(@SuppressWarnings("unused") Object object) {
-        return false;
+    static boolean other(Object object,
+                    @Cached(inline = false) IsBuiltinObjectProfile isListNode) {
+        return isListNode.profileObjectCached(object, PythonBuiltinClassType.PList);
     }
 }

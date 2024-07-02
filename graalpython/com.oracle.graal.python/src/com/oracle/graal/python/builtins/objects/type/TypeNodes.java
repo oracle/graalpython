@@ -2488,7 +2488,7 @@ public abstract class TypeNodes {
                 // Creates DynamicObjectStorage which ignores non-string keys
                 typeDict = getOrCreateDictNode.execute(inliningTarget, pythonClass);
                 // Writing a non string key converts DynamicObjectStorage to EconomicMapStorage
-                long keyHash = hashingStorageItKeyHash.execute(inliningTarget, namespaceStorage, it);
+                long keyHash = hashingStorageItKeyHash.execute(frame, inliningTarget, namespaceStorage, it);
                 HashingStorage updatedStore = setHashingStorageItem.execute(frame, inliningTarget, typeDict.getDictStorage(), keyObj, keyHash, value);
                 typeDict.setDictStorage(updatedStore);
             }

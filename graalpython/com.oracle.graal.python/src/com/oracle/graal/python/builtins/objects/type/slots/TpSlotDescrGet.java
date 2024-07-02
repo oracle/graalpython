@@ -74,6 +74,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -233,6 +234,7 @@ public abstract class TpSlotDescrGet {
             return checkResultNode.execute(threadState, T___GET__, toPythonNode.execute(result));
         }
 
+        @TruffleBoundary
         @Specialization(replaces = "callCachedBuiltin")
         static Object callGenericSimpleBuiltin(TpSlotDescrGetBuiltinSimple slot, Object self, Object obj, Object type) {
             // Simple builtins should not need a frame

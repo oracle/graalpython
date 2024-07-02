@@ -359,11 +359,8 @@ public abstract class ToNativeTypeNode {
             HashingStorage dictStorage = dict.getDictStorage();
             if (!(dictStorage instanceof DynamicObjectStorage)) {
                 HashingStorage storage = new DynamicObjectStorage(clazz);
-                dict.setDictStorage(storage);
-                if (dictStorage != null) {
-                    // copy all mappings to the new storage
-                    HashingStorageAddAllToOther.executeUncached(dictStorage, dict);
-                }
+                // copy all mappings to the new storage
+                dict.setDictStorage(HashingStorageAddAllToOther.executeUncached(dictStorage, storage));
             }
         }
         writePtrNode.write(mem, CFields.PyTypeObject__tp_dict, toNative.execute(dict));

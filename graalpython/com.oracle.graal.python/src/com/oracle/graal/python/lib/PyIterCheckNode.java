@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,9 +48,10 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -85,8 +86,8 @@ public abstract class PyIterCheckNode extends PNodeWithContext {
     @InliningCutoff
     @Specialization
     static boolean doPythonObject(Node inliningTarget, PythonAbstractObject object,
-                    @Shared @Cached GetClassNode getClassNode,
-                    @Shared @Cached(parameters = "Next", inline = false) LookupCallableSlotInMRONode lookupNext) {
+                    @Exclusive @Cached GetClassNode getClassNode,
+                    @Exclusive @Cached(parameters = "Next", inline = false) LookupCallableSlotInMRONode lookupNext) {
         return !(lookupNext.execute(getClassNode.execute(inliningTarget, object)) instanceof PNone);
     }
 
@@ -115,14 +116,16 @@ public abstract class PyIterCheckNode extends PNodeWithContext {
         return false;
     }
 
+    // @Exclusive because of truffle-interpreted-performance warning
     @InliningCutoff
     @Specialization(replaces = "doPythonObject")
     static boolean doGeneric(Node inliningTarget, Object object,
+                    @Cached IsForeignObjectNode isForeignObjectNode,
                     @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
-                    @Shared @Cached GetClassNode getClassNode,
-                    @Shared @Cached(parameters = "Next", inline = false) LookupCallableSlotInMRONode lookupNext) {
+                    @Exclusive @Cached GetClassNode getClassNode,
+                    @Exclusive @Cached(parameters = "Next", inline = false) LookupCallableSlotInMRONode lookupNext) {
         Object type = getClassNode.execute(inliningTarget, object);
-        if (type == PythonBuiltinClassType.ForeignObject) {
+        if (isForeignObjectNode.execute(inliningTarget, object)) {
             return interopLibrary.isIterator(object);
         }
         return !(lookupNext.execute(type) instanceof PNone);

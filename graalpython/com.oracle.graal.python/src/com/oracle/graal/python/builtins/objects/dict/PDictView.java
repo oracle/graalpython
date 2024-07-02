@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import com.oracle.graal.python.builtins.objects.common.ForeignHashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -47,18 +48,33 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class PDictView extends PythonBuiltinObject {
-    private final PHashingCollection dict;
+    private final Object dict;
+    private final ForeignHashingStorage foreignHashingStorage;
     private final String name;
 
     public PDictView(Object clazz, Shape instanceShape, String name, PHashingCollection dict) {
+        this(clazz, instanceShape, name, dict, null);
+    }
+
+    public PDictView(Object clazz, Shape instanceShape, String name, Object dict, ForeignHashingStorage foreignHashingStorage) {
         super(clazz, instanceShape);
         this.name = name;
         assert dict != null;
         this.dict = dict;
+        assert foreignHashingStorage == null || foreignHashingStorage.foreignDict == dict;
+        this.foreignHashingStorage = foreignHashingStorage;
     }
 
-    public final PHashingCollection getWrappedDict() {
+    public final Object getWrappedDict() {
         return dict;
+    }
+
+    public final HashingStorage getWrappedStorage() {
+        if (foreignHashingStorage != null) {
+            return foreignHashingStorage;
+        } else {
+            return ((PHashingCollection) dict).getDictStorage();
+        }
     }
 
     public String getName() {
@@ -88,6 +104,10 @@ public abstract class PDictView extends PythonBuiltinObject {
         public PDictKeysView(Object clazz, Shape instanceShape, PHashingCollection dict) {
             super(clazz, instanceShape, "dict_keys", dict);
         }
+
+        public PDictKeysView(Object clazz, Shape instanceShape, Object dict, ForeignHashingStorage foreignHashingStorage) {
+            super(clazz, instanceShape, "dict_keys", dict, foreignHashingStorage);
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -106,6 +126,10 @@ public abstract class PDictView extends PythonBuiltinObject {
         public PDictValuesView(Object clazz, Shape instanceShape, PHashingCollection dict) {
             super(clazz, instanceShape, "dict_values", dict);
         }
+
+        public PDictValuesView(Object clazz, Shape instanceShape, Object dict, ForeignHashingStorage foreignHashingStorage) {
+            super(clazz, instanceShape, "dict_values", dict, foreignHashingStorage);
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -123,6 +147,10 @@ public abstract class PDictView extends PythonBuiltinObject {
 
         public PDictItemsView(Object clazz, Shape instanceShape, PHashingCollection dict) {
             super(clazz, instanceShape, "dict_items", dict);
+        }
+
+        public PDictItemsView(Object clazz, Shape instanceShape, Object dict, ForeignHashingStorage foreignHashingStorage) {
+            super(clazz, instanceShape, "dict_items", dict, foreignHashingStorage);
         }
     }
 }

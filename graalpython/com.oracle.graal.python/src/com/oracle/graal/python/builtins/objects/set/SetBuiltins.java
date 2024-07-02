@@ -284,7 +284,7 @@ public final class SetBuiltins extends PythonBuiltins {
         static void update(VirtualFrame frame, PHashingCollection collection, PDictView.PDictKeysView other,
                         @Bind("this") Node inliningTarget,
                         @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
-            HashingStorage dictStorage = other.getWrappedDict().getDictStorage();
+            HashingStorage dictStorage = other.getWrappedStorage();
             addAllToOther.execute(frame, inliningTarget, dictStorage, collection);
         }
 

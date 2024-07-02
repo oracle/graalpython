@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
@@ -113,14 +114,14 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
     @InliningCutoff
     @Fallback
     static boolean doGeneric(Node inliningTarget, Object object,
+                    @Cached IsForeignObjectNode isForeignObjectNode,
                     @Cached LazyInteropLibrary lazyInteropLibrary,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex) {
         Object type = getClassNode.execute(inliningTarget, object);
-        if (type == PythonBuiltinClassType.ForeignObject) {
+        if (isForeignObjectNode.execute(inliningTarget, object)) {
             InteropLibrary interop = lazyInteropLibrary.get(inliningTarget);
-            return interop.fitsInLong(object) ||
-                            interop.isBoolean(object);
+            return interop.fitsInLong(object) || interop.isBoolean(object);
         }
         return lookupIndex.execute(type) != PNone.NO_VALUE;
     }

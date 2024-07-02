@@ -71,7 +71,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 /**
- * Serves both as a throwable carrier of the python exception object and as a represenation of the
+ * Serves both as a throwable carrier of the python exception object and as a representation of the
  * exception state at a single point in the program. An important invariant is that it must never be
  * rethrown after the contained exception object has been exposed to the program, instead, a new
  * object must be created for each throw.

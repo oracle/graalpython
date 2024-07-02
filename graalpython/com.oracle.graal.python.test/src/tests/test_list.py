@@ -856,6 +856,13 @@ class ListCompareTest(CompareTest):
         l.reverse()
         self.assertEqual([1], l)
 
+    def test_clear(self):
+        l = [1, 2]
+        l.clear()
+        self.assertEqual([], l)
+
+        with self.assertRaisesRegex(TypeError, "list"):
+            list.clear(42)
 
 if __name__ == '__main__':
     unittest.main()

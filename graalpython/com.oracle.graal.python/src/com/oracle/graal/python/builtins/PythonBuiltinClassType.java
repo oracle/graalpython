@@ -260,7 +260,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PRange("range", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT, RANGE_M_FLAGS, RangeBuiltins.SLOTS),
     PReferenceType("ReferenceType", "_weakref"),
     PSentinelIterator("callable_iterator", Flags.PRIVATE_DERIVED_WODICT),
-    PForeignArrayIterator("foreign_iterator"),
     PReverseIterator("reversed", J_BUILTINS),
     PSet("set", J_BUILTINS, SET_M_FLAGS, BaseSetBuiltins.SLOTS),
     PSlice("slice", J_BUILTINS),
@@ -502,7 +501,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SSLSyscallError("SSLSyscallError", J__SSL, Flags.EXCEPTION),
     SSLEOFError("SSLEOFError", J__SSL, Flags.EXCEPTION),
     SSLCertVerificationError("SSLCertVerificationError", J__SSL, Flags.EXCEPTION),
-    PForeignException("ForeignException", J_POLYGLOT, Flags.FOREIGN_EXCEPTION),
 
     // todo: all OS errors
 
@@ -558,7 +556,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     private static class Flags {
 
         static final Flags EXCEPTION = new Flags(true, true, true);
-        static final Flags FOREIGN_EXCEPTION = new Flags(false, false, true);
         static final Flags PRIVATE_DERIVED_WDICT = new Flags(false, false, true);
         static final Flags PRIVATE_BASE_WDICT = new Flags(false, true, true);
         static final Flags PRIVATE_BASE_WODICT = new Flags(false, true, false);
@@ -906,8 +903,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PickleError.base = Exception;
         PicklingError.base = PickleError;
         UnpicklingError.base = PickleError;
-
-        PForeignException.base = PBaseException;
 
         // warnings
         Warning.base = Exception;

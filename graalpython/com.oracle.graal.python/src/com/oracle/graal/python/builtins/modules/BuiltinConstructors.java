@@ -2889,17 +2889,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "foreign_iterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PForeignArrayIterator, isPublic = false)
-    @GenerateNodeFactory
-    public abstract static class ForeignIteratorTypeNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object iterator(Object args, Object kwargs,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "foreign_iterator");
-        }
-    }
-
     @Builtin(name = "generator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PGenerator, isPublic = false)
     @GenerateNodeFactory
     public abstract static class GeneratorTypeNode extends PythonBuiltinNode {
@@ -3019,7 +3008,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CodeConstructorNode extends PythonClinicBuiltinNode {
         @Specialization
-        PCode call(VirtualFrame frame, @SuppressWarnings("unused") Object cls, int argcount,
+        static PCode call(VirtualFrame frame, @SuppressWarnings("unused") Object cls, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         PBytes codestring, PTuple constants, PTuple names, PTuple varnames,

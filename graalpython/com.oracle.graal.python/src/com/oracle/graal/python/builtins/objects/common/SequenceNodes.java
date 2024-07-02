@@ -46,23 +46,32 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.CachedGetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.SetSequenceStorageNodeGen;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.ForeignSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 public abstract class SequenceNodes {
 
@@ -115,7 +124,7 @@ public abstract class SequenceNodes {
 
     @GenerateUncached
     @GenerateInline(inlineByDefault = true)
-    public abstract static class GetSequenceStorageNode extends Node {
+    public abstract static class GetSequenceStorageNode extends PNodeWithContext {
 
         public abstract SequenceStorage execute(Node inliningTarget, Object seq);
 
@@ -138,14 +147,25 @@ public abstract class SequenceNodes {
             return seq.getSequenceStorage();
         }
 
-        @Specialization(guards = "!isPSequence(seq)")
-        static SequenceStorage doFallback(@SuppressWarnings("unused") Object seq) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("cannot get sequence storage of non-sequence object");
+        // Note: this does not seem currently used but is good to accept foreign lists in more
+        // places
+        @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, seq)", "interop.hasArrayElements(seq)"}, limit = "1")
+        static SequenceStorage doForeign(Node inliningTarget, Object seq,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
+                        @Cached InlinedBranchProfile errorProfile) {
+            try {
+                long size = interop.getArraySize(seq);
+                return new ForeignSequenceStorage(seq, PInt.long2int(inliningTarget, size, errorProfile));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
 
-        static boolean isPSequence(Object object) {
-            return object instanceof PSequence;
+        @Fallback
+        static SequenceStorage doFallback(Node inliningTarget, Object seq,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A_SEQUENCE, seq);
         }
 
         @NeverDefault

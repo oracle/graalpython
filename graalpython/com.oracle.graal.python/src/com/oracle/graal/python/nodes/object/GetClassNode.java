@@ -54,10 +54,8 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.HiddenAttr;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -65,17 +63,14 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @TypeSystemReference(PythonTypes.class)
-@ImportStatic({PGuards.class})
 @GenerateUncached
 @GenerateInline(inlineByDefault = true)
 public abstract class GetClassNode extends PNodeWithContext {
@@ -247,17 +242,7 @@ public abstract class GetClassNode extends PNodeWithContext {
         return PythonBuiltinClassType.PInt;
     }
 
-    @Specialization
-    static Object getTruffleException(@SuppressWarnings("unused") AbstractTruffleException object) {
-        /*
-         * Special case: if Python code asks for the class of a foreign exception, we return a
-         * Python type that inherits from BaseException. We do this because Python users usually
-         * expect that every exception inherits from BaseException.
-         */
-        assert !(object instanceof PException);
-        return PythonBuiltinClassType.PForeignException;
-    }
-
+    @InliningCutoff
     @Fallback
     static Object getForeign(Object object,
                     @Cached(inline = false) GetRegisteredClassNode getRegisteredClassNode) {

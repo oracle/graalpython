@@ -110,9 +110,11 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ForeignSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Idempotent;
@@ -291,6 +293,10 @@ public abstract class PGuards {
         return first.getSequenceStorage() instanceof ObjectSequenceStorage && second.getSequenceStorage() instanceof ObjectSequenceStorage;
     }
 
+    public static boolean isForeignSequenceStorage(SequenceStorage sequenceStorage) {
+        return sequenceStorage instanceof ForeignSequenceStorage;
+    }
+
     public static boolean isList(Object o) {
         return o instanceof PList;
     }
@@ -306,8 +312,7 @@ public abstract class PGuards {
 
         PSequence sequence = iterator.getPSequence();
 
-        if (sequence instanceof PList) {
-            PList list = (PList) sequence;
+        if (sequence instanceof PList list) {
             return list.getSequenceStorage() instanceof ObjectSequenceStorage;
         }
 
