@@ -11,6 +11,9 @@ Configuration files are named `metadata.toml` and can contain the following:
 [[rules]]
 # Optional. Relative path to a patch file. May be omitted when the entry just specifies `install-priority`
 patch = 'foo-1.0.0.patch'
+# Required if 'patch' is specified. SPDX license expression for the package (allows parentheses, 'AND', 'OR', 'WITH').
+# Allowed licenses are enumerated in test_patch_metadata.py
+license = 'MIT'
 # Optional. Version specifier according to https://peps.python.org/pep-0440/#version-specifiers. If omitted, it will
 # match any version
 version = '== 1.0.0'
@@ -33,4 +36,5 @@ install-priority = 1
 # The next entry will apply to all other artifacts of foo
 [[patches]]
 patch = 'foo.patch'
+license = 'MIT'
 ```

@@ -36,12 +36,28 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from pathlib import Path
+import re
 
 import sys
+from pathlib import Path
+
+# Approved license identifiers in SPDX "short identifier" format
+ALLOWED_LICENSES = {
+    'MIT',  # https://spdx.org/licenses/MIT.html
+    'BSD-3-Clause',  # https://spdx.org/licenses/BSD-3-Clause.html
+    'BSD-2-Clause',  # https://spdx.org/licenses/BSD-2-Clause.html
+    'Apache-2.0',  # https://spdx.org/licenses/Apache-2.0.html
+    'MPL-2.0',  # https://spdx.org/licenses/MPL-2.0.html
+    'LGPL-2.0-or-later',  # https://spdx.org/licenses/LGPL-2.0-or-later.html
+    'LGPL-3.0-or-later',  # https://spdx.org/licenses/LGPL-3.0-or-later.html
+    'PSF-2.0',  # https://spdx.org/licenses/PSF-2.0.html
+}
+ALLOWED_WITH_CLAUSES = {
+    'openssl-exception',
+}
 
 SECTIONS = frozenset({'rules', 'add-sources'})
-RULE_KEYS = frozenset({'version', 'patch', 'subdir', 'dist-type', 'install-priority', 'ignore-rule-on-llvm'})
+RULE_KEYS = frozenset({'version', 'patch', 'license', 'subdir', 'dist-type', 'install-priority', 'ignore-rule-on-llvm'})
 
 if sys.implementation.name == 'graalpy':
     import ensurepip
@@ -67,6 +83,17 @@ if sys.implementation.name == 'graalpy':
                     patch_path = package_dir / patch
                     assert patch_path.is_file(), f"Patch file does not exists: {patch_path}"
                     patches.add(patch_path)
+                    license = rule.get('license')
+                    assert license, f"'license' not specified for patch {patch}"
+                    license = re.sub(r'[()]', ' ', license)
+                    for part in re.split(f'AND|OR', license):
+                        part = part.strip()
+                        if ' WITH ' in part:
+                            part, exception = re.split(r'\s+WITH\s+', part, 1)
+                            assert exception in ALLOWED_WITH_CLAUSES, \
+                                f"License WITH clause {exception} not in allowed list of clauses: {', '.join(ALLOWED_WITH_CLAUSES)}"
+                        assert part in ALLOWED_LICENSES, \
+                            f"License {part} not in allowed list of licenses: {', '.join(ALLOWED_LICENSES)}"
                 if install_priority := rule.get('install-priority'):
                     assert isinstance(install_priority, int), "'rules.install_priority' must be an int"
                 if dist_type := rule.get('dist-type'):
@@ -87,11 +114,17 @@ if sys.implementation.name == 'graalpy':
 
 
     def test_patch_metadata():
+        errors = []
         for package_dir in patch_dir.iterdir():
             if package_dir.is_dir():
-                if (metadata_path := package_dir / 'metadata.toml').is_file():
-                    with open(metadata_path, 'rb') as f:
-                        metadata = tomli.load(f)
-                        validate_metadata(package_dir, metadata)
-                else:
-                    assert False, f"Patch directory without metadata: {package_dir}"
+                try:
+                    if (metadata_path := package_dir / 'metadata.toml').is_file():
+                        with open(metadata_path, 'rb') as f:
+                            metadata = tomli.load(f)
+                            validate_metadata(package_dir, metadata)
+                    else:
+                        assert False, f"Patch directory without metadata: {package_dir}"
+                except Exception as e:
+                    errors.append(f"\t{package_dir.name}: {e}")
+        if errors:
+            raise AssertionError("Patch metadata validation failed:\n" + '\n'.join(errors))
