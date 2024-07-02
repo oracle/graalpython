@@ -169,9 +169,15 @@ void
 _Py_DecRef(PyObject *o)
 {
     // GraalPy change: different implementation
+    if (UNLIKELY(graalpy_finalizing)) {
+        /*
+         * Many native libraries in C++ do decrefs in global object destructors that run
+         * after the VM has exitted and we have deallocated the native wrappers.
+         */
+        return;
+    }
     const Py_ssize_t refcnt = Py_REFCNT(o);
-    if (refcnt != IMMORTAL_REFCNT)
-    {
+    if (refcnt != IMMORTAL_REFCNT) {
         const Py_ssize_t updated_refcnt = refcnt - 1;
         Py_SET_REFCNT(o, updated_refcnt);
         if (updated_refcnt != 0) {
