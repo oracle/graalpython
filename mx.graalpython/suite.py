@@ -16,9 +16,9 @@ suite = {
     "url": "http://www.graalvm.org/",
 
     "developer": {
-        "name": "Truffle and Graal developers",
-        "email": "graalvm-users@oss.oracle.com",
-        "organization": "Graal",
+        "name": "GraalVM Development",
+        "email": "graalvm-dev@oss.oracle.com",
+        "organization": "Oracle Corporation",
         "organizationUrl": "http://www.graalvm.org/",
     },
 
@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "bf0bb9bbfe346fe1b0868a56790e4d3fb9f0392e",
+                "version": "5616789e91e18e90bbe42285102856823ff8e7c9",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "bf0bb9bbfe346fe1b0868a56790e4d3fb9f0392e",
+                "version": "5616789e91e18e90bbe42285102856823ff8e7c9",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "bf0bb9bbfe346fe1b0868a56790e4d3fb9f0392e",
+                "version": "5616789e91e18e90bbe42285102856823ff8e7c9",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "bf0bb9bbfe346fe1b0868a56790e4d3fb9f0392e",
+                "version": "5616789e91e18e90bbe42285102856823ff8e7c9",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
