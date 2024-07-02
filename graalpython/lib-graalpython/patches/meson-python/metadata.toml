@@ -1,3 +1,4 @@
 [[rules]]
 # Backport pypa/packaging PR for fixing graalpy architecture
 patch = 'meson-python.patch'
+license = 'MIT'

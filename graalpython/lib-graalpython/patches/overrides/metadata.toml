@@ -4,3 +4,4 @@ version = '== 7.4.0'
 # to do some otherwise impossible syntax shortcuts. Since it's esentially a type-checker, we just disable the overrides
 # checking altogether
 patch = 'overrides-7.4.0.patch'
+license = 'Apache-2.0'

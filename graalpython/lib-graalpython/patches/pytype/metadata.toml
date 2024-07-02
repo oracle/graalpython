@@ -1,2 +1,3 @@
 [[rules]]
 patch = 'pytype.patch'
+license = 'Apache-2.0'

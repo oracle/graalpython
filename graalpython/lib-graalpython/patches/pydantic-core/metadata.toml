@@ -1,4 +1,5 @@
 [[rules]]
 version = '== 2.10.1'
 patch = 'pydantic-core-2.10.1.patch'
+license = 'MIT'
 

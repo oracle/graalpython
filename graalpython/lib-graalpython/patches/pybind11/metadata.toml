@@ -4,3 +4,4 @@
 # Note: This patch is also inlined in torch
 version = '>= 2.10.1'
 patch = 'pybind11-2.10.1.patch'
+license = 'BSD-3-Clause'

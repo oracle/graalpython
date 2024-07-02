@@ -1,3 +1,4 @@
 [[rules]]
 # Avoid PyOS_getsig calls. Not upstreamable
 patch = 'prompt_toolkit.patch'
+license = 'BSD-3-Clause'

@@ -1,2 +1,3 @@
 [[rules]]
 patch = 'PyDriller.patch'
+license = 'Apache-2.0'

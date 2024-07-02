@@ -1,12 +1,15 @@
 [[rules]]
 version = '== 2.3.0'
 patch = 'pyperf-2.3.0.patch'
+license = 'MIT'
 
 [[rules]]
 version = '== 2.3.1'
 patch = 'pyperf-2.3.1.patch'
+license = 'MIT'
 
 [[rules]]
 install-priority = 10
 version = '== 2.5.0'
 patch = 'pyperf-2.5.0.patch'
+license = 'MIT'

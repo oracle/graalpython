@@ -1,2 +1,3 @@
 [[rules]]
 patch = 'rapidfuzz.patch'
+license = 'MIT'
