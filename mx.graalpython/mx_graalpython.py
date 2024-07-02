@@ -47,7 +47,6 @@ if sys.version_info[0] < 3:
     raise RuntimeError("The build scripts are no longer compatible with Python 2")
 
 import tempfile
-import urllib.request as urllib_request
 from argparse import ArgumentParser
 from dataclasses import dataclass
 import stat

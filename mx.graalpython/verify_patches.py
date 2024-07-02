@@ -41,8 +41,8 @@ import re
 import sys
 from pathlib import Path
 
-from pip._vendor import tomli
-from pip._vendor.packaging.specifiers import SpecifierSet
+from pip._vendor import tomli  # pylint: disable=no-name-in-module
+from pip._vendor.packaging.specifiers import SpecifierSet  # pylint: disable=no-name-in-module
 
 # Approved license identifiers in SPDX "short identifier" format
 ALLOWED_LICENSES = {
@@ -75,10 +75,10 @@ def validate_metadata(package_dir, metadata):
                 patch_path = package_dir / patch
                 assert patch_path.is_file(), f"Patch file does not exists: {patch_path}"
                 patches.add(patch_path)
-                license = rule.get('license')
-                assert license, f"'license' not specified for patch {patch}"
-                license = re.sub(r'[()]', ' ', license)
-                for part in re.split(f'AND|OR', license):
+                license_id = rule.get('license')
+                assert license_id, f"'license' not specified for patch {patch}"
+                license_id = re.sub(r'[()]', ' ', license_id)
+                for part in re.split(f'AND|OR', license_id):
                     part = part.strip()
                     if ' WITH ' in part:
                         part, exception = re.split(r'\s+WITH\s+', part, 1)
@@ -121,7 +121,7 @@ def main():
                         validate_metadata(package_dir, metadata)
                 else:
                     assert False, f"Patch directory without metadata: {package_dir}"
-            except Exception as e:
+            except AssertionError as e:
                 errors.append(f"\t{package_dir.name}: {e}")
     if errors:
         sys.exit("Patch metadata validation failed:\n" + '\n'.join(errors))
