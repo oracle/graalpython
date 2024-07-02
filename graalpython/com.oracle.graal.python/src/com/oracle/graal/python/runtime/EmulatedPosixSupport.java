@@ -2621,7 +2621,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             try {
                 return new MMapHandle(new AnonymousMap(PythonUtils.toIntExact(length)), 0);
             } catch (OverflowException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new UnsupportedPosixFeatureException(String.format("Anonymous mapping in mmap for memory larger than %d", Integer.MAX_VALUE));
             }
         }

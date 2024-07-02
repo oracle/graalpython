@@ -70,7 +70,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemEr
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
-import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreter;
+import static com.oracle.truffle.api.CompilerDirectives.transferToInterpreterAndInvalidate;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -2144,7 +2144,7 @@ public abstract class CExtNodes {
             if (callable instanceof PythonObject pythonObject) {
                 return pythonObject;
             }
-            transferToInterpreter();
+            transferToInterpreterAndInvalidate();
             throw shouldNotReachHere("Unexpected class of callable: " + callable.getClass());
         }
 

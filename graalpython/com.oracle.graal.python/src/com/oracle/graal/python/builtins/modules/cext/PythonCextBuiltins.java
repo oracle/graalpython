@@ -367,7 +367,7 @@ public final class PythonCextBuiltins {
         }
 
         protected final PException badInternalCall(String argName) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC, getName(), argName);
         }
 
@@ -600,8 +600,7 @@ public final class PythonCextBuiltins {
 
         CallTarget getCallTarget() {
             if (callTarget == null) {
-                CompilerDirectives.transferToInterpreter();
-                CompilerDirectives.shouldNotReachHere("call target slow path not implemented");
+                throw CompilerDirectives.shouldNotReachHere("call target slow path not implemented");
             }
             return callTarget;
         }
@@ -656,7 +655,7 @@ public final class PythonCextBuiltins {
                     CompilerDirectives.transferToInterpreter();
                     throw t;
                 } catch (Throwable t) {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     t.printStackTrace();
                     throw CompilerDirectives.shouldNotReachHere(t);
                 }
@@ -664,7 +663,7 @@ public final class PythonCextBuiltins {
 
             @Specialization
             public static Object doFallback(@SuppressWarnings("unused") CApiBuiltinExecutable self, @SuppressWarnings("unused") Object[] arguments) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw CompilerDirectives.shouldNotReachHere("shouldn't hit generic case of " + Execute.class.getName());
             }
         }
@@ -824,7 +823,7 @@ public final class PythonCextBuiltins {
                 } else if (cachedSelf.getRetDescriptor().isVoid()) {
                     return PNone.NO_VALUE;
                 } else {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("return type while handling PException: " + cachedSelf.getRetDescriptor() + " in " + self.name);
                 }
             } finally {
@@ -1412,8 +1411,7 @@ public final class PythonCextBuiltins {
 
         @SuppressWarnings("unused")
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            CompilerDirectives.transferToInterpreter();
-            throw new IllegalStateException("should not reach");
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
