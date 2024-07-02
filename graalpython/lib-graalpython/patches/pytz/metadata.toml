@@ -1,4 +1,0 @@
-[[rules]]
-version = '== 2022.2.1'
-patch = 'pytz-2022.2.1.patch'
-license = 'MIT'
