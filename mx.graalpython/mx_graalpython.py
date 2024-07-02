@@ -1360,6 +1360,13 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
     )
 
 
+def get_cpython():
+    if python3_home := os.environ.get("PYTHON3_HOME"):
+        return os.path.join(python3_home, "python")
+    else:
+        return "python3"
+
+
 def graalpython_gate_runner(args, tasks):
     report = lambda: (not is_collecting_coverage()) and task
     nonZeroIsFatal = not is_collecting_coverage()
@@ -1466,13 +1473,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
-            exe = os.environ.get("PYTHON3_HOME", None)
-            if exe:
-                exe = os.path.join(exe, "python")
-            else:
-                exe = "python3"
             env = extend_os_env(PYTHONHASHSEED='0')
-            test_args = [exe, _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests"]
+            test_args = [get_cpython(), _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests"]
             mx.run(test_args, nonZeroIsFatal=True, env=env)
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
@@ -2098,12 +2100,11 @@ def python_run_mx_filetests(args):
 
 
 def _python_checkpatchfiles():
-    exe = os.environ.get("PYTHON3_HOME", sys.executable)
     env = os.environ.copy()
     env['PYTHONPATH'] = 'graalpython/lib-python/3/ensurepip/_bundled/pip-23.2.1-py3-none-any.whl'
     mx_dir = Path(__file__).parent
     mx.run(
-        [exe, str(mx_dir / 'verify_patches.py'), str(mx_dir.parent / 'graalpython/lib-graalpython/patches')],
+        [get_cpython(), str(mx_dir / 'verify_patches.py'), str(mx_dir.parent / 'graalpython/lib-graalpython/patches')],
         env=env,
         nonZeroIsFatal=True,
     )
