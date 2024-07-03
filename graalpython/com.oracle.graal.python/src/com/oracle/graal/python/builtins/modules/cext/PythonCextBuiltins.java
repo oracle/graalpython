@@ -130,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateRefNode;
@@ -1673,6 +1674,27 @@ public final class PythonCextBuiltins {
         @Specialization(guards = "!isNativeAccessAllowed()")
         static Object doManaged(@SuppressWarnings("unused") Object pointer) {
             return PInt.intValue(false);
+        }
+    }
+
+    @CApiBuiltin(ret = Void, call = Ignored)
+    abstract static class PyTruffle_EnableReferneceQueuePolling extends CApiNullaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(@Bind("this") Node inliningTarget) {
+            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
+            CApiTransitions.enableReferenceQueuePolling(handleContext);
+            return PNone.NO_VALUE;
+        }
+    }
+
+    @CApiBuiltin(ret = Int, call = Ignored)
+    abstract static class PyTruffle_DisableReferneceQueuePolling extends CApiNullaryBuiltinNode {
+        @Specialization
+        static int doGeneric(@Bind("this") Node inliningTarget) {
+            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
+            return PInt.intValue(CApiTransitions.disableReferenceQueuePolling(handleContext));
         }
     }
 

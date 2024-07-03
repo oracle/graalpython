@@ -601,8 +601,16 @@ public abstract class CApiTransitions {
         handleContext.nativeLookup.clear();
     }
 
-    public static void disableReferenceQueuePolling(HandleContext handleContext) {
-        handleContext.referenceQueuePollActive = true;
+    public static boolean disableReferenceQueuePolling(HandleContext handleContext) {
+        if (!handleContext.referenceQueuePollActive) {
+            handleContext.referenceQueuePollActive = true;
+            return false;
+        }
+        return true;
+    }
+
+    public static void enableReferenceQueuePolling(HandleContext handleContext) {
+        handleContext.referenceQueuePollActive = false;
     }
 
     private static void freeNativeStub(PythonObjectReference ref) {
