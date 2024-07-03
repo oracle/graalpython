@@ -1,0 +1,503 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index f777917..b466206 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -243,9 +243,8 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3-build-config"
+-version = "0.21.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "7883df5835fafdad87c0d888b266c8ec0f4c9ca48a5bed6bbb592e8dedee1b50"
++version = "0.19.2"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "once_cell",
+  "target-lexicon",
+@@ -253,9 +252,8 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3-ffi"
+-version = "0.21.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "01be5843dc60b916ab4dad1dca6d20b9b4e6ddc8e15f50c47fe6d85f1fb97403"
++version = "0.19.2"
++source = "git+https://github.com/timfel/pyo3.git?branch=v0.19.2.graalpy#a1869b1127916f2ac1f12a915828e7d5570dddf3"
+ dependencies = [
+  "libc",
+  "pyo3-build-config",
+diff --git a/Cargo.toml b/Cargo.toml
+index 75310c6..4b9a520 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -68,7 +68,7 @@ half = { version = "2", default-features = false, features = ["std"] }
+ itoa = { version = "1", default-features = false }
+ itoap = { version = "1", features = ["std", "simd"] }
+ once_cell = { version = "1", default-features = false, features = ["race"] }
+-pyo3-ffi = { version = "^0.21", default-features = false, features = ["extension-module"]}
++pyo3-ffi = { git = "https://github.com/timfel/pyo3.git", branch = "v0.19.2.graalpy", default_features = false, features = ["extension-module"] }
+ ryu = { version = "1", default-features = false }
+ serde = { version = "1", default-features = false }
+ serde_json = { version = "1", default-features = false, features = ["std", "float_roundtrip"] }
+@@ -78,7 +78,7 @@ unwinding = { version = "0.2", features = ["unwinder"], optional = true }
+ 
+ [build-dependencies]
+ cc = { version = "1" }
+-pyo3-build-config = { version = "^0.21" }
++pyo3-build-config = { git = "https://github.com/timfel/pyo3.git", branch = "v0.19.2.graalpy" }
+ version_check = { version = "0.9" }
+ 
+ [profile.dev]
+diff --git a/build.rs b/build.rs
+index 9d9527b..64a641f 100644
+--- a/build.rs
++++ b/build.rs
+@@ -21,9 +21,8 @@ fn main() {
+     println!("cargo:rustc-check-cfg=cfg(Py_3_8)");
+     println!("cargo:rustc-check-cfg=cfg(Py_3_9)");
+ 
+-    for cfg in pyo3_build_config::get().build_script_outputs() {
+-        println!("{cfg}");
+-    }
++    let py_cfg = pyo3_build_config::get();
++    py_cfg.emit_pyo3_cfgs();
+ 
+     if let Some(true) = version_check::supports_feature("core_intrinsics") {
+         println!("cargo:rustc-cfg=feature=\"intrinsics\"");
+diff --git a/src/deserialize/cache.rs b/src/deserialize/cache.rs
+index 6653a34..7712cb4 100644
+--- a/src/deserialize/cache.rs
++++ b/src/deserialize/cache.rs
+@@ -21,7 +21,7 @@ impl CachedKey {
+     }
+     pub fn get(&mut self) -> *mut pyo3_ffi::PyObject {
+         let ptr = self.ptr as *mut pyo3_ffi::PyObject;
+-        debug_assert!(ffi!(Py_REFCNT(ptr)) >= 1);
++        // debug_assert!(ffi!(Py_REFCNT(ptr)) >= 1);
+         ffi!(Py_INCREF(ptr));
+         ptr
+     }
+diff --git a/src/deserialize/deserializer.rs b/src/deserialize/deserializer.rs
+index 2e7dd8c..f939487 100644
+--- a/src/deserialize/deserializer.rs
++++ b/src/deserialize/deserializer.rs
+@@ -8,7 +8,7 @@ use core::ptr::NonNull;
+ pub fn deserialize(
+     ptr: *mut pyo3_ffi::PyObject,
+ ) -> Result<NonNull<pyo3_ffi::PyObject>, DeserializeError<'static>> {
+-    debug_assert!(ffi!(Py_REFCNT(ptr)) >= 1);
++    // debug_assert!(ffi!(Py_REFCNT(ptr)) >= 1);
+     let buffer = read_input_to_buf(ptr)?;
+ 
+     if unlikely!(buffer.len() == 2) {
+diff --git a/src/deserialize/yyjson.rs b/src/deserialize/yyjson.rs
+index 4151974..1583627 100644
+--- a/src/deserialize/yyjson.rs
++++ b/src/deserialize/yyjson.rs
+@@ -192,21 +192,20 @@ fn populate_yy_array(list: *mut pyo3_ffi::PyObject, elem: *mut yyjson_val) {
+         let len = unsafe_yyjson_get_len(elem);
+         assume!(len >= 1);
+         let mut next = unsafe_yyjson_get_first(elem);
+-        let mut dptr = (*(list as *mut pyo3_ffi::PyListObject)).ob_item;
+ 
+-        for _ in 0..len {
++        for index in 0..len {
+             let val = next;
+             if unlikely!(unsafe_yyjson_is_ctn(val)) {
+                 next = unsafe_yyjson_get_next_container(val);
+                 if is_yyjson_tag!(val, TAG_ARRAY) {
+                     let pyval = ffi!(PyList_New(unsafe_yyjson_get_len(val) as isize));
+-                    append_to_list!(dptr, pyval);
++                    ffi!(PyList_SetItem(list, index.try_into().unwrap(), pyval));
+                     if unsafe_yyjson_get_len(val) > 0 {
+                         populate_yy_array(pyval, val);
+                     }
+                 } else {
+                     let pyval = ffi!(_PyDict_NewPresized(unsafe_yyjson_get_len(val) as isize));
+-                    append_to_list!(dptr, pyval);
++                    ffi!(PyList_SetItem(list, index.try_into().unwrap(), pyval));
+                     if unsafe_yyjson_get_len(val) > 0 {
+                         populate_yy_object(pyval, val);
+                     }
+@@ -224,7 +223,7 @@ fn populate_yy_array(list: *mut pyo3_ffi::PyObject, elem: *mut yyjson_val) {
+                     ElementType::Array => unreachable!(),
+                     ElementType::Object => unreachable!(),
+                 };
+-                append_to_list!(dptr, pyval.as_ptr());
++                ffi!(PyList_SetItem(list, index.try_into().unwrap(), pyval.as_ptr()));
+             }
+         }
+     }
+diff --git a/src/ffi/fragment.rs b/src/ffi/fragment.rs
+index 9cfd4d7..4231d18 100644
+--- a/src/ffi/fragment.rs
++++ b/src/ffi/fragment.rs
+@@ -39,7 +39,10 @@ pub unsafe extern "C" fn orjson_fragment_tp_new(
+         raise_args_exception();
+         null_mut()
+     } else {
++        #[cfg(not(any(GraalPy, PyPy)))]
+         let contents = PyTuple_GET_ITEM(args, 0);
++        #[cfg(any(GraalPy, PyPy))]
++        let contents = PyTuple_GetItem(args, 0);
+         Py_INCREF(contents);
+         let obj = Box::new(Fragment {
+             ob_refcnt: 1,
+diff --git a/src/lib.rs b/src/lib.rs
+index 0ae348e..13508ea 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -230,11 +230,20 @@ fn raise_loads_exception(err: deserialize::DeserializeError) -> *mut PyObject {
+             PyUnicode_FromStringAndSize(msg.as_ptr() as *const c_char, msg.len() as isize);
+         let args = PyTuple_New(3);
+         let pos = PyLong_FromLongLong(pos);
+-        PyTuple_SET_ITEM(args, 0, err_msg);
+-        PyTuple_SET_ITEM(args, 1, doc);
+-        PyTuple_SET_ITEM(args, 2, pos);
++        #[cfg(not(any(GraalPy, PyPy)))]
++        {
++            PyTuple_SET_ITEM(args, 0, err_msg);
++            PyTuple_SET_ITEM(args, 1, doc);
++            PyTuple_SET_ITEM(args, 2, pos);
++        }
++        #[cfg(any(GraalPy, PyPy))]
++        {
++            PyTuple_SetItem(args, 0, err_msg);
++            PyTuple_SetItem(args, 1, doc);
++            PyTuple_SetItem(args, 2, pos);
++        }
+         PyErr_SetObject(typeref::JsonDecodeError, args);
+-        debug_assert!(ffi!(Py_REFCNT(args)) <= 2);
++        // debug_assert!(ffi!(Py_REFCNT(args)) <= 2);
+         Py_DECREF(args);
+     };
+     null_mut()
+@@ -248,7 +257,7 @@ fn raise_dumps_exception_fixed(msg: &str) -> *mut PyObject {
+         let err_msg =
+             PyUnicode_FromStringAndSize(msg.as_ptr() as *const c_char, msg.len() as isize);
+         PyErr_SetObject(typeref::JsonEncodeError, err_msg);
+-        debug_assert!(ffi!(Py_REFCNT(err_msg)) <= 2);
++        // debug_assert!(ffi!(Py_REFCNT(err_msg)) <= 2);
+         Py_DECREF(err_msg);
+     };
+     null_mut()
+@@ -265,7 +274,7 @@ fn raise_dumps_exception_dynamic(err: &str) -> *mut PyObject {
+         let err_msg =
+             PyUnicode_FromStringAndSize(err.as_ptr() as *const c_char, err.len() as isize);
+         PyErr_SetObject(typeref::JsonEncodeError, err_msg);
+-        debug_assert!(ffi!(Py_REFCNT(err_msg)) <= 2);
++        // debug_assert!(ffi!(Py_REFCNT(err_msg)) <= 2);
+         Py_DECREF(err_msg);
+ 
+         if !cause_exc.is_null() {
+@@ -291,7 +300,7 @@ fn raise_dumps_exception_dynamic(err: &str) -> *mut PyObject {
+         let err_msg =
+             PyUnicode_FromStringAndSize(err.as_ptr() as *const c_char, err.len() as isize);
+         PyErr_SetObject(typeref::JsonEncodeError, err_msg);
+-        debug_assert!(ffi!(Py_REFCNT(err_msg)) == 2);
++        // debug_assert!(ffi!(Py_REFCNT(err_msg)) == 2);
+         Py_DECREF(err_msg);
+         let mut tp: *mut PyObject = null_mut();
+         let mut val: *mut PyObject = null_mut();
+@@ -345,7 +354,10 @@ pub unsafe extern "C" fn dumps(
+     }
+     if unlikely!(!kwnames.is_null()) {
+         for i in 0..=Py_SIZE(kwnames).saturating_sub(1) {
++            #[cfg(not(any(GraalPy, PyPy)))]
+             let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
++            #[cfg(any(GraalPy, PyPy))]
++            let arg = PyTuple_GetItem(kwnames, i as Py_ssize_t);
+             if arg == typeref::DEFAULT {
+                 if unlikely!(num_args & 2 == 2) {
+                     return raise_dumps_exception_fixed(
+@@ -369,7 +381,7 @@ pub unsafe extern "C" fn dumps(
+     let mut optsbits: i32 = 0;
+     if unlikely!(optsptr.is_some()) {
+         let opts = optsptr.unwrap();
+-        if (*opts.as_ptr()).ob_type == typeref::INT_TYPE {
++        if Py_TYPE(opts.as_ptr()) == typeref::INT_TYPE {
+             optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
+             if unlikely!(!(0..=opt::MAX_OPT).contains(&optsbits)) {
+                 return raise_dumps_exception_fixed("Invalid opts");
+diff --git a/src/serialize/per_type/datetime.rs b/src/serialize/per_type/datetime.rs
+index 951398e..d7d758c 100644
+--- a/src/serialize/per_type/datetime.rs
++++ b/src/serialize/per_type/datetime.rs
+@@ -164,7 +164,11 @@ impl DateTimeLike for DateTime {
+     }
+ 
+     fn has_tz(&self) -> bool {
++        #[cfg(not(GraalPy))]
+         unsafe { (*(self.ptr as *mut pyo3_ffi::PyDateTime_DateTime)).hastzinfo == 1 }
++
++        #[cfg(GraalPy)]
++        unsafe { pyo3_ffi::Py_IsNone(pyo3_ffi::PyDateTime_DATE_GET_TZINFO(self.ptr as *mut pyo3_ffi::PyObject)) == 0 }
+     }
+ 
+     fn slow_offset(&self) -> Result<Offset, DateTimeError> {
+diff --git a/src/serialize/per_type/default.rs b/src/serialize/per_type/default.rs
+index 6c9e1d4..81aa3ce 100644
+--- a/src/serialize/per_type/default.rs
++++ b/src/serialize/per_type/default.rs
+@@ -28,13 +28,13 @@ impl<'a> Serialize for DefaultSerializer<'a> {
+                 if unlikely!(self.previous.state.default_calls_limit()) {
+                     err!(SerializeError::DefaultRecursionLimit)
+                 }
+-                #[cfg(not(Py_3_10))]
++                #[cfg(any(not(Py_3_10), GraalPy, PyPy))]
+                 let default_obj = ffi!(PyObject_CallFunctionObjArgs(
+                     callable.as_ptr(),
+                     self.previous.ptr,
+                     core::ptr::null_mut() as *mut pyo3_ffi::PyObject
+                 ));
+-                #[cfg(Py_3_10)]
++                #[cfg(all(Py_3_10, not(GraalPy), not(PyPy)))]
+                 let default_obj = unsafe {
+                     pyo3_ffi::PyObject_Vectorcall(
+                         callable.as_ptr(),
+diff --git a/src/serialize/per_type/list.rs b/src/serialize/per_type/list.rs
+index d9d75ef..26d77c3 100644
+--- a/src/serialize/per_type/list.rs
++++ b/src/serialize/per_type/list.rs
+@@ -39,6 +39,18 @@ pub struct ListTupleSerializer {
+     state: SerializerState,
+     default: Option<NonNull<pyo3_ffi::PyObject>>,
+     len: usize,
++    owns_data_ptr: bool,
++}
++
++impl Drop for ListTupleSerializer {
++    fn drop(&mut self) {
++        if self.owns_data_ptr {
++            let layout = std::alloc::Layout::array::<*mut pyo3_ffi::PyObject>(self.len).unwrap();
++            unsafe {
++                std::alloc::dealloc(self.data_ptr as *mut u8, layout);
++            }
++        }
++    }
+ }
+ 
+ impl ListTupleSerializer {
+@@ -51,13 +63,21 @@ impl ListTupleSerializer {
+             is_type!(ob_type!(ptr), LIST_TYPE)
+                 || is_subclass_by_flag!(ob_type!(ptr), Py_TPFLAGS_LIST_SUBCLASS)
+         );
+-        let data_ptr = unsafe { (*(ptr as *mut pyo3_ffi::PyListObject)).ob_item };
+         let len = ffi!(Py_SIZE(ptr)) as usize;
++        let data_ptr: *mut *mut pyo3_ffi::PyObject;
++        unsafe {
++            let layout = std::alloc::Layout::array::<*mut pyo3_ffi::PyObject>(len).unwrap();
++            data_ptr = std::alloc::alloc(layout) as *mut *mut pyo3_ffi::PyObject;
++            for i in 0..len {
++                *data_ptr.add(i) = pyo3_ffi::PyList_GetItem(ptr, i.try_into().unwrap());
++            }
++        }
+         Self {
+             data_ptr: data_ptr,
+-            len: len,
++            len: len as usize,
+             state: state.copy_for_recursive_call(),
+             default: default,
++            owns_data_ptr: true,
+         }
+     }
+ 
+@@ -77,6 +97,7 @@ impl ListTupleSerializer {
+             len: len,
+             state: state.copy_for_recursive_call(),
+             default: default,
++            owns_data_ptr: false,
+         }
+     }
+ }
+diff --git a/src/serialize/per_type/numpy.rs b/src/serialize/per_type/numpy.rs
+index c7ea47f..da780ab 100644
+--- a/src/serialize/per_type/numpy.rs
++++ b/src/serialize/per_type/numpy.rs
+@@ -1218,8 +1218,14 @@ impl NumpyDatetimeUnit {
+     fn from_pyobject(ptr: *mut PyObject) -> Self {
+         let dtype = ffi!(PyObject_GetAttr(ptr, DTYPE_STR));
+         let descr = ffi!(PyObject_GetAttr(dtype, DESCR_STR));
++        #[cfg(not(any(GraalPy, PyPy)))]
+         let el0 = ffi!(PyList_GET_ITEM(descr, 0));
++        #[cfg(any(GraalPy, PyPy))]
++        let el0 = ffi!(PyList_GetItem(descr, 0));
++        #[cfg(not(any(GraalPy, PyPy)))]
+         let descr_str = ffi!(PyTuple_GET_ITEM(el0, 1));
++        #[cfg(any(GraalPy, PyPy))]
++        let descr_str = ffi!(PyTuple_GetItem(el0, 1));
+         let uni = crate::str::unicode_to_str(descr_str).unwrap();
+         if uni.len() < 5 {
+             return Self::NaT;
+diff --git a/src/str/ffi.rs b/src/str/ffi.rs
+index 2f37b6b..013273d 100644
+--- a/src/str/ffi.rs
++++ b/src/str/ffi.rs
+@@ -37,18 +37,6 @@ pub fn unicode_to_str_via_ffi(op: *mut PyObject) -> Option<&'static str> {
+ #[inline]
+ pub fn unicode_to_str(op: *mut PyObject) -> Option<&'static str> {
+     unsafe {
+-        if unlikely!((*op.cast::<PyASCIIObject>()).compact() == 0) {
+-            unicode_to_str_via_ffi(op)
+-        } else if (*op.cast::<PyASCIIObject>()).ascii() == 1 {
+-            let ptr = op.cast::<PyASCIIObject>().offset(1) as *const u8;
+-            let len = (*op.cast::<PyASCIIObject>()).length as usize;
+-            Some(str_from_slice!(ptr, len))
+-        } else if (*op.cast::<PyCompactUnicodeObject>()).utf8_length != 0 {
+-            let ptr = (*op.cast::<PyCompactUnicodeObject>()).utf8 as *const u8;
+-            let len = (*op.cast::<PyCompactUnicodeObject>()).utf8_length as usize;
+-            Some(str_from_slice!(ptr, len))
+-        } else {
+-            unicode_to_str_via_ffi(op)
+-        }
++        unicode_to_str_via_ffi(op)
+     }
+ }
+diff --git a/src/typeref.rs b/src/typeref.rs
+index 0fe13f9..c8847e2 100644
+--- a/src/typeref.rs
++++ b/src/typeref.rs
+@@ -146,26 +146,26 @@ fn _init_typerefs_impl() -> bool {
+         TRUE = Py_True();
+         FALSE = Py_False();
+         EMPTY_UNICODE = PyUnicode_New(0, 255);
+-        STR_TYPE = (*EMPTY_UNICODE).ob_type;
+-        BYTES_TYPE = (*PyBytes_FromStringAndSize("".as_ptr() as *const c_char, 0)).ob_type;
++        STR_TYPE = Py_TYPE(EMPTY_UNICODE);
++        BYTES_TYPE = Py_TYPE(PyBytes_FromStringAndSize("".as_ptr() as *const c_char, 0));
+ 
+         {
+             let bytearray = PyByteArray_FromStringAndSize("".as_ptr() as *const c_char, 0);
+-            BYTEARRAY_TYPE = (*bytearray).ob_type;
++            BYTEARRAY_TYPE = Py_TYPE(bytearray);
+ 
+             let memoryview = PyMemoryView_FromObject(bytearray);
+-            MEMORYVIEW_TYPE = (*memoryview).ob_type;
++            MEMORYVIEW_TYPE = Py_TYPE(memoryview);
+             Py_DECREF(memoryview);
+             Py_DECREF(bytearray);
+         }
+ 
+-        DICT_TYPE = (*PyDict_New()).ob_type;
+-        LIST_TYPE = (*PyList_New(0)).ob_type;
+-        TUPLE_TYPE = (*PyTuple_New(0)).ob_type;
+-        NONE_TYPE = (*NONE).ob_type;
+-        BOOL_TYPE = (*TRUE).ob_type;
+-        INT_TYPE = (*PyLong_FromLongLong(0)).ob_type;
+-        FLOAT_TYPE = (*PyFloat_FromDouble(0.0)).ob_type;
++        DICT_TYPE = Py_TYPE(PyDict_New());
++        LIST_TYPE = Py_TYPE(PyList_New(0));
++        TUPLE_TYPE = Py_TYPE(PyTuple_New(0));
++        NONE_TYPE = Py_TYPE(NONE);
++        BOOL_TYPE = Py_TYPE(TRUE);
++        INT_TYPE = Py_TYPE(PyLong_FromLongLong(0));
++        FLOAT_TYPE = Py_TYPE(PyFloat_FromDouble(0.0));
+         DATETIME_TYPE = look_up_datetime_type();
+         DATE_TYPE = look_up_date_type();
+         TIME_TYPE = look_up_time_type();
+@@ -290,7 +290,7 @@ unsafe fn look_up_uuid_type() -> *mut PyTypeObject {
+     let uuid_mod = PyImport_ImportModule("uuid\0".as_ptr() as *const c_char);
+     let uuid_mod_dict = PyObject_GenericGetDict(uuid_mod, null_mut());
+     let uuid = PyMapping_GetItemString(uuid_mod_dict, "NAMESPACE_DNS\0".as_ptr() as *const c_char);
+-    let ptr = (*uuid).ob_type;
++    let ptr = Py_TYPE(uuid);
+     Py_DECREF(uuid);
+     Py_DECREF(uuid_mod_dict);
+     Py_DECREF(uuid_mod);
+@@ -311,7 +311,7 @@ unsafe fn look_up_datetime_type() -> *mut PyTypeObject {
+         NONE,
+         (*(PyDateTimeAPI())).DateTimeType,
+     );
+-    let ptr = (*datetime).ob_type;
++    let ptr = Py_TYPE(datetime);
+     Py_DECREF(datetime);
+     ptr
+ }
+@@ -320,7 +320,7 @@ unsafe fn look_up_datetime_type() -> *mut PyTypeObject {
+ #[cfg_attr(feature = "optimize", optimize(size))]
+ unsafe fn look_up_date_type() -> *mut PyTypeObject {
+     let date = ((*PyDateTimeAPI()).Date_FromDate)(1, 1, 1, (*(PyDateTimeAPI())).DateType);
+-    let ptr = (*date).ob_type;
++    let ptr = Py_TYPE(date);
+     Py_DECREF(date);
+     ptr
+ }
+@@ -329,7 +329,7 @@ unsafe fn look_up_date_type() -> *mut PyTypeObject {
+ #[cfg_attr(feature = "optimize", optimize(size))]
+ unsafe fn look_up_time_type() -> *mut PyTypeObject {
+     let time = ((*PyDateTimeAPI()).Time_FromTime)(0, 0, 0, 0, NONE, (*(PyDateTimeAPI())).TimeType);
+-    let ptr = (*time).ob_type;
++    let ptr = Py_TYPE(time);
+     Py_DECREF(time);
+     ptr
+ }
+diff --git a/src/util.rs b/src/util.rs
+index db6e8a8..b6a1b0d 100644
+--- a/src/util.rs
++++ b/src/util.rs
+@@ -10,7 +10,7 @@ macro_rules! is_type {
+ 
+ macro_rules! ob_type {
+     ($obj:expr) => {
+-        unsafe { (*$obj).ob_type }
++        unsafe { pyo3_ffi::Py_TYPE($obj) }
+     };
+ }
+ 
+@@ -29,10 +29,7 @@ macro_rules! is_subclass_by_flag {
+ macro_rules! is_subclass_by_type {
+     ($ob_type:expr, $type:ident) => {
+         unsafe {
+-            (*($ob_type as *mut pyo3_ffi::PyTypeObject))
+-                .ob_base
+-                .ob_base
+-                .ob_type
++            pyo3_ffi::Py_TYPE($ob_type as *mut pyo3_ffi::PyObject)
+                 == $type
+         }
+     };
+@@ -103,7 +100,7 @@ macro_rules! reverse_pydict_incref {
+     ($op:expr) => {
+         unsafe {
+             if pyo3_ffi::_Py_IsImmortal($op) == 0 {
+-                debug_assert!(ffi!(Py_REFCNT($op)) >= 2);
++                // debug_assert!(ffi!(Py_REFCNT($op)) >= 2);
+                 (*$op).ob_refcnt.ob_refcnt -= 1;
+             }
+         }
+@@ -114,7 +111,7 @@ macro_rules! reverse_pydict_incref {
+ macro_rules! reverse_pydict_incref {
+     ($op:expr) => {
+         unsafe {
+-            debug_assert!(ffi!(Py_REFCNT($op)) >= 2);
++            // debug_assert!(ffi!(Py_REFCNT($op)) >= 2);
+             (*$op).ob_refcnt -= 1;
+         }
+     };
+@@ -142,7 +139,7 @@ macro_rules! ffi {
+     };
+ }
+ 
+-#[cfg(Py_3_9)]
++#[cfg(all(Py_3_9, not(any(PyPy, GraalPy))))]
+ macro_rules! call_method {
+     ($obj1:expr, $obj2:expr) => {
+         unsafe { pyo3_ffi::PyObject_CallMethodNoArgs($obj1, $obj2) }
+@@ -152,7 +149,7 @@ macro_rules! call_method {
+     };
+ }
+ 
+-#[cfg(not(Py_3_9))]
++#[cfg(any(not(Py_3_9), PyPy, GraalPy))]
+ macro_rules! call_method {
+     ($obj1:expr, $obj2:expr) => {
+         unsafe {
+@@ -181,7 +178,7 @@ macro_rules! str_hash {
+     };
+ }
+ 
+-#[cfg(Py_3_13)]
++#[cfg(any(Py_3_13, GraalPy))]
+ macro_rules! pydict_contains {
+     ($obj1:expr, $obj2:expr) => {
+         unsafe { pyo3_ffi::PyDict_Contains(pyo3_ffi::PyType_GetDict($obj1), $obj2) == 1 }
