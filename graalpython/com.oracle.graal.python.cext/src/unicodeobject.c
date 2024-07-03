@@ -1723,6 +1723,11 @@ unicode_dealloc(PyObject *unicode)
     }
 #endif
 
+    // GraalPy change
+    if (points_to_py_handle_space(unicode)) {
+        return;
+    }
+
 #if 0 // GraalPy change
     switch (PyUnicode_CHECK_INTERNED(unicode)) {
     case SSTATE_NOT_INTERNED:
