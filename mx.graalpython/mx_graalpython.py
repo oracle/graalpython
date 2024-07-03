@@ -2101,10 +2101,14 @@ def python_run_mx_filetests(args):
 
 def _python_checkpatchfiles():
     env = os.environ.copy()
-    env['PYTHONPATH'] = 'graalpython/lib-python/3/ensurepip/_bundled/pip-23.2.1-py3-none-any.whl'
     mx_dir = Path(__file__).parent
+    root_dir = mx_dir.parent
+    [pip_wheel] = (root_dir / 'graalpython' / 'lib-python' / '3' / 'ensurepip' / '_bundled').glob('pip-*.whl')
+    env['PYTHONPATH'] = str(pip_wheel)
+    # We use the CPython that is used for running our unittests, not the one mx is running with.
+    # This is done to make sure it can import the pip wheel.
     mx.run(
-        [get_cpython(), str(mx_dir / 'verify_patches.py'), str(mx_dir.parent / 'graalpython/lib-graalpython/patches')],
+        [get_cpython(), str(mx_dir / 'verify_patches.py'), str(root_dir / 'graalpython' / 'lib-graalpython' / 'patches')],
         env=env,
         nonZeroIsFatal=True,
     )
