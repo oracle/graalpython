@@ -102,8 +102,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     public void lookupChanged() {
         // TODO invalidate cached native MRO
-        CompilerDirectives.transferToInterpreter();
-        throw new UnsupportedOperationException("not yet implemented");
+        throw CompilerDirectives.shouldNotReachHere("not yet implemented");
     }
 
     @Override

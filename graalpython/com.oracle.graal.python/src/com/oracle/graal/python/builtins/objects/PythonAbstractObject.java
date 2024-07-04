@@ -153,7 +153,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -180,6 +179,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.RegionEqualNode;
@@ -1364,11 +1364,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
 
         @ExportMessage
-        Object readArrayElement(long index) throws InvalidArrayIndexException {
-            try {
+        Object readArrayElement(long index,
+                        @Cached InlinedBranchProfile outOfBoundsProfile,
+                        @Bind("$node") Node inliningTarget) throws InvalidArrayIndexException {
+            if (Long.compareUnsigned(index, keys.length) < 0) {
                 return keys[(int) index];
-            } catch (IndexOutOfBoundsException e) {
-                CompilerDirectives.transferToInterpreter();
+            } else {
+                outOfBoundsProfile.enter(inliningTarget);
                 throw InvalidArrayIndexException.create(index);
             }
         }

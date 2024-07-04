@@ -642,7 +642,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 isPInt.enter(inliningTarget);
                 return doPI((PInt) index, prefix, radix, longToString, fromJavaStringNode);
             } else {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("bin/oct/hex with native integer subclasses"));
             }
         }
