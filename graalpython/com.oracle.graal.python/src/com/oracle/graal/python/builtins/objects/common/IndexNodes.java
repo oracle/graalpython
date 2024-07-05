@@ -46,12 +46,12 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.Normali
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -192,79 +192,78 @@ public abstract class IndexNodes {
         @Specialization
         static int doInt(int index, int length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
-                        @Shared("negativeIndexProfile") @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
+                        @Shared @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             int normalizedIndex = index;
             if (negativeIndexProfile.profile(inliningTarget, normalizedIndex < 0)) {
                 normalizedIndex += length;
             }
-            boundsCheckNode.execute(inliningTarget, errorMessage, normalizedIndex, length);
+            checkBounds(inliningTarget, raiseNode, errorMessage, normalizedIndex, length);
             return normalizedIndex;
         }
 
         @Specialization
         static int doBool(boolean bIndex, int length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
-                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             int index = PInt.intValue(bIndex);
-            boundsCheckNode.execute(inliningTarget, errorMessage, index, length);
+            checkBounds(inliningTarget, raiseNode, errorMessage, index, length);
             return index;
         }
 
         @Specialization(rewriteOn = OverflowException.class)
         static int doLong(long lIndex, int length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
-                        @Shared("negativeIndexProfile") @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) throws OverflowException {
+                        @Shared @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
             int index = PInt.intValueExact(lIndex);
-            return doInt(index, length, errorMessage, inliningTarget, negativeIndexProfile, boundsCheckNode);
+            return doInt(index, length, errorMessage, inliningTarget, negativeIndexProfile, raiseNode);
         }
 
         @Specialization(replaces = "doLong")
         int doLongOvf(long index, int length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
-                        @Shared("negativeIndexProfile") @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return doLong(index, length, errorMessage, inliningTarget, negativeIndexProfile, boundsCheckNode);
+                return doLong(index, length, errorMessage, inliningTarget, negativeIndexProfile, raiseNode);
             } catch (OverflowException e) {
-                throw raiseNode.raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
+                throw raiseNode.get(inliningTarget).raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
             }
         }
 
         @Specialization(rewriteOn = OverflowException.class)
         static int doPInt(PInt index, int length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
-                        @Shared("negativeIndexProfile") @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) throws OverflowException {
+                        @Shared @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
             int idx = index.intValueExact();
-            return doInt(idx, length, errorMessage, inliningTarget, negativeIndexProfile, boundsCheckNode);
+            return doInt(idx, length, errorMessage, inliningTarget, negativeIndexProfile, raiseNode);
         }
 
         @Specialization(replaces = "doPInt")
         int doPIntOvf(PInt index, int length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
-                        @Shared("negativeIndexProfile") @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return doPInt(index, length, errorMessage, inliningTarget, negativeIndexProfile, boundsCheckNode);
+                return doPInt(index, length, errorMessage, inliningTarget, negativeIndexProfile, raiseNode);
             } catch (OverflowException e) {
-                throw raiseNode.raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
+                throw raiseNode.get(inliningTarget).raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
             }
         }
 
         @Specialization
         static long doLongLong(long lIndex, long length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
-                        @Shared("negativeIndexProfile") @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
+                        @Shared @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
             long normalizedIndex = lIndex;
             if (negativeIndexProfile.profile(inliningTarget, normalizedIndex < 0)) {
                 normalizedIndex += length;
             }
-            boundsCheckNode.execute(inliningTarget, errorMessage, normalizedIndex, length);
+
+            checkBounds(inliningTarget, raiseNode, errorMessage, normalizedIndex, length);
             return normalizedIndex;
         }
 
@@ -343,32 +342,26 @@ public abstract class IndexNodes {
         }
     }
 
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class BoundsCheckNode extends Node {
-
-        public abstract void execute(Node inliningTarget, TruffleString errorMessage, int idx, int length);
-
-        public abstract void execute(Node inliningTarget, TruffleString errorMessage, long idx, long length);
-
-        @Specialization
-        static void doBoundsCheck(Node inliningTarget, TruffleString errorMessage, int idx, int length,
-                        @Shared @Cached InlinedConditionProfile outOfBoundsProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            if (outOfBoundsProfile.profile(inliningTarget, idx < 0 || idx >= length)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, errorMessage);
-            }
-        }
-
-        @Specialization
-        static void doBoundsCheck(Node inliningTarget, TruffleString errorMessage, long idx, long length,
-                        @Shared @Cached InlinedConditionProfile outOfBoundsProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            if (outOfBoundsProfile.profile(inliningTarget, idx < 0 || idx >= length)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, errorMessage);
-            }
+    public static void checkBounds(Node inliningTarget, PRaiseNode.Lazy raiseNode, TruffleString errorMessage, int idx, int length) {
+        if (idx < 0 || idx >= length) {
+            raiseIndexError(inliningTarget, errorMessage, raiseNode);
         }
     }
 
+    public static void checkBounds(Node inliningTarget, PRaiseNode.Lazy raiseNode, TruffleString errorMessage, long idx, long length) {
+        if (idx < 0 || idx >= length) {
+            raiseIndexError(inliningTarget, errorMessage, raiseNode);
+        }
+    }
+
+    public static void checkBounds(Node inliningTarget, PRaiseNode.Lazy raiseNode, TruffleString errorMessage, int idx, long length) {
+        if (idx < 0 || idx >= length) {
+            raiseIndexError(inliningTarget, errorMessage, raiseNode);
+        }
+    }
+
+    @InliningCutoff
+    private static void raiseIndexError(Node inliningTarget, TruffleString errorMessage, Lazy raiseNode) {
+        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, errorMessage);
+    }
 }

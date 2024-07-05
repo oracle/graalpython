@@ -644,10 +644,7 @@ class ObjectTests(unittest.TestCase):
 
 
 class TestNativeSubclass(unittest.TestCase):
-    def test_builtins(self):
-        b = BytesSubclass(b"hello")
-        assert is_native_object(b)
-        assert type(b) == BytesSubclass
+    def _verify_common(self, b):
         assert b
         assert not BytesSubclass(b'')
         assert len(b) == 5
@@ -660,13 +657,11 @@ class TestNativeSubclass(unittest.TestCase):
         assert b + b" world" == b"hello world"
         assert b * 2 == b"hellohello"
         assert list(b) == [ord('h'), ord('e'), ord('l'), ord('l'), ord('o')]
-        assert repr(b) == "b'hello'"
         assert b.index(ord('l')) == 2
         assert b.count(ord('l')) == 2
         assert b.decode('ascii') == 'hello'
         assert BytesSubclass(b'hello ').strip() == b'hello'
         assert BytesSubclass(b',').join([b'a', BytesSubclass(b'b')]) == b'a,b'
-        assert hash(b) == hash(b'hello')
         assert BytesSubclass(b'(%s)') % b'a' == b'(a)'
         assert b.startswith(b'h')
         assert b.endswith(b'o')
@@ -676,8 +671,43 @@ class TestNativeSubclass(unittest.TestCase):
         assert b.upper() == b'HELLO'
         assert BytesSubclass(b'a,b').split(BytesSubclass(b',')) == [b'a', b'b']
 
-    def test_managed_subclass(self):
+    def _verify_bytes(self, b):
+        self._verify_common(b)
+        assert is_native_object(b)
+        assert repr(b) == "b'hello'", repr(b)
+        assert hash(b) == hash(b'hello')
+
+    def _verify_bytearray(self, b):
+        self._verify_common(b)
+        # assert is_native_object(b) # TODO: BuiltinConstructors.ByteArrayNode doesnt allocate native objects
+        self.assertRaises(TypeError, lambda: hash(b))
+
+    def test_bytes_subclass(self):
+        b = BytesSubclass(b"hello")
+        assert type(b) == BytesSubclass
+        self._verify_bytes(b)
+
+    def test_managed_bytes_subclass(self):
         class ManagedSubclass(BytesSubclass):
             pass
 
-        assert is_native_object(ManagedSubclass(b"hello"))
+        b = ManagedSubclass(b"hello")
+        assert type(b) == ManagedSubclass
+        self._verify_bytes(b)
+
+    def test_bytearray_subclass(self):
+        b = ByteArraySubclass(b"hello")
+        assert type(b) == ByteArraySubclass
+        # TODO: if TypeNode.GetNameNode is equivalent to _PyType_Name, it should transform tp_name "abc.xzy" to "xyz"
+        # assert repr(b) == "ByteArraySubclass(b'hello')", repr(b)
+        self._verify_bytearray(b)
+
+    def test_managed_bytearray_subclass(self):
+        class ArrManagedSubclass(ByteArraySubclass):
+            pass
+
+        b = ArrManagedSubclass(b"hello")
+        assert type(b) == ArrManagedSubclass
+        # TODO: if TypeNode.GetNameNode is equivalent to _PyType_Name, it should transform tp_name "abc.xzy" to "xyz"
+        # assert repr(b) == "ArrManagedSubclass(b'hello')", repr(b)
+        self._verify_bytearray(b)

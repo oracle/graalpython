@@ -40,8 +40,8 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
@@ -115,7 +115,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             if (globals instanceof PythonModule) {
                 if (getDictNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getDictNode = insert(ObjectBuiltinsFactory.DictNodeGen.create());
+                    getDictNode = insert(ObjectBuiltins.DictNode.create());
                 }
                 return getDictNode.execute(curFrame, globals, PNone.NO_VALUE);
             } else {
@@ -134,7 +134,7 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetBuiltinsNode extends PythonBuiltinNode {
         public abstract Object execute(VirtualFrame frame, PFrame self);
 
-        @Child private DictNode dictNode = ObjectBuiltinsFactory.DictNodeGen.create();
+        @Child private DictNode dictNode = ObjectBuiltins.DictNode.create();
 
         @Specialization
         Object get(VirtualFrame frame, @SuppressWarnings("unused") PFrame self) {

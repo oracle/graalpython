@@ -28,10 +28,10 @@ package com.oracle.graal.python.builtins.objects.range;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.objects.common.IndexNodes.checkBounds;
 import static com.oracle.graal.python.nodes.ErrorMessages.RANGE_OUT_OF_BOUNDS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
@@ -66,8 +66,10 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
@@ -91,6 +93,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -399,11 +402,35 @@ public final class RangeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_item, isComplex = true)
+    @GenerateNodeFactory
+    public abstract static class RangeSqItemNode extends SqItemBuiltinNode {
+        @Specialization
+        static int doInt(PIntRange self, int index,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (negativeIndexProfile.profile(inliningTarget, index < 0)) {
+                index += self.getIntLength();
+            }
+            checkBounds(inliningTarget, raiseNode, ErrorMessages.RANGE_OUT_OF_BOUNDS, index, self.getIntLength());
+            return self.getIntItemNormalized(index);
+        }
+
+        @Specialization
+        @InliningCutoff
+        static Object doBigInt(PBigRange self, int index,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createInt(self.getBigIntItemNormalized(GetItemNode.computeBigRangeItem(inliningTarget, self, index)));
+        }
+    }
+
+    @Slot(value = SlotKind.mp_subscript, isComplex = true)
     @GenerateNodeFactory
     @GenerateUncached
     @ImportStatic(PGuards.class)
-    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetItemNode extends MpSubscriptBuiltinNode {
 
         public abstract Object execute(VirtualFrame frame, PRange range, Object index);
 
@@ -548,6 +575,16 @@ public final class RangeBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static BigInteger computeBigRangeItem(Node inliningTarget, PBigRange range, Object idx, CastToJavaBigIntegerNode toBigInt) {
             BigInteger index = toBigInt.execute(inliningTarget, idx);
+            return computeBigRangeItem(inliningTarget, range, index);
+        }
+
+        @TruffleBoundary
+        private static BigInteger computeBigRangeItem(Node inliningTarget, PBigRange range, int index) {
+            return computeBigRangeItem(inliningTarget, range, BigInteger.valueOf(index));
+        }
+
+        private static BigInteger computeBigRangeItem(Node inliningTarget, PBigRange range, BigInteger index) {
+            CompilerAsserts.neverPartOfCompilation();
             BigInteger length = range.getBigIntegerLength();
             BigInteger i;
             if (index.compareTo(BigInteger.ZERO) < 0) {

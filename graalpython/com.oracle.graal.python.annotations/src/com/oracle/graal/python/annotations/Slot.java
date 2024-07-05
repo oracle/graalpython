@@ -94,7 +94,9 @@ public @interface Slot {
     enum SlotKind {
         nb_bool,
         sq_length,
+        sq_item,
         mp_length,
+        mp_subscript,
         tp_descr_get,
         tp_descr_set,
         tp_getattro,

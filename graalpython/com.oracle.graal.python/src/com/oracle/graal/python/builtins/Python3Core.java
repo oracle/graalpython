@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.StructModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
@@ -340,6 +341,8 @@ import com.oracle.graal.python.builtins.objects.ssl.SSLContextBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLSocketBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
+import com.oracle.graal.python.builtins.objects.struct.StructBuiltins;
+import com.oracle.graal.python.builtins.objects.struct.StructUnpackIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
@@ -409,8 +412,7 @@ public abstract class Python3Core {
                         toTruffleStringUncached("_sre"),
                         toTruffleStringUncached("_sysconfig"),
                         toTruffleStringUncached("java"),
-                        toTruffleStringUncached("pip_hook"),
-                        toTruffleStringUncached("_struct")));
+                        toTruffleStringUncached("pip_hook")));
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
@@ -768,6 +770,10 @@ public abstract class Python3Core {
                         new GraalHPyUniversalModuleBuiltins(),
                         new GraalHPyDebugModuleBuiltins(),
                         new GraalHPyTraceModuleBuiltins(),
+
+                        new StructModuleBuiltins(),
+                        new StructBuiltins(),
+                        new StructUnpackIteratorBuiltins(),
 
                         // _asyncio
                         new AsyncioModuleBuiltins(),

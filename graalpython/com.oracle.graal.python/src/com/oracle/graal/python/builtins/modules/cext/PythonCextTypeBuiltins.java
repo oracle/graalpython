@@ -247,8 +247,7 @@ public final class PythonCextTypeBuiltins {
                 try {
                     className = switchEncodingNode.execute(nameLib.asTruffleString(classNameObj), TS_ENCODING);
                 } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreter();
-                    throw new IllegalStateException();
+                    throw CompilerDirectives.shouldNotReachHere(e);
                 }
             } else {
                 className = null;

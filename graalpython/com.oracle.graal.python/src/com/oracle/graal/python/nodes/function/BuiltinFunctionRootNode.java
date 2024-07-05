@@ -32,7 +32,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -63,11 +62,8 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -117,46 +113,6 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf) {
         this(language, builtin, factory, declaresExplicitSelf, builtin.constructsClass());
-    }
-
-    public static class StandaloneBuiltinFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
-        private final T node;
-
-        public StandaloneBuiltinFactory(T node) {
-            this.node = node;
-        }
-
-        @Override
-        public T createNode(Object... arguments) {
-            return NodeUtil.cloneNode(node);
-        }
-
-        @Override
-        public Class<T> getNodeClass() {
-            return determineNodeClass(node);
-        }
-
-        @SuppressWarnings("unchecked")
-        private static <T> Class<T> determineNodeClass(T node) {
-            CompilerAsserts.neverPartOfCompilation();
-            Class<T> nodeClass = (Class<T>) node.getClass();
-            GeneratedBy genBy = nodeClass.getAnnotation(GeneratedBy.class);
-            if (genBy != null) {
-                nodeClass = (Class<T>) genBy.value();
-                assert nodeClass.isAssignableFrom(node.getClass());
-            }
-            return nodeClass;
-        }
-
-        @Override
-        public List<List<Class<?>>> getNodeSignatures() {
-            throw new IllegalAccessError();
-        }
-
-        @Override
-        public List<Class<? extends Node>> getExecutionSignature() {
-            throw new IllegalAccessError();
-        }
     }
 
     /**
@@ -317,7 +273,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     }
 
     @Override
-    public boolean isCaptureFramesForTrace() {
+    public boolean isCaptureFramesForTrace(boolean compiledFrame) {
         return false;
     }
 

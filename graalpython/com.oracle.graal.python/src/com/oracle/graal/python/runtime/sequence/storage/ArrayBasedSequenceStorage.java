@@ -53,14 +53,6 @@ public abstract class ArrayBasedSequenceStorage extends SequenceStorage {
 
     public abstract ArrayBasedSequenceStorage createEmpty(int newCapacity);
 
-    public final void setNewLength(int length) {
-        this.length = length;
-    }
-
-    public final void incLength() {
-        this.length++;
-    }
-
     /**
      * The capacity we should allocate for a given length.
      */

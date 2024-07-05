@@ -52,7 +52,6 @@ import io.micronaut.inject.ArgumentInjectionPoint;
 import io.micronaut.inject.BeanDefinition;
 import io.micronaut.inject.InjectionPoint;
 import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 import org.graalvm.python.embedding.micronaut.annotations.GraalPyModuleBean;
 
@@ -69,12 +68,12 @@ class GraalPyModuleIntroduction implements MethodInterceptor<Object, Object> {
                               InjectionPoint<?> injectionPoint,
                               ApplicationContext context) {
         this.graalPyContext = graalPyContext;
-        if (injectionPoint instanceof ArgumentInjectionPoint<?,?> argumentInjectionPoint) {
+        if (injectionPoint instanceof ArgumentInjectionPoint<?, ?> argumentInjectionPoint) {
             Argument<?> argument = argumentInjectionPoint.asArgument();
             Class<?> beanType = argument.getType();
             BeanDefinition<?> beanDefinition = context.getBeanDefinition(beanType);
             String moduleName = beanDefinition.stringValue(GraalPyModuleBean.class).get();
-            if(moduleName == null) {
+            if (moduleName == null) {
                 throw new ConfigurationException("GraalPyModuleBean has no module name: " + beanDefinition);
             }
             this.pythonModule = graalPyContext.eval(PYTHON, "import " + moduleName + "; " + moduleName);
@@ -87,7 +86,7 @@ class GraalPyModuleIntroduction implements MethodInterceptor<Object, Object> {
     @Override
     public Object intercept(MethodInvocationContext<Object, Object> context) {
         Class<?> type = context.getDeclaringType();
-        if(pythonModuleInterface == null) {
+        if (pythonModuleInterface == null) {
             pythonModuleInterface = pythonModule.as(type);
         }
         return context.getExecutableMethod().invoke(

@@ -124,6 +124,8 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextBuiltins;
@@ -200,8 +202,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PBuiltinClassMethod("classmethod_descriptor", Flags.PRIVATE_DERIVED_WODICT, ClassmethodBuiltins.SLOTS),
     GetSetDescriptor("getset_descriptor", Flags.PRIVATE_DERIVED_WODICT, GetSetDescriptorTypeBuiltins.SLOTS),
     MemberDescriptor(J_MEMBER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT, MemberDescriptorBuiltins.SLOTS),
-    PByteArray("bytearray", J_BUILTINS, BYTE_ARRAY_M_FLAGS, BytesCommonBuiltins.SLOTS),
-    PBytes("bytes", J_BUILTINS, BYTES_M_FLAGS, BytesCommonBuiltins.SLOTS),
+    PByteArray("bytearray", J_BUILTINS, BYTE_ARRAY_M_FLAGS, TpSlots.merge(BytesCommonBuiltins.SLOTS, ByteArrayBuiltins.SLOTS)),
+    PBytes("bytes", J_BUILTINS, BYTES_M_FLAGS, TpSlots.merge(BytesCommonBuiltins.SLOTS, BytesBuiltins.SLOTS)),
     PCell("cell", Flags.PRIVATE_DERIVED_WODICT),
     PSimpleNamespace("SimpleNamespace", null, "types", Flags.PUBLIC_BASE_WDICT),
     PKeyWrapper("KeyWrapper", "_functools", "functools", Flags.PUBLIC_DERIVED_WODICT),
@@ -494,7 +496,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SSLSyscallError("SSLSyscallError", J__SSL, Flags.EXCEPTION),
     SSLEOFError("SSLEOFError", J__SSL, Flags.EXCEPTION),
     SSLCertVerificationError("SSLCertVerificationError", J__SSL, Flags.EXCEPTION),
-    PForeignException("ForeignException", Flags.FOREIGN_EXCEPTION),
+    PForeignException("ForeignException", J_POLYGLOT, Flags.FOREIGN_EXCEPTION),
 
     // todo: all OS errors
 

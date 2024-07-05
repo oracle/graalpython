@@ -286,8 +286,8 @@ if sys.implementation.name == "graalpy":
     def test_internal_languages_dont_eval():
         try:
             polyglot.eval(language="nfi", string="default")
-        except NotImplementedError as e:
-            assert "No language for id nfi found" in str(e)
+        except ValueError as e:
+            assert str(e) == "polyglot language 'nfi' not found"
 
         assert polyglot.eval(language="python", string="21 * 2") == 42
 

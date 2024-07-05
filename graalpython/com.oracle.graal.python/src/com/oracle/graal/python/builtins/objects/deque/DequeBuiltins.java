@@ -57,7 +57,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
@@ -96,7 +95,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeDelItemNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeGetItemNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeInplaceMulNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeInsertNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeMulNodeClinicProviderGen;
@@ -108,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -843,16 +842,9 @@ public final class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "n"})
+    @Slot(value = SlotKind.sq_item, isComplex = true)
     @GenerateNodeFactory
-    @ArgumentClinic(name = "n", conversion = ClinicConversion.Index)
-    public abstract static class DequeGetItemNode extends PythonBinaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return DequeGetItemNodeClinicProviderGen.INSTANCE;
-        }
-
+    public abstract static class DequeGetItemNode extends SqItemBuiltinNode {
         @Specialization
         @TruffleBoundary
         Object doGeneric(PDeque self, int idx,

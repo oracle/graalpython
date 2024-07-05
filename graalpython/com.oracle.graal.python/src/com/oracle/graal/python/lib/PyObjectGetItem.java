@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.ErrorMessages.SEQUENCE_INDEX_MUST_BE_INT_NOT_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLASS_GETITEM__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -51,19 +53,23 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.CallSlotBinaryFuncNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.CallSlotSizeArgFun;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -72,6 +78,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
  * Equivalent of CPython's {@code PyObject_GetItem}.
@@ -90,87 +97,91 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
 
     public abstract Object execute(Frame frame, Node inliningTarget, Object object, Object key);
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinList(object)")
     static Object doList(VirtualFrame frame, PList object, Object key,
                     @Cached ListBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);
     }
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinTuple(object)")
     static Object doTuple(VirtualFrame frame, PTuple object, Object key,
                     @Cached TupleBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);
     }
 
     @InliningCutoff // TODO: inline this probably?
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinDict(object)")
     static Object doDict(VirtualFrame frame, PDict object, Object key,
                     @Cached DictBuiltins.GetItemNode getItemNode) {
         return getItemNode.execute(frame, object, key);
     }
 
-    @InliningCutoff // no point inlining the complex case
     @Specialization(replaces = {"doList", "doTuple", "doDict"})
     static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object object, Object key,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "GetItem", inline = false) LookupSpecialMethodSlotNode lookupGetItem,
-                    @Cached(inline = false) CallBinaryMethodNode callGetItem,
-                    @Cached(inline = false) LazyPyObjectGetItemClass getItemClass,
-                    @Cached PRaiseNode.Lazy raise) {
-        Object type = getClassNode.execute(inliningTarget, object);
-        Object getItem = lookupGetItem.execute(frame, type, object);
-        if (getItem != PNone.NO_VALUE) {
-            return callGetItem.executeObject(frame, getItem, object, key);
-        }
-        Object item = getItemClass.get(inliningTarget).execute(frame, object, key);
-        if (item != PNone.NO_VALUE) {
-            return item;
-        }
-        throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, object);
+                    @Cached GetObjectSlotsNode getSlotsNode,
+                    @Cached PyObjectGetItemGeneric genericNode) {
+        TpSlots slots = getSlotsNode.execute(inliningTarget, object);
+        return genericNode.execute(frame, inliningTarget, object, slots, key);
     }
 
     @GenerateUncached
-    @GenerateCached
-    @GenerateInline(false)
-    abstract static class LazyPyObjectGetItemClass extends Node {
-        public final PyObjectGetItemClass get(Node inliningTarget) {
-            return execute(inliningTarget);
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class PyObjectGetItemGeneric extends PNodeWithContext {
+        public abstract Object execute(Frame frame, Node inliningTarget, Object object, TpSlots objectKlassSlots, Object key);
+
+        @Specialization(guards = "slots.mp_subscript() != null")
+        static Object doMapping(Frame frame, Node inliningTarget, Object object, TpSlots slots, Object key,
+                        @Cached CallSlotBinaryFuncNode callNode) {
+            return callNode.execute((VirtualFrame) frame, inliningTarget, slots.mp_subscript(), object, key);
         }
 
-        abstract PyObjectGetItemClass execute(Node inliningTarget);
+        // Note: this is uncommon path, but DSL wouldn't know, so it does not generate
+        // specialization data-class.
+        @Specialization(guards = {"slots.sq_item() != null", "slots.mp_subscript() == null"})
+        @InliningCutoff // uncommon case: defining sq_item, but not mp_subscript
+        static Object doSequence(Frame frame, Node inliningTarget, Object object, TpSlots slots, Object key,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Cached CallSlotLenNode callLenSlot,
+                        @Cached CallSlotSizeArgFun callSqItem) {
 
-        @Specialization
-        static PyObjectGetItemClass doIt(@Cached PyObjectGetItemClass node) {
-            return node;
+            if (!indexCheckNode.execute(inliningTarget, key)) {
+                raiseSeqIndexMustBeInt(inliningTarget, key, raiseNode);
+            }
+            int intKey = asSizeNode.executeExact(frame, inliningTarget, key, IndexError);
+            return PySequenceGetItemNode.getItem((VirtualFrame) frame, inliningTarget, object, slots, intKey,
+                            negativeIndexProfile, callLenSlot, callSqItem, raiseNode);
         }
-    }
 
-    @GenerateUncached
-    @GenerateInline(false) // used only lazily
-    abstract static class PyObjectGetItemClass extends PNodeWithContext {
-        public abstract Object execute(Frame frame, Object maybeType, Object key);
+        @InliningCutoff
+        private static void raiseSeqIndexMustBeInt(Node inliningTarget, Object key, Lazy raiseNode) {
+            raiseNode.get(inliningTarget).raise(TypeError, SEQUENCE_INDEX_MUST_BE_INT_NOT_P, key);
+        }
 
-        @Specialization
-        static Object doGeneric(VirtualFrame frame, Object type, Object key,
-                        @Bind("this") Node inliningTarget,
+        @Fallback
+        @InliningCutoff
+        static Object tryType(VirtualFrame frame, Node inliningTarget, Object maybeType, @SuppressWarnings("unused") TpSlots slots, Object key,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached PyObjectLookupAttr lookupClassGetItem,
                         @Cached IsBuiltinClassExactProfile isBuiltinClassProfile,
-                        @Cached PythonObjectFactory factory,
-                        @Cached CallNode callClassGetItem,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            if (isTypeNode.execute(inliningTarget, type)) {
-                Object classGetitem = lookupClassGetItem.execute(frame, inliningTarget, type, T___CLASS_GETITEM__);
+                        @Cached(inline = false) PythonObjectFactory factory,
+                        @Cached(inline = false) CallNode callClassGetItem,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            if (isTypeNode.execute(inliningTarget, maybeType)) {
+                Object classGetitem = lookupClassGetItem.execute(frame, inliningTarget, maybeType, T___CLASS_GETITEM__);
                 if (!(classGetitem instanceof PNone)) {
                     return callClassGetItem.execute(frame, classGetitem, key);
                 }
-                if (isBuiltinClassProfile.profileClass(inliningTarget, type, PythonBuiltinClassType.PythonClass)) {
+                if (isBuiltinClassProfile.profileClass(inliningTarget, maybeType, PythonBuiltinClassType.PythonClass)) {
                     // Special case type[int], but disallow other types so str[int] fails
-                    return factory.createGenericAlias(type, key);
+                    return factory.createGenericAlias(maybeType, key);
                 }
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TYPE_NOT_SUBSCRIPTABLE, type);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TYPE_NOT_SUBSCRIPTABLE, maybeType);
             }
-            return PNone.NO_VALUE;
+            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, maybeType);
         }
     }
 

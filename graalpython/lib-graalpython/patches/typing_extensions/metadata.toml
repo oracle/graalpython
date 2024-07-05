@@ -1,0 +1,3 @@
+[[rules]]
+patch = 'typing_extensions.patch'
+subdir = 'src'

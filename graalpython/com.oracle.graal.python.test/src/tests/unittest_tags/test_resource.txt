@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_resource.ResourceTest.test_freebsd_contants
+*graalpython.lib-python.3.test.test_resource.ResourceTest.test_getrusage
 *graalpython.lib-python.3.test.test_resource.ResourceTest.test_linux_constants
 *graalpython.lib-python.3.test.test_resource.ResourceTest.test_pagesize
 *graalpython.lib-python.3.test.test_resource.ResourceTest.test_prlimit

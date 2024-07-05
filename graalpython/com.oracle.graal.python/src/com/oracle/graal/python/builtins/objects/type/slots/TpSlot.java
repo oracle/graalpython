@@ -88,7 +88,11 @@ public abstract class TpSlot {
             // This returns PyProcsWrapper, which will, in its toNative message, register the
             // pointer in C API context, such that we can map back from a pointer that we get from C
             // to the PyProcsWrapper and from that to the slot instance again in TpSlots#fromNative
-            return slotMeta.createNativeWrapper(managedSlot);
+            assert PythonContext.get(null).ownsGil(); // without GIL: use AtomicReference & CAS
+            if (managedSlot.slotWrapper == null) {
+                managedSlot.slotWrapper = slotMeta.createNativeWrapper(managedSlot);
+            }
+            return managedSlot.slotWrapper;
         } else {
             throw CompilerDirectives.shouldNotReachHere("TpSlotWrapper should wrap only managed slots. Native slots should go directly to native unwrapped.");
         }
@@ -121,6 +125,7 @@ public abstract class TpSlot {
      * Marker base class for managed slots: either builtin slots or user defined Python slots.
      */
     public abstract static sealed class TpSlotManaged extends TpSlot permits TpSlotBuiltin, TpSlotPython {
+        private TpSlotWrapper slotWrapper;
     }
 
     /**
@@ -161,24 +166,19 @@ public abstract class TpSlot {
      * stored determines the signature. On Java level we have to do a call with boxed arguments
      * array and cannot optimize for specific signature.
      */
-    public static final class TpSlotNative extends TpSlot {
-        /**
-         * HPy slots currently "pretend" to be Python magic methods. They are added to a newly
-         * constructed type in HPyCreateTypeFromSpecNode, which triggers {@code TpSlots#updateSlot}
-         * for every added slot. In the future HPy slots should be treated like native slots, except
-         * that they will have another dispatch method in CallXYZSlot nodes, see {@link TpSlotLen}
-         * for an example.
-         */
-        final boolean isHPySlot;
+    public abstract static sealed class TpSlotNative extends TpSlot permits TpSlotCExtNative, TpSlotHPyNative {
         final Object callable;
 
-        public TpSlotNative(Object callable, boolean isHPySlot) {
-            this.isHPySlot = isHPySlot;
+        public TpSlotNative(Object callable) {
             this.callable = callable;
         }
 
-        public TpSlotNative(Object callable) {
-            this(callable, false);
+        public static TpSlotNative createCExtSlot(Object callable) {
+            return new TpSlotCExtNative(callable);
+        }
+
+        public static TpSlotNative createHPySlot(Object callable) {
+            return new TpSlotHPyNative(callable);
         }
 
         public boolean isSameCallable(TpSlotNative other) {
@@ -186,16 +186,33 @@ public abstract class TpSlot {
             return InteropLibrary.getUncached().isIdentical(callable, other.callable, InteropLibrary.getUncached());
         }
 
-        @SuppressWarnings("unused")
-        public boolean isHPySlot() {
-            return isHPySlot;
-        }
-
         /**
          * Bound callable that supports the execute interop message.
          */
         public Object getCallable() {
             return callable;
+        }
+    }
+
+    /**
+     * Standard CPython C API slot that takes {@code PyObject*} arguments.
+     */
+    public static final class TpSlotCExtNative extends TpSlotNative {
+        public TpSlotCExtNative(Object callable) {
+            super(callable);
+        }
+    }
+
+    /**
+     * HPy slots currently "pretend" to be Python magic methods. They are added to a newly
+     * constructed type in HPyCreateTypeFromSpecNode, which triggers {@code TpSlots#updateSlot} for
+     * every added slot. In the future HPy slots should be treated like native slots, except that
+     * they will have another dispatch method in CallXYZSlot nodes, see {@link TpSlotLen} for an
+     * example.
+     */
+    public static final class TpSlotHPyNative extends TpSlotNative {
+        public TpSlotHPyNative(Object callable) {
+            super(callable);
         }
     }
 

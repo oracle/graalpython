@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CallSlotNbBoolNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -123,26 +122,25 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
         return !object.isEmpty();
     }
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
-    static boolean doList(Node inliningTarget, PList object) {
+    @Specialization(guards = "isBuiltinList(object)")
+    static boolean doList(PList object) {
         return object.getSequenceStorage().length() != 0;
     }
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
-    static boolean doTuple(Node inliningTarget, PTuple object) {
+    @Specialization(guards = "isBuiltinTuple(object)")
+    static boolean doTuple(PTuple object) {
         return object.getSequenceStorage().length() != 0;
     }
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinDict(object)")
     static boolean doDict(Node inliningTarget, PDict object,
                     @Exclusive @Cached HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage()) != 0;
     }
 
-    @Specialization(guards = "cannotBeOverridden(object, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "isBuiltinAnySet(object)")
     @InliningCutoff
-    static boolean doSet(Node inliningTarget, PSet object,
-                    @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
+    static boolean doSet(Node inliningTarget, PBaseSet object,
                     @Exclusive @Cached HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage()) != 0;
     }

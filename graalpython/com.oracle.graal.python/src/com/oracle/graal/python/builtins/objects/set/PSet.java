@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,16 +25,18 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
+import static com.oracle.graal.python.util.PythonUtils.builtinClassToType;
+
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PSet extends PBaseSet {
 
     public PSet(Object clazz, Shape instanceShape) {
-        super(clazz, instanceShape);
+        super(builtinClassToType(clazz), instanceShape);
     }
 
     public PSet(Object clazz, Shape instanceShape, HashingStorage store) {
-        super(clazz, instanceShape, store);
+        super(builtinClassToType(clazz), instanceShape, store);
     }
 }

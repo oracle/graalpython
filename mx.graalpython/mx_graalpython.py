@@ -410,21 +410,16 @@ def punittest(ars, report=False):
     if skip_leak_tests:
         return
 
-    common_args = ["--lang", "python",
-                   "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
-                   "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
-
-    if not all([
-        # test leaks with Python code only
-        run_leak_launcher(common_args + ["--code", "pass", ]),
-        # test leaks when some C module code is involved
-        run_leak_launcher(common_args + ["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)']),
-        # test leaks with shared engine Python code only
-        run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
-        # test leaks with shared engine when some C module code is involved
-        run_leak_launcher(common_args + ["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
-    ]):
-        mx.abort(1)
+    # test leaks with Python code only
+    run_leak_launcher(["--code", "pass", ])
+    run_leak_launcher(["--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
+    # test leaks when some C module code is involved
+    run_leak_launcher(["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
+    # test leaks with shared engine Python code only
+    run_leak_launcher(["--shared-engine", "--code", "pass"])
+    run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
+    # test leaks with shared engine when some C module code is involved
+    run_leak_launcher(["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
 
 
 PYTHON_ARCHIVES = ["GRAALPYTHON_GRAALVM_SUPPORT"]
@@ -765,6 +760,7 @@ class GraalPythonTags(object):
     unittest_sandboxed = 'python-unittest-sandboxed'
     unittest_multi = 'python-unittest-multi-context'
     unittest_jython = 'python-unittest-jython'
+    unittest_arrow = 'python-unittest-arrow-storage'
     unittest_hpy = 'python-unittest-hpy'
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_posix = 'python-unittest-posix'
@@ -875,7 +871,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
         launcher = os.path.join(python_home, 'bin', _graalpy_launcher(enterprise))
         out = mx.OutputCapture()
-        import_managed_status = mx.run([launcher, "-c", "import __graalpython_enterprise__"], nonZeroIsFatal=False, out=out, err=out)
+        import_managed_status = mx.run([launcher, "-c", "import sys; assert 'Oracle GraalVM' in sys.version"], nonZeroIsFatal=False, out=out, err=out)
         if enterprise != (import_managed_status == 0):
             mx.abort(f"GRAALPY_HOME is not compatible with requested distribution kind ({import_managed_status=}, {enterprise=}, {out=}).")
         return python_home
@@ -1353,8 +1349,7 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
     print(f"with PYTHONPATH={python_path}")
 
     if checkIfWithGraalPythonEE:
-        mx.run([python_binary, "-c", "import __graalpython_enterprise__"])
-        print("with graalpy EE")
+        mx.run([python_binary, "-c", "import sys; print(sys.version)"])
     run_python_unittests(
         python_binary,
         args=["-v"],
@@ -1493,6 +1488,10 @@ def graalpython_gate_runner(args, tasks):
         if task:
             run_python_unittests(graalpy_standalone_jvm(), args=["--python.EmulateJython"], paths=["test_interop.py"], report=report(), nonZeroIsFatal=nonZeroIsFatal)
 
+    with Task('GraalPython with Arrow Storage Strategy', tasks, tags=[GraalPythonTags.unittest_arrow]) as task:
+        if task:
+            run_python_unittests(graalpy_standalone_jvm(), args=["--python.UseNativePrimitiveStorageStrategy"], report=report(), nonZeroIsFatal=nonZeroIsFatal)
+
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
             run_hpy_unittests(graalpy_standalone_native(), nonZeroIsFatal=nonZeroIsFatal, report=report())
@@ -1504,7 +1503,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
             opt = '--PosixModuleBackend={backend} --Sha3ModuleBackend={backend}'
-            tests_list = ["test_posix.py", "test_mmap.py", "test_hashlib.py"]
+            tests_list = ["test_posix.py", "test_mmap.py", "test_hashlib.py", "test_resource.py"]
             run_python_unittests(graalpy_standalone_jvm(), args=opt.format(backend='native').split(), paths=tests_list, report=report())
             run_python_unittests(graalpy_standalone_jvm(), args=opt.format(backend='java').split(), paths=tests_list, report=report())
 
@@ -1516,7 +1515,7 @@ def graalpython_gate_runner(args, tasks):
 
             env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
             env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
-            env['ENABLE_MICRONAUT_UNITTESTS'] ='true'
+            env['ENABLE_MICRONAUT_UNITTESTS'] ='false' # 'true' - GR-54891
             default_java_home = env.get('JAVA_HOME')
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home
@@ -2124,6 +2123,7 @@ def _python_checkpatchfiles():
             # numpy started putting the whole license text in the field. Its BSD-3-Clause
             'numpy-1.23.2.patch',
             'numpy-1.23.5.patch',
+            'numpy-1.24.3.patch',
             'numpy-1.26.4.patch',
             'numpy-2.0.0.patch',
             # libcst is MIT
@@ -2171,6 +2171,8 @@ def _python_checkpatchfiles():
             'autopep8.patch',
             # Whole license in the field. It's MIT
             'tiktoken-0.7.0.patch',
+            # License field is null. It's PSF
+            'typing_extensions.patch',
         }
         allowed_licenses = [
             "MIT",
@@ -2305,6 +2307,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER', 'sdk:MAVEN_DOWNLOADER'],
             main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
+                '-J-Xms14g', # GR-46399: libpythonvm needs more than the default minimum of 8 GB to be built
                 '-H:+DetectUserDirectoriesInImageHeap',
                 '-H:-CopyLanguageResources',
                 '-Dpolyglot.python.PosixModuleBackend=native',
@@ -2994,9 +2997,18 @@ def update_hpy_import_cmd(args):
 
 
 def run_leak_launcher(input_args):
+    args = input_args
+    keep_dumps_on_success = False
+    if '--keep-dump-on-success' in input_args:
+        args.remove('--keep-dump-on-success')
+        args.append('--keep-dump')
+        keep_dumps_on_success = True
     print(shlex.join(["mx", "python-leak-test", *input_args]))
 
-    args = input_args
+    args = ["--lang", "python",
+            "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
+            "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
+    args += input_args
     args = [
         "--keep-dump",
         "--experimental-options",
@@ -3015,24 +3027,25 @@ def run_leak_launcher(input_args):
     vm_args.append("com.oracle.graal.python.test.advanced.LeakTest")
     out = mx.OutputCapture()
     retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False, out=mx.TeeOutputCapture(out))
-    dump_path = out.data.strip().partition("Dump file:")[2].strip()
+    dump_paths = re.findall(r'Dump file: (\S+)', out.data.strip())
     if retval == 0:
         print("PASSED")
-        if dump_path:
+        if dump_paths and not keep_dumps_on_success:
             print("Removing heapdump for passed test")
-            os.unlink(dump_path)
-        return True
+            for p in dump_paths:
+                os.unlink(p)
     else:
         print("FAILED")
-        if 'CI' in os.environ and dump_path:
-            save_path = os.path.join(SUITE.dir, "dumps", "leak_test")
-            try:
-                os.makedirs(save_path)
-            except OSError:
-                pass
-            dest = shutil.copy(dump_path, save_path)
-            print(f"Heapdump file kept in {dest}")
-        return False
+        if 'CI' in os.environ and dump_paths:
+            for i, dump_path in enumerate(dump_paths):
+                save_path = os.path.join(SUITE.dir, "dumps", f"leak_test{i}")
+                try:
+                    os.makedirs(save_path)
+                except OSError:
+                    pass
+                dest = shutil.copy(dump_path, save_path)
+                print(f"Heapdump file {dump_path} kept in {dest}")
+        mx.abort(1)
 
 
 def no_return(fn):

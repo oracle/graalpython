@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -221,7 +221,7 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
         if (t instanceof StackOverflowError soe) {
             CompilerDirectives.transferToInterpreter();
             PythonContext context = PythonContext.get(null);
-            context.reacquireGilAfterStackOverflow();
+            context.ensureGilAfterFailure();
             PBaseException newException = context.factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, EMPTY_OBJECT_ARRAY);
             throw ExceptionUtils.wrapJavaException(soe, null, newException);
         }

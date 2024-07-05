@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotHPyNative;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -120,7 +121,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class HPyExternalFunctionNodes {
@@ -169,7 +169,7 @@ public abstract class HPyExternalFunctionNodes {
     static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPyFuncSignature signature, TruffleString name, Object callable, Object enclosingType,
                     PythonObjectFactory factory) {
         assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
-        RootCallTarget callTarget = language.createCachedCallTarget(l -> createRootNode(l, signature, name), signature, name);
+        RootCallTarget callTarget = language.createCachedCallTarget(l -> createRootNode(l, signature, name), signature, name, true);
 
         Object[] defaults;
         if (signature == HPyFuncSignature.TERNARYFUNC) {
@@ -234,7 +234,8 @@ public abstract class HPyExternalFunctionNodes {
      * @return A {@link PBuiltinFunction} implementing the semantics of the specified slot wrapper.
      */
     @TruffleBoundary
-    static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPySlotWrapper wrapper, TruffleString name, Object callable, Object enclosingType,
+    public static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPySlotWrapper wrapper, TpSlotHPyNative slot, PExternalFunctionWrapper legacySlotWrapper,
+                    TruffleString name, Object callable, Object enclosingType,
                     PythonObjectFactory factory) {
         assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
         RootCallTarget callTarget = language.createCachedCallTarget(l -> createSlotRootNode(l, wrapper, name), wrapper, name);
@@ -256,7 +257,7 @@ public abstract class HPyExternalFunctionNodes {
             kwDefaults = createKwDefaults(callable, context);
 
         }
-        return factory.createBuiltinFunction(name, enclosingType, defaults, kwDefaults, 0, callTarget);
+        return factory.createWrapperDescriptor(name, enclosingType, defaults, kwDefaults, 0, callTarget, slot, legacySlotWrapper);
     }
 
     private static PRootNode createSlotRootNode(PythonLanguage language, HPySlotWrapper wrapper, TruffleString name) {
@@ -339,7 +340,7 @@ public abstract class HPyExternalFunctionNodes {
      * Invokes an HPy C function. It takes care of argument and result conversion and always passes
      * the HPy context as a first parameter.
      */
-    abstract static class HPyExternalFunctionInvokeNode extends Node {
+    public abstract static class HPyExternalFunctionInvokeNode extends Node {
 
         @Child private HPyConvertArgsToSulongNode toSulongNode;
         @Child private HPyCheckFunctionResultNode checkFunctionResultNode;
@@ -515,12 +516,6 @@ public abstract class HPyExternalFunctionNodes {
 
         public TruffleString getTSName() {
             return name;
-        }
-
-        @Override
-        public NodeCost getCost() {
-            // this is just a thin argument shuffling wrapper
-            return NodeCost.NONE;
         }
 
         @Override

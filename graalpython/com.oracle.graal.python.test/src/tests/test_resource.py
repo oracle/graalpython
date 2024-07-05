@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,16 +38,10 @@
 # SOFTWARE.
 
 
-def assert_raises(err, fn, *args, **kwargs):
-    raised = False
-    try:
-        fn(*args, **kwargs)
-    except err:
-        raised = True
-    assert raised
-
-
 def test_import():
+    import sys
+    if sys.platform not in ['darwin', 'linux']:
+        return
     imported = True
     try:
         import resource
@@ -57,7 +51,11 @@ def test_import():
 
 
 def test_gerusage():
-    from resource import getrusage, RUSAGE_SELF, RUSAGE_THREAD
+    from resource import getrusage, RUSAGE_SELF
+    try:
+        from resource import RUSAGE_THREAD
+    except ImportError:
+        RUSAGE_THREAD = RUSAGE_SELF
     for who in [RUSAGE_SELF, RUSAGE_THREAD]:
         ru = getrusage(who)
         attrs = [

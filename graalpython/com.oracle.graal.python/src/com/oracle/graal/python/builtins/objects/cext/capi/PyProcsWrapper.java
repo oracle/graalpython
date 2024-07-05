@@ -43,19 +43,23 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.CallSlotBinaryFuncNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.CallSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallManagedSlotGetAttrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CallSlotNbBoolNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallManagedSlotSetAttrNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.CallSlotSizeArgFun;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -73,9 +77,14 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -85,6 +94,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
@@ -223,6 +233,54 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
             }
+        }
+
+        @Override
+        protected String getSignature() {
+            return "(POINTER,POINTER):POINTER";
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class BinarySlotFuncWrapper extends TpSlotWrapper {
+
+        public BinarySlotFuncWrapper(TpSlotManaged delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
+                        @Cached CallSlotBinaryFuncNode callSlotNode,
+                        @Cached NativeToPythonNode selfToJavaNode,
+                        @Cached NativeToPythonNode argTtoJavaNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
+            try {
+                if (arguments.length != 2) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(2, 2, arguments.length);
+                }
+                try {
+                    return toNativeNode.execute(callSlotNode.execute(null, inliningTarget, getSlot(), selfToJavaNode.execute(arguments[0]), argTtoJavaNode.execute(arguments[1])));
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "BinaryFuncWrapper", getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(inliningTarget, e);
+                return PythonContext.get(gil).getNativeNull();
+            } finally {
+                CApiTiming.exit(timing);
+                gil.release(mustRelease);
+            }
+        }
+
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new BinarySlotFuncWrapper(slot);
         }
 
         @Override
@@ -664,6 +722,89 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         @Override
         protected String getSignature() {
             return "(POINTER,SINT64):POINTER";
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class SsizeargfuncSlotWrapper extends TpSlotWrapper {
+
+        public SsizeargfuncSlotWrapper(TpSlotManaged delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new SsizeargfuncSlotWrapper(slot);
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
+                        @Cached CallSlotSizeArgFun callSlotNode,
+                        @Cached SsizeAsIntNode asIntNode,
+                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
+            try {
+                if (arguments.length != 2) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(2, 2, arguments.length);
+                }
+                assert arguments[1] instanceof Number;
+                try {
+                    Object result = callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.execute(arguments[0]), asIntNode.execute(inliningTarget, arguments[1]));
+                    return toNativeNode.execute(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "SsizeargfuncWrapper", getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(inliningTarget, e);
+                return PythonContext.get(toJavaNode).getNativeNull();
+            } finally {
+                CApiTiming.exit(timing);
+                gil.release(mustRelease);
+            }
+        }
+
+        @Override
+        protected String getSignature() {
+            return "(POINTER,SINT64):POINTER";
+        }
+    }
+
+    /**
+     * For the time being when indices/lengths in GraalPy are 32bit integers, we must deal with
+     * possible situation that someone passes larger number to us. In long term, we should migrate
+     * indices/length to use longs.
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    abstract static class SsizeAsIntNode extends Node {
+        public abstract int execute(Node inliningTarget, Object value);
+
+        @Specialization
+        static int doI(int i) {
+            return i;
+        }
+
+        @Specialization
+        static int doL(Node inliningTarget, long l,
+                        @Cached InlinedBranchProfile errorBranch) {
+            if (PInt.isIntRange(l)) {
+                return (int) l;
+            }
+            errorBranch.enter(inliningTarget);
+            throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);
+        }
+
+        @Fallback
+        @InliningCutoff
+        static int doOthers(Object value) {
+            throw CompilerDirectives.shouldNotReachHere("Unexpected value passed to upcall as Py_ssize_t");
         }
     }
 

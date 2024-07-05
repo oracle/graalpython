@@ -41,7 +41,9 @@
 package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_LINUX;
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
+import static com.oracle.graal.python.builtins.objects.thread.PThread.getThreadId;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
@@ -235,6 +237,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
@@ -2126,6 +2129,70 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @TruffleBoundary
+    public RusageResult getrusage(int who) throws PosixException {
+        Runtime runtime = Runtime.getRuntime();
+        double ru_utime = 0; // time in user mode (float)
+        double ru_stime = 0; // time in system mode (float)
+        long ru_maxrss;
+
+        if (!ImageInfo.inImageCode()) {
+            // once GR-44559 is fixed we can enable this branch on NI
+            java.lang.management.ThreadMXBean threadMXBean = java.lang.management.ManagementFactory.getThreadMXBean();
+            if (PosixConstants.RUSAGE_THREAD.defined &&
+                            who == PosixConstants.RUSAGE_THREAD.getValueIfDefined()) {
+                long id = getThreadId(Thread.currentThread());
+                if (threadMXBean.isCurrentThreadCpuTimeSupported()) {
+                    ru_utime = threadMXBean.getThreadUserTime(id) / 1000000000.0;
+                    ru_stime = Math.max(0, (threadMXBean.getThreadCpuTime(id) - threadMXBean.getThreadUserTime(id))) / 1000000000.0;
+                }
+
+                if (threadMXBean instanceof com.sun.management.ThreadMXBean) {
+                    com.sun.management.ThreadMXBean thMxBean = (com.sun.management.ThreadMXBean) threadMXBean;
+                    ru_maxrss = thMxBean.getThreadAllocatedBytes(id);
+                } else {
+                    ru_maxrss = runtime.maxMemory();
+                }
+            } else if (who == PosixConstants.RUSAGE_SELF.value) {
+                if (threadMXBean.isThreadCpuTimeSupported()) {
+                    for (long thId : threadMXBean.getAllThreadIds()) {
+                        long tu = threadMXBean.getThreadUserTime(thId);
+                        long tc = threadMXBean.getThreadCpuTime(thId);
+
+                        if (tu != -1) {
+                            ru_utime += tu / 1000000000.0;
+                        }
+
+                        if (tu != -1 && tc != -1) {
+                            ru_stime += Math.max(0, tc - tu) / 1000000000.0;
+                        }
+                    }
+                }
+
+                java.lang.management.MemoryMXBean memoryMXBean = java.lang.management.ManagementFactory.getMemoryMXBean();
+                java.lang.management.MemoryUsage heapMemoryUsage = memoryMXBean.getHeapMemoryUsage();
+                java.lang.management.MemoryUsage nonHeapMemoryUsage = memoryMXBean.getNonHeapMemoryUsage();
+                ru_maxrss = heapMemoryUsage.getCommitted() + nonHeapMemoryUsage.getCommitted();
+            } else {
+                throw posixException(OSErrorEnum.EINVAL);
+            }
+        } else if (who == PosixConstants.RUSAGE_SELF.value ||
+                        (PosixConstants.RUSAGE_THREAD.defined && who == PosixConstants.RUSAGE_THREAD.getValueIfDefined())) {
+            ru_maxrss = runtime.maxMemory();
+        } else {
+            throw posixException(OSErrorEnum.EINVAL);
+        }
+
+        if (PythonOS.getPythonOS() == PLATFORM_LINUX) {
+            // peak memory usage (kilobytes on Linux)
+            ru_maxrss /= 1024;
+        }
+
+        return new RusageResult(ru_utime, ru_stime, ru_maxrss,
+                        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+    }
+
+    @ExportMessage
     @SuppressWarnings("static-method")
     public OpenPtyResult openpty() {
         throw new UnsupportedPosixFeatureException("Emulated openpty not supported");
@@ -2554,7 +2621,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             try {
                 return new MMapHandle(new AnonymousMap(PythonUtils.toIntExact(length)), 0);
             } catch (OverflowException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new UnsupportedPosixFeatureException(String.format("Anonymous mapping in mmap for memory larger than %d", Integer.MAX_VALUE));
             }
         }

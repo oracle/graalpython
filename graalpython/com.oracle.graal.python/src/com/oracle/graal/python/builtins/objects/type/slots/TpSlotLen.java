@@ -51,11 +51,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.slots.HPyDispatchers.UnaryHPySlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.UnaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotHPyNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -75,6 +78,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -166,16 +170,33 @@ public abstract class TpSlotLen {
             return callSlotNode.execute(frame, slot, self);
         }
 
-        @Specialization// (guards = "!slot.isHPySlot()")
-        static int callNative(VirtualFrame frame, Node inliningTarget, TpSlotNative slot, Object self,
-                        @Cached GetThreadStateNode getThreadStateNode,
+        @Specialization
+        static int callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
+                        @Exclusive @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
+                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___LEN__, slot.callable, toNativeNode.execute(self));
+            long l = checkResultNode.executeLong(state, T___LEN__, result);
+            if (!PInt.isIntRange(l)) {
+                raiseOverflow(inliningTarget, raiseNode, l);
+            }
+            return (int) l;
+        }
+
+        @Specialization
+        static int callNative(VirtualFrame frame, Node inliningTarget, TpSlotHPyNative slot, Object self,
+                        @Exclusive @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached(inline = false) HPyAsHandleNode toNativeNode,
+                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
+            PythonContext ctx = PythonContext.get(inliningTarget);
+            PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
+            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___LEN__, slot.callable, ctx.getHPyContext().getBackend(), toNativeNode.execute(self));
             long l = checkResultNode.executeLong(state, T___LEN__, result);
             if (!PInt.isIntRange(l)) {
                 raiseOverflow(inliningTarget, raiseNode, l);

@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.str;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_SEQ_ITEM;
-import static com.oracle.graal.python.nodes.PGuards.cannotBeOverridden;
+import static com.oracle.graal.python.nodes.PGuards.isBuiltinPString;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -488,9 +488,8 @@ public abstract class StringNodes {
 
         @Specialization
         static PString doPString(Node inliningTarget, PString string,
-                        @Cached GetClassNode getClassNode,
                         @Shared @Cached HiddenAttr.WriteNode writeNode) {
-            if (cannotBeOverridden(getClassNode.execute(inliningTarget, string))) {
+            if (isBuiltinPString(string)) {
                 writeNode.execute(inliningTarget, string, HiddenAttr.INTERNED, true);
                 return string;
             }

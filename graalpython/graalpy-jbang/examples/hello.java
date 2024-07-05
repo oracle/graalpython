@@ -47,14 +47,13 @@
 //PIP termcolor
 
 import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.PolyglotException;
-import org.graalvm.python.embedding.vfs.VirtualFileSystem;
+import org.graalvm.python.embedding.utils.GraalPyResources;
 
 public class hello {
     public static void main(String[] args) {
         System.out.println("Running main method from Java.");
-        try (Context context = VirtualGraalPyContext.getContext()) {
+        try (Context context = GraalPyResources.createContext()) {
             switch (args.length) {
                 case 0:
                     context.eval("python", "print('Hello from Python')");
@@ -75,9 +74,3 @@ public class hello {
     }
 }
 
-final class VirtualGraalPyContext {
-
-    public static Context getContext() {
-        return VirtualFileSystem.contextBuilder().build();
-    }
-}

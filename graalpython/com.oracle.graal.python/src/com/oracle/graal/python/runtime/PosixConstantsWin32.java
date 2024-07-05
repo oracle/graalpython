@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,6 +65,7 @@ class PosixConstantsWin32 {
         constants.put("SEEK_CUR", 1);
         constants.put("SEEK_END", 2);
         constants.put("SOMAXCONN", 2147483647);
+        constants.put("RUSAGE_SELF", 0);
         constants.put("O_RDONLY", 0x00000000);
         constants.put("O_WRONLY", 0x00000001);
         constants.put("O_RDWR", 0x00000002);

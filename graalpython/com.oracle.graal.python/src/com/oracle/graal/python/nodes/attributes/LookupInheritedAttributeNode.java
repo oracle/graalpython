@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class LookupInheritedAttributeNode extends PNodeWithContext {
@@ -65,12 +64,6 @@ public final class LookupInheritedAttributeNode extends PNodeWithContext {
     @NeverDefault
     public static LookupInheritedAttributeNode create(TruffleString key) {
         return new LookupInheritedAttributeNode(key);
-    }
-
-    @Override
-    public NodeCost getCost() {
-        // super-simple wrapper node
-        return NodeCost.NONE;
     }
 
     /**

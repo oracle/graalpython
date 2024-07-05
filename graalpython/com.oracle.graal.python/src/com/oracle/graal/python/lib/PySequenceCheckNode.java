@@ -40,14 +40,9 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_SEQUENCE_CHECK;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
@@ -89,18 +84,11 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
         return false;
     }
 
-    @Specialization
-    static boolean doNative(PythonAbstractNativeObject object,
-                    @Cached(inline = false) PythonToNativeNode toSulongNode,
-                    @Cached(inline = false) PCallCapiFunction callCapiFunction) {
-        return ((int) callCapiFunction.call(FUN_PY_SEQUENCE_CHECK, toSulongNode.execute(object))) != 0;
-    }
-
     @Fallback
     static boolean doGeneric(Node inliningTarget, Object object,
                     @Cached PyDictCheckNode dictCheckNode,
                     @Cached GetClassNode getClassNode,
-                    @Cached GetMethodsFlagsNode getMethodsFlagsNode,
+                    @Cached GetCachedTpSlotsNode getSlotsNode,
                     @Cached LazyInteropLibrary lazyLib) {
         if (dictCheckNode.execute(inliningTarget, object)) {
             return false;
@@ -109,6 +97,6 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
         if (type == PythonBuiltinClassType.ForeignObject) {
             return lazyLib.get(inliningTarget).hasArrayElements(object);
         }
-        return (getMethodsFlagsNode.execute(inliningTarget, type) & MethodsFlags.SQ_ITEM) != 0;
+        return getSlotsNode.execute(inliningTarget, type).sq_item() != null;
     }
 }

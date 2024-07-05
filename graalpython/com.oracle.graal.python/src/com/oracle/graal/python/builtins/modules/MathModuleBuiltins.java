@@ -1121,7 +1121,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object gcdNative(@SuppressWarnings("unused") PythonAbstractNativeObject a, @SuppressWarnings("unused") Object b) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.GCD_FOR_NATIVE_NOT_SUPPORTED);
         }
 

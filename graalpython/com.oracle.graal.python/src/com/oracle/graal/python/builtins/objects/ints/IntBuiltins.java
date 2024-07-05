@@ -142,7 +142,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -3273,31 +3272,23 @@ public final class IntBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "cannotBeOverridden(self, inliningTarget, getClassNode)")
-        static PInt doPInt(PInt self,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode) {
+        @Specialization(guards = "isBuiltinPInt(self)")
+        static PInt doPInt(PInt self) {
             return self;
         }
 
-        @Specialization(guards = "!cannotBeOverridden(self, inliningTarget, getClassNode)", rewriteOn = OverflowException.class)
-        static int doPIntOverridenNarrowInt(PInt self,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode) throws OverflowException {
+        @Specialization(guards = "!isBuiltinPInt(self)", rewriteOn = OverflowException.class)
+        static int doPIntOverridenNarrowInt(PInt self) throws OverflowException {
             return self.intValueExact();
         }
 
-        @Specialization(guards = "!cannotBeOverridden(self, inliningTarget, getClassNode)", replaces = "doPIntOverridenNarrowInt", rewriteOn = OverflowException.class)
-        static long doPIntOverridenNarrowLong(PInt self,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode) throws OverflowException {
+        @Specialization(guards = "!isBuiltinPInt(self)", replaces = "doPIntOverridenNarrowInt", rewriteOn = OverflowException.class)
+        static long doPIntOverridenNarrowLong(PInt self) throws OverflowException {
             return self.longValueExact();
         }
 
-        @Specialization(guards = "!cannotBeOverridden(self, inliningTarget, getClassNode)", replaces = "doPIntOverridenNarrowLong")
+        @Specialization(guards = "!isBuiltinPInt(self)", replaces = "doPIntOverridenNarrowLong")
         static PInt doPIntOverriden(PInt self,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @Cached PythonObjectFactory factory) {
             return factory.createInt(self.getValue());
         }

@@ -100,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -159,7 +160,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -324,15 +324,10 @@ public abstract class ExternalFunctionNodes {
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached NativeToPythonNode nativeToPythonNode) {
             Object result = nativeToPythonNode.execute(object);
-            if (result instanceof TruffleString) {
+            if (result == PNone.NO_VALUE) {
                 return result;
-            } else if (result instanceof PString) {
-                return castToStringNode.execute(inliningTarget, result);
-            } else if (result == PNone.NO_VALUE) {
-                return result;
-            } else {
-                throw CompilerDirectives.shouldNotReachHere();
             }
+            return castToStringNode.castKnownString(inliningTarget, result);
         }
 
         @NeverDefault
@@ -466,7 +461,7 @@ public abstract class ExternalFunctionNodes {
 
         @TruffleBoundary
         static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, TruffleString name, boolean doArgAndResultConversion, boolean isStatic) {
-            Class<?> nodeKlass;
+            Class<? extends PRootNode> nodeKlass;
             Function<PythonLanguage, RootNode> rootNodeFunction;
             switch (sig) {
                 case ALLOC:
@@ -701,7 +696,7 @@ public abstract class ExternalFunctionNodes {
                 // ensure that 'callable' is executable via InteropLibrary
                 Object boundCallable = CExtContext.ensureExecutable(callable, sig);
                 kwDefaults = ExternalFunctionNodes.createKwDefaults(boundCallable);
-                slot = new TpSlotNative(boundCallable);
+                slot = TpSlotNative.createCExtSlot(boundCallable);
             }
 
             // generate default values for positional args (if necessary)
@@ -723,6 +718,21 @@ public abstract class ExternalFunctionNodes {
                     return factory.createBuiltinFunction(name, type, defaults, kwDefaults, flags, callTarget);
             }
             return factory.createWrapperDescriptor(name, type, defaults, kwDefaults, flags, callTarget, slot, sig);
+        }
+
+        /**
+         * {@link #createWrapperFunction(TruffleString, Object, Object, int, PExternalFunctionWrapper, PythonLanguage, PythonObjectFactory, boolean)}.
+         */
+        @TruffleBoundary
+        public static PBuiltinFunction createWrapperFunction(TruffleString name, TpSlotCExtNative slot, Object enclosingType, PExternalFunctionWrapper sig, PythonLanguage language,
+                        PythonObjectFactory factory) {
+            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, true, false);
+            if (callTarget == null) {
+                return null;
+            }
+            var kwDefaults = ExternalFunctionNodes.createKwDefaults(slot.getCallable());
+            Object[] defaults = PBuiltinFunction.generateDefaults(sig.numDefaults);
+            return factory.createWrapperDescriptor(name, enclosingType, defaults, kwDefaults, 0, callTarget, slot, sig);
         }
 
         private static boolean isClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
@@ -877,7 +887,7 @@ public abstract class ExternalFunctionNodes {
                  * Special case after calling a C function: transfer caught exception back to frame
                  * to simulate the global state semantics.
                  */
-                if (frame != null) {
+                if (frame != null && threadState.getCaughtException() != null) {
                     PArguments.setException(frame, threadState.getCaughtException());
                 }
                 IndirectCallContext.exit(frame, threadState, state);
@@ -1076,12 +1086,6 @@ public abstract class ExternalFunctionNodes {
         @Override
         public String getName() {
             return name.toJavaStringUncached();
-        }
-
-        @Override
-        public NodeCost getCost() {
-            // this is just a thin argument shuffling wrapper
-            return NodeCost.NONE;
         }
 
         @Override

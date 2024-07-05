@@ -99,6 +99,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUFFLE_RICHC
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -109,98 +110,108 @@ public abstract class GraalHPyLegacyDef {
     public static final int MEMBER_FLAG_READONLY = 1;
 
     /**
+     * Used when the corresponding slot has not been migrated to the CPython compatible TpSlot, or
+     * there is no equivalent CPython slot (for those we may still reserve space in TpSlots in the
+     * future).
+     */
+    public static final TpSlotMeta NO_TP_SLOT = null;
+
+    /**
      * Values for field {@code slot} of structure {@code PyType_Slot}.
      */
     enum HPyLegacySlot {
         // generic type slots
-        Py_tp_alloc(47, T___ALLOC__, PExternalFunctionWrapper.ALLOC),
-        Py_tp_base(48),
-        Py_tp_bases(49),
-        Py_tp_call(50, T___CALL__, PExternalFunctionWrapper.KEYWORDS),
-        Py_tp_clear(51, T___CLEAR__, PExternalFunctionWrapper.INQUIRY),
-        Py_tp_dealloc(52, T___DEALLOC__),
-        Py_tp_del(53, T___DEL__),
-        Py_tp_descr_get(54, T___GET__),
-        Py_tp_descr_set(55, T___SET__),
-        Py_tp_doc(56),
-        Py_tp_getattr(57, T___GETATTR__, PExternalFunctionWrapper.GETATTR),
-        Py_tp_getattro(58, T___GETATTR__),
-        Py_tp_hash(59, T___HASH__, PExternalFunctionWrapper.HASHFUNC),
-        Py_tp_init(60, T___INIT__, PExternalFunctionWrapper.INITPROC),
-        Py_tp_is_gc(61),
-        Py_tp_iter(62, T___ITER__),
-        Py_tp_iternext(63, T___NEXT__, PExternalFunctionWrapper.ITERNEXT),
-        Py_tp_methods(64),
-        Py_tp_new(65, T___NEW__, PExternalFunctionWrapper.KEYWORDS),
-        Py_tp_repr(66, T___REPR__, PExternalFunctionWrapper.TP_REPR),
-        Py_tp_richcompare(67, T___TRUFFLE_RICHCOMPARE__, PExternalFunctionWrapper.RICHCMP),
-        Py_tp_setattr(68, T___SETATTR__, PExternalFunctionWrapper.SETATTR),
-        Py_tp_setattro(69, T___SETATTR__),
-        Py_tp_str(70, T___STR__, PExternalFunctionWrapper.TP_STR),
-        Py_tp_traverse(71),
-        Py_tp_members(72),
-        Py_tp_getset(73),
-        Py_tp_free(74, T___FREE__),
+        Py_tp_alloc(47, NO_TP_SLOT, T___ALLOC__, PExternalFunctionWrapper.ALLOC),
+        Py_tp_base(48, NO_TP_SLOT),
+        Py_tp_bases(49, NO_TP_SLOT),
+        Py_tp_call(50, NO_TP_SLOT, T___CALL__, PExternalFunctionWrapper.KEYWORDS),
+        Py_tp_clear(51, NO_TP_SLOT, T___CLEAR__, PExternalFunctionWrapper.INQUIRY),
+        Py_tp_dealloc(52, NO_TP_SLOT, T___DEALLOC__),
+        Py_tp_del(53, NO_TP_SLOT, T___DEL__),
+        Py_tp_descr_get(54, NO_TP_SLOT, T___GET__),
+        Py_tp_descr_set(55, NO_TP_SLOT, T___SET__),
+        Py_tp_doc(56, NO_TP_SLOT),
+        Py_tp_getattr(57, NO_TP_SLOT, T___GETATTR__, PExternalFunctionWrapper.GETATTR),
+        Py_tp_getattro(58, NO_TP_SLOT, T___GETATTR__),
+        Py_tp_hash(59, NO_TP_SLOT, T___HASH__, PExternalFunctionWrapper.HASHFUNC),
+        Py_tp_init(60, NO_TP_SLOT, T___INIT__, PExternalFunctionWrapper.INITPROC),
+        Py_tp_is_gc(61, NO_TP_SLOT),
+        Py_tp_iter(62, NO_TP_SLOT, T___ITER__),
+        Py_tp_iternext(63, NO_TP_SLOT, T___NEXT__, PExternalFunctionWrapper.ITERNEXT),
+        Py_tp_methods(64, NO_TP_SLOT),
+        Py_tp_new(65, NO_TP_SLOT, T___NEW__, PExternalFunctionWrapper.KEYWORDS),
+        Py_tp_repr(66, NO_TP_SLOT, T___REPR__, PExternalFunctionWrapper.TP_REPR),
+        Py_tp_richcompare(67, NO_TP_SLOT, T___TRUFFLE_RICHCOMPARE__, PExternalFunctionWrapper.RICHCMP),
+        Py_tp_setattr(68, NO_TP_SLOT, T___SETATTR__, PExternalFunctionWrapper.SETATTR),
+        Py_tp_setattro(69, NO_TP_SLOT, T___SETATTR__),
+        Py_tp_str(70, NO_TP_SLOT, T___STR__, PExternalFunctionWrapper.TP_STR),
+        Py_tp_traverse(71, NO_TP_SLOT),
+        Py_tp_members(72, NO_TP_SLOT),
+        Py_tp_getset(73, NO_TP_SLOT),
+        Py_tp_free(74, NO_TP_SLOT, T___FREE__),
 
-        // PyMappingMethods
-        Py_mp_ass_subscript(3, T___SETITEM__, PExternalFunctionWrapper.OBJOBJARGPROC),
-        Py_mp_length(4, T___LEN__, PExternalFunctionWrapper.LENFUNC),
-        Py_mp_subscript(5, T___GETITEM__),
+        // PyMappingMethods, NO_TP_SLOT
+        Py_mp_ass_subscript(3, NO_TP_SLOT, T___SETITEM__, PExternalFunctionWrapper.OBJOBJARGPROC),
+        Py_mp_length(4, NO_TP_SLOT, T___LEN__, PExternalFunctionWrapper.LENFUNC),
+        Py_mp_subscript(5, NO_TP_SLOT, T___GETITEM__),
 
-        // PyNumberMethods
-        Py_nb_absolute(6, T___ABS__),
-        Py_nb_add(7, T___ADD__),
-        Py_nb_and(8, T___AND__),
-        Py_nb_bool(9, T___BOOL__, PExternalFunctionWrapper.INQUIRY),
-        Py_nb_divmod(10, T___DIVMOD__),
-        Py_nb_float(11, T___FLOAT__),
-        Py_nb_floor_divide(12, T___FLOORDIV__),
-        Py_nb_index(13, T___INDEX__),
-        Py_nb_inplace_add(14, T___IADD__),
-        Py_nb_inplace_and(15, T___IAND__),
-        Py_nb_inplace_floor_divide(16, T___IFLOORDIV__),
-        Py_nb_inplace_lshift(17, T___ILSHIFT__),
-        Py_nb_inplace_multiply(18, T___IMUL__),
-        Py_nb_inplace_or(19, T___IOR__),
-        Py_nb_inplace_power(20, T___IPOW__),
-        Py_nb_inplace_remainder(21, T___IMOD__),
-        Py_nb_inplace_rshift(22, T___IRSHIFT__),
-        Py_nb_inplace_subtract(23, T___ISUB__),
-        Py_nb_inplace_true_divide(24, T___ITRUEDIV__),
-        Py_nb_inplace_xor(25, T___IXOR__),
-        Py_nb_int(26, T___INT__),
-        Py_nb_invert(27, T___INVERT__),
-        Py_nb_lshift(28, T___LSHIFT__),
-        Py_nb_multiply(29, T___MUL__),
-        Py_nb_negative(30, T___NEG__),
-        Py_nb_or(31, T___OR__),
-        Py_nb_positive(32, T___POS__),
-        Py_nb_power(33, T___POW__, PExternalFunctionWrapper.TERNARYFUNC),
-        Py_nb_remainder(34, T___MOD__),
-        Py_nb_rshift(35, T___RSHIFT__),
-        Py_nb_subtract(36, T___SUB__),
-        Py_nb_true_divide(37, T___TRUEDIV__),
-        Py_nb_xor(38, T___XOR__),
-        Py_nb_matrix_multiply(75, T___MATMUL__),
-        Py_nb_inplace_matrix_multiply(76, T___IMATMUL__),
+        // PyNumberMethods, NO_TP_SLOT
+        Py_nb_absolute(6, NO_TP_SLOT, T___ABS__),
+        Py_nb_add(7, NO_TP_SLOT, T___ADD__),
+        Py_nb_and(8, NO_TP_SLOT, T___AND__),
+        Py_nb_bool(9, NO_TP_SLOT, T___BOOL__, PExternalFunctionWrapper.INQUIRY),
+        Py_nb_divmod(10, NO_TP_SLOT, T___DIVMOD__),
+        Py_nb_float(11, NO_TP_SLOT, T___FLOAT__),
+        Py_nb_floor_divide(12, NO_TP_SLOT, T___FLOORDIV__),
+        Py_nb_index(13, NO_TP_SLOT, T___INDEX__),
+        Py_nb_inplace_add(14, NO_TP_SLOT, T___IADD__),
+        Py_nb_inplace_and(15, NO_TP_SLOT, T___IAND__),
+        Py_nb_inplace_floor_divide(16, NO_TP_SLOT, T___IFLOORDIV__),
+        Py_nb_inplace_lshift(17, NO_TP_SLOT, T___ILSHIFT__),
+        Py_nb_inplace_multiply(18, NO_TP_SLOT, T___IMUL__),
+        Py_nb_inplace_or(19, NO_TP_SLOT, T___IOR__),
+        Py_nb_inplace_power(20, NO_TP_SLOT, T___IPOW__),
+        Py_nb_inplace_remainder(21, NO_TP_SLOT, T___IMOD__),
+        Py_nb_inplace_rshift(22, NO_TP_SLOT, T___IRSHIFT__),
+        Py_nb_inplace_subtract(23, NO_TP_SLOT, T___ISUB__),
+        Py_nb_inplace_true_divide(24, NO_TP_SLOT, T___ITRUEDIV__),
+        Py_nb_inplace_xor(25, NO_TP_SLOT, T___IXOR__),
+        Py_nb_int(26, NO_TP_SLOT, T___INT__),
+        Py_nb_invert(27, NO_TP_SLOT, T___INVERT__),
+        Py_nb_lshift(28, NO_TP_SLOT, T___LSHIFT__),
+        Py_nb_multiply(29, NO_TP_SLOT, T___MUL__),
+        Py_nb_negative(30, NO_TP_SLOT, T___NEG__),
+        Py_nb_or(31, NO_TP_SLOT, T___OR__),
+        Py_nb_positive(32, NO_TP_SLOT, T___POS__),
+        Py_nb_power(33, NO_TP_SLOT, T___POW__, PExternalFunctionWrapper.TERNARYFUNC),
+        Py_nb_remainder(34, NO_TP_SLOT, T___MOD__),
+        Py_nb_rshift(35, NO_TP_SLOT, T___RSHIFT__),
+        Py_nb_subtract(36, NO_TP_SLOT, T___SUB__),
+        Py_nb_true_divide(37, NO_TP_SLOT, T___TRUEDIV__),
+        Py_nb_xor(38, NO_TP_SLOT, T___XOR__),
+        Py_nb_matrix_multiply(75, NO_TP_SLOT, T___MATMUL__),
+        Py_nb_inplace_matrix_multiply(76, NO_TP_SLOT, T___IMATMUL__),
 
-        // PySequenceMethods
-        Py_sq_ass_item(39, T___SETITEM__, PExternalFunctionWrapper.SETITEM),
-        Py_sq_concat(40, T___ADD__),
-        Py_sq_contains(41, T___CONTAINS__, PExternalFunctionWrapper.OBJOBJPROC),
-        Py_sq_inplace_concat(42, T___IADD__),
-        Py_sq_inplace_repeat(43, T___IMUL__, PExternalFunctionWrapper.ALLOC),
-        Py_sq_item(44, T___GETITEM__, PExternalFunctionWrapper.GETITEM),
-        Py_sq_length(45, T___LEN__, PExternalFunctionWrapper.LENFUNC),
-        Py_sq_repeat(46, T___MUL__, PExternalFunctionWrapper.ALLOC),
+        // PySequenceMethods, NO_TP_SLOT
+        Py_sq_ass_item(39, NO_TP_SLOT, T___SETITEM__, PExternalFunctionWrapper.SETITEM),
+        Py_sq_concat(40, NO_TP_SLOT, T___ADD__),
+        Py_sq_contains(41, NO_TP_SLOT, T___CONTAINS__, PExternalFunctionWrapper.OBJOBJPROC),
+        Py_sq_inplace_concat(42, NO_TP_SLOT, T___IADD__),
+        Py_sq_inplace_repeat(43, NO_TP_SLOT, T___IMUL__, PExternalFunctionWrapper.ALLOC),
+        Py_sq_item(44, TpSlotMeta.SQ_ITEM, T___GETITEM__, PExternalFunctionWrapper.GETITEM),
+        Py_sq_length(45, NO_TP_SLOT, T___LEN__, PExternalFunctionWrapper.LENFUNC),
+        Py_sq_repeat(46, NO_TP_SLOT, T___MUL__, PExternalFunctionWrapper.ALLOC),
 
-        // PyAsyncMethods
-        Py_am_await(77),
-        Py_am_aiter(78),
-        Py_am_anext(79);
+        // PyAsyncMethods, NO_TP_SLOT
+        Py_am_await(77, NO_TP_SLOT),
+        Py_am_aiter(78, NO_TP_SLOT),
+        Py_am_anext(79, NO_TP_SLOT);
 
         /** The corresponding C enum value. */
         private final int value;
+
+        /** Corresponding CPython compatible slot. */
+        private final TpSlotMeta tpSlot;
 
         /**
          * The corresponding attribute key (mostly a {@link String} which is the name of a magic
@@ -212,18 +223,17 @@ public abstract class GraalHPyLegacyDef {
         /** The signature of the slot function. */
         private final PExternalFunctionWrapper signature;
 
-        HPyLegacySlot(int value) {
-            this(value, null, null);
+        HPyLegacySlot(int value, TpSlotMeta tpSlot) {
+            this(value, tpSlot, null);
         }
 
-        HPyLegacySlot(int value, TruffleString attributeKey) {
-            this.value = value;
-            this.attributeKey = attributeKey;
-            this.signature = PExternalFunctionWrapper.DIRECT;
+        HPyLegacySlot(int value, TpSlotMeta tpSlot, TruffleString attributeKey) {
+            this(value, tpSlot, attributeKey, PExternalFunctionWrapper.DIRECT);
         }
 
-        HPyLegacySlot(int value, TruffleString attributeKey, PExternalFunctionWrapper signature) {
+        HPyLegacySlot(int value, TpSlotMeta tpSlot, TruffleString attributeKey, PExternalFunctionWrapper signature) {
             this.value = value;
+            this.tpSlot = tpSlot;
             this.attributeKey = attributeKey;
             this.signature = signature;
         }
@@ -252,6 +262,10 @@ public abstract class GraalHPyLegacyDef {
 
         static HPyLegacySlot fromValue(int value) {
             return value >= 0 && value < BY_VALUE.length ? BY_VALUE[value] : null;
+        }
+
+        public TpSlotMeta getTpSlot() {
+            return tpSlot;
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -90,7 +90,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -116,11 +115,6 @@ abstract class GraalHPyJNINodes {
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
-        }
-
-        @Override
         public boolean isAdoptable() {
             return false;
         }
@@ -143,11 +137,6 @@ abstract class GraalHPyJNINodes {
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
-        }
-
-        @Override
         public boolean isAdoptable() {
             return false;
         }
@@ -163,11 +152,6 @@ abstract class GraalHPyJNINodes {
         @Override
         protected void execute(@SuppressWarnings("unused") GraalHPyContext ctx, Object pointer) {
             UNSAFE.freeMemory(coerceToPointer(pointer));
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
         }
 
         @Override
@@ -213,11 +197,6 @@ abstract class GraalHPyJNINodes {
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
-        }
-
-        @Override
         public boolean isAdoptable() {
             return false;
         }
@@ -232,11 +211,6 @@ abstract class GraalHPyJNINodes {
         @Override
         public Object execute(@SuppressWarnings("unused") GraalHPyContext ctx, Object pointer, long offset) {
             return coerceToPointer(pointer) + offset;
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.MONOMORPHIC;
         }
 
         @Override
@@ -264,11 +238,6 @@ abstract class GraalHPyJNINodes {
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
-        }
-
-        @Override
         public boolean isAdoptable() {
             return false;
         }
@@ -290,11 +259,6 @@ abstract class GraalHPyJNINodes {
                 ctx.releaseHPyHandleForObject(GraalHPyBoxing.unboxHandle(bits));
             }
             return result;
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
         }
 
         @Override
@@ -325,11 +289,6 @@ abstract class GraalHPyJNINodes {
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
-        }
-
-        @Override
         public boolean isAdoptable() {
             return false;
         }
@@ -356,11 +315,6 @@ abstract class GraalHPyJNINodes {
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
-        }
-
-        @Override
         public boolean isAdoptable() {
             return false;
         }
@@ -376,11 +330,6 @@ abstract class GraalHPyJNINodes {
         @Override
         protected int execute(@SuppressWarnings("unused") GraalHPyContext ctx, Object pointer, long offset) {
             return UNSAFE.getInt(coerceToPointer(pointer) + offset);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
         }
 
         @Override
@@ -402,11 +351,6 @@ abstract class GraalHPyJNINodes {
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
-        }
-
-        @Override
         public boolean isAdoptable() {
             return false;
         }
@@ -422,11 +366,6 @@ abstract class GraalHPyJNINodes {
         @Override
         protected double execute(@SuppressWarnings("unused") GraalHPyContext ctx, Object pointer, long offset) {
             return UNSAFE.getFloat(coerceToPointer(pointer) + offset);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
         }
 
         @Override
@@ -448,11 +387,6 @@ abstract class GraalHPyJNINodes {
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
-        }
-
-        @Override
         public boolean isAdoptable() {
             return false;
         }
@@ -468,11 +402,6 @@ abstract class GraalHPyJNINodes {
         @Override
         protected Object execute(@SuppressWarnings("unused") GraalHPyContext ctx, Object pointer, long offset) {
             return UNSAFE.getAddress(coerceToPointer(pointer) + offset);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
         }
 
         @Override
@@ -566,11 +495,6 @@ abstract class GraalHPyJNINodes {
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
-        }
-
-        @Override
         public boolean isAdoptable() {
             return false;
         }
@@ -586,11 +510,6 @@ abstract class GraalHPyJNINodes {
         @Override
         protected void execute(@SuppressWarnings("unused") GraalHPyContext ctx, Object pointer, long offset, int value) {
             UNSAFE.putInt(coerceToPointer(pointer) + offset, value);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
         }
 
         @Override
@@ -612,11 +531,6 @@ abstract class GraalHPyJNINodes {
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
-        }
-
-        @Override
         public boolean isAdoptable() {
             return false;
         }
@@ -632,11 +546,6 @@ abstract class GraalHPyJNINodes {
         @Override
         protected void execute(@SuppressWarnings("unused") GraalHPyContext ctx, Object pointer, long offset, double value) {
             UNSAFE.putDouble(coerceToPointer(pointer) + offset, value);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
         }
 
         @Override
@@ -740,11 +649,6 @@ abstract class GraalHPyJNINodes {
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
-        }
-
-        @Override
         public boolean isAdoptable() {
             return false;
         }
@@ -761,11 +665,6 @@ abstract class GraalHPyJNINodes {
         protected void execute(GraalHPyContext ctx, Object pointer, long offset, Object value) {
             long bits = ctx.pythonObjectAsBits(value);
             UNSAFE.putAddress(coerceToPointer(pointer) + offset, bits);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
         }
 
         @Override
@@ -802,11 +701,6 @@ abstract class GraalHPyJNINodes {
         }
 
         @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
-        }
-
-        @Override
         public boolean isAdoptable() {
             return false;
         }
@@ -822,11 +716,6 @@ abstract class GraalHPyJNINodes {
         @Override
         protected void execute(GraalHPyContext ctx, Object basePointer, long offset, Object valuePointer) {
             UNSAFE.putAddress(coerceToPointer(basePointer) + offset, coerceToPointer(valuePointer));
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
         }
 
         @Override
@@ -849,11 +738,6 @@ abstract class GraalHPyJNINodes {
 
         static void write(long address, long value) {
             UNSAFE.putAddress(address, value);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.POLYMORPHIC;
         }
 
         @Override

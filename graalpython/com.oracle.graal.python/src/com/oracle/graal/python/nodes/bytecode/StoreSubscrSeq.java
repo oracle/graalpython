@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,7 +60,7 @@ public abstract class StoreSubscrSeq extends Node {
     public abstract static class ONode extends StoreSubscrSeq {
         public abstract void execute(Object sequence, int index, Object value);
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
+        @Specialization(guards = "isBuiltinList(sequence)")
         void doList(PList sequence, int index, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile updateStorageProfile,
@@ -84,7 +84,7 @@ public abstract class StoreSubscrSeq extends Node {
     public abstract static class INode extends StoreSubscrSeq {
         public abstract void execute(Object sequence, int index, int value);
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
+        @Specialization(guards = "isBuiltinList(sequence)")
         void doList(PList sequence, int index, int value,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile updateStorageProfile,
@@ -108,7 +108,7 @@ public abstract class StoreSubscrSeq extends Node {
     public abstract static class DNode extends StoreSubscrSeq {
         public abstract void execute(Object sequence, int index, double value);
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
+        @Specialization(guards = "isBuiltinList(sequence)")
         void doList(PList sequence, int index, double value,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile updateStorageProfile,

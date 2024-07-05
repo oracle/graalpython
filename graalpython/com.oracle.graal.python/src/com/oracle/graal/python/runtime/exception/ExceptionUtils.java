@@ -273,7 +273,7 @@ public final class ExceptionUtils {
     public static PException wrapJavaExceptionIfApplicable(Node location, Throwable e, PythonObjectFactory factory) {
         if (e instanceof StackOverflowError) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            PythonContext.get(null).reacquireGilAfterStackOverflow();
+            PythonContext.get(null).ensureGilAfterFailure();
             return ExceptionUtils.wrapJavaException(e, location, factory.createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{}));
         }
         if (e instanceof OutOfMemoryError) {

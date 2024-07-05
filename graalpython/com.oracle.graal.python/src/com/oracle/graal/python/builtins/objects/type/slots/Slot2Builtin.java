@@ -196,4 +196,9 @@ class Slot2Builtin implements Builtin {
     public Class<? extends Annotation> annotationType() {
         return Builtin.class;
     }
+
+    @Override
+    public boolean autoRegister() {
+        return false;
+    }
 }

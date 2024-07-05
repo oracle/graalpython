@@ -86,6 +86,8 @@ public abstract class ErrorMessages {
     public static final TruffleString ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P = tsLiteral("argument should be bytes, buffer or ASCII string, not '%p'");
     public static final TruffleString ARRAY_ASSIGN_OUT_OF_BOUNDS = tsLiteral("array assignment index out of range");
     public static final TruffleString ARRAY_OUT_OF_BOUNDS = tsLiteral("array index out of range");
+    public static final TruffleString S_INDEX_OUT_OF_RANGE = tsLiteral("%s index out of range");
+    public static final TruffleString ARRAY_INDICES_MUST_BE_INTS = tsLiteral("array indices must be integers");
     public static final TruffleString AST_IDENTIFIER_MUST_BE_OF_TYPE_STR = tsLiteral("AST identifier must be of type str");
     public static final TruffleString AST_STRING_MUST_BE_OF_TYPE_STR = tsLiteral("AST string must be of type str");
     public static final TruffleString ATTEMPTING_READ_FROM_OFFSET_D = tsLiteral("Attempting to read from offset %d but object '%s' has no associated native space.");
@@ -137,6 +139,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BYTECODE_VERSION_MISMATCH = tsLiteral("Bytecode version mismatch, expected %d actual %d");
     public static final TruffleString BYTE_STR_IS_TOO_LARGE = tsLiteral("byte string is too large");
     public static final TruffleString BYTEARRAY_OUT_OF_BOUNDS = tsLiteral("bytearray index out of range");
+    public static final TruffleString BYTES_OUT_OF_BOUNDS = tsLiteral("bytes index out of range");
     public static final TruffleString BYTEORDER_MUST_BE_LITTLE_OR_BIG = tsLiteral("byteorder must be either 'little' or 'big'");
     public static final TruffleString BYTESLIKE_OBJ_REQUIRED = tsLiteral("a bytes-like object is required, not '%p'");
     public static final TruffleString BYTE_STRING_OF_LEN_ONE_ONLY = tsLiteral("%s argument 2 must be a byte string of length 1, not %s");
@@ -588,8 +591,9 @@ public abstract class ErrorMessages {
     public static final TruffleString PACKED_IP_WRONG_LENGTH = tsLiteral("packed IP wrong length for %s");
     public static final TruffleString PATTERNS_MAY_ONLY_MATCH_LITERALS_AND_ATTRIBUTE_LOOKUPS = tsLiteral("patterns may only match literals and attribute lookups");
     public static final TruffleString POLYGLOT_ACCESS_NOT_ALLOWED = tsLiteral("polyglot access is not allowed");
-    public static final TruffleString POLYGLOT_EVAL_MUST_PASS_STRINGS = tsLiteral("polyglot.eval must pass strings as either 'path' or a 'string' keyword");
-    public static final TruffleString POLYGLOT_EVAL_WITH_STRING_MUST_PASS_LANG = tsLiteral("polyglot.eval with a string argument must pass a language or mime-type");
+    public static final TruffleString POLYGLOT_ACCESS_NOT_ALLOWED_FOR_LANGUAGE_S = tsLiteral("polyglot access is not allowed for language '%s'");
+    public static final TruffleString POLYGLOT_EVAL_MUST_PASS_STRING_OR_PATH = tsLiteral("polyglot.eval() must pass either 'path' or 'string' keyword argument");
+    public static final TruffleString POLYGLOT_EVAL_MUST_PASS_LANG = tsLiteral("polyglot.eval() must pass 'language' keyword argument");
     public static final TruffleString POP_FROM_EMPTY_SET = tsLiteral("pop from an emtpy set");
     public static final TruffleString POP_INDEX_OUT_OF_RANGE = tsLiteral("pop index out of range");
     public static final TruffleString POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS = tsLiteral("position %d from error handler out of bounds");
@@ -784,7 +788,7 @@ public abstract class ErrorMessages {
     public static final TruffleString X_NOT_IN_TUPLE = tsLiteral("tuple.index(x): x not in tuple");
     public static final TruffleString S_IS_AN_INVALID_ARG_FOR_S = tsLiteral("'%s' is an invalid keyword argument for %s");
     public static final TruffleString YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH = tsLiteral("%s: you may specify either '%s' or '%s' but not both");
-    public static final TruffleString ACCESS_TO_INTERNAL_LANG_NOT_PERMITTED = tsLiteral("access to internal language %s is not permitted");
+    public static final TruffleString POLYGLOT_LANGUAGE_S_NOT_FOUND = tsLiteral("polyglot language '%s' not found");
     public static final TruffleString POW_BASE_NOT_INVERTIBLE = tsLiteral("base is not invertible for the given modulus");
     public static final TruffleString POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER = tsLiteral("0.0 cannot be raised to a negative power");
     public static final TruffleString S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT = tsLiteral("'%c' alignment flag is not allowed in complex format specifier");
@@ -846,7 +850,7 @@ public abstract class ErrorMessages {
     public static final TruffleString GETPWUID_NOT_FOUND = tsLiteral("getpwuid(): uid not found");
     public static final TruffleString EXPECTED_INT_MESSAGE = tsLiteral("Expected an int as second argument to ldexp.");
     public static final TruffleString NOT_IMPLEMENTED = tsLiteral("not implemented");
-    public static final TruffleString RUSAGE_NOT_YET_IMPLEMENED = tsLiteral("rusage usage not yet implemented for specified arg.");
+    public static final TruffleString RUSAGE_INVALID_WHO = tsLiteral("invalid who parameter");
     public static final TruffleString SOCKADDR_RESOLVED_TO_MULTIPLE_ADDRESSES = tsLiteral("sockaddr resolved to multiple addresses");
     public static final TruffleString IPV4_MUST_BE_2_TUPLE = tsLiteral("IPv4 sockaddr must be 2 tuple");
     public static final TruffleString GETNAMEINFO_ARG1_MUST_BE_TUPLE = tsLiteral("getnameinfo() argument 1 must be a tuple");
@@ -1629,4 +1633,26 @@ public abstract class ErrorMessages {
     public static final TruffleString LINENO_MUST_BE_AN_INTEGER = tsLiteral("lineno must be an integer");
 
     public static final TruffleString LINENO_OUT_OF_RANGE = tsLiteral("lineno out of range");
+
+    public static final TruffleString SEQUENCE_INDEX_MUST_BE_INT_NOT_P = tsLiteral("sequence index must be integer, not '%p'");
+    public static final TruffleString ARG_MUST_BE_STR_OR_BYTES = tsLiteral("%s argument 1 must be a str or bytes object, not %p");
+    public static final TruffleString REPEAT_COUNT_WITHOUT_FMT = tsLiteral("repeat count given without format specifier");
+    public static final TruffleString BAD_CHR_IN_STRUCT_FMT = tsLiteral("bad char in struct format: %s");
+    public static final TruffleString ARG_NOT_T = tsLiteral("required argument is not %s");
+    public static final TruffleString ARG_O_O_RANGE = tsLiteral("argument out of range");
+    public static final TruffleString ARG_FOR_N_MUST_BE = tsLiteral("argument for %s must be a % object");
+    public static final TruffleString FMT_REQ_RANGE = tsLiteral("%s format requires %d <= number <= %d");
+    public static final TruffleString STRUCT_CHR_FMT_BYTES_1 = tsLiteral("char format requires a bytes object of length 1");
+    public static final TruffleString STRUCT_FMT_NOT_YET_SUPPORTED = tsLiteral("format code: '%s' not yet supported");
+    public static final TruffleString STRUCT_PACK_EXPECTED_N_ITEMS_GOT_K = tsLiteral("pack expected %d items for packing (got %d)");
+    public static final TruffleString STRUCT_NO_SPACE_TO_PACK_N_BYTES = tsLiteral("no space to pack %d bytes at offset %d");
+    public static final TruffleString STRUCT_NOT_ENOUGH_DATA_TO_UNPACK_N_BYTES = tsLiteral("not enough data to unpack %d bytes at offset %d");
+    public static final TruffleString STRUCT_OFFSET_OUT_OF_RANGE = tsLiteral("offset %d out of range for %d-byte buffer");
+    public static final TruffleString STRUCT_PACK_INTO_REQ_BUFFER_TO_PACK = tsLiteral("pack_into requires a buffer of at least %d bytes for packing %d bytes at offset %d (actual buffer size is %d)");
+    public static final TruffleString STRUCT_UNPACK_FROM_REQ_AT_LEAST_N_BYTES = tsLiteral(
+                    "unpack_from requires a buffer of at least %d bytes for unpacking %d bytes at offset %d (actual buffer size is %d)");
+    public static final TruffleString UNPACK_REQ_A_BUFFER_OF_N_BYTES = tsLiteral("unpack requires a buffer of %d bytes");
+    public static final TruffleString STRUCT_ITER_CANNOT_UNPACK_FROM_STRUCT_OF_SIZE_0 = tsLiteral("cannot iteratively unpack with a struct of length 0");
+    public static final TruffleString STRUCT_ITER_UNPACK_REQ_A_BUFFER_OF_A_MUL_OF_BYTES = tsLiteral("iterative unpacking requires a buffer of a multiple of %d bytes");
+    public static final TruffleString CANNOT_CREATE_P_OBJECTS = tsLiteral("Cannot create %p objects");
 }

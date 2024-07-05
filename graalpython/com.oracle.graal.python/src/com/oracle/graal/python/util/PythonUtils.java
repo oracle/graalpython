@@ -42,7 +42,6 @@ package com.oracle.graal.python.util;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PString;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -75,9 +74,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -95,6 +94,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleOptions;
+import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -102,6 +102,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -692,32 +693,17 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
-    public static void createMember(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, TruffleString name, TruffleString doc, int idx,
-                    Function<PythonLanguage, RootNode> rootNodeSupplier) {
-        RootCallTarget callTarget = language.createCachedCallTarget(rootNodeSupplier, nodeClass, idx);
-        PBuiltinFunction getter = factory.createBuiltinFunction(name, klass, 0, 0, callTarget);
-        GetSetDescriptor callable = factory.createGetSetDescriptor(getter, null, name, klass, false);
-        if (doc != null) {
-            callable.setAttribute(T___DOC__, doc);
-        }
-        WriteAttributeToObjectNode.getUncached(true).execute(klass, name, callable);
-    }
-
-    @TruffleBoundary
-    public static PBuiltinFunction createMethod(PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults, Supplier<PythonBuiltinBaseNode> nodeSupplier,
-                    Object... callTargetCacheKeys) {
-        return createMethod(PythonObjectFactory.getUncached(), language, klass, nodeClass, type, numDefaults, nodeSupplier, callTargetCacheKeys);
-    }
-
-    @TruffleBoundary
-    public static PBuiltinFunction createMethod(PythonObjectFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults,
-                    Supplier<PythonBuiltinBaseNode> nodeSupplier,
-                    Object... callTargetCacheKeys) {
+    public static PBuiltinFunction createMethod(PythonLanguage language, Object klass, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory, Object type, int numDefaults) {
+        Class<? extends PythonBuiltinBaseNode> nodeClass = nodeFactory.getNodeClass();
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
-        RootCallTarget callTarget = language.createCachedCallTarget(l -> {
-            NodeFactory<PythonBuiltinBaseNode> nodeFactory = new BuiltinFunctionRootNode.StandaloneBuiltinFactory<>(nodeSupplier.get());
-            return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true);
-        }, nodeClass, createCalltargetKeys(callTargetCacheKeys, nodeClass));
+        RootCallTarget callTarget = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, nodeFactory, true), nodeClass);
+        return createMethod(PythonObjectFactory.getUncached(), klass, builtin, callTarget, type, numDefaults);
+    }
+
+    @TruffleBoundary
+    public static PBuiltinFunction createMethod(PythonObjectFactory factory, Object klass, Builtin builtin, RootCallTarget callTarget, Object type,
+                    int numDefaults) {
+        assert callTarget.getRootNode() instanceof BuiltinFunctionRootNode r && r.getBuiltin() == builtin;
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
         TruffleString name = toTruffleStringUncached(builtin.name());
         PBuiltinFunction function = factory.createBuiltinFunction(name, type, numDefaults, flags, callTarget);
@@ -728,15 +714,9 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
-    public static void createConstructor(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, Supplier<PythonBuiltinBaseNode> nodeSupplier,
-                    Object... callTargetCacheKeys) {
-        Builtin builtin = nodeClass.getAnnotation(Builtin.class);
+    public static void createConstructor(PythonObjectSlowPathFactory factory, Object klass, Builtin builtin, RootCallTarget callTarget) {
         assert J___NEW__.equals(builtin.name());
         assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
-        RootCallTarget callTarget = language.createCachedCallTarget(l -> {
-            NodeFactory<PythonBuiltinBaseNode> nodeFactory = new BuiltinFunctionRootNode.StandaloneBuiltinFactory<>(nodeSupplier.get());
-            return new BuiltinFunctionRootNode(l, builtin, nodeFactory, false, PythonBuiltinClassType.PTuple);
-        }, nodeClass, createCalltargetKeys(callTargetCacheKeys, nodeClass));
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
         PBuiltinFunction function = factory.createBuiltinFunction(toTruffleStringUncached(builtin.name()), PythonBuiltinClassType.PTuple, 1, flags, callTarget);
         PBuiltinMethod method = factory.createBuiltinMethod(PythonBuiltinClassType.PTuple, function);
@@ -827,6 +807,13 @@ public final class PythonUtils {
             profiles[i] = ConditionProfile.create();
         }
         return profiles;
+    }
+
+    public static Object builtinClassToType(Object cls) {
+        if (cls instanceof PythonBuiltinClass builtinClass) {
+            return builtinClass.getType();
+        }
+        return cls;
     }
 
     public static final class NodeCounterWithLimit implements NodeVisitor {
@@ -1036,5 +1023,50 @@ public final class PythonUtils {
         // TODO: have a simple LRU cache of "uncached" pointer InteropLibrary in context?
         // "accepts" should be fast and saves us the concurrent hash map lookup in getUncached
         return existing != null && existing.accepts(obj) ? existing : InteropLibrary.getUncached(obj);
+    }
+
+    /**
+     * Node factory that creates new instances of given node by cloning a prototype node instance
+     * passed in the constructor. We use cloning as opposed to a producer lambda, because this
+     * avoids the need for two arguments (node class and the producer factory).
+     */
+    public static final class PrototypeNodeFactory<T extends Node> implements NodeFactory<T> {
+        private final T node;
+
+        public PrototypeNodeFactory(T node) {
+            this.node = node;
+        }
+
+        @Override
+        public T createNode(Object... arguments) {
+            return NodeUtil.cloneNode(node);
+        }
+
+        @Override
+        public Class<T> getNodeClass() {
+            return determineNodeClass(node);
+        }
+
+        @SuppressWarnings("unchecked")
+        private static <T> Class<T> determineNodeClass(T node) {
+            CompilerAsserts.neverPartOfCompilation();
+            Class<T> nodeClass = (Class<T>) node.getClass();
+            GeneratedBy genBy = nodeClass.getAnnotation(GeneratedBy.class);
+            if (genBy != null) {
+                nodeClass = (Class<T>) genBy.value();
+                assert nodeClass.isAssignableFrom(node.getClass());
+            }
+            return nodeClass;
+        }
+
+        @Override
+        public List<List<Class<?>>> getNodeSignatures() {
+            throw new IllegalAccessError();
+        }
+
+        @Override
+        public List<Class<? extends Node>> getExecutionSignature() {
+            throw new IllegalAccessError();
+        }
     }
 }

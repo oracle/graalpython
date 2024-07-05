@@ -22,3 +22,31 @@ index 51ac712..a7d1e9b 100644
  
  [features]
  defaut = ["pyo3/extension-module"]
+diff --git a/bindings/python/src/lib.rs b/bindings/python/src/lib.rs
+index 8625944..a8ac19d 100644
+--- a/bindings/python/src/lib.rs
++++ b/bindings/python/src/lib.rs
+@@ -50,14 +50,16 @@ extern "C" fn child_after_fork() {
+ pub fn tokenizers(_py: Python, m: &PyModule) -> PyResult<()> {
+     let _ = env_logger::try_init_from_env("TOKENIZERS_LOG");
+ 
++    // GraalPy change: Disable the atfork warning. This triggers a ton of false positives when
++    // jline calls stty and we don't support fork anyway
+     // Register the fork callback
+-    #[cfg(target_family = "unix")]
+-    unsafe {
+-        if !REGISTERED_FORK_CALLBACK {
+-            libc::pthread_atfork(None, None, Some(child_after_fork));
+-            REGISTERED_FORK_CALLBACK = true;
+-        }
+-    }
++    // #[cfg(target_family = "unix")]
++    // unsafe {
++    //     if !REGISTERED_FORK_CALLBACK {
++    //         libc::pthread_atfork(None, None, Some(child_after_fork));
++    //         REGISTERED_FORK_CALLBACK = true;
++    //     }
++    // }
+ 
+     m.add_class::<tokenizer::PyTokenizer>()?;
+     m.add_class::<tokenizer::PyAddedToken>()?;

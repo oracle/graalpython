@@ -70,6 +70,8 @@ import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelper
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
@@ -118,6 +120,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.InteropBehavior;
 import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
@@ -145,11 +148,11 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -161,7 +164,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.Source.LiteralBuilder;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -220,99 +222,68 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "eval", minNumOfPositionalArgs = 0, parameterNames = {"path", "string", "language"})
     @GenerateNodeFactory
-    abstract static class EvalInteropNode extends PythonBuiltinNode {
+    abstract static class EvalInteropNode extends PythonTernaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object evalString(@SuppressWarnings("unused") PNone path, TruffleString tvalue, TruffleString tlangOrMimeType,
-                        @Shared @Cached PForeignToPTypeNode convert) {
+        Object eval(Object pathObj, Object stringObj, Object languageObj) {
+            if (languageObj instanceof PNone) {
+                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.POLYGLOT_EVAL_MUST_PASS_LANG);
+            }
+            boolean hasString = !(stringObj instanceof PNone);
+            boolean hasPath = !(pathObj instanceof PNone);
+            if (!hasString && !hasPath || hasString && hasPath) {
+                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.POLYGLOT_EVAL_MUST_PASS_STRING_OR_PATH);
+            }
+            String languageName = toJavaString(languageObj, "language");
+            String string = hasString ? toJavaString(stringObj, "string") : null;
+            String path = hasPath ? toJavaString(pathObj, "path") : null;
             Env env = getContext().getEnv();
-            if (!env.isPolyglotEvalAllowed()) {
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
+            if (!env.isPolyglotEvalAllowed(null)) {
+                throw PRaiseNode.raiseUncached(this, RuntimeError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
             }
-            try {
-                String value = tvalue.toJavaStringUncached();
-                String langOrMimeType = tlangOrMimeType.toJavaStringUncached();
-                boolean mimeType = isMimeType(langOrMimeType);
-                String lang = mimeType ? findLanguageByMimeType(env, langOrMimeType) : langOrMimeType;
-                raiseIfInternal(env, lang);
-                LiteralBuilder newBuilder = Source.newBuilder(lang, value, value);
-                if (mimeType) {
-                    newBuilder = newBuilder.mimeType(langOrMimeType);
-                }
-                return convert.executeConvert(env.parsePublic(newBuilder.build()).call());
-            } catch (RuntimeException e) {
-                throw PRaiseNode.raiseUncached(this, NotImplementedError, e);
-            }
-        }
-
-        private void raiseIfInternal(Env env, String lang) {
-            LanguageInfo languageInfo = env.getPublicLanguages().get(lang);
-            if (languageInfo != null && languageInfo.isInternal()) {
-                throw PRaiseNode.raiseUncached(this, NotImplementedError, ErrorMessages.ACCESS_TO_INTERNAL_LANG_NOT_PERMITTED, lang);
-            }
-        }
-
-        @TruffleBoundary
-        @Specialization
-        Object evalFile(TruffleString tpath, @SuppressWarnings("unused") PNone string, TruffleString tlangOrMimeType,
-                        @Shared @Cached PForeignToPTypeNode convert) {
-            Env env = getContext().getEnv();
-            if (!env.isPolyglotEvalAllowed()) {
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
-            }
-            try {
-                String path = tpath.toJavaStringUncached();
-                String langOrMimeType = tlangOrMimeType.toJavaStringUncached();
-                boolean mimeType = isMimeType(langOrMimeType);
-                String lang = mimeType ? findLanguageByMimeType(env, langOrMimeType) : langOrMimeType;
-                raiseIfInternal(env, lang);
-                SourceBuilder newBuilder = Source.newBuilder(lang, env.getPublicTruffleFile(path));
-                if (mimeType) {
-                    newBuilder = newBuilder.mimeType(langOrMimeType);
-                }
-                return convert.executeConvert(getContext().getEnv().parsePublic(newBuilder.name(path).build()).call());
-            } catch (IOException e) {
-                throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.S, e);
-            } catch (RuntimeException e) {
-                throw PRaiseNode.raiseUncached(this, NotImplementedError, e);
-            }
-        }
-
-        @TruffleBoundary
-        @Specialization
-        Object evalFile(TruffleString tpath, @SuppressWarnings("unused") PNone string, @SuppressWarnings("unused") PNone lang,
-                        @Shared @Cached PForeignToPTypeNode convert) {
-            Env env = getContext().getEnv();
-            if (!env.isPolyglotEvalAllowed()) {
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED);
-            }
-            try {
-                String path = tpath.toJavaStringUncached();
-                return convert.executeConvert(getContext().getEnv().parsePublic(Source.newBuilder(PythonLanguage.ID, env.getPublicTruffleFile(path)).name(path).build()).call());
-            } catch (IOException e) {
-                throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.S, e);
-            } catch (RuntimeException e) {
-                throw PRaiseNode.raiseUncached(this, NotImplementedError, e);
-            }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        static Object evalStringWithoutLang(PNone path, TruffleString string, PNone lang,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.POLYGLOT_EVAL_WITH_STRING_MUST_PASS_LANG);
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static Object evalWithoutContent(Object path, Object string, Object lang,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.POLYGLOT_EVAL_MUST_PASS_STRINGS);
-        }
-
-        @TruffleBoundary(transferToInterpreterOnException = false)
-        private static String findLanguageByMimeType(Env env, String mimeType) {
             Map<String, LanguageInfo> languages = env.getPublicLanguages();
+            String mimeType = null;
+            if (isMimeType(languageName)) {
+                mimeType = languageName;
+                languageName = findLanguageByMimeType(languages, languageName);
+            }
+            LanguageInfo language = languages.get(languageName);
+            if (language == null) {
+                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.POLYGLOT_LANGUAGE_S_NOT_FOUND, languageName);
+            }
+            if (!env.isPolyglotEvalAllowed(language)) {
+                throw PRaiseNode.raiseUncached(this, RuntimeError, ErrorMessages.POLYGLOT_ACCESS_NOT_ALLOWED_FOR_LANGUAGE_S, languageName);
+            }
+            try {
+                SourceBuilder builder;
+                if (hasString) {
+                    builder = Source.newBuilder(languageName, string, string);
+                } else {
+                    builder = Source.newBuilder(languageName, env.getPublicTruffleFile(path)).name(path);
+                }
+                if (mimeType != null) {
+                    builder = builder.mimeType(mimeType);
+                }
+                Object result = env.parsePublic(builder.build()).call();
+                return PForeignToPTypeNode.getUncached().executeConvert(result);
+            } catch (AbstractTruffleException e) {
+                throw e;
+            } catch (IOException e) {
+                throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.S, e);
+            } catch (RuntimeException e) {
+                throw PRaiseNode.raiseUncached(this, RuntimeError, e);
+            }
+        }
+
+        private String toJavaString(Object object, String parameterName) {
+            try {
+                return CastToJavaStringNode.getUncached().execute(object);
+            } catch (CannotCastException e) {
+                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.S_BRACKETS_ARG_S_MUST_BE_S_NOT_P, "polyglot.eval", parameterName, "str", object);
+            }
+        }
+
+        private static String findLanguageByMimeType(Map<String, LanguageInfo> languages, String mimeType) {
             for (String language : languages.keySet()) {
                 for (String registeredMimeType : languages.get(language).getMimeTypes()) {
                     if (mimeType.equals(registeredMimeType)) {
@@ -323,7 +294,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             return null;
         }
 
-        protected boolean isMimeType(String lang) {
+        private static boolean isMimeType(String lang) {
             return lang.contains("/");
         }
     }

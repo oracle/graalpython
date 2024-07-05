@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,10 +41,12 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -54,7 +56,8 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 @GenerateCached(false)
 @GenerateInline
-public abstract class PyDictCheckExactNode extends PNodeWithContext {
+@ImportStatic(PGuards.class)
+public abstract class PyDictCheckExactNode extends Node {
     public static boolean executeUncached(Object object) {
         return PyDictCheckExactNodeGen.getUncached().execute(null, object);
     }
@@ -66,12 +69,7 @@ public abstract class PyDictCheckExactNode extends PNodeWithContext {
         return true;
     }
 
-    @Specialization(guards = "!isBuiltinDict(dict)")
-    static boolean doOtherDict(@SuppressWarnings("unused") PDict dict) {
-        return false;
-    }
-
-    @Specialization(guards = "!isDict(object)")
+    @Fallback
     static boolean doOther(@SuppressWarnings("unused") Object object) {
         return false;
     }

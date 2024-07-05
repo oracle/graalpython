@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "7.19.0",
+    "mxversion": "7.27.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -16,9 +16,9 @@ suite = {
     "url": "http://www.graalvm.org/",
 
     "developer": {
-        "name": "Truffle and Graal developers",
-        "email": "graalvm-users@oss.oracle.com",
-        "organization": "Graal",
+        "name": "GraalVM Development",
+        "email": "graalvm-dev@oss.oracle.com",
+        "organization": "Oracle Corporation",
         "organizationUrl": "http://www.graalvm.org/",
     },
 
@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "e3f8f87793cd913453b44b3b315fb3da1f648257",
+                "version": "0517eeebe74567d9f7e92dd1018b6b0276d39d1a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "e3f8f87793cd913453b44b3b315fb3da1f648257",
+                "version": "0517eeebe74567d9f7e92dd1018b6b0276d39d1a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "e3f8f87793cd913453b44b3b315fb3da1f648257",
+                "version": "0517eeebe74567d9f7e92dd1018b6b0276d39d1a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "e3f8f87793cd913453b44b3b315fb3da1f648257",
+                "version": "0517eeebe74567d9f7e92dd1018b6b0276d39d1a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -106,7 +106,7 @@ suite = {
             "urls": [
                 "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/setuptools-40.6.3.zip",
             ],
-            "sha1": "7a5960b8062ddbf0c0e79f806e23785d55fec3c8",
+            "digest": "sha512:16920fd41f398696c563417049472c0d81abb2d293ecb45bbbe97c12651669833e34eac238e2e4a6f8761ea58fb39806425d2741e88e8c3097fe2b5457ebf488",
         },
         "XZ-5.2.6": {
             "urls": [
@@ -677,7 +677,6 @@ suite = {
                             "bin/modules/_sqlite3<graalpy_ext:native>",
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
-                            "bin/modules/_cpython_struct<graalpy_ext:native>",
                             "bin/modules/_sha3<graalpy_ext:native>",
                         ],
                     },
@@ -697,7 +696,6 @@ suite = {
                             "bin/modules/_sqlite3<graalpy_ext:native>",
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
-                            "bin/modules/_cpython_struct<graalpy_ext:native>",
                             "bin/modules/_sha3<graalpy_ext:native>",
                             "bin/modules/_testcapi<graalpy_ext:native>",
                             "bin/modules/_testbuffer<graalpy_ext:native>",
@@ -925,7 +923,6 @@ suite = {
                 "name": "org.graalvm.python.embedding",
                 "exports": [
                     "org.graalvm.python.embedding.utils",
-                    "org.graalvm.python.embedding.vfs",
                 ]
             },
             "useModulePath": True,
@@ -985,6 +982,7 @@ suite = {
                 "sdk:LAUNCHER_COMMON",
                 "sdk:JLINE3",
                 "sdk:MAVEN_DOWNLOADER",
+                "sdk:NATIVEIMAGE",
             ],
             "description": "GraalPython launcher",
             "maven": {

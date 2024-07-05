@@ -139,7 +139,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -985,7 +984,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
     }
 
     @ReportPolymorphism
-    @NodeInfo(shortName = "warnings_warn_impl", description = "implements warnings_warn_impl and the clinic wrapper")
     @Builtin(name = J_WARN, minNumOfPositionalArgs = 2, parameterNames = {"$mod", "message", "category", "stacklevel", "source"}, declaresExplicitSelf = true, alwaysNeedsCallerFrame = true)
     @ArgumentClinic(name = "category", defaultValue = "PNone.NONE")
     @ArgumentClinic(name = "stacklevel", conversion = ClinicConversion.Int, defaultValue = "1")
@@ -1016,7 +1014,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
     }
 
     @ReportPolymorphism
-    @NodeInfo(shortName = "warnings_warn_explicit")
     @Builtin(name = J_WARN_EXPLICIT, minNumOfPositionalArgs = 5, //
                     parameterNames = {"$mod", "message", "category", "filename", "lineno", "module", "registry", "module_globals", "source"}, declaresExplicitSelf = true)
     @ArgumentClinic(name = "lineno", conversion = ClinicConversion.Int)

@@ -834,11 +834,11 @@ public final class CApiContext extends CExtContext {
                      * is terminated by a signal, the context exit is skipped. For that case we set
                      * up the shutdown hook.
                      */
-                    Object finalizeFunction = U.readMember(capiLibrary, "GraalPy_get_finalize_capi_pointer_array");
+                    Object finalizeFunction = U.readMember(capiLibrary, "GraalPy_get_finalize_capi_pointer");
                     Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
-                    Object resetFunctionPointerArray = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
+                    Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
                     try {
-                        cApiContext.addNativeFinalizer(env, resetFunctionPointerArray);
+                        cApiContext.addNativeFinalizer(env, finalizingPointer);
                     } catch (RuntimeException e) {
                         // This can happen when other languages restrict multithreading
                         LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
@@ -865,33 +865,18 @@ public final class CApiContext extends CExtContext {
     }
 
     /**
-     * Registers a VM shutdown hook, that resets certain C API function to NOP functions to avoid
-     * segfaults due to improper Python context shutdown. In particular, the shutdown hook reads
-     * pairs of {@code variable address} and {@code reset value} provided in a native array and
-     * writes the {@code reset value} to the {@code variable address}. Currently, this is used to
-     * change the incref and decref upcall functions which would crash if they are called after the
-     * Python context was closed. The format of the array is:
-     *
-     * <pre>
-     *     [ var_addr, reset_val, var_addr1, reset_val1, ..., NULL ]
-     * </pre>
+     * Registers a VM shutdown hook, that sets {@code graalpy_finalizing} variable to let the C side
+     * know that it's not safe to do upcalls and that native wrappers might have been deallocated.
+     * We need to do it in a VM shutdown hook to make sure C atexit won't crash even if our context
+     * finalization didn't run.
      */
-    private void addNativeFinalizer(Env env, Object resetFunctionPointerArray) {
+    private void addNativeFinalizer(Env env, Object finalizingPointerObj) {
         final Unsafe unsafe = getContext().getUnsafe();
-        InteropLibrary lib = InteropLibrary.getUncached(resetFunctionPointerArray);
-        if (!lib.isNull(resetFunctionPointerArray) && lib.isPointer(resetFunctionPointerArray)) {
+        InteropLibrary lib = InteropLibrary.getUncached(finalizingPointerObj);
+        if (!lib.isNull(finalizingPointerObj) && lib.isPointer(finalizingPointerObj)) {
             try {
-                long lresetFunctionPointerArray = lib.asPointer(resetFunctionPointerArray);
-                nativeFinalizerRunnable = () -> {
-                    long resetFunctionPointerLocation;
-                    long curElemAddr = lresetFunctionPointerArray;
-                    while ((resetFunctionPointerLocation = unsafe.getLong(curElemAddr)) != 0) {
-                        curElemAddr += Long.BYTES;
-                        long replacingFunctionPointer = unsafe.getLong(curElemAddr);
-                        unsafe.putAddress(resetFunctionPointerLocation, replacingFunctionPointer);
-                        curElemAddr += Long.BYTES;
-                    }
-                };
+                long finalizingPointer = lib.asPointer(finalizingPointerObj);
+                nativeFinalizerRunnable = () -> unsafe.putInt(finalizingPointer, 1);
                 nativeFinalizerShutdownHook = env.newTruffleThreadBuilder(nativeFinalizerRunnable).build();
                 Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
             } catch (UnsupportedMessageException e) {

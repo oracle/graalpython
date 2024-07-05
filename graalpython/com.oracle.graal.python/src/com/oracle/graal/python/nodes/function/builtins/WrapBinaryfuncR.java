@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.function.builtins;
 
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.truffle.api.nodes.NodeCost;
 
 // also implements wrap_ternaryfunc_r, because it's the same thing
 public final class WrapBinaryfuncR extends SlotWrapper {
@@ -62,10 +61,5 @@ public final class WrapBinaryfuncR extends SlotWrapper {
         } else {
             throw new IllegalStateException("reverse wrappers can only apply to binary and ternary nodes");
         }
-    }
-
-    @Override
-    public NodeCost getCost() {
-        return NodeCost.NONE;
     }
 }

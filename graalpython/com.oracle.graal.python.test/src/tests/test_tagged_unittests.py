@@ -129,8 +129,9 @@ def make_test_function(working_test):
         result = run_with_timeout(cmd, timeout=RUN_TIMEOUT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         append_out = "-v" in sys.argv
         if result.returncode == 124:
-            raise subprocess.TimeoutExpired(cmd=cmd, timeout=RUN_TIMEOUT)
-        if result.returncode:
+            message = f"{working_test[0]} timed out after {RUN_TIMEOUT}s.\n"
+            append_out = True
+        elif result.returncode:
             message = f"{working_test[0]} failed with exit code {result.returncode}.\n"
             append_out = True
         else:
@@ -142,6 +143,8 @@ def make_test_function(working_test):
             message += LINE + "\n"
         print(message)
         if result.returncode:
+            if result.returncode == 124:
+                raise subprocess.TimeoutExpired(cmd=cmd, timeout=RUN_TIMEOUT)
             raise subprocess.CalledProcessError(result.returncode, cmd)
 
     if testmod.startswith('test_'):

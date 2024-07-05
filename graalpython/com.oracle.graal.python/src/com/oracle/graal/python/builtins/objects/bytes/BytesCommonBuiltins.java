@@ -91,12 +91,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltinsFactory.LStripNodeFactory;
-import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltinsFactory.RStripNodeFactory;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.BytesLikeCheck;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.NeedleToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltinsFactory.LStripNodeFactory;
+import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltinsFactory.RStripNodeFactory;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
@@ -446,6 +446,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         // common and specialized cases --------------------
 
         @Specialization
+        @SuppressWarnings("truffle-static-method")
         boolean doIt(VirtualFrame frame, Object self, Object substrs, int start, int end,
                         @Bind("this") Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage,

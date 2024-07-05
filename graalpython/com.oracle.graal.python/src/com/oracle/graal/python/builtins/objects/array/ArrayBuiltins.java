@@ -33,6 +33,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.builtins.objects.common.IndexNodes.checkBounds;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
@@ -43,7 +44,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.array.ArrayNodes.DeleteArraySliceNode;
+import com.oracle.graal.python.builtins.objects.array.ArrayNodes.GetValueNode;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
@@ -90,8 +91,12 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -102,6 +107,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -130,6 +136,7 @@ import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -544,26 +551,50 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_item, isComplex = true)
     @GenerateNodeFactory
-    abstract static class GetItemNode extends PythonBinaryBuiltinNode {
-
-        @Specialization(guards = "!isPSlice(idx)")
-        static Object getitem(VirtualFrame frame, PArray self, Object idx,
+    abstract static class SqItemNode extends SqItemBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, PArray self, int index,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyNumberIndexNode indexNode,
-                        @Cached("forArray()") NormalizeIndexNode normalizeIndexNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
-            int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength());
+            return getItem(inliningTarget, self, index, raiseNode, getValueNode);
+        }
+
+        private static Object getItem(Node inliningTarget, PArray self, int index, PRaiseNode.Lazy raiseNode, GetValueNode getValueNode) {
+            checkBounds(inliningTarget, raiseNode, ErrorMessages.ARRAY_OUT_OF_BOUNDS, index, self.getLength());
             return getValueNode.execute(inliningTarget, self, index);
+        }
+    }
+
+    @Slot(value = SlotKind.mp_subscript, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class MpSubscriptNode extends MpSubscriptBuiltinNode {
+        @Specialization(guards = "!isPSlice(idx)")
+        static Object doIndex(VirtualFrame frame, PArray self, Object idx,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PyNumberAsSizeNode numberAsSizeNode,
+                        @Exclusive @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Cached ArrayNodes.GetValueNode getValueNode) {
+            if (!indexCheckNode.execute(inliningTarget, idx)) {
+                throw raiseNonIntIndex(inliningTarget, raiseNode);
+            }
+            int index = numberAsSizeNode.executeExact(frame, inliningTarget, idx, IndexError);
+            if (negativeIndexProfile.profile(inliningTarget, index < 0)) {
+                index += self.getLength();
+            }
+            return SqItemNode.getItem(inliningTarget, self, index, raiseNode, getValueNode);
         }
 
         @Specialization
-        static Object getitem(PArray self, PSlice slice,
+        static Object doSlice(PArray self, PSlice slice,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedByteValueProfile itemShiftProfile,
-                        @Cached InlinedConditionProfile simpleStepProfile,
+                        @Exclusive @Cached InlinedConditionProfile simpleStepProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached PythonObjectFactory factory) {
@@ -586,6 +617,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 }
             }
             return newArray;
+        }
+
+        @InliningCutoff
+        private static PException raiseNonIntIndex(Node inliningTarget, Lazy raiseNode) {
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARRAY_INDICES_MUST_BE_INTS);
         }
     }
 

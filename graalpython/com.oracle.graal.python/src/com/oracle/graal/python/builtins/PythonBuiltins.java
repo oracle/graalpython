@@ -244,7 +244,12 @@ public abstract class PythonBuiltins {
         PythonOS currentOs = PythonOS.getPythonOS();
         for (NodeFactory<? extends PythonBuiltinBaseNode> factory : factories) {
             Boolean needsFrame = null;
+            boolean initialized = false;
             for (Builtin builtin : factory.getNodeClass().getAnnotationsByType(Builtin.class)) {
+                if (!builtin.autoRegister()) {
+                    assert !initialized : "Builtin annotations on " + factory.getNodeClass().getName() + " do not agree on 'autoInitialize' property.";
+                    break;
+                }
                 if (builtin.os() == PythonOS.PLATFORM_ANY || builtin.os() == currentOs) {
                     if (needsFrame == null) {
                         needsFrame = builtin.needsFrame();

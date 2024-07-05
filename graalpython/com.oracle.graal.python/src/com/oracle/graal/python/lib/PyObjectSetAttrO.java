@@ -43,19 +43,19 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallSlotSetAttrONode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -88,25 +88,22 @@ public abstract class PyObjectSetAttrO extends PNodeWithContext {
 
     public abstract void execute(Frame frame, Node inliningTarget, Object receiver, Object name, Object value);
 
-    @Specialization(guards = "cannotBeOverridden(nameObj, inliningTarget, getClassNode)", limit = "1")
-    static void doIt(Frame frame, Node inliningTarget, Object self, Object nameObj, Object value,
-                    @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @Cached CastToTruffleStringNode castNode,
-                    @Cached PRaiseNode.Lazy raise,
-                    @Cached PyObjectSetAttr setAttr) {
-        TruffleString name;
-        try {
-            name = castNode.execute(inliningTarget, nameObj);
-        } catch (CannotCastException ex) {
-            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, nameObj);
-        }
+    @Specialization
+    static void doIt(Frame frame, Node inliningTarget, Object self, TruffleString name, Object value,
+                    @Shared @Cached PyObjectSetAttr setAttr) {
         setAttr.execute(frame, inliningTarget, self, name, value);
     }
 
-    @Specialization(guards = "!cannotBeOverridden(nameObj, inliningTarget, getClassNode)", limit = "1")
+    @Specialization(guards = "isBuiltinPString(name)")
+    static void doIt(Frame frame, Node inliningTarget, Object self, PString name, Object value,
+                    @Cached CastToTruffleStringNode castNode,
+                    @Shared @Cached PyObjectSetAttr setAttr) {
+        setAttr.execute(frame, inliningTarget, self, castNode.castKnownString(inliningTarget, name), value);
+    }
+
+    @Fallback
     @InliningCutoff
-    static void doIt(Frame frame, Node inliningTarget, Object self, @SuppressWarnings("unused") Object nameObj, Object value,
-                    @Exclusive @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+    static void doIt(Frame frame, Object self, Object nameObj, Object value,
                     @Cached(inline = false) PyObjectSetAttrOGeneric generic) {
         generic.execute(frame, self, nameObj, value);
     }

@@ -89,7 +89,17 @@ public final class PythonCextFuncBuiltins {
     abstract static class PyTruffleCFunction_SetDoc extends CApiBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        static Object set(Object functionObj, TruffleString doc) {
+        static Object setString(Object functionObj, TruffleString doc) {
+            return setDoc(functionObj, doc);
+        }
+
+        @Specialization(guards = "isNoValue(nullValue)")
+        @TruffleBoundary
+        static Object setNull(Object functionObj, @SuppressWarnings("unused") PNone nullValue) {
+            return setDoc(functionObj, null);
+        }
+
+        private static PNone setDoc(Object functionObj, TruffleString doc) {
             PBuiltinFunction function;
             if (functionObj instanceof PBuiltinFunction builtinFunction) {
                 function = builtinFunction;

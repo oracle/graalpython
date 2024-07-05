@@ -11,6 +11,12 @@ dist-type = 'sdist'
 ignore-rule-on-llvm = true
 
 [[rules]]
+version = '== 1.24.3'
+patch = 'numpy-1.24.3.patch'
+dist-type = 'sdist'
+ignore-rule-on-llvm = true
+
+[[rules]]
 version = '== 1.23.5'
 patch = 'numpy-1.23.5.patch'
 dist-type = 'sdist'

@@ -138,7 +138,6 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_sre": CopyFromWithOverrides("Modules/_sre"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c": CopyFrom("Modules/unicodedata.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_bz2.c": CopyFrom("Modules/_bz2module.c"),
-    "graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c": CopyFrom("Modules/_struct.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_testcapi.c": CopyFrom("Modules/_testcapimodule.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.h": CopyFrom("Modules/_ctypes/_ctypes_test.h"),
     "graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.c": CopyFrom("Modules/_ctypes/_ctypes_test.c"),
