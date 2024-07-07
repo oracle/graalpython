@@ -518,7 +518,6 @@ class TestGCRefCycles:
         rescued_obj4 = l1[0]
         del l1
 
-        __graalpython__.tdebug("uff")
         TestCycle0.set_global_obj(2, obj14)
         del obj14
         ####################################### GC #######################################
@@ -665,3 +664,236 @@ class TestGCRefCycles:
         assert_is_freed(1)
         assert_is_weak(htid_l0)
         assert_is_weak(htid_l1)
+
+    def test_module_globals(self):
+        self._trigger_gc()
+        GCTestModuleGlobal = CPyExtType("GCTestModuleGlobal", 
+                        '''
+                        struct struct_GC_Test_C
+                        {
+                            PyObject_HEAD
+                            PyObject *_test_list_c;
+                        };
+
+                        struct struct_GC_Test_B
+                        {
+                            struct struct_GC_Test_C base;
+                        };
+
+                        struct struct_GC_Test_A
+                        {
+                            PyObject_HEAD
+                            struct struct_GC_Test_B *_test_b;
+                        };
+
+                        struct struct_GC_Test_G
+                        {
+                            PyObject_HEAD
+                            struct struct_GC_Test_A *_test_a;
+                        };
+
+                        static struct struct_GC_Test_G *__GC_Test_Global__ = 0;
+                        static PyTypeObject *pytype_GC_Test_G = 0;
+                        static PyTypeObject *pytype_GC_Test_A = 0;
+                        static PyTypeObject *pytype_GC_Test_B = 0;
+                        static PyTypeObject *pytype_GC_Test_C = 0;
+
+                        static PyObject *tp_new_GC_Test_G(PyTypeObject *t, PyObject *a, PyObject *k) {
+                            struct struct_GC_Test_G *p;
+                            PyObject *o = (*t->tp_alloc)(t, 0);
+                            p = ((struct struct_GC_Test_G *)o);
+                            p->_test_a = ((struct struct_GC_Test_A *)Py_None);
+                            Py_INCREF(Py_None);
+                            return o;
+                        }
+
+                        static int tp_traverse_GC_Test_G(PyObject *o, visitproc v, void *a) {
+                            struct struct_GC_Test_G *p = (struct struct_GC_Test_G *)o;
+                            if (p->_test_a)
+                                return (*v)(((PyObject *)p->_test_a), a);
+                            return 0;
+                        }
+
+                        static PyObject *tp_new_GC_Test_A(PyTypeObject *t, PyObject *a, PyObject *k) {
+                            PyObject *o = (*t->tp_alloc)(t, 0);
+                            PyObject *t1 = PyObject_CallNoArgs(((PyObject *)pytype_GC_Test_B));
+                            ((struct struct_GC_Test_A *)o)->_test_b = ((struct struct_GC_Test_B *)t1);
+                            return o;
+                        }
+
+                        static int tp_traverse_GC_Test_A(PyObject *o, visitproc v, void *a) {
+                            struct struct_GC_Test_A *p = (struct struct_GC_Test_A *)o;
+                            if (p->_test_b)
+                                return (*v)(((PyObject *)p->_test_b), a);
+                            return 0;
+                        }
+
+                        static PyObject *tp_new_GC_Test_C(PyTypeObject *t, PyObject *a, PyObject *k) {
+                            struct struct_GC_Test_C *p;
+                            PyObject *o = (*t->tp_alloc)(t, 0);
+                            p = ((struct struct_GC_Test_C *)o);
+                            p->_test_list_c = ((PyObject *)Py_None);
+                            Py_INCREF(Py_None);
+                            return o;
+                        }
+
+                        static int tp_traverse_GC_Test_C(PyObject *o, visitproc v, void *a) {
+                            struct struct_GC_Test_C *p = (struct struct_GC_Test_C *)o;
+                            if (p->_test_list_c)
+                                return (*v)(p->_test_list_c, a);
+                            return 0;
+                        }
+
+                        static PyObject *tp_new_GC_Test_B(PyTypeObject *t, PyObject *a, PyObject *k) {
+                            struct struct_GC_Test_B *p;
+                            PyObject *o = tp_new_GC_Test_C(t, a, k);
+                            p = ((struct struct_GC_Test_B *)o);
+                            return o;
+                        }
+
+                        static struct struct_GC_Test_A *GC_Test_G_getGCTestA(struct struct_GC_Test_G *self) {
+                            PyObject *t3 = NULL;
+                            if (((PyObject *)self->_test_a) == Py_None)
+                            {
+                                t3 = PyObject_CallNoArgs(((PyObject *)pytype_GC_Test_A));
+                                Py_DECREF(((PyObject *)self->_test_a));
+                                self->_test_a = ((struct struct_GC_Test_A *)t3);
+                            }
+
+                            Py_INCREF(((PyObject *)self->_test_a));
+                            return self->_test_a;
+                        }
+
+                        static PyObject *GC_Test_B_clear(struct struct_GC_Test_B *self) {
+                            PyObject *py_slice = PySlice_New(Py_None, Py_None, Py_None);
+                            PyObject_DelItem(self->base._test_list_c, py_slice);
+                            Py_INCREF(Py_None);
+                            return Py_None;
+                        }
+
+                        static int GC_Test_A_prepare(struct struct_GC_Test_A *self) {
+                            PyObject *t1 = GC_Test_B_clear(self->_test_b);
+                            Py_DECREF(t1);
+                            return 0;
+                        }
+
+                        static int GC_Test_A_cleanup(struct struct_GC_Test_A *self) {
+                            PyObject *t1 = GC_Test_B_clear(self->_test_b);
+                            Py_DECREF(t1);
+                            return 0;
+                        }
+
+                        static int GC_Test_C__init__(PyObject *self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+                            PyObject *list_c = PyTuple_GET_ITEM(__pyx_args, 0);
+                            Py_INCREF(list_c);
+                            Py_DECREF(((struct struct_GC_Test_C *)self)->_test_list_c);
+                            printf("list_c: %p\\n", list_c);
+                            ((struct struct_GC_Test_C *)self)->_test_list_c = list_c;
+                            return 0;
+                        }
+
+                        static int GC_Test_B__init__(PyObject *self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+                            PyObject *t1 = NULL;
+                            PyObject *t2 = PyObject_GetAttrString((PyObject *)pytype_GC_Test_C, "__init__");
+                            PyObject *t3 = PyList_New(0);
+                            PyObject *t6 = PyTuple_New(2);
+                            Py_INCREF(self);
+                            PyTuple_SET_ITEM(t6, 0, self);
+                            PyTuple_SET_ITEM(t6, 1, t3);
+                            t1 = PyObject_Call(t2, t6, NULL);
+                            Py_DECREF(t6);
+                            Py_DECREF(t2);
+                            Py_DECREF(t1);
+                            return 0;
+                        }
+
+
+                        static PyObject *GC_Test_Global(PyObject *self, PyObject *unused) {
+                            struct struct_GC_Test_A *__pyx_v_A = 0;
+                            __pyx_v_A = GC_Test_G_getGCTestA(__GC_Test_Global__);
+                            GC_Test_A_prepare(__pyx_v_A);
+                            GC_Test_A_cleanup(__pyx_v_A);
+                            Py_INCREF(Py_None);
+                            Py_XDECREF((PyObject *)__pyx_v_A);
+                            return Py_None;
+                        }
+
+                        PyTypeObject spec_GC_Test_C = {
+                            PyVarObject_HEAD_INIT(NULL, 0)
+                            .tp_name = "GC_Test_C",
+                            .tp_basicsize = sizeof(struct struct_GC_Test_C),
+                            .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+                            .tp_traverse = tp_traverse_GC_Test_C,
+                            .tp_init = GC_Test_C__init__,
+                            .tp_new = tp_new_GC_Test_C,
+                        };
+
+                        PyTypeObject spec_GC_Test_B = {
+                            PyVarObject_HEAD_INIT(NULL, 0)
+                            .tp_name = "GC_Test_B",
+                            .tp_basicsize = sizeof(struct struct_GC_Test_B),
+                            .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+                            .tp_traverse = tp_traverse_GC_Test_C,
+                            .tp_init = GC_Test_B__init__,
+                            .tp_new = tp_new_GC_Test_B,
+                            .tp_base = &spec_GC_Test_C,
+                        };
+
+                        PyTypeObject spec_GC_Test_A = {
+                            PyVarObject_HEAD_INIT(NULL, 0)
+                            .tp_name = "GC_Test_A",
+                            .tp_basicsize = sizeof(struct struct_GC_Test_A),
+                            .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+                            .tp_traverse = tp_traverse_GC_Test_A,
+                            .tp_new = tp_new_GC_Test_A,
+                        };
+
+                        PyTypeObject spec_GC_Test_G = {
+                            PyVarObject_HEAD_INIT(NULL, 0)
+                            .tp_name = "GC_Test_G",
+                            .tp_basicsize = sizeof(struct struct_GC_Test_G),
+                            .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+                            .tp_traverse = tp_traverse_GC_Test_G,
+                            .tp_new = tp_new_GC_Test_G,
+                        };
+
+                        ''',
+                        tp_methods='''{"GC_Test_Global", (PyCFunction)GC_Test_Global, METH_NOARGS | METH_CLASS, ""}''',
+                        ready_code='''
+
+                            if (PyType_Ready(&spec_GC_Test_G) < 0)
+                                return NULL;
+                            pytype_GC_Test_G = &spec_GC_Test_G;
+
+                            if (PyType_Ready(&spec_GC_Test_A) < 0)
+                                return NULL;
+                            pytype_GC_Test_A = &spec_GC_Test_A;
+
+                            if (PyType_Ready(&spec_GC_Test_C) < 0)
+                                return NULL;
+                            pytype_GC_Test_C = &spec_GC_Test_C;
+
+                            if (PyType_Ready(&spec_GC_Test_B) < 0)
+                                return NULL;
+                            pytype_GC_Test_B = &spec_GC_Test_B;
+
+                            __GC_Test_Global__ = (struct struct_GC_Test_G *)PyObject_CallNoArgs(((PyObject *)pytype_GC_Test_G));
+                            ''',
+                        )
+        
+        GCTestModuleGlobal.GC_Test_Global()
+        ####################################### GC #######################################
+        self._trigger_gc()
+        ##################################################################################
+        GCTestModuleGlobal.GC_Test_Global()
+        ####################################### GC #######################################
+        self._trigger_gc()
+        ##################################################################################
+        GCTestModuleGlobal.GC_Test_Global()
+        ####################################### GC #######################################
+        self._trigger_gc()
+        ##################################################################################
+        GCTestModuleGlobal.GC_Test_Global()
+        ####################################### GC #######################################
+        self._trigger_gc()
+        ##################################################################################
