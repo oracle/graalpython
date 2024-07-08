@@ -404,14 +404,27 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         return resourcePathToPlatformPath(VENV_PREFIX);
     }
 
-    private String resourcePathToPlatformPath(String inputPath) {
-        assert inputPath.length() > VFS_ROOT.length() && inputPath.startsWith(VFS_ROOT) : "inputPath expected to start with '" + VFS_ROOT + "' but was '" + inputPath + "'";
-        var path = inputPath.substring(VFS_ROOT.length() + 1);
+    /**
+     * Converts the given path starting with the internal resource root to the path as seen by
+     * Python IO. For example if no other mount point was set then the path
+     * "/org.graalvm.python.vfs/src/hello.py" will be converted to the default mount point
+     * "/graalpy_vfs/src/hello.py" .
+     *
+     * @deprecated use {@link #getMountPoint()} instead
+     */
+    @Deprecated
+    public String resourcePathToPlatformPath(String resourcePath) {
+        if (!(resourcePath.length() > VFS_ROOT.length() && resourcePath.startsWith(VFS_ROOT))) {
+            String msg = "Resource path is expected to start with '" + VFS_ROOT + "' but was '" + resourcePath + "'.\n" +
+                            "Please also ensure that your virtual file system resources root directory is '" + VFS_ROOT + "'";
+            throw new IllegalArgumentException(msg);
+        }
+        var path = resourcePath.substring(VFS_ROOT.length() + 1);
         if (!PLATFORM_SEPARATOR.equals(RESOURCE_SEPARATOR)) {
             path = path.replace(RESOURCE_SEPARATOR, PLATFORM_SEPARATOR);
         }
         String absolute = mountPoint.resolve(path).toString();
-        if (inputPath.endsWith(RESOURCE_SEPARATOR) && !absolute.endsWith(PLATFORM_SEPARATOR)) {
+        if (resourcePath.endsWith(RESOURCE_SEPARATOR) && !absolute.endsWith(PLATFORM_SEPARATOR)) {
             absolute += PLATFORM_SEPARATOR;
         }
         return absolute;
