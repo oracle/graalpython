@@ -712,7 +712,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Override
     public Throwable interceptInternalException(Throwable throwable, BytecodeNode bytecodeNode, int bci) {
         if (throwable instanceof StackOverflowError soe) {
-            PythonContext.get(this).reacquireGilAfterStackOverflow();
+            PythonContext.get(this).ensureGilAfterFailure();
             return ExceptionUtils.wrapJavaException(soe, this, factory.createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{}));
         }
         return throwable;
@@ -2302,13 +2302,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = LocalSetterRange.class)
     @ImportStatic({PGuards.class})
     public static final class UnpackToLocals {
-        @Specialization(guards = {"cannotBeOverridden(sequence, inliningTarget, getClassNode)", "!isPString(sequence)"}, limit = "1")
+        @Specialization(guards = "isBuiltinSequence(sequence)")
         @ExplodeLoop
         public static void doUnpackSequence(VirtualFrame localFrame, LocalSetterRange results, PSequence sequence,
                         @Bind("this") Node inliningTarget,
                         @Bind("$bytecode") BytecodeNode bytecode,
                         @Bind("$bci") int bci,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached InlinedBranchProfile errorProfile,
@@ -2380,12 +2379,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ImportStatic({PGuards.class})
     @SuppressWarnings("truffle-interpreted-performance")
     public static final class UnpackStarredToLocals {
-        @Specialization(guards = {"cannotBeOverridden(sequence, inliningTarget, getClassNode)", "!isPString(sequence)"}, limit = "1")
+        @Specialization(guards = "isBuiltinSequence(sequence)")
         public static void doUnpackSequence(VirtualFrame localFrame,
                         int starIndex,
                         LocalSetterRange results,
                         PSequence sequence,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Shared @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
@@ -3224,10 +3222,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     @ImportStatic({PGuards.class})
     public static final class UnpackStarred {
-        @Specialization(guards = {"cannotBeOverridden(sequence, inliningTarget, getClassNode)", "!isPString(sequence)"}, limit = "1")
+        @Specialization(guards = "isBuiltinSequence(sequence)")
         public static Object[] doUnpackSequence(VirtualFrame localFrame, PSequence sequence,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -3279,13 +3276,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = int.class)
     @ImportStatic({PGuards.class})
     public static final class UnpackSequence {
-        @Specialization(guards = {"cannotBeOverridden(sequence, inliningTarget, getClassNode)", "!isPString(sequence)"}, limit = "1")
+        @Specialization(guards = "isBuiltinSequence(sequence)")
         @ExplodeLoop
         public static Object[] doUnpackSequence(VirtualFrame localFrame,
                         int count,
                         PSequence sequence,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -3351,7 +3347,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = int.class)
     @ImportStatic({PGuards.class})
     public static final class UnpackEx {
-        @Specialization(guards = {"cannotBeOverridden(sequence, inliningTarget, getClassNode)", "!isPString(sequence)"}, limit = "1")
+        @Specialization(guards = "isBuiltinSequence(sequence)")
         public static Object[] doUnpackSequence(VirtualFrame localFrame,
                         int countBefore,
                         int countAfter,
@@ -3840,13 +3836,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 // }
 // TODO: add @Shared to GetItemNodes
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
+        @Specialization(guards = "isBuiltinList(sequence)")
         public static Object doObjectSequence(PList sequence, int index,
                         @Cached("createForList()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(sequence.getSequenceStorage(), index);
         }
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
+        @Specialization(guards = "isBuiltinTuple(sequence)")
         public static Object doObjectTuple(PTuple sequence, int index,
                         @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(sequence.getSequenceStorage(), index);
