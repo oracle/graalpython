@@ -158,6 +158,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_MMAP_INIT_BUFFERPROTOCOL("mmap_init_bufferprotocol", ArgDescriptor.Void, PyTypeObject),
     FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL("PyTruffleCData_InitBufferProtocol", ArgDescriptor.Void, PyTypeObject),
     FUN_TRUFFLE_CHECK_TYPE_READY("truffle_check_type_ready", ArgDescriptor.Void, PyTypeObject),
+    FUN_PYOBJECT_HASH_NOT_IMPLEMENTED("PyObject_HashNotImplemented", ArgDescriptor.Py_hash_t, PyObject),
 
     /* PyDateTime_CAPI */
 

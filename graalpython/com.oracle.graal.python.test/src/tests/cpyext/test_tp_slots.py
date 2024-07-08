@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import sys
-from . import CPyExtType, CPyExtHeapType, compile_module_from_string
+from . import CPyExtType, CPyExtHeapType, compile_module_from_string, assert_raises
 
 SlotsGetter = CPyExtType("SlotsGetter",
                          """
@@ -438,3 +438,78 @@ def test_mp_len_and_sq_item():
 
     verify(MyMpLenSqItem())
     verify(MyMpLenSqItemHeap())
+
+
+def test_tp_hash():
+    TypeWithHash = CPyExtType(
+        "TypeWithHash",
+        '''
+        static PyObject* richcompare(PyObject* self, PyObject* other, int cmp) {
+            Py_RETURN_NOTIMPLEMENTED;
+        }
+        static Py_hash_t hash(PyObject* self) {
+            return 123;
+        }
+        ''',
+        tp_richcompare='richcompare',
+        tp_hash='hash',
+    )
+    assert TypeWithHash.__hash__
+    assert hash(TypeWithHash()) == 123
+
+    class InheritsHash(TypeWithHash):
+        pass
+
+    assert InheritsHash.__hash__
+    assert hash(InheritsHash()) == 123
+
+    TypeWithoutHash = CPyExtType(
+        "TypeWithoutHash",
+        '''
+        static PyObject* richcompare(PyObject* self, PyObject* other, int cmp) {
+            Py_RETURN_NOTIMPLEMENTED;
+        }
+        static PyObject* has_hash_not_implemented(PyObject* unused, PyObject* obj) {
+            return PyBool_FromLong(Py_TYPE(obj)->tp_hash == PyObject_HashNotImplemented);
+        }
+        ''',
+        tp_richcompare='richcompare',
+        tp_methods='{"has_hash_not_implemented", (PyCFunction)has_hash_not_implemented, METH_STATIC | METH_O, ""}',
+    )
+
+    def assert_has_no_hash(obj):
+        assert_raises(TypeError, hash, obj)
+        assert type(obj).__hash__ is None
+        assert TypeWithoutHash.has_hash_not_implemented(obj)
+
+    assert_has_no_hash(TypeWithoutHash())
+
+    class OverridesEq1:
+        def __eq__(self, other):
+            return self is other
+
+    assert_has_no_hash(OverridesEq1())
+
+    class OverridesEq2(TypeWithHash):
+        def __eq__(self, other):
+            return self is other
+
+    assert_has_no_hash(OverridesEq2())
+
+    class DisablesHash1:
+        __hash__ = None
+
+    assert_has_no_hash(DisablesHash1())
+
+    class DisablesHash2(TypeWithHash):
+        __hash__ = None
+
+    assert_has_no_hash(DisablesHash2())
+
+    # TODO GR-55196
+    # TypeWithoutHashExplicit = CPyExtType(
+    #     "TypeWithoutHashExplicit",
+    #     tp_hash='PyObject_HashNotImplemented',
+    # )
+    #
+    # assert_has_no_hash(TypeWithoutHashExplicit())
