@@ -195,6 +195,10 @@ static inline void _PyObject_GC_UNTRACK(
 // Macros to accept any type for the parameter, and to automatically pass
 // the filename and the filename (if NDEBUG is not defined) where the macro
 // is called.
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+#  define _PyObject_GC_TRACK(op)
+#  define _PyObject_GC_UNTRACK(op)
+#else
 #ifdef NDEBUG
 #  define _PyObject_GC_TRACK(op) \
         _PyObject_GC_TRACK(_PyObject_CAST(op))
@@ -205,6 +209,7 @@ static inline void _PyObject_GC_UNTRACK(
         _PyObject_GC_TRACK(__FILE__, __LINE__, _PyObject_CAST(op))
 #  define _PyObject_GC_UNTRACK(op) \
         _PyObject_GC_UNTRACK(__FILE__, __LINE__, _PyObject_CAST(op))
+#endif
 #endif
 
 #ifdef Py_REF_DEBUG

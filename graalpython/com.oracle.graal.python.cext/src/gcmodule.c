@@ -2446,6 +2446,8 @@ PyInit_gc(void)
 }
 #endif // GraalPy change
 
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+
 /* C API for controlling the state of the garbage collector */
 int
 PyGC_Enable(void)
@@ -2521,6 +2523,37 @@ _PyGC_CollectNoFail(PyThreadState *tstate)
     gcstate->collecting = 0;
     return n;
 }
+#else
+int
+PyGC_Enable(void)
+{
+    return 0;
+}
+
+int
+PyGC_Disable(void)
+{
+    return 0;
+}
+
+int
+PyGC_IsEnabled(void)
+{
+    return 0;
+}
+
+Py_ssize_t
+PyGC_Collect(void)
+{
+    return 0;
+}
+
+PyAPI_FUNC(Py_ssize_t)
+_PyGC_CollectNoFail(PyThreadState *tstate)
+{
+    return 0;
+}
+#endif
 
 #if 0 // GraalPy change
 void
@@ -2601,6 +2634,7 @@ _PyGC_Fini(PyInterpreterState *interp)
 }
 #endif // GraalPy change
 
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
 /* for debugging */
 void
 _PyGC_Dump(PyGC_Head *g)
@@ -2694,6 +2728,28 @@ _PyObject_GC_Link(PyObject *op)
     }
 }
 
+#else
+
+void
+_PyGC_Dump(PyGC_Head *g) {}
+
+void
+PyObject_GC_Track(void *op_raw) {}
+
+void
+PyObject_GC_UnTrack(void *op_raw) {}
+
+int
+PyObject_IS_GC(PyObject *obj)
+{
+    return 0;
+}
+
+void
+_PyObject_GC_Link(PyObject *op) {}
+
+#endif
+
 static PyObject *
 gc_alloc(size_t basicsize, size_t presize)
 {
@@ -2746,6 +2802,8 @@ _PyObject_GC_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
     _PyObject_InitVar(op, tp, nitems);
     return op;
 }
+
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
 
 PyVarObject *
 _PyObject_GC_Resize(PyVarObject *op, Py_ssize_t nitems)
@@ -2831,3 +2889,42 @@ _GraalPyObject_GC_NotifyOwnershipTransfer(PyObject *op)
         CALL_TRAVERSE(traverse, op, visit_strong_reachable, NULL);
     }
 }
+#else
+
+
+PyVarObject *
+_PyObject_GC_Resize(PyVarObject *op, Py_ssize_t nitems)
+{
+    return NULL;
+}
+
+void
+PyObject_GC_Del(void *op) {}
+
+int
+PyObject_GC_IsTracked(PyObject* obj)
+{
+    return 0;
+}
+
+int
+PyObject_GC_IsFinalized(PyObject *obj)
+{
+    return 1;
+}
+
+
+void
+GraalPyObject_GC_Del(void *op) {}
+
+/* Exposes 'gc_collect_impl' such that we can call it from Java. */
+PyAPI_FUNC(Py_ssize_t)
+GraalPyGC_Collect(int generation)
+{
+    return 0;
+}
+
+PyAPI_FUNC(void)
+_GraalPyObject_GC_NotifyOwnershipTransfer(PyObject *op) {}
+
+#endif
