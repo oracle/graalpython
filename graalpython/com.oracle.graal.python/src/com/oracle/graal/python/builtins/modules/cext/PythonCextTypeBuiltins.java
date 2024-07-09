@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PyObjectSetAttrNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
@@ -79,6 +80,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -88,15 +91,18 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetDefault;
+import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -122,6 +128,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -135,13 +142,50 @@ public final class PythonCextTypeBuiltins {
         Object doGeneric(Object type, Object name,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttributeInMRONode) {
+                        @Cached TypeNodes.GetMroStorageNode getMroStorageNode,
+                        @Cached PythonCextBuiltins.PromoteBorrowedValue promoteBorrowedValue,
+                        @Cached CStructAccess.ReadObjectNode getNativeDict,
+                        @Cached GetDictIfExistsNode getDictIfExistsNode,
+                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
+                        @Cached PyDictGetItem getItem,
+                        @Cached PyDictSetItem setItem) {
             TruffleString key = castToTruffleStringNode.castKnownString(inliningTarget, name);
-            Object result = lookupAttributeInMRONode.execute(type, key);
-            if (result == PNone.NO_VALUE) {
-                return getNativeNull();
+            MroSequenceStorage mro = getMroStorageNode.execute(inliningTarget, type);
+            for (int i = 0; i < mro.length(); i++) {
+                PythonAbstractClass cls = mro.getPythonClassItemNormalized(i);
+                PDict dict;
+                if (cls instanceof PythonAbstractNativeObject nativeCls) {
+                    Object dictObj = getNativeDict.readFromObj(nativeCls, CFields.PyTypeObject__tp_dict);
+                    if (dictObj instanceof PDict d) {
+                        dict = d;
+                    } else {
+                        continue;
+                    }
+                } else if (cls instanceof PythonManagedClass managedCls) {
+                    dict = getDictIfExistsNode.execute(managedCls);
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                Object value;
+                if (dict == null) {
+                    value = dylib.getOrDefault((DynamicObject) cls, key, null);
+                } else {
+                    value = getItem.execute(null, inliningTarget, dict, key);
+                }
+                if (value != null && value != PNone.NO_VALUE) {
+                    Object promoted = promoteBorrowedValue.execute(inliningTarget, value);
+                    if (promoted != null) {
+                        if (dict == null) {
+                            dylib.put((DynamicObject) cls, key, promoted);
+                        } else {
+                            setItem.execute(null, inliningTarget, dict, key, promoted);
+                        }
+                        return promoted;
+                    }
+                    return value;
+                }
             }
-            return result;
+            return getNativeNull();
         }
     }
 
