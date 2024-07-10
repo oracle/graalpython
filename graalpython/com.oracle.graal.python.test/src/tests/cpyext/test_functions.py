@@ -40,7 +40,7 @@
 import array
 import sys
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, IS_MANAGED_LAUNCHER
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, IS_MANAGED_LAUNCHER, CPyExtHeapType
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -72,6 +72,24 @@ def identCallResult(arg):
         return ident(*arg)
     else:
         return ident(arg)
+
+
+class TypeWithAttr:
+    attr = "str"
+
+
+class SubtypeWithAttr(TypeWithAttr):
+    pass
+
+
+class TypeWithAttrInDict:
+    attr = "str"
+
+
+TypeWithAttrInDict.__dict__
+
+NativeTypeWithAttr = CPyExtHeapType("NativeTypeWithAttr")
+NativeTypeWithAttr.attr = "str"
 
 
 class TestPyObject(CPyExtTestCase):
@@ -386,6 +404,22 @@ class TestPyObject(CPyExtTestCase):
         lambda: TestPyObject.__PyObject_GetAttrString_ARGS,
         arguments=["PyObject* object", "const char* attr"],
         argspec="Os",
+    )
+
+    test__PyType_Lookup = CPyExtFunction(
+        lambda args: "str",
+        lambda: (
+            (TypeWithAttr, "attr"),
+            (TypeWithAttr, "attr"),
+            (SubtypeWithAttr, "attr"),
+            (SubtypeWithAttr, "attr"),
+            (TypeWithAttrInDict, "attr"),
+            (TypeWithAttrInDict, "attr"),
+            (NativeTypeWithAttr, "attr"),
+            (NativeTypeWithAttr, "attr"),
+        ),
+        arguments=["PyTypeObject* type", "PyObject* name"],
+        argspec="OO",
     )
 
     def setattrstring(args):
