@@ -1295,7 +1295,7 @@ public abstract class CExtNodes {
         @Specialization
         static Object resolveLongCached(Node inliningTarget, long pointer,
                         @Exclusive @Cached ResolveHandleNode resolveHandleNode,
-                        @Cached UpdateRefNode updateRefNode) {
+                        @Exclusive @Cached UpdateRefNode updateRefNode) {
             Object lookup = CApiTransitions.lookupNative(pointer);
             if (lookup != null) {
                 if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
@@ -1313,7 +1313,7 @@ public abstract class CExtNodes {
         static Object resolveGeneric(Node inliningTarget, Object pointerObject,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Exclusive @Cached ResolveHandleNode resolveHandleNode,
-                        @Cached UpdateRefNode updateRefNode) {
+                        @Exclusive @Cached UpdateRefNode updateRefNode) {
             if (lib.isPointer(pointerObject)) {
                 Object lookup;
                 long pointer;

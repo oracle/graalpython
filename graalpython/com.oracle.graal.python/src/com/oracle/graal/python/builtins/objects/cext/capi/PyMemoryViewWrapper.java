@@ -51,6 +51,7 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -98,9 +100,15 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
         CStructAccess.WriteIntNode writeI32Node = CStructAccess.WriteIntNode.getUncached();
         CExtNodes.AsCharPointerNode asCharPointerNode = CExtNodes.AsCharPointerNode.getUncached();
 
-        Object mem = CStructAccess.AllocateNode.allocUncached(PyMemoryViewObject);
-        writeI64Node.write(mem, PyObject__ob_refcnt, IMMORTAL_REFCNT); // TODO: immortal for now
-        writePointerNode.write(mem, PyObject__ob_type, PythonToNativeNewRefNode.executeUncached(GetClassNode.executeUncached(object)));
+        Object mem;
+        if (!PythonContext.get(null).isNativeAccessAllowed()) { // accommodate managed mode.
+            mem = CStructAccess.AllocateNode.allocUncached(PyMemoryViewObject.size()); /*- GC head alloc is not needed */
+            writeI64Node.write(mem, PyObject__ob_refcnt, IMMORTAL_REFCNT); // TODO: immortal for now
+            writePointerNode.write(mem, PyObject__ob_type, PythonToNativeNewRefNode.executeUncached(GetClassNode.executeUncached(object)));
+        } else {
+            long taggedPointer = CApiTransitions.FirstToNativeNode.executeUncached(object.getNativeWrapper(), true /*- TODO: immortal for now */);
+            mem = CApiTransitions.HandlePointerConverter.pointerToStub(taggedPointer);
+        }
         writeI32Node.write(mem, PyMemoryViewObject__flags, object.getFlags());
         writeI64Node.write(mem, PyMemoryViewObject__exports, object.getExports().get());
         // TODO: ignoring mbuf, hash and weakreflist for now

@@ -90,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeN
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -924,6 +925,7 @@ public abstract class CApiTransitions {
                         @Exclusive @Cached InlinedConditionProfile isVarObjectProfile,
                         @Exclusive @Cached InlinedConditionProfile isGcProfile,
                         @Exclusive @Cached InlinedConditionProfile isFloatObjectProfile,
+                        @Exclusive @Cached InlinedConditionProfile isMemViewObjectProfile,
                         @Cached GetClassNode getClassNode,
                         @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
                         @Exclusive @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
@@ -939,6 +941,8 @@ public abstract class CApiTransitions {
                 ctype = CStructs.GraalPyVarObject;
             } else if (isFloatObjectProfile.profile(inliningTarget, delegate instanceof Double || delegate instanceof PFloat)) {
                 ctype = CStructs.GraalPyFloatObject;
+            } else if (isMemViewObjectProfile.profile(inliningTarget, delegate instanceof PMemoryView)) {
+                ctype = CStructs.PyMemoryViewObject;
             } else {
                 ctype = CStructs.GraalPyObject;
             }
@@ -1438,7 +1442,7 @@ public abstract class CApiTransitions {
         static Object doWrapper(PythonNativeWrapper value,
                         @Bind("$node") Node inliningTarget,
                         @Exclusive @Cached InlinedExactClassProfile wrapperProfile,
-                        @Cached UpdateRefNode updateRefNode) {
+                        @Exclusive @Cached UpdateRefNode updateRefNode) {
             return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, false, value);
         }
 
@@ -1455,7 +1459,7 @@ public abstract class CApiTransitions {
                         @Cached InlinedConditionProfile isNativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile,
                         @Exclusive @Cached InlinedExactClassProfile wrapperProfile,
-                        @Cached UpdateRefNode updateRefNode) {
+                        @Exclusive @Cached UpdateRefNode updateRefNode) {
             assert !(value instanceof TruffleString);
             assert !(value instanceof PythonAbstractObject);
             assert !(value instanceof Number);
