@@ -1464,5 +1464,17 @@ suite = {
                 "tag": ["default", "public"],
             },
         },
+        "graalpy-gradle-plugin": {
+            "class": "MavenProject",
+            "subDir": "graalpython",
+            "noMavenJavadoc": True,
+            "dependencies": [
+                "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON_EMBEDDING_TOOLS",
+            ],
+            "maven": {
+                "tag": ["default", "public"],
+            },
+        },
     },
 }
