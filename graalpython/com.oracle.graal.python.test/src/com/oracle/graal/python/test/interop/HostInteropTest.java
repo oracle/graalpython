@@ -75,6 +75,21 @@ public class HostInteropTest extends PythonTests {
         context.close();
     }
 
+    public static int TEST_FIELD = 32;
+
+    @Test
+    public void testStaticMembers() {
+        int oldValue = TEST_FIELD;
+        Value t = context.eval("python", String.format("""
+                        import java
+                        jt = java.type("%s")
+                        oldvalue = jt.TEST_FIELD
+                        jt.TEST_FIELD = oldvalue + 1
+                        jt.TEST_FIELD
+                        """, HostInteropTest.class.getName()));
+        assertEquals(oldValue + 1, t.asInt());
+    }
+
     @Test
     public void testConstantInteropBehavior() {
         Value t = context.eval("python", """
