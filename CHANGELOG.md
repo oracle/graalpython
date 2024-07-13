@@ -10,8 +10,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Update to Python 3.11.7
 * We now provide intrinsified `_pickle` module also in the community version.
 * `polyglot.eval` now raises more meaningful exceptions. Unavaliable languages raise `ValueError`. Exceptions from the polyglot language are raised directly as interop objects (typed as `polyglot.ForeignException`). The shortcut for executing python files without specifying language has been removed, use regular `eval` for executing Python code.
-* Update to Python 3.11.7.
-* We now provide intrinsified `_pickle` and `_struct` modules also in the community version. This means more packages will no work without allowing native access.
+* In Jython emulation mode we now magically fall back to calling Java getters or setters when using Python attribute access for non-visible properties. This can help migrating away from Jython if you relied on this behavior. 
 
 ## Version 24.0.0
 * We now provide a collection of recipes in the form of GitHub Actions to build popular native extensions on GraalPy. These provide a reproducible way for the community to build native extensions for GraalPy with the correct dependencies. See scripts/wheelbuilder/README.md for details.
