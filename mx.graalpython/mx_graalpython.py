@@ -47,7 +47,6 @@ if sys.version_info[0] < 3:
     raise RuntimeError("The build scripts are no longer compatible with Python 2")
 
 import tempfile
-import urllib.request as urllib_request
 from argparse import ArgumentParser
 from dataclasses import dataclass
 import stat
@@ -1361,6 +1360,13 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
     )
 
 
+def get_cpython():
+    if python3_home := os.environ.get("PYTHON3_HOME"):
+        return os.path.join(python3_home, "python")
+    else:
+        return "python3"
+
+
 def graalpython_gate_runner(args, tasks):
     report = lambda: (not is_collecting_coverage()) and task
     nonZeroIsFatal = not is_collecting_coverage()
@@ -1467,13 +1473,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
-            exe = os.environ.get("PYTHON3_HOME", None)
-            if exe:
-                exe = os.path.join(exe, "python")
-            else:
-                exe = "python3"
             env = extend_os_env(PYTHONHASHSEED='0')
-            test_args = [exe, _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests"]
+            test_args = [get_cpython(), _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests"]
             mx.run(test_args, nonZeroIsFatal=True, env=env)
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
@@ -2099,134 +2100,18 @@ def python_run_mx_filetests(args):
 
 
 def _python_checkpatchfiles():
-    listfilename = tempfile.mktemp()
-    # additionally, we want to check if the packages we are patching all have a permissive license
-    with open(listfilename, "w") as listfile:
-        mx.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], out=listfile)
-    try:
-        # TODO our mirror doesn't handle the json API
-        # pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
-        pypi_base_url = "https://pypi.org"
-        with open(listfilename, "r") as listfile:
-            content = listfile.read()
-        patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/.*?([^/]*\.patch)")
-        checked = {
-            # meson-python puts the whole license text in the field. It's MIT
-            'meson-python.patch',
-            # scipy puts the whole license text in the field, skip it. It's new BSD
-            'scipy-1.9.3.patch',
-            'scipy-1.10.1.patch',
-            # pandas puts the whole license text in the field. Its BSD-3-Clause
-            'pandas-1.5.2.patch',
-            'pandas-2.0.3.patch',
-            'pandas-2.2.2.patch',
-            # numpy started putting the whole license text in the field. Its BSD-3-Clause
-            'numpy-1.23.2.patch',
-            'numpy-1.23.5.patch',
-            'numpy-1.24.3.patch',
-            'numpy-1.26.4.patch',
-            'numpy-2.0.0.patch',
-            # libcst is MIT
-            'libcst-1.0.1.patch',
-            # Empty license field, skip it. It's MIT
-            'setuptools-60.patch',
-            'setuptools-60.9.patch',
-            'setuptools-63.patch',
-            'setuptools-65.patch',
-            # Empty license field. It's MIT
-            'urllib3-2.patch',
-            # Empty license field. It's MIT
-            'wheel-0.43.patch',
-            'wheel-0.41.2.patch',
-            'wheel-0.40.patch',
-            'wheel-0.38.patch',
-            'wheel-0.37.patch',
-            'wheel-0.35.patch',
-            'wheel-pre-0.35.patch',
-            # Empty license field. It's ASL 2.0 or BSD 2-Clause
-            'packaging.patch',
-            # pymongo puts the whole license in the field. It's ASL 2.0
-            'pymongo.patch',
-            # Empty license field. It's ASL 2.0
-            'tokenizers-0.13.3.patch',
-            'tokenizers-0.15.0.patch',
-            # Empty license field. It's Apache 2
-            'safetensors-0.3.3.patch',
-            'tensorflow-io-0.34.0.patch',
-            'tensorflow-io-gcs-filesystem-0.34.0.patch',
-            # Puts whole license into the field. It's BSD 3-Clause
-            'pythran-0.12.0.patch',
-            'pythran-0.13.patch',
-            'pyzmq.patch',
-            'jupyter_server.patch',
-            # Empty license field. It's BSD-3-Clause
-            'prompt_toolkit.patch',
-            # Whole license in the field. It's BSD-3-Clause
-            'pyzmq.patch',
-            # Whole license in the field. It's PSF
-            'matplotlib-3.5.3.patch',
-            'matplotlib-3.6.3.patch',
-            'matplotlib-3.7.0.patch',
-            # Empty license field. It's MIT
-            'autopep8.patch',
-            # Whole license in the field. It's MIT
-            'tiktoken-0.7.0.patch',
-            # License field is null. It's PSF
-            'typing_extensions.patch',
-        }
-        allowed_licenses = [
-            "MIT",
-            "BSD",
-            "BSD-3-Clause",
-            "3-Clause BSD License",
-            "Apache License, Version 2.0",
-            "http://www.apache.org/licenses/LICENSE-2.0",
-            "PSF",
-            "Apache",
-            "new BSD",
-            "Apache-2.0",
-            "MPL-2.0",
-            "LGPL",
-        ]
-
-        def as_license_regex(name):
-            subregex = re.escape(name).replace(r'\-', '[- ]')
-            return f'(?:{subregex}(?: license)?)'
-
-        allowed_licenses_regex = re.compile('|'.join(map(as_license_regex, allowed_licenses)), re.IGNORECASE)
-
-        for line in content.split("\n"):
-            if not line or os.stat(line).st_size == 0:
-                # empty files are just markers and do not need to be license checked
-                continue
-            match = patchfile_pattern.search(line)
-            if match:
-                package_name = match.group(1)
-                patch_name = match.group(2)
-                if patch_name in checked:
-                    continue
-                checked.add(patch_name)
-                package_url = "/".join([pypi_base_url, "pypi", package_name, "json"])
-                mx.log("Checking license of patchfile for " + package_url)
-                response = urllib_request.urlopen(package_url)
-                try:
-                    data = json.loads(response.read())
-                    license_field = data["info"]["license"]
-                    license_field_no_parens = re.sub(r'[()]', '', license_field)
-                    license_tokens = re.split(r' AND | OR ', license_field_no_parens)
-                    for license_token in license_tokens:
-                        if not allowed_licenses_regex.match(license_token):
-                            mx.abort(
-                                f"The license for the original project of patch file {patch_name!r} is {license_field!r}. "
-                                f"We cannot include a patch for it. Allowed licenses are: {allowed_licenses}"
-                            )
-                except Exception as e: # pylint: disable=broad-except;
-                    mx.abort("Error getting %r.\n%r" % (package_url, e))
-                finally:
-                    if response:
-                        response.close()
-    finally:
-        os.unlink(listfilename)
+    env = os.environ.copy()
+    mx_dir = Path(__file__).parent
+    root_dir = mx_dir.parent
+    [pip_wheel] = (root_dir / 'graalpython' / 'lib-python' / '3' / 'ensurepip' / '_bundled').glob('pip-*.whl')
+    env['PYTHONPATH'] = str(pip_wheel)
+    # We use the CPython that is used for running our unittests, not the one mx is running with.
+    # This is done to make sure it can import the pip wheel.
+    mx.run(
+        [get_cpython(), str(mx_dir / 'verify_patches.py'), str(root_dir / 'graalpython' / 'lib-graalpython' / 'patches')],
+        env=env,
+        nonZeroIsFatal=True,
+    )
 
 
 # ----------------------------------------------------------------------------------------------------------------------

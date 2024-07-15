@@ -1,2 +1,3 @@
 [[rules]]
 patch = 'category-encoders.patch'
+license = 'BSD-3-Clause'
