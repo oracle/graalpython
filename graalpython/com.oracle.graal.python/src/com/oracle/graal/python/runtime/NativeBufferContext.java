@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.runtime.native_memory.NativeBuffer;
+import com.oracle.graal.python.runtime.native_memory.NativePrimitiveReference;
 import com.oracle.graal.python.runtime.sequence.storage.NativeIntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -52,7 +53,6 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
 import sun.misc.Unsafe;
 
-import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -150,20 +150,6 @@ public class NativeBufferContext {
                 }
             }
             LOGGER.fine("Native buffer reference cleaner thread is exiting.");
-        }
-    }
-
-    static final class NativePrimitiveReference extends PhantomReference<NativePrimitiveSequenceStorage> {
-
-        private final NativeBuffer buffer;
-
-        public NativePrimitiveReference(NativePrimitiveSequenceStorage referent, ReferenceQueue<NativePrimitiveSequenceStorage> q) {
-            super(referent, q);
-            this.buffer = referent.getValueBuffer();
-        }
-
-        public void release() {
-            buffer.release();
         }
     }
 }

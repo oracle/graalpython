@@ -419,6 +419,12 @@ def punittest(ars, report=False):
     run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
     # test leaks with shared engine when some C module code is involved
     run_leak_launcher(["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
+    run_leak_launcher(["--shared-engine", "--code", '[10, 20]', "--python.UseNativePrimitiveStorageStrategy=true",
+                       "--forbidden-class", "com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage",
+                       "--forbidden-class", "com.oracle.graal.python.runtime.native_memory.NativePrimitiveReference"])
+    run_leak_launcher(["--code", '[10, 20]', "--python.UseNativePrimitiveStorageStrategy=true",
+                       "--forbidden-class", "com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage",
+                       "--forbidden-class", "com.oracle.graal.python.runtime.native_memory.NativePrimitiveReference"])
 
 
 PYTHON_ARCHIVES = ["GRAALPYTHON_GRAALVM_SUPPORT"]
