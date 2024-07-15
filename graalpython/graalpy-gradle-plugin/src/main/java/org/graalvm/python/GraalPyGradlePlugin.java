@@ -55,11 +55,12 @@ import org.gradle.language.jvm.tasks.ProcessResources;
 import java.util.Collections;
 import java.util.List;
 
+import static org.graalvm.python.embedding.tools.vfs.VFSUtils.GRAALPY_GROUP_ID;
+
 
 public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     private static final String PYTHON_LAUNCHER_ARTIFACT_ID = "python-launcher";
     private static final String PYTHON_EMBEDDING_ARTIFACT_ID = "python-embedding";
-    public static final String GRAALPY_GROUP_ID = "org.graalvm.python";
 
     private static final String POLYGLOT_GROUP_ID = "org.graalvm.polyglot";
     private static final String PYTHON_COMMUNITY_ARTIFACT_ID = "python-community";

@@ -69,6 +69,7 @@ import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_HOME;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
+import static org.graalvm.python.embedding.tools.vfs.VFSUtils.GRAALPY_GROUP_ID;
 
 @Mojo(name = "process-graalpy-resources", defaultPhase = LifecyclePhase.PROCESS_RESOURCES,
                 requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
@@ -78,7 +79,6 @@ public class ManageResourcesMojo extends AbstractMojo {
     private static final String PYTHON_LANGUAGE_ARTIFACT_ID = "python-language";
     private static final String PYTHON_RESOURCES = "python-resources";
     private static final String PYTHON_LAUNCHER_ARTIFACT_ID = "python-launcher";
-    private static final String GRAALPY_GROUP_ID = "org.graalvm.python";
 
     private static final String POLYGLOT_GROUP_ID = "org.graalvm.polyglot";
     private static final String PYTHON_COMMUNITY_ARTIFACT_ID = "python-community";
@@ -93,18 +93,6 @@ public class ManageResourcesMojo extends AbstractMojo {
     private static final String INCLUDE_PREFIX = "include:";
 
     private static final String EXCLUDE_PREFIX = "exclude:";
-
-    private static final String NATIVE_IMAGE_RESOURCES_CONFIG = """
-        {
-          "resources": {
-            "includes": [
-              {"pattern": "$vfs/.*"}
-            ]
-          }
-        }
-        """.replace("$vfs", VFS_ROOT);
-
-    private static final String NATIVE_IMAGE_ARGS = "Args = -H:-CopyLanguageResources";
 
     @Parameter(defaultValue = "${project}", required = true, readonly = true)
     MavenProject project;
@@ -130,10 +118,6 @@ public class ManageResourcesMojo extends AbstractMojo {
     private ProjectBuilder projectBuilder;
 
     private Set<String> launcherClassPath;
-
-    static Path getMetaInfDirectory(MavenProject project) {
-        return Path.of(project.getBuild().getOutputDirectory(), "META-INF", "native-image", GRAALPY_GROUP_ID, GRAALPY_MAVEN_PLUGIN_ARTIFACT_ID);
-    }
 
     public void execute() throws MojoExecutionException {
 
@@ -177,20 +161,10 @@ public class ManageResourcesMojo extends AbstractMojo {
     }
 
     private void manageNativeImageConfig() throws MojoExecutionException {
-        Path metaInf = getMetaInfDirectory(project);
-        Path resourceConfig = metaInf.resolve("resource-config.json");
         try {
-            Files.createDirectories(resourceConfig.getParent());
-            Files.writeString(resourceConfig, NATIVE_IMAGE_RESOURCES_CONFIG, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        } catch (IOException  e) {
-            throw new MojoExecutionException(String.format("failed to write %s", resourceConfig), e);
-        }
-        Path nativeImageProperties = metaInf.resolve("native-image.properties");
-        try {
-            Files.createDirectories(nativeImageProperties.getParent());
-            Files.writeString(nativeImageProperties, NATIVE_IMAGE_ARGS, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            VFSUtils.writeNativeImageConfig(project.getBuild().getOutputDirectory(), GRAALPY_MAVEN_PLUGIN_ARTIFACT_ID);
         } catch (IOException e) {
-            throw new MojoExecutionException(String.format("failed to write %s", nativeImageProperties), e);
+            throw new MojoExecutionException(e);
         }
     }
 
