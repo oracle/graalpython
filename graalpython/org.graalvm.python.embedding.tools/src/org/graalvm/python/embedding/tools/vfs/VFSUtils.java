@@ -51,6 +51,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,6 +69,38 @@ public final class VFSUtils {
     public static final String VFS_HOME = "home";
     public static final String VFS_VENV = "venv";
     public static final String VFS_FILESLIST = "fileslist.txt";
+
+    public static final String GRAALPY_GROUP_ID = "org.graalvm.python";
+
+    private static final String NATIVE_IMAGE_RESOURCES_CONFIG = """
+                    {
+                      "resources": {
+                        "includes": [
+                          {"pattern": "$vfs/.*"}
+                        ]
+                      }
+                    }
+                    """.replace("$vfs", VFS_ROOT);
+
+    private static final String NATIVE_IMAGE_ARGS = "Args = -H:-CopyLanguageResources";
+
+    public static void writeNativeImageConfig(String metaInfRoot, String pluginId) throws IOException {
+        Path metaInf = Path.of(metaInfRoot, "META-INF", "native-image", GRAALPY_GROUP_ID, pluginId);
+        Path resourceConfig = metaInf.resolve("resource-config.json");
+        try {
+            Files.createDirectories(resourceConfig.getParent());
+            Files.writeString(resourceConfig, NATIVE_IMAGE_RESOURCES_CONFIG, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException e) {
+            throw new IOException(String.format("failed to write %s", resourceConfig), e);
+        }
+        Path nativeImageProperties = metaInf.resolve("native-image.properties");
+        try {
+            Files.createDirectories(nativeImageProperties.getParent());
+            Files.writeString(nativeImageProperties, NATIVE_IMAGE_ARGS, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException e) {
+            throw new IOException(String.format("failed to write %s", nativeImageProperties), e);
+        }
+    }
 
     public static void generateVFSFilesList(Path vfs) throws IOException {
         Path filesList = vfs.resolve(VFS_FILESLIST);

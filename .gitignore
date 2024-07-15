@@ -87,8 +87,8 @@ graalpython/com.oracle.graal.python.test/src/tests/patched_package/build/
 graalpython/com.oracle.graal.python.test/src/tests/patched_package/src/patched_package.egg-info
 graalpython/com.oracle.graal.python.test.integration/target
 graalpython/graalpy-maven-plugin/target
+graalpython/graalpy-gradle-plugin/target
 graalpython/graalpy-archetype-polyglot-app/target
-graalpython/graalpy-micronaut-embedding/target
 graalpython/com.oracle.graal.python.test/src/tests/standalone/micronaut/hello/target/
 graalpython/com.oracle.graal.python.test/src/tests/cpyext/build/
 pom-mx.xml
