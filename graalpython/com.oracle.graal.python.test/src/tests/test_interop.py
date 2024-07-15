@@ -639,6 +639,16 @@ if sys.implementation.name == "graalpy":
             exec('from java.lang.Byte import *', g)
             assert type(g['MAX_VALUE']) is int
 
+    def test_jython_accessors():
+        if __graalpython__.jython_emulation_enabled:
+            from java.util.logging import LogRecord
+            from java.util.logging import Level
+            lr = LogRecord(Level.ALL, "message")
+
+            assert lr.message == "message"
+            lr.message = "new message"
+            assert lr.message == "new message"
+
     @skipUnless(test_polyglot_languages, "tests other language access")
     def test_doctest():
         import doctest

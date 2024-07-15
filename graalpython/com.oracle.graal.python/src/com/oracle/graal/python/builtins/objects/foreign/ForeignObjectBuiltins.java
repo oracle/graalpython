@@ -1020,6 +1020,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
+    @TruffleBoundary(allowInlining = true)
+    private static String asJavaPrefixedMethod(String prefix, String member) {
+        return prefix + member.substring(0, 1).toUpperCase() + member.substring(1);
+    }
+
     @GenerateInline
     @GenerateCached(false)
     @ImportStatic(PythonOptions.class)
@@ -1038,10 +1043,22 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 String member = castToString.execute(memberObj);
                 if (read.isMemberReadable(object, member)) {
                     return toPythonNode.executeConvert(read.readMember(object, member));
+                } else if (PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.EmulateJython)) {
+                    // no profile, above condition should fold to false when EmulateJython is off
+                    if (PythonContext.get(inliningTarget).getEnv().isHostObject(object)) {
+                        String getter = asJavaPrefixedMethod("get", member);
+                        if (read.isMemberInvocable(object, getter)) {
+                            try {
+                                return toPythonNode.executeConvert(read.invokeMember(object, getter));
+                            } catch (UnsupportedTypeException ignored) {
+                                // fall through to AttributeError
+                            }
+                        }
+                    }
                 }
             } catch (CannotCastException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, memberObj);
-            } catch (UnknownIdentifierException | UnsupportedMessageException ignore) {
+            } catch (UnknownIdentifierException | UnsupportedMessageException | ArityException ignore) {
             } finally {
                 gil.acquire();
             }
@@ -1061,15 +1078,38 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Shared @Cached GilNode gil,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
+            String member;
             try {
-                lib.writeMember(object, castToString.execute(key), value);
+                member = castToString.execute(key);
             } catch (CannotCastException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
-            } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
+            }
+            try {
+                try {
+                    lib.writeMember(object, member, value);
+                    return;
+                } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                    if (PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.EmulateJython)) {
+                        // no profile, above condition folds to false when EmulateJython is off
+                        try {
+                            if (PythonContext.get(inliningTarget).getEnv().isHostObject(object)) {
+                                String setter = asJavaPrefixedMethod("set", member);
+                                if (lib.isMemberInvocable(object, setter)) {
+                                    lib.invokeMember(object, setter, value);
+                                    return;
+                                }
+                            }
+                        } catch (ArityException | UnsupportedMessageException | UnknownIdentifierException ignore) {
+                            // fall through to AttributeError
+                        }
+                    }
+                }
+            } catch (UnsupportedTypeException e) {
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.INVALID_TYPE_FOR_S, key);
             } finally {
                 gil.acquire();
             }
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
         }
 
         @Specialization(guards = "isNoValue(value)")
