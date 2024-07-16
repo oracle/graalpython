@@ -48,7 +48,7 @@ import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 import java.io.IOException;
 
-public abstract class GenerateManifestTask extends DefaultTask {
+public abstract class NativeImageConfigTask extends DefaultTask {
 
     private static final String GRAALPY_GRADLE_PLUGIN_ARTIFACT_ID = "graalpy-gradle-plugin";
 
@@ -56,11 +56,11 @@ public abstract class GenerateManifestTask extends DefaultTask {
     public abstract DirectoryProperty getManifestOutputDir();
 
     @TaskAction
-    public void generateManifest() {
+    public void exec() {
         try {
             VFSUtils.writeNativeImageConfig(getManifestOutputDir().get().getAsFile().getAbsolutePath(), GRAALPY_GRADLE_PLUGIN_ARTIFACT_ID);
         } catch (IOException e) {
-            throw new GradleScriptException(e.getMessage(), e);
+            throw new GradleScriptException("failed to create native image configuration files", e);
         }
     }
 }
