@@ -57,7 +57,6 @@ SOFTWARE.
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- XXX -->
         <graalpy.version>24.2.0</graalpy.version>
         <gradle.version>6.1.1</gradle.version>
     </properties>
@@ -159,23 +158,9 @@ SOFTWARE.
     </dependencies>
 
     <repositories>
-<!--        <repository>-->
-<!--            <id>maven</id>-->
-<!--            <url>https://repo1.maven.org/maven2/</url>-->
-<!--        </repository>-->
         <repository>
             <id>gradle</id>
             <url>https://repo.gradle.org/gradle/libs-releases/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>gradle-local</id>
-            <url>https://repo.gradle.org/gradle/libs-releases-local/</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
