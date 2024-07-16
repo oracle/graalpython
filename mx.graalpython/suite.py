@@ -1465,6 +1465,19 @@ suite = {
             },
         },
 
+        "graalpy-gradle-plugin": {
+            "class": "MavenProject",
+            "subDir": "graalpython",
+            "noMavenJavadoc": True,
+            "dependencies": [
+                "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON_EMBEDDING_TOOLS",
+            ],
+            "maven": {
+                "tag": ["default", "public"],
+            },
+        },
+
         "graalpy-micronaut-embedding": {
             "class": "MavenProject",
             "subDir": "graalpython",
