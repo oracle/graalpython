@@ -907,7 +907,26 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 }
                 String name = parts[0].trim();
                 if (name.equals("home")) {
-                    contextBuilder.option("python.PythonHome", parts[1].trim());
+                    Path homeProperty = Paths.get(parts[1].trim());
+                    /*
+                     * (tfel): According to PEP 405, the home key is the directory of the Python
+                     * executable from which this virtual environment was created, that is, it
+                     * usually ends with "/bin" on a Unix system. On Windows, the base Python should
+                     * be in the top-level directory or under "\Scripts". To support running from
+                     * Maven artifacts where we don't have a working executable, we patched our
+                     * shipped venv module to set the home path without a "/bin" or "\\Scripts"
+                     * suffix, so we explicitly check for those two subfolder cases and otherwise
+                     * assume the home key is directly pointing to the Python home.
+                     */
+                    if (homeProperty.endsWith("bin") || homeProperty.endsWith("Scripts")) {
+                        homeProperty = homeProperty.getParent();
+                    }
+                    try {
+                        contextBuilder.option("python.PythonHome", homeProperty.toString());
+                    } catch (NullPointerException ex) {
+                        // NullPointerException covers the possible null result of getParent()
+                        warn("Could not set PYTHONHOME according to the pyvenv.cfg file.");
+                    }
                     String sysPrefix = null;
                     try {
                         sysPrefix = venvCfg.getParent().toAbsolutePath().toString();
