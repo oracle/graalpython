@@ -346,7 +346,7 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Whether C extension modules should be loaded as native code (as opposed to Sulong bitcode execution).") //
     public static final OptionKey<Boolean> NativeModules = new OptionKey<>(true);
 
-    @EngineOption @Option(category = OptionCategory.USER, usageSyntax = "true|false", help = "Emulate some Jython features that can cause performance degradation") //
+    @EngineOption @Option(category = OptionCategory.USER, usageSyntax = "true|false", help = "Emulate some Jython features that can cause performance degradation", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Enable tracing of native memory (ATTENTION: this will have significant impact on CExt execution performance).") //
