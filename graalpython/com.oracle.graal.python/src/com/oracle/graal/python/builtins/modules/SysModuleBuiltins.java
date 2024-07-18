@@ -1689,23 +1689,13 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(RuntimeError, LOST_S, "sys.stdout");
             }
 
-            boolean reprWriteOk = false;
-            boolean unicodeEncodeError = false;
+            Object reprVal = null;
             try {
-                Object reprVal = objectRepr(frame, inliningTarget, obj, reprAsObjectNode);
-                if (reprVal == null) {
-                    reprWriteOk = false;
-                } else {
-                    reprWriteOk = true;
-                    fileWriteString(frame, inliningTarget, stdOut, castToStringNode.execute(inliningTarget, reprVal), getAttr, callNode);
-                }
+                reprVal = objectRepr(frame, inliningTarget, obj, reprAsObjectNode);
             } catch (PException pe) {
                 pe.expect(inliningTarget, UnicodeEncodeError, unicodeEncodeErrorProfile);
                 // repr(o) is not encodable to sys.stdout.encoding with sys.stdout.errors error
                 // handler (which is probably 'strict')
-                unicodeEncodeError = true;
-            }
-            if (!reprWriteOk && unicodeEncodeError) {
                 // inlined sysDisplayHookUnencodable
                 final TruffleString stdoutEncoding = objectLookupAttrAsString(frame, inliningTarget, stdOut, T_ENCODING, lookupAttr, castToStringNode);
                 final Object reprStr = objectRepr(frame, inliningTarget, obj, reprAsObjectNode);
@@ -1719,6 +1709,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                     final Object str = objectStr(frame, inliningTarget, escapedStr, strAsObjectNode);
                     fileWriteString(frame, inliningTarget, stdOut, castToStringNode.execute(inliningTarget, str), getAttr, callNode);
                 }
+            }
+            if (reprVal != null) {
+                fileWriteString(frame, inliningTarget, stdOut, castToStringNode.execute(inliningTarget, reprVal), getAttr, callNode);
             }
 
             fileWriteString(frame, inliningTarget, stdOut, T_NEWLINE, getAttr, callNode);
