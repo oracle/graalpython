@@ -48,7 +48,7 @@ import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 import java.io.IOException;
 
-public abstract class NativeImageConfigTask extends DefaultTask {
+public abstract class MetaInfTask extends DefaultTask {
 
     private static final String GRAALPY_GRADLE_PLUGIN_ARTIFACT_ID = "graalpy-gradle-plugin";
 

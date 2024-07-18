@@ -42,7 +42,7 @@ package org.graalvm.python;
 
 import org.graalvm.python.dsl.GraalPyExtension;
 import org.graalvm.python.tasks.VFSFilesListTask;
-import org.graalvm.python.tasks.NativeImageConfigTask;
+import org.graalvm.python.tasks.MetaInfTask;
 import org.graalvm.python.tasks.ResourcesTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
@@ -54,12 +54,11 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.tasks.Jar;
 import org.gradle.language.jvm.tasks.ProcessResources;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.GRAALPY_GROUP_ID;
-import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
-
 
 public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     private static final String PYTHON_LAUNCHER_ARTIFACT_ID = "python-launcher";
@@ -68,10 +67,10 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     private static final String PYTHON_COMMUNITY_ARTIFACT_ID = "python-community";
     private static final String PYTHON_ARTIFACT_ID = "python";
     private static final String GRAALPY_GRADLE_PLUGIN_TASK_GROUP = "graalPy";
-    private static final String DEFAULT_RESOURCES_DIRECTORY = "graalpy-resources";
-    private static final String GRAALPY_META_INF_DIRECTORY = "graalpy-meta-inf";
+    private static final String DEFAULT_RESOURCES_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "resources";
+    private static final String GRAALPY_META_INF_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "META-INF";
     private static final String GRAALPY_RESOURCES_TASK = "graalPyResources";
-    private static final String GRAALPY_NATIVE_IMAGE_CONFIG_TASK = "graalPyNativeImageConfig";
+    private static final String GRAALPY_META_INF_TASK_TASK = "graalPyMetaInf";
     private static final String GRAALPY_VFS_FILESLIST_TASK = "graalPyVFSFilesList";
 
 
@@ -105,9 +104,9 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
             t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
         });
 
-        TaskProvider<NativeImageConfigTask> nativeImageConfigTask = project.getTasks().register(GRAALPY_NATIVE_IMAGE_CONFIG_TASK, NativeImageConfigTask.class);
-        project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME, t -> ((Jar) t).getMetaInf().from(nativeImageConfigTask));
-        nativeImageConfigTask.configure(t -> {
+        TaskProvider<MetaInfTask> metaInfTask = project.getTasks().register(GRAALPY_META_INF_TASK_TASK, MetaInfTask.class);
+        project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME, t -> ((Jar) t).getMetaInf().from(metaInfTask));
+        metaInfTask.configure(t -> {
             t.getManifestOutputDir().convention(project.getLayout().getBuildDirectory().dir(GRAALPY_META_INF_DIRECTORY));
             t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
         });
