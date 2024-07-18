@@ -58,6 +58,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.GRAALPY_GROUP_ID;
+import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
 
 
 public abstract class GraalPyGradlePlugin implements Plugin<Project> {
@@ -67,7 +68,8 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     private static final String PYTHON_COMMUNITY_ARTIFACT_ID = "python-community";
     private static final String PYTHON_ARTIFACT_ID = "python";
     private static final String GRAALPY_GRADLE_PLUGIN_TASK_GROUP = "graalPy";
-    private static final String DEFAULT_WRAPPER_DIRECTORY = "python-generated";
+    private static final String DEFAULT_RESOURCES_DIRECTORY = "graalpy-resources";
+    private static final String GRAALPY_META_INF_DIRECTORY = "graalpy-meta-inf";
     private static final String GRAALPY_RESOURCES_TASK = "graalPyResources";
     private static final String GRAALPY_NATIVE_IMAGE_CONFIG_TASK = "graalPyNativeImageConfig";
     private static final String GRAALPY_VFS_FILESLIST_TASK = "graalPyVFSFilesList";
@@ -86,27 +88,32 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
         extension.getPythonHome().getExcludes().convention(Collections.emptyList());
         extension.getPackages().convention(Collections.emptyList());
 
-        TaskProvider<ResourcesTask> installPackagesTask = project.getTasks().register(GRAALPY_RESOURCES_TASK, ResourcesTask.class);
-        installPackagesTask.configure(t -> {
+        TaskProvider<ResourcesTask> resourcesTask = project.getTasks().register(GRAALPY_RESOURCES_TASK, ResourcesTask.class);
+        resourcesTask.configure(t -> {
             t.getIncludes().set(extension.getPythonHome().getIncludes());
             t.getExcludes().set(extension.getPythonHome().getExcludes());
             t.getPackages().set(extension.getPackages());
-            t.getIncludeVfsRoot().set(extension.getIncludeVfsRootDir());
 
-            t.getOutput().set(extension.getPythonResourcesDirectory());
+            if(extension.getPythonResourcesDirectory().isPresent()) {
+                t.getOutput().set(extension.getPythonResourcesDirectory());
+                t.getIncludeVfsRoot().set(false);
+            } else {
+                t.getOutput().set(project.getLayout().getBuildDirectory().dir(DEFAULT_RESOURCES_DIRECTORY));
+                t.getIncludeVfsRoot().set(true);
+            }
 
             t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
         });
 
-        TaskProvider<NativeImageConfigTask> generateManifestTask = project.getTasks().register(GRAALPY_NATIVE_IMAGE_CONFIG_TASK, NativeImageConfigTask.class);
-        project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME, t -> ((Jar) t).getMetaInf().from(generateManifestTask));
-        generateManifestTask.configure(t -> {
-            t.getManifestOutputDir().convention(project.getLayout().getBuildDirectory().dir("GRAAL-META-INF"));
+        TaskProvider<NativeImageConfigTask> nativeImageConfigTask = project.getTasks().register(GRAALPY_NATIVE_IMAGE_CONFIG_TASK, NativeImageConfigTask.class);
+        project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME, t -> ((Jar) t).getMetaInf().from(nativeImageConfigTask));
+        nativeImageConfigTask.configure(t -> {
+            t.getManifestOutputDir().convention(project.getLayout().getBuildDirectory().dir(GRAALPY_META_INF_DIRECTORY));
             t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
         });
 
-        TaskProvider<VFSFilesListTask> generateVFSFilesListTask = project.getTasks().register(GRAALPY_VFS_FILESLIST_TASK, VFSFilesListTask.class);
-        generateVFSFilesListTask.configure(t -> {
+        TaskProvider<VFSFilesListTask> vfsFilesListTask = project.getTasks().register(GRAALPY_VFS_FILESLIST_TASK, VFSFilesListTask.class);
+        vfsFilesListTask.configure(t -> {
             t.getResourcesDir().convention((((ProcessResources) project.getTasks().getByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME)).getDestinationDir()));
             t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
         });
@@ -114,22 +121,18 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
 
         project.afterEvaluate(p -> {
             checkAndAddDependencies();
-
             if (!extension.getPythonResourcesDirectory().isPresent()) {
-                ((ProcessResources) project.getTasks().getByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME)).with(project.copySpec().from(installPackagesTask));
+                ((ProcessResources) project.getTasks().getByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME)).with(project.copySpec().from(resourcesTask));
+            } else {
+                project.getTasks().getByName(JavaPlugin.CLASSES_TASK_NAME, t -> t.dependsOn(GRAALPY_RESOURCES_TASK));
             }
-
-            // Provide the default value after the isPresent check, otherwise isPresent always returns true
-            extension.getPythonResourcesDirectory().convention(project.getLayout().getBuildDirectory().dir(DEFAULT_WRAPPER_DIRECTORY));
         });
-
     }
 
     private void checkAndAddDependencies() {
         project.getDependencies().add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, "%s:%s:%s".formatted(GRAALPY_GROUP_ID, PYTHON_LAUNCHER_ARTIFACT_ID, getGraalPyVersion(project)));
         project.getDependencies().add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, "%s:%s:%s".formatted(GRAALPY_GROUP_ID, PYTHON_EMBEDDING_ARTIFACT_ID, getGraalPyVersion(project)));
     }
-
 
     public static String getGraalPyVersion(Project project) {
         return getGraalPyDependency(project).getVersion();
