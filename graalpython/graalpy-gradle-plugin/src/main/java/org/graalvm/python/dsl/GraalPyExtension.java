@@ -47,12 +47,21 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Nested;
 
 public interface GraalPyExtension {
+
+    /**
+     * External directory supposed to be populated with python resources, namely graalpy stdlib and venv.
+     * It is either present or not.
+     */
     DirectoryProperty getPythonResourcesDirectory();
 
+    /**
+     * Determines third party python packages to be installed for graalpy usage.
+     */
     ListProperty<String> getPackages();
 
-    Property<Boolean> getIncludeVfsRootDir();
-
+    /**
+     * Determines what parts of graalpy stdlib are supposed to be available for graalpy.
+     */
     @Nested
     PythonHomeInfo getPythonHome();
 
