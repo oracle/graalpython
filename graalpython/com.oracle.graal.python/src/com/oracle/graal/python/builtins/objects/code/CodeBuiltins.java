@@ -338,7 +338,9 @@ public final class CodeBuiltins extends PythonBuiltins {
         private static List<PTuple> computeLinesForBytecodeDSLInterpreter(PBytecodeDSLRootNode root, PythonObjectFactory factory) {
             BytecodeNode bytecodeNode = root.getBytecodeNode();
             List<int[]> triples = new ArrayList<>();
-            traverseSourceInformationTree(bytecodeNode.getSourceInformationTree(), triples);
+            SourceInformationTree sourceInformationTree = bytecodeNode.getSourceInformationTree();
+            assert sourceInformationTree.getSourceSection() != null;
+            traverseSourceInformationTree(sourceInformationTree, triples);
             return convertTripleBcisToInstructionIndices(bytecodeNode, factory, triples);
         }
 
@@ -355,21 +357,21 @@ public final class CodeBuiltins extends PythonBuiltins {
          * assigned the line number of the node.
          */
         private static void traverseSourceInformationTree(SourceInformationTree tree, List<int[]> triples) {
-            int startIndex = tree.getStartIndex();
+            int startIndex = tree.getStartBytecodeIndex();
             int startLine = tree.getSourceSection().getStartLine();
             for (SourceInformationTree child : tree.getChildren()) {
-                if (startIndex < child.getStartIndex()) {
+                if (startIndex < child.getStartBytecodeIndex()) {
                     // range before child.start is uncovered
-                    triples.add(new int[]{startIndex, child.getStartIndex(), startLine});
+                    triples.add(new int[]{startIndex, child.getStartBytecodeIndex(), startLine});
                 }
                 // recursively handle [child.start, child.end]
                 traverseSourceInformationTree(child, triples);
-                startIndex = child.getEndIndex();
+                startIndex = child.getEndBytecodeIndex();
             }
 
-            if (startIndex < tree.getEndIndex()) {
+            if (startIndex < tree.getEndBytecodeIndex()) {
                 // range after last_child.end is uncovered
-                triples.add(new int[]{startIndex, tree.getEndIndex(), startLine});
+                triples.add(new int[]{startIndex, tree.getEndBytecodeIndex(), startLine});
             }
         }
 

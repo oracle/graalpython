@@ -236,7 +236,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
                 enableYield = true, //
                 enableSerialization = true, //
                 boxingEliminationTypes = {int.class, boolean.class}, //
-                storeBciInFrame = true //
+                storeBytecodeIndexInFrame = true //
 )
 @TypeSystemReference(PythonTypes.class)
 @OperationProxy(AddNode.class)
@@ -347,7 +347,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class EnterCalleeContext {
         @Specialization
         public static void doEnter(VirtualFrame frame,
-                        @Bind("$root") PBytecodeDSLRootNode root) {
+                        @Bind PBytecodeDSLRootNode root) {
             root.calleeContext.enter(frame);
 
             if (root.needsTraceAndProfileInstrumentation()) {
@@ -361,8 +361,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class EpilogForReturn {
         @Specialization
         public static Object doExit(VirtualFrame frame, Object returnValue,
-                        @Bind("$root") PBytecodeDSLRootNode root,
-                        @Bind("this") Node location) {
+                        @Bind PBytecodeDSLRootNode root,
+                        @Bind Node location) {
             if (root.needsTraceAndProfileInstrumentation()) {
                 root.getThreadState().popInstrumentationData(root);
             }
@@ -376,8 +376,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class EpilogForException {
         @Specialization
         public static void doExit(VirtualFrame frame, AbstractTruffleException ate,
-                        @Bind("$root") PBytecodeDSLRootNode root,
-                        @Bind("this") Node location) {
+                        @Bind PBytecodeDSLRootNode root,
+                        @Bind Node location) {
             if (ate instanceof PException pe) {
                 pe.notifyAddedTracebackFrame(!root.isInternal());
             }
@@ -658,10 +658,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class TraceOrProfileCall {
         @Specialization
         public static void perform(VirtualFrame frame,
-                        @Bind("this") Node location,
-                        @Bind("$root") PBytecodeDSLRootNode root,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
+                        @Bind Node location,
+                        @Bind PBytecodeDSLRootNode root,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci) {
             root.traceOrProfileCall(frame, location, bytecode, bci);
         }
     }
@@ -672,8 +672,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static void perform(VirtualFrame frame,
                         int line,
-                        @Bind("this") Node location,
-                        @Bind("$root") PBytecodeDSLRootNode root) {
+                        @Bind Node location,
+                        @Bind PBytecodeDSLRootNode root) {
             root.traceLine(frame, location, line);
         }
     }
@@ -684,8 +684,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static void perform(VirtualFrame frame,
                         int line,
-                        @Bind("this") Node location,
-                        @Bind("$root") PBytecodeDSLRootNode root) {
+                        @Bind Node location,
+                        @Bind PBytecodeDSLRootNode root) {
             root.traceLineAtLoopHeader(frame, location, line);
         }
     }
@@ -694,8 +694,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class TraceOrProfileReturn {
         @Specialization
         public static Object perform(VirtualFrame frame, Object value,
-                        @Bind("this") Node location,
-                        @Bind("$root") PBytecodeDSLRootNode root) {
+                        @Bind Node location,
+                        @Bind PBytecodeDSLRootNode root) {
             root.traceOrProfileReturn(frame, location, value);
             return value;
         }
@@ -925,7 +925,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class Yes {
         @Specialization
         public static boolean perform(VirtualFrame frame, Object o,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached YesNode yesNode) {
             return yesNode.executeBoolean(frame, inliningTarget, o);
         }
@@ -935,7 +935,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class Not {
         @Specialization
         public static boolean perform(VirtualFrame frame, Object o,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached NotNode notNode) {
             return notNode.executeBoolean(frame, inliningTarget, o);
         }
@@ -982,7 +982,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class DeleteName {
         @Specialization(guards = "hasLocals(frame)")
         public static void performLocals(VirtualFrame frame, TruffleString name,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectDelItem deleteNode) {
             deleteNode.execute(frame, inliningTarget, PArguments.getSpecialArgument(frame), name);
         }
@@ -1015,7 +1015,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class LoadVariableArguments {
         @Specialization
         public static Object perform(VirtualFrame frame,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createTuple(PArguments.getVariableArguments(frame));
         }
     }
@@ -1024,7 +1024,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class LoadKeywordArguments {
         @Specialization
         public static Object perform(VirtualFrame frame,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createDict(PArguments.getKeywordArguments(frame));
         }
     }
@@ -1035,7 +1035,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class LoadComplex {
         @Specialization
         public static Object perform(double real, double imag,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createComplex(real, imag);
         }
     }
@@ -1045,7 +1045,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class LoadBigInt {
         @Specialization
         public static Object perform(BigInteger bigInt,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createInt(bigInt);
         }
     }
@@ -1055,7 +1055,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class LoadBytes {
         @Specialization
         public static Object perform(byte[] bytes,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createBytes(bytes);
         }
     }
@@ -1064,7 +1064,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class GetIter {
         @Specialization
         public static Object perform(VirtualFrame frame, Object receiver,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIterNode) {
             return getIterNode.execute(frame, inliningTarget, receiver);
         }
@@ -1074,7 +1074,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class GetItem {
         @Specialization
         public static Object perform(VirtualFrame frame, Object key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetItem getItemNode) {
             return getItemNode.execute(frame, inliningTarget, key, value);
         }
@@ -1084,7 +1084,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class FormatStr {
         @Specialization
         public static TruffleString perform(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectStrAsTruffleStringNode asTruffleStringNode) {
             return asTruffleStringNode.execute(frame, inliningTarget, object);
         }
@@ -1094,7 +1094,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class FormatRepr {
         @Specialization
         public static TruffleString perform(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectReprAsTruffleStringNode asTruffleStringNode) {
             return asTruffleStringNode.execute(frame, inliningTarget, object);
         }
@@ -1104,7 +1104,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class FormatAscii {
         @Specialization
         public static TruffleString perform(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectAsciiNode asTruffleStringNode) {
             return asTruffleStringNode.execute(frame, inliningTarget, object);
         }
@@ -1135,7 +1135,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object[] kwDefaultsObject,
                         Object closure,
                         Object annotations,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
+                        @Bind PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
                         @Cached("createCode(rootNode, codeUnit, functionRootNode)") PCode cachedCode,
                         @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
@@ -1152,7 +1152,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object[] kwDefaultsObject,
                         Object closure,
                         Object annotations,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
+                        @Bind PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
                         @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             PCode code = createCode(rootNode, codeUnit, functionRootNode);
@@ -1169,7 +1169,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object[] kwDefaultsObject,
                         Object closure,
                         Object annotations,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
+                        @Bind PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
                         @Cached(value = "createGeneratorRootNode(rootNode, functionRootNode, codeUnit)", adopt = false) PBytecodeDSLGeneratorFunctionRootNode generatorRootNode,
                         @Cached("createCode(rootNode, codeUnit, generatorRootNode)") PCode cachedCode,
@@ -1187,7 +1187,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object[] kwDefaultsObject,
                         Object closure,
                         Object annotations,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
+                        @Bind PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
                         @Cached(value = "createGeneratorRootNode(rootNode, functionRootNode, codeUnit)", adopt = false) PBytecodeDSLGeneratorFunctionRootNode generatorRootNode,
                         @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
@@ -1536,28 +1536,28 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class ITrueDiv {
         @Specialization
         public static double doII(int left, int right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return TrueDivNode.doII(left, right, inliningTarget, raiseNode);
         }
 
         @Specialization
         public static double doLD(long left, double right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return TrueDivNode.doLD(left, right, inliningTarget, raiseNode);
         }
 
         @Specialization
         public static double doDL(double left, long right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return TrueDivNode.doDL(left, right, inliningTarget, raiseNode);
         }
 
         @Specialization
         public static double doDD(double left, double right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return TrueDivNode.doDD(left, right, inliningTarget, raiseNode);
         }
@@ -1579,35 +1579,35 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class IFloorDiv {
         @Specialization
         public static int doII(int left, int right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return FloorDivNode.doII(left, right, inliningTarget, raiseNode);
         }
 
         @Specialization(rewriteOn = OverflowException.class)
         public static long doLL(long left, long right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
             return FloorDivNode.doLL(left, right, inliningTarget, raiseNode);
         }
 
         @Specialization
         public static double doDL(double left, long right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return FloorDivNode.doDL(left, right, inliningTarget, raiseNode);
         }
 
         @Specialization
         public static double doDD(double left, double right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return FloorDivNode.doDD(left, right, inliningTarget, raiseNode);
         }
 
         @Specialization
         public static double doLD(long left, double right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return FloorDivNode.doLD(left, right, inliningTarget, raiseNode);
         }
@@ -1644,35 +1644,35 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class IMod {
         @Specialization
         public static int doII(int left, int right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return ModNode.doII(left, right, inliningTarget, raiseNode);
         }
 
         @Specialization(rewriteOn = OverflowException.class)
         public static long doLL(long left, long right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
             return ModNode.doLL(left, right, inliningTarget, raiseNode);
         }
 
         @Specialization
         public static double doDL(double left, long right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return ModNode.doDL(left, right, inliningTarget, raiseNode);
         }
 
         @Specialization
         public static double doDD(double left, double right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return ModNode.doDD(left, right, inliningTarget, raiseNode);
         }
 
         @Specialization
         public static double doLD(long left, double right,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             return ModNode.doLD(left, right, inliningTarget, raiseNode);
         }
@@ -1696,15 +1696,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Specialization
         public static boolean doIntegerSequence(VirtualFrame frame, LocalSetter output, PIntegerSequenceIterator iterator,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci) {
             return doInteger(frame, output, iterator, bytecode, bci);
         }
 
         @Specialization
         public static boolean doIntRange(VirtualFrame frame, LocalSetter output, PIntRangeIterator iterator,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci) {
             return doInteger(frame, output, iterator, bytecode, bci);
         }
 
@@ -1720,8 +1720,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Specialization
         public static boolean doObjectIterator(VirtualFrame frame, LocalSetter output, PObjectSequenceIterator iterator,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci) {
             if (!iterator.hasNext()) {
                 iterator.setExhausted();
                 output.setObject(bytecode, bci, frame, null);
@@ -1734,8 +1734,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Specialization
         public static boolean doLongIterator(VirtualFrame frame, LocalSetter output, PLongSequenceIterator iterator,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci) {
             if (!iterator.hasNext()) {
                 iterator.setExhausted();
                 return false;
@@ -1746,8 +1746,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Specialization
         public static boolean doDoubleIterator(VirtualFrame frame, LocalSetter output, PDoubleSequenceIterator iterator,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci) {
             if (!iterator.hasNext()) {
                 iterator.setExhausted();
                 return false;
@@ -1759,9 +1759,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         @InliningCutoff
         public static boolean doIterator(VirtualFrame frame, LocalSetter output, Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
                         @Cached GetNextNode next,
                         @Cached IsBuiltinObjectProfile errorProfile) {
             try {
@@ -1782,7 +1782,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static Object doIt(VirtualFrame frame,
                         TruffleString name, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetMethod getMethod) {
             return getMethod.execute(frame, inliningTarget, obj, name);
         }
@@ -1810,7 +1810,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         TruffleString key,
                         Object value,
                         Object object,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSetAttr setAttrNode) {
             setAttrNode.execute(frame, inliningTarget, object, key, value);
         }
@@ -1839,7 +1839,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class DeleteItem {
         @Specialization
         public static void doWithFrame(VirtualFrame frame, Object primary, Object index,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached("create(DelItem)") LookupSpecialMethodSlotNode lookupDelitem,
                         @Cached PRaiseNode raise,
@@ -1899,7 +1899,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeList {
         @Specialization
         public static PList perform(Object[] elements,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createList(elements);
         }
     }
@@ -1910,8 +1910,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization(guards = {"elements.length == length", "length <= EXPLODE_LOOP_THRESHOLD"}, limit = "1")
         @ExplodeLoop
         public static PSet performExploded(VirtualFrame frame, Object[] elements,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
-                        @Bind("this") Node node,
+                        @Bind PBytecodeDSLRootNode rootNode,
+                        @Bind Node node,
                         @Cached(value = "elements.length") int length,
                         @Shared @Cached SetNodes.AddNode addNode,
                         @Shared @Cached HashingCollectionNodes.SetItemNode setItemNode) {
@@ -1924,8 +1924,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Specialization
         public static PSet performRegular(VirtualFrame frame, Object[] elements,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
-                        @Bind("this") Node node,
+                        @Bind PBytecodeDSLRootNode rootNode,
+                        @Bind Node node,
                         @Shared @Cached SetNodes.AddNode addNode,
                         @Shared @Cached HashingCollectionNodes.SetItemNode setItemNode) {
             PSet set = rootNode.factory.createSet();
@@ -1940,7 +1940,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeEmptySet {
         @Specialization
         public static PSet perform(VirtualFrame frame,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createSet();
         }
     }
@@ -1953,8 +1953,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         int length,
                         @Variadic Object[] elements,
                         @Cached HashingStorageSetItem hashingStorageLibrary,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
-                        @Bind("this") Node inliningTarget) {
+                        @Bind PBytecodeDSLRootNode rootNode,
+                        @Bind Node inliningTarget) {
             HashingStorage setStorage;
             if (length <= EXPLODE_LOOP_THRESHOLD) {
                 setStorage = doExploded(frame, inliningTarget, elements, length, hashingStorageLibrary);
@@ -1989,7 +1989,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     public static final class MakeEmptyList {
         @Specialization
-        public static PList perform(@Bind("$root") PBytecodeDSLRootNode rootNode) {
+        public static PList perform(@Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createList();
         }
     }
@@ -1998,7 +1998,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeTuple {
         @Specialization
         public static Object perform(Object[] elements,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createTuple(elements);
         }
     }
@@ -2008,7 +2008,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeConstantIntList {
         @Specialization
         public static PList perform(int[] array,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             SequenceStorage storage = new IntSequenceStorage(PythonUtils.arrayCopyOf(array, array.length));
             return rootNode.factory.createList(storage);
         }
@@ -2019,7 +2019,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeConstantLongList {
         @Specialization
         public static PList perform(long[] array,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             SequenceStorage storage = new LongSequenceStorage(PythonUtils.arrayCopyOf(array, array.length));
             return rootNode.factory.createList(storage);
         }
@@ -2030,7 +2030,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeConstantBooleanList {
         @Specialization
         public static PList perform(boolean[] array,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             SequenceStorage storage = new BoolSequenceStorage(PythonUtils.arrayCopyOf(array, array.length));
             return rootNode.factory.createList(storage);
         }
@@ -2041,7 +2041,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeConstantDoubleList {
         @Specialization
         public static PList perform(double[] array,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             SequenceStorage storage = new DoubleSequenceStorage(PythonUtils.arrayCopyOf(array, array.length));
             return rootNode.factory.createList(storage);
         }
@@ -2052,7 +2052,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeConstantObjectList {
         @Specialization
         public static PList perform(Object[] array,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             SequenceStorage storage = new ObjectSequenceStorage(PythonUtils.arrayCopyOf(array, array.length));
             return rootNode.factory.createList(storage);
         }
@@ -2063,7 +2063,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeConstantIntTuple {
         @Specialization
         public static PTuple perform(int[] array,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             SequenceStorage storage = new IntSequenceStorage(array);
             return rootNode.factory.createTuple(storage);
         }
@@ -2074,7 +2074,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeConstantLongTuple {
         @Specialization
         public static PTuple perform(long[] array,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             SequenceStorage storage = new LongSequenceStorage(array);
             return rootNode.factory.createTuple(storage);
         }
@@ -2085,7 +2085,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeConstantBooleanTuple {
         @Specialization
         public static PTuple perform(boolean[] array,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             SequenceStorage storage = new BoolSequenceStorage(array);
             return rootNode.factory.createTuple(storage);
         }
@@ -2096,7 +2096,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeConstantDoubleTuple {
         @Specialization
         public static PTuple perform(double[] array,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             SequenceStorage storage = new DoubleSequenceStorage(array);
             return rootNode.factory.createTuple(storage);
         }
@@ -2107,7 +2107,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeConstantObjectTuple {
         @Specialization
         public static PTuple perform(Object[] array,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             SequenceStorage storage = new ObjectSequenceStorage(array);
             return rootNode.factory.createTuple(storage);
         }
@@ -2118,32 +2118,32 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Specialization
         public static Object doIII(int start, int end, int step,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createIntSlice(start, end, step);
         }
 
         @Specialization
         public static Object doNIN(PNone start, int end, PNone step,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createIntSlice(0, end, 1, true, true);
         }
 
         @Specialization
         public static Object doIIN(int start, int end, PNone step,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createIntSlice(start, end, 1, false, true);
         }
 
         @Specialization
         public static Object doNII(PNone start, int end, int step,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createIntSlice(0, end, step, true, false);
         }
 
         @Specialization
         @InliningCutoff
         public static Object doGeneric(Object start, Object end, Object step,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createObjectSlice(start, end, step);
         }
     }
@@ -2183,7 +2183,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MappingToKeywords {
         @Specialization
         public static PKeyword[] perform(Object sourceCollection,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached ExpandKeywordStarargsNode expandKeywordStarargsNode,
                         @Cached PRaiseNode raise) {
             return expandKeywordStarargsNode.execute(inliningTarget, sourceCollection);
@@ -2197,7 +2197,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static PDict perform(VirtualFrame frame,
                         int entries,
                         @Variadic Object[] keysAndValues,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
+                        @Bind PBytecodeDSLRootNode rootNode,
                         @Cached DictNodes.UpdateNode updateNode) {
             PDict dict = rootNode.factory.createDict();
             if (entries <= EXPLODE_LOOP_THRESHOLD) {
@@ -2238,7 +2238,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     public static final class MakeEmptyDict {
         @Specialization
-        public static PDict perform(@Bind("$root") PBytecodeDSLRootNode rootNode) {
+        public static PDict perform(@Bind PBytecodeDSLRootNode rootNode) {
             return rootNode.factory.createDict();
         }
     }
@@ -2247,7 +2247,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class SetDictItem {
         @Specialization
         public static void perform(VirtualFrame frame, PDict item, Object key, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached HashingStorageSetItem setItem) {
             item.setDictStorage(setItem.execute(frame, inliningTarget, item.getDictStorage(), key, value));
         }
@@ -2264,35 +2264,35 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class SetItem {
         @Specialization
         public static void performB(VirtualFrame frame, boolean value, Object primary, Object slice,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyObjectSetItem setItemNode) {
             setItemNode.execute(frame, inliningTarget, primary, slice, value);
         }
 
         @Specialization
         public static void performI(VirtualFrame frame, int value, Object primary, Object slice,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyObjectSetItem setItemNode) {
             setItemNode.execute(frame, inliningTarget, primary, slice, value);
         }
 
         @Specialization
         public static void performL(VirtualFrame frame, long value, Object primary, Object slice,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyObjectSetItem setItemNode) {
             setItemNode.execute(frame, inliningTarget, primary, slice, value);
         }
 
         @Specialization
         public static void performD(VirtualFrame frame, double value, Object primary, Object slice,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyObjectSetItem setItemNode) {
             setItemNode.execute(frame, inliningTarget, primary, slice, value);
         }
 
         @Specialization
         public static void performO(VirtualFrame frame, Object value, Object primary, Object slice,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PyObjectSetItem setItemNode) {
             setItemNode.execute(frame, inliningTarget, primary, slice, value);
         }
@@ -2305,9 +2305,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization(guards = "isBuiltinSequence(sequence)")
         @ExplodeLoop
         public static void doUnpackSequence(VirtualFrame localFrame, LocalSetterRange results, PSequence sequence,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached InlinedBranchProfile errorProfile,
@@ -2336,9 +2336,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @ExplodeLoop
         @InliningCutoff
         public static void doUnpackIterable(VirtualFrame virtualFrame, LocalSetterRange results, Object collection,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
@@ -2388,10 +2388,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Shared @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
                         @Cached InlinedBranchProfile errorProfile,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci,
-                        @Bind("this") Node inliningTarget,
+                        @Bind PBytecodeDSLRootNode rootNode,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             int resultsLength = results.getLength();
             int countBefore = starIndex;
@@ -2425,10 +2425,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Shared @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci,
-                        @Bind("this") Node inliningTarget,
+                        @Bind PBytecodeDSLRootNode rootNode,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             int resultsLength = results.getLength();
             int countBefore = starIndex;
@@ -2911,7 +2911,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class Raise {
         @Specialization
         public static void perform(VirtualFrame frame, Object typeOrExceptionObject, Object cause,
-                        @Bind("$root") PBytecodeDSLRootNode root,
+                        @Bind PBytecodeDSLRootNode root,
                         @Cached RaiseNode raiseNode) {
             raiseNode.execute(frame, typeOrExceptionObject, cause, !root.isInternal());
         }
@@ -2921,7 +2921,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class Reraise {
         @Specialization
         public static void doPException(PException ex,
-                        @Bind("$root") PBytecodeDSLRootNode root) {
+                        @Bind PBytecodeDSLRootNode root) {
             throw ex.getExceptionForReraise(!root.isInternal());
         }
 
@@ -2962,7 +2962,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization(guards = {"notPException(ex)"})
         @InliningCutoff
         public static void doAbstractTruffleException(VirtualFrame frame, AbstractTruffleException ex,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             PArguments.setException(frame, ExceptionUtils.wrapJavaException(ex, rootNode, rootNode.factory.createBaseException(SystemError, ErrorMessages.M, new Object[]{ex})));
         }
 
@@ -2983,7 +2983,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         @InliningCutoff
         public static void doPException(VirtualFrame frame, PException ex,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             ex.markAsCaught(frame, rootNode);
         }
 
@@ -2998,7 +2998,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         @InliningCutoff
         public static PException doPException(PException ex,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode) {
+                        @Bind PBytecodeDSLRootNode rootNode) {
             return ex.getExceptionForReraise(!rootNode.isInternal());
         }
 
@@ -3027,8 +3027,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class LoadCell {
         @Specialization
         public static Object doLoadCell(int index, PCell cell,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
-                        @Bind("this") Node inliningTarget,
+                        @Bind PBytecodeDSLRootNode rootNode,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode.Lazy raiseNode) {
             return checkUnboundCell(cell, index, rootNode, inliningTarget, raiseNode);
         }
@@ -3041,8 +3041,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static Object doLoadCell(VirtualFrame frame,
                         int index,
                         PCell cell,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
-                        @Bind("this") Node inliningTarget,
+                        @Bind PBytecodeDSLRootNode rootNode,
+                        @Bind Node inliningTarget,
                         @Cached ReadFromLocalsNode readLocalsNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             CodeUnit co = rootNode.getCodeUnit();
@@ -3080,8 +3080,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class ClearCell {
         @Specialization
         public static void doClearCell(int index, PCell cell,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
-                        @Bind("this") Node inliningTarget,
+                        @Bind PBytecodeDSLRootNode rootNode,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode.Lazy raiseNode) {
             checkUnboundCell(cell, index, rootNode, inliningTarget, raiseNode);
             cell.clearRef();
@@ -3093,8 +3093,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class ClearLocal {
         @Specialization
         public static void doClearLocal(VirtualFrame frame, LocalSetter localSetter,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci) {
             localSetter.setObject(bytecode, bci, frame, null);
         }
     }
@@ -3112,8 +3112,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class StoreRange {
         @Specialization
         public static void perform(VirtualFrame frame, LocalSetterRange locals, Object[] values,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci) {
             if (values.length <= EXPLODE_LOOP_THRESHOLD) {
                 doExploded(frame, locals, values, bytecode, bci);
             } else {
@@ -3204,7 +3204,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         PDict dict,
                         Object toMerge,
                         Object function,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
+                        @Bind PBytecodeDSLRootNode rootNode,
                         @Cached ConcatDictToStorageNode concatNode,
                         @Cached PRaiseNode raise) {
             try {
@@ -3224,7 +3224,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class UnpackStarred {
         @Specialization(guards = "isBuiltinSequence(sequence)")
         public static Object[] doUnpackSequence(VirtualFrame localFrame, PSequence sequence,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -3244,7 +3244,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
                         @Cached IsBuiltinObjectProfile stopIterationProfile1,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
 
             Object iterator;
@@ -3281,7 +3281,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static Object[] doUnpackSequence(VirtualFrame localFrame,
                         int count,
                         PSequence sequence,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Shared @Cached PRaiseNode raiseNode) {
@@ -3313,7 +3313,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached IsBuiltinObjectProfile notIterableProfile,
                         @Cached IsBuiltinObjectProfile stopIterationProfile1,
                         @Cached IsBuiltinObjectProfile stopIterationProfile2,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             Object iterator;
             try {
@@ -3352,7 +3352,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         int countBefore,
                         int countAfter,
                         PSequence sequence,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached GetPythonObjectClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
@@ -3379,7 +3379,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         int countBefore,
                         int countAfter,
                         Object collection,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
@@ -3516,9 +3516,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         LocalSetter exitSetter,
                         LocalSetter resultSetter,
                         Object contextManager,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
                         @Cached GetClassNode getClass,
                         @Cached(parameters = "Enter") LookupSpecialMethodSlotNode lookupEnter,
                         @Cached(parameters = "Exit") LookupSpecialMethodSlotNode lookupExit,
@@ -3551,8 +3551,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @InliningCutoff
         public static void doExceptional(VirtualFrame frame,
                         Object exception, Object exit, Object contextManager,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
+                        @Bind Node inliningTarget,
+                        @Bind PBytecodeDSLRootNode rootNode,
                         @Shared @Cached CallQuaternaryMethodNode callExit,
                         @Cached GetClassNode getClass,
                         @Cached ExceptionNodes.GetTracebackNode getTraceback,
@@ -3594,9 +3594,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         LocalSetter exitSetter,
                         LocalSetter resultSetter,
                         Object contextManager,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
                         @Cached GetClassNode getClass,
                         @Cached(parameters = "AEnter") LookupSpecialMethodSlotNode lookupEnter,
                         @Cached(parameters = "AExit") LookupSpecialMethodSlotNode lookupExit,
@@ -3630,8 +3630,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @InliningCutoff
         public static Object doExceptional(VirtualFrame frame,
                         Object exception, Object exit, Object contextManager,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
+                        @Bind Node inliningTarget,
+                        @Bind PBytecodeDSLRootNode rootNode,
                         @Shared @Cached CallQuaternaryMethodNode callExit,
                         @Cached GetClassNode getClass,
                         @Cached ExceptionNodes.GetTracebackNode getTraceback,
@@ -3663,8 +3663,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @InliningCutoff
         public static void doExceptional(VirtualFrame frame,
                         Object exception, Object result,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
+                        @Bind Node inliningTarget,
+                        @Bind PBytecodeDSLRootNode rootNode,
                         @Cached CallQuaternaryMethodNode callExit,
                         @Cached GetClassNode getClass,
                         @Cached ExceptionNodes.GetTracebackNode getTraceback,
@@ -3719,7 +3719,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class ListExtend {
         @Specialization
         public static void listExtend(VirtualFrame frame, PList list, Object obj,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
             ListExtendNode.extendSequence(frame, list, obj, inliningTarget, lenNode, extendNode);
@@ -3736,32 +3736,32 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class TeeLocal {
         @Specialization
         public static int doInt(VirtualFrame frame, LocalSetter local, int value,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci) {
             local.setInt(bytecode, bci, frame, value);
             return value;
         }
 
         @Specialization
         public static double doDouble(VirtualFrame frame, LocalSetter local, double value,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci) {
             local.setDouble(bytecode, bci, frame, value);
             return value;
         }
 
         @Specialization
         public static long doLong(VirtualFrame frame, LocalSetter local, long value,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci) {
             local.setLong(bytecode, bci, frame, value);
             return value;
         }
 
         @Specialization(replaces = {"doInt", "doDouble", "doLong"})
         public static Object doObject(VirtualFrame frame, LocalSetter local, Object value,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci) {
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci) {
             local.setObject(bytecode, bci, frame, value);
             return value;
         }
@@ -3779,7 +3779,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class GetLen {
         @Specialization
         public static int doObject(VirtualFrame frame, Object value,
-                        @Bind("this") Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode) {
             return sizeNode.execute(frame, inliningTarget, value);
         }
@@ -3862,8 +3862,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class PreYield {
         @Specialization
         public static Object doObject(VirtualFrame frame, Object value,
-                        @Bind("this") Node location,
-                        @Bind("$root") PBytecodeDSLRootNode root) {
+                        @Bind Node location,
+                        @Bind PBytecodeDSLRootNode root) {
             if (root.needsTraceAndProfileInstrumentation()) {
                 root.traceOrProfileReturn(frame, location, value);
                 root.getThreadState().popInstrumentationData(root);
@@ -3879,10 +3879,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class ResumeYield {
         @Specialization
         public static Object doObject(VirtualFrame frame, Object sendValue,
-                        @Bind("this") Node location,
-                        @Bind("$root") PBytecodeDSLRootNode root,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci,
+                        @Bind Node location,
+                        @Bind PBytecodeDSLRootNode root,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
                         @Cached GetSendValueNode getSendValue) {
             if (root.needsTraceAndProfileInstrumentation()) {
                 // We may not have reparsed the root with instrumentation yet.
@@ -3908,9 +3908,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         LocalSetter returnedValue,
                         PGenerator generator,
                         Object arg,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
                         @Cached CommonGeneratorBuiltins.SendNode sendNode,
                         @Shared @Cached IsBuiltinObjectProfile stopIterationProfile,
                         @Shared @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
@@ -3930,9 +3930,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         LocalSetter returnedValue,
                         Object iter,
                         @SuppressWarnings("unused") PNone arg,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
                         @SuppressWarnings("unused") @Cached PyIterCheckNode iterCheck,
                         @Cached GetNextNode getNextNode,
                         @Shared @Cached IsBuiltinObjectProfile stopIterationProfile,
@@ -3953,9 +3953,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         LocalSetter returnedValue,
                         Object obj,
                         Object arg,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
                         @Cached PyObjectCallMethodObjArgs callMethodNode,
                         @Shared @Cached IsBuiltinObjectProfile stopIterationProfile,
                         @Shared @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
@@ -3994,9 +3994,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         LocalSetter returnedValue,
                         PGenerator generator,
                         PException exception,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
                         @Cached CommonGeneratorBuiltins.ThrowNode throwNode,
                         @Cached CommonGeneratorBuiltins.CloseNode closeNode,
                         @Shared @Cached IsBuiltinObjectProfile profileExit,
@@ -4023,9 +4023,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         LocalSetter returnedValue,
                         Object obj,
                         Object exception,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("$bytecode") BytecodeNode bytecode,
-                        @Bind("$bci") int bci,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
                         @Cached PyObjectLookupAttr lookupThrow,
                         @Cached PyObjectLookupAttr lookupClose,
                         @Cached CallNode callThrow,
@@ -4075,8 +4075,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class CheckUnboundLocal {
         @Specialization
         public static Object doObject(int index, Object localValue,
-                        @Bind("$root") PBytecodeDSLRootNode rootNode,
-                        @Bind("this") Node inliningTarget,
+                        @Bind PBytecodeDSLRootNode rootNode,
+                        @Bind Node inliningTarget,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (localValue == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
