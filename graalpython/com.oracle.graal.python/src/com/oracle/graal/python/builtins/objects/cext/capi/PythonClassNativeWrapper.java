@@ -66,8 +66,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * Used to wrap {@link PythonClass} when used in native code. This wrapper mimics the correct shape
- * of the corresponding native type {@code struct _typeobject}.
+ * Used to wrap {@link PythonClass} when used in native code. This wrapper is replacing and the
+ * replacement mimics the correct shape of the corresponding native type {@code struct _typeobject}.
  */
 @ExportLibrary(InteropLibrary.class)
 public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWrapper {
@@ -193,6 +193,13 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
 
             ToNativeTypeNode.initializeType(this, pointerObject, heaptype);
         }
+        return replacement;
+    }
+
+    /**
+     * Does not initialize the replacement.
+     */
+    public Object getReplacementIfInitialized() {
         return replacement;
     }
 

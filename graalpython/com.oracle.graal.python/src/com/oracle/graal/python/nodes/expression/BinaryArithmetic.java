@@ -46,25 +46,32 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -177,17 +184,6 @@ public enum BinaryArithmetic {
         public static LookupAndCallBinaryNode createBinaryOp(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handler) {
             return LookupAndCallBinaryNode.createBinaryOp(slot, slot.getReverse(), handler);
         }
-
-        @NeverDefault
-        static LookupAndCallBinaryNode createPyNumberAdd(Supplier<NotImplementedHandler> handler) {
-            return LookupAndCallBinaryNode.createPyNumberAdd(handler);
-        }
-
-        @NeverDefault
-        static LookupAndCallBinaryNode createPyNumberMultiply(Supplier<NotImplementedHandler> handler) {
-            return LookupAndCallBinaryNode.createPyNumberMultiply(handler);
-        }
-
     }
     /*
      *
@@ -235,9 +231,49 @@ public enum BinaryArithmetic {
         }
 
         @Specialization
+        public static double doDI(double left, int right) {
+            return left + right;
+        }
+
+        @Specialization
+        public static double doID(int left, double right) {
+            return left + right;
+        }
+
+        @Specialization
+        static PList doPList(PList left, PList right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
+                        @Shared @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            SequenceStorage newStore = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return factory.createList(getClassNode.execute(inliningTarget, left), newStore);
+        }
+
+        @Specialization(guards = {"isBuiltinTuple(left)", "isBuiltinTuple(right)"})
+        static PTuple doTuple(PTuple left, PTuple right,
+                        @Shared @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            SequenceStorage concatenated = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return factory.createTuple(concatenated);
+        }
+
+        @Specialization
+        static TruffleString doIt(TruffleString left, TruffleString right,
+                        @Cached TruffleString.ConcatNode concatNode) {
+            return concatNode.execute(left, right, TS_ENCODING, false);
+        }
+
+        @Fallback
         public static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createPyNumberAdd(NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
-            return callNode.executeObject(frame, left, right);
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyNumberAddNode addNode) {
+            return addNode.execute(frame, inliningTarget, left, right);
+        }
+
+        @NeverDefault
+        protected static SequenceStorageNodes.ConcatNode createConcat() {
+            return SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create);
         }
 
         @NeverDefault

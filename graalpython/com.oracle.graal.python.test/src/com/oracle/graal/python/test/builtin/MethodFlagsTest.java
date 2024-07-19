@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,7 +87,6 @@ public class MethodFlagsTest {
     @Test
     public void testMethodFlagsConsistency() {
         for (PythonBuiltinClassType clazz : PythonBuiltinClassType.VALUES) {
-            assertMethodConsistentWithFlag(clazz, MethodsFlags.NB_ADD | MethodsFlags.SQ_CONCAT, SpecialMethodNames.T___ADD__);
             assertMethodConsistentWithFlag(clazz, MethodsFlags.NB_SUBTRACT, SpecialMethodNames.T___SUB__);
             assertMethodConsistentWithFlag(clazz, MethodsFlags.NB_MULTIPLY | MethodsFlags.SQ_REPEAT, SpecialMethodNames.T___MUL__);
             assertMethodConsistentWithFlag(clazz, MethodsFlags.NB_REMAINDER, SpecialMethodNames.T___MOD__);

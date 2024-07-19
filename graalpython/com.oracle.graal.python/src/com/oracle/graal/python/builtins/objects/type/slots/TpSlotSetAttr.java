@@ -63,10 +63,10 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.BinaryToTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.BinaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.TernaryPythonSlotDispatcherNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotSimpleBuiltinBase;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -102,7 +102,7 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
  */
 public class TpSlotSetAttr {
 
-    public abstract static class TpSlotSetAttrBuiltin<T extends SetAttrBuiltinNode> extends TpSlotSimpleBuiltinBase<T> {
+    public abstract static class TpSlotSetAttrBuiltin<T extends SetAttrBuiltinNode> extends TpSlotBuiltinBase<T> {
         public static final BuiltinSlotWrapperSignature SET_SIGNATURE = BuiltinSlotWrapperSignature.of(J_DOLLAR_SELF, "name", "value");
         private final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
 

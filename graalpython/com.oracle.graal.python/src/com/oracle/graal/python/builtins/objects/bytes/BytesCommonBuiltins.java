@@ -43,7 +43,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.FIRST_ARG_MUST_BE_BYTE
 import static com.oracle.graal.python.nodes.ErrorMessages.METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_ASCII;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_LENGTH_1;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
@@ -91,12 +90,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltinsFactory.LStripNodeFactory;
+import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltinsFactory.RStripNodeFactory;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.BytesLikeCheck;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.NeedleToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
-import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltinsFactory.LStripNodeFactory;
-import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltinsFactory.RStripNodeFactory;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
@@ -106,6 +105,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -286,9 +286,9 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_concat, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class AddNode extends PythonBinaryBuiltinNode {
+    public abstract static class AddNode extends SqConcatBuiltinNode {
 
         @Specialization
         static PBytesLike add(PBytesLike self, PBytesLike other,

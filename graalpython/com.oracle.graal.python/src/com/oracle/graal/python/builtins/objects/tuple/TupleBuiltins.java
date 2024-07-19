@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
@@ -76,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -452,9 +452,9 @@ public final class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_concat, isComplex = true)
     @GenerateNodeFactory
-    abstract static class AddNode extends PythonBinaryBuiltinNode {
+    abstract static class TupleConcatNode extends SqConcatBuiltinNode {
 
         @Specialization(guards = {"checkRight.execute(inliningTarget, right)"}, limit = "1")
         static PTuple doTuple(Object left, Object right,

@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AITE
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEXT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MP_ASS_SUBSCRIPT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_AND;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_DIVMOD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_FLOAT;
@@ -68,7 +67,6 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_CONT
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHODS_FLAGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AEXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
@@ -110,7 +108,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
@@ -256,8 +253,6 @@ public enum SpecialMethodSlot {
     Xor(T___XOR__, NB_XOR),
     RXor(T___RXOR__, NB_XOR),
     // Don't add SQ_CONCAT, CPython doesn't add a wrapper for it
-    Add(T___ADD__, NB_ADD),
-    RAdd(T___RADD__, NB_ADD),
     Sub(T___SUB__, NB_SUBTRACT),
     RSub(T___RSUB__, NB_SUBTRACT),
     // Don't add SQ_REPEAT, CPython doesn't add a wrapper for it
@@ -335,7 +330,6 @@ public enum SpecialMethodSlot {
     static {
         And.reverse = RAnd;
         Or.reverse = ROr;
-        Add.reverse = RAdd;
         Sub.reverse = RSub;
         Mul.reverse = RMul;
         DivMod.reverse = RDivMod;
@@ -1000,9 +994,6 @@ public enum SpecialMethodSlot {
                 if (eqNode.execute(name, T___RAND__, TS_ENCODING)) {
                     return RAnd;
                 }
-                if (eqNode.execute(name, T___RADD__, TS_ENCODING)) {
-                    return RAdd;
-                }
                 break;
             case 'o' * 26 + 'r':    // or
                 if (eqNode.execute(name, T___OR__, TS_ENCODING)) {
@@ -1025,11 +1016,6 @@ public enum SpecialMethodSlot {
             case 'r' * 26 + 'x':    // rx
                 if (eqNode.execute(name, T___RXOR__, TS_ENCODING)) {
                     return RXor;
-                }
-                break;
-            case 'a' * 26 + 'd':    // ad
-                if (eqNode.execute(name, T___ADD__, TS_ENCODING)) {
-                    return Add;
                 }
                 break;
             case 'r' * 26 + 's':    // rs

@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.ints;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
@@ -67,7 +66,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
@@ -125,6 +123,7 @@ import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
@@ -389,11 +388,10 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RADD__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_add, isComplex = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class AddNode extends PythonBinaryBuiltinNode {
+    public abstract static class AddNode extends BinaryOpBuiltinNode {
         public abstract Object execute(int left, int right);
 
         @Specialization(rewriteOn = ArithmeticException.class)

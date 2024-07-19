@@ -73,6 +73,26 @@ public class TpSlotsTests {
     }
 
     @Test
+    public void testBuilderExplicitGroups() {
+        Builder builder = TpSlots.newBuilder();
+        builder.allocateAllGroups();
+        TpSlots slots = builder.build();
+        for (TpSlotGroup group : TpSlotGroup.VALID_VALUES) {
+            Assert.assertTrue(getGroup(slots, group));
+        }
+    }
+
+    @Test
+    public void testBuilderExplicitGroup() {
+        for (TpSlotGroup group : TpSlotGroup.VALID_VALUES) {
+            Builder builder = TpSlots.newBuilder();
+            builder.setExplicitGroup(group);
+            TpSlots slots = builder.build();
+            Assert.assertTrue(getGroup(slots, group));
+        }
+    }
+
+    @Test
     public void testBuilderOptimizations1() {
         Builder builder = TpSlots.newBuilder();
         builder.set(TpSlotMeta.MP_LENGTH, TpSlotNative.createCExtSlot(TpSlotMeta.MP_LENGTH));
@@ -112,18 +132,21 @@ public class TpSlotsTests {
                 Assert.assertNull(def.name(), slotValue);
             }
         }
-        for (TpSlotGroup group : TpSlotGroup.values()) {
-            switch (group) {
-                case NO_GROUP -> {
-                }
-                case AS_NUMBER -> Assert.assertEquals(slots.has_as_number(), groupsSeen.contains(group));
-                case AS_SEQUENCE -> Assert.assertEquals(slots.has_as_sequence(), groupsSeen.contains(group));
-                case AS_MAPPING -> Assert.assertEquals(slots.has_as_mapping(), groupsSeen.contains(group));
-            }
+        for (TpSlotGroup group : TpSlotGroup.VALID_VALUES) {
+            Assert.assertEquals(getGroup(slots, group), groupsSeen.contains(group));
         }
     }
 
     private static void checkSlotValue(TpSlotMeta def, TpSlot slotValue) {
         Assert.assertTrue(def.name(), slotValue instanceof TpSlotNative slotNative && slotNative.getCallable() == def);
+    }
+
+    private static boolean getGroup(TpSlots slots, TpSlotGroup group) {
+        return switch (group) {
+            case NO_GROUP -> throw new IllegalArgumentException();
+            case AS_NUMBER -> slots.has_as_number();
+            case AS_SEQUENCE -> slots.has_as_sequence();
+            case AS_MAPPING -> slots.has_as_mapping();
+        };
     }
 }

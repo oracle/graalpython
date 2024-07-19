@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -125,6 +125,9 @@ class ProxyType(object):
 
     def __add__(self, other):
         return _proxy_get(self) + other
+
+    def __radd__(self, other):
+        return other + _proxy_get(self)
 
     def __sub__(self, other):
         return _proxy_get(self) - other

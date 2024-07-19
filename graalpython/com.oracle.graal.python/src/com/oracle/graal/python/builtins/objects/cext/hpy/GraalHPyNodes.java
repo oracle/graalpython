@@ -2471,7 +2471,7 @@ public abstract class GraalHPyNodes {
                 // These are the slots for the type we are creating as specified by the user:
                 TpSlots newSlots = tpSlotsBuilder.build();
                 // Slots inheritance:
-                newType.setTpSlots(newType.getTpSlots().copy().override(newSlots).build());
+                newType.setTpSlots(newType.getTpSlots().copy().overrideIgnoreGroups(newSlots).build());
                 // Create descriptors wrapping the slots, but only the new slots:
                 newSlots.addOperators(newType);
                 TpSlots.fixupSlotDispatchers(newType);

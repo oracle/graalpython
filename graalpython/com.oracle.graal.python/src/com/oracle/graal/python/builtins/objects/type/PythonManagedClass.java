@@ -79,7 +79,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
      */
     Object[] specialMethodSlots;
 
-    private TpSlots tpSlots;
+    protected TpSlots tpSlots;
 
     @CompilationFinal protected long methodsFlags = 0L;
 
@@ -178,10 +178,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     public final TpSlots getTpSlots() {
         return tpSlots;
-    }
-
-    public final void setTpSlots(TpSlots tpSlots) {
-        this.tpSlots = tpSlots;
     }
 
     public final Shape getInstanceShape() {

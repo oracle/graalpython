@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.complex;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyComplexObject__cval__imag;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyComplexObject__cval__real;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
@@ -58,7 +57,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
@@ -92,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyComplexCheckNode;
@@ -387,10 +386,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = J___RADD__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_add, isComplex = true)
     @GenerateNodeFactory
-    abstract static class AddNode extends PythonBinaryBuiltinNode {
+    abstract static class AddNode extends BinaryOpBuiltinNode {
         @Specialization
         static PComplex doInt(PComplex left, int right,
                         @Shared @Cached PythonObjectFactory factory) {

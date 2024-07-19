@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -112,11 +112,6 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @NeverDefault
     public static LookupAndCallBinaryNode createReversible(SpecialMethodSlot slot, SpecialMethodSlot rslot, Supplier<NotImplementedHandler> handlerFactory) {
         return LookupAndCallReversibleBinaryNodeGen.create(slot, rslot, handlerFactory, false, false);
-    }
-
-    @NeverDefault
-    public static LookupAndCallBinaryNode createPyNumberAdd(Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallNbNumbersBinaryNodeFactory.PyNumberAddNodeGen.create(handlerFactory);
     }
 
     @NeverDefault

@@ -1031,7 +1031,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
             initSlots(type.base);
         }
         var slots = type.base.slots.copy();
-        slots.override(type.declaredSlots);
+        slots.overrideIgnoreGroups(type.declaredSlots);
         type.slots = slots.build();
     }
 

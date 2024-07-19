@@ -2014,7 +2014,7 @@ public abstract class TypeNodes {
                 //
                 // We do not need to map slots to magic methods (add_operators in CPython), because
                 // this is a managed class and it cannot define its own slots.
-                TpSlots.inherit(newType, getMroStorageNode.execute(inliningTarget, newType));
+                TpSlots.inherit(newType, getMroStorageNode.execute(inliningTarget, newType), true);
                 TpSlots.fixupSlotDispatchers(newType);
 
                 HashingStorage storage = namespace.getDictStorage();
