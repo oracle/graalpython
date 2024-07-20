@@ -409,6 +409,7 @@ public abstract class CApiTransitions {
 
     @TruffleBoundary
     public static void exitPollCleanup() {
+        PythonUtils.forceFullGC();
         PythonContext context = PythonContext.get(null);
         HandleContext handleContext = context.nativeContext;
         int len = handleContext.nativeStubLookup.length;
