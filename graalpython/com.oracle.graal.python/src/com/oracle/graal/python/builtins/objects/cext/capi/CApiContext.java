@@ -958,7 +958,7 @@ public final class CApiContext extends CExtContext {
              * deallocating objects may run arbitrary guest code that can again call into the
              * interpreter.
              */
-            CApiTransitions.pollReferenceQueue();
+            CApiTransitions.exitPollCleanup();
             PythonThreadState threadState = getContext().getThreadState(getContext().getLanguage());
             Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
             if (nativeThreadState != null) {

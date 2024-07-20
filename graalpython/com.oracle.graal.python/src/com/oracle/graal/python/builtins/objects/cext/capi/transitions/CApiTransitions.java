@@ -408,6 +408,21 @@ public abstract class CApiTransitions {
     }
 
     @TruffleBoundary
+    public static void exitPollCleanup() {
+        PythonContext context = PythonContext.get(null);
+        HandleContext handleContext = context.nativeContext;
+        int len = handleContext.nativeStubLookup.length;
+        int idx = 0;
+        while (idx < len) {
+            if (handleContext.nativeStubLookup[idx] == null || handleContext.nativeStubLookup[idx].get() != null) {
+                idx++;
+            } else {
+                pollReferenceQueue();
+            }
+        }
+    }
+
+    @TruffleBoundary
     @SuppressWarnings("try")
     public static void pollReferenceQueue() {
         PythonContext context = PythonContext.get(null);
