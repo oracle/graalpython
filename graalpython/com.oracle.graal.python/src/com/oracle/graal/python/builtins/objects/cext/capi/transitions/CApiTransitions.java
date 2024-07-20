@@ -408,7 +408,7 @@ public abstract class CApiTransitions {
     }
 
     @TruffleBoundary
-    public static void exitPollCleanup() {
+    public static void ensurePollRefQueueCleanup() {
         PythonUtils.forceFullGC();
         PythonContext context = PythonContext.get(null);
         HandleContext handleContext = context.nativeContext;
