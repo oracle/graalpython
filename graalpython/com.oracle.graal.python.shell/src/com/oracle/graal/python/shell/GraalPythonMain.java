@@ -1253,7 +1253,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 } catch (EOFException e) {
                     if (!noSite) {
                         try {
-                            evalInternal(context, "import site; exit()\n");
+                            context.eval(Source.newBuilder(getLanguageId(), "import site; exit()\n", "<internal>").internal(true).interactive(true).buildLiteral());
                         } catch (PolyglotException e2) {
                             if (e2.isExit()) {
                                 // don't use the exit code from the PolyglotException
