@@ -185,7 +185,7 @@ def test_inspect_flag_exit():
         f.flush()
         validate_repl(dedent(f"""\
             Traceback (most recent call last):
-              File "{f.name}", line 3, in <module>
+              File "{os.path.realpath(f.name)}", line 3, in <module>
                 sys.exit(1)
             SystemExit: 1
             >>> a
