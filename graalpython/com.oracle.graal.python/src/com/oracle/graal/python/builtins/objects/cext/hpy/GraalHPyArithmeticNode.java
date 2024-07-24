@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,7 +56,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeCost;
 
 public abstract class GraalHPyArithmeticNode {
 
@@ -88,11 +87,6 @@ public abstract class GraalHPyArithmeticNode {
         public Object execute(Object object) {
             return opNode.executeCached(null, object);
         }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.NONE;
-        }
     }
 
     private static final class HPyUnaryArithmeticUncached extends HPyUnaryArithmeticNode {
@@ -109,11 +103,6 @@ public abstract class GraalHPyArithmeticNode {
             PArguments.setArgument(pythonArguments, 0, object);
             RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
             return GenericInvokeNode.invokeUncached(callTarget, pythonArguments);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.MEGAMORPHIC;
         }
 
         @Override
@@ -156,11 +145,6 @@ public abstract class GraalHPyArithmeticNode {
         public Object execute(Object arg0, Object arg1) {
             return opNode.executeObject(null, arg0, arg1);
         }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.NONE;
-        }
     }
 
     private static final class HPyBinaryArithmeticUncached extends HPyBinaryArithmeticNode {
@@ -178,11 +162,6 @@ public abstract class GraalHPyArithmeticNode {
             PArguments.setArgument(pythonArguments, 1, arg1);
             RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
             return GenericInvokeNode.invokeUncached(callTarget, pythonArguments);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.MEGAMORPHIC;
         }
 
         @Override
@@ -225,11 +204,6 @@ public abstract class GraalHPyArithmeticNode {
         public Object execute(Object arg0, Object arg1, Object arg2) {
             return opNode.execute(null, arg0, arg1, arg2);
         }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.NONE;
-        }
     }
 
     private static final class HPyTernaryArithmeticUncached extends HPyTernaryArithmeticNode {
@@ -248,11 +222,6 @@ public abstract class GraalHPyArithmeticNode {
             PArguments.setArgument(pythonArguments, 2, arg2);
             RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
             return GenericInvokeNode.invokeUncached(callTarget, pythonArguments);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.MEGAMORPHIC;
         }
 
         @Override
@@ -306,11 +275,6 @@ public abstract class GraalHPyArithmeticNode {
                 return opNode.execute(null, arg0, arg1);
             }
         }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.NONE;
-        }
     }
 
     private static final class HPyInplaceArithmeticUncached extends HPyInplaceArithmeticNode {
@@ -329,11 +293,6 @@ public abstract class GraalHPyArithmeticNode {
             PArguments.setArgument(pythonArguments, 2, arg2);
             RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
             return GenericInvokeNode.invokeUncached(callTarget, pythonArguments);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.MEGAMORPHIC;
         }
 
         @Override

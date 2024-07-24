@@ -275,7 +275,7 @@ public abstract class GenericTypeNodes {
             Object prepare = PyObjectLookupAttr.executeUncached(param, T___TYPING_PREPARE_SUBST__);
             if (!(prepare instanceof PNone)) {
                 Object itemarg = item instanceof PTuple ? item : PythonContext.get(node).factory().createTuple(new Object[]{item});
-                item = CallNode.getUncached().execute(prepare, self, itemarg);
+                item = CallNode.executeUncached(prepare, self, itemarg);
             }
         }
         if (argitems.length != nparams) {
@@ -296,7 +296,7 @@ public abstract class GenericTypeNodes {
             if (subst != PNone.NO_VALUE) {
                 int iparam = tupleIndex(parameters, arg);
                 assert iparam >= 0;
-                arg = CallNode.getUncached().execute(subst, argitems[iparam]);
+                arg = CallNode.executeUncached(subst, argitems[iparam]);
             } else {
                 arg = subsTvars(node, arg, parameters, argitems);
             }

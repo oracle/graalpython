@@ -6,3 +6,4 @@ version = '>= 6.69.0'
 install-priority = 0
 version = '< 6.69.0'
 patch = 'hypothesis-6.patch'
+license = 'MPL-2.0'

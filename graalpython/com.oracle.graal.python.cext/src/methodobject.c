@@ -102,3 +102,17 @@ void _PyCFunction_SetModule(PyObject *func, PyObject *mod) {
 void _PyCFunction_SetMethodDef(PyObject *func, PyMethodDef *def) {
     set_PyCFunctionObject_m_ml(func, def);
 }
+
+// GraalPy additions
+const char *
+GraalPyCFunction_GetDoc(PyObject *func) {
+    return PyCFunctionObject_m_ml(func)->ml_doc;
+}
+
+void
+GraalPyCFunction_SetDoc(PyObject *func, const char *doc) {
+    PyCFunctionObject_m_ml(func)->ml_doc = doc;
+    if (points_to_py_handle_space(func)) {
+        GraalPyTruffleCFunction_SetDoc(func, doc);
+    }
+}

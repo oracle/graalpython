@@ -122,7 +122,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         EconomicMapStorage dictStorage = EconomicMapStorage.create(1);
         dictStorage.putUncachedWithJavaEq(T___MODULE__, T_BUILTINS);
         PDict dict = factory.createDict(dictStorage);
-        Object exceptionGroupType = CallNode.getUncached().execute(typeBuiltin, T_EXCEPTION_GROUP, bases, dict);
+        Object exceptionGroupType = CallNode.executeUncached(typeBuiltin, T_EXCEPTION_GROUP, bases, dict);
         builtins.setAttribute(T_EXCEPTION_GROUP, exceptionGroupType);
     }
 
@@ -249,7 +249,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         return switch (matcherType) {
             case BY_TYPE -> PyErrExceptionMatchesNode.executeUncached(exception, matcherValue);
             case BY_PREDICATE ->
-                PyObjectIsTrueNode.executeUncached(CallNode.getUncached().execute(matcherValue, exception));
+                PyObjectIsTrueNode.executeUncached(CallNode.executeUncached(matcherValue, exception));
             // TODO INSTANCE_IDS
             default -> true;
         };

@@ -1,3 +1,4 @@
 [[rules]]
 version = '== 1.15'
 patch = 'lightfm-1.15.patch'
+license = 'MIT'

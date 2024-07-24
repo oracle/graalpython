@@ -30,16 +30,6 @@ import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
-import static com.oracle.graal.python.nodes.HiddenAttr.ALLOC;
-import static com.oracle.graal.python.nodes.HiddenAttr.BASICSIZE;
-import static com.oracle.graal.python.nodes.HiddenAttr.CLEAR;
-import static com.oracle.graal.python.nodes.HiddenAttr.DEALLOC;
-import static com.oracle.graal.python.nodes.HiddenAttr.DEL;
-import static com.oracle.graal.python.nodes.HiddenAttr.DICTOFFSET;
-import static com.oracle.graal.python.nodes.HiddenAttr.FLAGS;
-import static com.oracle.graal.python.nodes.HiddenAttr.FREE;
-import static com.oracle.graal.python.nodes.HiddenAttr.ITEMSIZE;
-import static com.oracle.graal.python.nodes.HiddenAttr.VECTORCALL_OFFSET;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
@@ -87,7 +77,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -147,7 +136,6 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -210,14 +198,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
 public final class TypeBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = TypeBuiltinsSlotsGen.SLOTS;
-
-    public static final HashMap<String, HiddenAttr> INITIAL_HIDDEN_TYPE_ATTRS = new HashMap<>();
-
-    static {
-        for (HiddenAttr attr : new HiddenAttr[]{DICTOFFSET, ITEMSIZE, BASICSIZE, ALLOC, DEALLOC, DEL, FREE, CLEAR, FLAGS, VECTORCALL_OFFSET}) {
-            INITIAL_HIDDEN_TYPE_ATTRS.put(attr.getName(), attr);
-        }
-    }
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

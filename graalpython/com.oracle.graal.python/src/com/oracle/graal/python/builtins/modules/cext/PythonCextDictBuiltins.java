@@ -491,7 +491,7 @@ public final class PythonCextDictBuiltins {
                 throw raiseNode.get(inliningTarget).raise(AttributeError, OBJ_P_HAS_NO_ATTR_S, b, T_KEYS);
             }
             Object updateCallable = lookupAttr.execute(null, inliningTarget, a, T_UPDATE);
-            callNode.execute(updateCallable, new Object[]{b});
+            callNode.executeWithoutFrame(updateCallable, new Object[]{b});
             return 0;
         }
 

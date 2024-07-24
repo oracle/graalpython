@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -163,7 +163,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                                     !pyTypeCheck.ctypesSimpleInstance(inliningTarget, converters[i], getBaseClassNode, isSameTypeNode)) {
                         arglist[i] = getFuncNode.execute(dict.getfunc, value, dict.size);
                     } else if (dict != null) {
-                        CDataObject obj = (CDataObject) callNode.execute(converters[i]);
+                        CDataObject obj = (CDataObject) callNode.executeWithoutFrame(converters[i]);
                         memcpyNode.execute(inliningTarget, obj.b_ptr, value, dict.size);
                         arglist[i] = obj;
                     } else {
@@ -174,7 +174,7 @@ public final class CThunkObject extends PythonBuiltinObject {
 
                 Object result = null;
                 try {
-                    result = callNode.execute(callable, arglist, PKeyword.EMPTY_KEYWORDS);
+                    result = callNode.executeWithoutFrame(callable, arglist, PKeyword.EMPTY_KEYWORDS);
                 } catch (PException e) {
                     writeUnraisableNode.execute(e.getEscapedException(), ON_CALLING_CTYPES_CALLBACK_FUNCTION, callable);
                 }

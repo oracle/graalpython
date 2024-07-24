@@ -71,14 +71,15 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFacto
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -1205,12 +1206,16 @@ public abstract class CExtCommonNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedBranchProfile indexLt0Branch,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached NormalizeIndexNode normalizeIndexNode) {
+                        @Cached CallSlotLenNode callLenNode,
+                        @Cached GetObjectSlotsNode getObjectSlotsNode) {
             int index = asSizeNode.executeExact(null, inliningTarget, indexObj);
             if (index < 0) {
                 indexLt0Branch.enter(inliningTarget);
-                return normalizeIndexNode.execute(index, sizeNode.execute(null, inliningTarget, self));
+                TpSlots slots = getObjectSlotsNode.execute(inliningTarget, self);
+                if (slots.sq_length() != null) {
+                    int len = callLenNode.execute(null, inliningTarget, slots.sq_length(), self);
+                    index += len;
+                }
             }
             return index;
         }

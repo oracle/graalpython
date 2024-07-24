@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,7 @@ import gc
 
 
 def test_gc_collect():
-    assert isinstance(gc.collect(), int)
+    assert isinstance(gc.collect(), (int, type(None)))
 
 
 def test_gc_count():

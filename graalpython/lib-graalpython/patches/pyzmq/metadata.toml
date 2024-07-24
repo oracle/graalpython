@@ -3,4 +3,5 @@
 version = '< 26'
 # The patch just makes it re-cythonize to pick up our cython changes
 patch = 'pyzmq.patch'
+license = 'BSD-3-Clause'
 dist-type = 'sdist'

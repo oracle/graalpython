@@ -4,46 +4,54 @@
 version = '== 0.43.0'
 # Add a workaround for building wheels with files larger than 2GB
 patch = 'wheel-0.43.patch'
+license = 'MIT'
 subdir = 'src'
 
 # Catch all rule for newer versions
 [[rules]]
 version = '>= 0.43.0'
 patch = 'wheel-0.43.patch'
+license = 'MIT'
 subdir = 'src'
 install-priority = 0
 
 [[rules]]
 version = '== 0.41.2'
 patch = 'wheel-0.41.2.patch'
+license = 'MIT'
 subdir = 'src'
 
 [[rules]]
 version = '>= 0.40, < 0.41.2'
 patch = 'wheel-0.40.patch'
+license = 'MIT'
 subdir = 'src'
 install-priority = 0
 
 [[rules]]
 version = '== 0.38.*'
 patch = 'wheel-0.38.patch'
+license = 'MIT'
 subdir = 'src'
 install-priority = 0
 
 [[rules]]
 version = '>= 0.36, < 0.38'
 patch = 'wheel-0.37.patch'
+license = 'MIT'
 subdir = 'src'
 install-priority = 0
 
 [[rules]]
 version = '== 0.35.*'
 patch = 'wheel-0.35.patch'
+license = 'MIT'
 subdir = 'src'
 install-priority = 0
 
 [[rules]]
 version = '< 0.35'
 patch = 'wheel-pre-0.35.patch'
+license = 'MIT'
 subdir = 'src'
 install-priority = 0

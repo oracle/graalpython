@@ -45,8 +45,11 @@ import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -55,8 +58,10 @@ import java.util.function.Function;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.polyglot.io.IOAccess;
-import org.graalvm.python.embedding.vfs.VirtualFileSystem;
+import org.graalvm.python.embedding.utils.GraalPyResources;
+import org.graalvm.python.embedding.utils.VirtualFileSystem;
 import org.junit.Test;
 
 public class VirtualFileSystemTest {
@@ -69,71 +74,72 @@ public class VirtualFileSystemTest {
 
     @Test
     public void defaultValues() throws Exception {
-        VirtualFileSystem vfs = VirtualFileSystem.create();
-        VirtualFileSystem vfs2 = VirtualFileSystem.newBuilder().build();
+        VirtualFileSystem fs = VirtualFileSystem.create();
+        VirtualFileSystem fs2 = VirtualFileSystem.create();
 
-        assertEquals(vfs.getMountPoint(), vfs2.getMountPoint());
+        assertEquals(fs.getMountPoint(), fs2.getMountPoint());
 
-        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs" : "/graalpy_vfs", vfs.getMountPoint());
+        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs" : "/graalpy_vfs", fs.getMountPoint());
     }
 
     @Test
     public void mountPoints() throws Exception {
-        VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
+        VirtualFileSystem fs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).build();
 
-        assertEquals(VFS_MOUNT_POINT, vfs.getMountPoint());
+        assertEquals(VFS_MOUNT_POINT, fs.getMountPoint());
     }
 
     @Test
     public void toRealPath() throws Exception {
-        VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
+        FileSystem fs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().equals("file1")).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build();
         // check regular resource dir
-        assertEquals("dir1", vfs.toRealPath(Path.of("dir1")).toString());
-        assertEquals(VFS_MOUNT_POINT + File.separator + "dir1", vfs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")).toString());
+        assertEquals("dir1", fs.toRealPath(Path.of("dir1")).toString());
+        assertEquals(VFS_MOUNT_POINT + File.separator + "dir1", fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")).toString());
         // check regular resource file
-        assertEquals("SomeFile", vfs.toRealPath(Path.of("SomeFile")).toString());
-        assertEquals(VFS_MOUNT_POINT + File.separator + "SomeFile", vfs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile")).toString());
+        assertEquals("SomeFile", fs.toRealPath(Path.of("SomeFile")).toString());
+        assertEquals(VFS_MOUNT_POINT + File.separator + "SomeFile", fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile")).toString());
         // check to be extracted file
-        checkExtractedFile(vfs.toRealPath(Path.of("file1")), new String[]{"text1", "text2"});
-        checkExtractedFile(vfs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "file1")), new String[]{"text1", "text2"});
+        checkExtractedFile(fs.toRealPath(Path.of("file1")), new String[]{"text1", "text2"});
+        checkExtractedFile(fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "file1")), new String[]{"text1", "text2"});
     }
 
     @Test
     public void toAbsolutePath() throws Exception {
-        VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
+        FileSystem fs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().equals("file1") || p.getFileName().toString().equals("file2")).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build();
         // check regular resource dir
-        assertEquals(VFS_MOUNT_POINT + File.separator + "dir1", vfs.toAbsolutePath(Path.of("dir1")).toString());
-        assertEquals(VFS_MOUNT_POINT + File.separator + "dir1", vfs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")).toString());
+        assertEquals(VFS_MOUNT_POINT + File.separator + "dir1", fs.toAbsolutePath(Path.of("dir1")).toString());
+        assertEquals(VFS_MOUNT_POINT + File.separator + "dir1", fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")).toString());
         // check regular resource file
-        assertEquals(VFS_MOUNT_POINT + File.separator + "SomeFile", vfs.toAbsolutePath(Path.of("SomeFile")).toString());
-        assertEquals(VFS_MOUNT_POINT + File.separator + "SomeFile", vfs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile")).toString());
+        assertEquals(VFS_MOUNT_POINT + File.separator + "SomeFile", fs.toAbsolutePath(Path.of("SomeFile")).toString());
+        assertEquals(VFS_MOUNT_POINT + File.separator + "SomeFile", fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile")).toString());
         // check to be extracted file
-        checkExtractedFile(vfs.toAbsolutePath(Path.of("file1")), new String[]{"text1", "text2"});
-        checkExtractedFile(vfs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "file1")), new String[]{"text1", "text2"});
-        checkExtractedFile(vfs.toAbsolutePath(Path.of("dir1/file2")), null);
-        checkExtractedFile(vfs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1/file2")), null);
+        checkExtractedFile(fs.toAbsolutePath(Path.of("file1")), new String[]{"text1", "text2"});
+        checkExtractedFile(fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "file1")), new String[]{"text1", "text2"});
+        checkExtractedFile(fs.toAbsolutePath(Path.of("dir1/file2")), null);
+        checkExtractedFile(fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1/file2")), null);
     }
 
     @Test
     public void libsExtract() throws Exception {
-        VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
+        FileSystem fs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().endsWith(".tso")).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build();
-        Path p = vfs.toAbsolutePath(Path.of("site-packages/testpkg/file.tso"));
+        Path p = fs.toAbsolutePath(Path.of("site-packages/testpkg/file.tso"));
         checkExtractedFile(p, null);
         Path extractedRoot = p.getParent().getParent().getParent();
+
         checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/file1.tso"), null);
         checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/file2.tso"), null);
         checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/file1.tso"), null);
@@ -142,7 +148,7 @@ public class VirtualFileSystemTest {
         checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file1.tso"), null);
         checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file2.tso"), null);
 
-        p = vfs.toAbsolutePath(Path.of("site-packages/testpkg-nolibs/file.tso"));
+        p = fs.toAbsolutePath(Path.of("site-packages/testpkg-nolibs/file.tso"));
         checkExtractedFile(p, null);
     }
 
@@ -433,12 +439,13 @@ public class VirtualFileSystemTest {
         VirtualFileSystem.Builder builder = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
+                        extractFilter(p -> p.getFileName().toString().endsWith(".tso")).//
                         resourceLoadingClass(VirtualFileSystemTest.class);
         if (builderFunction != null) {
             builder = builderFunction.apply(builder);
         }
-        VirtualFileSystem vfs = builder.build();
-        Context context = VirtualFileSystem.contextBuilder(vfs).build();
+        VirtualFileSystem fs = builder.build();
+        Context context = GraalPyResources.contextBuilder(fs).build();
         if (builderFunction == null) {
             cachedContext = context;
         }
@@ -446,11 +453,11 @@ public class VirtualFileSystemTest {
     }
 
     @Test
-    public void builderTest() {
-        Context context = VirtualFileSystem.contextBuilder().allowAllAccess(true).allowHostAccess(HostAccess.ALL).build();
+    public void vfsBuilderTest() {
+        Context context = GraalPyResources.contextBuilder().allowAllAccess(true).allowHostAccess(HostAccess.ALL).build();
         context.eval(PYTHON, "import java; java.type('java.lang.String')");
 
-        context = VirtualFileSystem.contextBuilder().allowAllAccess(false).allowHostAccess(HostAccess.NONE).build();
+        context = GraalPyResources.contextBuilder().allowAllAccess(false).allowHostAccess(HostAccess.NONE).build();
         context.eval(PYTHON, """
                         import java
                         try:
@@ -461,17 +468,17 @@ public class VirtualFileSystemTest {
                             assert False, 'expected NotImplementedError'
                         """);
 
-        VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
+        VirtualFileSystem fs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build();
-        context = VirtualFileSystem.contextBuilder(vfs).build();
+        context = GraalPyResources.contextBuilder(fs).build();
         context.eval(PYTHON, patchMountPoint("from os import listdir; listdir('/test_mount_point')"));
 
-        context = VirtualFileSystem.contextBuilder().build();
+        context = GraalPyResources.createContext();
         context.eval(PYTHON, "from os import listdir; listdir('.')");
 
-        context = VirtualFileSystem.contextBuilder().allowIO(IOAccess.NONE).build();
+        context = GraalPyResources.contextBuilder().allowIO(IOAccess.NONE).build();
         boolean gotPE = false;
         try {
             context.eval(PYTHON, "from os import listdir; listdir('.')");
@@ -480,4 +487,36 @@ public class VirtualFileSystemTest {
         }
         assert gotPE : "expected PolyglotException";
     }
+
+    @Test
+    public void externalResourcesBuilderTest() throws IOException {
+        VirtualFileSystem fs = VirtualFileSystem.newBuilder().resourceLoadingClass(VirtualFileSystemTest.class).build();
+        Path resourcesDir = Files.createTempDirectory("vfs-test-resources");
+
+        // extract VFS
+        GraalPyResources.extractVirtualFileSystemResources(fs, resourcesDir);
+
+        // check extracted contents
+        InputStream stream = VirtualFileSystemTest.class.getResourceAsStream("/org.graalvm.python.vfs/fileslist.txt");
+        BufferedReader br = new BufferedReader(new InputStreamReader(stream));
+        String line;
+        while ((line = br.readLine()) != null) {
+            line = line.substring("/org.graalvm.python.vfs/".length());
+            if (line.length() == 0) {
+                continue;
+            }
+            Path extractedFile = resourcesDir.resolve(line);
+            assert Files.exists(extractedFile);
+            if (line.endsWith("/")) {
+                assert Files.isDirectory(extractedFile);
+            }
+        }
+        checkExtractedFile(resourcesDir.resolve(Path.of("file1")), new String[]{"text1", "text2"});
+
+        // create context with extracted resource dir and check if we can see the extracted file
+        try (Context context = GraalPyResources.contextBuilder(resourcesDir).build()) {
+            context.eval("python", "import os; assert os.path.exists('" + resourcesDir.resolve("file1").toString().replace("\\", "\\\\") + "')");
+        }
+    }
+
 }

@@ -140,7 +140,7 @@ public final class PythonCextStructSeqBuiltins {
             Object typeBuiltin = readTypeBuiltinNode.execute(getCore().getBuiltins(), BuiltinNames.T_TYPE);
             PTuple bases = factory.createTuple(new Object[]{PythonBuiltinClassType.PTuple});
             PDict namespace = factory.createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.T___DOC__, typeDoc)});
-            Object cls = callTypeNewNode.execute(typeBuiltin, typeName, bases, namespace);
+            Object cls = callTypeNewNode.executeWithoutFrame(typeBuiltin, typeName, bases, namespace);
             initNode.execute(cls, fields, nInSequence);
             if (cls instanceof PythonClass) {
                 ((PythonClass) cls).makeStaticBase(dylib);

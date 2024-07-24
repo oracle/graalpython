@@ -37,6 +37,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.VarHandle;
+import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
@@ -70,11 +71,14 @@ import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence.BuiltinTypeDescriptor;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence.Descriptor;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence.DescriptorCallTargets;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
@@ -335,6 +339,46 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal(dimensions = 1) private final RootCallTarget[] builtinSlotsCallTargets;
 
     /**
+     * Weak hash map of call targets for builtin functions associated with named tuples generated at
+     * runtime from C extensions. We hold the cached call targets also weakly, because otherwise we
+     * would have a cycle from the value (call targets reference builtin nodes which wrap the
+     * descriptor) to the key. The key should be GC'ed when the corresponding generated named tuple
+     * class is GC'ed.
+     */
+    private final WeakHashMap<StructSequence.Descriptor, WeakReference<StructSequence.DescriptorCallTargets>> structSequenceTargets = new WeakHashMap<>();
+
+    /**
+     * The same as {@link #structSequenceTargets}, but for builtin named tuples. There is a bounded
+     * statically known number of builtin named tuples.
+     */
+    private final ConcurrentHashMap<StructSequence.Descriptor, StructSequence.DescriptorCallTargets> structSequenceBuiltinTargets = new ConcurrentHashMap<>();
+
+    public StructSequence.DescriptorCallTargets getOrCreateStructSequenceCallTargets(StructSequence.Descriptor descriptor,
+                    Function<StructSequence.Descriptor, StructSequence.DescriptorCallTargets> factory) {
+        if (singleContext) {
+            return factory.apply(descriptor);
+        }
+        if (descriptor instanceof BuiltinTypeDescriptor builtinDescriptor) {
+            // There must be finite set of objects initialized at build time, no need for a weak map
+            assert !ImageInfo.inImageCode() || builtinDescriptor.wasInitializedAtBuildTime();
+            return structSequenceBuiltinTargets.computeIfAbsent(builtinDescriptor, factory);
+        }
+        return getOrCreateStructSeqNonBuiltinTargets(descriptor, factory);
+    }
+
+    private DescriptorCallTargets getOrCreateStructSeqNonBuiltinTargets(Descriptor descriptor, Function<Descriptor, DescriptorCallTargets> factory) {
+        synchronized (structSequenceTargets) {
+            WeakReference<DescriptorCallTargets> weakResult = structSequenceTargets.computeIfAbsent(descriptor, d -> new WeakReference<>(factory.apply(d)));
+            DescriptorCallTargets result = weakResult.get();
+            if (result == null) {
+                result = factory.apply(descriptor);
+                structSequenceTargets.put(descriptor, new WeakReference<>(result));
+            }
+            return result;
+        }
+    }
+
+    /**
      * We cannot initialize call targets in language ctor and the next suitable hook is context
      * initialization, but that is called multiple times. We use this flag to run the language
      * specific initialization only once.
@@ -375,8 +419,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     /** For fast access to the PythonThreadState object by the owning thread. */
     private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
 
-    public final ConcurrentHashMap<String, HiddenAttr> typeHiddenAttrs = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_ATTRS);
-
     private final MroShape mroShapeRoot = MroShape.createRoot();
 
     /**
@@ -413,6 +455,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected void finalizeContext(PythonContext context) {
         context.finalizeContext();
         super.finalizeContext(context);
+        // trigger cleanup of stale entries in weak hash maps
+        structSequenceTargets.size();
+        indirectCallDataMap.size();
     }
 
     @Override
@@ -1003,9 +1048,87 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     /**
-     * Cache call targets that are created for every new context, based on a single key.
+     * Caches call target that wraps a node that is not parametrized, i.e., has only a parameterless
+     * ctor and all its instances implement the same logic. Parametrized nodes must include the
+     * parameters that alter their behavior as part of the cache key.
      */
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> key) {
+        // It's complicated with RootNodes, but regular nodes should have only parameterless ctor to
+        // be appropriate keys for the cache
+        assert RootNode.class.isAssignableFrom(key) || key.getConstructors().length <= 1;
+        assert RootNode.class.isAssignableFrom(key) || key.getConstructors().length == 0 || key.getConstructors()[0].getParameterCount() == 0;
+        return createCachedCallTargetUnsafe(rootNodeFunction, key);
+    }
+
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Enum<?> key) {
+        return createCachedCallTargetUnsafe(rootNodeFunction, key);
+    }
+
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, String key) {
+        // for builtins: name is needed to distinguish builtins that share the same underlying node
+        // in general: a String may be parameter of the node wrapped in the root node or the root
+        // node itself, there must be finite number of strings that can appear here (i.e., must not
+        // be dynamically generated unless their number is bounded).
+        return createCachedCallTargetUnsafe(rootNodeFunction, nodeClass, key);
+    }
+
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, TruffleString key) {
+        // See the String overload
+        return createCachedCallTargetUnsafe(rootNodeFunction, nodeClass, key);
+    }
+
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, int key) {
+        return createCachedCallTargetUnsafe(rootNodeFunction, nodeClass, key);
+    }
+
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, String name) {
+        // for slot wrappers: the root node may be wrapping a helper wrapper node implementing the
+        // wrapper logic and the bare slot node itself
+        return createCachedCallTargetUnsafe(rootNodeFunction, nodeClass1, nodeClass2, name);
+    }
+
+    /**
+     * Caches call targets for external C functions created by extensions at runtime.
+     * <p>
+     * For the time being, we assume finite/limited number of extensions and their external
+     * functions. This may hold onto call targets created by one extension used in a context that
+     * was closed in the meanwhile and no other context ever loads the extension.
+     */
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends RootNode> klass, Enum<?> signature, TruffleString name,
+                    boolean doArgumentAndResultConversion) {
+        return createCachedCallTargetUnsafe(rootNodeFunction, klass, signature, name, doArgumentAndResultConversion);
+    }
+
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Enum<?> signature, TruffleString name,
+                    boolean doArgumentAndResultConversion) {
+        return createCachedCallTargetUnsafe(rootNodeFunction, signature, name, doArgumentAndResultConversion);
+    }
+
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Enum<?> signature, TruffleString name) {
+        return createCachedCallTargetUnsafe(rootNodeFunction, signature, name);
+    }
+
+    public RootCallTarget createStructSeqIndexedMemberAccessCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, int memberIndex) {
+        return createCachedCallTargetUnsafe(rootNodeFunction, StructSequence.class, memberIndex);
+    }
+
+    public RootCallTarget createCachedPropAccessCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<?> nodeClass, String name, int type, int offset) {
+        // For the time being, we assume finite/limited number of cext/hpy types members, their
+        // types and offsets
+        return createCachedCallTargetUnsafe(rootNodeFunction, nodeClass, name, type, offset);
+    }
+
+    /**
+     * Keys in any caches held by {@link PythonLanguage} must be context independent objects and
+     * there must be either finite number of their instances, or if the key is a context independent
+     * mirror of some runtime data structure, it must be cached weakly. This call targets cache is
+     * strong.
+     * <p>
+     * To avoid memory leaks, all key types must be known to have finite number of possible
+     * instances. Public methods for adding to the cache must take concrete key type(s) so that all
+     * possible cache keys are explicit and documented.
+     */
+    private RootCallTarget createCachedCallTargetUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
         CompilerAsserts.neverPartOfCompilation();
         if (!singleContext) {
             return cachedCallTargets.computeIfAbsent(key, k -> PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this)));
@@ -1014,11 +1137,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    /**
-     * Cache call targets that are created for every new context, based on a list of keys.
-     */
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object... cacheKeys) {
-        return createCachedCallTarget(rootNodeFunction, Arrays.asList(cacheKeys));
+    private RootCallTarget createCachedCallTargetUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, Object... cacheKeys) {
+        return createCachedCallTargetUnsafe(rootNodeFunction, Arrays.asList(cacheKeys));
     }
 
     public void registerBuiltinDescriptorCallTarget(BuiltinMethodDescriptor descriptor, RootCallTarget callTarget) {

@@ -1872,7 +1872,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                     }
                     return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(lresult));
                 } else if (storage instanceof ObjectSequenceStorage) {
-                    Object result = ((ObjectSequenceStorage) storage).getItemNormalized(idx);
+                    Object result = ((ObjectSequenceStorage) storage).getObjectItemNormalized(idx);
                     if (result instanceof Integer) {
                         return GraalHPyBoxing.boxInt((int) result);
                     } else if (result instanceof Double) {
@@ -1983,7 +1983,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             return true;
         } else if (storage instanceof ObjectSequenceStorage) {
             Object value = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(hValue));
-            ((ObjectSequenceStorage) storage).setItemNormalized(idx, value);
+            ((ObjectSequenceStorage) storage).setObjectItemNormalized(idx, value);
             return true;
         }
         // TODO: other storages...
@@ -2657,7 +2657,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 keywords = PKeyword.EMPTY_KEYWORDS;
             }
 
-            Object result = CallNode.getUncached().execute(callableObj, argsArr, keywords);
+            Object result = CallNode.executeUncached(callableObj, argsArr, keywords);
             return context.pythonObjectAsBits(result);
         } catch (PException e) {
             HPyTransformExceptionToNativeNode.executeUncached(e);

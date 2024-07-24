@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -497,7 +498,8 @@ public final class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___DICT__, autoRegister = false, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
     public abstract static class DictNode extends PythonBinaryBuiltinNode {
 
         protected static boolean isExactObject(Node inliningTarget, IsBuiltinClassExactProfile profile, Object clazz) {
@@ -621,6 +623,11 @@ public final class ObjectBuiltins extends PythonBuiltins {
                             (classFilter && !isPythonModule(self) && isDict(mapping)) ||
                             (isPythonObject(self) && isDeleteMarker(mapping)) ||
                             (!isNoValue(mapping) && !isDict(mapping) && !isDeleteMarker(mapping)));
+        }
+
+        @NeverDefault
+        public static DictNode create() {
+            return DictNodeFactory.create();
         }
     }
 

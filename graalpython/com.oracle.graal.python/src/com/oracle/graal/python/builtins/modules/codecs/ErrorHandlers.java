@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -100,6 +100,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -261,7 +262,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "strict_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "strict_errors", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class StrictErrorHandlerNode extends ErrorHandlerBaseNode {
         @Specialization
         static Object doException(PBaseException exception,
@@ -276,7 +278,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "ignore_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "ignore_errors", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class IgnoreErrorHandlerNode extends ErrorHandlerBaseNode {
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doDecodeException(PBaseException exception,
@@ -305,7 +308,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "replace_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "replace_errors", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class ReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
         private static final TruffleString T_REPLACEMENT = tsLiteral("\uFFFD");
@@ -345,7 +349,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "xmlcharrefreplace_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "xmlcharrefreplace_errors", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class XmlCharRefReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -384,7 +389,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "backslashreplace_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "backslashreplace_errors", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class BackslashReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -468,7 +474,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "namereplace_errors", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "namereplace_errors", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class NameReplaceErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -520,7 +527,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "surrogatepass", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "surrogatepass", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class SurrogatePassErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -656,7 +664,8 @@ public final class ErrorHandlers {
         }
     }
 
-    @Builtin(name = "surrogateescape", minNumOfPositionalArgs = 1, parameterNames = "e")
+    @Builtin(name = "surrogateescape", autoRegister = false, minNumOfPositionalArgs = 1, parameterNames = "e")
+    @GenerateNodeFactory
     abstract static class SurrogateEscapeErrorHandlerNode extends ErrorHandlerBaseNode {
 
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -887,7 +896,7 @@ public final class ErrorHandlers {
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             cache.errorHandlerObject = cache.errorHandlerObject == null ? lookupErrorNode.execute(inliningTarget, errors) : cache.errorHandlerObject;
-            cache.exceptionObject = makeDecodeExceptionNode.execute(inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
+            cache.exceptionObject = makeDecodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
             Object resultObj = callNode.execute(frame, cache.errorHandlerObject, cache.exceptionObject);
             DecodingErrorHandlerResult result = parseResultNode.execute(frame, inliningTarget, resultObj);
             result.newSrcObj = getObjectNode.execute(inliningTarget, cache.exceptionObject);
@@ -965,7 +974,7 @@ public final class ErrorHandlers {
                         @Cached PRaiseNode.Lazy raiseNode) {
             cache.errorHandlerObject = cache.errorHandlerObject == null ? lookupErrorNode.execute(inliningTarget, errors) : cache.errorHandlerObject;
             int len = codePointLengthNode.execute(srcObj, TS_ENCODING);
-            cache.exceptionObject = makeEncodeExceptionNode.execute(inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
+            cache.exceptionObject = makeEncodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
             Object resultObj = callNode.execute(frame, cache.errorHandlerObject, cache.exceptionObject);
             EncodingErrorHandlerResult result = parseResultNode.execute(inliningTarget, resultObj);
             result.newPos = adjustAndCheckPos(result.newPos, len, inliningTarget, raiseNode);
@@ -978,13 +987,13 @@ public final class ErrorHandlers {
     @GenerateCached(false)
     abstract static class RaiseEncodeException extends Node {
 
-        abstract void execute(Node inliningTarget, ErrorHandlerCache cache, TruffleString encoding, TruffleString srcObj, int startPos, int endPos, TruffleString reason);
+        abstract void execute(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString encoding, TruffleString srcObj, int startPos, int endPos, TruffleString reason);
 
         @Specialization
-        static void doIt(Node inliningTarget, ErrorHandlerCache cache, TruffleString encoding, TruffleString srcObj, int startPos, int endPos, TruffleString reason,
+        static void doIt(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString encoding, TruffleString srcObj, int startPos, int endPos, TruffleString reason,
                         @Cached MakeEncodeExceptionNode makeEncodeExceptionNode,
                         @Cached(inline = false) PRaiseNode raiseNode) {
-            cache.exceptionObject = makeEncodeExceptionNode.execute(inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
+            cache.exceptionObject = makeEncodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
             raiseNode.raiseExceptionObject(cache.exceptionObject);
         }
     }

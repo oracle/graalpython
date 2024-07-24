@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
@@ -55,9 +56,12 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBina
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
+import com.oracle.graal.python.lib.PyContextCopyCurrent;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -88,7 +92,7 @@ public final class PythonCextContextBuiltins {
         @Specialization
         static Object doGeneric(TruffleString name, Object def,
                         @Cached CallNode callContextvar) {
-            return callContextvar.execute(PythonBuiltinClassType.ContextVar, name, def);
+            return callContextvar.executeWithoutFrame(PythonBuiltinClassType.ContextVar, name, def);
         }
 
         @Specialization
@@ -139,6 +143,59 @@ public final class PythonCextContextBuiltins {
             Object oldValue = pvar.getValue(threadState);
             pvar.setValue(threadState, val);
             return factory.createContextVarsToken(pvar, oldValue);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, call = Direct)
+    abstract static class PyContext_CopyCurrent extends CApiNullaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyContextCopyCurrent copyCurrent) {
+            return copyCurrent.execute(inliningTarget);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    abstract static class PyContext_Copy extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(PContextVarsContext context,
+                        @Cached PythonObjectFactory factory) {
+            return factory.copyContextVarsContext(context);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, call = Direct)
+    abstract static class PyContext_New extends CApiNullaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(
+                        @Cached PythonObjectFactory factory) {
+            return factory.createContextVarsContext();
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
+    abstract static class PyContext_Enter extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(PContextVarsContext context,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonContext.PythonThreadState threadState = getContext(inliningTarget).getThreadState(language);
+            context.enter(inliningTarget, threadState, raiseNode);
+            return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
+    abstract static class PyContext_Exit extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(PContextVarsContext context,
+                        @Bind("this") Node inliningTarget) {
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonContext.PythonThreadState threadState = getContext(inliningTarget).getThreadState(language);
+            context.leave(threadState);
+            return 0;
         }
     }
 }

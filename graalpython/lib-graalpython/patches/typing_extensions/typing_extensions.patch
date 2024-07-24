@@ -1,0 +1,13 @@
+diff --git a/typing_extensions.py b/typing_extensions.py
+index dec429c..3b711c6 100644
+--- a/typing_extensions.py
++++ b/typing_extensions.py
+@@ -544,7 +544,7 @@ else:
+         The abc and functools modules indiscriminately call isinstance() and
+         issubclass() on the whole MRO of a user class, which may contain protocols.
+         """
+-        return _caller(depth) in {'abc', 'functools', None}
++        return _caller(depth) in {'abc', 'functools', '_py_abc', None}
+ 
+     def _no_init(self, *args, **kwargs):
+         if type(self)._is_protocol:

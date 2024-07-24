@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -46,8 +46,8 @@ import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PySequenceGetItemNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -93,12 +93,12 @@ public final class ReversedBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isExhausted()")
         static Object next(VirtualFrame frame, PSequenceReverseIterator self,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItem,
+                        @Cached PySequenceGetItemNode getItemNode,
                         @Cached IsBuiltinObjectProfile profile,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (self.index >= 0) {
                 try {
-                    return callGetItem.executeObject(frame, self.getObject(), self.index--);
+                    return getItemNode.execute(frame, self.getObject(), self.index--);
                 } catch (PException e) {
                     e.expectIndexError(inliningTarget, profile);
                 }

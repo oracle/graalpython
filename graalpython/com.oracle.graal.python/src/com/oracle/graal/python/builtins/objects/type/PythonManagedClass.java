@@ -70,6 +70,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @CompilationFinal private Shape instanceShape;
     private TruffleString name;
     private TruffleString qualName;
+    private int indexedSlotCount;
 
     /**
      * Access using methods in {@link SpecialMethodSlot}.
@@ -165,6 +166,14 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                 subclass.lookupChanged();
             }
         }
+    }
+
+    public int getIndexedSlotCount() {
+        return indexedSlotCount;
+    }
+
+    public void setIndexedSlotCount(int indexedSlotCount) {
+        this.indexedSlotCount = indexedSlotCount;
     }
 
     public final TpSlots getTpSlots() {
@@ -307,14 +316,14 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     public final void setBases(Object newBaseClass, PythonAbstractClass[] newBaseClasses) {
         Object oldBase = getBase();
         PythonAbstractClass[] oldBaseClasses = getBaseClasses();
-        PythonAbstractClass[] oldMRO = (PythonAbstractClass[]) this.methodResolutionOrder.getInternalArray();
+        PythonAbstractClass[] oldMRO = this.methodResolutionOrder.getInternalClassArray();
 
         PythonAbstractClass[] subclassesArray = GetSubclassesAsArrayNode.executeUncached(this);
         PythonAbstractClass[][] oldSubClasssMROs = new PythonAbstractClass[subclassesArray.length][];
         for (int i = 0; i < subclassesArray.length; i++) {
             PythonAbstractClass scls = subclassesArray[i];
             if (scls instanceof PythonManagedClass) {
-                oldSubClasssMROs[i] = (PythonAbstractClass[]) ((PythonManagedClass) scls).methodResolutionOrder.getInternalArray();
+                oldSubClasssMROs[i] = ((PythonManagedClass) scls).methodResolutionOrder.getInternalClassArray();
             }
         }
 

@@ -57,25 +57,6 @@ public abstract class SequenceStorageFactory {
         }
     }
 
-    public static BasicSequenceStorage createStorage(Object baseValue, int len) {
-        assert baseValue != null;
-
-        if (baseValue instanceof Integer) {
-            return new IntSequenceStorage(len);
-        } else if (baseValue instanceof Byte) {
-            return new ByteSequenceStorage(len);
-        } else if (baseValue instanceof Long) {
-            return new LongSequenceStorage(len);
-        } else if (baseValue instanceof Double) {
-            return new DoubleSequenceStorage(len);
-        } else if (baseValue instanceof Boolean) {
-            return new BoolSequenceStorage(len);
-        } else {
-            return new ObjectSequenceStorage(len);
-        }
-
-    }
-
     private static boolean canSpecializeToInt(Object[] values) {
         for (Object item : values) {
             if (!(item instanceof Integer)) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -39,7 +39,7 @@ public final class PObjectSequenceIterator extends PPrimitiveIterator {
 
     public Object next() {
         assert hasNext();
-        return this.sequence.getItemNormalized(this.index++);
+        return this.sequence.getObjectItemNormalized(this.index++);
     }
 
     @Override

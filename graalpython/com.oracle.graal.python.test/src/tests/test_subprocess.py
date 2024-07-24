@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -144,39 +144,39 @@ class TestSubprocess(unittest.TestCase):
 
             env = {"GRAAL_PYTHON_ARGS": "-c 12"}
             result = subprocess.run([sys.executable], env=env)
-            assert result.returncode == 0
+            self.assertEqual(0, result.returncode)
 
             env = {"GRAAL_PYTHON_ARGS": "-c 'print(12)'"}
             result = subprocess.check_output([sys.executable], env=env, text=True)
-            assert result == '12\n'
+            self.assertEqual('12\n', result)
 
             env = {"GRAAL_PYTHON_ARGS": """-c 'print("Hello world")'"""}
             result = subprocess.check_output([sys.executable], env=env, text=True)
-            assert result == 'Hello world\n'
+            self.assertEqual('Hello world\n', result)
 
             env = {"GRAAL_PYTHON_ARGS": """-c ""'print("Hello world")'"""""}
             result = subprocess.check_output([sys.executable], env=env, text=True)
-            assert result == 'Hello world\n'
+            self.assertEqual('Hello world\n', result)
 
             env = {"GRAAL_PYTHON_ARGS": r"""-c 'print(\'"Hello world"\')'"""""}
             result = subprocess.check_output([sys.executable], env=env, text=True)
-            assert result == '"Hello world"\n'
+            self.assertEqual('"Hello world"\n', result)
 
             env = {"GRAAL_PYTHON_ARGS": """\v-c\vprint('"Hello world"')"""}
             result = subprocess.check_output([sys.executable], env=env, text=True)
-            assert result == '"Hello world"\n'
+            self.assertEqual('"Hello world"\n', result)
 
             env = {"GRAAL_PYTHON_ARGS": """\v-c\vprint('Hello', "world")"""}
             result = subprocess.check_output([sys.executable], env=env, text=True)
-            assert result == 'Hello world\n'
+            self.assertEqual('Hello world\n', result)
 
             # check that the subprocess receives the args and thus it should fail because it recurses
             args = """\v-c\vimport os\nprint(os.environ.get("GRAAL_PYTHON_ARGS"))"""
             env = {"GRAAL_PYTHON_ARGS": args}
             result = subprocess.check_output([sys.executable], env=env, text=True)
-            assert result == f"{args}\n"
+            self.assertEqual(f"{args}\n", result)
 
             # check that the subprocess does not receive the args when we end with \v
             env = {"GRAAL_PYTHON_ARGS": """\v-c\vimport os\nprint(os.environ.get("GRAAL_PYTHON_ARGS"))\v"""}
             result = subprocess.check_output([sys.executable], env=env, text=True)
-            assert result == 'None\n'
+            self.assertEqual('None\n', result)

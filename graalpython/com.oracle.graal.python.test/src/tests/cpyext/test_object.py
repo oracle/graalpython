@@ -1312,7 +1312,8 @@ class TestObject(object):
         # Note: len(obj) uses 'PyObject_Lenght' which does not use the attribute but first tries
         # 'sq_length' and falls back to 'mp_length'. Therefore, we just look at '__len__' here.
         assert obj.__len__() == 222
-        assert obj['hello'] == 'mp_subscript'
+        assert len(obj) == 111
+        assert obj['hello'] == 'mp_subscript', obj['hello']
         assert obj + 'hello' == 'mas_nb_add'
 
     def test_take_ownership(self):

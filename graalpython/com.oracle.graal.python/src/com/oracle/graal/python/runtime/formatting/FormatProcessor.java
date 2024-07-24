@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -98,7 +98,7 @@ abstract class FormatProcessor<T> {
     }
 
     static Object call(Object callable, Object... args) {
-        return CallNode.getUncached().execute(null, callable, args, PKeyword.EMPTY_KEYWORDS);
+        return CallNode.executeUncached(callable, args, PKeyword.EMPTY_KEYWORDS);
     }
 
     Object getItem(Object arg, Object arg2) {

@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
+import static com.oracle.graal.python.util.PythonUtils.builtinClassToType;
 
 import java.nio.ByteOrder;
 
@@ -63,11 +64,11 @@ public final class PByteArray extends PBytesLike {
     private volatile long exports;
 
     public PByteArray(Object cls, Shape instanceShape, byte[] bytes) {
-        super(cls, instanceShape, bytes);
+        super(builtinClassToType(cls), instanceShape, bytes);
     }
 
     public PByteArray(Object cls, Shape instanceShape, SequenceStorage store) {
-        super(cls, instanceShape, store);
+        super(builtinClassToType(cls), instanceShape, store);
     }
 
     @Override

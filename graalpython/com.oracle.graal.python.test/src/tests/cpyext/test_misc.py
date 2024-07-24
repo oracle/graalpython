@@ -165,6 +165,17 @@ class TestMisc(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyImport_GetModule = CPyExtFunction(
+        lambda args: sys.modules.get(args[0]),
+        lambda: (
+            ("os",),
+        ),
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* name"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyTruffle_Intrinsic_Pmovmskb = CPyExtFunction(
         lambda args: True,
         lambda: (

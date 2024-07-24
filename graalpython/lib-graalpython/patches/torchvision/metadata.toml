@@ -1,6 +1,7 @@
 [[rules]]
 version = '== 0.17.1'
 patch = 'torchvision-1.17.1.patch'
+license = 'BSD-3-Clause'
 
 [[add-sources]]
 version = '0.17.1'

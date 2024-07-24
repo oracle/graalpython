@@ -404,6 +404,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // data filled in subsequent __init__ call - see BytesCommonBuiltins.InitNode
             return factory.createByteArray(cls, PythonUtils.EMPTY_BYTE_ARRAY);
         }
+
+        // TODO: native allocation?
     }
 
     // complex([real[, imag]])
@@ -1079,7 +1081,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // float([x])
     @Builtin(name = J_FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat, doc = "Convert a string or number to a floating point number, if possible.")
     @GenerateNodeFactory
-    @ReportPolymorphism
     abstract static class FloatNode extends PythonBinaryBuiltinNode {
 
         @Child NonPrimitiveFloatNode nonPrimitiveFloatNode;
@@ -1872,7 +1873,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     The builtins True and False are the only two instances of the class bool.
                     The class bool is a subclass of the class int, and cannot be subclassed.""")
     @GenerateNodeFactory
-    @ReportPolymorphism
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
         @Specialization
         public static boolean bool(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,

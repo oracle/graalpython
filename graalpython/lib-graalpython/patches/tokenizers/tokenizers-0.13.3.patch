@@ -22,6 +22,34 @@ index 6282c31..47e6b12 100644
  
  [features]
  default = ["pyo3/extension-module"]
+diff --git a/src/lib.rs b/src/lib.rs
+index bf1adbd..89c34fe 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -48,14 +48,16 @@ extern "C" fn child_after_fork() {
+ pub fn tokenizers(_py: Python, m: &PyModule) -> PyResult<()> {
+     let _ = env_logger::try_init_from_env("TOKENIZERS_LOG");
+ 
++    // GraalPy change: Disable the atfork warning. This triggers a ton of false positives when
++    // jline calls stty and we don't support fork anyway
+     // Register the fork callback
+-    #[cfg(target_family = "unix")]
+-    unsafe {
+-        if !REGISTERED_FORK_CALLBACK {
+-            libc::pthread_atfork(None, None, Some(child_after_fork));
+-            REGISTERED_FORK_CALLBACK = true;
+-        }
+-    }
++    // #[cfg(target_family = "unix")]
++    // unsafe {
++    //     if !REGISTERED_FORK_CALLBACK {
++    //         libc::pthread_atfork(None, None, Some(child_after_fork));
++    //         REGISTERED_FORK_CALLBACK = true;
++    //     }
++    // }
+ 
+     m.add_class::<tokenizer::PyTokenizer>()?;
+     m.add_class::<tokenizer::PyAddedToken>()?;
 diff --git a/tokenizers-lib/src/models/bpe/trainer.rs b/tokenizers-lib/src/models/bpe/trainer.rs
 index 43ab848..55f95f8 100644
 --- a/tokenizers-lib/src/models/bpe/trainer.rs

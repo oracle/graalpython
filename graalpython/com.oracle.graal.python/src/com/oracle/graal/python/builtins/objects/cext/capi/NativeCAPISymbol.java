@@ -143,7 +143,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_TRUFFLE_CAPSULE_CALL_DESTRUCTOR("PyTruffleCapsule_CallDestructor", ArgDescriptor.Void, PyObject, ArgDescriptor.PY_CAPSULE_DESTRUCTOR),
     FUN_PY_SEQUENCE_CHECK("PySequence_Check", Int, PyObject),
     FUN_PY_SEQUENCE_SIZE("PySequence_Size", Py_ssize_t, PyObject),
-    FUN_PY_SEQUENCE_GET_ITEM("PySequence_GetItem", PyObjectTransfer, PyObject, Py_ssize_t),
     FUN_PY_SEQUENCE_SET_ITEM("PySequence_SetItem", Int, PyObject, Py_ssize_t, PyObject),
     FUN_PY_SEQUENCE_DEL_ITEM("PySequence_DelItem", Int, PyObject, Py_ssize_t),
     FUN_TUPLE_SUBTYPE_NEW("tuple_subtype_new", PyObjectTransfer, PyTypeObject, PyObject),
@@ -159,6 +158,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_MMAP_INIT_BUFFERPROTOCOL("mmap_init_bufferprotocol", ArgDescriptor.Void, PyTypeObject),
     FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL("PyTruffleCData_InitBufferProtocol", ArgDescriptor.Void, PyTypeObject),
     FUN_TRUFFLE_CHECK_TYPE_READY("truffle_check_type_ready", ArgDescriptor.Void, PyTypeObject),
+    FUN_PYOBJECT_HASH_NOT_IMPLEMENTED("PyObject_HashNotImplemented", ArgDescriptor.Py_hash_t, PyObject),
 
     /* PyDateTime_CAPI */
 

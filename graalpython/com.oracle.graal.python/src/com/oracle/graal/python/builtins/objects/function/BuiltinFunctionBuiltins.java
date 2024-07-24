@@ -195,19 +195,19 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
                 if (name.codePointAtIndexUncached(0, TS_ENCODING) == '$') {
                     name = name.substringUncached(1, name.codePointLengthUncached(TS_ENCODING) - 1, TS_ENCODING, true);
                 }
-                parameters.add(callNode.execute(inspectParameter, name, kind));
+                parameters.add(callNode.executeWithoutFrame(inspectParameter, name, kind));
             }
             if (takesVarArgs) {
-                parameters.add(callNode.execute(inspectParameter, StringLiterals.T_ARGS, ParameterKinds.VAR_POSITIONAL.get(parameterKinds, inspectParameter)));
+                parameters.add(callNode.executeWithoutFrame(inspectParameter, StringLiterals.T_ARGS, ParameterKinds.VAR_POSITIONAL.get(parameterKinds, inspectParameter)));
             }
             for (TruffleString keywordName : keywordNames) {
-                parameters.add(callNode.execute(inspectParameter, keywordName, ParameterKinds.KEYWORD_ONLY.get(parameterKinds, inspectParameter)));
+                parameters.add(callNode.executeWithoutFrame(inspectParameter, keywordName, ParameterKinds.KEYWORD_ONLY.get(parameterKinds, inspectParameter)));
             }
             if (takesVarKeywordArgs) {
-                parameters.add(callNode.execute(inspectParameter, StringLiterals.T_KWARGS, ParameterKinds.VAR_KEYWORD.get(parameterKinds, inspectParameter)));
+                parameters.add(callNode.executeWithoutFrame(inspectParameter, StringLiterals.T_KWARGS, ParameterKinds.VAR_KEYWORD.get(parameterKinds, inspectParameter)));
             }
 
-            return callNode.execute(inspectSignature, PythonObjectFactory.getUncached().createTuple(parameters.toArray()));
+            return callNode.executeWithoutFrame(inspectSignature, PythonObjectFactory.getUncached().createTuple(parameters.toArray()));
         }
     }
 }

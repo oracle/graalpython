@@ -25,13 +25,11 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import java.math.BigInteger;
+import com.oracle.truffle.api.CompilerDirectives;
+
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.util.PythonUtils;
-
-public final class LongSequenceStorage extends TypedSequenceStorage {
+public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
 
     private long[] values;
 
@@ -57,15 +55,15 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         this.length = 0;
     }
 
-    @Override
-    protected void increaseCapacityExactWithCopy(int newCapacity) {
+    private void increaseCapacityExactWithCopy(int newCapacity) {
         values = Arrays.copyOf(values, newCapacity);
         capacity = values.length;
     }
 
-    @Override
-    public SequenceStorage copy() {
-        return new LongSequenceStorage(PythonUtils.arrayCopyOf(values, length));
+    public void ensureCapacity(int newCapacity) throws ArithmeticException {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, newCapacity > capacity)) {
+            increaseCapacityExactWithCopy(capacityFor(newCapacity));
+        }
     }
 
     @Override
@@ -73,61 +71,30 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         return new LongSequenceStorage(newCapacity);
     }
 
-    @Override
-    public Object[] getInternalArray() {
-        /*
-         * Have to box and copy.
-         */
-        Object[] boxed = new Object[length];
+    public void reverse() {
+        if (length > 0) {
+            int head = 0;
+            int tail = length - 1;
+            int middle = (length - 1) / 2;
 
-        for (int i = 0; i < length; i++) {
-            boxed[i] = values[i];
+            for (; head <= middle; head++, tail--) {
+                long temp = values[head];
+                values[head] = values[tail];
+                values[tail] = temp;
+            }
         }
-
-        return boxed;
     }
 
     public long[] getInternalLongArray() {
         return values;
     }
 
-    @Override
-    public Object getItemNormalized(int idx) {
-        return getLongItemNormalized(idx);
-    }
-
     public long getLongItemNormalized(int idx) {
         return values[idx];
     }
 
-    @Override
-    public void setItemNormalized(int idx, Object val) throws SequenceStoreException {
-        Object value = (val instanceof Integer) ? BigInteger.valueOf((int) val).longValue() : val;
-        value = (val instanceof BigInteger) ? ((BigInteger) val).longValue() : value;
-        if (value instanceof Long) {
-            setLongItemNormalized(idx, (long) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
     public void setLongItemNormalized(int idx, long value) {
         values[idx] = value;
-    }
-
-    @Override
-    public void insertItem(int idx, Object val) throws SequenceStoreException {
-        long value;
-        if (val instanceof Integer) {
-            value = (int) val;
-        } else if (val instanceof BigInteger) {
-            value = PInt.longValue((BigInteger) val);
-        } else if (val instanceof Long) {
-            value = (long) val;
-        } else {
-            throw new SequenceStoreException(val);
-        }
-        insertLongItem(idx, value);
     }
 
     public void insertLongItem(int idx, long value) {
@@ -142,22 +109,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         incLength();
     }
 
-    @Override
-    public LongSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
-        long[] newArray = new long[sliceLength];
-
-        if (step == 1) {
-            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
-            return new LongSequenceStorage(newArray);
-        }
-
-        for (int i = start, j = 0; j < sliceLength; i += step, j++) {
-            newArray[j] = values[i];
-        }
-
-        return new LongSequenceStorage(newArray);
-    }
-
     public int indexOfLong(long value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {
@@ -166,21 +117,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         }
 
         return -1;
-    }
-
-    @Override
-    public void reverse() {
-        if (length > 0) {
-            int head = 0;
-            int tail = length - 1;
-            int middle = (length - 1) / 2;
-
-            for (; head <= middle; head++, tail--) {
-                long temp = values[head];
-                values[head] = values[tail];
-                values[tail] = temp;
-            }
-        }
     }
 
     @Override
@@ -198,9 +134,17 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         return Arrays.copyOf(values, length);
     }
 
-    @Override
     public Object[] getCopyOfInternalArray() {
-        return getInternalArray();
+        /*
+         * Have to box and copy.
+         */
+        Object[] boxed = new Object[length];
+
+        for (int i = 0; i < length; i++) {
+            boxed[i] = values[i];
+        }
+
+        return boxed;
     }
 
     @Override

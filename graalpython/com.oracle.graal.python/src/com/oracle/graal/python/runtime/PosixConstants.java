@@ -98,6 +98,9 @@ public final class PosixConstants {
     public static final MandatoryIntConstant SOMAXCONN;
     public static final OptionalIntConstant PIPE_BUF;
     public static final OptionalIntConstant SEM_VALUE_MAX;
+    public static final OptionalIntConstant RUSAGE_CHILDREN;
+    public static final MandatoryIntConstant RUSAGE_SELF;
+    public static final OptionalIntConstant RUSAGE_THREAD;
     public static final OptionalIntConstant O_ACCMODE;
     public static final MandatoryIntConstant O_RDONLY;
     public static final MandatoryIntConstant O_WRONLY;
@@ -377,6 +380,9 @@ public final class PosixConstants {
         SOMAXCONN = reg.createMandatoryInt("SOMAXCONN");
         PIPE_BUF = reg.createOptionalInt("PIPE_BUF");
         SEM_VALUE_MAX = reg.createOptionalInt("SEM_VALUE_MAX");
+        RUSAGE_CHILDREN = reg.createOptionalInt("RUSAGE_CHILDREN");
+        RUSAGE_SELF = reg.createMandatoryInt("RUSAGE_SELF");
+        RUSAGE_THREAD = reg.createOptionalInt("RUSAGE_THREAD");
         O_ACCMODE = reg.createOptionalInt("O_ACCMODE");
         O_RDONLY = reg.createMandatoryInt("O_RDONLY");
         O_WRONLY = reg.createMandatoryInt("O_WRONLY");

@@ -105,6 +105,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.utilities.MathUtils;
 
 @CoreFunctions(defineModule = "math")
 public final class MathModuleBuiltins extends PythonBuiltins {
@@ -1120,7 +1121,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object gcdNative(@SuppressWarnings("unused") PythonAbstractNativeObject a, @SuppressWarnings("unused") Object b) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.GCD_FOR_NATIVE_NOT_SUPPORTED);
         }
 
@@ -1258,7 +1259,6 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AcoshNode extends PythonUnaryBuiltinNode {
 
-        private static final double TWO_POW_P28 = 0x1.0p28;
         private static final double LN_2 = 6.93147180559945286227e-01;
 
         @Specialization
@@ -1285,14 +1285,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         private static double compute(Node inliningTarget, double value, PRaiseNode.Lazy raiseNode) {
             checkMathDomainError(value < 1, inliningTarget, raiseNode);
-            if (value >= TWO_POW_P28) {
-                return Math.log(value) + LN_2;
-            }
-            if (value <= 2.0) {
-                double t = value - 1.0;
-                return Math.log1p(t + Math.sqrt(2.0 * t + t * t));
-            }
-            return Math.log(value + Math.sqrt(value * value - 1.0));
+            return MathUtils.acosh(value);
         }
     }
 
@@ -1433,8 +1426,6 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AtanhNode extends PythonUnaryBuiltinNode {
 
-        private static final double TWO_POW_M28 = 0x1.0p-28;
-
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
@@ -1445,17 +1436,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         private static double compute(Node inliningTarget, double value, PRaiseNode.Lazy raiseNode) {
             double abs = Math.abs(value);
             checkMathDomainError(abs >= 1.0, inliningTarget, raiseNode);
-            if (abs < TWO_POW_M28) {
-                return value;
-            }
-            double t;
-            if (abs < 0.5) {
-                t = abs + abs;
-                t = 0.5 * Math.log1p(t + t * abs / (1.0 - abs));
-            } else {
-                t = 0.5 * Math.log1p((abs + abs) / (1.0 - abs));
-            }
-            return Math.copySign(t, value);
+            return MathUtils.atanh(value);
         }
     }
 
@@ -1465,10 +1446,6 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AsinhNode extends PythonUnaryBuiltinNode {
 
-        private static final double LN_2 = 6.93147180559945286227e-01;
-        private static final double TWO_POW_P28 = 0x1.0p28;
-        private static final double TWO_POW_M28 = 0x1.0p-28;
-
         @Specialization
         static double doGeneric(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
@@ -1476,30 +1453,8 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, AsinhNode::compute);
         }
 
-        @TruffleBoundary
         private static double compute(Node inliningTarget, double value, PRaiseNode.Lazy raiseNode) {
-            return compute(value);
-        }
-
-        static double compute(double value) {
-            double absx = Math.abs(value);
-
-            if (Double.isNaN(value) || Double.isInfinite(value)) {
-                return value + value;
-            }
-            if (absx < TWO_POW_M28) {
-                return value;
-            }
-            double w;
-            if (absx > TWO_POW_P28) {
-                w = Math.log(absx) + LN_2;
-            } else if (absx > 2.0) {
-                w = Math.log(2.0 * absx + 1.0 / (Math.sqrt(value * value + 1.0) + absx));
-            } else {
-                double t = value * value;
-                w = Math.log1p(absx + t / (1.0 + Math.sqrt(1.0 + t)));
-            }
-            return Math.copySign(w, value);
+            return MathUtils.asinh(value);
         }
 
         public static AsinhNode create() {

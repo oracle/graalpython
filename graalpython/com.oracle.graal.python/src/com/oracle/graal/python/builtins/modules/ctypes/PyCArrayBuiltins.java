@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.INDICES_MUST_BE_INTEGE
 import static com.oracle.graal.python.nodes.ErrorMessages.INDICES_MUST_BE_INTEGERS;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_INDEX;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
@@ -80,7 +79,9 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.AdjustIndices;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.SliceUnpack;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -88,12 +89,14 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -105,6 +108,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PyCArray)
@@ -237,29 +241,57 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_item, isComplex = true)
     @GenerateNodeFactory
-    abstract static class PyCArrayGetItemNode extends PythonBinaryBuiltinNode {
+    abstract static class PyCArrayGetItemNode extends SqItemBuiltinNode {
+        @Specialization
+        static Object doIt(CDataObject self, int index,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PyCDataGetNode pyCDataGetNode,
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+            checkIndex(inliningTarget, self, index, raiseNode);
+            return getItem(inliningTarget, self, index, pyCDataGetNode, pyObjectStgDictNode);
+        }
+
+        static Object getItem(Node inliningTarget, CDataObject self, int index, PyCDataGetNode pyCDataGetNode, PyObjectStgDictNode pyObjectStgDictNode) {
+            StgDictObject stgdict = pyObjectStgDictNode.execute(inliningTarget, self);
+            assert stgdict != null : "Cannot be NULL for array object instances";
+            int size = stgdict.size / stgdict.length;
+            int offset = index * size;
+            return pyCDataGetNode.execute(inliningTarget, stgdict.proto, stgdict.getfunc, self, index, size, self.b_ptr.withOffset(offset));
+        }
+
+        private static void checkIndex(Node inliningTarget, CDataObject self, int index, Lazy raiseNode) {
+            if (index < 0 || index >= self.b_length) {
+                raiseInvalidIndex(inliningTarget, raiseNode);
+            }
+        }
+
+        @InliningCutoff
+        private static void raiseInvalidIndex(Node inliningTarget, Lazy raiseNode) {
+            throw raiseNode.get(inliningTarget).raise(IndexError, INVALID_INDEX);
+        }
+    }
+
+    @Slot(value = SlotKind.mp_subscript, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class PyCArraySubscriptNode extends MpSubscriptBuiltinNode {
 
         protected static boolean isInvalid(CDataObject self, int index) {
             return index < 0 || index >= self.b_length;
         }
 
         @Specialization(guards = "!isInvalid(self, index)")
-        static Object Array_item(CDataObject self, int index,
+        static Object doInt(CDataObject self, int index,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
                         @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode) {
-            StgDictObject stgdict = pyObjectStgDictNode.execute(inliningTarget, self);
-            assert stgdict != null : "Cannot be NULL for array object instances";
-            int size = stgdict.size / stgdict.length;
-            int offset = index * size;
-
-            return pyCDataGetNode.execute(inliningTarget, stgdict.proto, stgdict.getfunc, self, index, size, self.b_ptr.withOffset(offset));
+            return PyCArrayGetItemNode.getItem(inliningTarget, self, index, pyCDataGetNode, pyObjectStgDictNode);
         }
 
         @Specialization(limit = "1")
-        static Object Array_subscript(CDataObject self, PSlice slice,
+        static Object doSlice(CDataObject self, PSlice slice,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
@@ -317,17 +349,18 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
             Object[] np = new Object[slicelen];
 
             for (int cur = sliceInfo.start, i = 0; i < slicelen; cur += sliceInfo.step, i++) {
-                np[i] = Array_item(self, cur, inliningTarget, pyCDataGetNode, pyObjectStgDictNode);
+                np[i] = doInt(self, cur, inliningTarget, pyCDataGetNode, pyObjectStgDictNode);
             }
             return factory.createList(np);
         }
 
-        @Specialization(guards = "!isPSlice(item)")
-        static Object Array_item(VirtualFrame frame, CDataObject self, Object item,
+        @Specialization(guards = "!isPSlice(item)", replaces = "doInt")
+        static Object doGeneric(VirtualFrame frame, CDataObject self, Object item,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached InlinedConditionProfile negativeIndexProfile,
                         @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
                         @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -336,14 +369,12 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
             }
             Object idx = indexNode.execute(frame, inliningTarget, item);
             int index = asSizeNode.executeExact(frame, inliningTarget, idx);
-            if (index < 0) {
+            if (negativeIndexProfile.profile(inliningTarget, index < 0)) {
                 index += self.b_length;
             }
-            if (isInvalid(self, index)) {
-                throw raiseNode.get(inliningTarget).raise(IndexError, INVALID_INDEX);
-            }
+            PyCArrayGetItemNode.checkIndex(inliningTarget, self, index, raiseNode);
 
-            return Array_item(self, index, inliningTarget, pyCDataGetNode, pyObjectStgDictNode);
+            return doInt(self, index, inliningTarget, pyCDataGetNode, pyObjectStgDictNode);
         }
     }
 

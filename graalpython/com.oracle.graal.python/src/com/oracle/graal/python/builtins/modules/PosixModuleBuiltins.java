@@ -394,7 +394,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         public static PTuple generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
                         @Cached("create(STAT_RESULT_DESC)") StructSequence.NewNode newNode) {
             PTuple p = (PTuple) newNode.execute(frame, cls, sequence, dict);
-            Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalArray();
+            Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalObjectArray();
             for (int i = 7; i <= 9; i++) {
                 if (data[i + 3] == PNone.NONE) {
                     data[i + 3] = data[i];
@@ -2853,11 +2853,14 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class SysconfNode extends PythonUnaryBuiltinNode {
 
         public static final TruffleString T_SC_CLK_TCK = tsLiteral("SC_CLK_TCK");
+        public static final TruffleString T_SC_NPROCESSORS_ONLN = tsLiteral("SC_NPROCESSORS_ONLN");
         public static final int SC_CLK_TCK = 2;
+        public static final int SC_NPROCESSORS_ONLN = 84;
         public static final EconomicMapStorage SYSCONF_NAMES = EconomicMapStorage.create();
         static {
             // TODO populate from constants
             SYSCONF_NAMES.putUncachedWithJavaEq(T_SC_CLK_TCK, SC_CLK_TCK);
+            SYSCONF_NAMES.putUncachedWithJavaEq(T_SC_NPROCESSORS_ONLN, SC_NPROCESSORS_ONLN);
         }
 
         @Specialization
@@ -2885,6 +2888,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             if (id == SC_CLK_TCK) {
                 return 100; // it's 100 on most default kernel configs. TODO: use real value through
                             // NFI
+            } else if (id == SC_NPROCESSORS_ONLN) {
+                return CpuCountNode.getCpuCount();
             }
             throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
         }

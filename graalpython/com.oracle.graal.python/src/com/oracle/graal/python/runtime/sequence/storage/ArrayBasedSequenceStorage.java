@@ -40,11 +40,10 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-public abstract class ArrayBasedSequenceStorage extends BasicSequenceStorage {
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.truffle.api.CompilerAsserts;
 
-    public abstract Object[] getInternalArray();
-
-    public abstract Object[] getCopyOfInternalArray();
+public abstract class ArrayBasedSequenceStorage extends SequenceStorage {
 
     public abstract Object getInternalArrayObject();
 
@@ -54,4 +53,29 @@ public abstract class ArrayBasedSequenceStorage extends BasicSequenceStorage {
 
     public abstract ArrayBasedSequenceStorage createEmpty(int newCapacity);
 
+    /**
+     * The capacity we should allocate for a given length.
+     */
+    protected static int capacityFor(int length) throws ArithmeticException {
+        return Math.max(16, Math.multiplyExact(length, 2));
+    }
+
+    public void minimizeCapacity() {
+        capacity = length;
+    }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        StringBuilder str = new StringBuilder(getClass().getSimpleName()).append('[');
+        int len = length > 10 ? 10 : length;
+        for (int i = 0; i < len; i++) {
+            str.append(i == 0 ? "" : ", ");
+            str.append(SequenceStorageNodes.GetItemScalarNode.executeUncached(this, i));
+        }
+        if (length > 10) {
+            str.append("...").append('(').append(length).append(')');
+        }
+        return str.append(']').toString();
+    }
 }

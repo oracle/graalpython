@@ -271,7 +271,7 @@ public final class PythonClass extends PythonManagedClass {
         if (mroShape != null) {
             // add this class as a subtype of all classes in the mro (including itself)
             mroLoop: for (int mroIdx = 0; mroIdx < mro.length(); mroIdx++) {
-                PythonManagedClass managedClass = (PythonManagedClass) mro.getItemNormalized(mroIdx);
+                PythonManagedClass managedClass = (PythonManagedClass) mro.getPythonClassItemNormalized(mroIdx);
                 if (managedClass instanceof PythonBuiltinClass) {
                     // builtin classes are assumed immutable, so we do not need to register in their
                     // mro subtypes array (in fact they do not have such array)

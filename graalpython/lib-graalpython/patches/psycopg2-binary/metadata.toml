@@ -1,0 +1,3 @@
+[[rules]]
+patch = "psycopg2-binary.patch"
+license = "LGPL-3.0-or-later WITH openssl-exception"

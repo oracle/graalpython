@@ -1,13 +1,14 @@
 [[rules]]
 version = '== 3.0.10'
 patch = 'Cython-3.0.10.patch'
+license = 'Apache-2.0'
 
-# Prefer pre-3 version for now
 [[rules]]
 version = '== 0.29.37'
 patch = 'Cython-0.29.37.patch'
-install-priority = 2
+license = 'Apache-2.0'
 
 [[rules]]
 version = '== 0.29.32'
 patch = 'Cython-0.29.32.patch'
+license = 'Apache-2.0'

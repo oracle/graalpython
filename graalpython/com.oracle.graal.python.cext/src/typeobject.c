@@ -6291,7 +6291,6 @@ type_ready_inherit(PyTypeObject *type)
 }
 
 
-#if 0 // GraalPy change
 /* Hack for tp_hash and __hash__.
    If after all that, tp_hash is still NULL, and __hash__ is not in
    tp_dict, set tp_hash to PyObject_HashNotImplemented and
@@ -6304,7 +6303,8 @@ type_ready_set_hash(PyTypeObject *type)
         return 0;
     }
 
-    int r = PyDict_Contains(type->tp_dict, &_Py_ID(__hash__));
+    // GraalPy change: cannot use CPython's current _Py_ID mechanism
+    int r = _PyDict_ContainsId(type->tp_dict, &PyId___hash__);
     if (r < 0) {
         return -1;
     }
@@ -6312,13 +6312,13 @@ type_ready_set_hash(PyTypeObject *type)
         return 0;
     }
 
-    if (PyDict_SetItem(type->tp_dict, &_Py_ID(__hash__), Py_None) < 0) {
+    // GraalPy change: cannot use CPython's current _Py_ID mechanism
+    if (_PyDict_SetItemId(type->tp_dict, &PyId___hash__, Py_None) < 0) {
         return -1;
     }
     type->tp_hash = PyObject_HashNotImplemented;
     return 0;
 }
-#endif // GraalPy change
 
 
 /* Link into each base class's list of subclasses */
@@ -6476,11 +6476,10 @@ type_ready(PyTypeObject *type)
      * when the C API is not loaded, we need to do that later.
      */
     GraalPyTruffle_AddInheritedSlots(type);
-#if 0 // GraalPy change
+
     if (type_ready_set_hash(type) < 0) {
         return -1;
     }
-#endif // GraalPy change
     if (type_ready_add_subclasses(type) < 0) {
         return -1;
     }

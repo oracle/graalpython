@@ -145,9 +145,9 @@ public class TpSlotSetAttr {
     }
 
     public static final class TpSlotSetAttrPython extends TpSlotPython {
-        final TruffleWeakReference<Object> setattr;
-        final TruffleWeakReference<Object> delattr;
-        final TruffleWeakReference<Object> type;
+        private final TruffleWeakReference<Object> setattr;
+        private final TruffleWeakReference<Object> delattr;
+        private final TruffleWeakReference<Object> type;
 
         public TpSlotSetAttrPython(Object setattr, Object delattr, Object type) {
             this.setattr = asWeakRef(setattr);

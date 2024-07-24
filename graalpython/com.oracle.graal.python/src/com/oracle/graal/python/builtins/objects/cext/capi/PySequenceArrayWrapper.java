@@ -42,18 +42,20 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import java.util.logging.Level;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapperFactory.ToNativeStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
@@ -77,6 +79,8 @@ public final class PySequenceArrayWrapper {
     @GenerateUncached
     public abstract static class ToNativeStorageNode extends Node {
 
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ToNativeStorageNode.class);
+
         public abstract NativeSequenceStorage execute(Node inliningTarget, SequenceStorage object, boolean isBytesLike);
 
         public static NativeSequenceStorage executeUncached(SequenceStorage object, boolean isBytesLike) {
@@ -84,9 +88,9 @@ public final class PySequenceArrayWrapper {
         }
 
         @Specialization(guards = "!isMroSequenceStorage(s)")
-        static NativeSequenceStorage doManaged(Node inliningTarget, BasicSequenceStorage s, boolean isBytesLike,
+        static NativeSequenceStorage doManaged(Node inliningTarget, ArrayBasedSequenceStorage s, boolean isBytesLike,
                         @Exclusive @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
-                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
+                        @Exclusive @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
             Object array;
             if (isBytesLike) {
                 ByteSequenceStorage byteStorage = (ByteSequenceStorage) s;
@@ -94,6 +98,18 @@ public final class PySequenceArrayWrapper {
             } else {
                 array = getInternalArrayNode.execute(inliningTarget, s);
             }
+            return storageToNativeNode.execute(inliningTarget, array, s.length());
+        }
+
+        /*
+         * TODO This can be optimized further. Now we are converting NativePrimitiveSequenceStorage
+         * to ObjectArrayStorage and then to NativeStorageStrategy
+         */
+        @Specialization
+        static NativeSequenceStorage doNativePrimitive(Node inliningTarget, NativePrimitiveSequenceStorage s, boolean isBytesLike,
+                        @Exclusive @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
+                        @Exclusive @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
+            Object array = getInternalArrayNode.execute(inliningTarget, s);
             return storageToNativeNode.execute(inliningTarget, array, s.length());
         }
 

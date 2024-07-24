@@ -57,12 +57,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@NodeInfo(shortName = "read_global")
 @GenerateUncached
 @SuppressWarnings("truffle-inlining")       // footprint reduction 48 -> 30
 public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {

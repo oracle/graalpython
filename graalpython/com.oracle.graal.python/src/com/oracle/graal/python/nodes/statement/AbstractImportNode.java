@@ -114,7 +114,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
             throw PConstructAndRaiseNode.getUncached().raiseImportError(null, IMPORT_NOT_FOUND);
         }
         Object fromList = context.factory().createTuple(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
-        CallNode.getUncached().execute(builtinImport, name, PNone.NONE, PNone.NONE, fromList, 0);
+        CallNode.executeUncached(builtinImport, name, PNone.NONE, PNone.NONE, fromList, 0);
         PythonModule sysModule = context.lookupBuiltinModule(T_SYS);
         Object modules = sysModule.getAttribute(T_MODULES);
         if (modules == PNone.NO_VALUE) {

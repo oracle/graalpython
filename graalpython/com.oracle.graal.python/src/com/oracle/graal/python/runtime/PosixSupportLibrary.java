@@ -300,6 +300,34 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long[] getgroups(Object receiver) throws PosixException;
 
+    /**
+     * Equivalent to struct r_usage with the fields expected on macOS and Linux.
+     *
+     * @param ru_utime time in user mode (fractional seconds)
+     * @param ru_stime time in system mode (fractional seconds)
+     * @param ru_maxrss reserved memory size
+     * @param ru_ixrss shared memory size
+     * @param ru_idrss unshared memory size
+     * @param ru_isrss unshared stack size
+     * @param ru_minflt page faults not requiring I/O
+     * @param ru_majflt page faults requiring I/O
+     * @param ru_nswap number of swap outs
+     * @param ru_inblock block input operations
+     * @param ru_oublock block output operations
+     * @param ru_msgsnd messages sent
+     * @param ru_msgrcv messages received
+     * @param ru_nsignals signals received
+     * @param ru_nvcsw voluntary context switches
+     * @param ru_nivcsw involuntary context switches
+     */
+    public record RusageResult(double ru_utime, double ru_stime,
+                    long ru_maxrss, long ru_ixrss, long ru_idrss, long ru_isrss,
+                    long ru_minflt, long ru_majflt, long ru_nswap, long ru_inblock, long ru_oublock,
+                    long ru_msgsnd, long ru_msgrcv, long ru_nsignals, long ru_nvcsw, long ru_nivcsw) {
+    }
+
+    public abstract RusageResult getrusage(Object receiver, int who) throws PosixException;
+
     public record OpenPtyResult(int masterFd, int slaveFd) {
     }
 

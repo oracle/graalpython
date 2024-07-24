@@ -41,7 +41,6 @@
 package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -59,7 +58,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
-public final class MroSequenceStorage extends TypedSequenceStorage {
+public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
 
     private final TruffleString className;
     /**
@@ -104,37 +103,8 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         this.attributesInMROFinalAssumptions = new HashMap<>();
     }
 
-    @Override
-    public PythonAbstractClass getItemNormalized(int idx) {
+    public PythonAbstractClass getPythonClassItemNormalized(int idx) {
         return values[idx];
-    }
-
-    @Override
-    @SuppressWarnings("unused")
-    public void setItemNormalized(int idx, Object value) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    @SuppressWarnings("unused")
-    public void insertItem(int idx, Object value) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
-    public MroSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
-        PythonAbstractClass[] newArray = new PythonAbstractClass[sliceLength];
-
-        if (step == 1) {
-            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
-            return new MroSequenceStorage(getClassName(), newArray);
-        }
-
-        for (int i = start, j = 0; j < sliceLength; i += step, j++) {
-            newArray[j] = values[i];
-        }
-
-        return new MroSequenceStorage(getClassName(), newArray);
     }
 
     public TruffleString getClassName() {
@@ -142,34 +112,12 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public SequenceStorage copy() {
-        return new MroSequenceStorage(getClassName(), PythonUtils.arrayCopyOf(values, length));
-    }
-
-    @Override
     public MroSequenceStorage createEmpty(int newCapacity) {
         return new MroSequenceStorage(getClassName(), newCapacity);
     }
 
-    @Override
-    public Object[] getInternalArray() {
-        return values;
-    }
-
     public PythonAbstractClass[] getInternalClassArray() {
         return values;
-    }
-
-    @SuppressWarnings("unused")
-    @Override
-    public void increaseCapacityExactWithCopy(int newCapacity) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @SuppressWarnings("unused")
-    @Override
-    public void reverse() {
-        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
@@ -184,7 +132,11 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public Object getCopyOfInternalArrayObject() {
-        return Arrays.copyOf(values, length);
+        return getCopyOfInternalArray();
+    }
+
+    public Object[] getCopyOfInternalArray() {
+        return PythonUtils.arrayCopyOf(values, length);
     }
 
     @SuppressWarnings("unused")
@@ -281,11 +233,6 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         }
         // indicate that the list should completely be removed
         return true;
-    }
-
-    @Override
-    public Object[] getCopyOfInternalArray() {
-        return getInternalArray();
     }
 
     public boolean hasAttributeInMROFinalAssumptions() {

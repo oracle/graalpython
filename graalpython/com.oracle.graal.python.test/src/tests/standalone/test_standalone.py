@@ -75,6 +75,12 @@ def get_gp():
 
     return graalpy
 
+def replace_in_file(file, str, replace_str):
+    with open(file, "r") as f:
+        contents = f.read()
+    with open(file, "w") as f:
+        f.write(contents.replace(str, replace_str))
+
 class PolyglotAppTest(unittest.TestCase):
 
     def setUpClass(self):
@@ -205,7 +211,7 @@ class PolyglotAppTest(unittest.TestCase):
                 self.env["MAVEN_OPTS"] = "-ea -esa"
 
             # import struct from python file triggers extract of native extension files in VirtualFileSystem
-            hello_src = os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs", "proj", "hello.py")
+            hello_src = os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs", "src", "hello.py")
             contents = open(hello_src, 'r').read()
             with open(hello_src, 'w') as f:
                 f.write("import struct\n" + contents)
@@ -218,6 +224,60 @@ class PolyglotAppTest(unittest.TestCase):
 
             #GR-51132 - NoClassDefFoundError when running polyglot app in java mode
             util.check_ouput("java.lang.NoClassDefFoundError", out, False)
+
+    @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
+    def test_generated_app_external_resources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target_name = "generated_app_ext_resources_test"
+            target_dir = os.path.join(str(tmpdir), target_name)
+            self.generate_app(tmpdir, target_dir, target_name)
+
+            # patch project to use external directory for resources
+            resources_dir = os.path.join(target_dir, "python")
+            os.makedirs(resources_dir, exist_ok=True)
+            src_dir = os.path.join(resources_dir, "src")
+            os.makedirs(src_dir, exist_ok=True)
+            # copy hello.py
+            shutil.copyfile(os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs", "src", "hello.py"), os.path.join(src_dir, "hello.py"))
+            shutil.rmtree(os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs"))
+            # patch GraalPy.java
+            replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
+                "package it.pkg;",
+                "package it.pkg;\nimport java.nio.file.Path;")
+            replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
+                "GraalPyResources.createContext()",
+                "GraalPyResources.contextBuilder(Path.of(\"python\")).build()")
+
+            # patch pom.xml
+            replace_in_file(os.path.join(target_dir, "pom.xml"),
+                "<packages>",
+                "<pythonResourcesDirectory>${project.basedir}/python</pythonResourcesDirectory>\n<packages>")
+
+            mvnw_cmd = util.get_mvn_wrapper(target_dir, self.env)
+
+            # build
+            cmd = mvnw_cmd + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+
+            # execute and check native image
+            cmd = [os.path.join(target_dir, "target", target_name)]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("hello java", out)
+
+            # 2.) check java build and exec
+            # run with java asserts on
+            if self.env.get("MAVEN_OPTS"):
+                self.env["MAVEN_OPTS"] = self.env.get("MAVEN_OPTS") + " -ea -esa"
+            else:
+                self.env["MAVEN_OPTS"] = "-ea -esa"
+
+            # build and exec
+            cmd = mvnw_cmd + ["package", "exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("hello java", out)
+
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_fail_without_graalpy_dep(self):
@@ -259,11 +319,7 @@ class PolyglotAppTest(unittest.TestCase):
             util.check_ouput("termcolor", out, False)
 
             # remove ujson pkg from plugin config and check if unistalled
-            with open(os.path.join(target_dir, "pom.xml"), "r") as f:
-                contents = f.read()
-
-            with open(os.path.join(target_dir, "pom.xml"), "w") as f:
-                f.write(contents.replace("<package>ujson</package>", ""))
+            replace_in_file(os.path.join(target_dir, "pom.xml"), "<package>ujson</package>", "")
 
             cmd = mvnw_cmd + ["process-resources"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
@@ -272,9 +328,14 @@ class PolyglotAppTest(unittest.TestCase):
             util.check_ouput("Uninstalling ujson", out)
             util.check_ouput("termcolor", out, False)
 
+    def check_tagfile(self, target_dir, expected):
+        with open(os.path.join(target_dir, "target", "classes", VFS_PREFIX, "home", "tagfile")) as f:
+            lines = f.readlines()
+        assert lines == expected, "expected tagfile " + str(expected) + ", but got " + str(lines)
+
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_check_home(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+         with tempfile.TemporaryDirectory() as tmpdir:
             target_name = "check_home_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "check_home_pom.xml")
@@ -282,20 +343,108 @@ class PolyglotAppTest(unittest.TestCase):
 
             mvnw_cmd = util.get_mvn_wrapper(target_dir, self.env)
 
-            cmd = mvnw_cmd + ["process-resources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            # 1. process-resources with no pythonHome config
+            process_resources_cmd = mvnw_cmd + ["process-resources"]
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("Copying std lib to ", out)
 
-            # check fileslist.txt
+            home_dir = os.path.join(target_dir, "target", "classes", VFS_PREFIX, "home")
+            assert os.path.exists(home_dir)
+            assert os.path.exists(os.path.join(home_dir, "lib-graalpython"))
+            assert os.path.isdir(os.path.join(home_dir, "lib-graalpython"))
+            assert os.path.exists(os.path.join(home_dir, "lib-python"))
+            assert os.path.isdir(os.path.join(home_dir, "lib-python"))
+            assert os.path.exists(os.path.join(home_dir, "tagfile"))
+            assert os.path.isfile(os.path.join(home_dir, "tagfile"))
+            self.check_tagfile(target_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
+
+            # 2. process-resources with empty pythonHome includes and excludes
+            shutil.copyfile(pom_template, os.path.join(target_dir, "pom.xml"))
+            util.patch_pom_repositories(os.path.join(target_dir, "pom.xml"))
+            replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", "<pythonHome></pythonHome></configuration>")
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("Copying std lib to ", out, False)
+            self.check_tagfile(target_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
+
+            shutil.copyfile(pom_template, os.path.join(target_dir, "pom.xml"))
+            util.patch_pom_repositories(os.path.join(target_dir, "pom.xml"))
+            replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", "<pythonHome><includes></includes><excludes></excludes></pythonHome></configuration>")
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("Copying std lib to ", out, False)
+            self.check_tagfile(target_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
+
+            shutil.copyfile(pom_template, os.path.join(target_dir, "pom.xml"))
+            util.patch_pom_repositories(os.path.join(target_dir, "pom.xml"))
+            home_tag = """
+                        <pythonHome>
+                            <includes>
+                                <include></include>
+                                <include> </include>
+                            </includes>
+                            <excludes>
+                                <exclude></exclude>
+                                <exclude> </exclude>
+                            </excludes>
+                        </pythonHome>
+                    """
+            replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", home_tag + "</configuration>")
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("Copying std lib to ", out, False)
+            self.check_tagfile(target_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
+
+            # 3. process-resources with pythonHome includes and excludes
+            home_tag = """
+                <pythonHome>
+                    <includes>
+                        <include>.*__init__\.py</include>
+                    </includes>
+                    <excludes>
+                        <exclude>.*html/__init__\.py</exclude>
+                    </excludes>
+                </pythonHome>
+            """
+            replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", home_tag + "</configuration>")
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("Deleting GraalPy home due to changed includes or excludes", out)
+            util.check_ouput("Copying std lib to ", out)
+            self.check_tagfile(target_dir, [f'{self.graalvmVersion}\n', 'include:.*__init__\\.py\n', 'exclude:.*html/__init__\\.py\n'])
+
+            # 4. check fileslist.txt
             fl_path = os.path.join(target_dir, "target", "classes", VFS_PREFIX, "fileslist.txt")
             with open(fl_path) as f:
                 for line in f:
                     line = f.readline()
                     # string \n
                     line = line[:len(line)-1]
-                    if line.endswith("/") or line == "/" + VFS_PREFIX + "/home/tagfile" or line == "/" + VFS_PREFIX + "/proj/hello.py":
+                    if not line.startswith("/" + VFS_PREFIX + "/home/") or line.endswith("/"):
                         continue
                     assert line.endswith("/__init__.py")
                     assert not line.endswith("html/__init__.py")
+
+    @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
+    def test_empty_packages(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target_name = "empty_packages_test"
+            target_dir = os.path.join(str(tmpdir), target_name)
+            pom_template = os.path.join(os.path.dirname(__file__), "check_packages_pom.xml")
+            self.generate_app(tmpdir, target_dir, target_name, pom_template)
+
+            mvnw_cmd = util.get_mvn_wrapper(target_dir, self.env)
+
+            cmd = mvnw_cmd + ["process-resources"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+
+            replace_in_file(os.path.join(target_dir, "pom.xml"), "</packages>", "<package></package><package> </package></packages>")
+
+            cmd = mvnw_cmd + ["process-resources"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_one_file():

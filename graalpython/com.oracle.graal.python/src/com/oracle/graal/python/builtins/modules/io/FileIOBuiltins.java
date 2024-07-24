@@ -847,7 +847,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_TRUNCATE, minNumOfPositionalArgs = 1, parameterNames = {"$self", ""})
+    @Builtin(name = J_TRUNCATE, minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "size"})
     @GenerateNodeFactory
     abstract static class TruncateNode extends PythonBinaryBuiltinNode {
 

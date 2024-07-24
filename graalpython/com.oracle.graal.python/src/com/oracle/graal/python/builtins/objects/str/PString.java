@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.str;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.builtinClassToType;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
@@ -62,12 +63,12 @@ public final class PString extends PSequence {
     private PBytes wCharBytes;
 
     public PString(Object clazz, Shape instanceShape, NativeCharSequence value) {
-        super(clazz, instanceShape);
+        super(builtinClassToType(clazz), instanceShape);
         this.nativeCharSequence = value;
     }
 
     public PString(Object clazz, Shape instanceShape, TruffleString value) {
-        super(clazz, instanceShape);
+        super(builtinClassToType(clazz), instanceShape);
         assert value != null;
         this.materializedValue = value;
     }

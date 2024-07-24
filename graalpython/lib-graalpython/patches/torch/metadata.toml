@@ -1,12 +1,13 @@
 [[rules]]
 version = '== 1.13.1'
 patch = 'torch-1.13.1.patch'
+license = 'BSD-3-Clause'
 dist-type = 'sdist'
-install-priority = 2
 
 [[rules]]
 version = '== 2.2.1'
 patch = 'torch-2.2.1.patch'
+license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
 [[add-sources]]

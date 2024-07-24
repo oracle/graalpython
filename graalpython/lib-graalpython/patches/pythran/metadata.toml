@@ -1,8 +1,10 @@
 [[rules]]
 version = '== 0.12.0'
 patch = 'pythran-0.12.0.patch'
+license = 'BSD-3-Clause'
 
 [[rules]]
 install-priority = 10
 version = '== 0.13.*'
 patch = 'pythran-0.13.patch'
+license = 'BSD-3-Clause'

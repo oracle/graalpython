@@ -1,0 +1,158 @@
+diff --git a/pyarrow/error.pxi b/pyarrow/error.pxi
+index 4357cde..582d1c6 100644
+--- a/pyarrow/error.pxi
++++ b/pyarrow/error.pxi
+@@ -245,7 +245,7 @@ cdef class SignalStopHandler:
+             if exc_value.signum:
+                 # Re-emit the exact same signal. We restored the Python signal
+                 # handler above, so it should receive it.
+-                if os.name == 'nt':
++                if os.name == 'nt' or sys.implementation.name == 'graalpy':
+                     SendSignal(exc_value.signum)
+                 else:
+                     SendSignalToThread(exc_value.signum,
+diff --git a/pyarrow/memory.pxi b/pyarrow/memory.pxi
+index 1ddcb01..6805e42 100644
+--- a/pyarrow/memory.pxi
++++ b/pyarrow/memory.pxi
+@@ -20,6 +20,10 @@
+ # cython: embedsignature = True
+ 
+ 
++cdef extern from "Python.h":
++    void Py_INCREF(object)
++
++
+ cdef class MemoryPool(_Weakrefable):
+     """
+     Base class for memory allocation.
+@@ -35,6 +39,13 @@ cdef class MemoryPool(_Weakrefable):
+ 
+     cdef void init(self, CMemoryPool* pool):
+         self.pool = pool
++        # GraalPy change: pyarrow doesn't maintain python references from
++        # buffers to pools, but they dereference the pointer to the pool in the
++        # destructor. They just assume buffers will get GC'ed before their
++        # pools. You can easily get a segfault even on CPython if you make
++        # a buffer outlive its pool. Since we can't guarantee destruction
++        # order, we just leak the pool.
++        Py_INCREF(self)
+ 
+     def release_unused(self):
+         """
+diff --git a/pyarrow_build_backend.py b/pyarrow_build_backend.py
+new file mode 100644
+index 0000000..955ac8d
+--- /dev/null
++++ b/pyarrow_build_backend.py
+@@ -0,0 +1,93 @@
++import os
++import re
++import sys
++import tarfile
++import subprocess
++import tempfile
++import shutil
++import tarfile
++import urllib.request
++from pathlib import Path
++
++VERSION = '15.0.0'
++
++
++def build_sdist(sdist_directory, config_settings=None):
++    nv = f'pyarrow-{VERSION}'
++    srcdir = Path(__file__).parent
++    archive_path = Path(sdist_directory) / f'{nv}.tar.gz'
++
++    def tarfilter(info):
++        if re.match(r'\./(?:.git|venv|[^-/]+-venv|dist)', info.name):
++            return None
++        info.name = f'./{nv}/{info.name}'
++        return info
++
++    with tarfile.open(archive_path, 'w:gz') as tar:
++        tar.add('.', filter=tarfilter)
++    return archive_path.name
++
++
++def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
++    wheel_directory = Path(wheel_directory).absolute()
++    with tempfile.TemporaryDirectory() as tmpdir:
++        tmpdir = Path(tmpdir).absolute()
++        tarname = f'apache-arrow-{VERSION}.tar.gz'
++        tarpath = tmpdir / tarname
++        urllib.request.urlretrieve(f"https://github.com/apache/arrow/archive/refs/tags/{tarname}", tarpath)
++        with tarfile.open(tarpath) as tar:
++            tar.extractall(tmpdir)
++        arrow_dir = tmpdir / f'arrow-apache-arrow-{VERSION}'
++        assert arrow_dir.is_dir()
++        arrow_dist = tmpdir / 'arrow-dist'
++        build_dir = tmpdir / 'arrow-build'
++        subprocess.check_call([
++            'cmake', '-S', str(arrow_dir / 'cpp'), '-B', str(build_dir),
++            '-DCMAKE_INSTALL_LIBDIR=lib',
++            f'-DCMAKE_INSTALL_PREFIX={arrow_dist}',
++            '-DCMAKE_BUILD_TYPE=Release',
++            '-DARROW_RPATH_ORIGIN=ON',
++            '-DARROW_BUILD_TESTS=OFF',
++            '-DARROW_BUILD_SHARED=ON',
++            '-DARROW_BUILD_STATIC=OFF',
++            # Features
++            '-DARROW_COMPUTE=ON',
++            '-DARROW_CSV=ON',
++            '-DARROW_JSON=ON',
++            '-DARROW_FILESYSTEM=ON',
++            '-DARROW_DATASET=ON',
++            '-DARROW_PARQUET=ON',
++            '-DPARQUET_REQUIRE_ENCRYPTION=ON',
++            '-DARROW_GANDIVA=ON',
++            '-DARROW_WITH_BZ2=ON',
++            '-DARROW_WITH_ZLIB=ON',
++            '-DARROW_WITH_ZSTD=ON',
++            '-DARROW_WITH_LZ4=ON',
++            '-DARROW_WITH_SNAPPY=ON',
++            '-DARROW_WITH_BROTLI=ON',
++        ])
++        subprocess.check_call([
++            'cmake', '--build', str(build_dir), '--parallel',
++        ])
++        subprocess.check_call([
++            'cmake', '--install', str(build_dir),
++        ])
++        env = os.environ.copy()
++        env['ARROW_HOME'] = str(arrow_dist)
++        env['CMAKE_PREFIX_PATH'] = str(arrow_dist)
++        env['PYARROW_WITH_DATASET'] = '1'
++        env['PYARROW_WITH_PARQUET'] = '1'
++        env['PYARROW_WITH_PARQUET_ENCRYPTION'] = '1'
++        env['PYARROW_WITH_GANDIVA'] = '1'
++        env['PYARROW_BUNDLE_ARROW_CPP'] = '1'
++        env['PYARROW_BUNDLE_CYTHON_CPP'] = '1'
++        subprocess.run(
++            [sys.executable, 'setup.py', 'bdist_wheel'],
++            env=env,
++            check=True,
++        )
++        wheels = list(Path('dist').glob('*.whl'))
++        assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
++        wheel = wheels[0]
++        shutil.copyfile(wheel, wheel_directory / wheel.name)
++        return str(wheel.name)
+diff --git a/pyproject.toml b/pyproject.toml
+index 437de10..a78c7ee 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -17,9 +17,11 @@
+ 
+ [build-system]
+ requires = [
+-    "cython >= 0.29.31",
++    "cython >= 0.29.31, < 3",
+     "oldest-supported-numpy>=0.14",
+     "setuptools_scm < 8.0.0",
+     "setuptools >= 40.1.0",
+     "wheel"
+ ]
++build-backend = "pyarrow_build_backend"
++backend-path = ["."]

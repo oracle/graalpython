@@ -5035,13 +5035,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int kind = CollectionBits.collectionKind(typeAndKind);
         assert kind == CollectionBits.KIND_LIST || kind == CollectionBits.KIND_TUPLE;
         boolean list = kind == CollectionBits.KIND_LIST;
+        var context = PythonContext.get(this);
+        boolean useNativePrimitiveStorage = context.getLanguage().getEngineOption(PythonOptions.UseNativePrimitiveStorageStrategy);
         switch (CollectionBits.elementType(typeAndKind)) {
             case CollectionBits.ELEMENT_INT: {
                 int[] a = (int[]) array;
-                if (list) {
-                    a = PythonUtils.arrayCopyOf(a, a.length);
+                if (useNativePrimitiveStorage) {
+                    storage = context.nativeBufferContext.toNativeIntStorage(a);
+                } else {
+                    if (list) {
+                        a = PythonUtils.arrayCopyOf(a, a.length);
+                    }
+                    storage = new IntSequenceStorage(a);
                 }
-                storage = new IntSequenceStorage(a);
                 break;
             }
             case CollectionBits.ELEMENT_LONG: {

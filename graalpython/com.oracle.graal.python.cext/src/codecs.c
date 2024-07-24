@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,3 +42,13 @@
 
 
 const char *Py_hexdigits = "0123456789abcdef";
+
+
+PyObject *PyCodec_StrictErrors(PyObject *exc)
+{
+    if (PyExceptionInstance_Check(exc))
+        PyErr_SetObject(PyExceptionInstance_Class(exc), exc);
+    else
+        PyErr_SetString(PyExc_TypeError, "codec must pass exception instance");
+    return NULL;
+}

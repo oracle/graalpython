@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,16 +41,27 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextFuncBuiltins {
 
@@ -71,6 +82,34 @@ public final class PythonCextFuncBuiltins {
         static Object staticmethod(Object callable,
                         @Cached PythonObjectFactory factory) {
             return factory.createClassmethodFromCallableObj(callable);
+        }
+    }
+
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyObject, ConstCharPtrAsTruffleString}, call = Ignored)
+    abstract static class PyTruffleCFunction_SetDoc extends CApiBinaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static Object setString(Object functionObj, TruffleString doc) {
+            return setDoc(functionObj, doc);
+        }
+
+        @Specialization(guards = "isNoValue(nullValue)")
+        @TruffleBoundary
+        static Object setNull(Object functionObj, @SuppressWarnings("unused") PNone nullValue) {
+            return setDoc(functionObj, null);
+        }
+
+        private static PNone setDoc(Object functionObj, TruffleString doc) {
+            PBuiltinFunction function;
+            if (functionObj instanceof PBuiltinFunction builtinFunction) {
+                function = builtinFunction;
+            } else if (functionObj instanceof PBuiltinMethod builtinMethod) {
+                function = builtinMethod.getBuiltinFunction();
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("Unexpected object passed to GraalPyCFunction_SetDoc");
+            }
+            function.setAttribute(T___DOC__, doc != null ? doc : PNone.NONE);
+            return PNone.NO_VALUE;
         }
     }
 }

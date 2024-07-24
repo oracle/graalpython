@@ -90,7 +90,7 @@ public final class PythonCextCodeBuiltins {
                             firstlineno, lnotab, exceptionTable,
                             freevars, cellvars
             };
-            return callNode.execute(PythonBuiltinClassType.PCode, args);
+            return callNode.executeWithoutFrame(PythonBuiltinClassType.PCode, args);
         }
     }
 

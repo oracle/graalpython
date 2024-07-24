@@ -76,21 +76,30 @@ import java.util.function.Predicate;
 
 import org.graalvm.polyglot.io.FileSystem;
 
-/**
- * @deprecated use org.graalvm.python.embedding.vfs.VirtualFileSystem instead
- */
-@Deprecated(since = "24.1.0")
 public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
-    private static final String VFS_ROOT = "org.graalvm.python.vfs";
-    private static final String VFS_FILESLIST = "fileslist.txt";
-    private static final String VFS_HOME = "home";
-    private static final String VFS_VENV = "venv";
-    private static final String VFS_PROJ = "proj";
+    /*
+     * Root of the virtual filesystem in the resources.
+     */
+    static final String VFS_ROOT = "/org.graalvm.python.vfs";
 
-    private static final String VENV_PREFIX = "/" + VFS_ROOT + "/" + VFS_VENV;
-    private static final String HOME_PREFIX = "/" + VFS_ROOT + "/" + VFS_HOME;
-    private static final String PROJ_PREFIX = "/" + VFS_ROOT + "/" + VFS_PROJ;
+    static final String VFS_HOME = "home";
+    static final String VFS_VENV = "venv";
+    static final String VFS_PROJ = "proj";
+    static final String VFS_SRC = "src";
+
+    /*
+     * Index of all files and directories available in the resources at runtime. - paths are
+     * absolute - directory paths end with a '/' - uses '/' separator regardless of platform. Used
+     * to determine directory entries, if an entry is a file or a directory, etc.
+     */
+    private static final String FILES_LIST_PATH = VFS_ROOT + "/fileslist.txt";
+    private static final String VENV_PREFIX = VFS_ROOT + "/" + VFS_VENV;
+    private static final String HOME_PREFIX = VFS_ROOT + "/" + VFS_HOME;
+    // TODO see GR-54915, deprecated and should be removed after 24.2.0
+    private static final String PROJ_PREFIX = VFS_ROOT + "/" + VFS_PROJ;
+    private static final String SRC_PREFIX = VFS_ROOT + "/" + VFS_SRC;
+
     private boolean extractOnStartup = "true".equals(System.getProperty("graalpy.vfs.extractOnStartup"));
 
     public static enum HostIO {
@@ -99,14 +108,15 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         READ_WRITE,
     }
 
+    /**
+     * Builder class to create {@link VirtualFileSystem} instances.
+     */
     public static final class Builder {
         private static final Predicate<Path> DEFAULT_EXTRACT_FILTER = (p) -> {
             var s = p.toString();
-            return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll");
+            return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll") || s.endsWith(".ttf");
         };
 
-        private String vfsPrefix = "/" + VFS_ROOT;
-        private String filesListPath = vfsPrefix + "/" + VFS_FILESLIST;
         private String windowsMountPoint = "X:\\graalpy_vfs";
         private String unixMountPoint = "/graalpy_vfs";
         private Predicate<Path> extractFilter = DEFAULT_EXTRACT_FILTER;
@@ -162,10 +172,11 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         }
 
         /**
-         * By default virtual filesystem resources are loaded by delegating to
-         * VirtualFileSystem.class.getResource(name). Use resourceLoadingClass to determine where to
-         * locate resources in cases when for example VirtualFileSystem is on module path and the
-         * jar containing the resources is on class path.
+         * By default, virtual filesystem resources are loaded by delegating to
+         * <code>VirtualFileSystem.class.getResource(name)</code>. Use
+         * <code>resourceLoadingClass</code> to determine where to locate resources in cases when
+         * for example <code>VirtualFileSystem</code> is on module path and the jar containing the
+         * resources is on class path.
          */
         public Builder resourceLoadingClass(Class<?> c) {
             resourceLoadingClass = c;
@@ -191,7 +202,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         }
 
         public VirtualFileSystem build() {
-            return new VirtualFileSystem(extractFilter, vfsPrefix, filesListPath, windowsMountPoint, unixMountPoint, allowHostIO, resourceLoadingClass, caseInsensitive);
+            return new VirtualFileSystem(extractFilter, windowsMountPoint, unixMountPoint, allowHostIO, resourceLoadingClass, caseInsensitive);
         }
     }
 
@@ -202,18 +213,6 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     public static VirtualFileSystem create() {
         return newBuilder().build();
     }
-
-    /*
-     * Root of the virtual filesystem in the resources.
-     */
-    private final String vfsPrefix;
-
-    /*
-     * Index of all files and directories available in the resources at runtime. - paths are
-     * absolute - directory paths end with a '/' - uses '/' separator regardless of platform. Used
-     * to determine directory entries, if an entry is a file or a directory, etc.
-     */
-    private final String filesListPath;
 
     /*
      * Maps platform-specific paths to entries.
@@ -238,11 +237,11 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             this.platformPath = platformPath;
         }
 
-        public String getPlatformPath() {
+        String getPlatformPath() {
             return platformPath;
         }
 
-        public String getResourcePath() {
+        String getResourcePath() {
             return platformPathToResourcePath(platformPath);
         }
     }
@@ -254,7 +253,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             super(path);
         }
 
-        public byte[] getData() throws IOException {
+        private byte[] getData() throws IOException {
             if (data == null) {
                 data = readResource(getResourcePath());
             }
@@ -265,7 +264,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     private final class DirEntry extends BaseEntry {
         List<BaseEntry> entries = new ArrayList<>();
 
-        public DirEntry(String platformPath) {
+        DirEntry(String platformPath) {
             super(platformPath);
         }
     }
@@ -294,7 +293,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     private static final class DeleteTempDir extends Thread {
         private final Path extractDir;
 
-        public DeleteTempDir(Path extractDir) {
+        DeleteTempDir(Path extractDir) {
             this.extractDir = extractDir;
         }
 
@@ -336,9 +335,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
      * {@link #toAbsolutePath(Path) absolute path} is computed. This argument may be {@code null}
      * causing that no extraction will happen.
      */
-    private VirtualFileSystem(Predicate<Path> extractFilter,
-                    String resourcesPrefix,
-                    String fileListResource,
+    VirtualFileSystem(Predicate<Path> extractFilter,
                     String windowsMountPoint,
                     String unixMountPoint,
                     HostIO allowHostIO,
@@ -349,8 +346,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         } else {
             this.resourceLoadingClass = VirtualFileSystem.class;
         }
-        this.vfsPrefix = resourcesPrefix;
-        this.filesListPath = fileListResource;
+
         this.caseInsensitive = caseInsensitive;
         String mp = System.getenv("GRAALPY_VFS_MOUNT_POINT");
         if (mp == null) {
@@ -388,30 +384,47 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         }
     }
 
-    public static boolean isWindows() {
+    static boolean isWindows() {
         return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
     }
 
-    public String vfsHomePath() {
+    String vfsHomePath() {
         return resourcePathToPlatformPath(HOME_PREFIX);
     }
 
-    public String vfsProjPath() {
+    String vfsProjPath() {
         return resourcePathToPlatformPath(PROJ_PREFIX);
     }
 
-    public String vfsVenvPath() {
+    String vfsSrcPath() {
+        return resourcePathToPlatformPath(SRC_PREFIX);
+    }
+
+    String vfsVenvPath() {
         return resourcePathToPlatformPath(VENV_PREFIX);
     }
 
-    private String resourcePathToPlatformPath(String inputPath) {
-        assert inputPath.length() > vfsPrefix.length() && inputPath.startsWith(vfsPrefix) : "inputPath expected to start with '" + vfsPrefix + "' but was '" + inputPath + "'";
-        var path = inputPath.substring(vfsPrefix.length() + 1);
+    /**
+     * Converts the given path starting with the internal resource root to the path as seen by
+     * Python IO. For example if no other mount point was set then the path
+     * "/org.graalvm.python.vfs/src/hello.py" will be converted to the default mount point
+     * "/graalpy_vfs/src/hello.py" .
+     *
+     * @deprecated use {@link #getMountPoint()} instead
+     */
+    @Deprecated
+    public String resourcePathToPlatformPath(String resourcePath) {
+        if (!(resourcePath.length() > VFS_ROOT.length() && resourcePath.startsWith(VFS_ROOT))) {
+            String msg = "Resource path is expected to start with '" + VFS_ROOT + "' but was '" + resourcePath + "'.\n" +
+                            "Please also ensure that your virtual file system resources root directory is '" + VFS_ROOT + "'";
+            throw new IllegalArgumentException(msg);
+        }
+        var path = resourcePath.substring(VFS_ROOT.length() + 1);
         if (!PLATFORM_SEPARATOR.equals(RESOURCE_SEPARATOR)) {
             path = path.replace(RESOURCE_SEPARATOR, PLATFORM_SEPARATOR);
         }
         String absolute = mountPoint.resolve(path).toString();
-        if (inputPath.endsWith(RESOURCE_SEPARATOR) && !absolute.endsWith(PLATFORM_SEPARATOR)) {
+        if (resourcePath.endsWith(RESOURCE_SEPARATOR) && !absolute.endsWith(PLATFORM_SEPARATOR)) {
             absolute += PLATFORM_SEPARATOR;
         }
         return absolute;
@@ -430,7 +443,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         if (path.endsWith(RESOURCE_SEPARATOR)) {
             path = path.substring(0, path.length() - RESOURCE_SEPARATOR.length());
         }
-        path = vfsPrefix + path;
+        path = VFS_ROOT + path;
         return path;
     }
 
@@ -440,7 +453,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     private void initEntries() throws IOException {
         vfsEntries = new HashMap<>();
-        try (InputStream stream = this.resourceLoadingClass.getResourceAsStream(filesListPath)) {
+        try (InputStream stream = this.resourceLoadingClass.getResourceAsStream(FILES_LIST_PATH)) {
             if (stream == null) {
                 return;
             }
@@ -611,6 +624,30 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                 for (BaseEntry be : ((DirEntry) entry).entries) {
                     extract(Path.of(be.getPlatformPath()));
                 }
+            }
+        }
+    }
+
+    void extractResources(Path resourcesDirectory) throws IOException {
+        InputStream stream = this.resourceLoadingClass.getResourceAsStream(FILES_LIST_PATH);
+        if (stream == null) {
+            return;
+        }
+        BufferedReader br = new BufferedReader(new InputStreamReader(stream));
+        String resourcePath;
+        while ((resourcePath = br.readLine()) != null) {
+            Path destFile = resourcesDirectory.resolve(Path.of(resourcePath.substring(VFS_ROOT.length() + 1)));
+            if (destFile == null) {
+                continue;
+            }
+            if (resourcePath.endsWith(RESOURCE_SEPARATOR)) {
+                Files.createDirectories(destFile);
+            } else {
+                Path parent = destFile.getParent();
+                if (parent != null) {
+                    Files.createDirectories(parent);
+                }
+                Files.write(destFile, readResource(resourcePath));
             }
         }
     }
