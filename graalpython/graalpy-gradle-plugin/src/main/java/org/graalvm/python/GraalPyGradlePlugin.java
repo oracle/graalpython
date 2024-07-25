@@ -89,7 +89,12 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
 
         TaskProvider<ResourcesTask> resourcesTask = project.getTasks().register(GRAALPY_RESOURCES_TASK, ResourcesTask.class);
         resourcesTask.configure(t -> {
-            t.getIncludes().set(extension.getPythonHome().getIncludes());
+            if(extension.getPythonHome().getIncludes().get().isEmpty()) {
+                t.getIncludes().set(List.of(".*"));
+            } else {
+                t.getIncludes().set(extension.getPythonHome().getIncludes());
+            }
+
             t.getExcludes().set(extension.getPythonHome().getExcludes());
             t.getPackages().set(extension.getPackages());
 
