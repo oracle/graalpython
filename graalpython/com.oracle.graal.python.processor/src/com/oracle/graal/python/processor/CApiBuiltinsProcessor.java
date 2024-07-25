@@ -836,7 +836,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     @SuppressWarnings({"try", "unused"})
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment re) {
         if (re.processingOver()) {
-            return false;
+            return true;
         }
 
         List<CApiBuiltinDesc> javaBuiltins = new ArrayList<>();
