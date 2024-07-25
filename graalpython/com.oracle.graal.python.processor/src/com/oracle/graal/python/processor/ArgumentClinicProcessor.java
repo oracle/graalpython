@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -90,11 +90,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        HashSet<String> vals = new HashSet<>();
-        vals.add(ArgumentClinic.class.getName());
-        vals.add(ArgumentsClinic.class.getName());
-        vals.add(ClinicConverterFactory.class.getName());
-        return vals;
+        return Set.of(ArgumentClinic.class.getName(), ArgumentsClinic.class.getName(), ClinicConverterFactory.class.getName());
     }
 
     @Override
@@ -105,7 +101,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         if (roundEnv.processingOver()) {
-            return false;
+            return true;
         }
         try {
             ConverterFactory.initBuiltins(processingEnv.getElementUtils());
