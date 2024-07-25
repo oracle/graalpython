@@ -558,7 +558,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyDict_GetItemStringWithError", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItem_KnownHash", ret = PyObject, args = {PyObject, PyObject, Py_hash_t}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_NewPresized", ret = PyObject, args = {Py_ssize_t}, call = CImpl)
-    @CApiBuiltin(name = "_PyDict_Next", ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PyObjectPtr, PyObjectPtr, PY_HASH_T_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_SetItemId", ret = Int, args = {PyObject, _PY_IDENTIFIER_PTR, PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyErr_BadInternalCall", ret = Void, args = {ConstCharPtr, PrimitiveResult32}, call = CImpl)
     @CApiBuiltin(name = "_PyErr_FormatFromCause", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
