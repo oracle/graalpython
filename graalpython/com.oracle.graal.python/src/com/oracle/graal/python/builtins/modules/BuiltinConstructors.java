@@ -2293,16 +2293,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
         static Object doBuffer(VirtualFrame frame, Object cls, Object obj, Object encoding, Object errors,
                         @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @Exclusive @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Exclusive @Cached InlinedConditionProfile isStringProfile,
                         @Exclusive @Cached InlinedConditionProfile isPStringProfile,
-                        @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached("create(T_DECODE)") LookupAndCallTernaryNode callDecodeNode,
+                        @Exclusive @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
+                        @Exclusive @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Exclusive @Cached("create(T_DECODE)") LookupAndCallTernaryNode callDecodeNode,
                         @Shared @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object buffer;
             try {
                 buffer = acquireLib.acquireReadonly(obj, frame, indirectCallData);
@@ -2337,13 +2337,50 @@ public final class BuiltinConstructors extends PythonBuiltins {
         static Object doNativeSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
+                        @Shared @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Exclusive @Cached PyObjectStrAsObjectNode strNode,
-                        @Cached CExtNodes.StringSubtypeNew subtypeNew) {
+                        @Shared @Cached(neverDefault = true) CExtNodes.StringSubtypeNew subtypeNew) {
             if (obj == PNone.NO_VALUE) {
                 return subtypeNew.call(cls, T_EMPTY_STRING);
             } else {
                 return subtypeNew.call(cls, strNode.execute(frame, inliningTarget, obj));
+            }
+        }
+
+        @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfString(frame, isSubtype, cls)", //
+                        "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "1")
+        static Object doNativeSubclassEncodeErr(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Exclusive @Cached("createFor(this)") IndirectCallData indirectCallData,
+                        @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Shared @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
+                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
+                        @Exclusive @Cached InlinedConditionProfile isStringProfile,
+                        @Exclusive @Cached InlinedConditionProfile isPStringProfile,
+                        @Exclusive @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
+                        @Exclusive @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Exclusive @Cached("create(T_DECODE)") LookupAndCallTernaryNode callDecodeNode,
+                        @Shared @Cached(neverDefault = true) CExtNodes.StringSubtypeNew subtypeNew,
+                        @Shared @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            Object buffer;
+            try {
+                buffer = acquireLib.acquireReadonly(obj, frame, indirectCallData);
+            } catch (PException e) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
+            }
+            try {
+                PBytes bytesObj = factory.createBytes(bufferLib.getCopiedByteArray(buffer));
+                Object en = encoding == PNone.NO_VALUE ? T_UTF8 : encoding;
+                Object result = assertNoJavaString(callDecodeNode.execute(frame, bytesObj, en, errors));
+                if (isStringProfile.profile(inliningTarget, result instanceof TruffleString)) {
+                    return subtypeNew.call(cls, asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile, factory));
+                } else if (isPStringProfile.profile(inliningTarget, result instanceof PString)) {
+                    return subtypeNew.call(cls, result);
+                }
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.P_S_RETURNED_NON_STRING, bytesObj, "decode", result);
+            } finally {
+                bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
