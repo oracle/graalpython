@@ -172,7 +172,7 @@ public final class ExceptionUtils {
             return;
         }
         StringBuilder sb = new StringBuilder();
-        SourceSection sourceSection = location != null ? location.getEncapsulatingSourceSection() : null;
+        SourceSection sourceSection = location != null ? location.getEncapsulatingSourceSection() : rootNode.getSourceSection();
         if (sourceSection != null) {
             sb.append("  File \"");
             Source source = sourceSection.getSource();
