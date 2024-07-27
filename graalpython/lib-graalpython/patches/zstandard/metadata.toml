@@ -1,2 +1,3 @@
 [[rules]]
 patch = 'zstandard.patch'
+license = 'BSD-3-Clause'

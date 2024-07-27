@@ -134,12 +134,10 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -752,8 +750,8 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
 
             assert message != null && category != null && filename != null && source != null;
             assert message != PNone.NO_VALUE && category != PNone.NO_VALUE && source != PNone.NO_VALUE;
-            Object msg = CallNode.getUncached().execute(warnmsgCls, message, category, filename, lineno, PNone.NONE, PNone.NONE, source);
-            CallNode.getUncached().execute(showFn, msg);
+            Object msg = CallNode.executeUncached(warnmsgCls, message, category, filename, lineno, PNone.NONE, PNone.NONE, source);
+            CallNode.executeUncached(showFn, msg);
         }
 
         /**
@@ -984,8 +982,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @ReportPolymorphism
-    @NodeInfo(shortName = "warnings_warn_impl", description = "implements warnings_warn_impl and the clinic wrapper")
     @Builtin(name = J_WARN, minNumOfPositionalArgs = 2, parameterNames = {"$mod", "message", "category", "stacklevel", "source"}, declaresExplicitSelf = true, alwaysNeedsCallerFrame = true)
     @ArgumentClinic(name = "category", defaultValue = "PNone.NONE")
     @ArgumentClinic(name = "stacklevel", conversion = ClinicConversion.Int, defaultValue = "1")
@@ -1015,8 +1011,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @ReportPolymorphism
-    @NodeInfo(shortName = "warnings_warn_explicit")
     @Builtin(name = J_WARN_EXPLICIT, minNumOfPositionalArgs = 5, //
                     parameterNames = {"$mod", "message", "category", "filename", "lineno", "module", "registry", "module_globals", "source"}, declaresExplicitSelf = true)
     @ArgumentClinic(name = "lineno", conversion = ClinicConversion.Int)
@@ -1182,7 +1176,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 } catch (IllegalFormatException e) {
                     throw CompilerDirectives.shouldNotReachHere("error while formatting \"" + format + "\"", e);
                 }
-                CallNode.getUncached().execute(warn, message, category, stackLevel, source);
+                CallNode.executeUncached(warn, message, category, stackLevel, source);
             }
         }
     }

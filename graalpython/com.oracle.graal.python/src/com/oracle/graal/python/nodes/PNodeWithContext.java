@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,7 +60,8 @@ public abstract class PNodeWithContext extends Node {
      * @return {@code true} if this node can be shared statically.
      */
     @Idempotent
-    protected final boolean isUncached() {
+    // conflicting with Node.isUncached(). Should be migrated to Node.isUncached() in the future.
+    protected final boolean isUncachedNode() {
         return !isAdoptable();
     }
 
@@ -78,6 +79,11 @@ public abstract class PNodeWithContext extends Node {
     @NonIdempotent
     public final PythonContext getContext() {
         return PythonContext.get(this);
+    }
+
+    @NonIdempotent
+    public static PythonContext getContext(Node node) {
+        return PythonContext.get(node);
     }
 
     @Idempotent

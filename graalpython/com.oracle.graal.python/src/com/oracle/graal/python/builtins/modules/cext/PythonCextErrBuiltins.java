@@ -103,14 +103,13 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -443,7 +442,6 @@ public final class PythonCextErrBuiltins {
         @TruffleBoundary
         @Specialization
         static Object raise(int set_sys_last_vars,
-                        @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached ExcInfoNode excInfoNode,
                         @Cached PyErr_Restore restoreNode,
@@ -457,7 +455,7 @@ public final class PythonCextErrBuiltins {
             Object err = PyErrOccurredNode.executeUncached(threadState);
             PythonModule sys = context.getSysModule();
             if (err != nativeNull && IsBuiltinObjectProfile.profileObjectUncached(err, PythonBuiltinClassType.SystemExit)) {
-                handleSystemExit(excInfoNode, getItemNode, isInstanceNode, restoreNode, (SysModuleBuiltins) sys.getBuiltins(), writeFileNode, exitNode);
+                handleSystemExit(excInfoNode, isInstanceNode, restoreNode, (SysModuleBuiltins) sys.getBuiltins(), writeFileNode, exitNode);
             }
             ExceptionState fetched = PyErrFetchNode.executeUncached(threadState);
             Object type = null;
@@ -484,7 +482,7 @@ public final class PythonCextErrBuiltins {
             }
             Object exceptHook = PyObjectLookupAttr.executeUncached(sys, T_EXCEPTHOOK);
             if (exceptHook != PNone.NO_VALUE) {
-                handleExceptHook(exceptHook, type, val, tb, excInfoNode, getItemNode, sys, errDisplayNode);
+                handleExceptHook(exceptHook, type, val, tb, excInfoNode, sys, errDisplayNode);
             }
             return PNone.NONE;
         }
@@ -501,33 +499,33 @@ public final class PythonCextErrBuiltins {
         }
 
         private static void handleExceptHook(Object exceptHook, Object type, Object val, Object tb, ExcInfoNode excInfoNode,
-                        GetItemNode getItemNode, PythonModule sys, PyErr_Display errDisplayNode) {
+                        PythonModule sys, PyErr_Display errDisplayNode) {
             CompilerAsserts.neverPartOfCompilation();
             try {
-                CallNode.getUncached().execute(exceptHook, type, val, tb);
+                CallNode.executeUncached(exceptHook, type, val, tb);
             } catch (PException e) {
                 PTuple sysInfo = excInfoNode.execute(null);
-                Object type1 = getItemNode.execute(null, sysInfo, 0);
-                Object val1 = getItemNode.execute(null, sysInfo, 1);
-                Object tb1 = getItemNode.execute(null, sysInfo, 2);
+                Object type1 = PyTupleGetItem.executeUncached(sysInfo, 0);
+                Object val1 = PyTupleGetItem.executeUncached(sysInfo, 1);
+                Object tb1 = PyTupleGetItem.executeUncached(sysInfo, 2);
                 // not quite the same as 'PySys_WriteStderr' but close
                 Object stdErr = ((SysModuleBuiltins) sys.getBuiltins()).getStdErr();
                 Object writeMethod = PyObjectGetAttr.executeUncached(stdErr, T_WRITE);
-                CallNode.getUncached().execute(null, writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, "Error in sys.excepthook:\n"));
+                CallNode.executeUncached(writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, "Error in sys.excepthook:\n"));
                 errDisplayNode.execute(type1, val1, tb1);
-                CallNode.getUncached().execute(null, writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, "\nOriginal exception was:\n"));
+                CallNode.executeUncached(writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, "\nOriginal exception was:\n"));
                 errDisplayNode.execute(type, val, tb);
                 PyObjectCallMethodObjArgs.executeUncached(stdErr, T_FLUSH);
             }
         }
 
-        private static void handleSystemExit(ExcInfoNode excInfoNode, TupleBuiltins.GetItemNode getItemNode, IsInstanceNode isInstanceNode,
+        private static void handleSystemExit(ExcInfoNode excInfoNode, IsInstanceNode isInstanceNode,
                         PyErr_Restore restoreNode, SysModuleBuiltins sys, PyFile_WriteObject writeFileNode, ExitNode exitNode) {
             CompilerAsserts.neverPartOfCompilation();
             PTuple sysInfo = excInfoNode.execute(null);
             int rc = 0;
             Object returnObject = null;
-            Object val = getItemNode.execute(null, sysInfo, 1);
+            Object val = PyTupleGetItem.executeUncached(sysInfo, 1);
             Object codeAttr = PyObjectLookupAttr.executeUncached(val, T_CODE);
             if (val != PNone.NONE && !(codeAttr instanceof PNone)) {
                 returnObject = codeAttr;
@@ -542,7 +540,7 @@ public final class PythonCextErrBuiltins {
                 } else {
                     Object stdOut = sys.getStdOut();
                     Object writeMethod = PyObjectGetAttr.executeUncached(stdOut, T_WRITE);
-                    CallNode.getUncached().execute(null, writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, returnObject));
+                    CallNode.executeUncached(writeMethod, PyObjectStrAsObjectNode.getUncached().execute(null, returnObject));
                     PyObjectCallMethodObjArgs.executeUncached(stdOut, T_FLUSH);
                 }
             }

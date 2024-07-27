@@ -346,7 +346,7 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Whether C extension modules should be loaded as native code (as opposed to Sulong bitcode execution).") //
     public static final OptionKey<Boolean> NativeModules = new OptionKey<>(true);
 
-    @EngineOption @Option(category = OptionCategory.USER, usageSyntax = "true|false", help = "Emulate some Jython features that can cause performance degradation") //
+    @EngineOption @Option(category = OptionCategory.USER, usageSyntax = "true|false", help = "Emulate some Jython features that can cause performance degradation", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Enable tracing of native memory (ATTENTION: this will have significant impact on CExt execution performance).") //
@@ -355,8 +355,8 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "If native memory tracing is enabled, also capture stack.") //
     public static final OptionKey<Boolean> TraceNativeMemoryCalls = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "<bytes>", help = "Max native memory heap size (default: 2 GB).") //
-    public static final OptionKey<Long> MaxNativeMemory = new OptionKey<>(1L << 31);
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "<bytes>", help = "Max native memory heap size (default: 8 GB).") //
+    public static final OptionKey<Long> MaxNativeMemory = new OptionKey<>(1L << 33);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "<bytes>", help = "Initial native memory heap size that triggers a GC (default: 256 MB).") //
     public static final OptionKey<Long> InitialNativeMemory = new OptionKey<>(1L << 28);
@@ -381,6 +381,9 @@ public final class PythonOptions {
 
     @Option(category = OptionCategory.EXPERT, help = "If true, use the system's toolchain for native extension compilation. Otherwise, use the LLVM Toolchain included with GraalVM.") //
     public static final OptionKey<Boolean> UseSystemToolchain = new OptionKey<>(true);
+
+    @EngineOption @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "If true, uses native storage strategy for primitive types") //
+    public static final OptionKey<Boolean> UseNativePrimitiveStorageStrategy = new OptionKey<>(false);
 
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 

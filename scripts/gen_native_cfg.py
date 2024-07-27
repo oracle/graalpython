@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -76,6 +76,7 @@ includes = '''
 # include <netinet/in.h>
 # include <netinet/tcp.h>
 # include <sys/mman.h>
+# include <sys/resource.h>
 # include <sys/select.h>
 # include <sys/socket.h>
 # include <sys/un.h>
@@ -149,6 +150,10 @@ constant_defs = '''
 * i PIPE_BUF
 
 * i SEM_VALUE_MAX
+
+* i RUSAGE_CHILDREN
+0 i RUSAGE_SELF
+* i RUSAGE_THREAD
 
 [openFlags]
 * x O_ACCMODE

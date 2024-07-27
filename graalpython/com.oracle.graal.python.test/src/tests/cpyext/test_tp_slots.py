@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import sys
-from . import CPyExtType, CPyExtHeapType, compile_module_from_string
+from . import CPyExtType, CPyExtHeapType, compile_module_from_string, assert_raises
 
 SlotsGetter = CPyExtType("SlotsGetter",
                          """
@@ -47,6 +47,12 @@ SlotsGetter = CPyExtType("SlotsGetter",
                          static PyObject* get_tp_attro(PyObject* unused, PyObject* object) {
                              return PyLong_FromVoidPtr(Py_TYPE(object)->tp_getattro);
                          }
+                         static PyObject* get_tp_setattr(PyObject* unused, PyObject* object) {
+                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_setattr);
+                         }
+                         static PyObject* get_tp_setattro(PyObject* unused, PyObject* object) {
+                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_setattro);
+                         }
                          static PyObject* get_tp_descr_get(PyObject* unused, PyObject* object) {
                              return PyLong_FromVoidPtr(Py_TYPE(object)->tp_descr_get);
                          }
@@ -54,6 +60,8 @@ SlotsGetter = CPyExtType("SlotsGetter",
                          tp_methods=
                          '{"get_tp_attr", (PyCFunction)get_tp_attr, METH_O | METH_STATIC, ""},' +
                          '{"get_tp_attro", (PyCFunction)get_tp_attro, METH_O | METH_STATIC, ""},' +
+                         '{"get_tp_setattr", (PyCFunction)get_tp_setattr, METH_O | METH_STATIC, ""},' +
+                         '{"get_tp_setattro", (PyCFunction)get_tp_setattro, METH_O | METH_STATIC, ""},' +
                          '{"get_tp_descr_get", (PyCFunction)get_tp_descr_get, METH_O | METH_STATIC, ""}')
 
 
@@ -205,6 +213,45 @@ def test_setattr_wrapper():
     assert x.__setattr__("bar", 42) is None
 
 
+def test_setattr_vs_setattro_inheritance():
+    TestSetAttrOInheritance = CPyExtType("TestSetAttrOInheritance",
+                                         '''
+                                         int testattr_set(PyObject* self, char* key, PyObject* value) {
+                                             Py_XDECREF(((TestSetAttrOInheritanceObject*)self)->payload);
+                                             if (value != NULL) {
+                                                 Py_INCREF(value);
+                                             }
+                                             ((TestSetAttrOInheritanceObject*)self)->payload = value;
+                                             return 0;
+                                         }
+
+                                         PyObject* get_payload(PyObject *self) {
+                                              PyObject* r = ((TestSetAttrOInheritanceObject*)self)->payload;
+                                              if (r == NULL) Py_RETURN_NONE;
+                                              Py_INCREF(r);
+                                              return r;
+                                         }
+                                         ''',
+                                         cmembers='PyObject* payload;',
+                                         tp_methods='{"get_payload", (PyCFunction)get_payload, METH_NOARGS, ""}',
+                                         tp_setattr="testattr_set")
+
+    x = TestSetAttrOInheritance()
+    x.foo = 42
+    assert x.get_payload() == 42
+
+    class Managed(TestSetAttrOInheritance):
+        pass
+
+    x = Managed()
+    x.foo = 42  # calls slot_tp_setattro, which calls __setattr__, which wraps the object.tp_setattro
+    assert x.get_payload() is None
+
+    assert SlotsGetter.get_tp_setattro(object()) == SlotsGetter.get_tp_setattro(Managed())
+    assert SlotsGetter.get_tp_setattro(TestSetAttrOInheritance()) == 0
+    assert SlotsGetter.get_tp_setattr(TestSetAttrOInheritance()) != 0
+
+
 def test_sq_ass_item_wrapper():
     TestSqAssItemWrapperReturn = CPyExtType("TestSqAssItemWrapperReturn",
                                           "static int myassitem(PyObject *self, Py_ssize_t i, PyObject *v) { return 0; }",
@@ -332,3 +379,137 @@ def test_type_not_ready():
     """, "NotReadyType")
     not_ready = module.create_not_ready()
     assert not_ready.foo == 'foo'
+
+
+def test_sq_len_and_item():
+    MySqLenItem = CPyExtType("MySqLenItem",
+                             '''
+                             Py_ssize_t my_sq_len(PyObject* a) { return 10; }
+                             PyObject* my_sq_item(PyObject* self, Py_ssize_t index) { return PyLong_FromSsize_t(index); }
+                             ''',
+                             sq_length="&my_sq_len",
+                             sq_item="my_sq_item")
+    MySqItemAddDunderLen = CPyExtHeapType("MySqItemAddDunderLen",
+                              code = '''
+                                        PyObject* my_sq_item(PyObject* self, Py_ssize_t index) { return PyLong_FromSsize_t(index); }
+                                        ''',
+                              slots=[
+                                  '{Py_sq_item, &my_sq_item}',
+                              ])
+    MySqItemAddDunderLen.__len__ = lambda self: 10
+
+    def verify(x):
+        assert x[5] == 5
+        assert x.__getitem__(5) == 5
+        assert x[-1] == 9
+        assert x.__getitem__(-1) == 9
+        assert x[-20] == -10
+        assert x.__getitem__(-20) == -10
+
+    verify(MySqLenItem())
+    verify(MySqItemAddDunderLen())
+
+
+def test_mp_len_and_sq_item():
+    MyMpLenSqItem = CPyExtType("MyMpLenSqItem",
+                             '''
+                             Py_ssize_t my_mp_len(PyObject* a) { return 10; }
+                             PyObject* my_sq_item(PyObject* self, Py_ssize_t index) { return PyLong_FromSsize_t(index); }
+                             ''',
+                             mp_length="&my_mp_len",
+                             sq_item="my_sq_item")
+    MyMpLenSqItemHeap = CPyExtHeapType("MyMpLenSqItemHeap",
+                                       code = '''
+                                        Py_ssize_t my_mp_len(PyObject* a) { return 10; }
+                                        PyObject* my_sq_item(PyObject* self, Py_ssize_t index) { return PyLong_FromSsize_t(index); }
+                                        ''',
+                                       slots=[
+                                           '{Py_mp_length, &my_mp_len}',
+                                           '{Py_sq_item, &my_sq_item}',
+                                       ])
+    def verify(x):
+        assert x[5] == 5
+        assert x.__getitem__(5) == 5
+        # no sq_length, negative index is just passed to sq_item
+        assert x[-1] == -1
+        assert x.__getitem__(-1) == -1
+        assert x[-20] == -20
+        assert x.__getitem__(-20) == -20
+
+    verify(MyMpLenSqItem())
+    verify(MyMpLenSqItemHeap())
+
+
+def test_tp_hash():
+    TypeWithHash = CPyExtType(
+        "TypeWithHash",
+        '''
+        static PyObject* richcompare(PyObject* self, PyObject* other, int cmp) {
+            Py_RETURN_NOTIMPLEMENTED;
+        }
+        static Py_hash_t hash(PyObject* self) {
+            return 123;
+        }
+        ''',
+        tp_richcompare='richcompare',
+        tp_hash='hash',
+    )
+    assert TypeWithHash.__hash__
+    assert hash(TypeWithHash()) == 123
+
+    class InheritsHash(TypeWithHash):
+        pass
+
+    assert InheritsHash.__hash__
+    assert hash(InheritsHash()) == 123
+
+    TypeWithoutHash = CPyExtType(
+        "TypeWithoutHash",
+        '''
+        static PyObject* richcompare(PyObject* self, PyObject* other, int cmp) {
+            Py_RETURN_NOTIMPLEMENTED;
+        }
+        static PyObject* has_hash_not_implemented(PyObject* unused, PyObject* obj) {
+            return PyBool_FromLong(Py_TYPE(obj)->tp_hash == PyObject_HashNotImplemented);
+        }
+        ''',
+        tp_richcompare='richcompare',
+        tp_methods='{"has_hash_not_implemented", (PyCFunction)has_hash_not_implemented, METH_STATIC | METH_O, ""}',
+    )
+
+    def assert_has_no_hash(obj):
+        assert_raises(TypeError, hash, obj)
+        assert type(obj).__hash__ is None
+        assert TypeWithoutHash.has_hash_not_implemented(obj)
+
+    assert_has_no_hash(TypeWithoutHash())
+
+    class OverridesEq1:
+        def __eq__(self, other):
+            return self is other
+
+    assert_has_no_hash(OverridesEq1())
+
+    class OverridesEq2(TypeWithHash):
+        def __eq__(self, other):
+            return self is other
+
+    assert_has_no_hash(OverridesEq2())
+
+    class DisablesHash1:
+        __hash__ = None
+
+    assert_has_no_hash(DisablesHash1())
+
+    class DisablesHash2(TypeWithHash):
+        __hash__ = None
+
+    assert_has_no_hash(DisablesHash2())
+
+    # TODO GR-55196
+    # TypeWithoutHashExplicit = CPyExtType(
+    #     "TypeWithoutHashExplicit",
+    #     tp_hash='PyObject_HashNotImplemented',
+    # )
+    #
+    # assert_has_no_hash(TypeWithoutHashExplicit())

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -108,7 +108,7 @@ public final class DropwhileBuiltins extends PythonBuiltins {
 
             while (loopProfile.profile(inliningTarget, !self.isDoneDropping())) {
                 Object n = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
-                if (!isTrue.execute(frame, inliningTarget, callNode.execute(self.getPredicate(), n))) {
+                if (!isTrue.execute(frame, inliningTarget, callNode.execute(frame, self.getPredicate(), n))) {
                     doneDroppingProfile.enter(inliningTarget);
                     self.setDoneDropping(true);
                     return n;

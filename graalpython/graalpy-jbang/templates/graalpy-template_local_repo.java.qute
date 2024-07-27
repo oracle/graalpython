@@ -18,12 +18,12 @@ import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.io.IOAccess;
-import org.graalvm.python.embedding.vfs.VirtualFileSystem;
+import org.graalvm.python.embedding.utils.GraalPyResources;
 
 public class {baseName} {
     public static void main(String[] args) {
 
-        try (Context context = VirtualGraalPyContext.getContext()) {
+        try (Context context = GraalPyResources.createContext()) {
             switch (args.length) {
                 case 0:
                     context.eval("python", "import site; site._script()");
@@ -44,9 +44,4 @@ public class {baseName} {
     }
 }
 
-final class VirtualGraalPyContext {
-    public static Context getContext() {
-        return VirtualFileSystem.contextBuilder().build();
-    }
-}
 

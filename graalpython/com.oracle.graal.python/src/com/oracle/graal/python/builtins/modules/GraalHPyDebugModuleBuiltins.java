@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.PythonUtils.PrototypeNodeFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -121,8 +122,10 @@ public final class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_NOT_AVAILABLE, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J_NOT_AVAILABLE, autoRegister = false, takesVarArgs = true, takesVarKeywordArgs = true)
     static final class NotAvailable extends PythonBuiltinNode {
+        private static final NodeFactory<NotAvailable> NODE_FACTORY = new PrototypeNodeFactory<>(new NotAvailable());
+
         @Override
         public Object execute(VirtualFrame frame) {
             throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_S_MODE_NOT_AVAILABLE, J_DEBUG);
@@ -132,10 +135,8 @@ public final class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     @TruffleBoundary
     static PBuiltinMethod createFunction(Python3Core core, PythonModule module) {
         Builtin builtin = NotAvailable.class.getAnnotation(Builtin.class);
-        RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> {
-            NodeFactory<PythonBuiltinBaseNode> nodeFactory = new BuiltinFunctionRootNode.StandaloneBuiltinFactory<>(new NotAvailable());
-            return new BuiltinFunctionRootNode(l, builtin, nodeFactory, false);
-        }, NotAvailable.class, builtin.name());
+        RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, NotAvailable.NODE_FACTORY, false), NotAvailable.class,
+                        builtin.name());
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
         TruffleString name = PythonUtils.toTruffleStringUncached(builtin.name());
         PBuiltinFunction fun = core.factory().createBuiltinFunction(name, null, 0, flags, callTarget);

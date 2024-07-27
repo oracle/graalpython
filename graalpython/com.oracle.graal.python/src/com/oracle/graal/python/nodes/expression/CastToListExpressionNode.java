@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,7 +60,6 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNodeGen.CastToListNodeGen;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -79,7 +78,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeCost;
 
 @GenerateInline(inlineByDefault = true)
 @GenerateCached
@@ -101,11 +99,9 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
             return PythonLanguage.get(this);
         }
 
-        @Specialization(guards = {"cannotBeOverridden(v, inliningTarget, getClassNode)", "cachedLength == getLength(v)", "cachedLength < 32"}, limit = "2")
+        @Specialization(guards = {"isBuiltinTuple(v)", "cachedLength == getLength(v)", "cachedLength < 32"}, limit = "2")
         @ExplodeLoop
         static PList starredTupleCachedLength(PTuple v,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                         @Exclusive @Cached PythonObjectFactory factory,
                         @Cached("getLength(v)") int cachedLength,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
@@ -117,16 +113,15 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
             return factory.createList(array);
         }
 
-        @Specialization(replaces = "starredTupleCachedLength", guards = "cannotBeOverridden(v, inliningTarget, getClassNode)", limit = "1")
+        @Specialization(replaces = "starredTupleCachedLength", guards = "isBuiltinTuple(v)")
         static PList starredTuple(PTuple v,
                         @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached GetPythonObjectClassNode getClassNode,
                         @Exclusive @Cached PythonObjectFactory factory,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             return factory.createList(getObjectArrayNode.execute(inliningTarget, v).clone());
         }
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(v)")
+        @Specialization(guards = "isBuiltinList(v)")
         protected static PList starredList(PList v) {
             return v;
         }
@@ -210,12 +205,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         public PList executeWithGlobalState(Object list) {
             Object builtins = PythonContext.get(this).getBuiltins();
             Object listType = ReadAttributeFromObjectNode.getUncached().execute(builtins, BuiltinNames.T_LIST);
-            return (PList) CallNode.getUncached().execute(null, LookupInheritedAttributeNode.Dynamic.executeUncached(listType, SpecialMethodNames.T___CALL__), listType, list);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.MEGAMORPHIC;
+            return (PList) CallNode.executeUncached(LookupInheritedAttributeNode.Dynamic.executeUncached(listType, SpecialMethodNames.T___CALL__), listType, list);
         }
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,16 +40,37 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
+import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyFrozenSet_CheckExact}.
  */
 @GenerateUncached
-public abstract class PyFrozenSetCheckExactNode {
+@GenerateCached(false)
+@GenerateInline
+@ImportStatic(PGuards.class)
+public abstract class PyFrozenSetCheckExactNode extends Node {
     public static boolean executeUncached(Object object) {
-        return IsBuiltinObjectExactProfile.profileObjectUncached(object, PythonBuiltinClassType.PFrozenSet);
+        return PyFrozenSetCheckExactNodeGen.getUncached().execute(null, object);
+    }
+
+    public abstract boolean execute(Node inliningTarget, Object object);
+
+    @Specialization(guards = "isBuiltinFrozenSet(frozenSet)")
+    static boolean doBuiltinFrozenSet(@SuppressWarnings("unused") PFrozenSet frozenSet) {
+        return true;
+    }
+
+    @Fallback
+    static boolean doOther(@SuppressWarnings("unused") Object object) {
+        return false;
     }
 }

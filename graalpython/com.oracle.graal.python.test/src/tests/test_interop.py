@@ -286,8 +286,8 @@ if sys.implementation.name == "graalpy":
     def test_internal_languages_dont_eval():
         try:
             polyglot.eval(language="nfi", string="default")
-        except NotImplementedError as e:
-            assert "No language for id nfi found" in str(e)
+        except ValueError as e:
+            assert str(e) == "polyglot language 'nfi' not found"
 
         assert polyglot.eval(language="python", string="21 * 2") == 42
 
@@ -638,6 +638,16 @@ if sys.implementation.name == "graalpy":
             g = {}
             exec('from java.lang.Byte import *', g)
             assert type(g['MAX_VALUE']) is int
+
+    def test_jython_accessors():
+        if __graalpython__.jython_emulation_enabled:
+            from java.util.logging import LogRecord
+            from java.util.logging import Level
+            lr = LogRecord(Level.ALL, "message")
+
+            assert lr.message == "message"
+            lr.message = "new message"
+            assert lr.message == "new message"
 
     @skipUnless(test_polyglot_languages, "tests other language access")
     def test_doctest():

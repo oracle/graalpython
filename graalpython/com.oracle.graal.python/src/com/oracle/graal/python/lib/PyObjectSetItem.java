@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -86,7 +86,7 @@ public abstract class PyObjectSetItem extends Node {
 
     public abstract void execute(Frame frame, Node inliningTarget, Object container, Object index, Object item);
 
-    @Specialization(guards = "cannotBeOverriddenForImmutableType(object)")
+    @Specialization(guards = "isBuiltinList(object)")
     static void doList(VirtualFrame frame, PList object, Object key, Object value,
                     @Cached(inline = false) ListBuiltins.SetItemNode setItemNode) {
         setItemNode.execute(frame, object, key, value);

@@ -57,10 +57,10 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeN
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.BinaryPythonSlotDispatcherNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotSimpleBuiltinBase;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -95,7 +95,7 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
  */
 public class TpSlotGetAttr {
 
-    public abstract static class TpSlotGetAttrBuiltin<T extends GetAttrBuiltinNode> extends TpSlotSimpleBuiltinBase<T> {
+    public abstract static class TpSlotGetAttrBuiltin<T extends GetAttrBuiltinNode> extends TpSlotBuiltinBase<T> {
         private final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
 
         protected TpSlotGetAttrBuiltin(NodeFactory<T> nodeFactory) {
@@ -126,9 +126,9 @@ public class TpSlotGetAttr {
     }
 
     public static final class TpSlotGetAttrPython extends TpSlotPython {
-        final TruffleWeakReference<Object> getattr;
-        final TruffleWeakReference<Object> getattribute;
-        final TruffleWeakReference<Object> type;
+        private final TruffleWeakReference<Object> getattr;
+        private final TruffleWeakReference<Object> getattribute;
+        private final TruffleWeakReference<Object> type;
 
         public TpSlotGetAttrPython(Object getattribute, Object getattr, Object type) {
             this.getattr = asWeakRef(getattr);
@@ -154,6 +154,10 @@ public class TpSlotGetAttr {
 
         public Object getGetattr() {
             return safeGet(getattr);
+        }
+
+        public boolean hasGetattr() {
+            return getattr != null;
         }
 
         public Object getGetattribute() {
@@ -283,15 +287,15 @@ public class TpSlotGetAttr {
             return slotNode.executeGetAttr(frame, self, name);
         }
 
-        @Specialization(guards = "isNoValue(slot.getattr)")
+        @Specialization(guards = "!slot.hasGetattr()")
         static Object callPythonSimple(VirtualFrame frame, Node inliningTarget, TpSlotGetAttrPython slot, Object self, Object name,
                         @Exclusive @Cached BinaryPythonSlotDispatcherNode callPythonFun) {
             // equivalent of typeobject.c:slot_tp_getattro, which is used if there is no __getattr__
             // hook
-            return callPythonFun.execute(frame, inliningTarget, slot.getattribute, slot.type, self, name);
+            return callPythonFun.execute(frame, inliningTarget, slot.getGetattribute(), slot.getType(), self, name);
         }
 
-        @Specialization(guards = "!isNoValue(slot.getattr)")
+        @Specialization(guards = "slot.hasGetattr()")
         static Object callPythonSimple(VirtualFrame frame, Node inliningTarget, TpSlotGetAttrPython slot, Object self, Object name,
                         @Exclusive @Cached BinaryPythonSlotDispatcherNode callPythonFun,
                         @Cached IsBuiltinObjectProfile errorProfile) {

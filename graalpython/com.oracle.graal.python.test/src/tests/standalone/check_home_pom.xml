@@ -73,14 +73,7 @@ SOFTWARE.
         <executions>
           <execution>
             <configuration>
-              <pythonHome>
-                <includes>
-                  <include>.*__init__\.py</include>
-                </includes>
-                <excludes>
-                  <exclude>.*html/__init__\.py</exclude>
-                </excludes>
-              </pythonHome>
+
             </configuration>
             <goals>
               <goal>process-graalpy-resources</goal>

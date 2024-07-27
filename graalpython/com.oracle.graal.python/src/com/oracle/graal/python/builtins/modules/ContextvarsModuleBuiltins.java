@@ -51,6 +51,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
+import com.oracle.graal.python.lib.PyContextCopyCurrent;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -58,7 +60,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -81,10 +82,10 @@ public final class ContextvarsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetDefaultEncodingNode extends PythonBuiltinNode {
         @Specialization
-        protected Object copyCtx(
-                        @Cached PythonObjectFactory factory) {
-            PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
-            return factory.copyContextVarsContext(threadState.getContextVarsContext());
+        protected static PContextVarsContext copyCtx(
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyContextCopyCurrent copyCurrent) {
+            return copyCurrent.execute(inliningTarget);
         }
     }
 

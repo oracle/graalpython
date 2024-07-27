@@ -103,12 +103,12 @@ import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerReference;
@@ -281,7 +281,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
                 PythonModule sysModule = context.getSysModule();
                 Object loadLibraryMethod = ReadAttributeFromObjectNode.getUncached().execute(ctypesModule, toTruffleStringUncached("LoadLibrary"));
-                Object pythonLib = CallNode.getUncached().execute(loadLibraryMethod, toTruffleStringUncached(GraalHPyJNIContext.getJNILibrary()), 0);
+                Object pythonLib = CallNode.executeUncached(loadLibraryMethod, toTruffleStringUncached(GraalHPyJNIContext.getJNILibrary()), 0);
                 WriteAttributeToPythonObjectNode.getUncached().execute(sysModule, toTruffleStringUncached("dllhandle"), pythonLib);
             }
         } else {
@@ -630,7 +630,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "resize", minNumOfPositionalArgs = 2, parameterNames = {"", "size"})
+    @Builtin(name = "resize", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"obj", "size"})
     @ArgumentClinic(name = "size", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     protected abstract static class ResizeNode extends PythonBinaryClinicBuiltinNode {
@@ -745,6 +745,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             if (name.isEmpty()) {
                 return factory.createNativeVoidPtr(((CtypesModuleBuiltins) self.getBuiltins()).rtldDefault);
             }
+
+            // The loaded library can link against libpython, so we have to make sure it is loaded
+            CApiContext.ensureCapiWasLoaded();
 
             int mode = m != Integer.MIN_VALUE ? m : RTLD_LOCAL.getValueIfDefined();
             mode |= RTLD_NOW.getValueIfDefined();
@@ -986,7 +989,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "byref", minNumOfPositionalArgs = 1, parameterNames = {"", "offset"})
+    @Builtin(name = "byref", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"instance", "offset"})
     @ArgumentClinic(name = "offset", conversion = ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory
     protected abstract static class ByRefNode extends PythonBinaryClinicBuiltinNode {
@@ -1246,7 +1249,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            return getResultNode.execute(restype, rtype, result, checker);
+            return getResultNode.execute(frame, restype, rtype, result, checker);
         }
 
         static Object callManagedFunction(Node inliningTarget, NativeFunction pProc, Object[] argarray, InteropLibrary ilib, PRaiseNode.Lazy raiseNode) {
@@ -1368,7 +1371,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 25
     abstract static class GetResultNode extends Node {
 
-        abstract Object execute(Object restype, FFIType rtype, Object result, Object checker);
+        abstract Object execute(VirtualFrame frame, Object restype, FFIType rtype, Object result, Object checker);
 
         /*
          * Convert the C value in result into a Python object, depending on restype.
@@ -1395,21 +1398,21 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"restype != null", "!isNone(restype)", "dict == null"}, limit = "1")
-        static Object callResType(Object restype, @SuppressWarnings("unused") FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
+        static Object callResType(VirtualFrame frame, Object restype, @SuppressWarnings("unused") FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("result") InteropLibrary ilib,
                         @SuppressWarnings("unused") @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @SuppressWarnings("unused") @Bind("getStgDict(inliningTarget, restype, pyTypeStgDictNode)") StgDictObject dict,
                         @Shared @Cached CallNode callNode) {
             try {
-                return callNode.execute(restype, ilib.asInt(result));
+                return callNode.execute(frame, restype, ilib.asInt(result));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
         @Specialization(guards = {"restype != null", "!isNone(restype)", "dict != null"}, limit = "1")
-        static Object callGetFunc(Object restype, FFIType rtype, Object result, Object checker,
+        static Object callGetFunc(VirtualFrame frame, Object restype, FFIType rtype, Object result, Object checker,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("result") InteropLibrary ilib,
                         @SuppressWarnings("unused") @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -1466,7 +1469,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             if (PGuards.isPNone(checker) || checker == null) {
                 return retval;
             }
-            return callNode.execute(checker, retval);
+            return callNode.execute(frame, checker, retval);
         }
 
         protected static StgDictObject getStgDict(Node inliningTarget, Object restype, PyTypeStgDictNode pyTypeStgDictNode) {
@@ -1838,7 +1841,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             Object src = readPythonObject.execute(inliningTarget, srcObj);
             Object ctype = readPythonObject.execute(inliningTarget, ctypeObj);
             castCheckPtrTypeNode.execute(inliningTarget, ctype);
-            CDataObject result = (CDataObject) callNode.execute(ctype);
+            CDataObject result = (CDataObject) callNode.executeWithoutFrame(ctype);
 
             /*
              * The casted objects '_objects' member:

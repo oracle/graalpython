@@ -33,7 +33,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
@@ -78,6 +77,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageMpSubscriptNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageSqItemNode;
 import com.oracle.graal.python.builtins.objects.common.SortNodes.SortSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
@@ -89,7 +90,9 @@ import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -287,39 +290,37 @@ public final class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Slot(value = SlotKind.sq_item, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
-
+    public abstract static class ListSqItemNode extends SqItemBuiltinNode {
         @Specialization
-        static Object doInBounds(PList self, int index,
-                        @Shared("getItem") @Cached("createForList()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(self.getSequenceStorage(), index);
-        }
-
-        @InliningCutoff
-        @Specialization(guards = "isIndexOrSlice(this, indexCheckNode, key)")
-        static Object doScalar(VirtualFrame frame, PList self, Object key,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached PyIndexCheckNode indexCheckNode,
-                        @Shared("getItem") @Cached("createForList()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(frame, self.getSequenceStorage(), key);
-        }
-
-        @InliningCutoff
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isIndexOrSlice(inliningTarget, indexCheckNode, key)")
-        static Object doListError(VirtualFrame frame, Object self, Object key,
+        static Object doIt(PList self, int index,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
+                        @Cached SequenceStorageSqItemNode sqItemNode) {
+            return sqItemNode.execute(inliningTarget, self.getSequenceStorage(), index, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+        }
+    }
+
+    @Slot(value = SlotKind.mp_subscript, isComplex = true)
+    @GenerateNodeFactory
+    public abstract static class GetItemNode extends MpSubscriptBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, PList self, Object idx,
+                        @Bind("this") Node inliningTarget,
+                        @Cached InlinedConditionProfile validProfile,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached SequenceStorageMpSubscriptNode subscriptNode) {
+            if (!validProfile.profile(inliningTarget, SequenceStorageMpSubscriptNode.isValidIndex(inliningTarget, idx, indexCheckNode))) {
+                raiseNonIntIndex(inliningTarget, raiseNode, idx);
+            }
+            return subscriptNode.execute(frame, inliningTarget, self.getSequenceStorage(), idx,
+                            ErrorMessages.LIST_INDEX_OUT_OF_RANGE, PythonObjectFactory::createList);
         }
 
-        @NeverDefault
-        protected static GetItemNode create() {
-            return ListBuiltinsFactory.GetItemNodeFactory.create();
+        @InliningCutoff
+        private static void raiseNonIntIndex(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object index) {
+            raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", index);
         }
     }
 

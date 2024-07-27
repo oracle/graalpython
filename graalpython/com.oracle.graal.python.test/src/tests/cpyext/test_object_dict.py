@@ -45,12 +45,13 @@ NativeTypeWithoutDict = CPyExtType(
 
 NativeTypeWithDict = CPyExtType(
     name='NativeTypeWithDict',
-    cmembers='PyObject* dict;',
+    cmembers='int some_field; PyObject* dict;',
     tp_dictoffset='offsetof(NativeTypeWithDictObject, dict)',
     tp_getset='{"__dict__", PyObject_GenericGetDict, PyObject_GenericSetDict}',
 )
 
 NativeHeapTypeWithoutDict = CPyExtHeapType(
+    cmembers='int some_field;',
     name='NativeTypeWithManagedDict',
 )
 
@@ -75,7 +76,7 @@ NativeHeapTypeWithDict = CPyExtHeapType(
 
 
 # TODO it would be great if we could test creating heap types with Py_TPFLAGS_MANAGED_DICT, because pybind11 does that,
-# but there's no way to do that without abusing abusing implementations details
+# but there's no way to do that without abusing implementations details
 
 
 class NativeSubtypeWithDict(NativeTypeWithDict):
@@ -107,3 +108,15 @@ class TestObjectDict:
         self.assert_has_working_dict(NativeHeapTypeWithDict())
         self.assert_has_working_dict(NativeSubtypeWithDict())
         self.assert_has_working_dict(NativeSubtypeWithAddedDict())
+
+    def test_multiple_inheritance(self):
+        class Base1(NativeTypeWithoutDict):
+            pass
+
+        class Base2(NativeTypeWithoutDict):
+            pass
+
+        class Derived(Base1, Base2):
+            pass
+
+        self.assert_has_working_dict(Derived())

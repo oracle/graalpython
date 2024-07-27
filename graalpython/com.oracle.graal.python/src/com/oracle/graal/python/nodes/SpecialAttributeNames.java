@@ -114,6 +114,8 @@ public abstract class SpecialAttributeNames {
 
     public static final TruffleString T___CACHED__ = tsLiteral("__cached__");
 
+    public static final TruffleString T___INITIALIZING__ = tsLiteral("__initializing__");
+
     public static final String J___TEXT_SIGNATURE__ = "__text_signature__";
     public static final TruffleString T___TEXT_SIGNATURE__ = tsLiteral(J___TEXT_SIGNATURE__);
 

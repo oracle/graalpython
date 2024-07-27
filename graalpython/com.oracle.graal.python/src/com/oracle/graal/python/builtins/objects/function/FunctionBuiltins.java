@@ -78,7 +78,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -230,7 +229,6 @@ public final class FunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(arg)")
         @TruffleBoundary
         Object set(PFunction self, PDict arg) {
-            CompilerDirectives.transferToInterpreter();
             ArrayList<PKeyword> keywords = new ArrayList<>();
             final HashingStorage storage = arg.getDictStorage();
             HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);

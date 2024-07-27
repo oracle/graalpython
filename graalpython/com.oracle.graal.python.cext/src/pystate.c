@@ -187,6 +187,13 @@ PyGILState_Release(PyGILState_STATE oldstate)
         if (graalpy_gilstate_counter == 0 && graalpy_attached_thread) {
             (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
             graalpy_attached_thread = 0;
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+            /*
+             * The thread state on the Java-side can get garbage collected after the thread is detached,
+             * so we need to make sure to fetch a fresh pointer the next time we attach.
+             */
+            tstate_current = NULL;
+#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
         }
     }
 }

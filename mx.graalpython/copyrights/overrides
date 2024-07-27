@@ -216,7 +216,6 @@ graalpython/com.oracle.graal.python.cext/modules/_cpython_sre/sre.h,python.copyr
 graalpython/com.oracle.graal.python.cext/modules/_cpython_sre/sre_constants.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_sre/sre_lib.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_sre/sre_targets.h,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.h,python.copyright
@@ -269,7 +268,6 @@ graalpython/com.oracle.graal.python.cext/modules/_testcapi.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testbuffer.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testmultiphase.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_bz2module.c.h,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_testmultiphase.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/memoryobject.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/pyexpat.c.h,python.copyright
@@ -280,10 +278,11 @@ graalpython/com.oracle.graal.python.cext/modules/termios.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/testcapi_long.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodedata_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodename_db.h,python.copyright
+graalpython/com.oracle.graal.python.cext/src/_warnings.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/abstract.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/boolobject.c,python.copyright
-graalpython/com.oracle.graal.python.cext/src/bytesobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/bytearrayobject.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/bytesobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/call.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/capsule.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/codeobject.c,python.copyright
@@ -293,6 +292,7 @@ graalpython/com.oracle.graal.python.cext/src/dictobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/dtoa.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/errors.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/fileobject.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/fileutils.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/floatobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/gcmodule.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getargs.c,python.copyright
@@ -320,7 +320,6 @@ graalpython/com.oracle.graal.python.cext/src/typeobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodectype.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodeobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodetype_db.h,python.copyright
-graalpython/com.oracle.graal.python.cext/src/_warnings.c,python.copyright
 graalpython/com.oracle.graal.python.frozen/freeze_modules.py,python.copyright
 graalpython/com.oracle.graal.python.hpy.llvm/include/hpy.h,hpy.copyright
 graalpython/com.oracle.graal.python.hpy.llvm/include/hpy/autogen_hpyfunc_declare.h,hpy.copyright
@@ -582,6 +581,12 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/json/JSONEncoderBuiltins.java,python.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/json/JSONModuleBuiltins.java,python.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/json/JSONScannerBuiltins.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/StructModuleBuiltins.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PStructUnpackIterator.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/struct/PStruct.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/struct/StructBuiltins.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/struct/StructNodes.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/struct/StructUnpackIteratorBuiltins.java,python.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/PNone.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/PNotImplemented.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/array/ArrayBuiltins.java,zippy.copyright
@@ -694,7 +699,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatti
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatting/TextFormatter.java,jython.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/object/PythonObjectFactory.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/PSequence.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/BasicSequenceStorage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/BoolSequenceStorage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/ByteSequenceStorage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/DoubleSequenceStorage.java,zippy.copyright
@@ -705,7 +709,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SequenceStorage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SequenceStorageFactory.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SequenceStoreException.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/TypedSequenceStorage.java,zippy.copyright
 graalpython/lib-graalpython/modules/hpy/debug/__init__.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/debug/leakdetector.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/debug/pytest.py,hpy.copyright

@@ -1,0 +1,94 @@
+diff --git a/numpy/core/include/numpy/ndarrayobject.h b/numpy/core/include/numpy/ndarrayobject.h
+index a99fe7b..2f5e3ee 100644
+--- a/numpy/core/include/numpy/ndarrayobject.h
++++ b/numpy/core/include/numpy/ndarrayobject.h
+@@ -225,7 +225,7 @@ NPY_TITLE_KEY_check(PyObject *key, PyObject *value)
+     if (key == title) {
+         return 1;
+     }
+-#ifdef PYPY_VERSION
++#if defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)
+     /*
+      * On PyPy, dictionary keys do not always preserve object identity.
+      * Fall back to comparison by value.
+diff --git a/numpy/core/src/multiarray/compiled_base.c b/numpy/core/src/multiarray/compiled_base.c
+index 2ab58bb..d7a7823 100644
+--- a/numpy/core/src/multiarray/compiled_base.c
++++ b/numpy/core/src/multiarray/compiled_base.c
+@@ -1391,6 +1391,7 @@ fail:
+ NPY_NO_EXPORT PyObject *
+ arr_add_docstring(PyObject *NPY_UNUSED(dummy), PyObject *args)
+ {
++#if 0 // GraalPy change
+     PyObject *obj;
+     PyObject *str;
+     const char *docstr;
+@@ -1482,6 +1483,7 @@ arr_add_docstring(PyObject *NPY_UNUSED(dummy), PyObject *args)
+     }
+ 
+ #undef _ADDDOC
++#endif // GraalPy change
+ 
+     Py_RETURN_NONE;
+ }
+diff --git a/numpy/core/src/multiarray/shape.c b/numpy/core/src/multiarray/shape.c
+index dc7151a..377ec99 100644
+--- a/numpy/core/src/multiarray/shape.c
++++ b/numpy/core/src/multiarray/shape.c
+@@ -104,6 +104,11 @@ PyArray_Resize(PyArrayObject *self, PyArray_Dims *newshape, int refcheck,
+                     "cannot resize an array with refcheck=True on PyPy.\n"
+                     "Use the np.resize function or refcheck=False");
+             return NULL;
++#elif defined(GRAALVM_PYTHON)
++            PyErr_SetString(PyExc_ValueError,
++                    "cannot resize an array with refcheck=True on GraalPy.\n"
++                    "Use the np.resize function or refcheck=False");
++            return NULL;
+ #else
+             refcnt = PyArray_REFCOUNT(self);
+ #endif /* PYPY_VERSION */
+diff --git a/numpy/core/src/multiarray/temp_elide.c b/numpy/core/src/multiarray/temp_elide.c
+index 0bf500e..ad7a06e 100644
+--- a/numpy/core/src/multiarray/temp_elide.c
++++ b/numpy/core/src/multiarray/temp_elide.c
+@@ -58,7 +58,7 @@
+  * supported too by using the appropriate Windows APIs.
+  */
+ 
+-#if defined HAVE_BACKTRACE && defined HAVE_DLFCN_H && ! defined PYPY_VERSION
++#if defined HAVE_BACKTRACE && defined HAVE_DLFCN_H && ! defined PYPY_VERSION && !defined(GRAALVM_PYTHON)
+ /* 1 prints elided operations, 2 prints stacktraces */
+ #define NPY_ELIDE_DEBUG 0
+ #define NPY_MAX_STACKSIZE 10
+diff --git a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee754.c.src
+index 5d8cb06..2b25696 100644
+--- a/numpy/core/src/npymath/ieee754.c.src
++++ b/numpy/core/src/npymath/ieee754.c.src
+@@ -395,6 +395,11 @@ int npy_get_floatstatus_barrier(char* param)
+      * By using a volatile, the compiler cannot reorder this call
+      */
+     if (param != NULL) {
++        // GraalPy change: the pointer needs to be dereferenced to establish
++        // a data dependency to to ensure the compiler won't reorder the call
++        if (points_to_py_handle_space(param)) {
++            param = (char*)pointer_to_stub(param);
++        }
+         volatile char NPY_UNUSED(c) = *(char*)param;
+     }
+ 
+diff --git a/numpy/core/src/npymath/ieee754.cpp b/numpy/core/src/npymath/ieee754.cpp
+index ebc1dbe..2934bda 100644
+--- a/numpy/core/src/npymath/ieee754.cpp
++++ b/numpy/core/src/npymath/ieee754.cpp
+@@ -465,6 +465,11 @@ npy_get_floatstatus_barrier(char *param)
+      * By using a volatile, the compiler cannot reorder this call
+      */
+     if (param != NULL) {
++        // GraalPy change: the pointer needs to be dereferenced to establish
++        // a data dependency to to ensure the compiler won't reorder the call
++        if (points_to_py_handle_space(param)) {
++            param = (char*)pointer_to_stub(param);
++        }
+         volatile char NPY_UNUSED(c) = *(char *)param;
+     }
+ 

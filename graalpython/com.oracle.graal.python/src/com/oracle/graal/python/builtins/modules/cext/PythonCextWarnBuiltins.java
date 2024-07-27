@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,7 +69,7 @@ public final class PythonCextWarnBuiltins {
              * Note: we need to do a full call of '_warnings.warn' because it needs a frame in order
              * to create a proper traceback
              */
-            callNode.execute(attribute, message, category, (int) stackLevel, PNone.NONE);
+            callNode.executeWithoutFrame(attribute, message, category, (int) stackLevel, PNone.NONE);
             return PNone.NONE;
         }
     }
@@ -80,7 +80,7 @@ public final class PythonCextWarnBuiltins {
         Object warn(Object category, Object message, Object filename, int lineno, Object module, Object registry,
                         @Cached CallNode callNode) {
             Object attribute = getCore().lookupBuiltinModule(T__WARNINGS).getAttribute(WarningsModuleBuiltins.T_WARN_EXPLICIT);
-            callNode.execute(attribute, message, category, filename, lineno, module, registry);
+            callNode.executeWithoutFrame(attribute, message, category, filename, lineno, module, registry);
             return PNone.NONE;
         }
     }

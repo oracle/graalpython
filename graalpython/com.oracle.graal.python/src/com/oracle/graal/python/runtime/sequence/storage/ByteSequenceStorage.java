@@ -25,22 +25,18 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.ArrayUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(PythonBufferAccessLibrary.class)
-public final class ByteSequenceStorage extends TypedSequenceStorage {
+public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
 
     private byte[] values;
 
@@ -60,15 +56,15 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         this.length = 0;
     }
 
-    @Override
-    protected void increaseCapacityExactWithCopy(int newCapacity) {
+    private void increaseCapacityExactWithCopy(int newCapacity) {
         values = Arrays.copyOf(values, newCapacity);
         capacity = values.length;
     }
 
-    @Override
-    public SequenceStorage copy() {
-        return new ByteSequenceStorage(PythonUtils.arrayCopyOf(values, length));
+    public void ensureCapacity(int newCapacity) throws ArithmeticException {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, newCapacity > capacity)) {
+            increaseCapacityExactWithCopy(capacityFor(newCapacity));
+        }
     }
 
     @Override
@@ -76,23 +72,18 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return new ByteSequenceStorage(newCapacity);
     }
 
-    @Override
-    public Object[] getInternalArray() {
-        /*
-         * Have to box and copy.
-         */
-        Object[] boxed = new Object[length];
+    public void reverse() {
+        if (length > 0) {
+            int head = 0;
+            int tail = length - 1;
+            int middle = (length - 1) / 2;
 
-        for (int i = 0; i < length; i++) {
-            boxed[i] = values[i];
+            for (; head <= middle; head++, tail--) {
+                byte temp = values[head];
+                values[head] = values[tail];
+                values[tail] = temp;
+            }
         }
-
-        return boxed;
-    }
-
-    @Override
-    public Object getItemNormalized(int idx) {
-        return getIntItemNormalized(idx);
     }
 
     public byte getByteItemNormalized(int idx) {
@@ -103,33 +94,8 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return values[idx] & 0xFF;
     }
 
-    @Override
-    public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
-        if (value instanceof Byte) {
-            setByteItemNormalized(idx, (byte) value);
-        } else if (value instanceof Integer) {
-            if ((int) value < 0 || (int) value >= 256) {
-                throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
-            }
-            setByteItemNormalized(idx, ((Integer) value).byteValue());
-        } else {
-            throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.INTEGER_REQUIRED);
-        }
-    }
-
     public void setByteItemNormalized(int idx, byte value) {
         values[idx] = value;
-    }
-
-    @Override
-    public void insertItem(int idx, Object value) throws SequenceStoreException {
-        if (value instanceof Byte) {
-            insertByteItem(idx, (byte) value);
-        } else if (value instanceof Integer) {
-            insertByteItem(idx, ((Integer) value).byteValue());
-        } else {
-            throw new SequenceStoreException(value);
-        }
     }
 
     public void insertByteItem(int idx, byte value) {
@@ -142,22 +108,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
 
         values[idx] = value;
         length++;
-    }
-
-    @Override
-    public ByteSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
-        byte[] newArray = new byte[sliceLength];
-
-        if (step == 1) {
-            PythonUtils.arraycopy(values, start, newArray, 0, sliceLength);
-            return new ByteSequenceStorage(newArray);
-        }
-
-        for (int i = start, j = 0; j < sliceLength; i += step, j++) {
-            newArray[j] = values[i];
-        }
-
-        return new ByteSequenceStorage(newArray);
     }
 
     public int indexOfByte(byte value) {
@@ -175,21 +125,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void reverse() {
-        if (length > 0) {
-            int head = 0;
-            int tail = length - 1;
-            int middle = (length - 1) / 2;
-
-            for (; head <= middle; head++, tail--) {
-                byte temp = values[head];
-                values[head] = values[tail];
-                values[tail] = temp;
-            }
-        }
-    }
-
-    @Override
     public Object getIndicativeValue() {
         return 0;
     }
@@ -204,9 +139,17 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return Arrays.copyOf(values, length);
     }
 
-    @Override
     public Object[] getCopyOfInternalArray() {
-        return getInternalArray();
+        /*
+         * Have to box and copy.
+         */
+        Object[] boxed = new Object[length];
+
+        for (int i = 0; i < length; i++) {
+            boxed[i] = values[i];
+        }
+
+        return boxed;
     }
 
     @Override

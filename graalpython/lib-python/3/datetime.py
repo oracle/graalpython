@@ -2178,6 +2178,9 @@ class datetime(date):
         "Add a datetime and a timedelta."
         if not isinstance(other, timedelta):
             return NotImplemented
+        # GraalPy change: if it's a subtype, use only the values, don't call into the possibly overridden addition
+        if not type(other) is timedelta:
+            other = timedelta(days=other.days, seconds=other.seconds, microseconds=other.microseconds)
         delta = timedelta(self.toordinal(),
                           hours=self._hour,
                           minutes=self._minute,

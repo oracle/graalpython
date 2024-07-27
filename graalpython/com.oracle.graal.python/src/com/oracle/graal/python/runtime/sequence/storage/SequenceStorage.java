@@ -38,20 +38,12 @@ public abstract class SequenceStorage {
         Generic;
 
         public boolean generalizesFrom(StorageType other) {
-            switch (this) {
-                case Uninitialized:
-                case Empty:
-                    return false;
-                case Boolean:
-                case Byte:
-                case Double:
-                case Int:
-                    return other == Uninitialized || other == Empty || other == Byte;
-                case Long:
-                    return other == Uninitialized || other == Empty || other == Byte || other == Int;
-                default:
-                    return true;
-            }
+            return switch (this) {
+                case Uninitialized, Empty -> false;
+                case Boolean, Byte, Double, Int -> other == Uninitialized || other == Empty || other == Byte;
+                case Long -> other == Uninitialized || other == Empty || other == Byte || other == Int;
+                default -> true;
+            };
         }
     }
 
@@ -67,6 +59,14 @@ public abstract class SequenceStorage {
     protected SequenceStorage(int length, int capacity) {
         this.length = length;
         this.capacity = capacity;
+    }
+
+    public void setNewLength(int length) {
+        this.length = length;
+    }
+
+    public final void incLength() {
+        this.length++;
     }
 
     public final int length() {

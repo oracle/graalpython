@@ -12,6 +12,7 @@
   <properties>
     <graalpy.version>24.1.0</graalpy.version>
     <graalpy.edition>python-community</graalpy.edition>
+    <native-maven-plugin.version>0.9.28</native-maven-plugin.version>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -46,19 +47,20 @@
         <executions>
           <execution>
             <configuration>
-              <!-- specify python packages as if used with pip -->
+              <!-- specify python packages and their versions as if used with pip -->
               <packages>
                 <package>termcolor==2.2</package>
               </packages>
               <pythonHome>
-                <!-- java-like regular expression what file paths should be included into venv/home;
-                     default is all -->
                 <includes>
+                  <!-- java-like regular expression what file paths should be included;
+                       if empty than default is all -->
                   <include>.*</include>
-                </includes>
-                <!-- java-like regular expression what file paths should be excluded from venv/home;
-                     default is none -->
+                </includes>                
                 <excludes>
+                <!-- java-like regular expression what file paths should be excluded;
+                     default is none -->
+                  <!-- <exclude></exclude> -->
                 </excludes>
               </pythonHome>
             </configuration>
@@ -79,7 +81,7 @@
           <plugin>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
-            <version>0.9.27</version>
+            <version>${symbol_dollar}{native-maven-plugin.version}</version>
             <extensions>true</extensions>
             <executions>
               <execution>

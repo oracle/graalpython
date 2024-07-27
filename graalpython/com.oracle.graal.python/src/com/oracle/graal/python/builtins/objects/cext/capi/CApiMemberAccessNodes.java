@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,8 +39,6 @@
  * SOFTWARE.
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
-
-import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -82,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -90,19 +87,16 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.util.PythonUtils.PrototypeNodeFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GeneratedBy;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class CApiMemberAccessNodes {
@@ -135,46 +129,6 @@ public class CApiMemberAccessNodes {
      */
     private static boolean isReadOnlyType(int type) {
         return type == T_STRING || type == T_STRING_INPLACE;
-    }
-
-    public static class HPyMemberNodeFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
-        private final T node;
-
-        public HPyMemberNodeFactory(T node) {
-            this.node = node;
-        }
-
-        @Override
-        public T createNode(Object... arguments) {
-            return NodeUtil.cloneNode(node);
-        }
-
-        @Override
-        public Class<T> getNodeClass() {
-            return determineNodeClass(node);
-        }
-
-        @SuppressWarnings("unchecked")
-        private static <T> Class<T> determineNodeClass(T node) {
-            CompilerAsserts.neverPartOfCompilation();
-            Class<T> nodeClass = (Class<T>) node.getClass();
-            GeneratedBy genBy = nodeClass.getAnnotation(GeneratedBy.class);
-            if (genBy != null) {
-                nodeClass = (Class<T>) genBy.value();
-                assert nodeClass.isAssignableFrom(node.getClass());
-            }
-            return nodeClass;
-        }
-
-        @Override
-        public List<List<Class<?>>> getNodeSignatures() {
-            throw new IllegalAccessError();
-        }
-
-        @Override
-        public List<Class<? extends Node>> getExecutionSignature() {
-            throw new IllegalAccessError();
-        }
     }
 
     private static CStructAccess.ReadBaseNode getReadNode(int type) {
@@ -321,9 +275,9 @@ public class CApiMemberAccessNodes {
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object owner, TruffleString propertyName, int type, int offset) {
             CExtAsPythonObjectNode asPythonObjectNode = getReadConverterNode(type);
-            RootCallTarget callTarget = language.createCachedCallTarget(
-                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(ReadMemberNodeGen.create(type, offset, asPythonObjectNode)), true),
-                            CApiMemberAccessNodes.class, BUILTIN.name(), type, offset);
+            RootCallTarget callTarget = language.createCachedPropAccessCallTarget(
+                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(ReadMemberNodeGen.create(type, offset, asPythonObjectNode)), true),
+                            ReadMemberNode.class, BUILTIN.name(), type, offset);
             int flags = PBuiltinFunction.getFlags(BUILTIN, callTarget);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, owner, 0, flags, callTarget);
         }
@@ -348,8 +302,8 @@ public class CApiMemberAccessNodes {
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName) {
             RootCallTarget builtinCt = language.createCachedCallTarget(
-                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(ReadOnlyMemberNodeGen.create(propertyName)), true),
-                            CApiMemberAccessNodes.class, BUILTIN.name());
+                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(ReadOnlyMemberNodeGen.create(propertyName)), true),
+                            ReadOnlyMemberNode.class, BUILTIN.name());
             int flags = PBuiltinFunction.getFlags(BUILTIN, builtinCt);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, builtinCt);
         }
@@ -372,8 +326,8 @@ public class CApiMemberAccessNodes {
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName) {
             RootCallTarget builtinCt = language.createCachedCallTarget(
-                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(BadMemberDescrNodeGen.create()), true),
-                            CApiMemberAccessNodes.class, BUILTIN.name());
+                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(BadMemberDescrNodeGen.create()), true),
+                            BadMemberDescrNode.class, BUILTIN.name());
             int flags = PBuiltinFunction.getFlags(BUILTIN, builtinCt);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, builtinCt);
         }
@@ -680,9 +634,9 @@ public class CApiMemberAccessNodes {
                 return BadMemberDescrNode.createBuiltinFunction(language, propertyName);
             }
             //
-            RootCallTarget callTarget = language.createCachedCallTarget(
-                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(WriteMemberNodeGen.create(type, offset)), true),
-                            CApiMemberAccessNodes.class, BUILTIN.name(), type, offset);
+            RootCallTarget callTarget = language.createCachedPropAccessCallTarget(
+                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(WriteMemberNodeGen.create(type, offset)), true),
+                            WriteMemberNode.class, BUILTIN.name(), type, offset);
             int flags = PBuiltinFunction.getFlags(BUILTIN, callTarget);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, owner, 0, flags, callTarget);
         }

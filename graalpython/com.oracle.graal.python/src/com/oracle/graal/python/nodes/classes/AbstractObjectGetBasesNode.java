@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,9 +61,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeInfo;
 
-@NodeInfo(shortName = "cpython://Objects/abstract.c/abstract_get_bases")
 @GenerateUncached
 @ImportStatic({SpecialMethodNames.class})
 @SuppressWarnings("truffle-inlining")       // footprint reduction 44 -> 26
@@ -79,7 +77,7 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
         return executeInternal(frame, cls);
     }
 
-    @Specialization(guards = "!isUncached()")
+    @Specialization(guards = "!isUncachedNode()")
     static PTuple getBasesCached(VirtualFrame frame, Object cls,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetAttr getAttributeNode,

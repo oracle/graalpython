@@ -47,7 +47,6 @@ if sys.version_info[0] < 3:
     raise RuntimeError("The build scripts are no longer compatible with Python 2")
 
 import tempfile
-import urllib.request as urllib_request
 from argparse import ArgumentParser
 from dataclasses import dataclass
 import stat
@@ -410,21 +409,22 @@ def punittest(ars, report=False):
     if skip_leak_tests:
         return
 
-    common_args = ["--lang", "python",
-                   "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
-                   "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
-
-    if not all([
-        # test leaks with Python code only
-        run_leak_launcher(common_args + ["--code", "pass", ]),
-        # test leaks when some C module code is involved
-        run_leak_launcher(common_args + ["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)']),
-        # test leaks with shared engine Python code only
-        run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
-        # test leaks with shared engine when some C module code is involved
-        run_leak_launcher(common_args + ["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
-    ]):
-        mx.abort(1)
+    # test leaks with Python code only
+    run_leak_launcher(["--code", "pass", ])
+    run_leak_launcher(["--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
+    # test leaks when some C module code is involved
+    run_leak_launcher(["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
+    # test leaks with shared engine Python code only
+    run_leak_launcher(["--shared-engine", "--code", "pass"])
+    run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
+    # test leaks with shared engine when some C module code is involved
+    run_leak_launcher(["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
+    run_leak_launcher(["--shared-engine", "--code", '[10, 20]', "--python.UseNativePrimitiveStorageStrategy=true",
+                       "--forbidden-class", "com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage",
+                       "--forbidden-class", "com.oracle.graal.python.runtime.native_memory.NativePrimitiveReference"])
+    run_leak_launcher(["--code", '[10, 20]', "--python.UseNativePrimitiveStorageStrategy=true",
+                       "--forbidden-class", "com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage",
+                       "--forbidden-class", "com.oracle.graal.python.runtime.native_memory.NativePrimitiveReference"])
 
 
 PYTHON_ARCHIVES = ["GRAALPYTHON_GRAALVM_SUPPORT"]
@@ -709,6 +709,9 @@ def update_unittest_tags(args):
         'test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one',
         'test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_killed_child',
         'test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_idle_thread_reuse',
+        'graalpython.lib-python.3.test.test_threading.ThreadTests.test_join_nondaemon_on_shutdown',
+        'graalpython.lib-python.3.test.test_threading.ThreadTests.test_import_from_another_thread',
+        'graalpython.lib-python.3.test.test_threading.ThreadTests.test_finalization_shutdown',
         # Transiently times out GR-52666
         'test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_submit_after_interpreter_shutdown',
         'test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_del_shutdown',
@@ -762,6 +765,7 @@ class GraalPythonTags(object):
     unittest_sandboxed = 'python-unittest-sandboxed'
     unittest_multi = 'python-unittest-multi-context'
     unittest_jython = 'python-unittest-jython'
+    unittest_arrow = 'python-unittest-arrow-storage'
     unittest_hpy = 'python-unittest-hpy'
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_posix = 'python-unittest-posix'
@@ -872,7 +876,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
         launcher = os.path.join(python_home, 'bin', _graalpy_launcher(enterprise))
         out = mx.OutputCapture()
-        import_managed_status = mx.run([launcher, "-c", "import __graalpython_enterprise__"], nonZeroIsFatal=False, out=out, err=out)
+        import_managed_status = mx.run([launcher, "-c", "import sys; assert 'Oracle GraalVM' in sys.version"], nonZeroIsFatal=False, out=out, err=out)
         if enterprise != (import_managed_status == 0):
             mx.abort(f"GRAALPY_HOME is not compatible with requested distribution kind ({import_managed_status=}, {enterprise=}, {out=}).")
         return python_home
@@ -1350,8 +1354,7 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
     print(f"with PYTHONPATH={python_path}")
 
     if checkIfWithGraalPythonEE:
-        mx.run([python_binary, "-c", "import __graalpython_enterprise__"])
-        print("with graalpy EE")
+        mx.run([python_binary, "-c", "import sys; print(sys.version)"])
     run_python_unittests(
         python_binary,
         args=["-v"],
@@ -1361,6 +1364,13 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
         nonZeroIsFatal=nonZeroIsFatal,
         report=report,
     )
+
+
+def get_cpython():
+    if python3_home := os.environ.get("PYTHON3_HOME"):
+        return os.path.join(python3_home, "python")
+    else:
+        return "python3"
 
 
 def graalpython_gate_runner(args, tasks):
@@ -1469,13 +1479,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
-            exe = os.environ.get("PYTHON3_HOME", None)
-            if exe:
-                exe = os.path.join(exe, "python")
-            else:
-                exe = "python3"
             env = extend_os_env(PYTHONHASHSEED='0')
-            test_args = [exe, _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests"]
+            test_args = [get_cpython(), _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests"]
             mx.run(test_args, nonZeroIsFatal=True, env=env)
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
@@ -1490,6 +1495,10 @@ def graalpython_gate_runner(args, tasks):
         if task:
             run_python_unittests(graalpy_standalone_jvm(), args=["--python.EmulateJython"], paths=["test_interop.py"], report=report(), nonZeroIsFatal=nonZeroIsFatal)
 
+    with Task('GraalPython with Arrow Storage Strategy', tasks, tags=[GraalPythonTags.unittest_arrow]) as task:
+        if task:
+            run_python_unittests(graalpy_standalone_jvm(), args=["--python.UseNativePrimitiveStorageStrategy"], report=report(), nonZeroIsFatal=nonZeroIsFatal)
+
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
             run_hpy_unittests(graalpy_standalone_native(), nonZeroIsFatal=nonZeroIsFatal, report=report())
@@ -1501,7 +1510,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
             opt = '--PosixModuleBackend={backend} --Sha3ModuleBackend={backend}'
-            tests_list = ["test_posix.py", "test_mmap.py", "test_hashlib.py"]
+            tests_list = ["test_posix.py", "test_mmap.py", "test_hashlib.py", "test_resource.py"]
             run_python_unittests(graalpy_standalone_jvm(), args=opt.format(backend='native').split(), paths=tests_list, report=report())
             run_python_unittests(graalpy_standalone_jvm(), args=opt.format(backend='java').split(), paths=tests_list, report=report())
 
@@ -1513,8 +1522,6 @@ def graalpython_gate_runner(args, tasks):
 
             env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
             env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
-            env['ENABLE_MICRONAUT_UNITTESTS'] ='true'
-            default_java_home = env.get('JAVA_HOME')
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home
 
@@ -1537,16 +1544,6 @@ def graalpython_gate_runner(args, tasks):
             mx.run([sys.executable, _graalpytest_driver(), "-v",
                 "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_jbang_integration.py",
                 "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py"], env=env)
-
-            # avoid conflict between truffle_api and compiler modules transitively pulled in by micronaut plugin in the test app
-            # and those, which are available in the current gvm_jdk
-            if default_java_home:
-                env['JAVA_HOME'] = default_java_home
-            else:
-                del env['JAVA_HOME']
-            mx.logv(f"running test_micronaut with os.environ extended with: {env=}")
-            mx.run([sys.executable, _graalpytest_driver(), "-v",
-                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_micronaut.py"], env=env)
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
@@ -2097,128 +2094,18 @@ def python_run_mx_filetests(args):
 
 
 def _python_checkpatchfiles():
-    listfilename = tempfile.mktemp()
-    # additionally, we want to check if the packages we are patching all have a permissive license
-    with open(listfilename, "w") as listfile:
-        mx.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], out=listfile)
-    try:
-        # TODO our mirror doesn't handle the json API
-        # pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
-        pypi_base_url = "https://pypi.org"
-        with open(listfilename, "r") as listfile:
-            content = listfile.read()
-        patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/.*?([^/]*\.patch)")
-        checked = {
-            # meson-python puts the whole license text in the field. It's MIT
-            'meson-python.patch',
-            # scipy puts the whole license text in the field, skip it. It's new BSD
-            'scipy-1.9.3.patch',
-            'scipy-1.10.1.patch',
-            # pandas puts the whole license text in the field. Its BSD-3-Clause
-            'pandas-1.5.2.patch',
-            # numpy started putting the whole license text in the field. Its BSD-3-Clause
-            'numpy-1.23.2.patch',
-            'numpy-1.23.5.patch',
-            'numpy-1.26.4.patch',
-            # libcst is MIT
-            'libcst-1.0.1.patch',
-            # Empty license field, skip it. It's MIT
-            'setuptools-60.patch',
-            'setuptools-60.9.patch',
-            'setuptools-63.patch',
-            'setuptools-65.patch',
-            # Empty license field. It's MIT
-            'urllib3-2.patch',
-            # Empty license field. It's MIT
-            'wheel-0.43.patch',
-            'wheel-0.41.2.patch',
-            'wheel-0.40.patch',
-            'wheel-0.38.patch',
-            'wheel-0.37.patch',
-            'wheel-0.35.patch',
-            'wheel-pre-0.35.patch',
-            # Empty license field. It's ASL 2.0 or BSD 2-Clause
-            'packaging.patch',
-            # pymongo puts the whole license in the field. It's ASL 2.0
-            'pymongo.patch',
-            # Empty license field. It's ASL 2.0
-            'tokenizers-0.13.3.patch',
-            'tokenizers-0.15.0.patch',
-            # Empty license field. It's Apache 2
-            'safetensors-0.3.3.patch',
-            'tensorflow-io-0.34.0.patch',
-            'tensorflow-io-gcs-filesystem-0.34.0.patch',
-            # Puts whole license into the field. It's BSD 3-Clause
-            'pythran-0.12.0.patch',
-            'pythran-0.13.patch',
-            'pyzmq.patch',
-            'jupyter_server.patch',
-            # Empty license field. It's BSD-3-Clause
-            'prompt_toolkit.patch',
-            # Whole license in the field. It's BSD-3-Clause
-            'pyzmq.patch',
-            # Whole license in the field. It's PSF
-            'matplotlib-3.5.3.patch',
-            'matplotlib-3.6.3.patch',
-            'matplotlib-3.7.0.patch',
-            # Empty license field. It's MIT
-            'autopep8.patch',
-            # Whole license in the field. It's MIT
-            'tiktoken-0.7.0.patch',
-        }
-        allowed_licenses = [
-            "MIT",
-            "BSD",
-            "BSD-3-Clause",
-            "3-Clause BSD License",
-            "Apache License, Version 2.0",
-            "http://www.apache.org/licenses/LICENSE-2.0",
-            "PSF",
-            "Apache",
-            "new BSD",
-            "Apache-2.0",
-            "MPL-2.0",
-            "LGPL",
-        ]
-
-        def as_license_regex(name):
-            subregex = re.escape(name).replace(r'\-', '[- ]')
-            return f'(?:{subregex}(?: license)?)'
-
-        allowed_licenses_regex = re.compile('|'.join(map(as_license_regex, allowed_licenses)), re.IGNORECASE)
-
-        for line in content.split("\n"):
-            if not line or os.stat(line).st_size == 0:
-                # empty files are just markers and do not need to be license checked
-                continue
-            match = patchfile_pattern.search(line)
-            if match:
-                package_name = match.group(1)
-                patch_name = match.group(2)
-                if patch_name in checked:
-                    continue
-                checked.add(patch_name)
-                package_url = "/".join([pypi_base_url, "pypi", package_name, "json"])
-                mx.log("Checking license of patchfile for " + package_url)
-                response = urllib_request.urlopen(package_url)
-                try:
-                    data = json.loads(response.read())
-                    license_field = data["info"]["license"]
-                    license_field_no_parens = re.sub(r'[()]', '', license_field)
-                    license_tokens = re.split(r' AND | OR ', license_field_no_parens)
-                    for license_token in license_tokens:
-                        if not allowed_licenses_regex.match(license_token):
-                            mx.abort(
-                                f"The license for the original project of patch file {patch_name!r} is {license_field!r}. "
-                                f"We cannot include a patch for it. Allowed licenses are: {allowed_licenses}"
-                            )
-                except Exception as e: # pylint: disable=broad-except;
-                    mx.abort("Error getting %r.\n%r" % (package_url, e))
-                finally:
-                    if response:
-                        response.close()
-    finally:
-        os.unlink(listfilename)
+    env = os.environ.copy()
+    mx_dir = Path(__file__).parent
+    root_dir = mx_dir.parent
+    [pip_wheel] = (root_dir / 'graalpython' / 'lib-python' / '3' / 'ensurepip' / '_bundled').glob('pip-*.whl')
+    env['PYTHONPATH'] = str(pip_wheel)
+    # We use the CPython that is used for running our unittests, not the one mx is running with.
+    # This is done to make sure it can import the pip wheel.
+    mx.run(
+        [get_cpython(), str(mx_dir / 'verify_patches.py'), str(root_dir / 'graalpython' / 'lib-graalpython' / 'patches')],
+        env=env,
+        nonZeroIsFatal=True,
+    )
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -2299,6 +2186,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER', 'sdk:MAVEN_DOWNLOADER'],
             main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
+                '-J-Xms14g', # GR-46399: libpythonvm needs more than the default minimum of 8 GB to be built
                 '-H:+DetectUserDirectoriesInImageHeap',
                 '-H:-CopyLanguageResources',
                 '-Dpolyglot.python.PosixModuleBackend=native',
@@ -2988,9 +2876,18 @@ def update_hpy_import_cmd(args):
 
 
 def run_leak_launcher(input_args):
+    args = input_args
+    keep_dumps_on_success = False
+    if '--keep-dump-on-success' in input_args:
+        args.remove('--keep-dump-on-success')
+        args.append('--keep-dump')
+        keep_dumps_on_success = True
     print(shlex.join(["mx", "python-leak-test", *input_args]))
 
-    args = input_args
+    args = ["--lang", "python",
+            "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
+            "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
+    args += input_args
     args = [
         "--keep-dump",
         "--experimental-options",
@@ -3009,24 +2906,25 @@ def run_leak_launcher(input_args):
     vm_args.append("com.oracle.graal.python.test.advanced.LeakTest")
     out = mx.OutputCapture()
     retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False, out=mx.TeeOutputCapture(out))
-    dump_path = out.data.strip().partition("Dump file:")[2].strip()
+    dump_paths = re.findall(r'Dump file: (\S+)', out.data.strip())
     if retval == 0:
         print("PASSED")
-        if dump_path:
+        if dump_paths and not keep_dumps_on_success:
             print("Removing heapdump for passed test")
-            os.unlink(dump_path)
-        return True
+            for p in dump_paths:
+                os.unlink(p)
     else:
         print("FAILED")
-        if 'CI' in os.environ and dump_path:
-            save_path = os.path.join(SUITE.dir, "dumps", "leak_test")
-            try:
-                os.makedirs(save_path)
-            except OSError:
-                pass
-            dest = shutil.copy(dump_path, save_path)
-            print(f"Heapdump file kept in {dest}")
-        return False
+        if 'CI' in os.environ and dump_paths:
+            for i, dump_path in enumerate(dump_paths):
+                save_path = os.path.join(SUITE.dir, "dumps", f"leak_test{i}")
+                try:
+                    os.makedirs(save_path)
+                except OSError:
+                    pass
+                dest = shutil.copy(dump_path, save_path)
+                print(f"Heapdump file {dump_path} kept in {dest}")
+        mx.abort(1)
 
 
 def no_return(fn):

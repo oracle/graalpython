@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,13 +62,13 @@ public abstract class BinarySubscrSeq extends Node {
     public abstract static class ONode extends BinarySubscrSeq {
         public abstract Object execute(Object sequence, int index);
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
+        @Specialization(guards = "isBuiltinList(sequence)")
         Object doList(PList sequence, int index,
                         @Cached("createForList()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(sequence.getSequenceStorage(), index);
         }
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
+        @Specialization(guards = "isBuiltinTuple(sequence)")
         Object doList(PTuple sequence, int index,
                         @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(sequence.getSequenceStorage(), index);
@@ -90,7 +90,7 @@ public abstract class BinarySubscrSeq extends Node {
     public abstract static class INode extends BinarySubscrSeq {
         public abstract int execute(Object sequence, int index) throws QuickeningGeneralizeException;
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
+        @Specialization(guards = "isBuiltinList(sequence)")
         int doList(PList sequence, int index,
                         @Cached("createForList()") SequenceStorageNodes.GetItemNode getItemNode) {
             try {
@@ -101,7 +101,7 @@ public abstract class BinarySubscrSeq extends Node {
             }
         }
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
+        @Specialization(guards = "isBuiltinTuple(sequence)")
         int doList(PTuple sequence, int index,
                         @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
             try {
@@ -128,7 +128,7 @@ public abstract class BinarySubscrSeq extends Node {
     public abstract static class DNode extends BinarySubscrSeq {
         public abstract double execute(Object sequence, int index);
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
+        @Specialization(guards = "isBuiltinList(sequence)")
         double doList(PList sequence, int index,
                         @Cached("createForList()") SequenceStorageNodes.GetItemNode getItemNode) {
             try {
@@ -139,7 +139,7 @@ public abstract class BinarySubscrSeq extends Node {
             }
         }
 
-        @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
+        @Specialization(guards = "isBuiltinTuple(sequence)")
         double doList(PTuple sequence, int index,
                         @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
             try {

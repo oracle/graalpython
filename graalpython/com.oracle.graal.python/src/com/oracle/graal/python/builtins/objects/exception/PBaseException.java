@@ -46,6 +46,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -64,7 +65,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
-import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -251,7 +251,7 @@ public class PBaseException extends PythonObject {
             return typeName;
         } else if (args.getSequenceStorage().length() == 1) {
             SequenceStorage store = args.getSequenceStorage();
-            Object item = store instanceof BasicSequenceStorage basicStorage ? basicStorage.getItemNormalized(0) : "<unknown>";
+            Object item = GetItemScalarNode.executeUncached(store, 0);
             return typeName + ": " + item.toString();
         } else {
             return typeName + ": " + args.toString();

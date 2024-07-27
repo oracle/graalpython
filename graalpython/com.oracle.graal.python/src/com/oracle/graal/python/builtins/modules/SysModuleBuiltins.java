@@ -203,6 +203,8 @@ import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyTraceBackPrintNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyUnicodeAsEncodedString;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -1322,17 +1324,17 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(VirtualFrame frame, PythonModule sys, Object args,
                         @Bind("this") Node inliningTarget,
-                        @Cached TupleBuiltins.GetItemNode getItemNode,
+                        @Cached PyTupleGetItem getItemNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             final Object cls = getObjectClass(args);
             if (cls != PythonBuiltinClassType.PUnraisableHookArgs) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ARG_TYPE_MUST_BE, "sys.unraisablehook", "UnraisableHookArgs");
             }
-            final Object excType = getItemNode.execute(frame, args, 0);
-            final Object excValue = getItemNode.execute(frame, args, 1);
-            final Object excTb = getItemNode.execute(frame, args, 2);
-            final Object errMsg = getItemNode.execute(frame, args, 3);
-            final Object obj = getItemNode.execute(frame, args, 4);
+            final Object excType = getItemNode.execute(inliningTarget, args, 0);
+            final Object excValue = getItemNode.execute(inliningTarget, args, 1);
+            final Object excTb = getItemNode.execute(inliningTarget, args, 2);
+            final Object errMsg = getItemNode.execute(inliningTarget, args, 3);
+            final Object obj = getItemNode.execute(inliningTarget, args, 4);
 
             Object stdErr = objectLookupAttr(frame, sys, T_STDERR);
             final MaterializedFrame materializedFrame = frame.materialize();
@@ -1687,23 +1689,13 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(RuntimeError, LOST_S, "sys.stdout");
             }
 
-            boolean reprWriteOk = false;
-            boolean unicodeEncodeError = false;
+            Object reprVal = null;
             try {
-                Object reprVal = objectRepr(frame, inliningTarget, obj, reprAsObjectNode);
-                if (reprVal == null) {
-                    reprWriteOk = false;
-                } else {
-                    reprWriteOk = true;
-                    fileWriteString(frame, inliningTarget, stdOut, castToStringNode.execute(inliningTarget, reprVal), getAttr, callNode);
-                }
+                reprVal = objectRepr(frame, inliningTarget, obj, reprAsObjectNode);
             } catch (PException pe) {
                 pe.expect(inliningTarget, UnicodeEncodeError, unicodeEncodeErrorProfile);
                 // repr(o) is not encodable to sys.stdout.encoding with sys.stdout.errors error
                 // handler (which is probably 'strict')
-                unicodeEncodeError = true;
-            }
-            if (!reprWriteOk && unicodeEncodeError) {
                 // inlined sysDisplayHookUnencodable
                 final TruffleString stdoutEncoding = objectLookupAttrAsString(frame, inliningTarget, stdOut, T_ENCODING, lookupAttr, castToStringNode);
                 final Object reprStr = objectRepr(frame, inliningTarget, obj, reprAsObjectNode);
@@ -1717,6 +1709,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                     final Object str = objectStr(frame, inliningTarget, escapedStr, strAsObjectNode);
                     fileWriteString(frame, inliningTarget, stdOut, castToStringNode.execute(inliningTarget, str), getAttr, callNode);
                 }
+            }
+            if (reprVal != null) {
+                fileWriteString(frame, inliningTarget, stdOut, castToStringNode.execute(inliningTarget, reprVal), getAttr, callNode);
             }
 
             fileWriteString(frame, inliningTarget, stdOut, T_NEWLINE, getAttr, callNode);
@@ -1809,7 +1804,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
 
-            return callNode.execute(hook, args, keywords);
+            return callNode.execute(frame, hook, args, keywords);
         }
     }
 
@@ -1975,12 +1970,15 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(status)")
         static Object exit(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object status,
-                        @Cached TupleBuiltins.GetItemNode getItemNode,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyTupleCheckNode tupleCheckNode,
+                        @Cached TupleBuiltins.LenNode tupleLenNode,
+                        @Cached PyTupleGetItem getItemNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             Object code = status;
-            if (status instanceof PTuple) {
-                if (((PTuple) status).getSequenceStorage().length() == 1) {
-                    code = getItemNode.execute(frame, status, 0);
+            if (tupleCheckNode.execute(inliningTarget, status)) {
+                if (tupleLenNode.executeInt(frame, status) == 1) {
+                    code = getItemNode.execute(inliningTarget, status, 0);
                 }
             }
             throw raiseNode.raiseSystemExit(code);

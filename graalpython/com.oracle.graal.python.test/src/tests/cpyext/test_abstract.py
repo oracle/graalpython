@@ -40,6 +40,7 @@
 import array
 import collections
 import sys
+import mmap
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtType, unhandled_error_compare
 
@@ -177,6 +178,8 @@ def istypeof(obj, types):
 def _reference_getitem(args):
     seq = args[0]
     idx = args[1]
+    if isinstanceof(seq, [mmap.mmap]):
+        return seq[idx:(idx+1)]
     if not hasattr(seq, '__getitem__'):
         raise TypeError
     return seq.__getitem__(idx)
@@ -207,6 +210,13 @@ def _wrap_slice_fun(fun, since=0, default=None):
                 return default
         return fun(args)
     return wrapped_fun
+
+
+def create_anon_mmap(data):
+    mmap_object = mmap.mmap(-1, len(data) + 1)
+    mmap_object.write(data)
+    return mmap_object
+
 
 class NoNumber():
     pass
@@ -1175,13 +1185,14 @@ class TestAbstract(CPyExtTestCase):
             (DummyListSubclass(), 1),
             ('hello', 1),
             (DictSubclassWithSequenceMethods(), 1),
+            (create_anon_mmap(b'hello world!'), 3),
         ),
         resultspec="O",
         argspec='On',
         arguments=["PyObject* sequence", "Py_ssize_t idx"],
         cmpfunc=unhandled_error_compare
     )
-    
+
     test_PySequence_GetSlice = CPyExtFunction(
         _wrap_slice_fun(lambda args: args[0][args[1]:args[2]]),
         lambda: (
@@ -1331,6 +1342,7 @@ class TestAbstract(CPyExtTestCase):
             (['a', 'b', 'c'], 2),
             ([None], 0),
             ('hello', 0),
+            (create_anon_mmap(b'hello world!'), 3),
         ),
         resultspec="O",
         argspec='On',

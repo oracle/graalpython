@@ -106,7 +106,7 @@ public final class PythonCextModuleBuiltins {
         @Specialization
         static Object run(TruffleString name,
                         @Cached CallNode callNode) {
-            return callNode.execute(PythonBuiltinClassType.PythonModule, new Object[]{name});
+            return callNode.executeWithoutFrame(PythonBuiltinClassType.PythonModule, new Object[]{name});
         }
     }
 
@@ -130,7 +130,7 @@ public final class PythonCextModuleBuiltins {
                 newModuleName = pyPackageContext;
                 ctx.setPyPackageContext(null);
             }
-            Object newModule = callNode.execute(PythonBuiltinClassType.PythonModule, new Object[]{newModuleName});
+            Object newModule = callNode.executeWithoutFrame(PythonBuiltinClassType.PythonModule, new Object[]{newModuleName});
             // TODO: (tfel) I don't think this is the right place to set it, but somehow
             // at least in the import of sklearn.neighbors.dist_metrics through
             // sklearn.neighbors.ball_tree the __package__ attribute seems to be already

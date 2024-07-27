@@ -120,6 +120,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNew;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -234,7 +235,7 @@ public abstract class GraalHPyDef {
      * wrapper function which name starts with {@code wrap_}. For example, value {@link #UNARYFUNC}
      * corresponds to wrapper function {@code wrap_unaryfunc}.
      */
-    enum HPySlotWrapper {
+    public enum HPySlotWrapper {
         NULL(LLVMType.HPyFunc_keywords),
         UNARYFUNC(LLVMType.HPyFunc_unaryfunc),
         BINARYFUNC(LLVMType.HPyFunc_binaryfunc),
@@ -332,72 +333,81 @@ public abstract class GraalHPyDef {
     public static final int HPyType_BUILTIN_SHAPE_TUPLE = 5;
     public static final int HPyType_BUILTIN_SHAPE_LIST = 6;
 
+    /**
+     * Used when the corresponding slot has not been migrated to the CPython compatible TpSlot, or
+     * when the CPython compatible TpSlot does not have HPy support yet.
+     */
+    public static final TpSlotMeta NO_TP_SLOT = null;
+
     /* enum values for 'HPySlot_Slot' */
     enum HPySlot {
-        HPY_BF_GETBUFFER(1, HPySlotWrapper.GETBUFFER, HiddenAttr.GETBUFFER),
-        HPY_BF_RELEASEBUFFER(2, HPySlotWrapper.RELEASEBUFFER, HiddenAttr.RELEASEBUFFER),
-        HPY_MP_ASS_SUBSCRRIPT(3, HPySlotWrapper.OBJOBJARGPROC, T___SETITEM__, T___DELITEM__),
-        HPY_MP_LENGTH(4, HPySlotWrapper.LENFUNC, T___LEN__),
-        HPY_MP_SUBSCRIPT(5, HPySlotWrapper.BINARYFUNC, T___GETITEM__),
-        HPY_NB_ABSOLUTE(6, HPySlotWrapper.UNARYFUNC, T___ABS__),
-        HPY_NB_ADD(7, HPySlotWrapper.BINARYFUNC_L, T___ADD__, HPySlotWrapper.BINARYFUNC_R, T___RADD__),
-        HPY_NB_AND(8, HPySlotWrapper.BINARYFUNC_L, T___AND__, HPySlotWrapper.BINARYFUNC_R, T___RAND__),
-        HPY_NB_BOOL(9, HPySlotWrapper.INQUIRYPRED, T___BOOL__),
-        HPY_NB_DIVMOD(10, HPySlotWrapper.BINARYFUNC_L, T___DIVMOD__),
-        HPY_NB_FLOAT(11, HPySlotWrapper.UNARYFUNC, T___FLOAT__),
-        HPY_NB_FLOOR_DIVIDE(12, HPySlotWrapper.BINARYFUNC_L, T___FLOORDIV__, HPySlotWrapper.BINARYFUNC_R, T___RFLOORDIV__),
-        HPY_NB_INDEX(13, HPySlotWrapper.UNARYFUNC, T___INDEX__),
-        HPY_NB_INPLACE_ADD(14, HPySlotWrapper.BINARYFUNC_L, T___IADD__),
-        HPY_NB_INPLACE_AND(15, HPySlotWrapper.BINARYFUNC_L, T___IAND__),
-        HPY_NB_INPLACE_FLOOR_DIVIDE(16, HPySlotWrapper.BINARYFUNC_L, T___IFLOORDIV__),
-        HPY_NB_INPLACE_LSHIFT(17, HPySlotWrapper.BINARYFUNC_L, T___ILSHIFT__),
-        HPY_NB_INPLACE_MULTIPLY(18, HPySlotWrapper.BINARYFUNC_L, T___IMUL__),
-        HPY_NB_INPLACE_OR(19, HPySlotWrapper.BINARYFUNC_L, T___IOR__),
-        HPY_NB_INPLACE_POWER(20, HPySlotWrapper.TERNARYFUNC, T___IPOW__),
-        HPY_NB_INPLACE_REMAINDER(21, HPySlotWrapper.BINARYFUNC_L, T___IMOD__),
-        HPY_NB_INPLACE_RSHIFT(22, HPySlotWrapper.BINARYFUNC_L, T___IRSHIFT__),
-        HPY_NB_INPLACE_SUBTRACT(23, HPySlotWrapper.BINARYFUNC_L, T___ISUB__),
-        HPY_NB_INPLACE_TRUE_DIVIDE(24, HPySlotWrapper.BINARYFUNC_L, T___ITRUEDIV__),
-        HPY_NB_INPLACE_XOR(25, HPySlotWrapper.BINARYFUNC_L, T___IXOR__),
-        HPY_NB_INT(26, HPySlotWrapper.UNARYFUNC, T___INT__),
-        HPY_NB_INVERT(27, HPySlotWrapper.UNARYFUNC, T___INVERT__),
-        HPY_NB_LSHIFT(28, HPySlotWrapper.BINARYFUNC_L, T___LSHIFT__, HPySlotWrapper.BINARYFUNC_R, T___RLSHIFT__),
-        HPY_NB_MULTIPLY(29, HPySlotWrapper.BINARYFUNC_L, T___MUL__, HPySlotWrapper.BINARYFUNC_R, T___RMUL__),
-        HPY_NB_NEGATIVE(30, HPySlotWrapper.UNARYFUNC, T___NEG__),
-        HPY_NB_OR(31, HPySlotWrapper.BINARYFUNC_L, T___OR__, HPySlotWrapper.BINARYFUNC_R, T___ROR__),
-        HPY_NB_POSITIVE(32, HPySlotWrapper.UNARYFUNC, T___POS__),
-        HPY_NB_POWER(33, HPySlotWrapper.TERNARYFUNC, T___POW__),
-        HPY_NB_REMAINDER(34, HPySlotWrapper.BINARYFUNC_L, T___MOD__, HPySlotWrapper.BINARYFUNC_R, T___RMOD__),
-        HPY_NB_RSHIFT(35, HPySlotWrapper.BINARYFUNC_L, T___RSHIFT__, HPySlotWrapper.BINARYFUNC_R, T___RRSHIFT__),
-        HPY_NB_SUBTRACT(36, HPySlotWrapper.BINARYFUNC_L, T___SUB__, HPySlotWrapper.BINARYFUNC_R, T___RSUB__),
-        HPY_NB_TRUE_DIVIDE(37, HPySlotWrapper.BINARYFUNC_L, T___TRUEDIV__, HPySlotWrapper.BINARYFUNC_R, T___RTRUEDIV__),
-        HPY_NB_XOR(38, HPySlotWrapper.BINARYFUNC_L, T___XOR__, HPySlotWrapper.BINARYFUNC_R, T___RXOR__),
-        HPY_SQ_ASS_ITEM(39, HPySlotWrapper.SQ_SETITEM, T___SETITEM__, HPySlotWrapper.SQ_DELITEM, T___DELITEM__),
-        HPY_SQ_CONCAT(40, HPySlotWrapper.BINARYFUNC_L, T___ADD__),
-        HPY_SQ_CONTAINS(41, HPySlotWrapper.OBJOBJPROC, T___CONTAINS__),
-        HPY_SQ_INPLACE_CONCAT(42, HPySlotWrapper.BINARYFUNC_L, T___IADD__),
-        HPY_SQ_INPLACE_REPEAT(43, HPySlotWrapper.INDEXARGFUNC, T___IMUL__),
-        HPY_SQ_ITEM(44, HPySlotWrapper.SQ_ITEM, T___GETITEM__),
-        HPY_SQ_LENGTH(45, HPySlotWrapper.LENFUNC, T___LEN__),
-        HPY_SQ_REPEAT(46, HPySlotWrapper.INDEXARGFUNC, T___MUL__, T___RMUL__),
-        HPY_TP_CALL(50, HPySlotWrapper.CALL, T___CALL__),
-        HPY_TP_HASH(59, HPySlotWrapper.HASHFUNC, T___HASH__),
-        HPY_TP_INIT(60, HPySlotWrapper.INIT, T___INIT__),
-        HPY_TP_ITER(62, HPySlotWrapper.UNARYFUNC, T___ITER__),
-        HPY_TP_NEW(65, HPySlotWrapper.NULL, T___NEW__),
-        HPY_TP_REPR(66, HPySlotWrapper.UNARYFUNC, T___REPR__),
-        HPY_TP_RICHCOMPARE(67, w(RICHCMP_LT, RICHCMP_LE, RICHCMP_EQ, RICHCMP_NE, RICHCMP_GT, RICHCMP_GE), k(T___LT__, T___LE__, T___EQ__, T___NE__, T___GT__, T___GE__)),
-        HPY_TP_STR(70, HPySlotWrapper.UNARYFUNC, T___STR__),
-        HPY_TP_TRAVERSE(71, HPySlotWrapper.TRAVERSE),
-        HPY_NB_MATRIX_MULTIPLY(75, HPySlotWrapper.BINARYFUNC_L, T___MATMUL__, HPySlotWrapper.BINARYFUNC_R, T___RMATMUL__),
-        HPY_NB_INPLACE_MATRIX_MULTIPLY(76, HPySlotWrapper.BINARYFUNC_L, T___IMATMUL__),
-        HPY_TP_FINALIZE(80, HPySlotWrapper.DESTRUCTOR),
-        HPY_TP_DESTROY(1000, HPySlotWrapper.DESTROYFUNC),
-        HPY_MOD_CREATE(2000, HPySlotWrapper.MOD_CREATE),
-        HPY_MOD_EXEC(2001, HPySlotWrapper.INQUIRYPRED);
+        HPY_BF_GETBUFFER(1, NO_TP_SLOT, HPySlotWrapper.GETBUFFER, HiddenAttr.GETBUFFER),
+        HPY_BF_RELEASEBUFFER(2, NO_TP_SLOT, HPySlotWrapper.RELEASEBUFFER, HiddenAttr.RELEASEBUFFER),
+        HPY_MP_ASS_SUBSCRRIPT(3, NO_TP_SLOT, HPySlotWrapper.OBJOBJARGPROC, T___SETITEM__, T___DELITEM__),
+        HPY_MP_LENGTH(4, TpSlotMeta.MP_LENGTH, HPySlotWrapper.LENFUNC, T___LEN__),
+        HPY_MP_SUBSCRIPT(5, TpSlotMeta.MP_SUBSCRIPT, HPySlotWrapper.BINARYFUNC, T___GETITEM__),
+        HPY_NB_ABSOLUTE(6, NO_TP_SLOT, HPySlotWrapper.UNARYFUNC, T___ABS__),
+        HPY_NB_ADD(7, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___ADD__, HPySlotWrapper.BINARYFUNC_R, T___RADD__),
+        HPY_NB_AND(8, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___AND__, HPySlotWrapper.BINARYFUNC_R, T___RAND__),
+        HPY_NB_BOOL(9, NO_TP_SLOT, HPySlotWrapper.INQUIRYPRED, T___BOOL__),
+        HPY_NB_DIVMOD(10, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___DIVMOD__),
+        HPY_NB_FLOAT(11, NO_TP_SLOT, HPySlotWrapper.UNARYFUNC, T___FLOAT__),
+        HPY_NB_FLOOR_DIVIDE(12, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___FLOORDIV__, HPySlotWrapper.BINARYFUNC_R, T___RFLOORDIV__),
+        HPY_NB_INDEX(13, NO_TP_SLOT, HPySlotWrapper.UNARYFUNC, T___INDEX__),
+        HPY_NB_INPLACE_ADD(14, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___IADD__),
+        HPY_NB_INPLACE_AND(15, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___IAND__),
+        HPY_NB_INPLACE_FLOOR_DIVIDE(16, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___IFLOORDIV__),
+        HPY_NB_INPLACE_LSHIFT(17, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___ILSHIFT__),
+        HPY_NB_INPLACE_MULTIPLY(18, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___IMUL__),
+        HPY_NB_INPLACE_OR(19, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___IOR__),
+        HPY_NB_INPLACE_POWER(20, NO_TP_SLOT, HPySlotWrapper.TERNARYFUNC, T___IPOW__),
+        HPY_NB_INPLACE_REMAINDER(21, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___IMOD__),
+        HPY_NB_INPLACE_RSHIFT(22, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___IRSHIFT__),
+        HPY_NB_INPLACE_SUBTRACT(23, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___ISUB__),
+        HPY_NB_INPLACE_TRUE_DIVIDE(24, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___ITRUEDIV__),
+        HPY_NB_INPLACE_XOR(25, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___IXOR__),
+        HPY_NB_INT(26, NO_TP_SLOT, HPySlotWrapper.UNARYFUNC, T___INT__),
+        HPY_NB_INVERT(27, NO_TP_SLOT, HPySlotWrapper.UNARYFUNC, T___INVERT__),
+        HPY_NB_LSHIFT(28, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___LSHIFT__, HPySlotWrapper.BINARYFUNC_R, T___RLSHIFT__),
+        HPY_NB_MULTIPLY(29, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___MUL__, HPySlotWrapper.BINARYFUNC_R, T___RMUL__),
+        HPY_NB_NEGATIVE(30, NO_TP_SLOT, HPySlotWrapper.UNARYFUNC, T___NEG__),
+        HPY_NB_OR(31, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___OR__, HPySlotWrapper.BINARYFUNC_R, T___ROR__),
+        HPY_NB_POSITIVE(32, NO_TP_SLOT, HPySlotWrapper.UNARYFUNC, T___POS__),
+        HPY_NB_POWER(33, NO_TP_SLOT, HPySlotWrapper.TERNARYFUNC, T___POW__),
+        HPY_NB_REMAINDER(34, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___MOD__, HPySlotWrapper.BINARYFUNC_R, T___RMOD__),
+        HPY_NB_RSHIFT(35, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___RSHIFT__, HPySlotWrapper.BINARYFUNC_R, T___RRSHIFT__),
+        HPY_NB_SUBTRACT(36, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___SUB__, HPySlotWrapper.BINARYFUNC_R, T___RSUB__),
+        HPY_NB_TRUE_DIVIDE(37, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___TRUEDIV__, HPySlotWrapper.BINARYFUNC_R, T___RTRUEDIV__),
+        HPY_NB_XOR(38, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___XOR__, HPySlotWrapper.BINARYFUNC_R, T___RXOR__),
+        HPY_SQ_ASS_ITEM(39, NO_TP_SLOT, HPySlotWrapper.SQ_SETITEM, T___SETITEM__, HPySlotWrapper.SQ_DELITEM, T___DELITEM__),
+        HPY_SQ_CONCAT(40, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___ADD__),
+        HPY_SQ_CONTAINS(41, NO_TP_SLOT, HPySlotWrapper.OBJOBJPROC, T___CONTAINS__),
+        HPY_SQ_INPLACE_CONCAT(42, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___IADD__),
+        HPY_SQ_INPLACE_REPEAT(43, NO_TP_SLOT, HPySlotWrapper.INDEXARGFUNC, T___IMUL__),
+        HPY_SQ_ITEM(44, TpSlotMeta.SQ_ITEM, HPySlotWrapper.SQ_ITEM, T___GETITEM__),
+        HPY_SQ_LENGTH(45, TpSlotMeta.SQ_LENGTH, HPySlotWrapper.LENFUNC, T___LEN__),
+        HPY_SQ_REPEAT(46, NO_TP_SLOT, HPySlotWrapper.INDEXARGFUNC, T___MUL__, T___RMUL__),
+        HPY_TP_CALL(50, NO_TP_SLOT, HPySlotWrapper.CALL, T___CALL__),
+        HPY_TP_HASH(59, NO_TP_SLOT, HPySlotWrapper.HASHFUNC, T___HASH__),
+        HPY_TP_INIT(60, NO_TP_SLOT, HPySlotWrapper.INIT, T___INIT__),
+        HPY_TP_ITER(62, NO_TP_SLOT, HPySlotWrapper.UNARYFUNC, T___ITER__),
+        HPY_TP_NEW(65, NO_TP_SLOT, HPySlotWrapper.NULL, T___NEW__),
+        HPY_TP_REPR(66, NO_TP_SLOT, HPySlotWrapper.UNARYFUNC, T___REPR__),
+        HPY_TP_RICHCOMPARE(67, NO_TP_SLOT, w(RICHCMP_LT, RICHCMP_LE, RICHCMP_EQ, RICHCMP_NE, RICHCMP_GT, RICHCMP_GE), k(T___LT__, T___LE__, T___EQ__, T___NE__, T___GT__, T___GE__)),
+        HPY_TP_STR(70, NO_TP_SLOT, HPySlotWrapper.UNARYFUNC, T___STR__),
+        HPY_TP_TRAVERSE(71, NO_TP_SLOT, HPySlotWrapper.TRAVERSE),
+        HPY_NB_MATRIX_MULTIPLY(75, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___MATMUL__, HPySlotWrapper.BINARYFUNC_R, T___RMATMUL__),
+        HPY_NB_INPLACE_MATRIX_MULTIPLY(76, NO_TP_SLOT, HPySlotWrapper.BINARYFUNC_L, T___IMATMUL__),
+        HPY_TP_FINALIZE(80, NO_TP_SLOT, HPySlotWrapper.DESTRUCTOR),
+        HPY_TP_DESTROY(1000, NO_TP_SLOT, HPySlotWrapper.DESTROYFUNC),
+        HPY_MOD_CREATE(2000, NO_TP_SLOT, HPySlotWrapper.MOD_CREATE),
+        HPY_MOD_EXEC(2001, NO_TP_SLOT, HPySlotWrapper.INQUIRYPRED);
 
         /** The corresponding C enum value. */
         private final int value;
+
+        /** Corresponding CPython compatible slot */
+        private final TpSlotMeta tpSlot;
 
         /**
          * The corresponding attribute key (mostly a {@link TruffleString} which is the name of a
@@ -412,8 +422,9 @@ public abstract class GraalHPyDef {
         /**
          * Common case: one slot causes the creation of one attribute.
          */
-        HPySlot(int value, HPySlotWrapper signature, HiddenAttr attributeKey) {
+        HPySlot(int value, TpSlotMeta tpSlot, HPySlotWrapper signature, HiddenAttr attributeKey) {
             this.value = value;
+            this.tpSlot = tpSlot;
             this.attributeKeys = new Object[]{attributeKey};
             this.signatures = new HPySlotWrapper[]{signature};
         }
@@ -422,8 +433,9 @@ public abstract class GraalHPyDef {
          * Special case: one slot causes the creation of multiple attributes using the same slot
          * wrapper.
          */
-        HPySlot(int value, HPySlotWrapper signature, TruffleString... attributeKeys) {
+        HPySlot(int value, TpSlotMeta tpSlot, HPySlotWrapper signature, TruffleString... attributeKeys) {
             this.value = value;
+            this.tpSlot = tpSlot;
             this.attributeKeys = attributeKeys;
             if (attributeKeys.length > 0) {
                 this.signatures = new HPySlotWrapper[attributeKeys.length];
@@ -437,8 +449,9 @@ public abstract class GraalHPyDef {
          * Special case: one slot causes the creation of two attributes using different slot
          * wrappers.
          */
-        HPySlot(int value, HPySlotWrapper sig0, TruffleString key0, HPySlotWrapper sig1, TruffleString key1) {
+        HPySlot(int value, TpSlotMeta tpSlot, HPySlotWrapper sig0, TruffleString key0, HPySlotWrapper sig1, TruffleString key1) {
             this.value = value;
+            this.tpSlot = tpSlot;
             this.attributeKeys = new Object[]{key0, key1};
             this.signatures = new HPySlotWrapper[]{sig0, sig1};
         }
@@ -447,8 +460,9 @@ public abstract class GraalHPyDef {
          * Generic case: one slot causes the creation of multiple attributes with each different
          * slot wrappers.
          */
-        HPySlot(int value, HPySlotWrapper[] sigs, TruffleString... keys) {
+        HPySlot(int value, TpSlotMeta tpSlot, HPySlotWrapper[] sigs, TruffleString... keys) {
             this.value = value;
+            this.tpSlot = tpSlot;
             this.attributeKeys = keys;
             this.signatures = sigs;
         }
@@ -496,6 +510,10 @@ public abstract class GraalHPyDef {
 
         private static TruffleString[] k(TruffleString... keys) {
             return keys;
+        }
+
+        public TpSlotMeta getTpSlot() {
+            return tpSlot;
         }
     }
 

@@ -1,2 +1,3 @@
 [[rules]]
 patch = 'pymongo.patch'
+license = 'Apache-2.0'

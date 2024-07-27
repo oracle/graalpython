@@ -78,6 +78,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.nodes.util.ToNativePrimitiveStorageNode;
+import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
 import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -163,6 +165,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -370,7 +373,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     int numHooks = storage.length();
                     for (int i = 0; i < numHooks; i++) {
                         try {
-                            importer = CallNode.getUncached().execute(hooks[i], inputFilePath);
+                            importer = CallNode.executeUncached(hooks[i], inputFilePath);
                             break;
                         } catch (PException e) {
                             if (!IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(e.getUnreifiedException()), ImportError)) {
@@ -1085,6 +1088,29 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             TruffleString sep = TruffleString.fromJavaStringUncached(File.pathSeparator, TS_ENCODING);
             return context.getStdlibHome().concatUncached(sep, TS_ENCODING, false).concatUncached(context.getCoreHome(), TS_ENCODING, false);
+        }
+    }
+
+    @Builtin(name = "storage_to_native_primitive", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class StorageToNativePrimitive extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static Object doArray(PArray array,
+                        @Shared @Cached ToNativePrimitiveStorageNode toNativePrimitiveNode,
+                        @Bind("this") Node inliningTarget) {
+            NativePrimitiveSequenceStorage newStorage = toNativePrimitiveNode.execute(inliningTarget, array.getSequenceStorage());
+            array.setSequenceStorage(newStorage);
+            return array;
+        }
+
+        @Specialization
+        static Object doSequence(PSequence sequence,
+                        @Shared @Cached ToNativePrimitiveStorageNode toNativePrimitiveNode,
+                        @Bind("this") Node inliningTarget) {
+            NativePrimitiveSequenceStorage newStorage = toNativePrimitiveNode.execute(inliningTarget, sequence.getSequenceStorage());
+            sequence.setSequenceStorage(newStorage);
+            return sequence;
         }
     }
 }

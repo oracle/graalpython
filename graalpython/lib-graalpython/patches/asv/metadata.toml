@@ -1,3 +1,4 @@
 [[rules]]
 version = '== 0.5.1'
 patch = 'asv-0.5.1.patch'
+license = 'BSD-3-Clause'

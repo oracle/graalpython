@@ -149,10 +149,10 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -179,6 +179,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.RegionEqualNode;
@@ -197,6 +198,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     protected static final SpecialMethodSlot Next = SpecialMethodSlot.Next;
 
     protected static final Shape ABSTRACT_SHAPE = Shape.newBuilder().build();
+
+    private Object[] indexedSlots;
 
     protected PythonAbstractObject(Shape shape) {
         super(shape);
@@ -221,6 +224,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     public final void clearNativeWrapper() {
         nativeWrapper = null;
+    }
+
+    public Object[] getIndexedSlots() {
+        return indexedSlots;
+    }
+
+    public void setIndexedSlots(Object[] indexedSlots) {
+        this.indexedSlots = indexedSlots;
     }
 
     @ExportMessage
@@ -718,7 +729,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 if (checkMapping.execute(inliningTarget, this)) {
                     Object keysMethod = lookupKeys.execute(null, inliningTarget, this, T_KEYS);
                     if (keysMethod != PNone.NO_VALUE) {
-                        PList mapKeys = castToList.executeWithGlobalState(callKeys.execute(keysMethod));
+                        PList mapKeys = castToList.executeWithGlobalState(callKeys.executeWithoutFrame(keysMethod));
                         int len = lenNode.execute(inliningTarget, mapKeys);
                         for (int i = 0; i < len; i++) {
                             Object key = getItemNode.execute(null, inliningTarget, mapKeys, i);
@@ -1353,11 +1364,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
 
         @ExportMessage
-        Object readArrayElement(long index) throws InvalidArrayIndexException {
-            try {
+        Object readArrayElement(long index,
+                        @Cached InlinedBranchProfile outOfBoundsProfile,
+                        @Bind("$node") Node inliningTarget) throws InvalidArrayIndexException {
+            if (Long.compareUnsigned(index, keys.length) < 0) {
                 return keys[(int) index];
-            } catch (IndexOutOfBoundsException e) {
-                CompilerDirectives.transferToInterpreter();
+            } else {
+                outOfBoundsProfile.enter(inliningTarget);
                 throw InvalidArrayIndexException.create(index);
             }
         }
@@ -1421,7 +1434,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (toStringUsed.profile(inliningTarget, builtins != null)) {
                 toStrAttr = readStr.execute(builtins, names);
                 try {
-                    result = castStr.execute(inliningTarget, callNode.execute(toStrAttr, receiver));
+                    result = castStr.execute(inliningTarget, callNode.executeWithoutFrame(toStrAttr, receiver));
                 } catch (CannotCastException e) {
                     // do nothing
                 }
@@ -1483,6 +1496,41 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             return getClass.executeCached(this);
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public boolean hasMetaParents(
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
+                    @Exclusive @Cached TypeNodes.GetBaseClassesNode getBaseClassNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isTypeNode.execute(inliningTarget, this) && getBaseClassNode.execute(inliningTarget, this).length > 0;
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    public Object getMetaParents(
+                    @Bind("$node") Node inliningTarget,
+                    @Exclusive @Cached PythonObjectFactory factory,
+                    @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
+                    @Exclusive @Cached TypeNodes.GetBaseClassesNode getBaseClassNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (isTypeNode.execute(inliningTarget, this)) {
+                var bases = getBaseClassNode.execute(inliningTarget, this);
+                if (bases.length > 0) {
+                    return factory.createTuple(bases);
+                }
+            }
+            throw UnsupportedMessageException.create();
         } finally {
             gil.release(mustRelease);
         }

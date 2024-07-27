@@ -1,0 +1,119 @@
+diff --git a/numpy/_core/include/numpy/ndarrayobject.h b/numpy/_core/include/numpy/ndarrayobject.h
+index 0462625..3625e34 100644
+--- a/numpy/_core/include/numpy/ndarrayobject.h
++++ b/numpy/_core/include/numpy/ndarrayobject.h
+@@ -220,7 +220,7 @@ NPY_TITLE_KEY_check(PyObject *key, PyObject *value)
+     if (key == title) {
+         return 1;
+     }
+-#ifdef PYPY_VERSION
++#if defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)
+     /*
+      * On PyPy, dictionary keys do not always preserve object identity.
+      * Fall back to comparison by value.
+diff --git a/numpy/_core/src/multiarray/compiled_base.c b/numpy/_core/src/multiarray/compiled_base.c
+index 7913b18..9463852 100644
+--- a/numpy/_core/src/multiarray/compiled_base.c
++++ b/numpy/_core/src/multiarray/compiled_base.c
+@@ -1407,6 +1407,7 @@ fail:
+ NPY_NO_EXPORT PyObject *
+ arr_add_docstring(PyObject *NPY_UNUSED(dummy), PyObject *const *args, Py_ssize_t len_args)
+ {
++#if 0 // GraalPy change
+     PyObject *obj;
+     PyObject *str;
+     const char *docstr;
+@@ -1518,6 +1519,7 @@ arr_add_docstring(PyObject *NPY_UNUSED(dummy), PyObject *const *args, Py_ssize_t
+     }
+ 
+ #undef _ADDDOC
++#endif // GraalPy change
+ 
+     Py_RETURN_NONE;
+ }
+diff --git a/numpy/_core/src/multiarray/shape.c b/numpy/_core/src/multiarray/shape.c
+index ede7a61..21ae17b 100644
+--- a/numpy/_core/src/multiarray/shape.c
++++ b/numpy/_core/src/multiarray/shape.c
+@@ -105,6 +105,11 @@ PyArray_Resize(PyArrayObject *self, PyArray_Dims *newshape, int refcheck,
+                     "cannot resize an array with refcheck=True on PyPy.\n"
+                     "Use the np.resize function or refcheck=False");
+             return NULL;
++#elif defined(GRAALVM_PYTHON)
++            PyErr_SetString(PyExc_ValueError,
++                    "cannot resize an array with refcheck=True on GraalPy.\n"
++                    "Use the np.resize function or refcheck=False");
++            return NULL;
+ #else
+             refcnt = Py_REFCNT(self);
+ #endif /* PYPY_VERSION */
+diff --git a/numpy/_core/src/multiarray/stringdtype/dtype.c b/numpy/_core/src/multiarray/stringdtype/dtype.c
+index b94ab7e..6148268 100644
+--- a/numpy/_core/src/multiarray/stringdtype/dtype.c
++++ b/numpy/_core/src/multiarray/stringdtype/dtype.c
+@@ -817,7 +817,7 @@ init_string_dtype(void)
+     };
+ 
+     /* Loaded dynamically, so needs to be set here: */
+-    Py_TYPE(((PyObject *)&PyArray_StringDType)) = &PyArrayDTypeMeta_Type;
++    Py_SET_TYPE(((PyObject *)&PyArray_StringDType), &PyArrayDTypeMeta_Type);
+     ((PyTypeObject *)&PyArray_StringDType)->tp_base = &PyArrayDescr_Type;
+     if (PyType_Ready((PyTypeObject *)&PyArray_StringDType) < 0) {
+         return -1;
+diff --git a/numpy/_core/src/multiarray/temp_elide.c b/numpy/_core/src/multiarray/temp_elide.c
+index 2890406..353a657 100644
+--- a/numpy/_core/src/multiarray/temp_elide.c
++++ b/numpy/_core/src/multiarray/temp_elide.c
+@@ -58,7 +58,7 @@
+  * supported too by using the appropriate Windows APIs.
+  */
+ 
+-#if defined HAVE_BACKTRACE && defined HAVE_DLFCN_H && ! defined PYPY_VERSION
++#if defined HAVE_BACKTRACE && defined HAVE_DLFCN_H && ! defined PYPY_VERSION && !defined(GRAALVM_PYTHON)
+ 
+ #include <feature_detection_misc.h>
+ 
+diff --git a/numpy/_core/src/npymath/ieee754.c.src b/numpy/_core/src/npymath/ieee754.c.src
+index 8fccc9a..3bb9cf0 100644
+--- a/numpy/_core/src/npymath/ieee754.c.src
++++ b/numpy/_core/src/npymath/ieee754.c.src
+@@ -362,6 +362,11 @@ int npy_get_floatstatus_barrier(char* param)
+      * By using a volatile, the compiler cannot reorder this call
+      */
+     if (param != NULL) {
++        // GraalPy change: the pointer needs to be dereferenced to establish
++        // a data dependency to to ensure the compiler won't reorder the call
++        if (points_to_py_handle_space(param)) {
++            param = (char*)pointer_to_stub(param);
++        }
+         volatile char NPY_UNUSED(c) = *(char*)param;
+     }
+ 
+diff --git a/numpy/_core/src/npymath/ieee754.cpp b/numpy/_core/src/npymath/ieee754.cpp
+index 1c59bf3..519fabc 100644
+--- a/numpy/_core/src/npymath/ieee754.cpp
++++ b/numpy/_core/src/npymath/ieee754.cpp
+@@ -428,6 +428,11 @@ npy_get_floatstatus_barrier(char *param)
+      * By using a volatile, the compiler cannot reorder this call
+      */
+     if (param != NULL) {
++        // GraalPy change: the pointer needs to be dereferenced to establish
++        // a data dependency to to ensure the compiler won't reorder the call
++        if (points_to_py_handle_space(param)) {
++            param = (char*)pointer_to_stub(param);
++        }
+         volatile char NPY_UNUSED(c) = *(char *)param;
+     }
+ 
+diff --git a/vendored-meson/meson/mesonbuild/utils/universal.py b/vendored-meson/meson/mesonbuild/utils/universal.py
+index 1694912..a555fe3 100644
+--- a/vendored-meson/meson/mesonbuild/utils/universal.py
++++ b/vendored-meson/meson/mesonbuild/utils/universal.py
+@@ -727,6 +727,7 @@ def windows_detect_native_arch() -> str:
+     """
+     if sys.platform != 'win32':
+         return ''
++    return 'amd64'  # Workaround for GraalPy bug on Windows with kernel32.GetCurrentProcess()
+     try:
+         import ctypes
+         process_arch = ctypes.c_ushort()

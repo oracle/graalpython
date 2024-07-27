@@ -153,7 +153,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
         Object getBufferAttr = readGetBufferNode.execute(inliningTarget, type, HiddenAttr.GETBUFFER, null);
         if (hasSlotProfile.profile(inliningTarget, getBufferAttr != null)) {
             // HPy object with buffer slot
-            Object result = callNode.execute(getBufferAttr, object, BufferFlags.PyBUF_FULL_RO);
+            Object result = callNode.execute(frame, getBufferAttr, object, BufferFlags.PyBUF_FULL_RO);
             if (!(result instanceof CExtPyBuffer)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw CompilerDirectives.shouldNotReachHere("The internal " + HiddenAttr.GETBUFFER + " is expected to return a CExtPyBuffer object.");

@@ -1,3 +1,4 @@
 [[rules]]
 version = '== 0.3.3'
 patch = 'safetensors-0.3.3.patch'
+license = 'Apache-2.0'

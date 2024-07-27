@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -108,7 +108,7 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
                     @Cached BuiltinPyLongAsLongAndOverflowNode recursive) throws OverflowException {
         Object result = indexNode.execute(frame, inliningTarget, object);
         // PyNumberIndexNode guarantees that the result is a builtin integer
-        assert PyLongCheckExactNode.canBeBuiltinInt(result);
+        assert PyLongCheckExactNode.executeUncached(result);
         return recursive.execute(frame, inliningTarget, result);
     }
 

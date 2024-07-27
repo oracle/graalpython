@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AITE
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEXT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MP_ASS_SUBSCRIPT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MP_SUBSCRIPT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_AND;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_DIVMOD;
@@ -66,7 +65,6 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_TRUE
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_XOR;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_ASS_ITEM;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_CONTAINS;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_ITEM;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHODS_FLAGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
@@ -89,7 +87,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
@@ -227,7 +224,6 @@ public enum SpecialMethodSlot {
     Subclasscheck(T___SUBCLASSCHECK__),
     Call(T___CALL__, NO_BUILTIN_DESCRIPTORS),
 
-    GetItem(T___GETITEM__, SQ_ITEM | MP_SUBSCRIPT),
     SetItem(T___SETITEM__, SQ_ASS_ITEM | MP_ASS_SUBSCRIPT),
     DelItem(T___DELITEM__, SQ_ASS_ITEM | MP_ASS_SUBSCRIPT),
 
@@ -527,8 +523,8 @@ public enum SpecialMethodSlot {
         // we can just "extend" the slots of B with the new overrides in A. This fast-path seem to
         // handle large majority of the situations
         if (mro.length() >= 2 && klass.getBaseClasses().length <= 1) {
-            PythonAbstractClass firstType = mro.getItemNormalized(0);
-            PythonAbstractClass secondType = mro.getItemNormalized(1);
+            PythonAbstractClass firstType = mro.getPythonClassItemNormalized(0);
+            PythonAbstractClass secondType = mro.getPythonClassItemNormalized(1);
             if (firstType == klass && PythonManagedClass.isInstance(secondType)) {
                 PythonManagedClass managedBase = PythonManagedClass.cast(secondType);
                 if (managedBase.specialMethodSlots != null) {
@@ -553,7 +549,7 @@ public enum SpecialMethodSlot {
         // Check the last klass in MRO and use copy its slots for the beginning (if available)
         // In most cases this will be `object`, which contains most of the slots
         Object[] slots = null;
-        PythonAbstractClass lastType = mro.getItemNormalized(mro.length() - 1);
+        PythonAbstractClass lastType = mro.getPythonClassItemNormalized(mro.length() - 1);
         boolean slotsInitializedFromLast = false;
         if (PythonManagedClass.isInstance(lastType)) {
             PythonManagedClass lastClass = PythonManagedClass.cast(lastType);
@@ -570,7 +566,7 @@ public enum SpecialMethodSlot {
         // Traverse MRO in reverse order overriding the initial slots values if we find new override
         int skip = slotsInitializedFromLast ? 1 : 0;
         for (int i = mro.length() - skip - 1; i >= 0; i--) {
-            PythonAbstractClass base = mro.getItemNormalized(i);
+            PythonAbstractClass base = mro.getPythonClassItemNormalized(i);
             if (PythonManagedClass.isInstance(base)) {
                 setSlotsFromManaged(slots, PythonManagedClass.cast(base), language);
             } else {
@@ -591,7 +587,7 @@ public enum SpecialMethodSlot {
         boolean isMroSubtype = subTypeMro.length() == superTypeMro.length() - 1;
         if (isMroSubtype) {
             for (int i = 0; i < subTypeMro.length(); i++) {
-                if (superTypeMro.getItemNormalized(i + 1) != subTypeMro.getItemNormalized(i)) {
+                if (superTypeMro.getPythonClassItemNormalized(i + 1) != subTypeMro.getPythonClassItemNormalized(i)) {
                     isMroSubtype = false;
                     break;
                 }
@@ -847,9 +843,6 @@ public enum SpecialMethodSlot {
         int x = codePointAtIndexNode.execute(name, 2, TS_ENCODING) * 26 + codePointAtIndexNode.execute(name, 3, TS_ENCODING);
         switch (x) {
             case 'g' * 26 + 'e':    // ge
-                if (eqNode.execute(name, T___GETITEM__, TS_ENCODING)) {
-                    return GetItem;
-                }
                 if (eqNode.execute(name, T___GE__, TS_ENCODING)) {
                     return Ge;
                 }

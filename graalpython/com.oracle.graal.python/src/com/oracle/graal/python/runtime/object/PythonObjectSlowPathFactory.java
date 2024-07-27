@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.object.Shape;
 
 /**
@@ -88,11 +87,6 @@ public final class PythonObjectSlowPathFactory extends PythonObjectFactory {
     @Override
     protected Shape executeGetShape(Object arg0Value, boolean arg1Value) {
         return getInstanceShapeNode.execute(arg0Value);
-    }
-
-    @Override
-    public NodeCost getCost() {
-        return NodeCost.MEGAMORPHIC;
     }
 
     @Override

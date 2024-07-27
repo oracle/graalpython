@@ -42,7 +42,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
@@ -73,6 +72,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_BRACKETS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_BRACKETS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACKET;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.math.BigInteger;
@@ -91,29 +96,29 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitOrNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitXorNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -161,6 +166,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
 public final class ForeignObjectBuiltins extends PythonBuiltins {
@@ -973,13 +979,23 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_item, isComplex = true)
     @GenerateNodeFactory
-    abstract static class GetitemNode extends PythonBinaryBuiltinNode {
-        @Child private AccessForeignItemNodes.GetForeignItemNode getForeignItemNode = AccessForeignItemNodes.GetForeignItemNode.create();
+    abstract static class ForeignSqItemNode extends SqItemBuiltinNode {
+        @Specialization(limit = "3")
+        static Object doit(VirtualFrame frame, Object object, int key,
+                        @CachedLibrary("object") InteropLibrary interop,
+                        @Cached AccessForeignItemNodes.GetForeignItemNode getForeignItemNode) {
+            return getForeignItemNode.readForeignIndex(object, key, interop);
+        }
+    }
 
+    @Slot(value = SlotKind.mp_subscript, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class ForeignMpSubNode extends MpSubscriptBuiltinNode {
         @Specialization
-        Object doit(VirtualFrame frame, Object object, Object key) {
+        static Object doit(VirtualFrame frame, Object object, Object key,
+                        @Cached AccessForeignItemNodes.GetForeignItemNode getForeignItemNode) {
             return getForeignItemNode.execute(frame, object, key);
         }
     }
@@ -1004,6 +1020,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
+    @TruffleBoundary(allowInlining = true)
+    private static String asJavaPrefixedMethod(String prefix, String member) {
+        return prefix + member.substring(0, 1).toUpperCase() + member.substring(1);
+    }
+
     @GenerateInline
     @GenerateCached(false)
     @ImportStatic(PythonOptions.class)
@@ -1022,10 +1043,22 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 String member = castToString.execute(memberObj);
                 if (read.isMemberReadable(object, member)) {
                     return toPythonNode.executeConvert(read.readMember(object, member));
+                } else if (PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.EmulateJython)) {
+                    // no profile, above condition should fold to false when EmulateJython is off
+                    if (PythonContext.get(inliningTarget).getEnv().isHostObject(object)) {
+                        String getter = asJavaPrefixedMethod("get", member);
+                        if (read.isMemberInvocable(object, getter)) {
+                            try {
+                                return toPythonNode.executeConvert(read.invokeMember(object, getter));
+                            } catch (UnsupportedTypeException ignored) {
+                                // fall through to AttributeError
+                            }
+                        }
+                    }
                 }
             } catch (CannotCastException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, memberObj);
-            } catch (UnknownIdentifierException | UnsupportedMessageException ignore) {
+            } catch (UnknownIdentifierException | UnsupportedMessageException | ArityException ignore) {
             } finally {
                 gil.acquire();
             }
@@ -1045,15 +1078,38 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Shared @Cached GilNode gil,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
+            String member;
             try {
-                lib.writeMember(object, castToString.execute(key), value);
+                member = castToString.execute(key);
             } catch (CannotCastException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
-            } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
+            }
+            try {
+                try {
+                    lib.writeMember(object, member, value);
+                    return;
+                } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                    if (PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.EmulateJython)) {
+                        // no profile, above condition folds to false when EmulateJython is off
+                        try {
+                            if (PythonContext.get(inliningTarget).getEnv().isHostObject(object)) {
+                                String setter = asJavaPrefixedMethod("set", member);
+                                if (lib.isMemberInvocable(object, setter)) {
+                                    lib.invokeMember(object, setter, value);
+                                    return;
+                                }
+                            }
+                        } catch (ArityException | UnsupportedMessageException | UnknownIdentifierException ignore) {
+                            // fall through to AttributeError
+                        }
+                    }
+                }
+            } catch (UnsupportedTypeException e) {
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.INVALID_TYPE_FOR_S, key);
             } finally {
                 gil.acquire();
             }
+            throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -1179,8 +1235,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
-        @Child private LookupAndCallUnaryNode callStrNode;
-        @Child private CastToListNode castToListNode;
         @Child private TruffleString.SwitchEncodingNode switchEncodingNode;
 
         @Specialization
@@ -1188,18 +1242,18 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil,
+                        @Cached PyObjectStrAsTruffleStringNode strNode,
+                        @Cached StrForeignArrayNode strForeignArrayNode,
                         @Cached InlinedBranchProfile isNull,
                         @Cached InlinedBranchProfile isBoolean,
                         @Cached InlinedBranchProfile isString,
                         @Cached InlinedBranchProfile isLong,
                         @Cached InlinedBranchProfile isDouble,
-                        @Cached InlinedBranchProfile isArray,
-                        @Cached InlinedBranchProfile defaultCase,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached InlinedBranchProfile defaultCase) {
             try {
                 if (lib.isNull(object)) {
                     isNull.enter(inliningTarget);
-                    return getCallStrNode().executeObject(frame, PNone.NONE);
+                    return T_NONE;
                 } else if (lib.isBoolean(object)) {
                     isBoolean.enter(inliningTarget);
                     boolean value;
@@ -1209,7 +1263,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     } finally {
                         gil.acquire();
                     }
-                    return getCallStrNode().executeObject(frame, value);
+                    return strNode.execute(frame, inliningTarget, value);
                 } else if (lib.isString(object)) {
                     isString.enter(inliningTarget);
                     TruffleString value;
@@ -1219,7 +1273,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     } finally {
                         gil.acquire();
                     }
-                    return getCallStrNode().executeObject(frame, getSwitchEncodingNode().execute(value, TS_ENCODING));
+                    return strNode.execute(frame, inliningTarget, getSwitchEncodingNode().execute(value, TS_ENCODING));
                 } else if (lib.fitsInLong(object)) {
                     isLong.enter(inliningTarget);
                     long value;
@@ -1229,7 +1283,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     } finally {
                         gil.acquire();
                     }
-                    return getCallStrNode().executeObject(frame, value);
+                    return strNode.execute(frame, inliningTarget, value);
                 } else if (lib.fitsInDouble(object)) {
                     isDouble.enter(inliningTarget);
                     double value;
@@ -1239,42 +1293,15 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     } finally {
                         gil.acquire();
                     }
-                    return getCallStrNode().executeObject(frame, value);
+                    return strNode.execute(frame, inliningTarget, value);
                 } else if (lib.hasArrayElements(object)) {
-                    isArray.enter(inliningTarget);
-                    long size;
-                    gil.release(true);
-                    try {
-                        size = lib.getArraySize(object);
-                    } finally {
-                        gil.acquire();
-                    }
-                    if (size <= Integer.MAX_VALUE && size >= 0) {
-                        PForeignArrayIterator iterable = factory.get(inliningTarget).createForeignArrayIterator(object);
-                        return getCallStrNode().executeObject(frame, getCastToListNode().execute(frame, iterable));
-                    }
+                    return strForeignArrayNode.execute(frame, object, lib);
                 }
             } catch (UnsupportedMessageException e) {
                 // Fall back to the generic impl
             }
             defaultCase.enter(inliningTarget);
             return defaultConversion(frame, lib, object);
-        }
-
-        private LookupAndCallUnaryNode getCallStrNode() {
-            if (callStrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callStrNode = insert(LookupAndCallUnaryNode.create(SpecialMethodSlot.Str));
-            }
-            return callStrNode;
-        }
-
-        private CastToListNode getCastToListNode() {
-            if (castToListNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToListNode = insert(CastToListNode.create());
-            }
-            return castToListNode;
         }
 
         protected TruffleString.SwitchEncodingNode getSwitchEncodingNode() {
@@ -1290,6 +1317,60 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 return getSwitchEncodingNode().execute(lib.asTruffleString(lib.toDisplayString(object)), TS_ENCODING);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("toDisplayString result not convertible to String");
+            }
+        }
+    }
+
+    @GenerateInline(false) // Uncommon path
+    abstract static class StrForeignArrayNode extends Node {
+        abstract TruffleString execute(VirtualFrame frame, Object object, InteropLibrary lib) throws UnsupportedMessageException;
+
+        @Specialization
+        static TruffleString str(VirtualFrame frame, Object object, InteropLibrary lib,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GilNode gil,
+                        @Cached PyObjectReprAsTruffleStringNode reprNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) throws UnsupportedMessageException {
+            if (!PythonContext.get(inliningTarget).reprEnter(object)) {
+                return T_ELLIPSIS_IN_BRACKETS;
+            }
+            try {
+                long length;
+                gil.release(true);
+                try {
+                    length = lib.getArraySize(object);
+                } finally {
+                    gil.acquire();
+                }
+                if (length == 0) {
+                    return T_EMPTY_BRACKETS;
+                }
+                TruffleStringBuilder buf = TruffleStringBuilder.create(TS_ENCODING);
+                appendStringNode.execute(buf, T_LBRACKET);
+                boolean initial = true;
+                for (int index = 0; index < length; index++) {
+                    if (initial) {
+                        initial = false;
+                    } else {
+                        appendStringNode.execute(buf, T_COMMA_SPACE);
+                    }
+                    Object value;
+                    gil.release(true);
+                    try {
+                        value = lib.readArrayElement(object, index);
+                    } catch (InvalidArrayIndexException e) {
+                        // Concurrent modification?
+                        break;
+                    } finally {
+                        gil.acquire();
+                    }
+                    appendStringNode.execute(buf, reprNode.execute(frame, inliningTarget, value));
+                }
+                appendStringNode.execute(buf, T_RBRACKET);
+                return toStringNode.execute(buf);
+            } finally {
+                PythonContext.get(inliningTarget).reprLeave(object);
             }
         }
     }

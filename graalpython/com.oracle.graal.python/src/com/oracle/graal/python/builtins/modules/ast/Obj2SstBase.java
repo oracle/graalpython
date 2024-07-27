@@ -181,7 +181,7 @@ abstract class Obj2SstBase {
 
     static boolean isInstanceOf(Object o, PythonAbstractClass cls) {
         Object check = lookupAttr(cls, SpecialMethodNames.T___INSTANCECHECK__);
-        Object result = CallNode.getUncached().execute(check, o);
+        Object result = CallNode.executeUncached(check, o);
         return CastToJavaBooleanNode.executeUncached(result);
     }
 

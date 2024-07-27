@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.list;
 
+import static com.oracle.graal.python.util.PythonUtils.builtinClassToType;
+
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -33,7 +35,7 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -60,13 +62,13 @@ public final class PList extends PSequence {
     private SequenceStorage store;
 
     public PList(Object cls, Shape instanceShape, SequenceStorage store) {
-        super(cls, instanceShape);
+        super(builtinClassToType(cls), instanceShape);
         this.origin = null;
         this.store = store;
     }
 
     public PList(Object cls, Shape instanceShape, SequenceStorage store, ListOrigin origin) {
-        super(cls, instanceShape);
+        super(builtinClassToType(cls), instanceShape);
         this.origin = origin;
         this.store = store;
     }
@@ -243,7 +245,7 @@ public final class PList extends PSequence {
             }
         }
 
-        void reportUpdatedCapacity(BasicSequenceStorage newStore);
+        void reportUpdatedCapacity(ArrayBasedSequenceStorage newStore);
 
         SourceSection getSourceSection();
     }

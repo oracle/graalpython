@@ -223,7 +223,7 @@ public final class ExceptionUtils {
                 // Note: it is important to pass frame 'null' because that will cause the
                 // CallNode to tread the invoke like a foreign call and access the top frame ref
                 // in the context.
-                CallNode.getUncached().execute(null, hook, new Object[]{type, pythonException, tb}, PKeyword.EMPTY_KEYWORDS);
+                CallNode.executeUncached(hook, new Object[]{type, pythonException, tb}, PKeyword.EMPTY_KEYWORDS);
             } catch (PException internalError) {
                 // More complex handling of errors in exception printing is done in our
                 // Python code, if we get here, we just fall back to the launcher
@@ -273,7 +273,7 @@ public final class ExceptionUtils {
     public static PException wrapJavaExceptionIfApplicable(Node location, Throwable e, PythonObjectFactory factory) {
         if (e instanceof StackOverflowError) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            PythonContext.get(null).reacquireGilAfterStackOverflow();
+            PythonContext.get(null).ensureGilAfterFailure();
             return ExceptionUtils.wrapJavaException(e, location, factory.createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{}));
         }
         if (e instanceof OutOfMemoryError) {

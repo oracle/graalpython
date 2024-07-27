@@ -87,6 +87,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -210,8 +211,9 @@ public final class CDataBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            Object[] array = getArray.execute(inliningTarget, args.getSequenceStorage());
-            if (array.length < 3 || !PGuards.isDict(array[0]) || !PGuards.isInteger(array[2])) {
+            SequenceStorage storage = args.getSequenceStorage();
+            Object[] array = getArray.execute(inliningTarget, storage);
+            if (storage.length() < 3 || !PGuards.isDict(array[0]) || !PGuards.isInteger(array[2])) {
                 throw raiseNode.get(inliningTarget).raise(TypeError);
             }
             PDict dict = (PDict) array[0];

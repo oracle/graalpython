@@ -6,3 +6,4 @@ version = '>1.4'
 install-priority = 0
 version = '>1.3'
 patch = 'atomicwrites.patch'
+license = 'MIT'
