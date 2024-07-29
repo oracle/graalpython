@@ -1,5 +1,0 @@
-graalpy_virtualenv.egg-info/entry_points.txt
-graalpy_virtualenv.egg-info/PKG-INFO
-graalpy_virtualenv.egg-info/SOURCES.txt
-graalpy_virtualenv/__init__.py
-graalpy_virtualenv/graalpy.py
