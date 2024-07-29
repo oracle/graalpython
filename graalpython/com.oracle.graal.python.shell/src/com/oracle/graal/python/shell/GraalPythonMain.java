@@ -30,7 +30,6 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
-import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -717,8 +716,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             // the user did not explicitly pass some options that would be otherwise loaded from
             // pyvenv.cfg. Notable usage of this feature is GraalPython venvs which generate a
             // launcher script that passes those options explicitly without relying on pyvenv.cfg
-            boolean tryVenvCfg = !hasContextOptionSetViaCommandLine("SysPrefix") &&
-                            !hasContextOptionSetViaCommandLine("PythonHome") &&
+            boolean tryVenvCfg = !hasContextOptionSetViaCommandLine("PythonHome") &&
                             getEnv("GRAAL_PYTHONHOME") == null;
             if (tryVenvCfg) {
                 findAndApplyVenvCfg(contextBuilder, executable);
@@ -872,6 +870,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         return Paths.get(executable).toAbsolutePath().toString();
     }
 
+    // Rough equivalent of CPython's pyvenv.cfg logic in Modules/getpath.py
     private void findAndApplyVenvCfg(Builder contextBuilder, String executable) {
         Path binDir;
         try {
@@ -926,16 +925,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     } catch (NullPointerException ex) {
                         // NullPointerException covers the possible null result of getParent()
                         warn("Could not set PYTHONHOME according to the pyvenv.cfg file.");
-                    }
-                    String sysPrefix = null;
-                    try {
-                        sysPrefix = venvCfg.getParent().toAbsolutePath().toString();
-                    } catch (IOError | NullPointerException ex) {
-                        // NullPointerException covers the possible null result of getParent()
-                        warn("Could not set the sys.prefix according to the pyvenv.cfg file.");
-                    }
-                    if (sysPrefix != null) {
-                        contextBuilder.option("python.SysPrefix", sysPrefix);
                     }
                     break;
                 }
