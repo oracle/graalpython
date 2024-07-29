@@ -98,10 +98,10 @@ public final class VFSUtils {
 
     private static final String GRAALPY_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain";
 
-    public static void writeNativeImageConfig(String metaInfRoot, String pluginId) throws IOException {
-        Path metaInf = Path.of(metaInfRoot, "native-image", GRAALPY_GROUP_ID, pluginId);
-        write(metaInf.resolve("resource-config.json"), NATIVE_IMAGE_RESOURCES_CONFIG);
-        write(metaInf.resolve("native-image.properties"), NATIVE_IMAGE_ARGS);
+    public static void writeNativeImageConfig(Path metaInfRoot, String pluginId) throws IOException {
+        Path p = metaInfRoot.resolve(Path.of("native-image", GRAALPY_GROUP_ID, pluginId));
+        write(p.resolve("resource-config.json"), NATIVE_IMAGE_RESOURCES_CONFIG);
+        write(p.resolve("native-image.properties"), NATIVE_IMAGE_ARGS);
     }
 
     private static void write(Path config, String txt) throws IOException {

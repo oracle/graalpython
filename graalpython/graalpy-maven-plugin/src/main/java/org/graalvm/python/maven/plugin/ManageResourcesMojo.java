@@ -138,7 +138,7 @@ public class ManageResourcesMojo extends AbstractMojo {
 
     private void manageNativeImageConfig() throws MojoExecutionException {
         try {
-            VFSUtils.writeNativeImageConfig(project.getBuild().getOutputDirectory(), GRAALPY_MAVEN_PLUGIN_ARTIFACT_ID);
+            VFSUtils.writeNativeImageConfig(Path.of(project.getBuild().getOutputDirectory(), "META-INF"), GRAALPY_MAVEN_PLUGIN_ARTIFACT_ID);
         } catch (IOException e) {
             throw new MojoExecutionException("failed to create native image configuration files", e);
         }
