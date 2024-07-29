@@ -168,15 +168,17 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         public final String name;
         public final VariableElement[] arguments;
         public final VariableElement returnType;
+        public final boolean acquireGil;
         public final String call;
         public final String factory;
         public int id;
 
-        public CApiBuiltinDesc(Element origin, String name, VariableElement returnType, VariableElement[] arguments, String call, String factory) {
+        public CApiBuiltinDesc(Element origin, String name, VariableElement returnType, VariableElement[] arguments, boolean acquireGil, String call, String factory) {
             this.origin = origin;
             this.name = name;
             this.returnType = returnType;
             this.arguments = arguments;
+            this.acquireGil = acquireGil;
             this.call = call;
             this.factory = factory;
         }
@@ -356,11 +358,12 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                         name = builtinName;
                     }
                     var ret = findValue(builtin, "ret", VariableElement.class);
+                    boolean acquireGil = findValue(builtin, "acquireGil", Boolean.class);
                     String call = name(findValue(builtin, "call", VariableElement.class));
                     // boolean inlined = findValue(builtin, "inlined", Boolean.class);
                     VariableElement[] args = findValues(builtin, "args", VariableElement.class).toArray(new VariableElement[0]);
                     if (((TypeElement) element).getQualifiedName().toString().equals("com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction.Dummy")) {
-                        additionalBuiltins.add(new CApiBuiltinDesc(element, builtinName, ret, args, call, null));
+                        additionalBuiltins.add(new CApiBuiltinDesc(element, builtinName, ret, args, acquireGil, call, null));
                     } else {
                         if (!isValidReturnType(ret)) {
                             processingEnv.getMessager().printError(
@@ -387,7 +390,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                             genName += "NodeGen";
                         }
                         verifyNodeClass(((TypeElement) element), builtin);
-                        javaBuiltins.add(new CApiBuiltinDesc(element, name, ret, args, call, genName));
+                        javaBuiltins.add(new CApiBuiltinDesc(element, name, ret, args, acquireGil, call, genName));
                     }
                 }
             }
@@ -634,7 +637,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         for (var builtin : javaBuiltins) {
             String argString = Arrays.stream(builtin.arguments).map(b -> "ArgDescriptor." + b).collect(Collectors.joining(", "));
             lines.add("    public static final CApiBuiltinExecutable " + builtin.name + " = new CApiBuiltinExecutable(\"" + builtin.name + "\", CApiCallPath." + builtin.call + ", ArgDescriptor." +
-                            builtin.returnType + ", new ArgDescriptor[]{" + argString + "}, " + builtin.id + ");");
+                            builtin.returnType + ", new ArgDescriptor[]{" + argString + "}, " + builtin.acquireGil + ", " + builtin.id + ");");
         }
         lines.add("");
         lines.add("    public static final CApiBuiltinExecutable[] builtins = {");

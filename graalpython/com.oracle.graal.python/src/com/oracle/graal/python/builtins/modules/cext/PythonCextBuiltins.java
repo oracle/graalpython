@@ -172,6 +172,7 @@ import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -584,17 +585,19 @@ public final class PythonCextBuiltins {
         private final CApiTiming timing;
         private final ArgDescriptor ret;
         private final ArgDescriptor[] args;
+        private final boolean acquireGil;
         @CompilationFinal private CallTarget callTarget;
         private final CApiCallPath call;
         private final String name;
         private final int id;
 
-        public CApiBuiltinExecutable(String name, CApiCallPath call, ArgDescriptor ret, ArgDescriptor[] args, int id) {
+        public CApiBuiltinExecutable(String name, CApiCallPath call, ArgDescriptor ret, ArgDescriptor[] args, boolean acquireGil, int id) {
             this.timing = CApiTiming.create(false, name);
             this.name = name;
             this.call = call;
             this.ret = ret;
             this.args = args;
+            this.acquireGil = acquireGil;
             this.id = id;
         }
 
@@ -617,6 +620,10 @@ public final class PythonCextBuiltins {
 
         public String name() {
             return name;
+        }
+
+        public boolean acquireGil() {
+            return acquireGil;
         }
 
         CExtToNativeNode createRetNode() {
@@ -773,6 +780,7 @@ public final class PythonCextBuiltins {
 
     static final class CachedExecuteCApiBuiltinNode extends ExecuteCApiBuiltinNode {
         private final CApiBuiltinExecutable cachedSelf;
+        @Child private GilNode gilNode = GilNode.create();
         @Child private CExtToNativeNode retNode;
         @Children private final CExtToJavaNode[] argNodes;
         @Child private CApiBuiltinNode builtinNode;
@@ -788,6 +796,7 @@ public final class PythonCextBuiltins {
 
         @Override
         Object execute(CApiBuiltinExecutable self, Object[] arguments) {
+            boolean wasAcquired = self.acquireGil() && gilNode.acquire();
             CApiTiming.enter();
             try {
                 try {
@@ -827,6 +836,7 @@ public final class PythonCextBuiltins {
                     throw CompilerDirectives.shouldNotReachHere("return type while handling PException: " + cachedSelf.getRetDescriptor() + " in " + self.name);
                 }
             } finally {
+                gilNode.release(wasAcquired);
                 CApiTiming.exit(self.timing);
             }
         }
@@ -935,7 +945,11 @@ public final class PythonCextBuiltins {
          */
         boolean inlined() default false;
 
-        boolean acquiresGIL() default true;
+        /**
+         * Whether we need to acquire GIL around the call. Since our conversion nodes currently
+         * assume GIL, this should be only set to false by GIL-manipulating builtins.
+         */
+        boolean acquireGil() default true;
 
         /**
          * @see CApiCallPath

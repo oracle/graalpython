@@ -88,7 +88,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCEvalBuiltins {
 
-    @CApiBuiltin(ret = PyThreadState, args = {}, acquiresGIL = false, call = Direct)
+    @CApiBuiltin(ret = PyThreadState, args = {}, acquireGil = false, call = Direct)
     abstract static class PyEval_SaveThread extends CApiNullaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_SaveThread.class);
 
@@ -102,7 +102,7 @@ public final class PythonCextCEvalBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyThreadState}, acquiresGIL = false, call = Direct)
+    @CApiBuiltin(ret = Void, args = {PyThreadState}, acquireGil = false, call = Direct)
     abstract static class PyEval_RestoreThread extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_RestoreThread.class);
 

@@ -186,7 +186,7 @@ public final class CApiFunction {
     /*
      * Functions that are implemented as C code that can be executed both in native and in Sulong:
      */
-    @CApiBuiltin(name = "PyGILState_Check", ret = Int, args = {}, acquiresGIL = false, call = CImpl)
+    @CApiBuiltin(name = "PyGILState_Check", ret = Int, args = {}, acquireGil = false, call = CImpl)
     @CApiBuiltin(name = "PyArg_Parse", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyArg_ParseTuple", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyArg_ParseTupleAndKeywords", ret = Int, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, CHAR_PTR_LIST, VARARGS}, call = CImpl)
@@ -284,9 +284,9 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyFloat_Unpack2", ret = Double, args = {ConstCharPtrAsTruffleString, Int}, call = CImpl)
     @CApiBuiltin(name = "PyFloat_Unpack4", ret = Double, args = {ConstCharPtrAsTruffleString, Int}, call = CImpl)
     @CApiBuiltin(name = "PyFloat_Unpack8", ret = Double, args = {ConstCharPtrAsTruffleString, Int}, call = CImpl)
-    @CApiBuiltin(name = "PyGILState_Ensure", ret = PY_GIL_STATE_STATE, args = {}, acquiresGIL = false, call = CImpl)
+    @CApiBuiltin(name = "PyGILState_Ensure", ret = PY_GIL_STATE_STATE, args = {}, acquireGil = false, call = CImpl)
     @CApiBuiltin(name = "PyGILState_GetThisThreadState", ret = PyThreadState, args = {}, call = CImpl)
-    @CApiBuiltin(name = "PyGILState_Release", ret = Void, args = {PY_GIL_STATE_STATE}, acquiresGIL = false, call = CImpl)
+    @CApiBuiltin(name = "PyGILState_Release", ret = Void, args = {PY_GIL_STATE_STATE}, acquireGil = false, call = CImpl)
     @CApiBuiltin(name = "PyGen_New", ret = PyObject, args = {PyFrameObject}, call = CImpl)
     @CApiBuiltin(name = "PyGen_NewWithQualName", ret = PyObject, args = {PyFrameObject, PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyImport_AddModule", ret = PyObject, args = {ConstCharPtrAsTruffleString}, call = CImpl)
@@ -558,7 +558,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyDict_GetItemStringWithError", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_GetItem_KnownHash", ret = PyObject, args = {PyObject, PyObject, Py_hash_t}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_NewPresized", ret = PyObject, args = {Py_ssize_t}, call = CImpl)
-    @CApiBuiltin(name = "_PyDict_Next", ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PyObjectPtr, PyObjectPtr, PY_HASH_T_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyDict_SetItemId", ret = Int, args = {PyObject, _PY_IDENTIFIER_PTR, PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyErr_BadInternalCall", ret = Void, args = {ConstCharPtr, PrimitiveResult32}, call = CImpl)
     @CApiBuiltin(name = "_PyErr_FormatFromCause", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
