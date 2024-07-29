@@ -54,7 +54,6 @@ import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_BUFFER;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_ENCODING;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_MODE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_R;
@@ -790,18 +789,12 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         PBuffered writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
         BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) getBuiltinConstant(T_STDOUT), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        PTextIO stdout = setWrapper(T_STDOUT, T___STDOUT__, T_W, stdioEncoding, stdioError, writer, sysModule, factory);
+        setWrapper(T_STDOUT, T___STDOUT__, T_W, stdioEncoding, stdioError, writer, sysModule, factory);
 
         writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
         BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) getBuiltinConstant(T_STDERR), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        PTextIO stderr = setWrapper(T_STDERR, T___STDERR__, T_W, stdioEncoding, T_BACKSLASHREPLACE, writer, sysModule, factory);
-
-        // register atexit close std out/err
-        core.getContext().registerAtexitHook((ctx) -> {
-            callClose(stdout);
-            callClose(stderr);
-        });
+        setWrapper(T_STDERR, T___STDERR__, T_W, stdioEncoding, T_BACKSLASHREPLACE, writer, sysModule, factory);
     }
 
     private static PTextIO setWrapper(TruffleString name, TruffleString specialName, TruffleString mode, TruffleString encoding, TruffleString error, PBuffered buffered, PythonModule sysModule,
@@ -818,13 +811,6 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     private static void setAttribute(PythonObject obj, TruffleString key, Object value) {
         obj.setAttribute(key, value);
-    }
-
-    private static void callClose(Object obj) {
-        try {
-            PyObjectCallMethodObjArgs.executeUncached(obj, T_CLOSE);
-        } catch (PException e) {
-        }
     }
 
     public PDict getModules() {
