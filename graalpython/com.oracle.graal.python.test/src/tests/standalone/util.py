@@ -42,7 +42,8 @@ import shutil
 import subprocess
 import sys
 
-MAVEN_VERSION = "3.9.8"
+MAVEN_VERSION = "3.9.6"
+GRADLE_VERSION = "8.8"
 
 def run_cmd(cmd, env, cwd=None, print_out=False):
     out = []
@@ -66,12 +67,13 @@ def check_ouput(txt, out, contains=True):
         print_output(out, f"did not expect '{txt}' in output")
         assert False
 
-def print_output(out, err_msg):
+def print_output(out, err_msg=None):
     print("============== output =============")
     for line in out:
         print(line, end="")
     print("\n========== end of output ==========")
-    print("", err_msg, "", sep="\n")
+    if err_msg:
+        print("", err_msg, "", sep="\n")
 
 def get_mvn_wrapper(project_dir, env):
     cmd = "mvnw" if 'win32' != sys.platform else "mvnw.cmd"
@@ -80,6 +82,17 @@ def get_mvn_wrapper(project_dir, env):
     out, return_code = run_cmd(cmd, env, cwd=project_dir)
     check_ouput(MAVEN_VERSION, out)
     return mvn_cmd
+
+def get_gradle_wrapper(project_dir, env):
+    gradle = shutil.which('gradle')
+    cmd = [gradle, "wrapper", f"--gradle-version={GRADLE_VERSION}"]
+    out, return_code = run_cmd(cmd, env, cwd=project_dir)
+    check_ouput("BUILD SUCCESS", out)
+    gradle_cmd = [os.path.abspath(os.path.join(project_dir, "gradlew" if 'win32' != sys.platform else "gradlew.bat"))]
+    cmd = gradle_cmd + ["--version"]
+    out, return_code = run_cmd(cmd, env, cwd=project_dir)
+    check_ouput(GRADLE_VERSION, out)
+    return gradle_cmd
 
 def get_gp():
     if "PYTHON_STANDALONE_HOME" not in os.environ:

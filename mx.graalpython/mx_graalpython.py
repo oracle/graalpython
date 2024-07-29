@@ -1538,6 +1538,8 @@ def graalpython_gate_runner(args, tasks):
             mvn_repo_path, version, env = deploy_local_maven_repo()
 
             env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
+            # TODO disabled until gradle available on gate
+            # env['ENABLE_ENABLE_GRADLE_STANDALONE_UNITTESTS'] = 'true'
             env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home
