@@ -58,7 +58,7 @@ public abstract class MetaInfTask extends DefaultTask {
     @TaskAction
     public void exec() {
         try {
-            VFSUtils.writeNativeImageConfig(getManifestOutputDir().get().getAsFile().getAbsolutePath(), GRAALPY_GRADLE_PLUGIN_ARTIFACT_ID);
+            VFSUtils.writeNativeImageConfig(getManifestOutputDir().get().getAsFile().toPath(), GRAALPY_GRADLE_PLUGIN_ARTIFACT_ID);
         } catch (IOException e) {
             throw new GradleScriptException("failed to create native image configuration files", e);
         }
