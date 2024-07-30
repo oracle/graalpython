@@ -872,13 +872,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     // Rough equivalent of CPython's pyvenv.cfg logic in Modules/getpath.py
     private void findAndApplyVenvCfg(Builder contextBuilder, String executable) {
-        Path binDir;
+        Path executablePath;
         try {
-            binDir = Paths.get(executable).getParent();
+            executablePath = Paths.get(executable);
         } catch (InvalidPathException e) {
-            log("cannot determine the parent directory of the executable");
+            log("cannot determine path of the executable");
             return;
         }
+        Path binDir = executablePath.getParent();
         if (binDir == null) {
             log("parent directory of the executable does not exist");
             return;
@@ -906,23 +907,44 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 }
                 String name = parts[0].trim();
                 if (name.equals("home")) {
-                    Path homeProperty = Paths.get(parts[1].trim());
-                    /*
-                     * (tfel): According to PEP 405, the home key is the directory of the Python
-                     * executable from which this virtual environment was created, that is, it
-                     * usually ends with "/bin" on a Unix system. On Windows, the base Python should
-                     * be in the top-level directory or under "\Scripts". To support running from
-                     * Maven artifacts where we don't have a working executable, we patched our
-                     * shipped venv module to set the home path without a "/bin" or "\\Scripts"
-                     * suffix, so we explicitly check for those two subfolder cases and otherwise
-                     * assume the home key is directly pointing to the Python home.
-                     */
-                    if (homeProperty.endsWith("bin") || homeProperty.endsWith("Scripts")) {
-                        homeProperty = homeProperty.getParent();
-                    }
                     try {
-                        contextBuilder.option("python.PythonHome", homeProperty.toString());
-                    } catch (NullPointerException ex) {
+                        Path homeProperty = Paths.get(parts[1].trim());
+                        Path graalpyHome = homeProperty;
+                        /*
+                         * (tfel): According to PEP 405, the home key is the directory of the Python
+                         * executable from which this virtual environment was created, that is, it
+                         * usually ends with "/bin" on a Unix system. On Windows, the base Python
+                         * should be in the top-level directory or under "\Scripts". To support
+                         * running from Maven artifacts where we don't have a working executable, we
+                         * patched our shipped venv module to set the home path without a "/bin" or
+                         * "\\Scripts" suffix, so we explicitly check for those two subfolder cases
+                         * and otherwise assume the home key is directly pointing to the Python
+                         * home.
+                         */
+                        if (graalpyHome.endsWith("bin") || graalpyHome.endsWith("Scripts")) {
+                            graalpyHome = graalpyHome.getParent();
+                        }
+                        contextBuilder.option("python.PythonHome", graalpyHome.toString());
+                        /*
+                         * First try to resolve symlinked executables, since that may be more
+                         * accurate than assuming the executable in 'home'.
+                         */
+                        Path baseExecutable = null;
+                        try {
+                            Path realPath = executablePath.toRealPath();
+                            if (!realPath.equals(executablePath.toAbsolutePath())) {
+                                baseExecutable = realPath;
+                            }
+                        } catch (IOException ex) {
+                            // Ignore
+                        }
+                        if (baseExecutable == null) {
+                            baseExecutable = homeProperty.resolve(executablePath.getFileName());
+                        }
+                        if (Files.exists(baseExecutable)) {
+                            contextBuilder.option("python.BaseExecutable", baseExecutable.toString());
+                        }
+                    } catch (NullPointerException | InvalidPathException ex) {
                         // NullPointerException covers the possible null result of getParent()
                         warn("Could not set PYTHONHOME according to the pyvenv.cfg file.");
                     }

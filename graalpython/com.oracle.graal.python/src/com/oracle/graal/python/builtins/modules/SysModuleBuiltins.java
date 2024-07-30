@@ -655,8 +655,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         TruffleString capiHome = context.getCAPIHome();
 
         if (!ImageInfo.inImageBuildtimeCode()) {
-            sys.setAttribute(tsLiteral("executable"), context.getOption(PythonOptions.Executable));
-            sys.setAttribute(tsLiteral("_base_executable"), context.getOption(PythonOptions.Executable));
+            TruffleString executable = context.getOption(PythonOptions.Executable);
+            TruffleString baseExecutable = context.getOption(PythonOptions.BaseExecutable);
+            sys.setAttribute(tsLiteral("executable"), executable);
+            sys.setAttribute(tsLiteral("_base_executable"), baseExecutable.isEmpty() ? executable : baseExecutable);
         }
         sys.setAttribute(tsLiteral("dont_write_bytecode"), context.getOption(PythonOptions.DontWriteBytecodeFlag));
         TruffleString pycachePrefix = context.getOption(PythonOptions.PyCachePrefix);

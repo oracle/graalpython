@@ -315,8 +315,11 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "<height>", help = "Set by the launcher to the terminal height.") //
     public static final OptionKey<Integer> TerminalHeight = new OptionKey<>(25);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "<path>", help = "The sys.executable path. Set by the launcher, but can may need to be overridden in certain special situations.", stability = OptionStability.STABLE) //
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "<path>", help = "The sys.executable path. Set by the launcher, but may need to be overridden in certain special situations.", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> Executable = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
+
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "<path>", help = "The sys._base_executable path. Set by the launcher, but may need to be overridden in certain special situations.", stability = OptionStability.STABLE) //
+    public static final OptionKey<TruffleString> BaseExecutable = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "<cmdPart>[" + J_STRING_LIST_SEPARATOR +
                     "<cmdPart>]", help = "The executed command list as string joined by the executable list separator char. This must always correspond to the real, valid command list used to run GraalPy.") //
