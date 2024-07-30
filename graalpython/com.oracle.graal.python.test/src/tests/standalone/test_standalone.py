@@ -204,7 +204,17 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
         pass
 
     def generate_app(self, tmpdir, target_dir):
-        shutil.copytree(os.path.join(os.path.dirname(__file__), "gradle", "gradle-test-project"), target_dir)
+        src_prj_path = os.path.join(os.path.dirname(__file__), "gradle", "gradle-test-project")
+        for root, dirs, files in os.walk(src_prj_path):
+            for file in files:
+                source_file = os.path.join(root, file)
+                if file.endswith(".j"):
+                    file = file[0:len(file)- 1] + "java"
+                target_root = os.path.join(target_dir, root[len(src_prj_path) + 1:])
+                target_file = os.path.join(target_root, file)
+                os.makedirs(os.path.dirname(target_file), exist_ok=True)
+                shutil.copyfile(source_file, target_file)
+
         self.copy_build_files(target_dir)
 
     @unittest.skipUnless(is_gradle_enabled, "ENABLE_GRADLE_STANDALONE_UNITTESTS is not true")
