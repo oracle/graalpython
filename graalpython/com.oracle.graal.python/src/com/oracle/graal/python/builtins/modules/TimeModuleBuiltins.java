@@ -149,6 +149,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                                     "offset from UTC in seconds"
                     });
 
+    public static final TruffleString T_TZNAME = tsLiteral("tzname");
+    public static final TruffleString T_DAYLIGHT = tsLiteral("daylight");
+    public static final TruffleString T_TIMEZONE = tsLiteral("timezone");
+    public static final TruffleString T_ALTZONE = tsLiteral("altzone");
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TimeModuleBuiltinsFactory.getFactories();
@@ -157,12 +162,20 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
+        StructSequence.initType(core, STRUCT_TIME_DESC);
+        addBuiltinConstant("_STRUCT_TM_ITEMS", 11);
+    }
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
         // Should we read TZ env variable?
         ZoneId defaultZoneId = core.getContext().getEnv().getTimeZone();
         ModuleState moduleState = new ModuleState();
         moduleState.currentZoneId = defaultZoneId;
         moduleState.timeSlept = 0;
-        core.lookupBuiltinModule(T_TIME).setModuleState(moduleState);
+        PythonModule timeModule = core.lookupBuiltinModule(T_TIME);
+        timeModule.setModuleState(moduleState);
 
         TimeZone defaultTimeZone = TimeZone.getTimeZone(defaultZoneId);
         TruffleString noDaylightSavingZone = toTruffleStringUncached(defaultTimeZone.getDisplayName(false, TimeZone.SHORT));
@@ -170,17 +183,15 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         boolean hasDaylightSaving = !noDaylightSavingZone.equalsUncached(daylightSavingZone, TS_ENCODING);
         if (hasDaylightSaving) {
-            addBuiltinConstant("tzname", core.factory().createTuple(new Object[]{noDaylightSavingZone, daylightSavingZone}));
+            timeModule.setAttribute(T_TZNAME, core.factory().createTuple(new Object[]{noDaylightSavingZone, daylightSavingZone}));
         } else {
-            addBuiltinConstant("tzname", core.factory().createTuple(new Object[]{noDaylightSavingZone}));
+            timeModule.setAttribute(T_TZNAME, core.factory().createTuple(new Object[]{noDaylightSavingZone}));
         }
 
-        addBuiltinConstant("daylight", PInt.intValue(hasDaylightSaving));
+        timeModule.setAttribute(T_DAYLIGHT, PInt.intValue(hasDaylightSaving));
         int rawOffsetSeconds = defaultTimeZone.getRawOffset() / -1000;
-        addBuiltinConstant("timezone", rawOffsetSeconds);
-        addBuiltinConstant("altzone", rawOffsetSeconds - 3600);
-        addBuiltinConstant("_STRUCT_TM_ITEMS", 11);
-        StructSequence.initType(core, STRUCT_TIME_DESC);
+        timeModule.setAttribute(T_TIMEZONE, rawOffsetSeconds);
+        timeModule.setAttribute(T_ALTZONE, rawOffsetSeconds - 3600);
     }
 
     @TruffleBoundary

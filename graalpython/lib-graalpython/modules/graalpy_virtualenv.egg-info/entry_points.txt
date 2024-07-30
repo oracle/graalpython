@@ -1,5 +1,0 @@
-[virtualenv.create]
-graalpy = graalpy_virtualenv.graalpy:GraalPyCreatorPosix
-
-[virtualenv.seed]
-graalpy = graalpy_virtualenv.graalpy:GraalPySeeder
