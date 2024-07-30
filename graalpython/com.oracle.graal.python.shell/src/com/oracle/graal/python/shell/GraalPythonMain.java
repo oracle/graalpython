@@ -943,6 +943,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         }
                         if (Files.exists(baseExecutable)) {
                             contextBuilder.option("python.BaseExecutable", baseExecutable.toString());
+                            /*
+                             * This is needed to support the legacy GraalVM layout where the
+                             * executable is a symlink into the 'languages' directory.
+                             */
+                            contextBuilder.option("python.PythonHome", baseExecutable.getParent().getParent().toString());
                         }
                     } catch (NullPointerException | InvalidPathException ex) {
                         // NullPointerException covers the possible null result of getParent()
