@@ -40,7 +40,6 @@
  */
 package org.graalvm.python;
 
-import groovy.util.logging.Log;
 import org.graalvm.python.embedding.tools.exec.SubprocessLog;
 import org.gradle.api.logging.Logger;
 
