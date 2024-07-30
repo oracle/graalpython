@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,7 +72,6 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     private static final String GRAALPY_RESOURCES_TASK = "graalPyResources";
     private static final String GRAALPY_META_INF_TASK_TASK = "graalPyMetaInf";
     private static final String GRAALPY_VFS_FILESLIST_TASK = "graalPyVFSFilesList";
-
 
     GraalPyExtension extension;
     Project project;
@@ -154,6 +153,5 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     private static DependencySet resolveProjectDependencies(Project project) {
         return project.getConfigurations().getByName("implementation").getAllDependencies();
     }
-
 
 }
