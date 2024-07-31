@@ -175,6 +175,26 @@ class PolyglotAppTest(unittest.TestCase):
 
         util.patch_pom_repositories(os.path.join(target_dir, "pom.xml"))
 
+        distribution_url_override = self.env.get("MAVEN_DISTRIBUTION_URL_OVERRIDE")
+        if distribution_url_override:
+            mvnw_dir = os.path.join(os.path.dirname(__file__), "mvnw")
+
+            shutil.copy(os.path.join(mvnw_dir, "mvnw"), os.path.join(target_dir, "mvnw"))
+            shutil.copy(os.path.join(mvnw_dir, "mvnw.cmd"), os.path.join(target_dir, "mvnw.cmd"))
+            shutil.copytree(os.path.join(mvnw_dir, ".mvn"), os.path.join(target_dir, ".mvn"))
+
+            mvnw_properties = os.path.join(target_dir, ".mvn", "wrapper", "maven-wrapper.properties")
+            new_lines = []
+            with(open(mvnw_properties)) as f:
+                while line := f.readline():
+                    line.strip()
+                    if not line.startswith("#") and "distributionUrl" in line:
+                        new_lines.append(f"distributionUrl={distribution_url_override}\n")
+                    else:
+                        new_lines.append(line)
+            with(open(mvnw_properties, "w")) as f:
+                f.writelines(new_lines)
+
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_generated_app(self):
         with tempfile.TemporaryDirectory() as tmpdir:
