@@ -43,21 +43,32 @@ import subprocess
 import sys
 
 MAVEN_VERSION = "3.9.8"
-GRADLE_VERSION = "8.8"
+GRADLE_VERSION = "8.9"
 
-def run_cmd(cmd, env, cwd=None, print_out=False):
+def run_cmd(cmd, env, cwd=None, print_out=False, gradle=False):
     out = []
     out.append(f"Executing:\n    {cmd=}\n")
-    process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True, errors='backslashreplace')
-    if print_out:
-        print("============== output =============")
-    for line in iter(process.stdout.readline, ""):
-        out.append(line)
+    prev_java_home = None     
+    if gradle:
+        gradle_java_home = env.get("GRADLE_JAVA_HOME")
+        assert gradle_java_home, "in order to run standalone gradle tests, the 'GRADLE_JAVA_HOME' env var has to be set to a jdk <= 22"
+        prev_java_home = env["JAVA_HOME"]
+        env["JAVA_HOME"] = env["GRADLE_JAVA_HOME"]
+    
+    try:
+        process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True, errors='backslashreplace')
         if print_out:
-            print(line, end="")
-    if print_out:
-        print("\n========== end of output ==========")
-    return "".join(out), process.wait()
+            print("============== output =============")
+        for line in iter(process.stdout.readline, ""):
+            out.append(line)
+            if print_out:
+                print(line, end="")
+        if print_out:
+            print("\n========== end of output ==========")
+        return "".join(out), process.wait()
+    finally:
+        if prev_java_home:
+            env["JAVA_HOME"] = prev_java_home
 
 def check_ouput(txt, out, contains=True):
     if contains and txt not in out:
@@ -84,10 +95,6 @@ def get_mvn_wrapper(project_dir, env):
     return mvn_cmd
 
 def get_gradle_wrapper(project_dir, env):
-    gradle = shutil.which('gradle')
-    cmd = [gradle, "wrapper", f"--gradle-version={GRADLE_VERSION}"]
-    out, return_code = run_cmd(cmd, env, cwd=project_dir)
-    check_ouput("BUILD SUCCESS", out)
     gradle_cmd = [os.path.abspath(os.path.join(project_dir, "gradlew" if 'win32' != sys.platform else "gradlew.bat"))]
     cmd = gradle_cmd + ["--version"]
     out, return_code = run_cmd(cmd, env, cwd=project_dir)

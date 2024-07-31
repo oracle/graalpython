@@ -854,6 +854,16 @@ class TextTestResult  :
 class TestSuite:
     pass
 
+def removeAttr(cls, attr):
+    if(cls is object):
+        return
+    if hasattr(cls, attr):
+        try:
+            delattr(cls, attr)
+        except AttributeError as e:
+            pass
+    for b in cls.__bases__:
+        removeAttr(b, attr)
 
 def skip_deselected_test_functions(globals):
     """
@@ -876,7 +886,7 @@ def skip_deselected_test_functions(globals):
         if idx % total != batch - 1:
             n = test_func.__name__
             if isinstance(owner, type):
-                delattr(owner, n)
+                removeAttr(owner, n)
             else:
                 del owner[n]
 

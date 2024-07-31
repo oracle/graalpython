@@ -44,7 +44,7 @@ import unittest
 import urllib.parse
 import shutil
 import util
-from abc import ABC, abstractmethod
+import sys
 
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
 is_gradle_enabled = 'ENABLE_GRADLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_GRADLE_STANDALONE_UNITTESTS'] == "true"
@@ -91,6 +91,19 @@ def replace_in_file(file, str, replace_str):
     assert str in contents
     with open(file, "w") as f:
         f.write(contents.replace(str, replace_str))
+
+def patch_properties_file(properties_file, distribution_url_override):
+    if distribution_url_override:
+        new_lines = []
+        with(open(properties_file)) as f:
+            while line := f.readline():
+                line.strip()
+                if not line.startswith("#") and "distributionUrl" in line:
+                    new_lines.append(f"distributionUrl={distribution_url_override}\n")
+                else:
+                    new_lines.append(line)
+        with(open(properties_file, "w")) as f:
+            f.writelines(new_lines)
 
 class PolyglotAppTestBase(unittest.TestCase):
     def setUpClass(self):
@@ -169,66 +182,66 @@ def append(file, txt):
     with open(file, "a") as f:
         f.write(txt)
 
-class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
+class PolyglotAppGradleTestBase(PolyglotAppTestBase):
+    def setUpClass(self):
+        super().setUpClass()
+        self.test_prj_path = os.path.join(os.path.dirname(__file__), "gradle", "gradle-test-project")
 
-    @abstractmethod
     def target_dir_name_sufix(self, target_dir):
         pass
 
-    @abstractmethod
     def copy_build_files(self, target_dir):
         pass
 
-    @abstractmethod
     def packages_termcolor(self, build_file):
         pass
 
-    @abstractmethod
     def packages_termcolor_ujson(self):
         pass
 
-    @abstractmethod
     def packages_termcolor_resource_dir(self, resources_dir):
         pass
 
-    @abstractmethod
     def empty_home_includes(self):
         pass
 
-    @abstractmethod
     def home_includes(self):
         pass
 
-    @abstractmethod
     def empty_packages(self):
         pass
 
-    def generate_app(self, tmpdir, target_dir):
-        src_prj_path = os.path.join(os.path.dirname(__file__), "gradle", "gradle-test-project")
-        for root, dirs, files in os.walk(src_prj_path):
+    def generate_app(self, target_dir):
+        shutil.copytree(self.test_prj_path, target_dir)
+        for root, dirs, files in os.walk(target_dir):
             for file in files:
-                source_file = os.path.join(root, file)
                 if file.endswith(".j"):
-                    file = file[0:len(file)- 1] + "java"
-                target_root = os.path.join(target_dir, root[len(src_prj_path) + 1:])
-                target_file = os.path.join(target_root, file)
-                os.makedirs(os.path.dirname(target_file), exist_ok=True)
-                shutil.copyfile(source_file, target_file)
+                    shutil.move(os.path.join(root, file), os.path.join(root, file[0:len(file)- 1] + "java"))
+
+        patch_properties_file(os.path.join(target_dir, "gradle", "wrapper", "gradle-wrapper.properties"), self.env.get("GRADLE_DISTRIBUTION_URL_OVERRIDE"))
 
         self.copy_build_files(target_dir)
 
     @unittest.skipUnless(is_gradle_enabled, "ENABLE_GRADLE_STANDALONE_UNITTESTS is not true")
-    def test_generated_gradle_app(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+    def test_gradle_generated_app(self):
+        with tempfile.TemporaryDirectory() as tmpdir:        
             target_dir = os.path.join(str(tmpdir), "generated_app_gradle" + self.target_dir_name_sufix())
-            self.generate_app(tmpdir, target_dir)
+            self.generate_app(target_dir)
             build_file = os.path.join(target_dir, self.build_file_name)
             append(build_file, self.packages_termcolor())
 
             gradlew_cmd = util.get_gradle_wrapper(target_dir, self.env)
 
             # build
+            cmd = gradlew_cmd + ["build"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
+            util.check_ouput("BUILD SUCCESS", out)
+
             cmd = gradlew_cmd + ["nativeCompile"]
+            # gradle needs jdk <= 22, but it looks like the 'gradle nativeCompile' cmd does not complain if higher, 
+            # which is fine, because we need to build the native binary with a graalvm build
+            # and the one we have set in JAVA_HOME is at least jdk24
+            # => run without gradle = True
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
 
@@ -254,7 +267,7 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
 
             # rebuild and exec
             cmd = gradlew_cmd + ["build", "run"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("hello java", out)
 
@@ -262,10 +275,10 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
             util.check_ouput("java.lang.NoClassDefFoundError", out, False)
 
     @unittest.skipUnless(is_gradle_enabled, "ENABLE_GRADLE_STANDALONE_UNITTESTS is not true")
-    def test_generated_gradle_app_external_resources(self):
+    def test_gradle_generated_app_external_resources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "generated_gradle_app_external_resources" + self.target_dir_name_sufix())
-            self.generate_app(tmpdir, target_dir)
+            self.generate_app(target_dir)
             build_file = os.path.join(target_dir, self.build_file_name)
 
             # patch project to use external directory for resources
@@ -282,7 +295,7 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
                 "package org.example;\nimport java.nio.file.Path;")
             replace_in_file(os.path.join(target_dir, "src", "main", "java", "org", "example", "GraalPy.java"),
                 "GraalPyResources.createContext()",
-                "GraalPyResources.contextBuilder(Path.of(\"" + resources_dir + "\")).build()")
+                "GraalPyResources.contextBuilder(Path.of(\"python-resources\")).build()")
 
             # patch build.gradle
             append(build_file, self.packages_termcolor_resource_dir(resources_dir))
@@ -290,7 +303,15 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
             # build
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
 
-            cmd = gradle_cmd + ["clean", "nativeCompile"]
+            cmd = gradle_cmd + ["clean", "build"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
+            util.check_ouput("BUILD SUCCESS", out)
+
+            # gradle needs jdk <= 22, but it looks like the 'gradle nativeCompile' cmd does not complain if higher, 
+            # which is fine, because we need to build the native binary with a graalvm build
+            # and the one we have set in JAVA_HOME is at least jdk24
+            # => run without gradle = True
+            cmd = gradle_cmd + ["nativeCompile"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
 
@@ -301,7 +322,7 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
 
             # 2.) check java build and exec
             cmd = gradle_cmd + ["run"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("hello java", out)
 
@@ -309,7 +330,7 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
     def test_gradle_fail_without_graalpy_dep(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "gradle_fail_without_graalpy_dep" + self.target_dir_name_sufix())
-            self.generate_app(tmpdir, target_dir)
+            self.generate_app(target_dir)
             build_file = os.path.join(target_dir, self.build_file_name)
             append(build_file, GRAALPY_EMPTY)
 
@@ -320,14 +341,14 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
                 "// implementation(\"org.graalvm.python:python-community:24.2.0\")")
 
             cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("Missing GraalPy dependency. Please add to your build.gradle either org.graalvm.polyglot:python-community or org.graalvm.polyglot:python", out)
 
     @unittest.skipUnless(is_gradle_enabled, "ENABLE_GRADLE_STANDALONE_UNITTESTS is not true")
     def test_gradle_gen_launcher_and_venv(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "gradle_gen_launcher_and_venv" + self.target_dir_name_sufix())
-            self.generate_app(tmpdir, target_dir)
+            self.generate_app(target_dir)
 
             build_file = os.path.join(target_dir, self.build_file_name)
 
@@ -336,7 +357,7 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
             append(build_file, self.packages_termcolor_ujson())
 
             cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("-m venv", out)
             util.check_ouput("-m ensurepip",out)
             util.check_ouput("ujson", out)
@@ -344,18 +365,18 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
 
             # run again and assert that we do not regenerate the venv
             cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("-m venv", out, False)
             util.check_ouput("-m ensurepip", out, False)
             util.check_ouput("ujson", out, False)
             util.check_ouput("termcolor", out, False)
 
             # remove ujson pkg from plugin config and check if unistalled
-            shutil.copyfile(os.path.join(os.path.dirname(__file__), "gradle", "build", self.build_file_name), os.path.join(target_dir, self.build_file_name))
+            self.copy_build_files(target_dir)
             append(build_file, self.packages_termcolor())
 
             cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("-m venv", out, False)
             util.check_ouput("-m ensurepip", out, False)
             util.check_ouput("Uninstalling ujson", out)
@@ -367,10 +388,10 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
         assert lines == expected, "expected tagfile " + str(expected) + ", but got " + str(lines)
 
     @unittest.skipUnless(is_gradle_enabled, "ENABLE_GRADLE_STANDALONE_UNITTESTS is not true")
-    def test_check_home(self):
+    def test_gradle_check_home(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "check_home_test" + self.target_dir_name_sufix())
-            self.generate_app(tmpdir, target_dir)
+            self.generate_app(target_dir)
 
             build_file_template = os.path.join(os.path.dirname(__file__), "gradle", "build", self.build_file_name)
             build_file = os.path.join(target_dir, self.build_file_name)
@@ -379,7 +400,7 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
             process_resources_cmd = gradle_cmd + ["graalPyResources"]
 
             # 1. process-resources with no pythonHome config
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("Copying std lib to ", out)
 
@@ -394,25 +415,25 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
             self.check_tagfile(home_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
 
             # 2. process-resources with empty pythonHome
-            shutil.copyfile(build_file_template, build_file)
+            self.copy_build_files(target_dir)
             append(build_file, GRAALPY_EMPTY_HOME)
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("Copying std lib to ", out, False)
             self.check_tagfile(home_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
 
             # 3. process-resources with empty pythonHome includes and excludes
-            shutil.copyfile(build_file_template, build_file)
+            self.copy_build_files(target_dir)
             append(build_file, self.empty_home_includes())
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("Copying std lib to ", out, False)
             self.check_tagfile(home_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
 
             # 4. process-resources with pythonHome includes and excludes
-            shutil.copyfile(build_file_template, build_file)
+            self.copy_build_files(target_dir)
             append(build_file, self.home_includes())
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("Deleting GraalPy home due to changed includes or excludes", out)
             util.check_ouput("Copying std lib to ", out)
@@ -420,7 +441,7 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
 
             # 5. check fileslist.txt
             # XXX build vs graalPyVFSFilesList task?
-            out, return_code = util.run_cmd(gradle_cmd + ["build"], self.env, cwd=target_dir)
+            out, return_code = util.run_cmd(gradle_cmd + ["build"], self.env, cwd=target_dir, gradle = True)
             util.check_ouput("BUILD SUCCESS", out)
             fl_path = os.path.join(target_dir, "build", "resources", "main", VFS_PREFIX, "fileslist.txt")
             with open(fl_path) as f:
@@ -436,18 +457,27 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase, ABC):
                     assert not line.endswith("html/__init__.py"), f"expected line to end with html/__init__.py, but was '{line}''"
 
     @unittest.skipUnless(is_gradle_enabled, "ENABLE_GRADLE_STANDALONE_UNITTESTS is not true")
-    def test_empty_packages(self):
+    def test_gradle_empty_packages(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "empty_packages_test" + self.target_dir_name_sufix())
-            self.generate_app(tmpdir, target_dir)
+            self.generate_app(target_dir)
             build_file = os.path.join(target_dir, self.build_file_name)
 
             append(build_file, self.empty_packages())
 
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
             cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("BUILD SUCCESS", out)
+
+def print_file(file):
+    print("\n====", file, " ==========================================================================")
+    with open(file) as f:
+        while line := f.readline():
+            if line.endswith("\n"):
+                line = line[:len(line) - 1]
+            print(line)
+    print("\n========================================================================================")
 
 class PolyglotAppGradleGroovyTest(PolyglotAppGradleTestBase):
 
@@ -460,8 +490,21 @@ class PolyglotAppGradleGroovyTest(PolyglotAppGradleTestBase):
         return "_groovy"
 
     def copy_build_files(self, target_dir):
-        shutil.copyfile(os.path.join(os.path.dirname(__file__), "gradle", "build", self.build_file_name), os.path.join(target_dir, self.build_file_name))
-        shutil.copyfile(os.path.join(os.path.dirname(__file__), "gradle", "build", self.settings_file_name), os.path.join(target_dir, self.settings_file_name))
+        build_file = os.path.join(target_dir, self.build_file_name)
+        shutil.copyfile(os.path.join(os.path.dirname(__file__), "gradle", "build", self.build_file_name), build_file)
+        settings_file = os.path.join(target_dir, self.settings_file_name)
+        shutil.copyfile(os.path.join(os.path.dirname(__file__), "gradle", "build", self.settings_file_name), settings_file)
+        if custom_repos := os.environ.get("MAVEN_REPO_OVERRIDE"):
+            mvn_repos = ""
+            for idx, custom_repo in enumerate(custom_repos.split(",")):
+                mvn_repos += f"maven {{ url \"{custom_repo}\" }}\n    "
+            replace_in_file(build_file,
+                "repositories {", f"repositories {{\n    mavenLocal()\n    {mvn_repos}")
+            replace_in_file(settings_file,
+                "repositories {", f"repositories {{\n        {mvn_repos}")
+
+        #print_file(build_file)
+        #print_file(settings_file)
 
     def packages_termcolor(self):
         return """
@@ -478,6 +521,7 @@ graalPy {
 """
 
     def packages_termcolor_resource_dir(self, resources_dir):
+        resources_dir = resources_dir if 'win32' != sys.platform else resources_dir.replace("\\", "\\\\")
         return f"""
 graalPy {{
     packages = ["termcolor"]
@@ -523,8 +567,20 @@ class PolyglotAppGradleKotlinTest(PolyglotAppGradleTestBase):
         return "_kotlin"
 
     def copy_build_files(self, target_dir):
-        shutil.copyfile(os.path.join(os.path.dirname(__file__), "gradle", "build", self.build_file_name), os.path.join(target_dir, self.build_file_name))
-        shutil.copyfile(os.path.join(os.path.dirname(__file__), "gradle", "build", self.settings_file_name), os.path.join(target_dir, self.settings_file_name))
+        build_file = os.path.join(target_dir, self.build_file_name)
+        shutil.copyfile(os.path.join(os.path.dirname(__file__), "gradle", "build", self.build_file_name), build_file)
+        settings_file = os.path.join(target_dir, self.settings_file_name)
+        shutil.copyfile(os.path.join(os.path.dirname(__file__), "gradle", "build", self.settings_file_name), settings_file)
+        if custom_repos := os.environ.get("MAVEN_REPO_OVERRIDE"):
+            mvn_repos = ""
+            for idx, custom_repo in enumerate(custom_repos.split(",")):
+                mvn_repos += f"maven(url=\"{custom_repo}\")\n    "
+
+            replace_in_file(build_file, "repositories {", f"repositories {{\n    mavenLocal()\n    {mvn_repos}")
+            replace_in_file(settings_file, "repositories {", f"repositories {{\n        {mvn_repos}")
+
+        #print_file(build_file)
+        #print_file(settings_file)
 
     def packages_termcolor(self):
        return """
@@ -542,6 +598,7 @@ graalPy {
 """
 
     def packages_termcolor_resource_dir(self, resources_dir):
+        resources_dir = resources_dir if 'win32' != sys.platform else resources_dir.replace("\\", "\\\\")
         return f"""
 graalPy {{
     packages.add("termcolor")
@@ -598,25 +655,11 @@ class PolyglotAppTest(PolyglotAppTestBase):
 
         util.patch_pom_repositories(os.path.join(target_dir, "pom.xml"))
 
-        distribution_url_override = self.env.get("MAVEN_DISTRIBUTION_URL_OVERRIDE")
-        if distribution_url_override:
-            mvnw_dir = os.path.join(os.path.dirname(__file__), "mvnw")
-
-            shutil.copy(os.path.join(mvnw_dir, "mvnw"), os.path.join(target_dir, "mvnw"))
-            shutil.copy(os.path.join(mvnw_dir, "mvnw.cmd"), os.path.join(target_dir, "mvnw.cmd"))
-            shutil.copytree(os.path.join(mvnw_dir, ".mvn"), os.path.join(target_dir, ".mvn"))
-
-            mvnw_properties = os.path.join(target_dir, ".mvn", "wrapper", "maven-wrapper.properties")
-            new_lines = []
-            with(open(mvnw_properties)) as f:
-                while line := f.readline():
-                    line.strip()
-                    if not line.startswith("#") and "distributionUrl" in line:
-                        new_lines.append(f"distributionUrl={distribution_url_override}\n")
-                    else:
-                        new_lines.append(line)
-            with(open(mvnw_properties, "w")) as f:
-                f.writelines(new_lines)
+        mvnw_dir = os.path.join(os.path.dirname(__file__), "mvnw")
+        shutil.copy(os.path.join(mvnw_dir, "mvnw"), os.path.join(target_dir, "mvnw"))
+        shutil.copy(os.path.join(mvnw_dir, "mvnw.cmd"), os.path.join(target_dir, "mvnw.cmd"))
+        shutil.copytree(os.path.join(mvnw_dir, ".mvn"), os.path.join(target_dir, ".mvn"))
+        patch_properties_file(os.path.join(target_dir, ".mvn", "wrapper", "maven-wrapper.properties"), self.env.get("MAVEN_DISTRIBUTION_URL_OVERRIDE"))
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_generated_app(self):
