@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -44,7 +44,7 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
-import org.junit.Assert;
+import org.hamcrest.MatcherAssert;
 
 import com.oracle.graal.python.test.integration.advanced.BenchmarkTests;
 
@@ -106,7 +106,7 @@ public class PythonTests {
         PythonTests.runThrowableScript(new String[0], source, System.out, printStream);
         String[] output = byteArray.toString().split("\n");
         // ignore the traceback
-        Assert.assertThat(output[output.length - 1], containsString(expected.trim()));
+        MatcherAssert.assertThat(output[output.length - 1], containsString(expected.trim()));
     }
 
     public static void assertPrintContains(String expected, String code) {
