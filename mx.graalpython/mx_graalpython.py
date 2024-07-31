@@ -1537,9 +1537,11 @@ def graalpython_gate_runner(args, tasks):
             standalone_home = graalpy_standalone_home('jvm')
             mvn_repo_path, version, env = deploy_local_maven_repo()
 
+            # in order to run gradle we need a jdk <= 22
+            env['GRADLE_JAVA_HOME'] = env.get('JAVA_HOME')
+
             env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
-            # TODO disabled until gradle available on gate
-            # env['ENABLE_ENABLE_GRADLE_STANDALONE_UNITTESTS'] = 'true'
+            env['ENABLE_GRADLE_STANDALONE_UNITTESTS'] = 'true'
             env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home
@@ -1550,9 +1552,9 @@ def graalpython_gate_runner(args, tasks):
                 mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
             ])
 
-            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/mvnw/.mvn/wrapper/maven-wrapper.properties", ["distributionUrl"])
+            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/gradle/gradle-test-project/gradle/wrapper/gradle-wrapper.properties", ["distributionUrl"])
             if "distributionUrl" in urls:
-                env["MAVEN_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
+                env["GRADLE_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
 
             env["org.graalvm.maven.downloader.version"] = version
             env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
@@ -2024,11 +2026,6 @@ def update_import_cmd(args):
         join(enterprisedir, "ci"),
         join(overlaydir, "python", "graal-enterprise", "ci"),
         dirs_exist_ok=True)
-
-    # update the graal-enterprise revision in the overlay (used by benchmarks)
-    with open(join(overlaydir, "python", "imported-constants.json"), 'w') as fp:
-        d = {'GRAAL_ENTERPRISE_REVISION': revisions['graalpython-enterprise']}
-        json.dump(d, fp, indent=2)
 
     repos_updated = []
 

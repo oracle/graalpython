@@ -93,3 +93,4 @@ graalpython/com.oracle.graal.python.test/src/tests/standalone/micronaut/hello/ta
 graalpython/com.oracle.graal.python.test/src/tests/cpyext/build/
 pom-mx.xml
 .venv
+!graalpython/com.oracle.graal.python.test/src/tests/standalone/gradle/gradle-test-project/gradle/wrapper/gradle-wrapper.jar

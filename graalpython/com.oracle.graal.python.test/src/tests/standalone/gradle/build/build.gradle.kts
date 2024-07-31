@@ -13,10 +13,6 @@ application {
     mainClass = "org.example.GraalPy"
 }
 
-// XXX how to run with asserts on, aka -ea?
-//run {
-//    enableAssertions = true
-//}
 val r = tasks.run.get()
 r.enableAssertions = true
 r.outputs.upToDateWhen {false}
