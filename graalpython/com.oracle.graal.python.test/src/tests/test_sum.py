@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,6 +37,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from .util import assert_raises
+
 def test_type_int():
     # does not fit into primitive 'long'
     i = 0xfffffffffffffffffffffffffffffffffff
@@ -70,3 +72,7 @@ class SumTestClass:
 
 def test_iterator():
     assert sum(SumTestClass()) == 45
+
+def test_basics():
+    assert sum([[1, 2], [3, 4]], []) == [1, 2, 3, 4]
+    assert_raises(TypeError, sum, [1,2,3], None)

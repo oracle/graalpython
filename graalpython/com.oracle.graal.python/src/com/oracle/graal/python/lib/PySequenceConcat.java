@@ -54,9 +54,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.CallSlotBinaryFuncNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -66,76 +65,19 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@GenerateInline(inlineByDefault = true)
-public abstract class PyNumberAddNode extends BinaryOpNode {
+@GenerateInline
+@GenerateCached(false)
+public abstract class PySequenceConcat extends PNodeWithContext {
     public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
-
-    @Override
-    public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return executeCached(frame, left, right);
-    }
-
-    public final Object executeCached(VirtualFrame frame, Object v, Object w) {
-        return execute(frame, this, v, w);
-    }
-
-    public abstract int executeInt(VirtualFrame frame, Node inliningTarget, int left, int right) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, Node inliningTarget, double left, double right) throws UnexpectedResultException;
-
-    /*
-     * All the following fast paths need to be kept in sync with the corresponding builtin functions
-     * in IntBuiltins, FloatBuiltins, ListBuiltins, ...
-     */
-
-    @Specialization(rewriteOn = ArithmeticException.class)
-    public static int add(int left, int right) {
-        return Math.addExact(left, right);
-    }
-
-    @Specialization
-    public static long doIIOvf(int x, int y) {
-        return x + (long) y;
-    }
-
-    @Specialization(rewriteOn = ArithmeticException.class)
-    public static long addLong(long left, long right) {
-        return Math.addExact(left, right);
-    }
-
-    @Specialization
-    public static double doDD(double left, double right) {
-        return left + right;
-    }
-
-    @Specialization
-    public static double doDL(double left, long right) {
-        return left + right;
-    }
-
-    @Specialization
-    public static double doLD(long left, double right) {
-        return left + right;
-    }
-
-    @Specialization
-    public static double doDI(double left, int right) {
-        return left + right;
-    }
-
-    @Specialization
-    public static double doID(int left, double right) {
-        return left + right;
-    }
 
     @NeverDefault
     protected static SequenceStorageNodes.ConcatNode createConcat() {
@@ -152,7 +94,7 @@ public abstract class PyNumberAddNode extends BinaryOpNode {
     }
 
     @Specialization(guards = {"isBuiltinTuple(left)", "isBuiltinTuple(right)"})
-    static PTuple doTuple(Node inliningTarget, PTuple left, PTuple right,
+    static PTuple doTuple(PTuple left, PTuple right,
                     @Shared @Cached(value = "createConcat()", inline = false) SequenceStorageNodes.ConcatNode concatNode,
                     @Shared @Cached(inline = false) PythonObjectFactory factory) {
         SequenceStorage concatenated = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
@@ -171,38 +113,37 @@ public abstract class PyNumberAddNode extends BinaryOpNode {
                     @Cached GetCachedTpSlotsNode getVSlots,
                     @Cached GetCachedTpSlotsNode getWSlots,
                     @Exclusive @Cached GetClassNode getWClass,
+                    @Cached PySequenceCheckNode pySeqCheckV,
+                    @Cached PySequenceCheckNode pySeqCheckW,
                     @Cached CallBinaryOp1Node callBinaryOp1Node,
                     @Cached InlinedBranchProfile hasNbAddSlot,
                     @Cached InlinedBranchProfile hasNbAddResult,
                     @Cached CallSlotBinaryFuncNode callBinarySlotNode,
                     @Cached PRaiseNode.Lazy raiseNode) {
         Object classV = getVClass.execute(inliningTarget, v);
-        Object classW = getWClass.execute(inliningTarget, w);
         TpSlots slotsV = getVSlots.execute(inliningTarget, classV);
-        TpSlots slotsW = getWSlots.execute(inliningTarget, classW);
-        TpSlot slotV = slotsV.nb_add();
-        TpSlot slotW = slotsW.nb_add();
-        if (slotV != null || slotW != null) {
-            hasNbAddSlot.enter(inliningTarget);
-            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, BinaryOpSlot.NB_ADD);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                hasNbAddResult.enter(inliningTarget);
-                return result;
-            }
-        }
         if (slotsV.sq_concat() != null) {
             return callBinarySlotNode.execute(frame, inliningTarget, slotsV.sq_concat(), v, w);
         }
-        return raiseNotSupported(inliningTarget, v, w, raiseNode);
+        if (pySeqCheckV.execute(inliningTarget, v) && pySeqCheckW.execute(inliningTarget, w)) {
+            Object classW = getWClass.execute(inliningTarget, w);
+            TpSlots slotsW = getWSlots.execute(inliningTarget, classW);
+            TpSlot slotV = slotsV.nb_add();
+            TpSlot slotW = slotsW.nb_add();
+            if (slotV != null || slotW != null) {
+                hasNbAddSlot.enter(inliningTarget);
+                Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, BinaryOpSlot.NB_ADD);
+                if (result != PNotImplemented.NOT_IMPLEMENTED) {
+                    hasNbAddResult.enter(inliningTarget);
+                    return result;
+                }
+            }
+        }
+        return raiseNotSupported(inliningTarget, v, raiseNode);
     }
 
     @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, Lazy raiseNode) {
-        return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "+", v, w);
-    }
-
-    @NeverDefault
-    public static PyNumberAddNode create() {
-        return PyNumberAddNodeGen.create();
+    private static PException raiseNotSupported(Node inliningTarget, Object v, PRaiseNode.Lazy raiseNode) {
+        return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, v);
     }
 }

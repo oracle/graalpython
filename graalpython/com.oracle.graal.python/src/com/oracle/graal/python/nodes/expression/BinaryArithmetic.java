@@ -46,12 +46,9 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -61,29 +58,25 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @SuppressWarnings("truffle-inlining")
 public enum BinaryArithmetic {
-    Add(BinaryArithmeticFactory.AddNodeGen::create),
+    Add(PyNumberAddNode::create),
     Sub(BinaryArithmeticFactory.SubNodeGen::create),
     Mul(BinaryArithmeticFactory.MulNodeGen::create),
     TrueDiv(BinaryArithmeticFactory.TrueDivNodeGen::create),
@@ -183,102 +176,6 @@ public enum BinaryArithmetic {
         @NeverDefault
         public static LookupAndCallBinaryNode createBinaryOp(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handler) {
             return LookupAndCallBinaryNode.createBinaryOp(slot, slot.getReverse(), handler);
-        }
-    }
-    /*
-     *
-     * All the following fast paths need to be kept in sync with the corresponding builtin functions
-     * in IntBuiltins and FloatBuiltins.
-     *
-     */
-
-    public abstract static class AddNode extends BinaryArithmeticNode {
-
-        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("+");
-
-        public abstract int executeInt(VirtualFrame frame, int left, int right) throws UnexpectedResultException;
-
-        public abstract double executeDouble(VirtualFrame frame, double left, double right) throws UnexpectedResultException;
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        public static int add(int left, int right) {
-            return Math.addExact(left, right);
-        }
-
-        @Specialization
-        public static long doIIOvf(int x, int y) {
-            return x + (long) y;
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        public static long addLong(long left, long right) {
-            return Math.addExact(left, right);
-        }
-
-        @Specialization
-        public static double doDD(double left, double right) {
-            return left + right;
-        }
-
-        @Specialization
-        public static double doDL(double left, long right) {
-            return left + right;
-        }
-
-        @Specialization
-        public static double doLD(long left, double right) {
-            return left + right;
-        }
-
-        @Specialization
-        public static double doDI(double left, int right) {
-            return left + right;
-        }
-
-        @Specialization
-        public static double doID(int left, double right) {
-            return left + right;
-        }
-
-        @Specialization
-        static PList doPList(PList left, PList right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Shared @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            SequenceStorage newStore = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
-            return factory.createList(getClassNode.execute(inliningTarget, left), newStore);
-        }
-
-        @Specialization(guards = {"isBuiltinTuple(left)", "isBuiltinTuple(right)"})
-        static PTuple doTuple(PTuple left, PTuple right,
-                        @Shared @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            SequenceStorage concatenated = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
-            return factory.createTuple(concatenated);
-        }
-
-        @Specialization
-        static TruffleString doIt(TruffleString left, TruffleString right,
-                        @Cached TruffleString.ConcatNode concatNode) {
-            return concatNode.execute(left, right, TS_ENCODING, false);
-        }
-
-        @Fallback
-        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyNumberAddNode addNode) {
-            return addNode.execute(frame, inliningTarget, left, right);
-        }
-
-        @NeverDefault
-        protected static SequenceStorageNodes.ConcatNode createConcat() {
-            return SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create);
-        }
-
-        @NeverDefault
-        public static AddNode create() {
-            return BinaryArithmeticFactory.AddNodeGen.create();
         }
     }
 

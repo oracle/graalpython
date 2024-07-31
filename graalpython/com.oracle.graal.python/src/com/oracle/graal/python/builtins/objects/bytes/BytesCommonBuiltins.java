@@ -288,7 +288,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.sq_concat, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class AddNode extends SqConcatBuiltinNode {
+    public abstract static class ConcatNode extends SqConcatBuiltinNode {
 
         @Specialization
         static PBytesLike add(PBytesLike self, PBytesLike other,

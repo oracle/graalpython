@@ -55,9 +55,9 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -97,7 +97,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
         static Object next(VirtualFrame frame, PAccumulate self,
                         @Bind("this") Node inliningTarget,
                         @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached BinaryArithmetic.AddNode addNode,
+                        @Cached PyNumberAddNode addNode,
                         @Cached CallNode callNode,
                         @Cached InlinedBranchProfile hasInitialProfile,
                         @Cached InlinedBranchProfile markerProfile,
@@ -115,7 +115,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
                 return value;
             }
             if (hasFuncProfile.profile(inliningTarget, self.getFunc() == null)) {
-                self.setTotal(addNode.executeObject(frame, self.getTotal(), value));
+                self.setTotal(addNode.execute(frame, inliningTarget, self.getTotal(), value));
             } else {
                 self.setTotal(callNode.execute(frame, self.getFunc(), self.getTotal(), value));
             }
