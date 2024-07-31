@@ -49,6 +49,7 @@ import java.util.Collections;
 
 import org.graalvm.polyglot.Context;
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -107,14 +108,16 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void noneForbiddenWithFd() {
-        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or integer, not NoneType");
-        call(false, true, PNone.NONE);
+        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or integer, not NoneType", () -> {
+            call(false, true, PNone.NONE);
+        });
     }
 
     @Test
     public void noValueForbiddenWithoutFd() {
-        expectPythonMessage("TypeError: fun: arg should be string, bytes or os.PathLike, not NoneType");
-        call(false, false, PNone.NO_VALUE);
+        expectPythonMessage("TypeError: fun: arg should be string, bytes or os.PathLike, not NoneType", () -> {
+            call(false, false, PNone.NO_VALUE);
+        });
     }
 
     @Test
@@ -125,8 +128,9 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void stringWithZero() {
-        expectPythonMessage("ValueError: fun: embedded null character in arg");
-        call(false, false, ts("a\0c"));
+        expectPythonMessage("ValueError: fun: embedded null character in arg", () -> {
+            call(false, false, ts("a\0c"));
+        });
     }
 
     @Test
@@ -139,8 +143,9 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void bytesWithZero() {
-        expectPythonMessage("ValueError: fun: embedded null character in arg");
-        call(false, false, factory().createBytes("a\0c".getBytes()));
+        expectPythonMessage("ValueError: fun: embedded null character in arg", () -> {
+            call(false, false, factory().createBytes("a\0c".getBytes()));
+        });
     }
 
     @Test
@@ -151,8 +156,9 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void bufferWithZero() {
-        expectPythonMessage("ValueError: fun: embedded null character in arg");
-        call(false, false, evalValue("import array\narray.array('B', b'a\\0c')"));
+        expectPythonMessage("ValueError: fun: embedded null character in arg", () -> {
+            call(false, false, evalValue("import array\narray.array('B', b'a\\0c')"));
+        });
     }
 
     @Test
@@ -163,8 +169,9 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void boolForbidden() {
-        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not bool");
-        call(true, false, true);
+        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not bool", () -> {
+            call(true, false, true);
+        });
     }
 
     @Test
@@ -174,14 +181,16 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void intForbiddenWithNullable() {
-        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not int");
-        call(true, false, 42);
+        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not int", () -> {
+            call(true, false, 42);
+        });
     }
 
     @Test
     public void intForbiddenWithoutNullable() {
-        expectPythonMessage("TypeError: fun: arg should be string, bytes or os.PathLike, not int");
-        call(false, false, 42);
+        expectPythonMessage("TypeError: fun: arg should be string, bytes or os.PathLike, not int", () -> {
+            call(false, false, 42);
+        });
     }
 
     @Test
@@ -191,20 +200,23 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void longTooBig() {
-        expectPythonMessage("OverflowError: fd is greater than maximum");
-        call(false, true, 1L << 40);
+        expectPythonMessage("OverflowError: fd is greater than maximum", () -> {
+            call(false, true, 1L << 40);
+        });
     }
 
     @Test
     public void longTooSmall() {
-        expectPythonMessage("OverflowError: fd is less than minimum");
-        call(false, true, -1L << 40);
+        expectPythonMessage("OverflowError: fd is less than minimum", () -> {
+            call(false, true, -1L << 40);
+        });
     }
 
     @Test
     public void longForbidden() {
-        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not int");
-        call(true, false, 42L);
+        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not int", () -> {
+            call(true, false, 42L);
+        });
     }
 
     @Test
@@ -214,20 +226,23 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void pintTooBig() {
-        expectPythonMessage("OverflowError: fd is greater than maximum");
-        call(false, true, factory().createInt(BigInteger.ONE.shiftLeft(100)));
+        expectPythonMessage("OverflowError: fd is greater than maximum", () -> {
+            call(false, true, factory().createInt(BigInteger.ONE.shiftLeft(100)));
+        });
     }
 
     @Test
     public void pintTooSmall() {
-        expectPythonMessage("OverflowError: fd is less than minimum");
-        call(false, true, factory().createInt(BigInteger.ONE.shiftLeft(100).negate()));
+        expectPythonMessage("OverflowError: fd is less than minimum", () -> {
+            call(false, true, factory().createInt(BigInteger.ONE.shiftLeft(100).negate()));
+        });
     }
 
     @Test
     public void pintForbidden() {
-        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not int");
-        call(true, false, factory().createInt(BigInteger.valueOf(42)));
+        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not int", () -> {
+            call(true, false, factory().createInt(BigInteger.valueOf(42)));
+        });
     }
 
     @Test
@@ -237,20 +252,23 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void indexTooBig() {
-        expectPythonMessage("OverflowError: fd is greater than maximum");
-        call(false, true, evalValue("class C:\n  def __index__(self):\n    return 1 << 40\nC()"));
+        expectPythonMessage("OverflowError: fd is greater than maximum", () -> {
+            call(false, true, evalValue("class C:\n  def __index__(self):\n    return 1 << 40\nC()"));
+        });
     }
 
     @Test
     public void indexTooSmall() {
-        expectPythonMessage("OverflowError: fd is less than minimum");
-        call(false, true, evalValue("class C:\n  def __index__(self):\n    return -1 << 100\nC()"));
+        expectPythonMessage("OverflowError: fd is less than minimum", () -> {
+            call(false, true, evalValue("class C:\n  def __index__(self):\n    return -1 << 100\nC()"));
+        });
     }
 
     @Test
     public void indexForbidden() {
-        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not C");
-        call(true, false, evalValue("class C:\n  def __index__(self):\n    return 42\nC()"));
+        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not C", () -> {
+            call(true, false, evalValue("class C:\n  def __index__(self):\n    return 42\nC()"));
+        });
     }
 
     @Test
@@ -275,61 +293,70 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void fspathNone() {
-        expectPythonMessage("TypeError: expected C.__fspath__() to return str or bytes, not NoneType");
-        call(true, true, evalValue("class C:\n  def __fspath__(self):\n    return None\nC()"));
+        expectPythonMessage("TypeError: expected C.__fspath__() to return str or bytes, not NoneType", () -> {
+            call(true, true, evalValue("class C:\n  def __fspath__(self):\n    return None\nC()"));
+        });
     }
 
     @Test
     public void fspathInt() {
-        expectPythonMessage("TypeError: expected C.__fspath__() to return str or bytes, not int");
-        call(true, true, evalValue("class C:\n  def __fspath__(self):\n    return 42\nC()"));
+        expectPythonMessage("TypeError: expected C.__fspath__() to return str or bytes, not int", () -> {
+            call(true, true, evalValue("class C:\n  def __fspath__(self):\n    return 42\nC()"));
+        });
     }
 
     @Test
     public void fspathFloat() {
-        expectPythonMessage("TypeError: expected C.__fspath__() to return str or bytes, not float");
-        call(true, true, evalValue("class C:\n  def __fspath__(self):\n    return 3.14\nC()"));
+        expectPythonMessage("TypeError: expected C.__fspath__() to return str or bytes, not float", () -> {
+            call(true, true, evalValue("class C:\n  def __fspath__(self):\n    return 3.14\nC()"));
+        });
     }
 
     @Test
     public void fspathBufferLike() {
-        expectPythonMessage("TypeError: expected C.__fspath__() to return str or bytes, not array");
-        call(true, true, evalValue("class C:\n  def __fspath__(self):\n    import array\n    return array.array('B', b'abc')\nC()"));
+        expectPythonMessage("TypeError: expected C.__fspath__() to return str or bytes, not array", () -> {
+            call(true, true, evalValue("class C:\n  def __fspath__(self):\n    import array\n    return array.array('B', b'abc')\nC()"));
+        });
     }
 
     @Test
     public void fspathBytesLike() {
-        expectPythonMessage("TypeError: expected C.__fspath__() to return str or bytes, not bytearray");
-        call(true, true, evalValue("class C:\n  def __fspath__(self):\n    return bytearray(b'abc')\nC()"));
+        expectPythonMessage("TypeError: expected C.__fspath__() to return str or bytes, not bytearray", () -> {
+            call(true, true, evalValue("class C:\n  def __fspath__(self):\n    return bytearray(b'abc')\nC()"));
+        });
     }
 
     @Test
     public void unsupportedType1() {
-        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike, integer or None, not float");
-        call(true, true, 3.14);
+        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike, integer or None, not float", () -> {
+            call(true, true, 3.14);
+        });
     }
 
     @Test
     public void unsupportedType2() {
-        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not float");
-        call(true, false, 3.14);
+        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not float", () -> {
+            call(true, false, 3.14);
+        });
     }
 
     @Test
     public void unsupportedType3() {
-        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or integer, not float");
-        call(false, true, 3.14);
+        expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or integer, not float", () -> {
+            call(false, true, 3.14);
+        });
     }
 
     @Test
     public void unsupportedType4() {
-        expectPythonMessage("TypeError: fun: arg should be string, bytes or os.PathLike, not float");
-        call(false, false, 3.14);
+        expectPythonMessage("TypeError: fun: arg should be string, bytes or os.PathLike, not float", () -> {
+            call(false, false, 3.14);
+        });
     }
 
     private String callAndExpectPath(boolean nullable, boolean allowFd, Object arg, Object orig, boolean wasBufferLike) {
         Object result = call(nullable, allowFd, arg);
-        Assert.assertThat(result, CoreMatchers.instanceOf(PosixPath.class));
+        MatcherAssert.assertThat(result, CoreMatchers.instanceOf(PosixPath.class));
         PosixPath path = (PosixPath) result;
         Assert.assertSame(orig, path.originalObject);
         Assert.assertEquals(wasBufferLike, path.wasBufferLike);
@@ -349,7 +376,7 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     private static int callAndExpectFd(Object arg) {
         Object result = call(true, true, arg);
-        Assert.assertThat(result, CoreMatchers.instanceOf(PosixFd.class));
+        MatcherAssert.assertThat(result, CoreMatchers.instanceOf(PosixFd.class));
         PosixFd fd = (PosixFd) result;
         Assert.assertSame(arg, fd.originalObject);
         return fd.fd;
