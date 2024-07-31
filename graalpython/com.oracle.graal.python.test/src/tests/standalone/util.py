@@ -42,7 +42,7 @@ import shutil
 import subprocess
 import sys
 
-MAVEN_VERSION = "3.9.6"
+MAVEN_VERSION = "3.9.8"
 
 def run_cmd(cmd, env, cwd=None, print_out=False):
     out = []
@@ -74,17 +74,8 @@ def print_output(out, err_msg):
     print("", err_msg, "", sep="\n")
 
 def get_mvn_wrapper(project_dir, env):
-    if 'win32' != sys.platform:
-        cmd = [shutil.which('mvn'), "--batch-mode", "wrapper:wrapper", f"-Dmaven={MAVEN_VERSION}"]
-        out, return_code = run_cmd(cmd, env, cwd=project_dir)
-        check_ouput("BUILD SUCCESS", out)
-        mvn_cmd = [os.path.abspath(os.path.join(project_dir, "mvnw")),  "--batch-mode"]
-    else:
-        # TODO installing mvn wrapper with the current mvn 3.3.9 on gates does not work
-        # we have to provide the mvnw.cmd script
-        mvnw_dir = os.path.join(os.path.dirname(__file__), "mvnw")
-        mvn_cmd = [os.path.abspath(os.path.join(mvnw_dir, "mvnw.cmd")),  "--batch-mode"]
-
+    cmd = "mvnw" if 'win32' != sys.platform else "mvnw.cmd"
+    mvn_cmd = [os.path.join(project_dir, cmd),  "--batch-mode"]
     cmd = mvn_cmd + ["--version"]
     out, return_code = run_cmd(cmd, env, cwd=project_dir)
     check_ouput(MAVEN_VERSION, out)
