@@ -7,6 +7,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Updated developer metadata of Maven artifacts.
 
 ## Version 24.1.0
+* GraalPy is now considered stable for pure Python workloads. While many workloads involving native extension modules work, we continue to consider them experimental. You can use the command-line option `--python.WarnExperimentalFeatures` to enable warnings for such modules at runtime. In Java embeddings, set the context option `python.WarnExperimentalFeatures` to true.
 * Update to Python 3.11.7
 * We now provide intrinsified `_pickle` module also in the community version.
 * `polyglot.eval` now raises more meaningful exceptions. Unavaliable languages raise `ValueError`. Exceptions from the polyglot language are raised directly as interop objects (typed as `polyglot.ForeignException`). The shortcut for executing python files without specifying language has been removed, use regular `eval` for executing Python code.
