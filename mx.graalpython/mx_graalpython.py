@@ -1372,6 +1372,21 @@ def get_cpython():
     else:
         return "python3"
 
+def get_wrapper_urls(wrapper_properties_file, keys):
+    ret = dict()
+    with(open(wrapper_properties_file)) as f:
+        while line := f.readline():
+            line = line.strip()
+            for key in keys:
+                if not line.startswith("#") and key not in ret.keys() and key in line:
+                    s = line.split("=")
+                    if len(s) > 1:
+                        ret.update({key : mx_urlrewrites.rewriteurl(s[1].strip())})
+                        break
+    for key in keys:
+        assert key in ret.keys(), f"Expected key '{key}' to be in {wrapper_properties_file}, but was not."
+
+    return ret
 
 def graalpython_gate_runner(args, tasks):
     report = lambda: (not is_collecting_coverage()) and task
@@ -1530,6 +1545,11 @@ def graalpython_gate_runner(args, tasks):
                 f"{pathlib.Path(mvn_repo_path).as_uri()}/",
                 mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
             ])
+
+            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/mvnw/.mvn/wrapper/maven-wrapper.properties", ["distributionUrl"])
+            if "distributionUrl" in urls:
+                env["MAVEN_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
+
             env["org.graalvm.maven.downloader.version"] = version
             env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
 
