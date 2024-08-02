@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,7 +69,7 @@ JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugKeywords)(JNIEnv *env, jclass cla
     }
     assert(nargs >= 0);
     assert(n_kwnames >= 0);
-    size_t nargs_with_kw = (size_t)nargs + (size_t)n_kwnames;
+    jlong nargs_with_kw = nargs + n_kwnames;
     _ARR_JLONG2DH(dctx, dh_args, args, nargs_with_kw)
     DHPy dh_result = f(dctx, dh_self, dh_args, (size_t)nargs, dh_kwnames);
     _ARR_DH_CLOSE(dctx, dh_args, nargs_with_kw)

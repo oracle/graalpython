@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -144,20 +144,6 @@ static uint64_t get_hpy_handle_for_object(HPyContext *ctx, jobject hpyContext, j
     (*jniEnv)->DeleteLocalRef(jniEnv, hpy_handles);
     /* TODO(fa): update native data pointer cache here (if specified) */
     return boxHandle(next_handle);
-}
-
-static jobject get_object_for_hpy_handle(jobject hpyContext, uint64_t bits) {
-    jobjectArray hpy_handles = (jobjectArray)(*jniEnv)->GetObjectField(jniEnv, hpyContext, jniField_hpyHandleTable);
-    if (hpy_handles == NULL) {
-        LOGS("hpy handle table is NULL")
-        return NULL;
-    }
-    jobject element = (*jniEnv)->GetObjectArrayElement(jniEnv, (jobjectArray)hpy_handles, (jsize)unboxHandle(bits));
-    (*jniEnv)->DeleteLocalRef(jniEnv, hpy_handles);
-    if (element == NULL) {
-        LOGS("handle delegate is NULL")
-    }
-    return element;
 }
 
 static jobject get_object_for_hpy_global(jobject hpyContext, uint64_t bits) {

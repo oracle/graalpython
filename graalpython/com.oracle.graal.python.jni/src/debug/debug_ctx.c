@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -30,12 +30,6 @@
 #if defined(_MSC_VER)
 # include <malloc.h>   /* for alloca() */
 #endif
-
-static struct _HPyContext_s g_debug_ctx = {
-    .name = "HPy Debug Mode ABI",
-    ._private = NULL,
-    .abi_version = HPY_ABI_VERSION,
-};
 
 static HPyDebugCtxInfo *init_ctx_info(HPyContext *dctx, HPyContext *uctx) {
     HPyDebugCtxInfo *ctx_info = (HPyDebugCtxInfo*) malloc(sizeof(HPyDebugCtxInfo));

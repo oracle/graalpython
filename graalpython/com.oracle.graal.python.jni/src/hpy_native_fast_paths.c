@@ -44,6 +44,7 @@
 #include "hpy_native_fast_paths.h"
 #include "hpy_native_cache.h"
 
+#include <assert.h>
 #include <stdint.h>
 
 #define MAX_UNCLOSED_HANDLES 32
@@ -53,15 +54,20 @@ static HPy unclosedHandles[MAX_UNCLOSED_HANDLES];
 //*************************
 // BOXING
 
+static_assert(sizeof(uint64_t) == sizeof(double), "Assumption necessary for NaN boxing to work");
+
 static inline double unboxDouble(uint64_t value) {
-    uint64_t doubleBits = value - NAN_BOXING_BASE;
-    return * ((double*) &doubleBits);
+    double result;
+    uint64_t unboxed = value - NAN_BOXING_BASE;
+    memcpy(&result, &unboxed, sizeof(double));
+    return result;
 }
 
 static inline uint64_t boxDouble(double value) {
     // assumes that value doesn't contain non-standard silent NaNs
-    uint64_t doubleBits = * ((uint64_t*) &value);
-    return doubleBits + NAN_BOXING_BASE;
+    uint64_t unboxed;
+    memcpy(&unboxed, &value, sizeof(double));
+    return unboxed + NAN_BOXING_BASE;
 }
 
 //*************************

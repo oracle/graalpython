@@ -53,6 +53,7 @@ endif()
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 
 target_sources(${TARGET_BZIP2SUPPORT} PRIVATE "src/bz2.c")
+set_target_properties(${TARGET_BZIP2SUPPORT} PROPERTIES COMPILE_WARNING_AS_ERROR ON)
 # variable 'BZIP2_SRC' is provided by file 'libbz2.cmake'
 target_include_directories(${TARGET_BZIP2SUPPORT} PRIVATE ${BZIP2_SRC})
 target_link_libraries(${TARGET_BZIP2SUPPORT} PRIVATE ${TARGET_LIBBZ2})

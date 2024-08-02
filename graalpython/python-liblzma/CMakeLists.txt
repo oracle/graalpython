@@ -72,6 +72,8 @@ add_library(${TARGET_LZMASUPPORT} SHARED)
 # we want '-fPIC' even for the static lib
 set_target_properties(${TARGET_LZMA} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
+set_target_properties(${TARGET_LZMASUPPORT} PROPERTIES COMPILE_WARNING_AS_ERROR ON)
+
 # preprocessor defines for all platforms
 target_compile_definitions(${TARGET_LZMA} PRIVATE HAVE_CONFIG_H)
 target_compile_definitions(${TARGET_LZMASUPPORT} PRIVATE NDEBUG)

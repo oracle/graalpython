@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -179,7 +179,7 @@ get_optional_arg(HPyContext *ctx, const HPy *args, size_t nargs, HPy kwnames,
     HPy_ssize_t nkw, j;
     HPy h_kwname, h_item;
     // if given as positional arg
-    if (i < nargs) {
+    if (i < (HPy_ssize_t) nargs) {
         *out = args[i];
         return 0;
     }
