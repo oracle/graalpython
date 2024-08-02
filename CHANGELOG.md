@@ -13,6 +13,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * In Jython emulation mode we now magically fall back to calling Java getters or setters when using Python attribute access for non-visible properties. This can help migrating away from Jython if you relied on this behavior. 
 * The option `python.EmulateJython` to enable Jython emulation is now marked as stable, and can thus be relied upon in production.
 * Fixed parsing of pyvenv.cfg according to PEP 405, which is required to use [uv](https://github.com/astral-sh/uv?tab=readme-ov-file#uv) generated venvs with GraalPy.
+* Use https://www.graalvm.org/python/wheels/ as the default value for the `--extra-index-url` pip option. This will make it easy for users to install GraalPy binary wheels in the future.
 
 ## Version 24.0.0
 * We now provide a collection of recipes in the form of GitHub Actions to build popular native extensions on GraalPy. These provide a reproducible way for the community to build native extensions for GraalPy with the correct dependencies. See scripts/wheelbuilder/README.md for details.
