@@ -221,7 +221,7 @@ public enum ArgDescriptor {
     PY_GEN_OBJECT(ArgBehavior.PyObject, "PyGenObject*"),
     PyGetSetDef(ArgBehavior.Pointer, "PyGetSetDef*"),
     PY_GIL_STATE_STATE(ArgBehavior.Int32, "PyGILState_STATE"),
-    PY_HASH_T_PTR("Py_hash_t*"),
+    PY_HASH_T_PTR(ArgBehavior.Pointer, "Py_hash_t*"),
     PY_IDENTIFIER("_Py_Identifier*"),
     PyInterpreterState(ArgBehavior.Pointer, "PyInterpreterState*"),
     PY_LOCK_STATUS("PyLockStatus"),

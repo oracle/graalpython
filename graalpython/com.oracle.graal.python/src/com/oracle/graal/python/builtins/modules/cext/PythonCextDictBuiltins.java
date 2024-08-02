@@ -43,10 +43,12 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_HASH_T_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
@@ -59,6 +61,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
@@ -67,6 +70,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -107,6 +112,8 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
@@ -122,12 +129,17 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
-    abstract static class PyTruffleDict_Next extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PyObjectPtr, PyObjectPtr, PY_HASH_T_PTR}, call = Direct)
+    abstract static class _PyDict_Next extends CApi5BuiltinNode {
 
         @Specialization
-        static Object run(PDict dict, long pos,
+        static int next(PDict dict, Object posPtr, Object keyPtr, Object valuePtr, Object hashPtr,
                         @Bind("this") Node inliningTarget,
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Cached CStructAccess.ReadI64Node readI64Node,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
+                        @Cached CApiTransitions.PythonToNativeNode toNativeNode,
                         @Cached InlinedBranchProfile needsRewriteProfile,
                         @Cached InlinedBranchProfile economicMapProfile,
                         @Cached HashingStorageLen lenNode,
@@ -138,14 +150,14 @@ public final class PythonCextDictBuiltins {
                         @Cached HashingStorageIteratorKeyHash itKeyHash,
                         @Cached PromoteBorrowedValue promoteKeyNode,
                         @Cached PromoteBorrowedValue promoteValueNode,
-                        @Cached HashingStorageSetItem setItem,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached HashingStorageSetItem setItem) {
             /*
              * We need to promote primitive values and strings to object types for borrowing to work
              * correctly. This is very hard to do mid-iteration, so we do all the promotion for the
              * whole dict at once in the first call (which is required to start with position 0). In
              * order to not violate the ordering, we construct a completely new storage.
              */
+            long pos = readI64Node.read(posPtr);
             if (pos == 0) {
                 HashingStorage storage = dict.getDictStorage();
                 int len = lenNode.execute(inliningTarget, storage);
@@ -200,20 +212,33 @@ public final class PythonCextDictBuiltins {
             it.setState((int) pos - 1);
             boolean hasNext = itNext.execute(inliningTarget, storage, it);
             if (!hasNext) {
-                return getNativeNull(inliningTarget);
+                return 0;
             }
-            Object key = itKey.execute(inliningTarget, storage, it);
-            Object value = itValue.execute(inliningTarget, storage, it);
-            assert promoteKeyNode.execute(inliningTarget, key) == null;
-            assert promoteValueNode.execute(inliningTarget, value) == null;
-            long hash = itKeyHash.execute(inliningTarget, storage, it);
-            int newPos = it.getState() + 1;
-            return factory.createTuple(new Object[]{key, value, hash, newPos});
+            long newPos = it.getState() + 1;
+            writeLongNode.write(posPtr, newPos);
+            if (!lib.isNull(keyPtr)) {
+                Object key = itKey.execute(inliningTarget, storage, it);
+                assert promoteKeyNode.execute(inliningTarget, key) == null;
+                // Borrowed reference
+                writePointerNode.write(keyPtr, toNativeNode.execute(key));
+            }
+            if (!lib.isNull(valuePtr)) {
+                Object value = itValue.execute(inliningTarget, storage, it);
+                assert promoteValueNode.execute(inliningTarget, value) == null;
+                // Borrowed reference
+                writePointerNode.write(valuePtr, toNativeNode.execute(value));
+            }
+            if (!lib.isNull(hashPtr)) {
+                long hash = itKeyHash.execute(inliningTarget, storage, it);
+                writeLongNode.write(hashPtr, hash);
+            }
+            return 1;
         }
 
         @Fallback
-        Object run(@SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") Object pos) {
-            return getNativeNull();
+        @SuppressWarnings("unused")
+        static int run(Object dict, Object posPtr, Object keyPtr, Object valuePtr, Object hashPtr) {
+            return 0;
         }
     }
 

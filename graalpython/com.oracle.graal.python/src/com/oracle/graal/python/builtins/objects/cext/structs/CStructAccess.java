@@ -455,6 +455,10 @@ public class CStructAccess {
 
         abstract long execute(Object pointer, long offset);
 
+        public final long read(Object pointer) {
+            return execute(pointer, 0);
+        }
+
         public final long read(Object pointer, CFields field) {
             assert accepts(field);
             return execute(pointer, field.offset());

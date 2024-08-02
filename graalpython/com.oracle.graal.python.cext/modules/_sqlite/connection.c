@@ -199,10 +199,8 @@ pysqlite_connection_init_impl(pysqlite_Connection *self, PyObject *database,
     // Create and configure SQLite database object.
     sqlite3 *db;
     int rc;
-    // GraalPy change: workaround for GR-51314, revert to CPython original once fixed
-    char* cstr = PyBytes_AS_STRING(bytes);
     Py_BEGIN_ALLOW_THREADS
-    rc = sqlite3_open_v2(cstr, &db,
+    rc = sqlite3_open_v2(PyBytes_AS_STRING(bytes), &db,
                          SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE |
                          (uri ? SQLITE_OPEN_URI : 0), NULL);
     if (rc == SQLITE_OK) {
