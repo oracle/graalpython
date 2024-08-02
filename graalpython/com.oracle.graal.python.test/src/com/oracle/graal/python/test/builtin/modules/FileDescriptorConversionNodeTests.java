@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import java.math.BigInteger;
 
 import org.graalvm.polyglot.Context;
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -71,9 +72,10 @@ public class FileDescriptorConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void none() {
-        expectPythonMessage("TypeError: argument must be an int, or have a fileno() method.");
-        call(PNone.NONE);
-        Assert.assertEquals(AT_FDCWD.value, call(PNone.NO_VALUE));
+        expectPythonMessage("TypeError: argument must be an int, or have a fileno() method.", () -> {
+            call(PNone.NONE);
+            Assert.assertEquals(AT_FDCWD.value, call(PNone.NO_VALUE));
+        });
     }
 
     @Test
@@ -94,14 +96,16 @@ public class FileDescriptorConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void longTooBig() {
-        expectPythonMessage("OverflowError: Python int too large to convert to Java int");
-        call(1L << 40);
+        expectPythonMessage("OverflowError: Python int too large to convert to Java int", () -> {
+            call(1L << 40);
+        });
     }
 
     @Test
     public void longTooSmall() {
-        expectPythonMessage("OverflowError: Python int too large to convert to Java int");
-        call(-1L << 40);
+        expectPythonMessage("OverflowError: Python int too large to convert to Java int", () -> {
+            call(-1L << 40);
+        });
     }
 
     @Test
@@ -111,20 +115,23 @@ public class FileDescriptorConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void pintTooBig() {
-        expectPythonMessage("OverflowError: Python int too large to convert to Java int");
-        call(factory().createInt(BigInteger.ONE.shiftLeft(100)));
+        expectPythonMessage("OverflowError: Python int too large to convert to Java int", () -> {
+            call(factory().createInt(BigInteger.ONE.shiftLeft(100)));
+        });
     }
 
     @Test
     public void pintTooSmall() {
-        expectPythonMessage("OverflowError: Python int too large to convert to Java int");
-        call(factory().createInt(BigInteger.ONE.shiftLeft(100).negate()));
+        expectPythonMessage("OverflowError: Python int too large to convert to Java int", () -> {
+            call(factory().createInt(BigInteger.ONE.shiftLeft(100).negate()));
+        });
     }
 
     @Test
     public void indexNotUsed() {
-        expectPythonMessage("TypeError: argument must be an int, or have a fileno() method.");
-        call(evalValue("class C:\n  def __index__(self):\n    return 42\nC()"));
+        expectPythonMessage("TypeError: argument must be an int, or have a fileno() method.", () -> {
+            call(evalValue("class C:\n  def __index__(self):\n    return 42\nC()"));
+        });
     }
 
     @Test
@@ -134,25 +141,28 @@ public class FileDescriptorConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void filenoWrongType() {
-        expectPythonMessage("TypeError: fileno() returned a non-integer");
-        call(evalValue("class C:\n  def fileno(self):\n    return 3.14\nC()"));
+        expectPythonMessage("TypeError: fileno() returned a non-integer", () -> {
+            call(evalValue("class C:\n  def fileno(self):\n    return 3.14\nC()"));
+        });
     }
 
     @Test
     public void filenoTooBig() {
-        expectPythonMessage("OverflowError: Python int too large to convert to Java int");
-        call(evalValue("class C:\n  def fileno(self):\n    return 1 << 40\nC()"));
+        expectPythonMessage("OverflowError: Python int too large to convert to Java int", () -> {
+            call(evalValue("class C:\n  def fileno(self):\n    return 1 << 40\nC()"));
+        });
     }
 
     @Test
     public void unsupportedType1() {
-        expectPythonMessage("TypeError: argument must be an int, or have a fileno() method.");
-        call(3.14);
+        expectPythonMessage("TypeError: argument must be an int, or have a fileno() method.", () -> {
+            call(3.14);
+        });
     }
 
     protected static int call(Object arg) {
         Object result = call(arg, PosixModuleBuiltinsFactory.FileDescriptorConversionNodeGen.create());
-        Assert.assertThat(result, CoreMatchers.instanceOf(Integer.class));
+        MatcherAssert.assertThat(result, CoreMatchers.instanceOf(Integer.class));
         return (int) result;
     }
 

@@ -2074,7 +2074,6 @@ PyDict_Clear(PyObject *op)
     }
     ASSERT_CONSISTENT(mp);
 }
-#endif // GraalPy change
 
 /* Internal version of PyDict_Next that returns a hash value in addition
  * to the key and value.
@@ -2085,30 +2084,65 @@ int
 _PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
              PyObject **pvalue, Py_hash_t *phash)
 {
-    // GraalPy change: different implementation
-    PyObject *tresult = GraalPyTruffleDict_Next(op, *ppos);
-    if (tresult == NULL) {
-    	if(pkey != NULL) {
-    		*pkey = NULL;
-    	}
-    	if(pvalue != NULL) {
-    		*pvalue = NULL;
-    	}
-    	return 0;
+    Py_ssize_t i;
+    PyDictObject *mp;
+    PyObject *key, *value;
+    Py_hash_t hash;
+
+    if (!PyDict_Check(op))
+        return 0;
+    mp = (PyDictObject *)op;
+    i = *ppos;
+    if (mp->ma_values) {
+        assert(mp->ma_used <= SHARED_KEYS_MAX_SIZE);
+        if (i < 0 || i >= mp->ma_used)
+            return 0;
+        int index = get_index_from_order(mp, i);
+        value = mp->ma_values->values[index];
+
+        key = DK_UNICODE_ENTRIES(mp->ma_keys)[index].me_key;
+        hash = unicode_get_hash(key);
+        assert(value != NULL);
     }
-    if (pkey != NULL) {
-    	*pkey = PyTuple_GetItem(tresult, 0);
+    else {
+        Py_ssize_t n = mp->ma_keys->dk_nentries;
+        if (i < 0 || i >= n)
+            return 0;
+        if (DK_IS_UNICODE(mp->ma_keys)) {
+            PyDictUnicodeEntry *entry_ptr = &DK_UNICODE_ENTRIES(mp->ma_keys)[i];
+            while (i < n && entry_ptr->me_value == NULL) {
+                entry_ptr++;
+                i++;
+            }
+            if (i >= n)
+                return 0;
+            key = entry_ptr->me_key;
+            hash = unicode_get_hash(entry_ptr->me_key);
+            value = entry_ptr->me_value;
+        }
+        else {
+            PyDictKeyEntry *entry_ptr = &DK_ENTRIES(mp->ma_keys)[i];
+            while (i < n && entry_ptr->me_value == NULL) {
+                entry_ptr++;
+                i++;
+            }
+            if (i >= n)
+                return 0;
+            key = entry_ptr->me_key;
+            hash = entry_ptr->me_hash;
+            value = entry_ptr->me_value;
+        }
     }
-    if (pvalue != NULL) {
-    	*pvalue = PyTuple_GetItem(tresult, 1);
-    }
-    if (phash != NULL) {
-    	*phash = PyLong_AsSsize_t(PyTuple_GetItem(tresult, 2));
-    }
-    *ppos = PyLong_AsSsize_t(PyTuple_GetItem(tresult, 3));
-    Py_DECREF(tresult);
+    *ppos = i+1;
+    if (pkey)
+        *pkey = key;
+    if (pvalue)
+        *pvalue = value;
+    if (phash)
+        *phash = hash;
     return 1;
 }
+#endif // GraalPy change
 
 /*
  * Iterate over a dict.  Use like so:

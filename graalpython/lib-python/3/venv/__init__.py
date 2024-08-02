@@ -146,10 +146,6 @@ class EnvBuilder:
         libpath = self._venv_path(env_dir, 'purelib')
 
         # Truffle change:
-        # The original CPython code assumes that one level up from the executable (not resolving
-        # symlinks) is the Python home. It is not the case for us since $GRAALVM_HOME/bin/graalpy
-        # is just a symlink to $GRAALVM_HOME/languages/python/bin/graalpy.
-        context.python_dir = __graalpython__.home
         if not self.symlinks and os.name != 'nt':
             # We cannot copy the launcher to another location, because it is either bash launcher
             # that locates the java executable relative to it, or it is a native application that

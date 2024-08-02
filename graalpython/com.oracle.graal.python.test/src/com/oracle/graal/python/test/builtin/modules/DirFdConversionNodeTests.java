@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import java.math.BigInteger;
 
 import org.graalvm.polyglot.Context;
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -93,14 +94,16 @@ public class DirFdConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void longTooBig() {
-        expectPythonMessage("OverflowError: fd is greater than maximum");
-        call(1L << 40);
+        expectPythonMessage("OverflowError: fd is greater than maximum", () -> {
+            call(1L << 40);
+        });
     }
 
     @Test
     public void longTooSmall() {
-        expectPythonMessage("OverflowError: fd is less than minimum");
-        call(-1L << 40);
+        expectPythonMessage("OverflowError: fd is less than minimum", () -> {
+            call(-1L << 40);
+        });
     }
 
     @Test
@@ -110,14 +113,16 @@ public class DirFdConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void pintTooBig() {
-        expectPythonMessage("OverflowError: fd is greater than maximum");
-        call(factory().createInt(BigInteger.ONE.shiftLeft(100)));
+        expectPythonMessage("OverflowError: fd is greater than maximum", () -> {
+            call(factory().createInt(BigInteger.ONE.shiftLeft(100)));
+        });
     }
 
     @Test
     public void pintTooSmall() {
-        expectPythonMessage("OverflowError: fd is less than minimum");
-        call(factory().createInt(BigInteger.ONE.shiftLeft(100).negate()));
+        expectPythonMessage("OverflowError: fd is less than minimum", () -> {
+            call(factory().createInt(BigInteger.ONE.shiftLeft(100).negate()));
+        });
     }
 
     @Test
@@ -127,14 +132,16 @@ public class DirFdConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void indexTooBig() {
-        expectPythonMessage("OverflowError: fd is greater than maximum");
-        call(evalValue("class C:\n  def __index__(self):\n    return 1 << 40\nC()"));
+        expectPythonMessage("OverflowError: fd is greater than maximum", () -> {
+            call(evalValue("class C:\n  def __index__(self):\n    return 1 << 40\nC()"));
+        });
     }
 
     @Test
     public void indexTooSmall() {
-        expectPythonMessage("OverflowError: fd is less than minimum");
-        call(evalValue("class C:\n  def __index__(self):\n    return -1 << 100\nC()"));
+        expectPythonMessage("OverflowError: fd is less than minimum", () -> {
+            call(evalValue("class C:\n  def __index__(self):\n    return -1 << 100\nC()"));
+        });
     }
 
     @Test
@@ -144,13 +151,14 @@ public class DirFdConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void unsupportedType1() {
-        expectPythonMessage("TypeError: argument should be integer or None, not float");
-        call(3.14);
+        expectPythonMessage("TypeError: argument should be integer or None, not float", () -> {
+            call(3.14);
+        });
     }
 
     protected static int call(Object arg) {
         Object result = call(arg, PosixModuleBuiltinsFactory.DirFdConversionNodeGen.create());
-        Assert.assertThat(result, CoreMatchers.instanceOf(Integer.class));
+        MatcherAssert.assertThat(result, CoreMatchers.instanceOf(Integer.class));
         return (int) result;
     }
 

@@ -128,7 +128,7 @@ public abstract class PRootNode extends RootNode {
     }
 
     @Override
-    public boolean isCaptureFramesForTrace(Node currentNode) {
+    public boolean isCaptureFramesForTrace(boolean compiledFrame) {
         return true;
     }
 

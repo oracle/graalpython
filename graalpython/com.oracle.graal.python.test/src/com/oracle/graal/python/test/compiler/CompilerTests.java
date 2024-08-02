@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import java.nio.file.Paths;
 import java.util.EnumSet;
 
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -1089,7 +1090,7 @@ public class CompilerTests extends PythonTests {
             fail("Expected SyntaxError: " + msg);
         } catch (SyntaxError e) {
             Assert.assertEquals(ErrorCallback.ErrorType.Syntax, e.errorType);
-            Assert.assertThat(e.message, CoreMatchers.containsString(msg));
+            MatcherAssert.assertThat(e.message, CoreMatchers.containsString(msg));
         }
     }
 

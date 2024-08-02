@@ -87,7 +87,7 @@ public class SlotsProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         if (roundEnv.processingOver()) {
-            return false;
+            return true;
         }
         try {
             doProcess(roundEnv);

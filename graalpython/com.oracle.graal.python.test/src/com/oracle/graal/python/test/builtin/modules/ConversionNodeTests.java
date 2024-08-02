@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,8 +42,8 @@ package com.oracle.graal.python.test.builtin.modules;
 
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
+import org.junit.Assert;
+import org.junit.function.ThrowingRunnable;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -63,7 +63,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class ConversionNodeTests {
     static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("arg"), null);
-    @Rule public ExpectedException expectedException = ExpectedException.none();
 
     protected static Object call(Object arg, ArgumentCastNode castNode) {
         PythonLanguage language = PythonLanguage.get(castNode);
@@ -117,8 +116,8 @@ public class ConversionNodeTests {
         }
     }
 
-    protected void expectPythonMessage(String expectedMessage) {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage(expectedMessage);
+    protected void expectPythonMessage(String expectedMessage, ThrowingRunnable runnable) {
+        PException exception = Assert.assertThrows(PException.class, runnable);
+        Assert.assertEquals(expectedMessage, exception.getMessage());
     }
 }

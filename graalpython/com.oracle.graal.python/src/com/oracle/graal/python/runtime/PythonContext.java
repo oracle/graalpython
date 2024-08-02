@@ -30,9 +30,13 @@ import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_CACHE_TAG;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T__MULTIARCH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_THREADING;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
@@ -145,10 +149,12 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
@@ -1526,19 +1532,24 @@ public final class PythonContext extends Python3Core {
     }
 
     private void importSiteIfForced() {
-        if (getOption(PythonOptions.ForceImportSite)) {
-            AbstractImportNode.importModule(T_SITE);
-        }
-        if (!getOption(PythonOptions.WarnOptions).isEmpty()) {
-            // we must force an import of the warnings module here if warnings were passed
-            AbstractImportNode.importModule(T_WARNINGS);
-        }
-        if (getOption(PythonOptions.InputFilePath).isEmpty()) {
-            // When InputFilePath is set, this is handled by __graalpython__.run_path
-            addSysPath0();
-        }
-        if (getOption(PythonOptions.SetupLLVMLibraryPaths)) {
-            ImpModuleBuiltins.importFrozenModuleObject(this, toTruffleStringUncached("graalpy.sulong_support"), false);
+        try {
+            if (getOption(PythonOptions.ForceImportSite)) {
+                AbstractImportNode.importModule(T_SITE);
+            }
+            if (!getOption(PythonOptions.WarnOptions).isEmpty()) {
+                // we must force an import of the warnings module here if warnings were passed
+                AbstractImportNode.importModule(T_WARNINGS);
+            }
+            if (getOption(PythonOptions.InputFilePath).isEmpty()) {
+                // When InputFilePath is set, this is handled by __graalpython__.run_path
+                addSysPath0();
+            }
+            if (getOption(PythonOptions.SetupLLVMLibraryPaths)) {
+                ImpModuleBuiltins.importFrozenModuleObject(this, toTruffleStringUncached("graalpy.sulong_support"), false);
+            }
+        } catch (PException e) {
+            flushStdFiles();
+            throw e;
         }
     }
 
@@ -2013,6 +2024,7 @@ public final class PythonContext extends Python3Core {
             finalizing = true;
             // interrupt and join or kill python threads
             joinThreads();
+            flushStdFiles();
             if (cApiContext != null) {
                 cApiContext.finalizeCApi();
             }
@@ -2027,6 +2039,34 @@ public final class PythonContext extends Python3Core {
             }
         }
         mainThread = null;
+    }
+
+    // Equivalent of CPython's flush_std_files
+    @TruffleBoundary
+    public void flushStdFiles() {
+        PythonModule sysModule = getSysModule();
+        flushFile(sysModule.getAttribute(T_STDOUT), true);
+        flushFile(sysModule.getAttribute(T_STDERR), false);
+    }
+
+    private static void flushFile(Object file, boolean useWriteUnraisable) {
+        if (!(file instanceof PNone)) {
+            boolean closed = false;
+            try {
+                closed = PyObjectIsTrueNode.executeUncached(PyObjectGetAttr.executeUncached(file, T_CLOSED));
+            } catch (PException e) {
+                // Ignore
+            }
+            if (!closed) {
+                try {
+                    PyObjectCallMethodObjArgs.executeUncached(file, T_FLUSH);
+                } catch (PException e) {
+                    if (useWriteUnraisable) {
+                        WriteUnraisableNode.getUncached().execute(e.getEscapedException(), null, null);
+                    }
+                }
+            }
+        }
     }
 
     @TruffleBoundary
