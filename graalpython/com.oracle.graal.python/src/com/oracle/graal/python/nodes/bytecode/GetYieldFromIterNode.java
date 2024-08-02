@@ -44,18 +44,20 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @GenerateInline(false) // used in BCI root node
+@OperationProxy.Proxyable
 public abstract class GetYieldFromIterNode extends Node {
-    public abstract Object execute(Frame frame, Object receiver);
+    public abstract Object execute(VirtualFrame frame, Object receiver);
 
     @Specialization
     public static Object getGeneratorOrCoroutine(PGenerator arg) {
@@ -64,7 +66,7 @@ public abstract class GetYieldFromIterNode extends Node {
     }
 
     @Specialization
-    public static Object getGeneric(Frame frame, Object arg,
+    public static Object getGeneric(VirtualFrame frame, Object arg,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetIter getIter,
                     @Cached IsBuiltinObjectExactProfile isCoro) {

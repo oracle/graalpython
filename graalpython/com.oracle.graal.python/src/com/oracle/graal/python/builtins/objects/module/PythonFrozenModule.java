@@ -47,6 +47,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import java.io.IOException;
 import java.io.InputStream;
 
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonFrozenModule {
@@ -56,7 +57,7 @@ public final class PythonFrozenModule {
 
     private static byte[] getByteCode(String symbol) {
         try {
-            InputStream resourceAsStream = PythonFrozenModule.class.getResourceAsStream("Frozen" + symbol + ".bin");
+            InputStream resourceAsStream = PythonFrozenModule.class.getResourceAsStream("Frozen" + symbol + "." + getSuffix());
             if (resourceAsStream != null) {
                 return resourceAsStream.readAllBytes();
             }
@@ -64,6 +65,14 @@ public final class PythonFrozenModule {
             // fall-through
         }
         return null;
+    }
+
+    private static String getSuffix() {
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            return "bin_dsl";
+        } else {
+            return "bin";
+        }
     }
 
     public PythonFrozenModule(String symbol, String originalName, boolean isPackage) {

@@ -63,6 +63,7 @@ public abstract class ImportNode extends AbstractImportNode {
         return importModule(frame, name, globals, cachedFromList, level, importName);
     }
 
+    @NeverDefault
     public static ImportNode create() {
         return ImportNodeGen.create();
     }

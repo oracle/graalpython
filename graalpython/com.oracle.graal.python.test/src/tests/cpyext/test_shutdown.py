@@ -51,6 +51,8 @@ ENV['PYTHONPATH'] = str(DIR.parent.parent)
 ARGS = []
 if sys.implementation.name == 'graalpy':
     ARGS = ['--python.EnableDebuggingBuiltins']
+    if not __graalpython__.is_native and __graalpython__.is_bytecode_dsl_interpreter:
+        ARGS += ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
 COMMAND = [sys.executable, *ARGS, str(MODULE_PATH)]
 
 
