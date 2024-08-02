@@ -10,10 +10,20 @@ index 6633ef7..d7c21db 100644
 +
 +__GRAALPY_PATCHED = True
 diff --git a/pip/_internal/cli/cmdoptions.py b/pip/_internal/cli/cmdoptions.py
-index 02ba608..a3bba70 100644
+index 02ba608..85c7c22 100644
 --- a/pip/_internal/cli/cmdoptions.py
 +++ b/pip/_internal/cli/cmdoptions.py
-@@ -892,7 +892,7 @@ disable_pip_version_check: Callable[..., Option] = partial(
+@@ -357,7 +357,8 @@ def extra_index_url() -> Option:
+         dest="extra_index_urls",
+         metavar="URL",
+         action="append",
+-        default=[],
++        # GraalPy change: add default extra index with our prebuilt binaries
++        default=["https://www.graalvm.org/python/wheels/"],
+         help="Extra URLs of package indexes to use in addition to "
+         "--index-url. Should follow the same rules as "
+         "--index-url.",
+@@ -892,7 +893,7 @@ disable_pip_version_check: Callable[..., Option] = partial(
      "--disable-pip-version-check",
      dest="disable_pip_version_check",
      action="store_true",
