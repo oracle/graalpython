@@ -757,7 +757,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
         contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
         if (verboseFlag) {
-            contextBuilder.option("log.python.level", "FINE");
+            contextBuilder.option("log.python.level", "INFO");
         }
         contextBuilder.option("python.QuietFlag", Boolean.toString(quietFlag));
         contextBuilder.option("python.NoUserSiteFlag", Boolean.toString(noUserSite));
