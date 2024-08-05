@@ -122,10 +122,19 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
 * Windows
 
   The Windows support of GraalPy is still experimental, so not all features and packages may be available.
+  The easiest way to install GraalPy on Windows is to use [Pyenv-win](https://pyenv-win.github.io/pyenv-win/) (the Python version manager for Windows).
+  To install version 24.0.0 using Pyenv-win, run the following commands:
+  ```cmd
+  pyenv install graalpy-24.0.0-windows-amd64
+  ```
+  ```cmd
+  pyenv shell graalpy-24.0.0-windows-amd64
+  ```
+  Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
   
-  1. Find and download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases) that matches the pattern _graalpy-XX.Y.Z-windows-amd64.tar.gz_.
+  1. Find the download that matches the pattern _graalpy-XX.Y.Z-windows-amd64.tar.gz_ and download.
   2. Uncompress the file and update your `PATH` variable to include to the _graalpy-XX.Y.Z-windows-amd64/bin_ directory.
-  
+
 </details>
 <details>
 <summary><strong><a name="start-using-graalpy-in-github-actions"></a>Using GraalPy in Github Actions</strong></summary>
