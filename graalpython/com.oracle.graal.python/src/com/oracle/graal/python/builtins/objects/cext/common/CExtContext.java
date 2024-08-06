@@ -306,7 +306,13 @@ public abstract class CExtContext {
                     throws IOException, ApiInitException, ImportException {
 
         if (context.getOption(PythonOptions.WarnExperimentalFeatures) && !C_EXT_SUPPORTED_LIST.contains(spec.name.toJavaStringUncached())) {
-            getLogger().warning(() -> "Loading C extension module %s from '%s'. Support for the Python C API is considered experimental.".formatted(spec.name, spec.path));
+            getLogger().warning(() -> {
+                String message = "Loading C extension module %s from '%s'. Support for the Python C API is considered experimental.";
+                if (!context.getOption(PythonOptions.RunViaLauncher)) {
+                    message += " You can suppress this warning by setting the context option 'python.WarnExperimentalFeatures' to 'false'";
+                }
+                return message.formatted(spec.name, spec.path);
+            });
         }
 
         // we always need to load the CPython C API

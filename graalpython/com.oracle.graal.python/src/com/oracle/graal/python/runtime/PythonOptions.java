@@ -389,7 +389,7 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> UseNativePrimitiveStorageStrategy = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Print warnings when using experimental features at runtime.", stability = OptionStability.STABLE) //
-    public static final OptionKey<Boolean> WarnExperimentalFeatures = new OptionKey<>(false);
+    public static final OptionKey<Boolean> WarnExperimentalFeatures = new OptionKey<>(true);
 
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 
