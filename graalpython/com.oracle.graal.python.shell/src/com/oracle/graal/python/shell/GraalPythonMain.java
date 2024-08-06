@@ -791,6 +791,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             contextBuilder.option("python.PosixModuleBackend", "java");
         }
 
+        if (!hasContextOptionSetViaCommandLine("WarnExperimentalFeatures")) {
+            contextBuilder.option("python.WarnExperimentalFeatures", "false");
+        }
+
         if (multiContext) {
             contextBuilder.engine(Engine.newBuilder().allowExperimentalOptions(true).options(enginePolyglotOptions).build());
         }
