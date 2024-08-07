@@ -210,6 +210,7 @@ import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
+import com.oracle.graal.python.builtins.objects.tokenize.PTokenizerIter;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -1697,6 +1698,10 @@ public abstract class PythonObjectFactory extends Node {
     public PStructUnpackIterator createStructUnpackIterator(PStruct struct, Object buffer) {
         return trace(
                         new PStructUnpackIterator(PythonBuiltinClassType.PStructUnpackIterator, getShape(PythonBuiltinClassType.PStructUnpackIterator), struct, buffer));
+    }
+
+    public final PTokenizerIter createTokenizerIter(Object cls, String sourceString) {
+        return trace(new PTokenizerIter(cls, getShape(cls), sourceString));
     }
 
     @GenerateInline

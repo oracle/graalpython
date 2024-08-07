@@ -112,6 +112,7 @@ import com.oracle.graal.python.builtins.modules.StructModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.TokenizeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TracemallocModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
@@ -348,6 +349,7 @@ import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
+import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
@@ -779,7 +781,11 @@ public abstract class Python3Core {
                         new AsyncioModuleBuiltins(),
                         new AsyncGeneratorBuiltins(),
                         new AsyncGenSendBuiltins(),
-                        new AsyncGenThrowBuiltins()));
+                        new AsyncGenThrowBuiltins(),
+
+                        // _tokenizer
+                        new TokenizeModuleBuiltins(),
+                        new TokenizerIterBuiltins()));
         if (hasProfilerTool) {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
