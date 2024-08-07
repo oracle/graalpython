@@ -54,6 +54,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.io.IOException;
 import java.nio.file.LinkOption;
 import java.util.Set;
+import java.util.logging.Level;
 
 import org.graalvm.collections.Pair;
 import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
@@ -304,15 +305,16 @@ public abstract class CExtContext {
     @TruffleBoundary
     public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode)
                     throws IOException, ApiInitException, ImportException {
-
-        if (context.getOption(PythonOptions.WarnExperimentalFeatures) && !C_EXT_SUPPORTED_LIST.contains(spec.name.toJavaStringUncached())) {
-            getLogger().warning(() -> {
+        if (getLogger().isLoggable(Level.WARNING) && context.getOption(PythonOptions.WarnExperimentalFeatures)) {
+            boolean runViaLauncher = context.getOption(PythonOptions.RunViaLauncher);
+            if (!runViaLauncher || !C_EXT_SUPPORTED_LIST.contains(spec.name.toJavaStringUncached())) {
                 String message = "Loading C extension module %s from '%s'. Support for the Python C API is considered experimental.";
-                if (!context.getOption(PythonOptions.RunViaLauncher)) {
-                    message += " You can suppress this warning by setting the context option 'python.WarnExperimentalFeatures' to 'false'";
+                if (!runViaLauncher) {
+                    message += " See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions/#embedding-limitations for the limitations. " +
+                                    "You can suppress this warning by setting the context option 'python.WarnExperimentalFeatures' to 'false'";
                 }
-                return message.formatted(spec.name, spec.path);
-            });
+                getLogger().warning(message.formatted(spec.name, spec.path));
+            }
         }
 
         // we always need to load the CPython C API
