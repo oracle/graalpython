@@ -73,7 +73,8 @@ Known limitations of the Java backend are:
 
 ## Python Native Extensions
 
-Python native extensions run by default as native binaries, with full access to the underlying system. See [Embedding limitations](Native-Extensions.md#embedding-limitations)
+Python native extensions run by default as native binaries, with full access to the underlying system.
+See [Embedding limitations](Native-Extensions.md#embedding-limitations)
 
 The context permissions needed to run native extensions are:
 ```
