@@ -77,7 +77,7 @@ Python native extensions run by default as native binaries, with full access to 
 See [Embedding limitations](Native-Extensions.md#embedding-limitations)
 
 The context permissions needed to run native extensions are:
-```
+```java
 .allowIO(IOAccess.ALL)
 .allowCreateThread(true)
 .allowNativeAccess(true)
