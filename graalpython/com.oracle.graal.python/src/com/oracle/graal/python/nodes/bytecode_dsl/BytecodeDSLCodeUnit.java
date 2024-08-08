@@ -82,4 +82,12 @@ public class BytecodeDSLCodeUnit extends CodeUnit {
         }
     }
 
+    public TruffleString getDocstring() {
+        // The first constant in the code unit is the docstring (if available) or PNone.
+        if (constants.length > 0 && constants[0] instanceof TruffleString docstring) {
+            return docstring;
+        }
+        return null;
+    }
+
 }

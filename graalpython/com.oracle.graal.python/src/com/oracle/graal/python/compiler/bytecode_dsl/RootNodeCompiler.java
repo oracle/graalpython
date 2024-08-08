@@ -921,7 +921,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.endCheckUnboundLocal();
 
                 b.beginStoreLocal(local);
-                b.emitLoadConstant(null);
+                b.emitLoadNull();
                 b.endStoreLocal();
                 b.endBlock();
                 break;
@@ -1097,7 +1097,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                     b.emitLoadLocal(param);
                     toClear.add(param);
                 } else {
-                    b.emitLoadConstant(null);
+                    b.emitLoadNull();
                 }
                 b.endCreateCell();
             }
@@ -3169,16 +3169,12 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             TruffleString functionName = toTruffleStringUncached(name);
             Scope targetScope = ctx.scopeEnvironment.lookupScope(node);
             TruffleString qualifiedName = toTruffleStringUncached(ctx.getQualifiedName(targetScope));
-            TruffleString doc = null;
-            if (codeUnit.constants.length > 0 && codeUnit.constants[0] != null && codeUnit.constants[0] instanceof TruffleString docString) {
-                doc = docString;
-            }
 
             // Register these in the Python constants list.
             addConstant(qualifiedName);
             addConstant(codeUnit);
 
-            b.beginMakeFunction(functionName, qualifiedName, doc, codeUnit);
+            b.beginMakeFunction(functionName, qualifiedName, codeUnit);
 
             if (args == null || len(args.defaults) == 0) {
                 b.emitLoadConstant(PythonUtils.EMPTY_OBJECT_ARRAY);
@@ -3219,7 +3215,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             }
 
             if (codeUnit.freevars.length == 0) {
-                b.emitLoadConstant(null);
+                b.emitLoadNull();
             } else {
                 b.beginMakeCellArray();
                 for (int i = 0; i < codeUnit.freevars.length; i++) {
@@ -3243,7 +3239,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 }
                 b.endMakeDict();
             } else {
-                b.emitLoadConstant(null);
+                b.emitLoadNull();
             }
 
             b.endMakeFunction();

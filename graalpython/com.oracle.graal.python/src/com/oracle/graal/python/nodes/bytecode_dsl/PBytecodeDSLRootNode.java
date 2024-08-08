@@ -1122,14 +1122,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     @ConstantOperand(type = TruffleString.class, name = "name")
     @ConstantOperand(type = TruffleString.class, name = "qualifiedName")
-    @ConstantOperand(type = TruffleString.class, name = "doc")
     @ConstantOperand(type = BytecodeDSLCodeUnit.class)
     public static final class MakeFunction {
         @Specialization(guards = {"isSingleContext(rootNode)", "!codeUnit.isGeneratorOrCoroutine()"})
         public static Object functionSingleContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
-                        TruffleString doc,
                         BytecodeDSLCodeUnit codeUnit,
                         Object[] defaults,
                         Object[] kwDefaultsObject,
@@ -1139,14 +1137,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
                         @Cached("createCode(rootNode, codeUnit, functionRootNode)") PCode cachedCode,
                         @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-            return createFunction(frame, name, qualifiedName, doc, cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
+            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
         }
 
         @Specialization(replaces = "functionSingleContext", guards = "!codeUnit.isGeneratorOrCoroutine()")
         public static Object functionMultiContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
-                        TruffleString doc,
                         BytecodeDSLCodeUnit codeUnit,
                         Object[] defaults,
                         Object[] kwDefaultsObject,
@@ -1156,14 +1153,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
                         @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             PCode code = createCode(rootNode, codeUnit, functionRootNode);
-            return createFunction(frame, name, qualifiedName, doc, code, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
+            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), code, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
         }
 
         @Specialization(guards = {"isSingleContext(rootNode)", "codeUnit.isGeneratorOrCoroutine()"})
         public static Object generatorOrCoroutineSingleContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
-                        TruffleString doc,
                         BytecodeDSLCodeUnit codeUnit,
                         Object[] defaults,
                         Object[] kwDefaultsObject,
@@ -1174,14 +1170,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached(value = "createGeneratorRootNode(rootNode, functionRootNode, codeUnit)", adopt = false) PBytecodeDSLGeneratorFunctionRootNode generatorRootNode,
                         @Cached("createCode(rootNode, codeUnit, generatorRootNode)") PCode cachedCode,
                         @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-            return createFunction(frame, name, qualifiedName, doc, cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
+            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
         }
 
         @Specialization(replaces = "generatorOrCoroutineSingleContext", guards = "codeUnit.isGeneratorOrCoroutine()")
         public static Object generatorOrCoroutineMultiContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
-                        TruffleString doc,
                         BytecodeDSLCodeUnit codeUnit,
                         Object[] defaults,
                         Object[] kwDefaultsObject,
@@ -1192,7 +1187,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached(value = "createGeneratorRootNode(rootNode, functionRootNode, codeUnit)", adopt = false) PBytecodeDSLGeneratorFunctionRootNode generatorRootNode,
                         @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             PCode code = createCode(rootNode, codeUnit, generatorRootNode);
-            return createFunction(frame, name, qualifiedName, doc, code, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
+            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), code, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
         }
 
         @Idempotent

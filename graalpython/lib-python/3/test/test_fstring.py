@@ -13,7 +13,6 @@ import re
 import types
 import decimal
 import unittest
-from test.support import bytecode_dsl_excluded
 from test.support.os_helper import temp_cwd
 from test.support.script_helper import assert_python_failure
 
@@ -580,7 +579,6 @@ x = (
                                           #  '()#)'.  Make sure that doesn't compile.
                              ])
 
-    @bytecode_dsl_excluded
     def test_many_expressions(self):
         # Create a string with many expressions in it. Note that
         #  because we have a space in here as a literal, we're actually
