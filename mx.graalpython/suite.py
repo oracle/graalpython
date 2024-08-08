@@ -1091,6 +1091,8 @@ suite = {
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
                 "sdk:POLYGLOT",
+                "sdk:NATIVEIMAGE",
+                "sdk:COLLECTIONS",
                 "truffle:TRUFFLE_NFI",
                 "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency for convenience
                 "sulong:SULONG_API",
