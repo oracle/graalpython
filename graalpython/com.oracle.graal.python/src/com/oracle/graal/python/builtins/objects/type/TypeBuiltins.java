@@ -27,6 +27,7 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
@@ -54,6 +55,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
@@ -87,10 +89,13 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -111,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
@@ -1045,7 +1051,29 @@ public final class TypeBuiltins extends PythonBuiltins {
     abstract static class AbstractSlotNode extends PythonBinaryBuiltinNode {
     }
 
-    @Builtin(name = J___NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateInline
+    @GenerateCached(false)
+    static abstract class CheckSetSpecialTypeAttrNode extends Node {
+        abstract void execute(Node inliningTarget, Object type, Object value, TruffleString name);
+
+        @Specialization
+        static void check(Node inliningTarget, Object type, Object value, TruffleString name,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            if (PGuards.isKindOfBuiltinClass(type) || (getTypeFlagsNode.execute(type) & TypeFlags.IMMUTABLETYPE) != 0) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, name, type);
+            }
+            if (value == DescriptorDeleteMarker.INSTANCE) {
+                // Sic, it's not immutable, but CPython has this message
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_DELETE_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, name, type);
+            }
+            auditNode.audit(inliningTarget, "object.__setattr__", type, name, value);
+        }
+    }
+
+    @Builtin(name = J___NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, //
+                    allowsDelete = true /* Delete handled by CheckSetSpecialTypeAttrNode */)
     abstract static class NameNode extends AbstractSlotNode {
         @Specialization(guards = "isNoValue(value)")
         static TruffleString getNameType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value) {
@@ -1055,42 +1083,6 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         static TruffleString getNameBuiltin(PythonManagedClass cls, @SuppressWarnings("unused") PNone value) {
             return cls.getName();
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        static Object setName(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        static Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
-        }
-
-        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        static Object setName(VirtualFrame frame, PythonClass cls, Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached TruffleString.IsValidNode isValidNode,
-                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            try {
-                TruffleString string = castToTruffleStringNode.execute(inliningTarget, value);
-                if (indexOfCodePointNode.execute(string, 0, 0, codePointLengthNode.execute(string, TS_ENCODING), TS_ENCODING) >= 0) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
-                }
-                if (!isValidNode.execute(string, TS_ENCODING)) {
-                    throw constructAndRaiseNode.get(inliningTarget).raiseUnicodeEncodeError(frame, "utf-8", string, 0, string.codePointLengthUncached(TS_ENCODING), "can't encode classname");
-                }
-                cls.setName(string);
-                return PNone.NONE;
-            } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P, "string", cls, T___NAME__, value);
-            }
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -1109,10 +1101,59 @@ public final class TypeBuiltins extends PythonBuiltins {
             return substringNode.execute(tpName, lastDot + 1, nameLen - lastDot - 1, TS_ENCODING, true);
         }
 
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class SetNameInnerNode extends Node {
+            abstract void execute(Node inliningTarget, Object type, TruffleString value);
+
+            @Specialization
+            static void set(PythonClass type, TruffleString value) {
+                type.setName(value);
+            }
+
+            @Specialization
+            static void set(PythonAbstractNativeObject type, TruffleString value,
+                            @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
+                            @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject,
+                            @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
+                            @Cached(inline = false) TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                            @Cached(inline = false) PythonObjectFactory factory) {
+                value = switchEncodingNode.execute(value, TruffleString.Encoding.UTF_8);
+                byte[] bytes = copyToByteArrayNode.execute(value, TruffleString.Encoding.UTF_8);
+                PBytes bytesObject = factory.createBytes(bytes);
+                writePointerNode.writeToObj(type, PyTypeObject__tp_name, PySequenceArrayWrapper.ensureNativeSequence(bytesObject));
+                PString pString = factory.createString(value);
+                pString.setUtf8Bytes(bytesObject);
+                writeObject.writeToObject(type, PyHeapTypeObject__ht_name, pString);
+            }
+        }
+
         @Specialization(guards = "!isNoValue(value)")
-        static Object getModule(@SuppressWarnings("unused") PythonAbstractNativeObject cls, @SuppressWarnings("unused") Object value,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
+        static Object setName(VirtualFrame frame, Object cls, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CheckSetSpecialTypeAttrNode check,
+                        @Exclusive @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached TruffleString.IsValidNode isValidNode,
+                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached SetNameInnerNode innerNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            check.execute(inliningTarget, cls, value, T___NAME__);
+            TruffleString string;
+            try {
+                string = castToTruffleStringNode.execute(inliningTarget, value);
+            } catch (CannotCastException e) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P, "string", cls, T___NAME__, value);
+            }
+            if (indexOfCodePointNode.execute(string, 0, 0, codePointLengthNode.execute(string, TS_ENCODING), TS_ENCODING) >= 0) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
+            }
+            if (!isValidNode.execute(string, TS_ENCODING)) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseUnicodeEncodeError(frame, "utf-8", string, 0, string.codePointLengthUncached(TS_ENCODING), "can't encode classname");
+            }
+            innerNode.execute(inliningTarget, cls, string);
+            return PNone.NONE;
         }
     }
 
@@ -1205,7 +1246,8 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___QUALNAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___QUALNAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, //
+                    allowsDelete = true /* Delete handled by CheckSetSpecialTypeAttrNode */)
     abstract static class QualNameNode extends AbstractSlotNode {
         @Specialization(guards = "isNoValue(value)")
         static TruffleString getName(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value) {
@@ -1215,25 +1257,6 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         static TruffleString getName(PythonManagedClass cls, @SuppressWarnings("unused") PNone value) {
             return cls.getQualName();
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        static Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
-        }
-
-        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        static Object setName(PythonClass cls, Object value,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            try {
-                cls.setQualName(castToStringNode.execute(inliningTarget, value));
-                return PNone.NONE;
-            } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_ASSIGN_STR_TO_QUALNAME, cls, value);
-            }
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -1258,10 +1281,39 @@ public final class TypeBuiltins extends PythonBuiltins {
             }
         }
 
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class SetQualNameInnerNode extends Node {
+            abstract void execute(Node inliningTarget, Object type, TruffleString value);
+
+            @Specialization
+            static void set(PythonClass type, TruffleString value) {
+                type.setQualName(value);
+            }
+
+            @Specialization
+            static void set(PythonAbstractNativeObject type, TruffleString value,
+                            @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject) {
+                writeObject.writeToObject(type, PyHeapTypeObject__ht_qualname, value);
+            }
+        }
+
         @Specialization(guards = "!isNoValue(value)")
-        static Object setNative(@SuppressWarnings("unused") PythonNativeClass cls, @SuppressWarnings("unused") Object value,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
+        static Object setName(Object cls, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CheckSetSpecialTypeAttrNode check,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached SetQualNameInnerNode innerNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            check.execute(inliningTarget, cls, value, T___QUALNAME__);
+            TruffleString stringValue;
+            try {
+                stringValue = castToStringNode.execute(inliningTarget, value);
+            } catch (CannotCastException e) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_ASSIGN_STR_TO_QUALNAME, cls, value);
+            }
+            innerNode.execute(inliningTarget, cls, stringValue);
+            return PNone.NONE;
         }
     }
 
