@@ -56,7 +56,7 @@ The Java backend is the default when GraalPy is run via the `Context` API, that 
 GraalPy can log information about known incompatibility of functions executed at runtime, which includes the OS interface-related functions.
 To turn on this logging, use the command-line option `--log.python.compatibility.level=FINE` (or other desired logging level).
 
-Known limitations of the of the Java backend are:
+Known limitations of the Java backend are:
 
 * Its state is disconnected from the actual OS state, which applies especially to:
   * *file descriptors*: Python-level file descriptors are not usable in native code.
@@ -74,3 +74,11 @@ Known limitations of the of the Java backend are:
 ## Python Native Extensions
 
 Python native extensions run by default as native binaries, with full access to the underlying system.
+See [Embedding limitations](Native-Extensions.md#embedding-limitations)
+
+The context permissions needed to run native extensions are:
+```java
+.allowIO(IOAccess.ALL)
+.allowCreateThread(true)
+.allowNativeAccess(true)
+```

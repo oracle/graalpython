@@ -388,6 +388,9 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "If true, uses native storage strategy for primitive types") //
     public static final OptionKey<Boolean> UseNativePrimitiveStorageStrategy = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Print warnings when using experimental features at runtime.", stability = OptionStability.STABLE) //
+    public static final OptionKey<Boolean> WarnExperimentalFeatures = new OptionKey<>(true);
+
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 
     @CompilationFinal(dimensions = 1) private static final OptionKey<?>[] ENGINE_OPTION_KEYS;
