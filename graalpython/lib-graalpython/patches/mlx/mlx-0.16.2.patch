@@ -1,0 +1,25 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index 07c15ff..3e5ce82 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -1,7 +1,7 @@
+ [build-system]
+ requires = [
+   "setuptools>=42",
+-  "nanobind@git+https://github.com/wjakob/nanobind.git@2f04eac452a6d9142dedb957701bdb20125561e4",
++  "nanobind@git+https://github.com/msimacek/nanobind.git@mlx-0.16.2-graalpy-24.1",
+   "cmake>=3.24",
+ ]
+ build-backend = "setuptools.build_meta"
+diff --git a/setup.py b/setup.py
+index 7bd1be4..390c84c 100644
+--- a/setup.py
++++ b/setup.py
+@@ -13,6 +13,7 @@ from setuptools.command.build_ext import build_ext
+ 
+ 
+ def get_version(version):
++    return version
+     if "PYPI_RELEASE" not in os.environ:
+         today = datetime.date.today()
+         version = f"{version}.dev{today.year}{today.month:02d}{today.day:02d}"
