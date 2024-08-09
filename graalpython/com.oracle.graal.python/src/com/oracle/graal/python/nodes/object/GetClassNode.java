@@ -53,10 +53,12 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -70,9 +72,14 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
+
+import java.util.Map;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class})
@@ -259,7 +266,23 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @Fallback
-    static Object getForeign(@SuppressWarnings("unused") Object object) {
-        return PythonBuiltinClassType.ForeignObject;
+    static Object getForeign(@SuppressWarnings("unused") Object object,
+                             @CachedLibrary(limit = "3") InteropLibrary interopLib,
+                             @Bind("this") Node inliningTarget) {
+        try {
+            // Retrieve the meta object of the requested object in order to get to the class
+            Object metaObject = interopLib.getMetaObject(object);
+            // Get class name from meta object
+            String truffleClassName = (String) interopLib.getMetaQualifiedName(metaObject);
+            // Get Registry for custom python types from PythonContext
+            Map<Object, PythonClass> registry = PythonContext.get(inliningTarget).getInteropTypeRegistry();
+            if (registry.containsKey(truffleClassName)) {
+                // If a custom python class was registered, take that one.
+                return registry.get(truffleClassName);
+            }
+            return PythonBuiltinClassType.ForeignObject;
+        } catch (UnsupportedMessageException e) {
+            return PythonBuiltinClassType.ForeignObject;
+        }
     }
 }
