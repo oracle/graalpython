@@ -61,7 +61,8 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.BinaryToTernaryBuiltinNode;
-import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.TernaryOrBinaryPythonSlotDispatcherNode;
+import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.BinaryPythonSlotDispatcherNode;
+import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.TernaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
@@ -79,6 +80,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -315,24 +317,26 @@ public class TpSlotSetAttr {
             slotNode.executeSetAttr(frame, self, name, value);
         }
 
-        @Specialization
-        static void callPythonSimple(VirtualFrame frame, Node inliningTarget, TpSlotSetAttrPython slot, Object self, Object name, Object value,
-                        @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached TernaryOrBinaryPythonSlotDispatcherNode callPythonFun) {
-            Object callable;
-            boolean callDel = PGuards.isNoValue(value);
-            TruffleString funName;
-            if (callDel) {
-                callable = slot.getDelattr();
-                funName = T___DELATTR__;
-            } else {
-                callable = slot.getSetattr();
-                funName = T___SETATTR__;
-            }
+        @Specialization(guards = "!isNoValue(value)")
+        static void callPythonSimpleSet(VirtualFrame frame, Node inliningTarget, TpSlotSetAttrPython slot, Object self, Object name, Object value,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached TernaryPythonSlotDispatcherNode callPythonFun) {
+            Object callable = slot.getSetattr();
             if (callable == null) {
-                throw raiseAttributeError(inliningTarget, raiseNode, funName);
+                throw raiseAttributeError(inliningTarget, raiseNode, T___SETATTR__);
             }
-            callPythonFun.execute(frame, inliningTarget, !callDel, callable, slot.getType(), self, name, value);
+            callPythonFun.execute(frame, inliningTarget, callable, slot.getType(), self, name, value);
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        static void callPythonSimpleDel(VirtualFrame frame, Node inliningTarget, TpSlotSetAttrPython slot, Object self, Object name, @SuppressWarnings("unused") Object value,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached BinaryPythonSlotDispatcherNode callPythonFun) {
+            Object callable = slot.getDelattr();
+            if (callable == null) {
+                throw raiseAttributeError(inliningTarget, raiseNode, T___DELATTR__);
+            }
+            callPythonFun.execute(frame, inliningTarget, callable, slot.getType(), self, name);
         }
 
         @InliningCutoff

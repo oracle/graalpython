@@ -264,7 +264,8 @@ public abstract class TpSlotDescrGet {
     abstract static class DescrGetPythonSlotDispatcherNode extends PythonSlotDispatcherNodeBase {
         abstract Object execute(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1, Object arg2);
 
-        @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 3)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 3)"}, //
+                        limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "cachedCallee.getCodeStableAssumption()")
         protected static Object doCachedPFunction(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self,
                         Object arg1, Object arg2,
                         @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
