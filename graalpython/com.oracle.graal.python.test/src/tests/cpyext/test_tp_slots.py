@@ -65,6 +65,9 @@ SlotsGetter = CPyExtType("SlotsGetter",
                          static PyObject* get_tp_descr_get(PyObject* unused, PyObject* object) {
                              return PyLong_FromVoidPtr(Py_TYPE(object)->tp_descr_get);
                          }
+                         static PyObject* get_nb_add(PyObject* unused, PyObject* object) {
+                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_as_number == NULL ? NULL : Py_TYPE(object)->tp_as_number->nb_add);
+                         }
                          """,
                          tp_methods=
                          '{"get_tp_attr", (PyCFunction)get_tp_attr, METH_O | METH_STATIC, ""},' +
@@ -74,6 +77,7 @@ SlotsGetter = CPyExtType("SlotsGetter",
                          '{"get_nb_bool", (PyCFunction)get_nb_bool, METH_O | METH_STATIC, ""},' +
                          '{"get_tp_as_number", (PyCFunction)get_tp_as_number, METH_O | METH_STATIC, ""},' +
                          '{"get_sq_concat", (PyCFunction)get_sq_concat, METH_O | METH_STATIC, ""},' +
+                         '{"get_nb_add", (PyCFunction)get_nb_add, METH_O | METH_STATIC, ""},' +
                          '{"get_tp_descr_get", (PyCFunction)get_tp_descr_get, METH_O | METH_STATIC, ""}')
 
 
@@ -566,3 +570,26 @@ def test_nb_add_inheritace_does_not_add_sq_concat():
         def __add__(self, other): return NotImplemented
 
     assert SlotsGetter.get_sq_concat(ManagedSub2()) == 0
+
+
+def test_nb_add_sq_concat_static_managed_heap_inheritance():
+    NbAddSqConcatStaticType = CPyExtType("NbAddSqConcatStaticType",
+                                       code = 'PyObject* my_nb_add(PyObject* self, PyObject *other) { return PyLong_FromLong(42); }',
+                                       nb_add = 'my_nb_add',
+                                     sq_concat = 'my_nb_add')
+
+    # fixup_slot_dispatchers should figure out that __add__ and __radd__ descriptors wrap the same
+    # native call and set nb_add to it instead of the Python dispatcher C function
+    class IntermediateManagedDummy(NbAddSqConcatStaticType):
+        pass
+
+    # This should inherit my_nb_add as nb_add
+    SqConcatInheritingNbAdd = CPyExtHeapType("SqConcatInheritingNbAdd",
+                                             bases=(IntermediateManagedDummy,),
+                                             code = 'PyObject* my_sq_concat(PyObject* self, PyObject *other) { return PyLong_FromLong(10); }',
+                                             slots=['{Py_sq_concat, &my_sq_concat}'])
+
+    # Doing SqConcatInheritingNbAdd() + NbAddSqConcatStaticType() triggers segfault in CPython debug build
+    # (not in the addition itself, but later in weakref processing). This test is derived from a fuzzer test
+    # case, where it did not segfault...
+    assert SlotsGetter.get_nb_add(NbAddSqConcatStaticType()) == SlotsGetter.get_nb_add(SqConcatInheritingNbAdd())

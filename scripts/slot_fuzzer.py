@@ -65,7 +65,7 @@ SLOTS_TESTER = '''
 import sys
 import re
 import traceback
-def slots_tester(Klass):
+def slots_tester(Klass, other_klasses):
     def test(fun, name):
         try:
             print(f'{name}:', end='')
@@ -148,6 +148,11 @@ def slots_tester(Klass):
     test_dunder(obj, '__getitem__', -1)
     test_dunder(obj, '__getitem__', 'hello')
 
+    other_objs = [K() for K in other_klasses] + [42, 3.14, 'string', (1,2,3)]
+    for obj2 in other_objs:
+        obj1 = Klass()
+        test(lambda: obj1 + obj2, f"{Klass} + {type(obj2)}")
+        test(lambda: obj2 + obj1, f"{type(obj2)} + {Klass}")
 
 '''
 
@@ -222,8 +227,10 @@ PyObject *global_stash2;
 
 SLOTS = [
     Slot('tp_as_number', 'nb_bool', 'int $name$(PyObject* self)', ['1', '0', None]),
+    Slot('tp_as_number', 'nb_add', 'PyObject* $name$(PyObject* self, PyObject *other)', ['Py_NewRef(self)', 'PyLong_FromLong(0)', None]),
     Slot('tp_as_sequence', 'sq_length', 'Py_ssize_t $name$(PyObject* self)', ['0', '1', '42', None]),
-    Slot('tp_as_sequence', 'sq_item', 'PyObject* $name$(PyObject* self, Py_ssize_t index)', ['0', 'PyLong_FromSsize_t(index + 1)', None]),
+    Slot('tp_as_sequence', 'sq_item', 'PyObject* $name$(PyObject* self, Py_ssize_t index)', ['Py_NewRef(self)', 'PyLong_FromSsize_t(index + 1)', None]),
+    Slot('tp_as_sequence', 'sq_concat', 'PyObject* $name$(PyObject* self, PyObject *other)', ['Py_NewRef(self)', 'PyLong_FromLong(10)', None]),
     Slot('tp_as_mapping', 'mp_length', 'Py_ssize_t $name$(PyObject* self)', ['0', '1', '42', None]),
     Slot('tp_as_mapping', 'mp_subscript', 'PyObject* $name$(PyObject* self, PyObject* key)', ['Py_RETURN_FALSE', 'Py_NewRef(key)', None]),
     Slot(NO_GROUP, 'tp_getattr', 'PyObject* $name$(PyObject* self, char *name)', ['Py_RETURN_NONE', 'Py_RETURN_FALSE', 'Py_NewRef(self)', None,
@@ -275,6 +282,8 @@ global_descr_val = None
 
 MAGIC = {
     '__bool__(self)': ['True', 'False', None],
+    '__add__(self)': ['self', '"__add__result"', "NotImplemented", None],
+    '__radd__(self)': ['self', '"__add__result"', "NotImplemented", None],
     '__len__(self)': ['0', '1', '42', None],
     '__getattribute__(self,name)': ['name', '42', 'global_dict1[name]', None],
     '__getattr__(self,name)': ['name+"abc"', 'False', 'global_dict1[name]', None],
@@ -517,9 +526,10 @@ for test_case_idx in range(args.iterations):
 
     py_source += '\n\n# ===========\n'
     py_source += '# Tests:\n\n'
+    py_source += 'all_classes = ' + ','.join(classes) + '\n\n'
     for klass in classes:
         py_source += f'print("\\n\\n\\nTesting {klass}\\n")\n'
-        py_source += f'slots_tester({klass})\n'
+        py_source += f'slots_tester({klass}, all_classes)\n'
 
     py_filename = f"test{test_case_idx}.py"
     write_all(os.path.join(output_dir, py_filename), py_source)

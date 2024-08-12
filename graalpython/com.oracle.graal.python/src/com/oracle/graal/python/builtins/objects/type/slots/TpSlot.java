@@ -223,9 +223,19 @@ public abstract class TpSlot {
         }
 
         public final boolean isSameCallable(TpSlotNative other, InteropLibrary interop) {
-            // Interop is going to be quite slow (in interpreter)
-            // What else? Compare asPointer() values?
-            return this == other || this.callable == other.callable || interop.isIdentical(callable, other.callable, interop);
+            if (this == other || this.callable == other.callable) {
+                return true;
+            }
+            // NFISymbols do not implement isIdentical interop message, so we compare the pointers
+            // Interop is going to be quite slow (in interpreter), should we eagerly request the
+            // pointer in the ctor?
+            interop.toNative(callable);
+            interop.toNative(other.callable);
+            try {
+                return interop.asPointer(callable) == interop.asPointer(other.callable);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         /**
