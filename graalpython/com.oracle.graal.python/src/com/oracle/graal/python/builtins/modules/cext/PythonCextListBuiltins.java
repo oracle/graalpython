@@ -339,5 +339,11 @@ public final class PythonCextListBuiltins {
             }
             return 0;
         }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        static long doGeneric(PNone none, Object ignore) {
+            return 0;
+        }
     }
 }
