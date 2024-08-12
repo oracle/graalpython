@@ -1119,6 +1119,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return arg;
             }
 
+            @Specialization
             static double floatFromLong(long arg) {
                 return arg;
             }
@@ -1463,7 +1464,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private static void checkMaxDigits(PythonContext context, int digits, int base) {
             if (digits > SysModuleBuiltins.INT_MAX_STR_DIGITS_THRESHOLD && Integer.bitCount(base) != 1) {
-                Integer maxDigits = context.getIntMaxStrDigits();
+                int maxDigits = context.getIntMaxStrDigits();
                 if (maxDigits > 0 && digits > maxDigits) {
                     throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION_D, maxDigits, digits);
                 }
@@ -2270,7 +2271,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             Object result = strNode.execute(frame, inliningTarget, obj);
 
             // try to return a primitive if possible
-            result = assertNoJavaString(result);
+            assertNoJavaString(result);
             if (isStringProfile.profile(inliningTarget, result instanceof TruffleString)) {
                 return asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile, factory);
             }
