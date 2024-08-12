@@ -747,7 +747,7 @@ def update_unittest_tags(args):
         mx.warn("Potential regressions:\n" + '\n'.join(x[1] for x in diff))
 
 
-AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py", "test_ssl_java_integration.py"]
+AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_register_interop_behavior.py", "test_jarray.py", "test_ssl_java_integration.py"]
 # These test would work on JVM too, but they are prohibitively slow due to a large amount of subprocesses
 AOT_ONLY_TESTS = ["test_patched_pip.py", "test_multiprocessing_spawn.py"]
 

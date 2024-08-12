@@ -41,16 +41,9 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_GET_REGISTERED_INTEROP_BEHAVIOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_INTEROP_BEHAVIOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_JAVA_INTEROP_TYPE;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_INTEROP_BEHAVIOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_REMOVE_JAVA_INTEROP_TYPE;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_REGISTER_INTEROP_BEHAVIOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_REGISTER_JAVA_INTEROP_TYPE;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_REGISTER_JAVA_INTEROP_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEROP_TYPE_ALREADY_REGISTERED;
-import static com.oracle.graal.python.nodes.ErrorMessages.INTEROP_TYPE_NOT_REGISTERED;
+import static com.oracle.graal.python.nodes.ErrorMessages.INTEROP_TYPE_NOT_MERGABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_CANNOT_HAVE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_DOES_NOT_TAKE_VARARGS;
@@ -67,7 +60,7 @@ import static com.oracle.graal.python.nodes.InteropMethodNames.J_FITS_IN_SHORT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_READABLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_WRITABLE;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -75,60 +68,53 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltinsClinicProviders.RegisterInteropTypeNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.interop.InteropBehavior;
 import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -136,13 +122,10 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
@@ -650,271 +633,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class InteropBehaviorDecoratorNode extends PythonUnaryBuiltinNode {
-        static final TruffleString WRAPPER = tsLiteral("wrapper");
-        public static final TruffleString KW_RECEIVER = tsLiteral("$receiver");
-
-        static class RegisterWrapperRootNode extends PRootNode {
-            static final TruffleString[] KEYWORDS_HIDDEN_RECEIVER = new TruffleString[]{KW_RECEIVER};
-            private static final Signature SIGNATURE = new Signature(1, false, -1, false, tsArray("supplierClass"), KEYWORDS_HIDDEN_RECEIVER);
-            private static final TruffleString MODULE_POLYGLOT = tsLiteral("polyglot");
-            @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
-            @Child private PRaiseNode raiseNode = PRaiseNode.create();
-            @Child private TypeBuiltins.DirNode dirNode = TypeBuiltins.DirNode.create();
-            @Child private PyObjectGetAttr getAttr = PyObjectGetAttr.create();
-            @Child private CallVarargsMethodNode callVarargsMethod = CallVarargsMethodNode.create();
-
-            protected RegisterWrapperRootNode(TruffleLanguage<?> language) {
-                super(language);
-            }
-
-            @Override
-            public Object execute(VirtualFrame frame) {
-                calleeContext.enter(frame);
-                Object[] frameArguments = frame.getArguments();
-                Object supplierClass = PArguments.getArgument(frameArguments, 0);
-                // note: the hidden kwargs are stored at the end of the positional args
-                Object receiver = PArguments.getArgument(frameArguments, 1);
-                try {
-                    if (supplierClass instanceof PythonClass klass) {
-                        // extract methods and do the registration on the receiver type
-                        PSet names = dirNode.execute(frame, klass);
-                        PKeyword[] kwargs = getFunctionsAsKwArgs(names.getDictStorage(), supplierClass);
-                        PythonModule polyglotModule = PythonContext.get(this).lookupBuiltinModule(MODULE_POLYGLOT);
-                        Object register = getAttr.executeCached(frame, polyglotModule, T_REGISTER_INTEROP_BEHAVIOR);
-                        callVarargsMethod.execute(frame, register, new Object[]{receiver}, kwargs);
-                        return klass;
-                    }
-                    throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a python class", supplierClass);
-                } finally {
-                    calleeContext.exit(frame, this);
-                }
-            }
-
-            @TruffleBoundary
-            private PKeyword[] getFunctionsAsKwArgs(HashingStorage namesStorage, Object supplierClass) {
-                ArrayList<PKeyword> functions = new ArrayList<>();
-                HashingStorageNodes.HashingStorageIterator iterator = HashingStorageNodes.HashingStorageGetIterator.executeUncached(namesStorage);
-                while (HashingStorageNodes.HashingStorageIteratorNext.executeUncached(namesStorage, iterator)) {
-                    Object name = HashingStorageNodes.HashingStorageIteratorKey.executeUncached(namesStorage, iterator);
-                    Object value = PyObjectGetAttrO.executeUncached(supplierClass, name);
-                    if (value instanceof PFunction function) {
-                        functions.add(new PKeyword(CastToTruffleStringNode.executeUncached(name), function));
-                    }
-                }
-                return functions.toArray(PKeyword.EMPTY_KEYWORDS);
-            }
-
-            @Override
-            public Signature getSignature() {
-                return SIGNATURE;
-            }
-
-            @Override
-            public boolean isPythonInternal() {
-                return true;
-            }
-
-            @Override
-            public boolean isInternal() {
-                return true;
-            }
-
-            @Override
-            public boolean setsUpCalleeContext() {
-                return true;
-            }
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public Object decorate(PythonAbstractObject receiver,
-                        @Bind("this") Node inliningTarget,
-                        @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached PythonObjectFactory factory) {
-            if (isTypeNode.execute(inliningTarget, receiver)) {
-                RootCallTarget callTarget = getContext().getLanguage().createCachedCallTarget(RegisterWrapperRootNode::new, RegisterWrapperRootNode.class);
-                return factory.createBuiltinFunction(WRAPPER, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(receiver), 0, callTarget);
-            }
-            throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a type", receiver);
-        }
-
-        public static PKeyword[] createKwDefaults(Object receiver) {
-            // the receiver is passed in a hidden keyword argument
-            // in a pure python decorator this would be passed as a cell
-            return new PKeyword[]{new PKeyword(KW_RECEIVER, receiver)};
-        }
-    }
-
-    @Builtin(name = J_REGISTER_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, takesVarKeywordArgs = true, keywordOnlyNames = {"overwrite" }, doc = """
-        register_java_interop_type(javaClassName, pythonClass, overwrite=None)
-        
-        Example registering a custom interop type for the Java ArrayList
-
-        >>> from polyglot import register_java_interop_type
-
-        >>> class jArrayList(__graalpython__.ForeignType):
-        ...     def append(self, element):
-        ...         self.add(element)
-
-        >>> register_java_interop_type("java.util.ArrayList", jArrayList)
-        
-        For subsequent registrations with overwrite behavior use
-        >>> register_java_interop_type("java.util.ArrayList", newJArrayList, overwrite=True)
-        """)
-    @GenerateNodeFactory
-    public abstract static class RegisterJavaInteropTypeNode extends PythonBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        Object register(TruffleString javaClassName, PythonClass pythonClass, Object overwrite,
-                        @Bind("this") Node inliningTarget,
-                        @Cached TypeNodes.IsTypeNode isClassTypeNode,
-                        @Cached PRaiseNode raiseNode) {
-            if (!isClassTypeNode.execute(inliningTarget, pythonClass)) {
-                throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "second", "a python class", pythonClass);
-            }
-            // Get registry for custom interop types from PythonContext
-            Map<Object, PythonClass> interopTypeRegistry = PythonContext.get(this).getInteropTypeRegistry();
-            String javaClassNameAsString = javaClassName.toString();
-            // Check if already registered and if overwrite is configured
-            if (interopTypeRegistry.containsKey(javaClassNameAsString) && !Boolean.TRUE.equals(overwrite)) {
-                throw raiseNode.raise(KeyError, INTEROP_TYPE_ALREADY_REGISTERED, javaClassNameAsString);
-            }
-            interopTypeRegistry.put(javaClassNameAsString, pythonClass);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = J_REMOVE_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, doc = """
-        remove_java_interop_type(javaClassName)
-        
-        Remove registration of java interop type. Future registration don't need overwrite flag anymore.
-        Example removes the custom interop type for the ArrayList
-        
-        >>> from polyglot import remove_java_interop_type
-        
-        >>> remove_java_interop_type("java.util.ArrayList")
-        """)
-    @GenerateNodeFactory
-    public abstract static class RemoveJavaInteropTypeNode extends PythonBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        Object register(TruffleString javaClassName,
-                        @Cached PRaiseNode raiseNode) {
-            // Get registry for custom interop types from PythonContext
-            Map<Object, PythonClass> interopTypeRegistry = PythonContext.get(this).getInteropTypeRegistry();
-            String javaClassNameAsString = javaClassName.toString();
-            // Check if already registered and if overwrite is configured
-            if (!interopTypeRegistry.containsKey(javaClassNameAsString)) {
-                throw raiseNode.raise(KeyError, INTEROP_TYPE_NOT_REGISTERED, javaClassNameAsString);
-            }
-            interopTypeRegistry.remove(javaClassNameAsString);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = J_JAVA_INTEROP_TYPE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true, keywordOnlyNames = {"overwrite"}, doc = """
-       @java_interop_type(javaClassName, overwrite=None)
-        
-       Example registering a custom interop type for the Java ArrayList
-
-       >>> from polyglot import register_java_interop_type
-
-       >>> @java_interop_type("java.util.ArrayList")
-       ... class jArrayList(__graalpython__.ForeignType):
-       ...     def append(self, element):
-       ...         self.add(element)
-        
-       For subsequent registrations with overwrite behavior use
-       >>> @java_interop_type("java.util.ArrayList", overwrite=True)
-       ... class jArrayList(__graalpython__.ForeignType):
-       ...     pass
-       """)
-    @GenerateNodeFactory
-    public abstract static class JavaInteropTypeDecoratorNode extends PythonBuiltinNode {
-        static final TruffleString WRAPPER = tsLiteral("wrapper");
-        public static final TruffleString KW_J_CLASS_NAME = tsLiteral("javaClassName");
-
-        public static final TruffleString KW_OVERWRITE = tsLiteral("overwrite");
-
-        static class RegisterWrapperRootNode extends PRootNode {
-            static final TruffleString[] KEYWORDS_HIDDEN_RECEIVER = new TruffleString[]{KW_J_CLASS_NAME, KW_OVERWRITE};
-            private static final Signature SIGNATURE = new Signature(1, false, -1, false, tsArray("pythonClass"), KEYWORDS_HIDDEN_RECEIVER);
-            private static final TruffleString MODULE_POLYGLOT = tsLiteral("polyglot");
-            @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
-            @Child private PRaiseNode raiseNode = PRaiseNode.create();
-            @Child private PyObjectGetAttr getAttr = PyObjectGetAttr.create();
-            @Child private CallVarargsMethodNode callVarargsMethod = CallVarargsMethodNode.create();
-
-            protected RegisterWrapperRootNode(TruffleLanguage<?> language) {
-                super(language);
-            }
-
-            @Override
-            public Object execute(VirtualFrame frame) {
-                calleeContext.enter(frame);
-                Object[] frameArguments = frame.getArguments();
-                Object pythonClass = PArguments.getArgument(frameArguments, 0);
-                // note: the hidden kwargs are stored at the end of the positional args
-                Object javaClassName = PArguments.getArgument(frameArguments, 1);
-                Object overwrite = PArguments.getArgument(frameArguments, 2);
-                try {
-                    if (pythonClass instanceof PythonClass klass) {
-                        PythonModule polyglotModule = PythonContext.get(this).lookupBuiltinModule(MODULE_POLYGLOT);
-                        Object register = getAttr.executeCached(frame, polyglotModule, T_REGISTER_JAVA_INTEROP_TYPE);
-                        callVarargsMethod.execute(frame, register, new Object[]{javaClassName, pythonClass}, new PKeyword[]{new PKeyword(KW_OVERWRITE, overwrite)});
-                        return klass;
-                    }
-                    throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a python class", pythonClass);
-                } finally {
-                    calleeContext.exit(frame, this);
-                }
-            }
-
-            @Override
-            public Signature getSignature() {
-                return SIGNATURE;
-            }
-
-            @Override
-            public boolean isPythonInternal() {
-                return true;
-            }
-
-            @Override
-            public boolean isInternal() {
-                return true;
-            }
-
-            @Override
-            public boolean setsUpCalleeContext() {
-                return true;
-            }
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public Object decorate(TruffleString receiver, Object overwrite,
-                               @Cached PythonObjectFactory factory) {
-
-            RootCallTarget callTarget = getContext().getLanguage().createCachedCallTarget(RegisterWrapperRootNode::new, RegisterWrapperRootNode.class);
-            return factory.createBuiltinFunction(WRAPPER, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(receiver, overwrite), 0, callTarget);
-
-        }
-
-        public static PKeyword[] createKwDefaults(Object receiver, Object overwrite) {
-            // the receiver is passed in a hidden keyword argument
-            // in a pure python decorator this would be passed as a cell
-            return new PKeyword[]{new PKeyword(KW_J_CLASS_NAME, receiver), new PKeyword(KW_OVERWRITE, overwrite)};
-        }
-    }
-
-    @Builtin(name = J_REGISTER_INTEROP_BEHAVIOR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true, keywordOnlyNames = {"is_boolean", "is_date",
+    @Builtin(name = "register_interop_behavior", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true, keywordOnlyNames = {"is_boolean", "is_date",
                     "is_duration", "is_iterator", "is_number", "is_string", "is_time", "is_time_zone", "is_executable", "fits_in_big_integer", "fits_in_byte", "fits_in_double", "fits_in_float",
                     "fits_in_int", "fits_in_long", "fits_in_short", "as_big_integer", "as_boolean", "as_byte", "as_date", "as_double", "as_duration", "as_float", "as_int", "as_long", "as_short",
                     "as_string", "as_time", "as_time_zone", "execute", "read_array_element", "get_array_size", "has_array_elements", "is_array_element_readable", "is_array_element_modifiable",
@@ -1047,6 +766,155 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             }
             throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a type", receiver);
         }
+    }
+
+    @Builtin(name = "register_interop_type", minNumOfPositionalArgs = 2, parameterNames = {"foreign_class", "python_class"}, takesVarKeywordArgs = true, keywordOnlyNames = {
+                    "allow_method_overwrites"}, doc = """
+                                    register_interop_type(foreign_class, python_class, allow_method_overwrites=False)
+
+                                    Registers the python class for the given foreign_class.
+                                    Every instance of foreign_class or its subclasses will be treated as an instance of pythonClass.
+
+                                    Multiple registrations per foreign_class are allowed.
+                                    If two registered classes for the same foreign_class define the same method, an error will be raised.
+                                    If allow_method_overwrites=True, defining the same method is explicitly allowed.
+                                    In case of method conflicts, the newest registered class "wins".
+
+                                    Example registering a custom interop type for the java class YourClass
+
+                                    >>> from polyglot import register_interop_type
+                                    >>> import java
+
+                                    >>> class JYourClass:
+                                    ...     def __str__(self):
+                                    ...         return self.getClass().getSimpleName()
+
+                                    >>> YourClass = java.type("fully.qualified.package.path.YourClass")
+                                    >>> register_interop_type(YourClass, JYourClass)
+                                    >>> yourClassObject = YourClass()
+                                    >>> print(yourClassObject)
+                                    YourClass
+
+                                    Per default registering classes with the same methods for one foreign_class raises an error.
+                                    If you want to overwrite methods defined in JYourClass use "allow_method_overwrites=True":
+
+                                    >>> class NewJYourClass:
+                                    ...     def __str__(self):
+                                    ...         return self.getClass().getName()
+
+                                    >>> register_interop_type(YourClass, NewJYourClass, allow_method_overwrites=True)
+
+                                    >>> print(yourClassObject)  # Note: yourClassObject is still the same instance
+                                    fully.qualified.package.path.YourClass
+                                    """)
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "allow_method_overwrites", conversion = ClinicConversion.Boolean, defaultValue = "false", useDefaultForNone = true)
+    public abstract static class RegisterInteropTypeNode extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return RegisterInteropTypeNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object register(Object foreignClass, PythonClass pythonClass, boolean allowMethodOverwrites,
+                        @Bind("this") Node inliningTarget,
+                        @Cached TypeNodes.IsTypeNode isClassTypeNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interopLibrary,
+                        @Cached ObjectHashMap.PutNode putNode,
+                        @Cached ObjectHashMap.GetNode getNode,
+                        @Cached PRaiseNode raiseNode) {
+            foreignClass = checkAndCleanForeignClass(foreignClass, interopLibrary, raiseNode, getContext().getEnv());
+
+            if (!isClassTypeNode.execute(inliningTarget, pythonClass)) {
+                throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "second", "a python class", pythonClass);
+            }
+            // Contains foreignClasses as keys and PythonClass[] as values
+            ObjectHashMap interopTypeRegistry = getContext().interopTypeRegistry;
+
+            try {
+                // possible Types: null, no registered class yet | PythonClass[], at least one
+                // registered
+                var possibleClasses = getNode.execute(null, inliningTarget, interopTypeRegistry, foreignClass, interopLibrary.identityHashCode(foreignClass));
+
+                if (possibleClasses == null) {
+                    // nothing registered yet
+                    putNode.put(null, inliningTarget, interopTypeRegistry, foreignClass, interopLibrary.identityHashCode(foreignClass), new PythonClass[]{pythonClass});
+                } else if (possibleClasses instanceof PythonManagedClass[] registeredClasses) {
+                    // found one or more classes for the key, insert the new class in at first place
+                    // The logic for the class lookup should be LIFO
+                    if (checkIfAlreadyRegistered(pythonClass, registeredClasses, interopLibrary)) {
+                        throw raiseNode.raise(KeyError, INTEROP_TYPE_ALREADY_REGISTERED, interopLibrary.getMetaQualifiedName(foreignClass));
+                    }
+                    if (!allowMethodOverwrites) {
+                        // method overwrite not allowed, check if there is a conflict
+                        checkForMethodConflict(pythonClass, registeredClasses, raiseNode);
+                    }
+                    var newClasses = new PythonManagedClass[registeredClasses.length + 1];
+                    newClasses[0] = pythonClass;
+                    System.arraycopy(registeredClasses, 0, newClasses, 1, registeredClasses.length);
+                    putNode.put(null, inliningTarget, interopTypeRegistry, foreignClass, interopLibrary.identityHashCode(foreignClass), newClasses);
+                } else {
+                    // well, possibleClasses should be null | Array, looks like some edge case
+                    // missed
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                // clear all generated classes and invalidate the assumption for inline caches
+                clearInteropTypeRegistryCache(getContext());
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+            return PNone.NONE;
+        }
+
+        private static boolean checkIfAlreadyRegistered(PythonManagedClass pythonManagedClass, PythonManagedClass[] registeredClasses, InteropLibrary interopLibrary) {
+            for (PythonManagedClass registeredClass : registeredClasses) {
+                if (interopLibrary.isIdentical(registeredClass, pythonManagedClass, interopLibrary)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static void checkForMethodConflict(PythonManagedClass toCheck, PythonManagedClass[] registeredClasses, PRaiseNode raiseNode) {
+            for (TruffleString name : toCheck.getAttributeNames()) {
+                if (toCheck.getAttribute(name) instanceof PFunction) {
+                    for (PythonManagedClass registeredClass : registeredClasses) {
+                        if (registeredClass.getAttribute(name) instanceof PFunction) {
+                            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, INTEROP_TYPE_NOT_MERGABLE, toCheck, registeredClass, name);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static Object checkAndCleanForeignClass(Object object, InteropLibrary interopLibrary, PRaiseNode raiseNode, Env env) {
+            if (!interopLibrary.isMetaObject(object)) {
+                throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a class or interface", object);
+            }
+            if (!env.isHostObject(object)) {
+                return object;
+            }
+            final String memberClass = "class";
+            try {
+                // If the meta object is a host object, convert it to a non-static class
+                // Otherwise it would be useless as a key, because parent classes queried by the
+                // InteropLibrary are non-static
+                if (interopLibrary.isMemberExisting(object, memberClass) && interopLibrary.isMemberReadable(object, memberClass)) {
+                    object = interopLibrary.readMember(object, memberClass);
+                }
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+            return object;
+        }
+
+    }
+
+    public static void clearInteropTypeRegistryCache(PythonContext pythonContext) {
+        pythonContext.getLanguage().noInteropTypeRegisteredAssumption.invalidate();
+        pythonContext.interopTypeRegistryCacheValidAssumption.invalidate();
+        pythonContext.interopGeneratedClassCache.clear();
     }
 
     @Builtin(name = "__read__", minNumOfPositionalArgs = 2)

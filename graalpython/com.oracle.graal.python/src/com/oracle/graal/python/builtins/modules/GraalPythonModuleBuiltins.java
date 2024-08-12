@@ -273,6 +273,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("is_native_object"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("get_handle_table_id"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("is_strong_handle_table_ref"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("clear_interop_type_registry"), PNone.NO_VALUE);
         }
         if (PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS || !context.getOption(PythonOptions.RunViaLauncher)) {
             mod.setAttribute(tsLiteral("list_files"), PNone.NO_VALUE);
@@ -1142,6 +1143,19 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             NativePrimitiveSequenceStorage newStorage = toNativePrimitiveNode.execute(inliningTarget, sequence.getSequenceStorage());
             sequence.setSequenceStorage(newStorage);
             return sequence;
+        }
+    }
+
+    @Builtin(name = "clear_interop_type_registry", maxNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class ClearInteropTypeRegistry extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        Object doClear() {
+            getContext().interopTypeRegistry.clear();
+            PolyglotModuleBuiltins.clearInteropTypeRegistryCache(getContext());
+            return PNone.NONE;
         }
     }
 }

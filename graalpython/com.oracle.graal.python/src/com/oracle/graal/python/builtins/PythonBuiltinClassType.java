@@ -185,7 +185,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ExportLibrary(ReflectionLibrary.class)
 public enum PythonBuiltinClassType implements TruffleObject {
 
-    ForeignObject(J_FOREIGN, Flags.PRIVATE_DERIVED_WODICT, FOREIGNOBJECT_M_FLAGS, ForeignObjectBuiltins.SLOTS),
+    ForeignObject(J_FOREIGN, Flags.PRIVATE_BASE_WDICT, FOREIGNOBJECT_M_FLAGS, ForeignObjectBuiltins.SLOTS),
     Boolean("bool", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT, BOOLEAN_M_FLAGS),
     PArray("array", "array", ARRAY_M_FLAGS, ArrayBuiltins.SLOTS),
     PArrayIterator("arrayiterator", Flags.PRIVATE_DERIVED_WODICT),

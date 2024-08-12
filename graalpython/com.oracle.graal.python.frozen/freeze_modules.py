@@ -6,16 +6,15 @@
 """Freeze specified modules
 """
 
-from collections import namedtuple
-import marshal
-import os
-import ntpath
-import posixpath
-import sys
 import argparse
+import marshal
+import ntpath
+import os
+import posixpath
 import shutil
-
+import sys
 from _sha256 import sha256
+from collections import namedtuple
 
 FROZEN_ONLY = os.path.join(os.path.dirname(__file__), "flag.py")
 
@@ -111,7 +110,7 @@ def add_graalpython_core():
         l.append(f"{modname} : {modname} = {modpath}")
     for name in [
         "__graalpython__",
-        "_interop_behavior",
+        "_polyglot",
         "_sre",
         "_sysconfig",
         "_weakref",

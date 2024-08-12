@@ -1037,8 +1037,8 @@ public abstract class Python3Core {
                 }
             }
 
-            // import special interop predefined behavior
-            loadFile(toTruffleStringUncached("_interop_behavior"), getContext().getCoreHomeOrFail());
+            // import polyglot decorators and special interop predefined behavior
+            loadFile(toTruffleStringUncached("_polyglot"), getContext().getCoreHomeOrFail());
 
             initialized = true;
         }
