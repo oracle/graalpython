@@ -790,7 +790,7 @@ public abstract class BytesNodes {
             }
         }
 
-        @TruffleBoundary(transferToInterpreterOnException = false)
+        @TruffleBoundary
         private static byte[] resize(byte[] arr, int len) {
             return Arrays.copyOf(arr, len);
         }

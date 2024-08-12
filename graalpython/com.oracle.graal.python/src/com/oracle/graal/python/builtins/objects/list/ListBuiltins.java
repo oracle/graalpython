@@ -627,7 +627,7 @@ public final class ListBuiltins extends PythonBuiltins {
             return (int) Math.min(resultIndex, Integer.MAX_VALUE);
         }
 
-        @TruffleBoundary(transferToInterpreterOnException = false)
+        @TruffleBoundary
         private static int correctIndex(SequenceStorage s, PInt index) {
             BigInteger value = index.getValue();
             if (value.compareTo(BigInteger.ZERO) < 0) {
