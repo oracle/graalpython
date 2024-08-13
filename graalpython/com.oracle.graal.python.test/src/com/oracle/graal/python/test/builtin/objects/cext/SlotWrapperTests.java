@@ -38,70 +38,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.annotations;
+package com.oracle.graal.python.test.builtin.objects.cext;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Repeatable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-@Repeatable(Slot.Slots.class)
-public @interface Slot {
-    SlotKind value();
+import org.junit.Test;
 
-    /**
-     * The slot node either needs frame for execution (e.g., may call Python code) and/or is complex
-     * enough that indirect call to partially evaluated code is preferred over uncached execution
-     * without frame and without setting up indirect call context.
-     * 
-     * The slot call nodes AST inline slot nodes, but if the inline cache overflows or in the
-     * uncached case, they need to either call uncached slot node or do indirect call if
-     * {@code isComplex} is {@code true}.
-     */
-    boolean isComplex() default false;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.strings.TruffleString;
 
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.TYPE)
-    @interface Slots {
-        Slot[] value();
-    }
+public class SlotWrapperTests {
+    // Doesn't really need to be a real callable or type
+    private static final Object DUMMY_CALLABLE = new Object();
+    private static final Object DUMMY_TYPE = new Object();
 
-    /**
-     * Some slots do not have fixed signature. This annotation must be used for such slots, the
-     * semantics of its fields is the same as of the field with the same name in the
-     * {@code @Builtin} annotation.
-     */
-    @Retention(RetentionPolicy.RUNTIME)
-    @interface SlotSignature {
-        int minNumOfPositionalArgs() default 0;
+    @Test
+    public void testCloneContract() {
+        TruffleString testName = PythonUtils.toTruffleStringUncached("__test__");
+        TpSlotPythonSingle slotValue = new TpSlotPythonSingle(DUMMY_CALLABLE, DUMMY_TYPE, testName);
+        TpSlotPythonSingle slotValue2 = new TpSlotPythonSingle(DUMMY_CALLABLE, DUMMY_TYPE, testName);
+        for (TpSlotMeta slot : TpSlotMeta.values()) {
+            if (!slot.supportsManagedSlotValues()) {
+                continue;
+            }
+            // We rely on the wrapper not doing any validation of the value...
+            TpSlotWrapper wrapper = slot.createNativeWrapper(slotValue);
+            assertThat(wrapper.getSlot(), equalTo(slotValue));
 
-        boolean takesVarArgs() default false;
-
-        boolean takesVarKeywordArgs() default false;
-
-        String[] parameterNames() default {};
-
-        boolean needsFrame() default false;
-
-        boolean alwaysNeedsCallerFrame() default false;
-
-        String raiseErrorName() default "";
-    }
-
-    enum SlotKind {
-        nb_bool,
-        nb_add,
-        sq_length,
-        sq_item,
-        sq_concat,
-        mp_length,
-        mp_subscript,
-        tp_descr_get,
-        tp_descr_set,
-        tp_getattro,
-        tp_setattro,
+            TpSlotWrapper clonedWrapper = wrapper.cloneWith(slotValue2);
+            assertThat(clonedWrapper, not(equalTo(wrapper)));
+            assertThat(clonedWrapper, instanceOf(wrapper.getClass()));
+            assertThat(clonedWrapper.getSlot(), equalTo(slotValue2));
+        }
     }
 }

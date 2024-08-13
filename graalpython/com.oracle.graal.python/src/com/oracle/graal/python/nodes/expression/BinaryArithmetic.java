@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -71,12 +72,11 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @SuppressWarnings("truffle-inlining")
 public enum BinaryArithmetic {
-    Add(BinaryArithmeticFactory.AddNodeGen::create),
+    Add(PyNumberAddNode::create),
     Sub(BinaryArithmeticFactory.SubNodeGen::create),
     Mul(BinaryArithmeticFactory.MulNodeGen::create),
     TrueDiv(BinaryArithmeticFactory.TrueDivNodeGen::create),
@@ -176,73 +176,6 @@ public enum BinaryArithmetic {
         @NeverDefault
         public static LookupAndCallBinaryNode createBinaryOp(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handler) {
             return LookupAndCallBinaryNode.createBinaryOp(slot, slot.getReverse(), handler);
-        }
-
-        @NeverDefault
-        static LookupAndCallBinaryNode createPyNumberAdd(Supplier<NotImplementedHandler> handler) {
-            return LookupAndCallBinaryNode.createPyNumberAdd(handler);
-        }
-
-        @NeverDefault
-        static LookupAndCallBinaryNode createPyNumberMultiply(Supplier<NotImplementedHandler> handler) {
-            return LookupAndCallBinaryNode.createPyNumberMultiply(handler);
-        }
-
-    }
-    /*
-     *
-     * All the following fast paths need to be kept in sync with the corresponding builtin functions
-     * in IntBuiltins and FloatBuiltins.
-     *
-     */
-
-    public abstract static class AddNode extends BinaryArithmeticNode {
-
-        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("+");
-
-        public abstract int executeInt(VirtualFrame frame, int left, int right) throws UnexpectedResultException;
-
-        public abstract double executeDouble(VirtualFrame frame, double left, double right) throws UnexpectedResultException;
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        public static int add(int left, int right) {
-            return Math.addExact(left, right);
-        }
-
-        @Specialization
-        public static long doIIOvf(int x, int y) {
-            return x + (long) y;
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        public static long addLong(long left, long right) {
-            return Math.addExact(left, right);
-        }
-
-        @Specialization
-        public static double doDD(double left, double right) {
-            return left + right;
-        }
-
-        @Specialization
-        public static double doDL(double left, long right) {
-            return left + right;
-        }
-
-        @Specialization
-        public static double doLD(long left, double right) {
-            return left + right;
-        }
-
-        @Specialization
-        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createPyNumberAdd(NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
-            return callNode.executeObject(frame, left, right);
-        }
-
-        @NeverDefault
-        public static AddNode create() {
-            return BinaryArithmeticFactory.AddNodeGen.create();
         }
     }
 

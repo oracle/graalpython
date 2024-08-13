@@ -244,7 +244,7 @@ public final class PythonCextUnicodeBuiltins {
                         "isString(right) || isStringSubtype(inliningTarget, right, getClassNode, isSubtypeNode)"})
         static Object concat(Object left, Object right,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Cached StringBuiltins.AddNode addNode,
+                        @Cached StringBuiltins.ConcatNode addNode,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             return addNode.execute(null, left, right);

@@ -33,7 +33,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
@@ -54,7 +53,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
@@ -101,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
@@ -280,7 +279,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class ForeignBinaryNode extends PythonBinaryBuiltinNode {
+    abstract static class ForeignBinaryNode extends BinaryOpBuiltinNode {
         @Child private BinaryOpNode op;
         protected final boolean reverse;
 
@@ -409,7 +408,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_add, isComplex = true)
     @GenerateNodeFactory
     abstract static class AddNode extends ForeignBinaryNode {
         AddNode() {
@@ -439,14 +438,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 gil.acquire();
             }
             return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = J___RADD__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RAddNode extends AddNode {
-        RAddNode() {
-            super(true);
         }
     }
 

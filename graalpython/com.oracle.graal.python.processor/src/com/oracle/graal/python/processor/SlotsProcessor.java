@@ -184,7 +184,7 @@ public class SlotsProcessor extends AbstractProcessor {
                 w.startLn().//
                                 write("super(").//
                                 write(getNodeFactory(slot, slot.slotNodeType()) + ".getInstance()").//
-                                endLn(");");
+                                write(SlotsMapping.getExtraCtorArgs(slot)).endLn(");");
 
             }
             w.writeLn("}");

@@ -367,7 +367,6 @@ PyAPI_FUNC(int64_t) get_methods_flags(PyTypeObject *cls) {
 	PyNumberMethods* number = cls->tp_as_number;
     if (number != NULL) {
 #define COMPUTE_FLAGS(NAME, BIT_IDX) flags |= ((number->NAME != NULL) * BIT_IDX);
-		COMPUTE_FLAGS(nb_add, NB_ADD)
 		COMPUTE_FLAGS(nb_subtract, NB_SUBTRACT)
 		COMPUTE_FLAGS(nb_multiply, NB_MULTIPLY)
 		COMPUTE_FLAGS(nb_remainder, NB_REMAINDER)
@@ -409,7 +408,6 @@ PyAPI_FUNC(int64_t) get_methods_flags(PyTypeObject *cls) {
     if (sequence != NULL) {
 #define COMPUTE_FLAGS(NAME, BIT_IDX) flags |= ((sequence->NAME != NULL) * BIT_IDX);
 		COMPUTE_FLAGS(sq_length, SQ_LENGTH)
-		COMPUTE_FLAGS(sq_concat, SQ_CONCAT)
 		COMPUTE_FLAGS(sq_repeat, SQ_REPEAT)
 		COMPUTE_FLAGS(sq_item, SQ_ITEM)
 		COMPUTE_FLAGS(sq_ass_item, SQ_ASS_ITEM)

@@ -100,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
+import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -108,6 +109,7 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
+import com.oracle.graal.python.lib.PySequenceConcat;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.PySequenceDelItemNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
@@ -601,25 +603,11 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class PySequence_Concat extends CApiBinaryBuiltinNode {
-        @Specialization(guards = {"checkNode.execute(inliningTarget, s1)", "checkNode.execute(inliningTarget, s1)"})
-        Object concat(Object s1, Object s2,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("check") @Cached PySequenceCheckNode checkNode,
-                        @Cached("createAdd()") BinaryArithmetic.AddNode addNode) {
-            return addNode.executeObject(null, s1, s2);
-        }
-
-        @Specialization(guards = {"!checkNode.execute(inliningTarget, s1) || checkNode.execute(inliningTarget, s2)"})
-        static Object cantConcat(Object s1, @SuppressWarnings("unused") Object s2,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("check") @Cached PySequenceCheckNode checkNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
-        }
-
-        @NeverDefault
-        protected BinaryArithmetic.AddNode createAdd() {
-            return (BinaryArithmetic.AddNode) BinaryArithmetic.Add.create();
+        @Specialization
+        Object doIt(Object s1, Object s2,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PySequenceConcat pySeqConcat) {
+            return pySeqConcat.execute(null, inliningTarget, s1, s2);
         }
     }
 
@@ -631,13 +619,13 @@ public final class PythonCextAbstractBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
-                        @Cached("createAdd()") BinaryArithmetic.AddNode addNode,
+                        @Cached PyNumberAddNode addNode,
                         @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode) {
             Object iaddCallable = lookupNode.execute(null, inliningTarget, s1, T___IADD__);
             if (iaddCallable != PNone.NO_VALUE) {
                 return callNode.executeWithoutFrame(iaddCallable, s2);
             }
-            return addNode.executeObject(null, s1, s2);
+            return addNode.execute(null, inliningTarget, s1, s2);
         }
 
         @Specialization(guards = "!checkNode.execute(inliningTarget, s1)", limit = "1")
@@ -646,10 +634,6 @@ public final class PythonCextAbstractBuiltins {
                         @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
-        }
-
-        protected BinaryArithmetic.AddNode createAdd() {
-            return (BinaryArithmetic.AddNode) BinaryArithmetic.Add.create();
         }
     }
 

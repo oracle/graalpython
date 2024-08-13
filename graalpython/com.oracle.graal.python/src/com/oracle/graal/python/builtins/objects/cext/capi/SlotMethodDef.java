@@ -45,8 +45,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAs
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_await;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMappingMethods__mp_ass_subscript;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_absolute;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_add;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_and;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_divmod;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_float;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_floor_divide;
@@ -77,7 +75,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNu
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_true_divide;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_xor;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PySequenceMethods__sq_ass_item;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PySequenceMethods__sq_concat;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PySequenceMethods__sq_repeat;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_mapping;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_number;
@@ -92,9 +89,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_setattro;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_str;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
@@ -173,11 +168,8 @@ public enum SlotMethodDef {
 
     SQ_ASS_ITEM(PySequenceMethods__sq_ass_item, T___SETITEM__, SsizeobjargfuncWrapper::new, MethodsFlags.SQ_ASS_ITEM),
     SQ_REPEAT(PySequenceMethods__sq_repeat, T___MUL__, SsizeargfuncWrapper::new, MethodsFlags.SQ_REPEAT),
-    SQ_CONCAT(PySequenceMethods__sq_concat, T___ADD__, BinaryFuncWrapper::new, MethodsFlags.SQ_CONCAT),
 
     NB_ABSOLUTE(PyNumberMethods__nb_absolute, T___ABS__, UnaryFuncWrapper::new, MethodsFlags.NB_ABSOLUTE),
-    NB_ADD(PyNumberMethods__nb_add, T___ADD__, BinaryFuncWrapper::new, MethodsFlags.NB_ADD),
-    NB_AND(PyNumberMethods__nb_and, T___AND__, BinaryFuncWrapper::new, MethodsFlags.NB_AND),
     NB_DIVMOD(PyNumberMethods__nb_divmod, T___DIVMOD__, BinaryFuncWrapper::new, MethodsFlags.NB_DIVMOD),
     NB_FLOAT(PyNumberMethods__nb_float, T___FLOAT__, UnaryFuncWrapper::new, MethodsFlags.NB_FLOAT),
     NB_FLOOR_DIVIDE(PyNumberMethods__nb_floor_divide, T___FLOORDIV__, BinaryFuncWrapper::new, MethodsFlags.NB_FLOOR_DIVIDE),
@@ -247,16 +239,13 @@ public enum SlotMethodDef {
 
         initGroup(
                         PyTypeObject__tp_as_sequence,
-                        SQ_REPEAT,
-                        SQ_CONCAT);
+                        SQ_REPEAT);
         initGroup(
                         PyTypeObject__tp_as_mapping,
                         MP_ASS_SUBSCRIPT);
         initGroup(
                         PyTypeObject__tp_as_number,
                         NB_ABSOLUTE,
-                        NB_ADD,
-                        NB_AND,
                         NB_DIVMOD,
                         NB_FLOAT,
                         NB_FLOOR_DIVIDE,

@@ -53,8 +53,20 @@ SlotsGetter = CPyExtType("SlotsGetter",
                          static PyObject* get_tp_setattro(PyObject* unused, PyObject* object) {
                              return PyLong_FromVoidPtr(Py_TYPE(object)->tp_setattro);
                          }
+                         static PyObject* get_nb_bool(PyObject* unused, PyObject* object) {
+                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_as_number == NULL ? NULL : Py_TYPE(object)->tp_as_number->nb_bool);
+                         }
+                         static PyObject* get_tp_as_number(PyObject* unused, PyObject* object) {
+                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_as_number);
+                         }
+                         static PyObject* get_sq_concat(PyObject* unused, PyObject* object) {
+                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_as_sequence == NULL ? NULL : Py_TYPE(object)->tp_as_sequence->sq_concat);
+                         }
                          static PyObject* get_tp_descr_get(PyObject* unused, PyObject* object) {
                              return PyLong_FromVoidPtr(Py_TYPE(object)->tp_descr_get);
+                         }
+                         static PyObject* get_nb_add(PyObject* unused, PyObject* object) {
+                             return PyLong_FromVoidPtr(Py_TYPE(object)->tp_as_number == NULL ? NULL : Py_TYPE(object)->tp_as_number->nb_add);
                          }
                          """,
                          tp_methods=
@@ -62,6 +74,10 @@ SlotsGetter = CPyExtType("SlotsGetter",
                          '{"get_tp_attro", (PyCFunction)get_tp_attro, METH_O | METH_STATIC, ""},' +
                          '{"get_tp_setattr", (PyCFunction)get_tp_setattr, METH_O | METH_STATIC, ""},' +
                          '{"get_tp_setattro", (PyCFunction)get_tp_setattro, METH_O | METH_STATIC, ""},' +
+                         '{"get_nb_bool", (PyCFunction)get_nb_bool, METH_O | METH_STATIC, ""},' +
+                         '{"get_tp_as_number", (PyCFunction)get_tp_as_number, METH_O | METH_STATIC, ""},' +
+                         '{"get_sq_concat", (PyCFunction)get_sq_concat, METH_O | METH_STATIC, ""},' +
+                         '{"get_nb_add", (PyCFunction)get_nb_add, METH_O | METH_STATIC, ""},' +
                          '{"get_tp_descr_get", (PyCFunction)get_tp_descr_get, METH_O | METH_STATIC, ""}')
 
 
@@ -513,3 +529,58 @@ def test_tp_hash():
     # )
     #
     # assert_has_no_hash(TypeWithoutHashExplicit())
+
+
+def test_attr_update():
+    # Note: version with managed super type whose attribute is updated and should
+    # be propagated to the native subtype segfaults on CPython in various ways
+    TypeToBeUpdated = CPyExtHeapType("TypeToBeUpdated")
+    assert SlotsGetter.get_tp_as_number(TypeToBeUpdated()) != 0
+
+    TypeToBeUpdated.__bool__ = lambda self: False
+    assert not bool(TypeToBeUpdated())
+
+    TypeToBeUpdated.__add__ = lambda self,other: f"plus {other}"
+    assert TypeToBeUpdated() + "test" == "plus test"
+
+    class ManagedGoesNative:
+        pass
+
+    assert bool(ManagedGoesNative())
+    assert SlotsGetter.get_nb_bool(ManagedGoesNative()) == 0 # Sends it to native
+    assert SlotsGetter.get_tp_as_number(ManagedGoesNative()) != 0
+    assert bool(ManagedGoesNative())
+
+    ManagedGoesNative.__bool__ = lambda self: False
+    assert not bool(ManagedGoesNative())
+    assert SlotsGetter.get_nb_bool(ManagedGoesNative()) != 0
+
+
+def test_nb_add_inheritace_does_not_add_sq_concat():
+    NbAddOnlyHeapType = CPyExtHeapType("NbAddOnlyHeapType",
+                                       code = 'PyObject* my_nb_add(PyObject* self, PyObject *other) { return Py_NewRef(self); }',
+                                       slots=['{Py_nb_add, &my_nb_add}'])
+    class ManagedSub(NbAddOnlyHeapType):
+        pass
+
+    assert ManagedSub.__add__
+    assert SlotsGetter.get_sq_concat(ManagedSub()) == 0
+
+    class ManagedSub2(NbAddOnlyHeapType):
+        def __add__(self, other): return NotImplemented
+
+    assert SlotsGetter.get_sq_concat(ManagedSub2()) == 0
+
+
+def test_nb_add_sq_concat_static_managed_heap_inheritance():
+    NbAddSqConcatStaticType = CPyExtType("NbAddSqConcatStaticType",
+                                       code = 'PyObject* my_nb_add(PyObject* self, PyObject *other) { return PyLong_FromLong(42); }',
+                                       nb_add = 'my_nb_add',
+                                     sq_concat = 'my_nb_add')
+
+    # fixup_slot_dispatchers should figure out that __add__ and __radd__ descriptors wrap the same
+    # native call and set nb_add to it instead of the Python dispatcher C function
+    class ManagedDummy(NbAddSqConcatStaticType):
+        pass
+
+    assert SlotsGetter.get_nb_add(ManagedDummy()) == SlotsGetter.get_nb_add(NbAddSqConcatStaticType())

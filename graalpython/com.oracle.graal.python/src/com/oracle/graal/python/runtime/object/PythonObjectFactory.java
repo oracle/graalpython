@@ -593,7 +593,7 @@ public abstract class PythonObjectFactory extends Node {
         // Fixup tp slots
         MroSequenceStorage mro = GetMroStorageNode.executeUncached(result);
         SpecialMethodSlot.initializeSpecialMethodSlots(result, mro, language);
-        TpSlots.inherit(result, mro);
+        TpSlots.inherit(result, mro, true);
         TpSlots.fixupSlotDispatchers(result);
         result.initializeMroShape(language);
         return result;

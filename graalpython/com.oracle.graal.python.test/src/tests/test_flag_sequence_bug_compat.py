@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,7 @@ def test_op_order():
     class BA(bytearray):
         pass
 
-#    assert BA(b'abc') + C() == "RADD"
+    assert BA(b'abc') + C() == "RADD"
     assert C() + BA(b'abc') == "ADD"
     
     # bytes
@@ -61,7 +61,7 @@ def test_op_order():
     class B(bytes):
         pass
 
-#    assert B(b'ab') + C() == "RADD"
+    assert B(b'ab') + C() == "RADD"
     assert C() + B(b'ab') == "ADD"
     
     # list
@@ -71,7 +71,7 @@ def test_op_order():
     class L(list):
         pass
 
-#    assert L([1,2]) + C() == "RADD"
+    assert L([1,2]) + C() == "RADD"
     assert C() + L([1,2]) == "ADD"
     
     # tuple
@@ -81,7 +81,7 @@ def test_op_order():
     class T(tuple):
         pass
      
-#    assert T((1,2)) + C() == "RADD"
+    assert T((1,2)) + C() == "RADD"
     assert C() +  T((1,2)) == "ADD"
     
     # str
@@ -91,7 +91,7 @@ def test_op_order():
     class S(str):
         pass
 
-#    assert S(":") + C() == "RADD"
+    assert S(":") + C() == "RADD"
     assert C() + S(":") == "ADD"        
     
     # int

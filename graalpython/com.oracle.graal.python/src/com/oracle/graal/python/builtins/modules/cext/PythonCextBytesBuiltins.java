@@ -149,7 +149,7 @@ public final class PythonCextBytesBuiltins {
     abstract static class PyTruffleBytes_Concat extends CApiBinaryBuiltinNode {
         @Specialization
         static Object concat(Object original, Object newPart,
-                        @Cached BytesCommonBuiltins.AddNode addNode) {
+                        @Cached BytesCommonBuiltins.ConcatNode addNode) {
             return addNode.execute(null, original, newPart);
         }
     }

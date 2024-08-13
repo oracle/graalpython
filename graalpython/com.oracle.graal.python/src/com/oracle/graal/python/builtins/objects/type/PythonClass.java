@@ -110,6 +110,10 @@ public final class PythonClass extends PythonManagedClass {
         }
     }
 
+    public void setTpSlots(TpSlots tpSlots) {
+        this.tpSlots = tpSlots;
+    }
+
     @Override
     @TruffleBoundary
     @SuppressFBWarnings(value = "UR_UNINIT_READ_CALLED_FROM_SUPER_CONSTRUCTOR")

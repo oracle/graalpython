@@ -42,6 +42,7 @@ package com.oracle.graal.python.processor;
 
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.processor.SlotsProcessor.TpSlotData;
 
 public class SlotsMapping {
     private static String getSuffix(boolean isComplex) {
@@ -51,6 +52,8 @@ public class SlotsMapping {
     static String getSlotBaseClass(Slot s) {
         return switch (s.value()) {
             case nb_bool -> "TpSlotInquiry.TpSlotInquiryBuiltin";
+            case nb_add -> "TpSlotBinaryOp.TpSlotBinaryOpBuiltin";
+            case sq_concat -> "TpSlotBinaryFunc.TpSlotSqConcat";
             case sq_length, mp_length -> "TpSlotLen.TpSlotLenBuiltin" + getSuffix(s.isComplex());
             case sq_item -> "TpSlotSizeArgFun.TpSlotSizeArgFunBuiltin";
             case mp_subscript -> "TpSlotBinaryFunc.TpSlotMpSubscript";
@@ -65,6 +68,8 @@ public class SlotsMapping {
         return switch (s.value()) {
             case tp_descr_get -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode";
             case nb_bool -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode";
+            case nb_add -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode";
+            case sq_concat -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode";
             case sq_length, mp_length -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode";
             case sq_item -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode";
             case mp_subscript -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode";
@@ -79,7 +84,7 @@ public class SlotsMapping {
             case nb_bool -> "boolean executeUncached(Object self)";
             case tp_descr_get -> "Object executeUncached(Object self, Object obj, Object type)";
             case sq_length, mp_length -> "int executeUncached(Object self)";
-            case tp_getattro, tp_descr_set, tp_setattro, sq_item, mp_subscript ->
+            case tp_getattro, tp_descr_set, tp_setattro, sq_item, mp_subscript, nb_add, sq_concat ->
                 throw new AssertionError("Should not reach here: should be always complex");
         };
     }
@@ -88,7 +93,7 @@ public class SlotsMapping {
         return switch (s) {
             case nb_bool -> false;
             case sq_length, mp_length, tp_getattro, tp_descr_get, tp_descr_set,
-                            tp_setattro, sq_item, mp_subscript ->
+                            tp_setattro, sq_item, mp_subscript, nb_add, sq_concat ->
                 true;
         };
     }
@@ -96,7 +101,7 @@ public class SlotsMapping {
     static boolean supportsSimple(SlotKind s) {
         return switch (s) {
             case nb_bool, sq_length, mp_length, tp_descr_get -> true;
-            case tp_getattro, tp_descr_set, tp_setattro, sq_item, mp_subscript -> false;
+            case tp_getattro, tp_descr_set, tp_setattro, sq_item, mp_subscript, nb_add, sq_concat -> false;
         };
     }
 
@@ -105,8 +110,18 @@ public class SlotsMapping {
             case nb_bool -> "executeBool(null, self)";
             case sq_length, mp_length -> "executeInt(null, self)";
             case tp_descr_get -> "execute(null, self, obj, type)";
-            case tp_getattro, tp_descr_set, tp_setattro, sq_item, mp_subscript ->
+            case tp_getattro, tp_descr_set, tp_setattro, sq_item, mp_subscript, nb_add, sq_concat ->
                 throw new AssertionError("Should not reach here: should be always complex");
+        };
+    }
+
+    public static String getExtraCtorArgs(TpSlotData slot) {
+        return switch (slot.slot().value()) {
+            case nb_add -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__";
+            case nb_bool, tp_setattro, tp_getattro,
+                            tp_descr_set, tp_descr_get, mp_subscript,
+                            mp_length, sq_concat, sq_item, sq_length ->
+                "";
         };
     }
 }

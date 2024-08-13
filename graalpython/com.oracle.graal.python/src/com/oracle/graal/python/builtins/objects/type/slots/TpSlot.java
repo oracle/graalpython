@@ -63,9 +63,16 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
@@ -119,6 +126,40 @@ public abstract class TpSlot {
             return slotWrapper.getSlot();
         }
         return null;
+    }
+
+    /**
+     * Checks whether the slot represents the same "slot value" in CPython compatible way: i.e.,
+     * Python magic method wrappers are same slots even if they are wrapping different
+     * types/methods.
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class IsSameSlotNode extends Node {
+        public abstract boolean execute(Node inliningTarget, TpSlot a, TpSlot b);
+
+        @Specialization
+        static boolean pythonWrappers(TpSlotPython a, TpSlotPython b) {
+            return true;
+        }
+
+        @Specialization
+        static boolean nativeSlots(TpSlotNative a, TpSlotNative b,
+                        @CachedLibrary(limit = "1") InteropLibrary interop) {
+            return a.isSameCallable(b, interop);
+        }
+
+        @Fallback
+        static boolean others(TpSlot a, TpSlot b) {
+            // builtins are singletons, or if the types don't match the objects wouldn't either
+            assert hasExpectedType(a) && hasExpectedType(b);
+            return a == b;
+        }
+
+        private static boolean hasExpectedType(TpSlot x) {
+            return x instanceof TpSlotBuiltin<?> || x instanceof TpSlotNative || x instanceof TpSlotPython;
+        }
     }
 
     /**
@@ -181,15 +222,26 @@ public abstract class TpSlot {
             return new TpSlotHPyNative(callable);
         }
 
-        public boolean isSameCallable(TpSlotNative other) {
-            // This is going to be quite slow, what else? Compare asPointer() values?
-            return InteropLibrary.getUncached().isIdentical(callable, other.callable, InteropLibrary.getUncached());
+        public final boolean isSameCallable(TpSlotNative other, InteropLibrary interop) {
+            if (this == other || this.callable == other.callable) {
+                return true;
+            }
+            // NFISymbols do not implement isIdentical interop message, so we compare the pointers
+            // Interop is going to be quite slow (in interpreter), should we eagerly request the
+            // pointer in the ctor?
+            interop.toNative(callable);
+            interop.toNative(other.callable);
+            try {
+                return interop.asPointer(callable) == interop.asPointer(other.callable);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         /**
          * Bound callable that supports the execute interop message.
          */
-        public Object getCallable() {
+        public final Object getCallable() {
             return callable;
         }
     }

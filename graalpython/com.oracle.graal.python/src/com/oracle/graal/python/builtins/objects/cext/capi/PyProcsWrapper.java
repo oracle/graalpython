@@ -51,8 +51,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.CallSlotBinaryFuncNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.CallSlotBinaryOpNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.CallSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallManagedSlotGetAttrNode;
@@ -69,6 +74,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -290,6 +296,70 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    public static final class BinaryOpSlotFuncWrapper extends TpSlotWrapper {
+        private final BinaryOpSlot binaryOp;
+
+        public BinaryOpSlotFuncWrapper(TpSlotManaged delegate, BinaryOpSlot binaryOp) {
+            super(delegate);
+            this.binaryOp = binaryOp;
+        }
+
+        public static BinaryOpSlotFuncWrapper createAdd(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_ADD);
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
+                        @Cached CallSlotBinaryOpNode callSlotNode,
+                        @Cached NativeToPythonNode selfToJavaNode,
+                        @Cached NativeToPythonNode argTtoJavaNode,
+                        @Cached GetClassNode getSelfClassNode,
+                        @Cached GetClassNode getOtherClassNode,
+                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached GetCachedTpSlotsNode getOtherSlots,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
+            try {
+                if (arguments.length != 2) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(2, 2, arguments.length);
+                }
+                try {
+                    Object self = selfToJavaNode.execute(arguments[0]);
+                    Object other = argTtoJavaNode.execute(arguments[1]);
+                    Object otherType = getOtherClassNode.execute(inliningTarget, other);
+                    Object selfType = getSelfClassNode.execute(inliningTarget, self);
+                    TpSlot otherSlot = binaryOp.getSlotValue(getOtherSlots.execute(inliningTarget, otherType));
+                    boolean sameTypes = isSameTypeNode.execute(inliningTarget, selfType, otherType);
+                    return toNativeNode.execute(callSlotNode.execute(null, inliningTarget, getSlot(), self, selfType, other, otherSlot, otherType, sameTypes, binaryOp));
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "BinaryFuncWrapper", getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(inliningTarget, e);
+                return PythonContext.get(gil).getNativeNull();
+            } finally {
+                CApiTiming.exit(timing);
+                gil.release(mustRelease);
+            }
+        }
+
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, binaryOp);
+        }
+
+        @Override
+        protected String getSignature() {
+            return "(POINTER,POINTER):POINTER";
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
     public static final class UnaryFuncWrapper extends PyProcsWrapper {
 
         public UnaryFuncWrapper(Object delegate) {
@@ -376,7 +446,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
-            return new GetAttrWrapper(slot);
+            return new InquiryWrapper(slot);
         }
     }
 
@@ -512,7 +582,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
-            return new GetAttrWrapper(slot);
+            return new DescrSetFunctionWrapper(slot);
         }
     }
 
@@ -893,7 +963,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
-            return new GetAttrWrapper(slot);
+            return new LenfuncWrapper(slot);
         }
     }
 
@@ -1006,7 +1076,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
-            return new GetAttrWrapper(slot);
+            return new DescrGetFunctionWrapper(slot);
         }
     }
 }

@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -95,8 +96,13 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
         }
         Object type = getClassNode.execute(inliningTarget, object);
         if (type == PythonBuiltinClassType.ForeignObject) {
-            return lazyLib.get(inliningTarget).hasArrayElements(object);
+            return checkForeign(inliningTarget, object, lazyLib);
         }
         return getSlotsNode.execute(inliningTarget, type).sq_item() != null;
+    }
+
+    @InliningCutoff
+    private static boolean checkForeign(Node inliningTarget, Object object, LazyInteropLibrary lazyLib) {
+        return lazyLib.get(inliningTarget).hasArrayElements(object);
     }
 }

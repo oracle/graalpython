@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.list;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_SORT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
@@ -91,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -862,9 +862,9 @@ public final class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_concat, isComplex = true)
     @GenerateNodeFactory
-    abstract static class AddNode extends PythonBinaryBuiltinNode {
+    abstract static class ConcatNode extends SqConcatBuiltinNode {
         @Specialization
         static PList doPList(PList left, PList other,
                         @Bind("this") Node inliningTarget,
@@ -883,7 +883,7 @@ public final class ListBuiltins extends PythonBuiltins {
 
         @NeverDefault
         protected static SequenceStorageNodes.ConcatNode createConcat() {
-            return SequenceStorageNodes.ConcatNode.create(() -> SequenceStorageNodes.ListGeneralizationNode.create());
+            return SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create);
         }
     }
 

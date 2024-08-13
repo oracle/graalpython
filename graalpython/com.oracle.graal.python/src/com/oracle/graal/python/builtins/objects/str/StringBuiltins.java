@@ -37,7 +37,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_FORMAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STARTSWITH;
 import static com.oracle.graal.python.nodes.ErrorMessages.FILL_CHAR_MUST_BE_UNICODE_CHAR_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
@@ -133,6 +132,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -544,9 +544,9 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_concat, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class AddNode extends PythonBinaryBuiltinNode {
+    public abstract static class ConcatNode extends SqConcatBuiltinNode {
         @Specialization
         static TruffleString doIt(TruffleString self, TruffleString other,
                         @Shared @Cached TruffleString.ConcatNode concatNode) {
@@ -581,7 +581,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static Object doSNative(VirtualFrame frame, Object self, PythonAbstractNativeObject other,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CastToTruffleStringNode cast,
-                        @Shared @Cached AddNode recurse,
+                        @Shared @Cached ConcatNode recurse,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return recurse.execute(frame, self, cast.execute(inliningTarget, other));
@@ -594,7 +594,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static Object doNativeS(VirtualFrame frame, PythonAbstractNativeObject self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CastToTruffleStringNode cast,
-                        @Shared @Cached AddNode recurse,
+                        @Shared @Cached ConcatNode recurse,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return recurse.execute(frame, cast.execute(inliningTarget, self), other);
@@ -607,7 +607,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static Object doNative(VirtualFrame frame, PythonAbstractNativeObject self, PythonAbstractNativeObject other,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CastToTruffleStringNode cast,
-                        @Shared @Cached AddNode recurse,
+                        @Shared @Cached ConcatNode recurse,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 return recurse.execute(frame, cast.execute(inliningTarget, self), cast.execute(inliningTarget, other));

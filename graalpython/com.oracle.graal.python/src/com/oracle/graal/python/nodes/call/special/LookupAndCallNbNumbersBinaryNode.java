@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,10 +41,8 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SLOT1BINFULL;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_CONCAT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_REPEAT;
 import static com.oracle.truffle.api.dsl.Cached.Shared;
 
@@ -83,83 +81,6 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
     private static Object lookupAttrId(VirtualFrame frame, Object obj, Object objClass,
                     LookupSpecialMethodSlotNode getattr) {
         return getattr.execute(frame, objClass, obj);
-    }
-
-    // cpython://Objects/abstract.c#PyNumber_Add
-    protected abstract static class PyNumberAddNode extends LookupAndCallNbNumbersBinaryNode {
-        PyNumberAddNode(Supplier<NotImplementedHandler> handlerFactory) {
-            super(handlerFactory);
-        }
-
-        @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
-        @SuppressWarnings("truffle-static-method")
-        Object addC(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
-                        @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
-                        @Exclusive @Cached GetClassNode getClassNode,
-                        @Exclusive @Cached("create(Add)") LookupSpecialMethodSlotNode getattr,
-                        @Exclusive @Cached GetMethodsFlagsNode getMethodsFlagsNode,
-                        @Exclusive @Cached GetClassNode getlClassNode,
-                        @Exclusive @Cached GetClassNode getrClassNode,
-                        @Exclusive @Cached InlinedConditionProfile p1,
-                        @Exclusive @Cached InlinedConditionProfile p2,
-                        @Exclusive @Cached InlinedConditionProfile p3,
-                        @Exclusive @Cached BinaryOp1Node binaryOp1Node,
-                        @Exclusive @Cached Slot1BINFULLNode slot1BINFULLNode) {
-            return add(frame, left, right, inliningTarget, getClassNode, getattr, getMethodsFlagsNode,
-                            getlClassNode, getrClassNode, p1, p2, p3,
-                            binaryOp1Node, slot1BINFULLNode);
-        }
-
-        @Specialization(replaces = "addC")
-        @SuppressWarnings("truffle-static-method")
-        Object add(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached GetClassNode getClassNode,
-                        @Exclusive @Cached("create(Add)") LookupSpecialMethodSlotNode getattr,
-                        @Exclusive @Cached GetMethodsFlagsNode getMethodsFlagsNode,
-                        @Exclusive @Cached GetClassNode getlClassNode,
-                        @Exclusive @Cached GetClassNode getrClassNode,
-                        @Exclusive @Cached InlinedConditionProfile p1,
-                        @Exclusive @Cached InlinedConditionProfile p2,
-                        @Exclusive @Cached InlinedConditionProfile p3,
-                        @Exclusive @Cached BinaryOp1Node binaryOp1Node,
-                        @Exclusive @Cached Slot1BINFULLNode slot1BINFULLNode) {
-            Object lClass = getlClassNode.execute(inliningTarget, left);
-            Object rClass = getrClassNode.execute(inliningTarget, right);
-            long lFlags = getMethodsFlagsNode.execute(inliningTarget, lClass);
-            long rFlags = getMethodsFlagsNode.execute(inliningTarget, rClass);
-            if (p1.profile(inliningTarget, ((lFlags | rFlags) & NB_ADD) != 0)) {
-                Object result;
-                SpecialMethodSlot slot = SpecialMethodSlot.Add;
-                SpecialMethodSlot rslot = SpecialMethodSlot.RAdd;
-                if (p2.profile(inliningTarget, BinaryOp1Node.isBothSLOT1BINFULL(lFlags, rFlags) || doSLOT1BINFULL(slot, lFlags, rFlags))) {
-                    result = slot1BINFULLNode.execute(frame, left, right, slot, rslot, lFlags, rFlags, lClass, rClass);
-                } else {
-                    result = binaryOp1Node.execute(frame, left, right, slot, rslot, lFlags, rFlags, lClass, rClass);
-                }
-                if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                    return result;
-                }
-            }
-            if (p3.profile(inliningTarget, (lFlags & SQ_CONCAT) != 0)) {
-                Object seqClass = getClassNode.execute(inliningTarget, left);
-                Object callable = getattr.execute(frame, seqClass, left);
-                return ensureDispatch().executeObject(frame, callable, left, right);
-            }
-            return runErrorHandler(frame, left, right);
-        }
-
-        @Override
-        public TruffleString getName() {
-            return SpecialMethodSlot.Add.getName();
-        }
-
-        @Override
-        public TruffleString getRname() {
-            return SpecialMethodSlot.RAdd.getName();
-        }
     }
 
     // cpython://Objects/abstract.c#PyNumber_Multiply
@@ -549,8 +470,7 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
             return result == PNotImplemented.NOT_IMPLEMENTED &&
                             otherSlot == PNone.NO_VALUE &&
                             lClass == rClass &&
-                            (slot == SpecialMethodSlot.Add ||
-                                            slot == SpecialMethodSlot.Mul ||
+                            (slot == SpecialMethodSlot.Mul ||
                                             slot == SpecialMethodSlot.And ||
                                             slot == SpecialMethodSlot.Or ||
                                             slot == SpecialMethodSlot.Xor);

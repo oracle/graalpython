@@ -83,7 +83,7 @@ public class TpSlotBinaryFunc {
     }
 
     public abstract static class TpSlotBinaryFuncBuiltin<T extends PythonBinaryBuiltinNode> extends TpSlotBuiltinBase<T> {
-        private final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
+        final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
         private final String builtinName;
 
         protected TpSlotBinaryFuncBuiltin(NodeFactory<T> nodeFactory, PExternalFunctionWrapper wrapper, String builtinName) {
@@ -108,8 +108,18 @@ public class TpSlotBinaryFunc {
         }
     }
 
+    public abstract static class TpSlotSqConcat<T extends PythonBinaryBuiltinNode> extends TpSlotBinaryFuncBuiltin<T> {
+        protected TpSlotSqConcat(NodeFactory<T> nodeFactory) {
+            super(nodeFactory, PExternalFunctionWrapper.BINARYFUNC, J___GETITEM__);
+        }
+    }
+
     @GenerateInline(value = false, inherit = true)
     public abstract static class MpSubscriptBuiltinNode extends PythonBinaryBuiltinNode {
+    }
+
+    @GenerateInline(value = false, inherit = true)
+    public abstract static class SqConcatBuiltinNode extends PythonBinaryBuiltinNode {
     }
 
     @GenerateInline

@@ -61,7 +61,6 @@ public abstract class MethodsFlags {
      * necessary conversions in the slot functions themselves.
      */
 
-    public static final long NB_ADD = 1L;
     public static final long NB_SUBTRACT = 1L << 1;
     public static final long NB_MULTIPLY = 1L << 2;
     public static final long NB_REMAINDER = 1L << 3;
@@ -100,18 +99,13 @@ public abstract class MethodsFlags {
     // this is helpful to determine if the binop slot is of a heaptype.
     public static final long SLOT1BINFULL = 1L << 39;
 
-    private static final long SLOT1BINFULL_METHODS = SLOT1BINFULL | NB_ADD | NB_SUBTRACT | NB_POWER | NB_FLOOR_DIVIDE |
+    private static final long SLOT1BINFULL_METHODS = SLOT1BINFULL | NB_SUBTRACT | NB_POWER | NB_FLOOR_DIVIDE |
                     NB_TRUE_DIVIDE | NB_LSHIFT | NB_RSHIFT | NB_AND | NB_XOR | NB_OR | NB_MULTIPLY | NB_REMAINDER |
                     NB_DIVMOD | NB_MATRIX_MULTIPLY;
-
-    public static boolean isSLOT1BINFULL(long methodsFlags, long op) {
-        return (methodsFlags & (SLOT1BINFULL_METHODS & (op | SLOT1BINFULL))) > SLOT1BINFULL;
-    }
 
     // PySequenceMethods
 
     public static final long SQ_LENGTH = 1L << 40;
-    public static final long SQ_CONCAT = 1L << 41;
     public static final long SQ_REPEAT = 1L << 42;
     public static final long SQ_ITEM = 1L << 43;
     public static final long SQ_ASS_ITEM = 1L << 45;
@@ -131,7 +125,7 @@ public abstract class MethodsFlags {
     public static final long AM_SEND = 1L << 57;
 
     public static final long ASYNC_METHODS = AM_AWAIT | AM_AITER | AM_ANEXT | AM_SEND;
-    public static final long SEQUENCE_METHODS = SQ_LENGTH | SQ_ITEM | SQ_ASS_ITEM | SQ_CONCAT | SQ_INPLACE_CONCAT | SQ_INPLACE_REPEAT | SQ_REPEAT | SQ_CONTAINS;
+    public static final long SEQUENCE_METHODS = SQ_LENGTH | SQ_ITEM | SQ_ASS_ITEM | SQ_INPLACE_CONCAT | SQ_INPLACE_REPEAT | SQ_REPEAT | SQ_CONTAINS;
     public static final long MAPPING_METHODS = MP_LENGTH | MP_SUBSCRIPT | MP_ASS_SUBSCRIPT;
 
     // builtins methods flags
@@ -141,20 +135,20 @@ public abstract class MethodsFlags {
     public static final long TYPE_M_FLAGS = NB_OR;
 
     public static final long NONE_M_FLAGS = NB_BOOL;
-    public static final long INT_M_FLAGS = NB_ADD | NB_SUBTRACT | NB_MULTIPLY | NB_REMAINDER | NB_DIVMOD |
+    public static final long INT_M_FLAGS = NB_SUBTRACT | NB_MULTIPLY | NB_REMAINDER | NB_DIVMOD |
                     NB_POWER | NB_NEGATIVE | NB_POSITIVE | NB_ABSOLUTE | NB_BOOL | NB_INVERT | NB_LSHIFT |
                     NB_RSHIFT | NB_AND | NB_XOR | NB_OR | NB_INT | NB_FLOAT |
                     NB_FLOOR_DIVIDE | NB_TRUE_DIVIDE | NB_INDEX;
     public static final long BOOLEAN_M_FLAGS = INT_M_FLAGS /* base */ | NB_AND | NB_XOR | NB_OR;
-    public static final long FLOAT_M_FLAGS = NB_ADD | NB_SUBTRACT | NB_MULTIPLY | NB_REMAINDER | NB_DIVMOD |
+    public static final long FLOAT_M_FLAGS = NB_SUBTRACT | NB_MULTIPLY | NB_REMAINDER | NB_DIVMOD |
                     NB_POWER | NB_NEGATIVE | NB_POSITIVE | NB_ABSOLUTE | NB_BOOL | NB_INT | NB_FLOAT |
                     NB_FLOOR_DIVIDE | NB_TRUE_DIVIDE;
-    public static final long BYTE_ARRAY_M_FLAGS = NB_REMAINDER | SQ_LENGTH | SQ_CONCAT | SQ_REPEAT |
+    public static final long BYTE_ARRAY_M_FLAGS = NB_REMAINDER | SQ_LENGTH | SQ_REPEAT |
                     SQ_ITEM | SQ_ASS_ITEM | SQ_CONTAINS | SQ_INPLACE_CONCAT | SQ_INPLACE_REPEAT | MP_LENGTH |
                     MP_SUBSCRIPT | MP_ASS_SUBSCRIPT;
-    public static final long BYTES_M_FLAGS = NB_REMAINDER | SQ_LENGTH | SQ_CONCAT | SQ_REPEAT | SQ_ITEM |
+    public static final long BYTES_M_FLAGS = NB_REMAINDER | SQ_LENGTH | SQ_REPEAT | SQ_ITEM |
                     SQ_CONTAINS | MP_LENGTH | MP_SUBSCRIPT;
-    public static final long COMPLEX_M_FLAGS = NB_ADD | NB_SUBTRACT | NB_MULTIPLY | NB_POWER | NB_NEGATIVE |
+    public static final long COMPLEX_M_FLAGS = NB_SUBTRACT | NB_MULTIPLY | NB_POWER | NB_NEGATIVE |
                     NB_POSITIVE | NB_ABSOLUTE | NB_BOOL | NB_TRUE_DIVIDE;
     public static final long DICT_M_FLAGS = NB_OR | NB_INPLACE_OR | SQ_CONTAINS | MP_LENGTH | MP_SUBSCRIPT |
                     MP_ASS_SUBSCRIPT;
@@ -164,9 +158,9 @@ public abstract class MethodsFlags {
 
     public static final long DICTITEMSVIEW_M_FLAGS = NB_SUBTRACT | NB_AND | NB_XOR | NB_OR | SQ_LENGTH |
                     SQ_CONTAINS;
-    public static final long LIST_M_FLAGS = SQ_LENGTH | SQ_CONCAT | SQ_REPEAT | SQ_ITEM | SQ_ASS_ITEM | SQ_CONTAINS |
+    public static final long LIST_M_FLAGS = SQ_LENGTH | SQ_REPEAT | SQ_ITEM | SQ_ASS_ITEM | SQ_CONTAINS |
                     SQ_INPLACE_CONCAT | SQ_INPLACE_REPEAT | MP_LENGTH | MP_SUBSCRIPT | MP_ASS_SUBSCRIPT;
-    public static final long TUPLE_M_FLAGS = SQ_LENGTH | SQ_CONCAT | SQ_REPEAT | SQ_ITEM | SQ_CONTAINS |
+    public static final long TUPLE_M_FLAGS = SQ_LENGTH | SQ_REPEAT | SQ_ITEM | SQ_CONTAINS |
                     MP_LENGTH | MP_SUBSCRIPT;
     public static final long MEMORYVIEW_M_FLAGS = SQ_LENGTH | SQ_ITEM | MP_LENGTH | MP_SUBSCRIPT |
                     MP_ASS_SUBSCRIPT;
@@ -176,15 +170,15 @@ public abstract class MethodsFlags {
                     SQ_CONTAINS;
     public static final long SET_M_FLAGS = NB_SUBTRACT | NB_AND | NB_XOR | NB_OR |
                     NB_INPLACE_SUBTRACT | NB_INPLACE_AND | NB_INPLACE_XOR | NB_INPLACE_OR | SQ_LENGTH | SQ_CONTAINS;
-    public static final long STRING_M_FLAGS = NB_REMAINDER | SQ_LENGTH | SQ_CONCAT | SQ_REPEAT | SQ_ITEM |
+    public static final long STRING_M_FLAGS = NB_REMAINDER | SQ_LENGTH | SQ_REPEAT | SQ_ITEM |
                     SQ_CONTAINS | MP_LENGTH | MP_SUBSCRIPT;
 
     public static final long DEFAULTDICT_M_FLAGS = NB_OR | DICT_M_FLAGS;
-    public static final long DEQUE_M_FLAGS = SQ_LENGTH | SQ_CONCAT | SQ_REPEAT |
+    public static final long DEQUE_M_FLAGS = SQ_LENGTH | SQ_REPEAT |
                     SQ_ITEM | SQ_ASS_ITEM | SQ_CONTAINS | SQ_INPLACE_CONCAT | SQ_INPLACE_REPEAT;
 
     public static final long MAPPINGPROXY_M_FLAGS = NB_OR | NB_INPLACE_OR | SQ_CONTAINS | MP_LENGTH | MP_SUBSCRIPT;
-    public static final long ARRAY_M_FLAGS = SQ_LENGTH | SQ_CONCAT | SQ_REPEAT | SQ_ITEM | SQ_ASS_ITEM |
+    public static final long ARRAY_M_FLAGS = SQ_LENGTH | SQ_REPEAT | SQ_ITEM | SQ_ASS_ITEM |
                     SQ_CONTAINS | SQ_INPLACE_CONCAT | SQ_INPLACE_REPEAT | MP_LENGTH | MP_SUBSCRIPT | MP_ASS_SUBSCRIPT;
     public static final long MMAP_M_FLAGS = SQ_LENGTH | SQ_ITEM | SQ_ASS_ITEM |
                     MP_LENGTH | MP_SUBSCRIPT | MP_ASS_SUBSCRIPT;
@@ -213,7 +207,7 @@ public abstract class MethodsFlags {
     public static final long SIMPLECDATA_M_FLAGS = NB_BOOL;
     public static final long UNIONTYPE_M_FLAGS = SQ_REPEAT | TYPE_M_FLAGS;
 
-    public static final long FOREIGNOBJECT_M_FLAGS = NB_BOOL | SQ_LENGTH | MP_LENGTH | NB_ADD | NB_MULTIPLY |
+    public static final long FOREIGNOBJECT_M_FLAGS = NB_BOOL | SQ_LENGTH | MP_LENGTH | NB_MULTIPLY |
                     NB_SUBTRACT | NB_DIVMOD | NB_FLOOR_DIVIDE | NB_TRUE_DIVIDE | NB_AND | NB_XOR | NB_OR | NB_INDEX |
                     SQ_CONTAINS | MP_SUBSCRIPT | MP_ASS_SUBSCRIPT;
 

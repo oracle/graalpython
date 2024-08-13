@@ -250,7 +250,7 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
             return false;
         }
         // see pypy descroperation.py#_make_binop_impl()
-        boolean isSeqBugCompatOperation = (slot == SpecialMethodSlot.Add || slot == SpecialMethodSlot.Mul);
+        boolean isSeqBugCompatOperation = (slot == SpecialMethodSlot.Mul);
         return isSeqBugCompatOperation && isFlagSequenceBugCompat(inliningTarget, leftClass, gotLeftBuiltinClassType) && !isFlagSequenceBugCompat(inliningTarget, rightClass, gotRightBuiltinClassType);
     }
 
