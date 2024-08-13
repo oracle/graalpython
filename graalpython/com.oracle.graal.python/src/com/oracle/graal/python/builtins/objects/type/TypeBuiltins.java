@@ -376,7 +376,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             return execute(frame, self, arguments, keywords);
         }
 
-        public CallNodeHelper getCallNodeHelper() {
+        private CallNodeHelper getCallNodeHelper() {
             if (callNodeHelper == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callNodeHelper = insert(CallNodeHelperNodeGen.create());
@@ -1053,7 +1053,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
-    static abstract class CheckSetSpecialTypeAttrNode extends Node {
+    abstract static class CheckSetSpecialTypeAttrNode extends Node {
         abstract void execute(Node inliningTarget, Object type, Object value, TruffleString name);
 
         @Specialization
