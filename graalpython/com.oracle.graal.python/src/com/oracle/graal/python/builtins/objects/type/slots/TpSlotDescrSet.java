@@ -250,6 +250,7 @@ public abstract class TpSlotDescrSet {
         }
 
         @Specialization(guards = "isNoValue(value)")
+        @InliningCutoff
         static void callPythonDel(VirtualFrame frame, Node inliningTarget, TpSlotDescrSetPython slot, Object self, Object obj, @SuppressWarnings("unused") Object value,
                         @Cached BinaryPythonSlotDispatcherNode dispatcherNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {

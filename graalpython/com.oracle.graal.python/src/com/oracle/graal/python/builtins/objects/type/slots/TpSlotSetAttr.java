@@ -329,6 +329,7 @@ public class TpSlotSetAttr {
         }
 
         @Specialization(guards = "isNoValue(value)")
+        @InliningCutoff
         static void callPythonSimpleDel(VirtualFrame frame, Node inliningTarget, TpSlotSetAttrPython slot, Object self, Object name, @SuppressWarnings("unused") Object value,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode,
                         @Cached BinaryPythonSlotDispatcherNode callPythonFun) {
