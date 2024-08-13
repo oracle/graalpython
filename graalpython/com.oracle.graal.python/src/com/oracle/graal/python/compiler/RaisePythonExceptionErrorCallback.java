@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -101,6 +101,10 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
 
     @Override
     public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
+        throw raiseSyntaxError(errorType, sourceRange, message);
+    }
+
+    public PException raiseSyntaxError(ErrorType errorType, SourceRange sourceRange, String message) {
         throw raiseSyntaxError(errorType, sourceRange, toTruffleStringUncached(message), source, withJavaStackTrace);
     }
 
@@ -212,6 +216,13 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
     public void triggerDeprecationWarnings() {
         if (deprecationWarnings != null) {
             triggerDeprecationWarningsBoundary();
+        }
+    }
+
+    public void triggerAndClearDeprecationWarnings() {
+        if (deprecationWarnings != null) {
+            triggerDeprecationWarningsBoundary();
+            deprecationWarnings.clear();
         }
     }
 

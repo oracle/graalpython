@@ -544,6 +544,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     Capsule("capsule"),
 
+    PTokenizerIter("TokenizerIter", "_tokenize"),
+
     // A marker for @Builtin that is not a class. Must always come last.
     nil("nil");
 
