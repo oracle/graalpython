@@ -580,16 +580,7 @@ def test_nb_add_sq_concat_static_managed_heap_inheritance():
 
     # fixup_slot_dispatchers should figure out that __add__ and __radd__ descriptors wrap the same
     # native call and set nb_add to it instead of the Python dispatcher C function
-    class IntermediateManagedDummy(NbAddSqConcatStaticType):
+    class ManagedDummy(NbAddSqConcatStaticType):
         pass
 
-    # This should inherit my_nb_add as nb_add
-    SqConcatInheritingNbAdd = CPyExtHeapType("SqConcatInheritingNbAdd",
-                                             bases=(IntermediateManagedDummy,),
-                                             code = 'PyObject* my_sq_concat(PyObject* self, PyObject *other) { return PyLong_FromLong(10); }',
-                                             slots=['{Py_sq_concat, &my_sq_concat}'])
-
-    # Doing SqConcatInheritingNbAdd() + NbAddSqConcatStaticType() triggers segfault in CPython debug build
-    # (not in the addition itself, but later in weakref processing). This test is derived from a fuzzer test
-    # case, where it did not segfault...
-    assert SlotsGetter.get_nb_add(NbAddSqConcatStaticType()) == SlotsGetter.get_nb_add(SqConcatInheritingNbAdd())
+    assert SlotsGetter.get_nb_add(ManagedDummy()) == SlotsGetter.get_nb_add(NbAddSqConcatStaticType())
