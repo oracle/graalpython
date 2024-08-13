@@ -1,0 +1,3 @@
+[[rules]]
+patch = 'nanobind.patch'
+license = 'BSD-3-Clause'

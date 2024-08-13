@@ -1,8 +1,11 @@
-[[rules]]
-version = '== 0.16.2'
-patch = 'mlx-0.16.2.patch'
-license = 'MIT'
+[[add-sources]]
+version = '0.16.3'
+url = 'https://github.com/ml-explore/mlx/archive/refs/tags/v0.16.3.tar.gz'
 
 [[add-sources]]
 version = '0.16.2'
 url = 'https://github.com/ml-explore/mlx/archive/refs/tags/v0.16.2.tar.gz'
+
+[[add-sources]]
+version = '0.16.1'
+url = 'https://github.com/ml-explore/mlx/archive/refs/tags/v0.16.1.tar.gz'
