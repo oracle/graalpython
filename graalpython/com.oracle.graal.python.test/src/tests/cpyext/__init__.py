@@ -767,7 +767,7 @@ def CPyExtHeapType(name, bases=(object), code='', slots=None, **kwargs):
         {slots}
     }};
 
-    PyType_Spec spec = {{ "{name}Type", sizeof({name}Object), 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, slots }};
+    PyType_Spec spec = {{ "{name}", sizeof({name}Object), 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, slots }};
 
     static PyObject* create(PyObject* unused, PyObject* bases) {{
         {ready_code}

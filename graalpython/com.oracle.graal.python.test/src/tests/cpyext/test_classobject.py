@@ -39,7 +39,7 @@
 
 import sys
 
-from . import CPyExtTestCase, CPyExtFunction
+from . import CPyExtTestCase, CPyExtFunction, CPyExtType, assert_raises, CPyExtHeapType
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -53,7 +53,6 @@ DummyInstance = DummyClass()
 
 
 class TestClassobject(CPyExtTestCase):
-
     testmod = type(sys)("foo")
 
     test_PyMethod_Function = CPyExtFunction(
@@ -79,3 +78,18 @@ class TestClassobject(CPyExtTestCase):
         argspec="O",
         arguments=["PyObject* func"],
     )
+
+    def test_name_qualname(self):
+        TypeWithName = CPyExtType('TypeWithName')
+        assert TypeWithName.__name__ == 'TypeWithName'
+        assert TypeWithName.__qualname__ == 'TypeWithName'
+        assert_raises(TypeError, setattr, '__name__', TypeWithName, "foo")
+        assert_raises(TypeError, setattr, '__qualname__', TypeWithName, "foo")
+
+        HeapTypeWithName = CPyExtHeapType('HeapTypeWithName')
+        assert HeapTypeWithName.__name__ == 'HeapTypeWithName'
+        assert HeapTypeWithName.__qualname__ == 'HeapTypeWithName'
+        HeapTypeWithName.__name__ = 'HeapTypeWithNameRenamed'
+        assert HeapTypeWithName.__name__ == 'HeapTypeWithNameRenamed'
+        HeapTypeWithName.__qualname__ = 'foo.HeapTypeWithNameRenamed'
+        assert HeapTypeWithName.__qualname__ == 'foo.HeapTypeWithNameRenamed'

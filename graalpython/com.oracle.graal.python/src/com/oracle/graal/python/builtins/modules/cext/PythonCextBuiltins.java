@@ -1705,7 +1705,11 @@ public final class PythonCextBuiltins {
                 }
                 Object attribute = PyObjectGetAttr.getUncached().execute(null, moduleObject, toTruffleStringUncached(name));
                 if (attribute != PNone.NO_VALUE) {
-                    clazz = (PythonManagedClass) attribute;
+                    if (attribute instanceof PythonBuiltinClassType builtinType) {
+                        clazz = core.lookupType(builtinType);
+                    } else {
+                        clazz = (PythonManagedClass) attribute;
+                    }
                 }
 
             }

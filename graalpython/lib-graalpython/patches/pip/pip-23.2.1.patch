@@ -336,7 +336,7 @@ index 78b5c13..18a184c 100644
 +    from pip._internal.utils.graalpy import apply_graalpy_patches
 +    apply_graalpy_patches(filename, location)
 diff --git a/pip/_internal/wheel_builder.py b/pip/_internal/wheel_builder.py
-index 60d75dd..556a5f5 100644
+index 60d75dd..bdf4231 100644
 --- a/pip/_internal/wheel_builder.py
 +++ b/pip/_internal/wheel_builder.py
 @@ -7,6 +7,7 @@ import re
@@ -358,12 +358,15 @@ index 60d75dd..556a5f5 100644
      # Otherwise, do not cache.
      return False
  
-@@ -248,6 +253,8 @@ def _build_one_inside_env(
+@@ -248,6 +253,11 @@ def _build_one_inside_env(
              )
  
          if wheel_path is not None:
 +            # GraalPy change: watermark wheels that we built so that we don't try to patch them when installing
-+            graalpy.mark_wheel(wheel_path)
++            # Note: we currently don't patch source builds from SCM links, so we don't watermark them so that they can
++            # get patched with a wheel patch
++            if not req.link.is_vcs:
++                graalpy.mark_wheel(wheel_path)
              wheel_name = os.path.basename(wheel_path)
              dest_path = os.path.join(output_dir, wheel_name)
              try:
