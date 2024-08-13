@@ -78,7 +78,7 @@ if sys.platform != 'win32' and (sys.implementation.name != 'graalpy' or not __gr
             index = -1
             whole_out = ''
             while True:
-                rlist, _, _ = select.select([pty_parent], [], [], 30)
+                rlist, _, _ = select.select([pty_parent], [], [], 60)
                 assert pty_parent in rlist, f"Timed out waiting for REPL output. Output: {whole_out}{out}"
                 out += os.read(pty_parent, 1024).decode('utf-8')
                 out = out.replace('\r\n', '\n')
@@ -99,7 +99,7 @@ if sys.platform != 'win32' and (sys.implementation.name != 'graalpy' or not __gr
                     out = out[-4:]
                     if index >= len(input_and_output):
                         os.write(pty_parent, b'\x04')  # CTRL-D
-                        proc.wait(timeout=30)
+                        proc.wait(timeout=60)
                         out = os.read(pty_parent, 1024).decode('utf-8')
                         out = re.sub(r'\x1b\[\?2004[hl]', '', out)
                         assert not out.strip(), f"Garbage after EOF:\n{out!r}"

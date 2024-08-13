@@ -59,7 +59,8 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.BinaryToTernaryBuiltinNode;
-import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.TernaryOrBinaryPythonSlotDispatcherNode;
+import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.BinaryPythonSlotDispatcherNode;
+import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.TernaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
@@ -76,9 +77,11 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -214,6 +217,7 @@ public abstract class TpSlotDescrSet {
     @GenerateInline(inlineByDefault = true)
     @GenerateCached
     @GenerateUncached
+    @ImportStatic(PGuards.class)
     @SuppressWarnings("rawtypes")
     public abstract static class CallSlotDescrSet extends Node {
         @NeverDefault
@@ -234,24 +238,27 @@ public abstract class TpSlotDescrSet {
             slotNode.executeVoid(frame, self, obj, value);
         }
 
-        @Specialization
-        static void callPython(VirtualFrame frame, Node inliningTarget, TpSlotDescrSetPython slot, Object self, Object obj, Object value,
-                        @Cached TernaryOrBinaryPythonSlotDispatcherNode dispatcherNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            Object callable;
-            boolean callDel = PGuards.isNoValue(value);
-            TruffleString name;
-            if (callDel) {
-                callable = slot.getDelCallable();
-                name = T___DEL__;
-            } else {
-                callable = slot.getSetCallable();
-                name = T___SET__;
-            }
+        @Specialization(guards = "!isNoValue(value)")
+        static void callPythonSet(VirtualFrame frame, Node inliningTarget, TpSlotDescrSetPython slot, Object self, Object obj, Object value,
+                        @Cached TernaryPythonSlotDispatcherNode dispatcherNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            Object callable = slot.getSetCallable();
             if (callable == null) {
-                throw raiseAttributeError(inliningTarget, raiseNode, name);
+                throw raiseAttributeError(inliningTarget, raiseNode, T___SET__);
             }
-            dispatcherNode.execute(frame, inliningTarget, !callDel, callable, slot.getType(), self, obj, value);
+            dispatcherNode.execute(frame, inliningTarget, callable, slot.getType(), self, obj, value);
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        @InliningCutoff
+        static void callPythonDel(VirtualFrame frame, Node inliningTarget, TpSlotDescrSetPython slot, Object self, Object obj, @SuppressWarnings("unused") Object value,
+                        @Cached BinaryPythonSlotDispatcherNode dispatcherNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            Object callable = slot.getDelCallable();
+            if (callable == null) {
+                throw raiseAttributeError(inliningTarget, raiseNode, T___DEL__);
+            }
+            dispatcherNode.execute(frame, inliningTarget, callable, slot.getType(), self, obj);
         }
 
         @Specialization

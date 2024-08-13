@@ -71,6 +71,8 @@ abstract class PythonDispatchers {
     abstract static class PythonSlotDispatcherNodeBase extends PNodeWithContext {
         @Idempotent
         static boolean isSimpleSignature(PFunction callable, int positionArgsCount) {
+            CompilerAsserts.partialEvaluationConstant(callable);
+            CompilerAsserts.partialEvaluationConstant(positionArgsCount);
             Signature signature = callable.getCode().getSignature();
             boolean result = signature.takesPositionalOnly() && signature.getMaxNumOfPositionalArgs() == positionArgsCount;
             CompilerAsserts.partialEvaluationConstant(result); // should hold in single context
@@ -96,7 +98,8 @@ abstract class PythonDispatchers {
 
         abstract Object executeImpl(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self);
 
-        @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 1)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 1)"}, //
+                        limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "cachedCallee.getCodeStableAssumption()")
         protected static Object doCachedPFunction(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self,
                         @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
                         @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
@@ -136,7 +139,8 @@ abstract class PythonDispatchers {
 
         abstract Object executeImpl(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1);
 
-        @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 2)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 2)"}, //
+                        limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "cachedCallee.getCodeStableAssumption()")
         protected static Object doCachedPFunction(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self, Object arg1,
                         @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
                         @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
@@ -168,59 +172,44 @@ abstract class PythonDispatchers {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    abstract static class TernaryOrBinaryPythonSlotDispatcherNode extends PythonSlotDispatcherNodeBase {
-        final Object execute(VirtualFrame frame, Node inliningTarget, boolean callTernary, Object callable, Object type, Object self, Object arg1, Object arg2) {
+    abstract static class TernaryPythonSlotDispatcherNode extends PythonSlotDispatcherNodeBase {
+        final Object execute(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1, Object arg2) {
             assert !(callable instanceof TruffleWeakReference<?>);
             assert !(type instanceof TruffleWeakReference<?>);
-            return executeImpl(frame, inliningTarget, callTernary, callable, type, self, arg1, arg2);
+            return executeImpl(frame, inliningTarget, callable, type, self, arg1, arg2);
         }
 
-        abstract Object executeImpl(VirtualFrame frame, Node inliningTarget, boolean callTernary, Object callable, Object type, Object self, Object arg1, Object arg2);
+        abstract Object executeImpl(VirtualFrame frame, Node inliningTarget, Object callable, Object type, Object self, Object arg1, Object arg2);
 
-        @Idempotent
-        static int getArgsCount(boolean callTernary) {
-            return callTernary ? 3 : 2;
-        }
-
-        @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, getArgsCount(callTernary))"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        protected static Object doCachedPFunction(VirtualFrame frame, boolean callTernary, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self,
+        @Specialization(guards = {"isSingleContext()", "callee == cachedCallee", "isSimpleSignature(cachedCallee, 3)"}, //
+                        limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "cachedCallee.getCodeStableAssumption()")
+        protected static Object doCachedPFunction(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, @SuppressWarnings("unused") Object type, Object self,
                         Object arg1, Object arg2,
                         @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
                         @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
-            Object[] arguments = PArguments.create(getArgsCount(callTernary));
+            Object[] arguments = PArguments.create(3);
             PArguments.setArgument(arguments, 0, self);
             PArguments.setArgument(arguments, 1, arg1);
-            if (callTernary) {
-                PArguments.setArgument(arguments, 2, arg2);
-            }
+            PArguments.setArgument(arguments, 2, arg2);
             return invoke.execute(frame, arguments);
         }
 
         @Specialization(replaces = "doCachedPFunction")
         @InliningCutoff
-        static Object doGeneric(VirtualFrame frame, Node inliningTarget, boolean callTernary, Object callableObj, Object type, Object self, Object arg1, Object arg2,
+        static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object callableObj, Object type, Object self, Object arg1, Object arg2,
                         @Cached MaybeBindDescriptorNode bindDescriptorNode,
                         @Cached(inline = false) CallNode callNode) {
             Object bound = bindDescriptorNode.execute(frame, inliningTarget, callableObj, self, type);
-            int argsCount = 1 + asInt(callTernary) + asInt(!(bound instanceof BoundDescriptor));
-            Object[] arguments = new Object[argsCount];
-            int argIndex = 0;
+            Object[] arguments;
             Object callable;
             if (bound instanceof BoundDescriptor boundDescr) {
                 callable = boundDescr.descriptor;
+                arguments = new Object[]{arg1, arg2};
             } else {
                 callable = bound;
-                arguments[argIndex++] = self;
-            }
-            arguments[argIndex++] = arg1;
-            if (callTernary) {
-                arguments[argIndex] = arg2;
+                arguments = new Object[]{self, arg1, arg2};
             }
             return callNode.execute(frame, callable, arguments);
-        }
-
-        private static int asInt(boolean b) {
-            return b ? 1 : 0;
         }
     }
 }
