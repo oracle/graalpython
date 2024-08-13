@@ -153,6 +153,8 @@ def slots_tester(Klass, other_klasses):
         obj1 = Klass()
         test(lambda: obj1 + obj2, f"{Klass} + {type(obj2)}")
         test(lambda: obj2 + obj1, f"{type(obj2)} + {Klass}")
+        test_dunder(obj1, "__add__", obj2)
+        test_dunder(obj1, "__radd__", obj2)
 
 '''
 
