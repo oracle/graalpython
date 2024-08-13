@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,7 +61,7 @@
 static int fill_c_type_sizes(int32_t *ctype_sizes)
 {
     ctype_sizes[0] = (int32_t) sizeof(HPyContext*);
-    ctype_sizes[1] = (int32_t) sizeof(void);
+    ctype_sizes[1] = (int32_t) 0;
     ctype_sizes[2] = (int32_t) sizeof(void*);
     ctype_sizes[3] = (int32_t) sizeof(void**);
     ctype_sizes[4] = (int32_t) sizeof(bool);

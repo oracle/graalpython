@@ -776,8 +776,8 @@ suite = {
                     "<others>": {
                         "cflags": [
                             "-DHPY_ABI_HYBRID", "-DHPY_EMBEDDED_MODULES", "-DNDEBUG", "-DMS_WINDOWS",
-                            # cflags equivalent to -g -O3 -Wall (/WX would be -Werror)
-                            "-D_CRT_SECURE_NO_WARNINGS", "/Z7", "/O2", "/W3",
+                            # cflags equivalent to -g -O3 -Wall (/W3, could be /Wall) -Werror (/WX)
+                            "-D_CRT_SECURE_NO_WARNINGS", "/Z7", "/O2", "/W3", "/WX",
                             "-I\"<path:com.oracle.graal.python.cext>/include\"",
                             "-I\"<path:com.oracle.graal.python.cext>/include/internal\"",
                             "-I\"<path:com.oracle.graal.python.cext>/src\"",
@@ -791,7 +791,7 @@ suite = {
                     "<others>": {
                         "cflags": [
                             "-DHPY_ABI_HYBRID", "-DHPY_EMBEDDED_MODULES", "-DNDEBUG",
-                            "-O3", "-Werror", "-fPIC",
+                            "-O3", "-Wall", "-Werror", "-fPIC",
                             "-I\"<path:com.oracle.graal.python.cext>/include\"",
                             "-I\"<path:com.oracle.graal.python.cext>/include/internal\"",
                             "-I\"<path:com.oracle.graal.python.cext>/src\"",

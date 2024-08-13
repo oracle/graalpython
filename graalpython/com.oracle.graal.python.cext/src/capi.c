@@ -251,7 +251,7 @@ PyAPI_FUNC(void) mmap_init_bufferprotocol(PyObject* mmap_type) {
 	    (getbufferproc)mmap_getbuffer,
 	    (releasebufferproc)NULL,
 	};
-	GraalPy_set_PyTypeObject_tp_as_buffer(mmap_type, &mmap_as_buffer);
+	GraalPy_set_PyTypeObject_tp_as_buffer((PyTypeObject *) mmap_type, &mmap_as_buffer);
 	((PyTypeObject*) mmap_type)->tp_as_buffer = &mmap_as_buffer;
 }
 
@@ -268,7 +268,7 @@ PyAPI_FUNC(void) PyTruffleCData_InitBufferProtocol(PyObject* type) {
         cdata_getbuffer,
         cdata_releasebuffer,
     };
-    GraalPy_set_PyTypeObject_tp_as_buffer(type, &cdata_as_buffer);
+    GraalPy_set_PyTypeObject_tp_as_buffer(((PyTypeObject*) type), &cdata_as_buffer);
     ((PyTypeObject*) type)->tp_as_buffer = &cdata_as_buffer;
 }
 
@@ -309,7 +309,7 @@ void memory_releasebuf(PyMemoryViewObject *self, Py_buffer *view);
 static int
 picklebuf_getbuf(PyPickleBufferObject *self, Py_buffer *view, int flags)
 {
-    PyObject *self_view_obj = GraalPyTruffle_PickleBuffer_viewobj(self);
+    PyObject *self_view_obj = GraalPyTruffle_PickleBuffer_viewobj((PyObject*) self);
     return PyObject_GetBuffer(self_view_obj, view, flags);
 }
 

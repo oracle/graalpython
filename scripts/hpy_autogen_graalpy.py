@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -1245,7 +1245,10 @@ class autogen_c_access(GraalPyAutoGenFile):
         w('static int fill_c_type_sizes(int32_t *ctype_sizes)')
         w('{')
         for i, c_name in c_types:
-            w(f'{self.INDENT}ctype_sizes[{i}] = (int32_t) sizeof({c_name});' )
+            if c_name == 'void':
+                w(f'{self.INDENT}ctype_sizes[{i}] = (int32_t) 0;')
+            else:
+                w(f'{self.INDENT}ctype_sizes[{i}] = (int32_t) sizeof({c_name});')
         w(f'{self.INDENT}return 0;')
         w('};')
         w('')
