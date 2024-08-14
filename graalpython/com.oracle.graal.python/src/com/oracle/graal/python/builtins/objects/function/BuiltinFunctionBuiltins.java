@@ -172,7 +172,7 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
             Object inspectParameter = PyObjectGetAttr.executeUncached(inspect, tsLiteral("Parameter"));
             Object[] parameterKinds = new Object[ParameterKinds.VALUES.length];
 
-            TruffleString[] keywordNames = signature.getKeywordNames();
+            TruffleString[] keywordNames = signature.getVisibleKeywordNames();
             boolean takesVarArgs = signature.takesVarArgs();
             boolean takesVarKeywordArgs = signature.takesVarKeywordArgs();
             TruffleString[] parameterNames = signature.getParameterIds();

@@ -308,7 +308,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         public static TruffleString signatureToText(Signature signature, boolean skipSelf) {
-            TruffleString[] keywordNames = signature.getKeywordNames();
+            TruffleString[] keywordNames = signature.getVisibleKeywordNames();
             boolean takesVarArgs = signature.takesVarArgs();
             boolean takesVarKeywordArgs = signature.takesVarKeywordArgs();
 

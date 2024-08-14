@@ -27,9 +27,14 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SELF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class Signature {
@@ -125,6 +130,21 @@ public final class Signature {
 
     public final TruffleString[] getKeywordNames() {
         return keywordOnlyNames;
+    }
+
+    @TruffleBoundary
+    public TruffleString[] getVisibleKeywordNames() {
+        /*
+         * C slot wrappers (ab)use keyword defaults for storing the function pointers, we need to
+         * filter them out. Their names start with a dollar sign.
+         */
+        List<TruffleString> visibleKeywordNames = new ArrayList<>(keywordOnlyNames.length);
+        for (TruffleString k : keywordOnlyNames) {
+            if (k.byteLength(TS_ENCODING) > 0 && k.codePointAtByteIndexUncached(0, TS_ENCODING) != '$') {
+                visibleKeywordNames.add(k);
+            }
+        }
+        return visibleKeywordNames.toArray(TruffleString[]::new);
     }
 
     public final boolean takesKeywordArgs() {
