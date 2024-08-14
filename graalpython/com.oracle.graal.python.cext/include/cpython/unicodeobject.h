@@ -325,7 +325,7 @@ PyAPI_FUNC(int) _PyTruffleUnicode_KIND(PyObject*);
 #define PyUnicode_KIND(op) ((enum PyUnicode_Kind)_PyTruffleUnicode_KIND(_PyObject_CAST(op)))
 
 /* Return a void pointer to the raw unicode buffer. */
-static inline void* _PyUnicode_COMPACT_DATA(PyObject *op) {
+static inline void* _PyUnicode_COMPACT_DATA(PyObject *Py_UNUSED(op)) {
     // strings are never compact in GraalPy
     return NULL;
 }
