@@ -19,14 +19,14 @@ GraalPy is ready for production running pure Python code and has experimental su
 **Compatible with the Python ecosystem**
 
 * Use almost any standard Python feature, the CPython tests run on every commit and pass ~85%
+* See if the packages you need work according to our [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/)
+* Support for native extension modules is considered experimental, but you can already install [packages](docs/user/Python-Runtime.md#installing-packages) like *NumPy*, *PyTorch*, or *Tensorflow*; run [Hugging Face](https://huggingface.co/) models like *Stable Diffusion* or *GPT*
 ![](docs/user/assets/mcd.svg#gh-light-mode-only)![](docs/user/assets/mcd-dark.svg#gh-dark-mode-only)<sup>
 We run the tests of the [most depended on PyPI packages](https://libraries.io/pypi) every day.
 For 96% of those packages a recent version can be installed on GraalPy and GraalPy passes about 50% of all tests of all packages combined.
 We assume that CPython not passing 100% of all tests is due to problems in our infrastructure that may also affect GraalPy.
 Packages where CPython fails all tests are marked as "not tested" for both CPython and GraalPy.
 </sup>
-* See if the packages you need work according to our [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/)
-* Support for native extension modules is considered experimental, but you can already install [packages](docs/user/Python-Runtime.md#installing-packages) like *NumPy*, *PyTorch*, or *Tensorflow*; run [Hugging Face](https://huggingface.co/) models like *Stable Diffusion* or *GPT*
 
 **Runs Python code faster**
 
