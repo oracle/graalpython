@@ -1981,7 +1981,10 @@ PyLong_FromString(const char *str, char **pend, int base)
         overflow = 1;
     }
 
-    if (overflow) {
+    if (overflow || (error_if_nonzero && value != 0)) {
+        if (error_if_nonzero) {
+            base = 0;
+        }
         PyObject* string = PyUnicode_FromStringAndSize(numberStart, digits);
         PyObject* result = GraalPyTruffleLong_FromString(string, base, negative);
         Py_DecRef(string);

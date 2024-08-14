@@ -5721,7 +5721,7 @@ type_add_members(PyTypeObject *type)
     PyObject *dict = type->tp_dict;
     for (; memb->name != NULL; memb++) {
         // GraalPy change
-        if (GraalPyTruffleType_AddMember(type, type->tp_dict, memb->name, memb->type, memb->offset, (memb->flags & READONLY) == 0, memb->doc) < 0)
+        if (GraalPyTruffleType_AddMember(type, dict, memb->name, memb->type, memb->offset, (memb->flags & READONLY) == 0, memb->doc) < 0)
             return -1;
     }
     return 0;
@@ -5740,7 +5740,7 @@ type_add_getset(PyTypeObject *type)
     for (; gsp->name != NULL; gsp++) {
         // GraalPy change
         if (GraalPyTruffleType_AddGetSet(type,
-                        type->tp_dict,
+                        dict,
                         gsp->name,
                         gsp->get,
                         gsp->set,

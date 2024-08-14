@@ -28,7 +28,6 @@
 #
 cmake_minimum_required(VERSION 3.22)
 project(com.oracle.graal.python.cext)
-set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
 function(require_var var)
     if (NOT DEFINED ${var})
@@ -61,7 +60,11 @@ set(TARGET_LIBPYTHON "python-${LLVM_MODE}")
 # common variables and compile/link options (for all build targets)
 ######################################################################
 
-set(CFLAGS_WARNINGS -Wno-int-to-pointer-cast -Wno-int-conversion -Wno-void-pointer-to-int-cast
+set(CFLAGS_WARNINGS -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-const-variable
+                    -Wno-tautological-constant-out-of-range-compare   # fileutils.c: wchar_t > MAX_UNICODE is always false on Windows
+                    -Wno-unused-but-set-variable                      # sqlite.c: BOOL bRc
+                    -Wno-ignored-pragmas                              # sre.c: #pragma optimize("agtw", on)
+                    -Wno-int-to-pointer-cast -Wno-int-conversion -Wno-void-pointer-to-int-cast
                     -Wno-incompatible-pointer-types-discards-qualifiers -Wno-pointer-type-mismatch
                     -Wno-braced-scalar-init -Wno-deprecated-declarations)
 

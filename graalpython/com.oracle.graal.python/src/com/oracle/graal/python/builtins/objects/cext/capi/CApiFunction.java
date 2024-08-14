@@ -770,7 +770,9 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyImport_ImportFrozenModule", ret = Int, args = {ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyImport_ImportFrozenModuleObject", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyImport_ReloadModule", ret = PyObject, args = {PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyInit__imp", ret = PyObject, args = {}, call = NotImplemented)
+    // Not implemented, we just use handwritten stub (in import.c) to preserve the C attributes
+    // (PyMODINIT_FUNC vs PyAPI_FUNC)
+    @CApiBuiltin(name = "PyInit__imp", ret = PyObject, args = {}, call = Ignored)
     @CApiBuiltin(name = "PyInterpreterState_Clear", ret = Void, args = {PyInterpreterState}, call = NotImplemented)
     @CApiBuiltin(name = "PyInterpreterState_Delete", ret = Void, args = {PyInterpreterState}, call = NotImplemented)
     @CApiBuiltin(name = "PyInterpreterState_Get", ret = PyInterpreterState, args = {}, call = NotImplemented)

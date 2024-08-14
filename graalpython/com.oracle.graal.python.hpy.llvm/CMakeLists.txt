@@ -28,7 +28,6 @@
 #
 cmake_minimum_required(VERSION 3.22)
 project(com.oracle.graal.python.hpy.llvm)
-set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
 function(require_var var)
   if (NOT DEFINED ${var})
