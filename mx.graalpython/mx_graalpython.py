@@ -721,6 +721,8 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_buffer.TestBufferProtocol.test_ndarray_slice_multidim',
         # Transient failure to delete semaphore on process death
         'test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_resource_tracker_sigkill',
+        # Connecting to external page that sometimes times out
+        'graalpython.lib-python.3.test.test_urllib2net.OtherNetworkTests.test_ftp',
     ]
 
     result_tags = linux_tags & darwin_tags
@@ -1573,7 +1575,7 @@ def graalpython_gate_runner(args, tasks):
                 svm_image = python_svm()
                 benchmark = os.path.join(PATH_MESO, "image-magix.py")
                 out = mx.OutputCapture()
-                mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+                mx.run([svm_image, "-S", "--log.python.level=FINE", benchmark], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
             success = "\n".join([
                 "[0, 0, 0, 0, 0, 0, 10, 10, 10, 0, 0, 10, 3, 10, 0, 0, 10, 10, 10, 0, 0, 0, 0, 0, 0]",
             ])

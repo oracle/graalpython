@@ -6,6 +6,7 @@
 
 GraalPy is a high-performance implementation of the [Python](https://www.python.org/) language for the JVM built on [GraalVM](https://www.graalvm.org/).
 GraalPy has first-class support for embedding in Java and can turn Python applications into fast, standalone binaries.
+GraalPy is ready for production running pure Python code and has experimental support for many popular native extension modules.
 
 ## Why GraalPy?
 
@@ -17,8 +18,6 @@ GraalPy has first-class support for embedding in Java and can turn Python applic
 
 **Compatible with the Python ecosystem**
 
-* Install [packages](docs/user/Python-Runtime.md#installing-packages) like *NumPy*, *PyTorch*, or *Tensorflow*; run [Hugging Face](https://huggingface.co/) models like *Stable Diffusion* or *GPT*
-* See if the packages you need work with our [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/)
 * Use almost any standard Python feature, the CPython tests run on every commit and pass ~85%
 ![](docs/user/assets/mcd.svg#gh-light-mode-only)![](docs/user/assets/mcd-dark.svg#gh-dark-mode-only)<sup>
 We run the tests of the [most depended on PyPI packages](https://libraries.io/pypi) every day.
@@ -26,6 +25,8 @@ For 96% of those packages a recent version can be installed on GraalPy and Graal
 We assume that CPython not passing 100% of all tests is due to problems in our infrastructure that may also affect GraalPy.
 Packages where CPython fails all tests are marked as "not tested" for both CPython and GraalPy.
 </sup>
+* See if the packages you need work according to our [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/)
+* Support for native extension modules is considered experimental, but you can already install [packages](docs/user/Python-Runtime.md#installing-packages) like *NumPy*, *PyTorch*, or *Tensorflow*; run [Hugging Face](https://huggingface.co/) models like *Stable Diffusion* or *GPT*
 
 **Runs Python code faster**
 

@@ -53,6 +53,8 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.nio.file.LinkOption;
+import java.util.Set;
+import java.util.logging.Level;
 
 import org.graalvm.collections.Pair;
 import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
@@ -274,6 +276,15 @@ public abstract class CExtContext {
         return str;
     }
 
+    private static final Set<String> C_EXT_SUPPORTED_LIST = Set.of(
+                    // Stdlib modules are considered supported
+                    "_cpython_sre",
+                    "_cpython_unicodedata",
+                    "_sha3",
+                    "_sqlite3",
+                    "termios",
+                    "pyexpat");
+
     /**
      * This method loads a C extension module (C API) and will initialize the corresponding native
      * contexts if necessary.
@@ -294,6 +305,17 @@ public abstract class CExtContext {
     @TruffleBoundary
     public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode)
                     throws IOException, ApiInitException, ImportException {
+        if (getLogger().isLoggable(Level.WARNING) && context.getOption(PythonOptions.WarnExperimentalFeatures)) {
+            boolean runViaLauncher = context.getOption(PythonOptions.RunViaLauncher);
+            if (!runViaLauncher || !C_EXT_SUPPORTED_LIST.contains(spec.name.toJavaStringUncached())) {
+                String message = "Loading C extension module %s from '%s'. Support for the Python C API is considered experimental.";
+                if (!runViaLauncher) {
+                    message += " See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions/#embedding-limitations for the limitations. " +
+                                    "You can suppress this warning by setting the context option 'python.WarnExperimentalFeatures' to 'false'";
+                }
+                getLogger().warning(message.formatted(spec.name, spec.path));
+            }
+        }
 
         // we always need to load the CPython C API
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
