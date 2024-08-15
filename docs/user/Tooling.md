@@ -1,5 +1,5 @@
 ---
-layout: docs-experimental
+layout: docs
 toc_group: python
 link_title: Tooling Support for Python
 permalink: /reference-manual/python/Tooling/
