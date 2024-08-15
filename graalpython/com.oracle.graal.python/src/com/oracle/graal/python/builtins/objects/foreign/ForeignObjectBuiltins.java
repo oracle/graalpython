@@ -423,8 +423,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return lib.asBoolean(obj);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to boolean as it claims to");
+                throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
                 gil.acquire();
             }
@@ -439,8 +438,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return lib.asLong(obj);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to long as it claims to");
+                throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
                 gil.acquire();
             }
@@ -456,8 +454,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return factory.createInt(lib.asBigInteger(obj));
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to BigInteger as it claims to");
+                throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
                 gil.acquire();
             }
@@ -472,8 +469,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return lib.asDouble(obj);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to double as it claims to");
+                throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
                 gil.acquire();
             }

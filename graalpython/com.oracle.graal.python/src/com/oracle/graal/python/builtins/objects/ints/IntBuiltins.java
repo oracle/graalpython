@@ -454,8 +454,14 @@ public final class IntBuiltins extends PythonBuiltins {
             return left.add(right);
         }
 
+        static boolean isNotImplemented(Object x) {
+            return !(x instanceof Long || x instanceof Integer || x instanceof Boolean || x instanceof PInt);
+        }
+
+        // There is a Truffle bug (GR-57305) that constructs a wrong fallback guard in the presence
+        // of implicit casts, so we cannot use @Fallback for now
         @SuppressWarnings("unused")
-        @Fallback
+        @Specialization(guards = {"isNotImplemented(left) || isNotImplemented(right)"})
         static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
