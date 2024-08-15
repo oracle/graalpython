@@ -105,6 +105,10 @@ public abstract class CallBinaryOp1Node extends PNodeWithContext {
                 slotW = null;
             }
         }
+        // Note: we call slotW with v as the receiver. This appears to be the semantics of
+        // CPython reversible binop slots. This is supposed to allow the slot to handle
+        // the reversible case, if the slot does not want to handle it, it should detect that
+        // the first receiver argument is not of the right type and just return NotImplemented.
         if (slotV != null) {
             if (slotW != null && isSubtypeNode.execute(frame, classW, classV)) {
                 assert !sameTypes;

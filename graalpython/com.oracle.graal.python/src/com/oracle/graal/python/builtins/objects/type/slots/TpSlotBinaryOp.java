@@ -178,6 +178,11 @@ public class TpSlotBinaryOp {
         }
     }
 
+    /**
+     * Slots representing "reversible" binary operations on the Python side do not have two
+     * versions, instead they should be able to handle the situation when "left" operand is not the
+     * object that "owns" the slot. See also {@link com.oracle.graal.python.lib.CallBinaryOp1Node}.
+     */
     @GenerateInline(value = false, inherit = true)
     public abstract static class BinaryOpBuiltinNode extends PythonBinaryBuiltinNode {
     }
