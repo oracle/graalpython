@@ -66,7 +66,6 @@ import org.eclipse.aether.graph.Dependency;
 import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
-
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_HOME;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
@@ -483,7 +482,21 @@ public class ManageResourcesMojo extends AbstractMojo {
     }
 
     private static String getGraalPyVersion(MavenProject project) throws MojoExecutionException {
-        return getGraalPyArtifact(project).getVersion();
+        DefaultArtifact a = (DefaultArtifact) getGraalPyArtifact(project);
+        String version = a.getVersion();
+        if(a.isSnapshot()) {
+            // getVersion for a snapshot artefact returns base version + timestamp - e.g. 24.2.0-20240808.200816-1
+            // and there might be snapshot artefacts with different timestamps in the repository.
+            // We should use $baseVersion + "-SNAPSHOT" as maven is in such case
+            // able to properly resolve all project artefacts.
+            version = a.getBaseVersion();
+            if(!version.endsWith("-SNAPSHOT")) {
+                // getBaseVersion is expected to return a version without any additional metadata, e.g. 24.2.0-20240808.200816-1 -> 24.2.0,
+                // but also saw getBaseVersion() already returning version with -SNAPSHOT suffix
+                version = version + "-SNAPSHOT";
+            }
+        }
+        return version;
     }
 
     private static Artifact getGraalPyArtifact(MavenProject project) throws MojoExecutionException {
@@ -514,9 +527,10 @@ public class ManageResourcesMojo extends AbstractMojo {
 
             // 1.) python-launcher and transitive dependencies
             // get the artifact from its direct dependency in graalpy-maven-plugin
+            getLog().debug("calculateLauncherClasspath based on " + GRAALPY_GROUP_ID + ":" + GRAALPY_MAVEN_PLUGIN_ARTIFACT_ID + ":" + version);
             DefaultArtifact mvnPlugin = new DefaultArtifact(GRAALPY_GROUP_ID, GRAALPY_MAVEN_PLUGIN_ARTIFACT_ID, version, "compile", "jar", null, new DefaultArtifactHandler("pom"));
             ProjectBuildingResult result = buildProjectFromArtifact(mvnPlugin);
-            Artifact graalPyLauncherArtifact = result.getProject().getArtifacts().stream().filter(a ->GRAALPY_GROUP_ID.equals(a.getGroupId()) && PYTHON_LAUNCHER_ARTIFACT_ID.equals(a.getArtifactId()) && version.equals(a.getVersion()))
+            Artifact graalPyLauncherArtifact = result.getProject().getArtifacts().stream().filter(a ->GRAALPY_GROUP_ID.equals(a.getGroupId()) && PYTHON_LAUNCHER_ARTIFACT_ID.equals(a.getArtifactId()))
                     .findFirst()
                     .orElse(null);
             // python-launcher artifact
