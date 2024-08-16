@@ -81,35 +81,46 @@ def replace_field_access(contents, match, replacement, assignment):
 
     # scan backwards to capture the whole receiver
     idx = consume_whitespace_backwards(start - 2)
-    empty = True
-    while idx > 1:
-        c = contents[idx]
-        c2 = contents[idx - 1: idx + 1]
-        if c == ')' or c == ']' or (c == '>' and c2 != '->'):
-            if level == 0 and c == ')' and not empty:
-                idx += 1
-                break  # don't include casts
-            empty = False
-            level += 1
+
+    def consume_pairwise_backwards(idx, l, r):
+        level = 1
+        idx -= 1
+        while level and idx:
+            c = contents[idx]
+            if c == l:
+                level -= 1
+            elif c == r:
+                level += 1
             idx -= 1
-        elif level > 0 and (c == '(' or c == '[' or c == '<'):
-            level -= 1
-            idx = consume_whitespace_backwards(idx - 1)
-        else:
-            if level > 0:
-                idx -= 1
-            elif c.isidentifier() or c.isdigit():
-                empty = False
-                idx -= 1
-            elif c == '.':
-                empty = True
-                idx = consume_whitespace_backwards(idx - 1)
-            elif c2 == '->':
-                empty = True
-                idx = consume_whitespace_backwards(idx - 2)
-            else:
+        return idx
+
+    def consume_identifier_backwards(idx):
+        while (contents[idx].isidentifier() or contents[idx].isdigit()) and idx:
+            idx -= 1
+        return idx
+
+    first = True
+    while idx:
+        c = contents[idx]
+        if c == ')' and first:
+            idx = consume_pairwise_backwards(idx, '(', ')')
+        elif c == ']':
+            idx = consume_pairwise_backwards(idx, '[', ']')
+        elif c.isidentifier() or c.isdigit():
+            id_start = consume_identifier_backwards(idx)
+            if contents[id_start + 1: idx + 1] == 'return':
                 idx += 1
                 break
+            idx = id_start
+        elif c == '.':
+            idx -= 1
+        elif c == '>' and idx > 1 and contents[idx - 1] == '-':
+            idx -= 2
+        else:
+            idx += 1
+            break
+        first = False
+        idx = consume_whitespace_backwards(idx)
 
     receiver_start = consume_whitespace_forward(idx)
     receiver_string = contents[receiver_start: start - 1]
@@ -122,7 +133,6 @@ def replace_field_access(contents, match, replacement, assignment):
             # this looks like an assignment, determine the value
             idx = consume_whitespace_forward(idx + 1)
             value_start = idx
-            empty = True
             while idx < len(contents) - 2:
                 c = contents[idx]
                 c2 = contents[idx: idx + 2]
@@ -134,7 +144,7 @@ def replace_field_access(contents, match, replacement, assignment):
                     idx += 1
                 else:
                     if level == 0 and (c == ')' or c == ';' or c == ','):
-                        break;
+                        break
                     if c2 == '<=' or c2 == '<<' or c2 == '>='or c2 == '>>' or c2 == '->':
                         idx += 2
                     else:

@@ -942,26 +942,26 @@ index c49b7bb..3a5be09 100644
  #    define NB_TYPE_GET_SLOT_IMPL 1 // Custom implementation of nb::type_get_slot
  #  else
 diff --git a/nanobind/include/nanobind/nb_types.h b/nanobind/include/nanobind/nb_types.h
-index 2761a58..b83a651 100644
+index b83a651..de16f03 100644
 --- a/nanobind/include/nanobind/nb_types.h
 +++ b/nanobind/include/nanobind/nb_types.h
-@@ -873,14 +873,14 @@ inline detail::dict_iterator dict::end() const { return { }; }
- 
- #if !defined(Py_LIMITED_API) && !defined(PYPY_VERSION)
- inline detail::fast_iterator tuple::begin() const {
--    PySequence_Fast_ITEMS((PyObject*)return ((PyTupleObject *) m_ptr));
-+    return PySequence_Fast_ITEMS((PyObject*)((PyTupleObject *) m_ptr));
+@@ -877,14 +877,14 @@ inline detail::fast_iterator tuple::begin() const {
  }
  inline detail::fast_iterator tuple::end() const {
      PyTupleObject *v = (PyTupleObject *) m_ptr;
-     return PySequence_Fast_ITEMS((PyObject*)v) + v->ob_base.ob_size;
+-    return PySequence_Fast_ITEMS((PyObject*)v) + v->ob_base.ob_size;
++    return PySequence_Fast_ITEMS((PyObject*)v) + Py_SIZE(v);
  }
  inline detail::fast_iterator list::begin() const {
--    PySequence_Fast_ITEMS((PyObject*)return ((PyListObject *) m_ptr));
-+    return PySequence_Fast_ITEMS((PyObject*)((PyListObject *) m_ptr));
+     return PySequence_Fast_ITEMS((PyObject*)((PyListObject *) m_ptr));
  }
  inline detail::fast_iterator list::end() const {
      PyListObject *v = (PyListObject *) m_ptr;
+-    return PySequence_Fast_ITEMS((PyObject*)v) + v->ob_base.ob_size;
++    return PySequence_Fast_ITEMS((PyObject*)v) + Py_SIZE(v);
+ }
+ #endif
+ 
 diff --git a/nanobind/include/nanobind/stl/detail/chrono.h b/nanobind/include/nanobind/stl/detail/chrono.h
 index 39bd5d9..6e9efb0 100644
 --- a/nanobind/include/nanobind/stl/detail/chrono.h

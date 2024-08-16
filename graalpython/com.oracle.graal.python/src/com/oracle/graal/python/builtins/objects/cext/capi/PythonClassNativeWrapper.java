@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -49,12 +50,14 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetBasicSizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetItemSizeNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -188,7 +191,15 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
              */
             PythonManagedClass clazz = (PythonManagedClass) getDelegate();
             boolean heaptype = (GetTypeFlagsNode.executeUncached(clazz) & TypeFlags.HEAPTYPE) != 0;
-            Object pointerObject = AllocateNode.allocUncached(heaptype ? CStructs.PyHeapTypeObject : CStructs.PyTypeObject);
+            long size = CStructs.PyTypeObject.size();
+            if (heaptype) {
+                size = CStructs.PyHeapTypeObject.size();
+                if (GetClassNode.executeUncached(clazz) instanceof PythonAbstractNativeObject nativeMetatype) {
+                    // TODO should call the metatype's tp_alloc
+                    size = TypeNodes.GetBasicSizeNode.executeUncached(nativeMetatype);
+                }
+            }
+            Object pointerObject = AllocateNode.allocUncached(size);
             replacement = registerReplacement(pointerObject, true, lib);
 
             ToNativeTypeNode.initializeType(this, pointerObject, heaptype);
