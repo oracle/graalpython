@@ -1,22 +1,24 @@
 diff --git a/pyproject.toml b/pyproject.toml
-new file mode 100644
-index 0000000..9175509
---- /dev/null
+index 2c463d7..31010c2 100644
+--- a/pyproject.toml
 +++ b/pyproject.toml
-@@ -0,0 +1,3 @@
-+[build-system]
-+requires = ["setuptools >= 40.6.0", "wheel", "Cython < 3"]
+@@ -1,5 +1,6 @@
+ [build-system]
+ requires = ["Cython>=3.0.11", "setuptools", "wheel"]
 +build-backend = "setuptools.build_meta:__legacy__"
+ 
+ [tool.cibuildwheel]
+ build-verbosity = 2
 diff --git a/setupinfo.py b/setupinfo.py
-index 6758914..288d09e 100644
+index 97e3399..9079171 100644
 --- a/setupinfo.py
 +++ b/setupinfo.py
-@@ -537,7 +537,7 @@ OPTION_WITH_UNICODE_STRINGS = has_option('with-unicode-strings')
+@@ -563,7 +563,7 @@ OPTION_WITH_UNICODE_STRINGS = has_option('with-unicode-strings')
  OPTION_WITHOUT_ASSERT = has_option('without-assert')
  OPTION_WITHOUT_THREADING = has_option('without-threading')
  OPTION_WITHOUT_CYTHON = has_option('without-cython')
 -OPTION_WITH_CYTHON = has_option('with-cython')
-+OPTION_WITH_CYTHON = True # GraalVM change
++OPTION_WITH_CYTHON = True
  OPTION_WITH_CYTHON_GDB = has_option('cython-gdb')
  OPTION_WITH_REFNANNY = has_option('with-refnanny')
  OPTION_WITH_COVERAGE = has_option('with-coverage')
