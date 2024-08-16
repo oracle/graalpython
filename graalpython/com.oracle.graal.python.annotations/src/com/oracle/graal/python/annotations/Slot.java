@@ -91,17 +91,32 @@ public @interface Slot {
         String raiseErrorName() default "";
     }
 
+    /** See <a href="https://docs.python.org/3/c-api/typeobj.html">slot documentation</a> */
     enum SlotKind {
-        nb_bool,
-        nb_add,
-        sq_length,
-        sq_item,
-        sq_concat,
-        mp_length,
-        mp_subscript,
-        tp_descr_get,
-        tp_descr_set,
-        tp_getattro,
-        tp_setattro,
+        /** Whether this object is treated as true or false for {@code if object} */
+        nb_bool("__bool__"),
+        /** foo + bar */
+        nb_add("__add__, __radd__"),
+        /** sequence length/size */
+        sq_length("__len__"),
+        /** sequence item: read element at index */
+        sq_item("__getitem__"),
+        /** seq + seq, nb_add is tried before */
+        sq_concat("__add__"),
+        /** mapping length */
+        mp_length("__len__"),
+        /** mapping subscript, e.g. o[key], o[i:j] */
+        mp_subscript("__getitem__"),
+        /** type descriptor get */
+        tp_descr_get("__get__"),
+        /** type descriptor set/delete */
+        tp_descr_set("__set__, __delete__"),
+        /** get object attribute */
+        tp_getattro("__getattribute__, __getattr__"),
+        /** set/delete object attribute */
+        tp_setattro("__setattr__, __delattr__");
+
+        SlotKind(@SuppressWarnings("unused") String specialMethods) {
+        }
     }
 }
