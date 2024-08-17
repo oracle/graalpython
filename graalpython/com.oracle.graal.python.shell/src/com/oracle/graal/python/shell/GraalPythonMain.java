@@ -420,6 +420,11 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             }
         }
 
+        if (!ImageInfo.inImageCode() && Boolean.getBoolean("python.EnableBytecodeDSLInterpreter")) {
+            // forward the property on JVM
+            addRelaunchArg("--vm.Dpython.EnableBytecodeDSLInterpreter=true");
+        }
+
         // According to CPython if no arguments are given, they contain an empty string.
         if (programArgs.isEmpty()) {
             programArgs.add("");

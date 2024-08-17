@@ -890,9 +890,8 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Bind Node inliningTarget,
                         @Cached PyNumberAddNode arithmeticNode) {
-            return arithmeticNode.execute(null, inliningTarget, arg0, arg1);
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
@@ -913,9 +912,8 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Bind Node inliningTarget,
                         @Cached PyNumberMultiplyNode arithmeticNode) {
-            return arithmeticNode.execute(null, inliningTarget, arg0, arg1);
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
@@ -1035,9 +1033,8 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1, Object arg2,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberPowerNode powerNode) {
-            return powerNode.execute(null, inliningTarget, arg0, arg1, arg2);
+            return powerNode.execute(null, arg0, arg1, arg2);
         }
     }
 
