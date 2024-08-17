@@ -72,12 +72,12 @@ public abstract class WriteGlobalNode extends PNodeWithContext {
     }
 
     public final void executeObject(VirtualFrame frame, TruffleString name, Object value) {
-        CompilerAsserts.partialEvaluationConstant(name);
+        CompilerAsserts.compilationConstant(name);
         executeObjectWithGlobals(frame, PArguments.getGlobals(frame), name, value);
     }
 
     public final void write(Frame frame, Object globals, TruffleString name, Object value) {
-        CompilerAsserts.partialEvaluationConstant(name);
+        CompilerAsserts.compilationConstant(name);
         executeObjectWithGlobals((VirtualFrame) frame, globals, name, value);
     }
 

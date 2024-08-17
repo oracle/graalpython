@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLen
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -77,6 +78,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @GenerateInline(false)
 @GenerateCached
+@OperationProxy.Proxyable
 public abstract class PyObjectIsTrueNode extends UnaryOpNode {
     public abstract boolean execute(Frame frame, Object object);
 

@@ -898,6 +898,13 @@ class Config:
             tags_dir = None
             if config_tags_dir := settings.get('tags_dir'):
                 tags_dir = (config_path.parent / config_tags_dir).resolve()
+                # Temporary measure for the time while the Bytecode DSL based interpreter
+                # does not pass all tests that the manual interpreter does
+                if IS_GRAALPY and __graalpython__.is_bytecode_dsl_interpreter:
+                    bc_dsl_tags = tags_dir.parent / ('bytecode_dsl_' + tags_dir.name)
+                    if bc_dsl_tags.exists():
+                        print("Note: switching tags dir to: " + bc_dsl_tags)
+                        tags_dir = bc_dsl_tags
             return cls(
                 configdir=config_path.parent.resolve(),
                 rootdir=config_path.parent.parent.resolve(),

@@ -70,6 +70,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -179,6 +180,7 @@ public enum BinaryArithmetic {
 
     }
 
+    @OperationProxy.Proxyable
     public abstract static class PowNode extends BinaryArithmeticNode {
 
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("** or pow()");
@@ -191,6 +193,7 @@ public enum BinaryArithmetic {
         }
     }
 
+    @OperationProxy.Proxyable
     public abstract static class GenericBinaryArithmeticNode extends BinaryArithmeticNode {
 
         private final SpecialMethodSlot slot;

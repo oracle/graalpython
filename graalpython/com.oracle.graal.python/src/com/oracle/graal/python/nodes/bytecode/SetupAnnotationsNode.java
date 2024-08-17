@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -75,6 +76,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 @GenerateUncached
 @ImportStatic(PArguments.class)
 @GenerateInline(false) // used in BCI root node
+@OperationProxy.Proxyable
 public abstract class SetupAnnotationsNode extends PNodeWithContext {
     public abstract void execute(Frame frame);
 

@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -148,6 +149,7 @@ public enum UnaryArithmetic {
     }
 
     @GenerateCached
+    @OperationProxy.Proxyable
     public abstract static class GenericUnaryArithmeticNode extends UnaryArithmeticNode {
 
         private final TruffleString specialMethodName;

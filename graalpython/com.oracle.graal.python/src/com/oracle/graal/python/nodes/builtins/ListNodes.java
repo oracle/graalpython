@@ -76,6 +76,7 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStor
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -307,6 +308,7 @@ public abstract class ListNodes {
      */
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 36 -> 17
+    @OperationProxy.Proxyable
     public abstract static class AppendNode extends PNodeWithContext {
         private static final BranchProfile[] DISABLED = new BranchProfile[]{BranchProfile.getUncached()};
 
