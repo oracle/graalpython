@@ -1,4 +1,4 @@
-# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import os
 import unittest
 import difflib
 import sys
@@ -160,6 +161,7 @@ def make_test_method(fun, name):
     return test_case
 
 
+@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: FrameSlotTypeException with reparsing")
 class TraceTests(unittest.TestCase):
     def trace(self, frame, event, arg):
         code = frame.f_code

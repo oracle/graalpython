@@ -1,0 +1,16 @@
+test.test_compare.ComparisonFullTest.test_bytes @ linux-x86_64
+test.test_compare.ComparisonFullTest.test_comp_classes_different @ linux-x86_64
+test.test_compare.ComparisonFullTest.test_comp_classes_same @ linux-x86_64
+test.test_compare.ComparisonFullTest.test_mappings @ linux-x86_64
+test.test_compare.ComparisonFullTest.test_numbers @ linux-x86_64
+test.test_compare.ComparisonFullTest.test_objects @ linux-x86_64
+test.test_compare.ComparisonFullTest.test_sequences @ linux-x86_64
+test.test_compare.ComparisonFullTest.test_sets @ linux-x86_64
+test.test_compare.ComparisonFullTest.test_str_subclass @ linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_comparisons @ linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_id_comparisons @ linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_issue_1393 @ linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_ne_defaults_to_not_eq @ linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_ne_high_priority @ linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_ne_low_priority @ linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_other_delegation @ linux-x86_64

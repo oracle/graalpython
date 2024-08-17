@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,8 +37,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import os
 import doctest
 import sys
+import unittest
 
 
 # Copied from test_doctest
@@ -68,6 +70,7 @@ class PdbTestInput(object):
             sys.settrace(self.orig_trace)
 
 
+@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: FrameSlotTypeException with reparsing")
 def doctest_pdb_locals():
     """
     Test that locals get synced after breakpoint
@@ -98,6 +101,7 @@ def doctest_pdb_locals():
     """
 
 
+@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: FrameSlotTypeException with reparsing")
 def doctest_pdb_locals_generator():
     """
     Test that locals get synced after breakpoint in a generator
@@ -128,6 +132,7 @@ def doctest_pdb_locals_generator():
     """
 
 
+@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: FrameSlotTypeException with reparsing")
 def doctest_pdb_locals_sync_back():
     """
     Test that locals set by debugger get propagated back into the frame.
@@ -153,5 +158,6 @@ def doctest_pdb_locals_sync_back():
     """
 
 
+@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: FrameSlotTypeException with reparsing")
 def test_run_doctests():
     doctest.testmod(sys.modules[__name__], raise_on_error=True)

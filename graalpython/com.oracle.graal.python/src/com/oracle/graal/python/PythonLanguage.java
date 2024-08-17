@@ -75,12 +75,16 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
+import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
+import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
@@ -587,7 +591,18 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (internal && !source.isInternal()) {
                 source = Source.newBuilder(source).internal(true).build();
             }
-            PBytecodeRootNode rootNode = PBytecodeRootNode.create(this, code, source);
+            RootNode rootNode = null;
+
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                if (source.hasBytes()) {
+                    // Force a character-based source so that source sections work as expected.
+                    source = Source.newBuilder(source).content(Source.CONTENT_NONE).build();
+                }
+                rootNode = ((BytecodeDSLCodeUnit) code).createRootNode(context, source);
+            } else {
+                rootNode = PBytecodeRootNode.create(this, (BytecodeCodeUnit) code, source);
+            }
+
             return PythonUtils.getOrCreateCallTarget(rootNode);
         }
 
@@ -632,7 +647,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal);
             ModTy mod = (ModTy) parser.parse();
             assert mod != null;
-            return compileForBytecodeInterpreter(context, mod, source, topLevel, optimize, argumentNames, errorCb, futureFeatures);
+            return compileModule(context, mod, source, topLevel, optimize, argumentNames, errorCb, futureFeatures);
         } catch (PException e) {
             if (topLevel) {
                 PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
@@ -642,20 +657,19 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @TruffleBoundary
-    public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy mod, Source source, boolean topLevel, int optimize, List<String> argumentNames,
+    public RootCallTarget compileModule(PythonContext context, ModTy modIn, Source source, boolean topLevel, int optimize, List<String> argumentNames,
                     RaisePythonExceptionErrorCallback errorCallback, int flags) {
-        return compileForBytecodeInterpreter(context, mod, source, topLevel, optimize, argumentNames, errorCallback, FutureFeature.fromFlags(flags));
+        return compileModule(context, modIn, source, topLevel, optimize, argumentNames, errorCallback, FutureFeature.fromFlags(flags));
     }
 
     @TruffleBoundary
-    public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy modIn, Source source, boolean topLevel, int optimize, List<String> argumentNames,
+    public RootCallTarget compileModule(PythonContext context, ModTy modIn, Source source, boolean topLevel, int optimize, List<String> argumentNames,
                     RaisePythonExceptionErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
         RaisePythonExceptionErrorCallback errorCb = errorCallback;
         if (errorCb == null) {
             errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
         }
         try {
-            Compiler compiler = new Compiler(errorCb);
             boolean hasArguments = argumentNames != null && !argumentNames.isEmpty();
             final ModTy mod;
             if (hasArguments) {
@@ -663,9 +677,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             } else {
                 mod = modIn;
             }
-            CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize, futureFeatures);
-            CodeUnit co = cu.assemble();
-            RootNode rootNode = PBytecodeRootNode.create(this, co, source, errorCb);
+
+            RootNode rootNode;
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                rootNode = compileForBytecodeDSLInterpreter(context, mod, source, optimize, errorCb, futureFeatures);
+            } else {
+                rootNode = compileForBytecodeInterpreter(mod, source, optimize, errorCb, futureFeatures);
+            }
+
             if (topLevel) {
                 GilNode gil = GilNode.getUncached();
                 boolean wasAcquired = gil.acquire(context, rootNode);
@@ -688,6 +707,19 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
             throw e;
         }
+    }
+
+    private RootNode compileForBytecodeInterpreter(ModTy mod, Source source, int optimize, RaisePythonExceptionErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
+        Compiler compiler = new Compiler(errorCallback);
+        CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize, futureFeatures);
+        BytecodeCodeUnit co = cu.assemble();
+        return PBytecodeRootNode.create(this, co, source, errorCallback);
+    }
+
+    private RootNode compileForBytecodeDSLInterpreter(PythonContext context, ModTy mod, Source source, int optimize,
+                    RaisePythonExceptionErrorCallback errorCallback, EnumSet<FutureFeature> futureFeatures) {
+        BytecodeDSLCompilerResult result = BytecodeDSLCompiler.compile(this, context, mod, source, optimize, errorCallback, futureFeatures);
+        return result.rootNode();
     }
 
     private static ModTy transformASTForExecutionWithArguments(List<String> argumentNames, ModTy mod) {

@@ -1,0 +1,4 @@
+test.test_global.GlobalTests.test1 @ linux-x86_64
+test.test_global.GlobalTests.test2 @ linux-x86_64
+test.test_global.GlobalTests.test3 @ linux-x86_64
+test.test_global.GlobalTests.test4 @ linux-x86_64

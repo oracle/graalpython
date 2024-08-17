@@ -36,7 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import os
 import sys
 
 
@@ -46,59 +46,74 @@ import sys
 def test_lineno():
     assert sys._getframe(0).f_lineno == 47
 
-
-# IMPORTANT: DO NOT MOVE!
-def test_nested_lineno():
-    def test_nested():
-        return sys._getframe(0)
-
-    f = test_nested()
-    assert f.f_lineno == 53
-
-# IMPORTANT: DO NOT MOVE!
-def test_nested_lineno_return_loc():
-    def test_nested():
-        f = sys._getframe(0)
-        if True:
-            return f
-        return None
-
-    f = test_nested()
-    assert f.f_lineno == 63
-
-# IMPORTANT: DO NOT MOVE!
-def test_nested_lineno_implicit_return():
-    f = None
-    def test_nested():
-        nonlocal f
-        f = sys._getframe(0)
-        dummy = 42
-
-    test_nested()
-    assert f.f_lineno == 75
-
-# IMPORTANT: DO NOT MOVE!
-def test_nested_lineno_finally():
-    def test_nested():
-        try:
+if not os.environ.get('BYTECODE_DSL_INTERPRETER'): # Blocked by GR-61955
+    # IMPORTANT: DO NOT MOVE!
+    def test_nested_lineno():
+        def test_nested():
             return sys._getframe(0)
-        finally:
+
+        f = test_nested()
+        assert f.f_lineno == 53
+
+    # IMPORTANT: DO NOT MOVE!
+    def test_nested_lineno_return_loc():
+        def test_nested():
+            f = sys._getframe(0)
+            if True:
+                return f
+            return None
+
+        f = test_nested()
+        assert f.f_lineno == 63
+
+    # IMPORTANT: DO NOT MOVE!
+    def test_nested_lineno_implicit_return():
+        f = None
+        def test_nested():
+            nonlocal f
+            f = sys._getframe(0)
             dummy = 42
 
-    f = test_nested()
-    assert f.f_lineno == 86, f.f_lineno
+        test_nested()
+        assert f.f_lineno == 75
 
-# IMPORTANT: DO NOT MOVE!
-def test_nested_lineno_multiline_return():
-    def test_nested():
-        f = sys._getframe(0)
-        if f:
-            return (
-                f)
-        return None
+    # IMPORTANT: DO NOT MOVE!
+    def test_nested_lineno_finally():
+        def test_nested():
+            try:
+                return sys._getframe(0)
+            finally:
+                dummy = 42
 
-    f = test_nested()
-    assert f.f_lineno == 96
+        f = test_nested()
+        assert f.f_lineno == 86, f.f_lineno
+
+    # IMPORTANT: DO NOT MOVE!
+    def test_nested_lineno_multiline_return():
+        def test_nested():
+            f = sys._getframe(0)
+            if f:
+                return (
+                    f)
+            return None
+
+        f = test_nested()
+        assert f.f_lineno == 96
+
+    # IMPORTANT: DO NOT MOVE!
+    def test_nested_lineno_raise():
+        f = None
+        def test_nested():
+            nonlocal f
+            f = sys._getframe(0)
+            raise ValueError("should happen")
+            raise ArgumentError("should not happen")
+        try:
+            test_nested()
+        except ValueError as e:
+            assert "should happen" in str(e)
+            assert f.f_lineno == 109
+
 
 def test_read_and_write_locals():
     a = 1

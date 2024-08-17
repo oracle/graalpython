@@ -1,0 +1,5 @@
+test.test_stat.TestFilemodePyStat.test_devices @ linux-x86_64
+test.test_stat.TestFilemodePyStat.test_directory @ linux-x86_64
+test.test_stat.TestFilemodePyStat.test_link @ linux-x86_64
+test.test_stat.TestFilemodePyStat.test_mode @ linux-x86_64
+test.test_stat.TestFilemodePyStat.test_module_attributes @ linux-x86_64

@@ -1,0 +1,4 @@
+test.test_strftime.StrftimeTest.test_strftime @ linux-x86_64
+test.test_strftime.Y1900Tests.test_y_1900 @ linux-x86_64
+test.test_strftime.Y1900Tests.test_y_after_1900 @ linux-x86_64
+test.test_strftime.Y1900Tests.test_y_before_1900 @ linux-x86_64

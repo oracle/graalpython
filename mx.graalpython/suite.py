@@ -376,7 +376,7 @@ suite = {
         "com.oracle.graal.python.frozen": {
             "subDir": "graalpython",
             "vpath": True,
-            "type": "GraalpythonProject",
+            "type": "GraalpythonFrozenProject",
             "args": [
                 "<path:com.oracle.graal.python.frozen>/freeze_modules.py",
                 "--python-lib",

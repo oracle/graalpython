@@ -1,0 +1,10 @@
+test.test_largefile.CLargeFileTest.test_lseek @ linux-x86_64
+test.test_largefile.CLargeFileTest.test_osstat @ linux-x86_64
+test.test_largefile.CLargeFileTest.test_seek_read @ linux-x86_64
+test.test_largefile.CLargeFileTest.test_seekable @ linux-x86_64
+test.test_largefile.CLargeFileTest.test_truncate @ linux-x86_64
+test.test_largefile.PyLargeFileTest.test_lseek @ linux-x86_64
+test.test_largefile.PyLargeFileTest.test_osstat @ linux-x86_64
+test.test_largefile.PyLargeFileTest.test_seek_read @ linux-x86_64
+test.test_largefile.PyLargeFileTest.test_seekable @ linux-x86_64
+test.test_largefile.PyLargeFileTest.test_truncate @ linux-x86_64

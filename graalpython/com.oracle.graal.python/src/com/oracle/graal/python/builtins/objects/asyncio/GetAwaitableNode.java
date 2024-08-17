@@ -49,6 +49,7 @@ import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -60,6 +61,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
+@OperationProxy.Proxyable
 @SuppressWarnings("truffle-inlining")
 public abstract class GetAwaitableNode extends Node {
     public abstract Object execute(VirtualFrame frame, Object arg);

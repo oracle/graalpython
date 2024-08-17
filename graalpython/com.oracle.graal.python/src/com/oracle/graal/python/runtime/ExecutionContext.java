@@ -60,6 +60,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -73,8 +74,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 
@@ -93,17 +96,45 @@ public abstract class ExecutionContext {
          * Prepare an indirect call from a Python frame to a Python function.
          */
         public void prepareIndirectCall(VirtualFrame frame, Object[] callArguments, Node callNode) {
-            executePrepareCall(frame, callArguments, callNode, true, true);
+            executePrepareCall(frame, getActualCallArguments(callArguments), callNode, true, true);
+        }
+
+        private static Object[] getActualCallArguments(Object[] callArguments) {
+            /**
+             * Bytecode DSL note: When resuming a generator/coroutine, the call target is a
+             * ContinuationRoot with a different calling convention from regular PRootNodes. The
+             * first argument is a materialized frame containing the arguments used for argument
+             * reads.
+             */
+            if (callArguments.length == 2 && callArguments[0] instanceof MaterializedFrame materialized) {
+                return materialized.getArguments();
+            }
+            return callArguments;
         }
 
         /**
          * Prepare a call from a Python frame to a Python function.
          */
         public void prepareCall(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget, Node callNode) {
-            // n.b.: The class cast should always be correct, since this context
-            // must only be used when calling from Python to Python
-            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
-            executePrepareCall(frame, callArguments, callNode, calleeRootNode.needsCallerFrame(), calleeRootNode.needsExceptionState());
+            RootNode rootNode = callTarget.getRootNode();
+
+            PRootNode calleeRootNode;
+            Object[] actualCallArguments;
+            boolean needsExceptionState;
+            if (rootNode instanceof ContinuationRootNode continuationRoot) {
+                calleeRootNode = (PRootNode) continuationRoot.getSourceRootNode();
+                assert callArguments.length == 2;
+                actualCallArguments = ((MaterializedFrame) callArguments[0]).getArguments();
+                // Local exception state takes precedence over any exception in the caller's context
+                needsExceptionState = calleeRootNode.needsExceptionState() && !PArguments.hasException(actualCallArguments);
+            } else {
+                // n.b.: The class cast should always be correct, since this context
+                // must only be used when calling from Python to Python
+                calleeRootNode = (PRootNode) rootNode;
+                actualCallArguments = callArguments;
+                needsExceptionState = calleeRootNode.needsExceptionState();
+            }
+            executePrepareCall(frame, actualCallArguments, callNode, calleeRootNode.needsCallerFrame(), needsExceptionState);
         }
 
         protected abstract void executePrepareCall(VirtualFrame frame, Object[] callArguments, Node callNode, boolean needsCallerFrame, boolean needsExceptionState);
@@ -266,6 +297,10 @@ public abstract class ExecutionContext {
         }
 
         public void exit(VirtualFrame frame, PRootNode node) {
+            exit(frame, node, node);
+        }
+
+        public void exit(VirtualFrame frame, PRootNode node, Node location) {
             /*
              * equivalent to PyPy's ExecutionContext.leave. Note that <tt>got_exception</tt> in
              * their code is handled automatically by the Truffle lazy exceptions, so here we only
@@ -274,12 +309,12 @@ public abstract class ExecutionContext {
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
             CompilerAsserts.partialEvaluationConstant(node);
             if (node.getFrameEscapedProfile().profile(info.isEscaped())) {
-                exitEscaped(frame, node, info);
+                exitEscaped(frame, node, location, info);
             }
         }
 
         @InliningCutoff
-        private void exitEscaped(VirtualFrame frame, PRootNode node, Reference info) {
+        private void exitEscaped(VirtualFrame frame, PRootNode node, Node location, Reference info) {
             if (!everEscaped) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 everEscaped = true;
@@ -307,7 +342,7 @@ public abstract class ExecutionContext {
             }
 
             // force the frame so that it can be accessed later
-            ensureMaterializeNode().execute(frame, node, false, true);
+            ensureMaterializeNode().execute(frame, location, false, true);
             // if this frame escaped we must ensure that also f_back does
             callerInfo.markAsEscaped();
             info.setBackref(callerInfo);

@@ -1,0 +1,3 @@
+test.test_zipfile64.OtherTests.testMoreThan64kFiles @ linux-x86_64
+test.test_zipfile64.OtherTests.testMoreThan64kFilesAppend @ linux-x86_64
+test.test_zipfile64.TestsWithSourceFile.testDeflated @ linux-x86_64

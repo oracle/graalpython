@@ -41,6 +41,8 @@
 
 package org.graalvm.python.embedding.cext.test;
 
+import static org.graalvm.python.embedding.test.EmbeddingTestUtils.createVenv;
+import static org.graalvm.python.embedding.test.EmbeddingTestUtils.deleteDirOnShutdown;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -59,10 +61,10 @@ import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.python.embedding.tools.exec.BuildToolLog;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
+import org.junit.Assume;
 import org.junit.Test;
 
-import static org.graalvm.python.embedding.test.EmbeddingTestUtils.deleteDirOnShutdown;
-import static org.graalvm.python.embedding.test.EmbeddingTestUtils.createVenv;
+import com.oracle.graal.python.runtime.PythonOptions;
 
 public class MultiContextCExtTest {
     static final class TestLog extends Handler implements BuildToolLog {
@@ -167,6 +169,7 @@ public class MultiContextCExtTest {
 
     @Test
     public void testCreatingVenvForMulticontext() throws IOException, VFSUtils.PackagesChangedException {
+        Assume.assumeFalse(PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER);
         var log = new TestLog();
         Path tmpdir = Files.createTempDirectory("MultiContextCExtTest");
         Path venvDir = tmpdir.resolve("venv");

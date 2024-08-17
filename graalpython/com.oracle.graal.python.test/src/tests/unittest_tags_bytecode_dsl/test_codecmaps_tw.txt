@@ -1,0 +1,5 @@
+test.test_codecmaps_tw.TestBIG5Map.test_errorhandle @ linux-x86_64
+test.test_codecmaps_tw.TestBIG5Map.test_mapping_file @ linux-x86_64
+test.test_codecmaps_tw.TestBIG5Map.test_mapping_supplemental @ linux-x86_64
+test.test_codecmaps_tw.TestCP950Map.test_errorhandle @ linux-x86_64
+test.test_codecmaps_tw.TestCP950Map.test_mapping_supplemental @ linux-x86_64
