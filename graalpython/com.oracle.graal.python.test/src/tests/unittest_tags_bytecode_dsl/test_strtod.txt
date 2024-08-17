@@ -1,0 +1,8 @@
+test.test_strtod.StrtodTests.test_bigcomp @ linux-x86_64
+test.test_strtod.StrtodTests.test_boundaries @ linux-x86_64
+test.test_strtod.StrtodTests.test_halfway_cases @ linux-x86_64
+test.test_strtod.StrtodTests.test_large_exponents @ linux-x86_64
+test.test_strtod.StrtodTests.test_parsing @ linux-x86_64
+test.test_strtod.StrtodTests.test_particular @ linux-x86_64
+test.test_strtod.StrtodTests.test_short_halfway_cases @ linux-x86_64
+test.test_strtod.StrtodTests.test_underflow_boundary @ linux-x86_64

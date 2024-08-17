@@ -1,0 +1,12 @@
+test.test_format.FormatTest.test_bytes_and_bytearray_format @ linux-x86_64
+test.test_format.FormatTest.test_common_format @ linux-x86_64
+test.test_format.FormatTest.test_g_format_has_no_trailing_zeros @ linux-x86_64
+test.test_format.FormatTest.test_locale @ linux-x86_64
+test.test_format.FormatTest.test_non_ascii @ linux-x86_64
+test.test_format.FormatTest.test_nul @ linux-x86_64
+test.test_format.FormatTest.test_precision @ linux-x86_64
+test.test_format.FormatTest.test_str_format @ linux-x86_64
+test.test_format.FormatTest.test_with_a_commas_and_an_underscore_in_format_specifier @ linux-x86_64
+test.test_format.FormatTest.test_with_an_underscore_and_a_comma_in_format_specifier @ linux-x86_64
+test.test_format.FormatTest.test_with_two_commas_in_format_specifier @ linux-x86_64
+test.test_format.FormatTest.test_with_two_underscore_in_format_specifier @ linux-x86_64

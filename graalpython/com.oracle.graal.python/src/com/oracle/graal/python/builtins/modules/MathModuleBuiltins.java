@@ -2502,7 +2502,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             Object acc = start;
             Object next;
             while (loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator)))) {
-                acc = multiplyNode.execute(frame, inliningTarget, acc, next);
+                acc = multiplyNode.execute(frame, acc, next);
             }
             return acc;
         }
