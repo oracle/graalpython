@@ -73,7 +73,7 @@ public abstract class PyObjectStrAsTruffleStringNode extends PNodeWithContext {
     public abstract TruffleString execute(Frame frame, Node inliningTarget, Object object);
 
     @Specialization
-    static TruffleString doString(TruffleString obj) {
+    static TruffleString doString(Node inliningTarget, TruffleString obj) {
         return obj;
     }
 

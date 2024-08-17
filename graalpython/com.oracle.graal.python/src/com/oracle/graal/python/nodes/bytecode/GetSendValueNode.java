@@ -47,6 +47,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @GenerateUncached
@@ -69,6 +70,7 @@ public abstract class GetSendValueNode extends PNodeWithContext {
         return obj;
     }
 
+    @NeverDefault
     public static GetSendValueNode create() {
         return GetSendValueNodeGen.create();
     }

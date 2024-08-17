@@ -63,4 +63,9 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_native:
         """)
         env = os.environ.copy()
         env['JAVA_TOOL_OPTIONS'] = f"-Djavax.net.ssl.trustStore={curdir}/ssldata/signing_keystore.jks"
-        subprocess.run([sys.executable, '-c', src], env=env, check=True)
+
+        args = []
+        if __graalpython__.is_bytecode_dsl_interpreter:
+            args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
+
+        subprocess.run([sys.executable, *args, '-c', src], env=env, check=True)
