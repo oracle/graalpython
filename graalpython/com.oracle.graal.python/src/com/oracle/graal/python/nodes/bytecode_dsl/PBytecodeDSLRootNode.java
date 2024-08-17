@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -94,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
@@ -176,6 +178,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.exception.ExceptMatchNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
@@ -1966,6 +1969,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation
     public static final class Le {
+
+        private static final TruffleString T_OPERATOR = PythonUtils.tsLiteral("<=");
+
         @Specialization
         public static boolean cmp(int left, int right) {
             return left <= right;
@@ -1989,6 +1995,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static boolean cmp(double left, double right) {
             return left <= right;
+        }
+
+        @Specialization
+        public static boolean cmp(TruffleString left, TruffleString right,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return StringUtils.compareStrings(left, right, compareIntsUTF32Node) <= 0;
         }
 
         @Specialization
@@ -2011,6 +2023,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation
     public static final class Lt {
+
+        private static final TruffleString T_OPERATOR = PythonUtils.tsLiteral("<");
+
         @Specialization
         public static boolean cmp(int left, int right) {
             return left < right;
@@ -2034,6 +2049,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static boolean cmp(double left, double right) {
             return left < right;
+        }
+
+        @Specialization
+        public static boolean cmp(TruffleString left, TruffleString right,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return StringUtils.compareStrings(left, right, compareIntsUTF32Node) < 0;
         }
 
         @Specialization
@@ -2056,6 +2077,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation
     public static final class Ge {
+
+        private static final TruffleString T_OPERATOR = PythonUtils.tsLiteral(">=");
+
         @Specialization
         public static boolean cmp(int left, int right) {
             return left >= right;
@@ -2079,6 +2103,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static boolean cmp(double left, double right) {
             return left >= right;
+        }
+
+        @Specialization
+        public static boolean cmp(TruffleString left, TruffleString right,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return StringUtils.compareStrings(left, right, compareIntsUTF32Node) >= 0;
         }
 
         @Specialization
@@ -2101,6 +2131,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation
     public static final class Gt {
+
+        private static final TruffleString T_OPERATOR = PythonUtils.tsLiteral(">");
+
         @Specialization
         public static boolean cmp(int left, int right) {
             return left > right;
@@ -2127,6 +2160,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @Specialization
+        public static boolean cmp(TruffleString left, TruffleString right,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return StringUtils.compareStrings(left, right, compareIntsUTF32Node) > 0;
+        }
+
+        @Specialization
         public static boolean cmp(int left, double right) {
             return left > right;
         }
@@ -2146,6 +2185,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation
     public static final class Eq {
+
         @Specialization
         public static boolean cmp(int left, int right) {
             return left == right;
@@ -2197,6 +2237,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation
     public static final class Ne {
+
         @Specialization
         public static boolean cmp(int left, int right) {
             return left != right;

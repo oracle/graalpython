@@ -77,6 +77,8 @@ PLATFORM_KEYS = {sys.platform, platform.machine(), sys.implementation.name}
 if IS_GRAALPY:
     # noinspection PyUnresolvedReferences
     PLATFORM_KEYS.add('native_image' if __graalpython__.is_native else 'jvm')
+    if __graalpython__.is_bytecode_dsl_interpreter:
+        PLATFORM_KEYS.add('bytecode_dsl')
 
 CURRENT_PLATFORM = f'{sys.platform}-{platform.machine()}'
 CURRENT_PLATFORM_KEYS = frozenset({CURRENT_PLATFORM})

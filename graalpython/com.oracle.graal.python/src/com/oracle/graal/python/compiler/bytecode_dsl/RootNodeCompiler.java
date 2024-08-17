@@ -48,8 +48,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -3508,6 +3510,20 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 return result;
             }
 
+            public void copySubjectToTemporaryWithLookup(String name) {
+                BytecodeLocal temporary = lookupOrAllocateBindVariable(name);
+                b.beginStoreLocal(temporary);
+                b.emitLoadLocal(subject);
+                b.endStoreLocal();
+            }
+
+            private BytecodeLocal lookupOrAllocateBindVariable(String name) {
+                if (!bindVariables.containsKey(name)) {
+                    return allocateBindVariable(name);
+                }
+                return bindVariables.get(name);
+            }
+
             private void duplicateStoreError(String name) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "multiple assignments to name '%s' in pattern", name);
             }
@@ -3541,6 +3557,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
                 emitPatternCondition(c, pc);
                 visitStatements(c.body);
+                pc.bindVariables.clear();
                 visitMatchCaseRecursively(cases, index + 1, pc);
                 b.endIfThenElse();
             } else {
@@ -3702,14 +3719,93 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             emitPatternNotImplemented("mapping");
         }
 
-        private void doVisitPattern(PatternTy.MatchOr node, PatternContext pc) {
-            if (node.patterns.length > 2) {
-                emitPatternNotImplemented("OR with more than 2 elements");
+        private void checkAlternativePatternDifferentNames(Set<String> control, Map<String, BytecodeLocal> bindVariables) {
+            if (!control.equals(bindVariables.keySet())) {
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "alternative patterns bind different names");
             }
+        }
+
+        private void fromPatternContextToLocal(PatternContext pc, BytecodeLocal local_temp) {
+            b.beginIfThen();
+
+            // condition
+            b.emitLoadLocal(local_temp);
+
+            // if-then
+            b.beginBlock();
+
+            if (!pc.bindVariables.isEmpty()) {
+                for (Map.Entry<String, BytecodeLocal> entry : pc.bindVariables.entrySet()) {
+                    beginStoreLocal(entry.getKey(), b);
+                    b.emitLoadLocal(entry.getValue());
+                    endStoreLocal(entry.getKey(), b);
+                }
+            }
+
+            b.endBlock();
+            b.endIfThen();
+        }
+
+        private void visitMatchOrRecursively(PatternTy[] patterns, int index, PatternContext pc, Set<String> control, boolean allowIrrefutable) {
+            /**
+             * Case patterns joined by OR operator are chained as a sequence of binary OR operators, as in:
+             *
+             * @formatter:off
+             * case pattern1 | (pattern2 | (pattern3 | ... (patternN-1 | patternN))):
+             *  ...
+             * @formatter:on
+             */
             b.beginBoolOr();
-            visitPattern(node.patterns[0], pc);
-            visitPattern(node.patterns[1], pc);
-            b.endBoolOr();
+            b.beginBlock();
+
+            pc = new PatternContext(pc.subject);
+
+            // store the (boolean) result of the sub-pattern
+            BytecodeLocal local_temp = b.createLocal();
+            b.beginStoreLocal(local_temp);
+            visitPattern(patterns[index], pc);
+            b.endStoreLocal();
+
+            if (index == 0) {
+                control = new HashSet<>(pc.bindVariables.keySet());
+            }
+            checkAlternativePatternDifferentNames(control, pc.bindVariables);
+            fromPatternContextToLocal(pc, local_temp);
+
+            b.emitLoadLocal(local_temp);
+            b.endBlock();
+
+            if (index + 2 < patterns.length) {
+                visitMatchOrRecursively(patterns, index + 1, pc, control, allowIrrefutable);
+                b.endBoolOr();
+            } else {
+                // Only last sub-pattern can be irrefutable -- if it was allowed in the first place
+                pc = new PatternContext(pc.subject);
+                pc.allowIrrefutable = allowIrrefutable;
+
+                b.beginBlock();
+
+                // store the (boolean) result of the sub-pattern
+                local_temp = b.createLocal();
+                b.beginStoreLocal(local_temp);
+                visitPattern(patterns[index + 1], pc);
+                b.endStoreLocal();
+
+                checkAlternativePatternDifferentNames(control, pc.bindVariables);
+                fromPatternContextToLocal(pc, local_temp);
+
+                b.emitLoadLocal(local_temp);
+                b.endBlock();
+                b.endBoolOr();
+            }
+        }
+
+        private void doVisitPattern(PatternTy.MatchOr node, PatternContext pc) {
+            boolean saveIrrefutable = pc.allowIrrefutable;
+            // sub-patterns are not irrefutable by default, only last one is
+            // this needs to be restored before last sub-pattern is visited
+            pc.allowIrrefutable = false;
+            visitMatchOrRecursively(node.patterns, 0, pc, null, saveIrrefutable);
         }
 
         private void patternHelperSequenceUnpack(PatternTy[] patterns, PatternContext pc) {
@@ -3723,7 +3819,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             patternUnpackHelper(patterns, pc);
             b.endStoreLocal();
 
+            b.beginPrimitiveBoolAnd();
             for (int i = 0; i < n; i++) {
+                b.beginBlock();
                 b.beginStoreLocal(pc.subject);
                 b.beginArrayIndex(i);
                 b.emitLoadLocal(unpacked);
@@ -3731,7 +3829,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endStoreLocal();
 
                 visitSubpattern(patterns[i], pc);
+                b.endBlock();
             }
+
+            b.endPrimitiveBoolAnd();
             b.endBlock();
         }
 
@@ -3839,6 +3940,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 onlyWildcard &= wildcardCheck(pattern);
             }
 
+            b.beginBlock();
+            BytecodeLocal resultOfAnd = b.createLocal();
+
+            // oldSubject <- pc.subject
+            // store pc.subject for eventual return from sub-pattern
+            BytecodeLocal oldSubject = b.createLocal();
+            b.beginStoreLocal(oldSubject);
+            b.emitLoadLocal(pc.subject);
+            b.endStoreLocal();
+
+            b.beginStoreLocal(resultOfAnd);
             b.beginPrimitiveBoolAnd();
 
             b.beginCheckTypeFlags(TypeFlags.SEQUENCE);
@@ -3883,6 +3995,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             b.endPrimitiveBoolAnd();
+            b.endStoreLocal();
+
+            // pc.subject <- oldSubject
+            // load old subject when returning from sub-pattern
+            b.beginStoreLocal(pc.subject);
+            b.emitLoadLocal(oldSubject);
+            b.endStoreLocal();
+
+            b.emitLoadLocal(resultOfAnd);
+            b.endBlock();
+
         }
 
         private void doVisitPattern(PatternTy.MatchSingleton node, PatternContext pc) {

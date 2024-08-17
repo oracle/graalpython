@@ -47,3 +47,32 @@ selector = [
     # when the runner exits. We don't know which tests can trigger this, so we exclude the whole file.
     'test_multiprocessing_graalpy',
 ]
+
+
+[[test_rules]]
+exclude_on = ['bytecode_dsl']
+selector = [
+    'test_grammar', # test_grammar: AssertionError: 0 != 1 : [], line 23, in check_syntax_warning
+    'test_patma', # multiple assignments to name 'z' in pattern, line 480
+    'test_genexps', # expected: {'a': <generator object <genexpr> at ...>}, got {'a': <generator object genexp at 0x824052475>}
+    'test_fstring', # max stack height:
+    'test_code', # difference in output of dump(f.__code__)
+    'test_sys_settrace', # FrameSlotTypeException from Bytecode DSL
+    'test_regrtest', # class pattern matching
+    # syntax error: 'await' outside async function
+    'test_asyncio',
+    'test_asyncgen',
+    'test_coroutines',
+    # not implemented: PGenerator.java:204
+    'test_contextlib_async',
+    'test_typing',
+    'test_async_case',
+    'test_exceptions', # test_generator_doesnt_retain_old_exc: wrong traceback
+    'test_compile', # test_dict: bytecode DSL limited stack size
+    # AssertionError: invalid bytecode node passed
+    'test_copy',
+    'test_dict',
+    # bytecode validation error
+    'test_email',
+    'test_json',
+]

@@ -38,6 +38,7 @@
 # SOFTWARE.
 import os
 import sys, ast, unittest
+import inspect
 
 
 @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
@@ -125,3 +126,202 @@ def test_mutable_dict_keys():
 
     assert test('attr1') == {'dyn_match': 1, 'attr2': 2, 'attr3': 3}
     assert test('attr2') == {'dyn_match': 2, 'attr1': 1, 'attr3': 3}
+
+@unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+def test_multiple_or_pattern_basic():
+    match 0:
+        case 0 | 1 | 2 | 3 | 4 | 5 as x:
+            assert x == 0
+
+    match 3:
+        case ((0 | 1 | 2) as x) | ((3 | 4 | 5) as x):
+            assert x == 3
+
+@unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+def test_sequence_pattern():
+    match (1, 2):
+        case (3, 2):
+            assert False
+
+    match (1, (2, 2)):
+        case (3, (2, 2)):
+            assert False
+
+    match (1, 2):
+        case (3, q):
+            assert False
+
+
+@unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+def test_multiple_or_pattern_advanced():
+    match 4:
+        case (0 as z) | (1 as z) | (2 as z) | (4 as z) | (77 as z):
+            assert z == 4
+
+    match 42:
+        case (0 as z) | (1 as z):
+            assert z == 1
+        case x:
+            assert x == 42
+
+    match 2:
+        case (0 as z) | (1 as z) | (2 as z):
+            assert z == 2
+        case _:
+            assert False
+
+    match 1:
+        case (0 as z) | (1 as z) | (2 as z):
+            assert z == 1
+        case _:
+            assert False
+
+    match 0:
+        case (0 as z) | (1 as z) | (2 as z):
+            assert z == 0
+        case _:
+            assert False
+
+    match (1, 2):
+        case (w, 2) | (2, w):
+            assert w == 1
+
+
+@unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+def test_multiple_or_pattern_creates_locals():
+    match (1, 2):
+        case (a, 1) | (a, 2):
+            assert a == 1
+    assert a == 1
+
+    match [1, 2]:
+        case [a1, 1] | [a1, 2]:
+            assert a1 == 1
+    assert a1 == 1
+
+    match (1, 2, 2, 3, 2):
+        case (1, a, b, 4, c) | (1, a, b, 3, c) | (1, a, b, 2, c):
+            assert a == 2
+            assert b == 2
+            assert c == 2
+    assert a == 2
+    assert b == 2
+    assert c == 2
+
+    match (1, 3, 4, 9):
+        case ((d, e, f, 7) | (d, e, f, 8) | (d, e, f, 6) | (d, e, f, 9)):
+            assert d == 1
+            assert e == 3
+            assert f == 4
+    assert d == 1
+    assert e == 3
+    assert f == 4
+
+    match (1,2,3,4,5,6,7):
+        case (0,q,w,e,r,t,y) | (q,w,e,r,t,y,7):
+            assert q == 1
+            assert w == 2
+            assert e == 3
+            assert r == 4
+            assert t == 5
+            assert y == 6
+    assert q == 1
+    assert w == 2
+    assert e == 3
+    assert r == 4
+    assert t == 5
+    assert y == 6
+
+
+class TestOriginalPatMa(unittest.TestCase):
+    @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+    def test_patma_246(self):
+        def f(x):
+            match x:
+                case (
+                (h, g, i, a, b, d, e, c, f, 10) |
+                (a, b, c, d, e, f, g, h, i, 9) |
+                (g, b, a, c, d, -5, e, h, i, f) |
+                (-1, d, f, b, g, e, i, a, h, c)
+                ):
+                    w = 0
+            out = locals()
+            del out["x"]
+            return out
+        alts = [
+            dict(a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, i=8, w=0),
+            dict(h=1, g=2, i=3, a=4, b=5, d=6, e=7, c=8, f=9, w=0),
+            dict(g=0, b=-1, a=-2, c=-3, d=-4, e=-6, h=-7, i=-8, f=-9, w=0),
+            dict(d=-2, f=-3, b=-4, g=-5, e=-6, i=-7, a=-8, h=-9, c=-10, w=0),
+            dict(),
+        ]
+        self.assertEqual(f(range(10)), alts[0])
+        self.assertEqual(f(range(1, 11)), alts[1])
+        self.assertEqual(f(range(0, -10, -1)), alts[2])
+        self.assertEqual(f(range(-1, -11, -1)), alts[3])
+        self.assertEqual(f(range(10, 20)), alts[4])
+
+    @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+    def test_patma_242(self):
+        x = range(3)
+        match x:
+            case [y, *_, z]:
+                w = 0
+        self.assertEqual(w, 0)
+        self.assertEqual(x, range(3))
+        self.assertEqual(y, 0)
+        self.assertEqual(z, 2)
+
+    @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+    def test_patma_017(self):
+        match (0, 1, 2):
+            case [*x, 0, 1, 2,]:
+                y = 0
+        self.assertEqual(x, [])
+        self.assertEqual(y, 0)
+
+
+class TestErrors(unittest.TestCase):
+    def assert_syntax_error(self, code: str):
+        with self.assertRaises(SyntaxError):
+            compile(inspect.cleandoc(code), "<test>", "exec")
+
+    @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+    def test_alternative_patterns_bind_different_names_0(self):
+        self.assert_syntax_error("""
+            match ...:
+                case "a" | a:
+                    pass
+            """)
+
+    @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+    def test_alternative_patterns_bind_different_names_1(self):
+        self.assert_syntax_error("""
+        match ...:
+            case [a, [b] | [c] | [d]]:
+                pass
+        """)
+
+    @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+    def test_multiple_or_same_name(self):
+        self.assert_syntax_error("""
+        match 0:
+            case x | x:
+                pass
+        """)
+
+    @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+    def test_multiple_or_wildcard(self):
+        self.assert_syntax_error("""
+        match 0:
+            case * | 1:
+                pass
+        """)
+
+    @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+    def test_unbound_local_variable(self):
+        with self.assertRaises(UnboundLocalError):
+            match (1, 3):
+                case (a, 1) | (a, 2):
+                    pass
+            assert a == 1
