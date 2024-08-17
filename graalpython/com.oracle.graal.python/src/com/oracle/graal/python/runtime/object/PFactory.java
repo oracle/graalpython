@@ -226,8 +226,10 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.builtins.objects.types.PGenericAliasIterator;
 import com.oracle.graal.python.builtins.objects.types.PUnionType;
-import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -825,13 +827,26 @@ public final class PFactory {
         return trace(language, PGenerator.create(language, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator));
     }
 
+    public static PGenerator createGenerator(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeDSLRootNode rootNode, Object[] arguments) {
+        return trace(language, PGenerator.create(language, name, qualname, rootNode, arguments, PythonBuiltinClassType.PGenerator));
+    }
+
     public static PGenerator createIterableCoroutine(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets,
                     Object[] arguments) {
         return trace(language, PGenerator.create(language, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator, true));
     }
 
+    public static PGenerator createIterableCoroutine(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeDSLRootNode rootNode,
+                    Object[] arguments) {
+        return trace(language, PGenerator.create(language, name, qualname, rootNode, arguments, PythonBuiltinClassType.PGenerator, true));
+    }
+
     public static PGenerator createCoroutine(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         return trace(language, PGenerator.create(language, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine));
+    }
+
+    public static PGenerator createCoroutine(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeDSLRootNode rootNode, Object[] arguments) {
+        return trace(language, PGenerator.create(language, name, qualname, rootNode, arguments, PythonBuiltinClassType.PCoroutine));
     }
 
     public static PCoroutineWrapper createCoroutineWrapper(PythonLanguage language, PGenerator generator) {
@@ -1091,7 +1106,11 @@ public final class PFactory {
         return trace(language, new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct, flags, firstlineno, linetable, filename));
     }
 
-    public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
+    public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, BytecodeCodeUnit codeUnit) {
+        return trace(language, new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature, codeUnit));
+    }
+
+    public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, BytecodeDSLCodeUnit codeUnit) {
         return trace(language, new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature, codeUnit));
     }
 

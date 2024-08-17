@@ -1,0 +1,6 @@
+test.test_cgitb.TestCgitb.test_blanks @ linux-x86_64
+test.test_cgitb.TestCgitb.test_fonts @ linux-x86_64
+test.test_cgitb.TestCgitb.test_html @ linux-x86_64
+test.test_cgitb.TestCgitb.test_syshook_no_logdir_default_format @ linux-x86_64
+test.test_cgitb.TestCgitb.test_syshook_no_logdir_text_format @ linux-x86_64
+test.test_cgitb.TestCgitb.test_text @ linux-x86_64

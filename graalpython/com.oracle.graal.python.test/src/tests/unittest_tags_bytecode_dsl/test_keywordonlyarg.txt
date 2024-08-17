@@ -1,0 +1,11 @@
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testFunctionCall @ linux-x86_64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testKwDefaults @ linux-x86_64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testRaiseErrorFuncallWithUnexpectedKeywordArgument @ linux-x86_64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testSyntaxErrorForFunctionCall @ linux-x86_64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testSyntaxErrorForFunctionDefinition @ linux-x86_64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testSyntaxForManyArguments @ linux-x86_64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testTooManyPositionalErrorMessage @ linux-x86_64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.test_default_evaluation_order @ linux-x86_64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.test_issue13343 @ linux-x86_64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.test_kwonly_methods @ linux-x86_64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.test_mangling @ linux-x86_64

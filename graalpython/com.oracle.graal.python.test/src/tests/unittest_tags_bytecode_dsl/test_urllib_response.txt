@@ -1,0 +1,4 @@
+test.test_urllib_response.TestResponse.test_addclosehook @ linux-x86_64
+test.test_urllib_response.TestResponse.test_addinfo @ linux-x86_64
+test.test_urllib_response.TestResponse.test_addinfourl @ linux-x86_64
+test.test_urllib_response.TestResponse.test_with @ linux-x86_64

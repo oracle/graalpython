@@ -1,0 +1,15 @@
+test.test_structseq.StructSeqTest.test_cmp @ linux-x86_64
+test.test_structseq.StructSeqTest.test_concat @ linux-x86_64
+test.test_structseq.StructSeqTest.test_constructor @ linux-x86_64
+test.test_structseq.StructSeqTest.test_contains @ linux-x86_64
+test.test_structseq.StructSeqTest.test_copying @ linux-x86_64
+test.test_structseq.StructSeqTest.test_copying_with_unnamed_fields @ linux-x86_64
+test.test_structseq.StructSeqTest.test_eviltuple @ linux-x86_64
+test.test_structseq.StructSeqTest.test_extended_getslice @ linux-x86_64
+test.test_structseq.StructSeqTest.test_fields @ linux-x86_64
+test.test_structseq.StructSeqTest.test_hash @ linux-x86_64
+test.test_structseq.StructSeqTest.test_pickling @ linux-x86_64
+test.test_structseq.StructSeqTest.test_pickling_with_unnamed_fields @ linux-x86_64
+test.test_structseq.StructSeqTest.test_repeat @ linux-x86_64
+test.test_structseq.StructSeqTest.test_repr @ linux-x86_64
+test.test_structseq.StructSeqTest.test_tuple @ linux-x86_64
