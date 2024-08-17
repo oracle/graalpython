@@ -64,6 +64,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -180,6 +181,7 @@ public enum BinaryArithmetic {
         }
     }
 
+    @OperationProxy.Proxyable
     public abstract static class SubNode extends BinaryArithmeticNode {
 
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("-");
@@ -237,6 +239,7 @@ public enum BinaryArithmetic {
         }
     }
 
+    @OperationProxy.Proxyable
     public abstract static class TrueDivNode extends BinaryArithmeticRaiseNode {
 
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("/");
@@ -278,6 +281,7 @@ public enum BinaryArithmetic {
         }
     }
 
+    @OperationProxy.Proxyable
     public abstract static class FloorDivNode extends BinaryArithmeticRaiseNode {
 
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("//");
@@ -333,6 +337,7 @@ public enum BinaryArithmetic {
         }
     }
 
+    @OperationProxy.Proxyable
     public abstract static class ModNode extends BinaryArithmeticRaiseNode {
 
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("%");
@@ -384,6 +389,7 @@ public enum BinaryArithmetic {
         }
     }
 
+    @OperationProxy.Proxyable
     public abstract static class LShiftNode extends BinaryArithmeticNode {
 
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("<<");
@@ -414,6 +420,7 @@ public enum BinaryArithmetic {
         }
     }
 
+    @OperationProxy.Proxyable
     public abstract static class RShiftNode extends BinaryArithmeticNode {
 
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler(">>");
@@ -436,6 +443,7 @@ public enum BinaryArithmetic {
         }
     }
 
+    @OperationProxy.Proxyable
     public abstract static class BitAndNode extends BinaryArithmeticNode {
 
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("&");
@@ -458,6 +466,7 @@ public enum BinaryArithmetic {
 
     }
 
+    @OperationProxy.Proxyable
     public abstract static class BitOrNode extends BinaryArithmeticNode {
 
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("|");
@@ -482,6 +491,7 @@ public enum BinaryArithmetic {
 
     }
 
+    @OperationProxy.Proxyable
     public abstract static class BitXorNode extends BinaryArithmeticNode {
 
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("^");
@@ -504,6 +514,7 @@ public enum BinaryArithmetic {
 
     }
 
+    @OperationProxy.Proxyable
     public abstract static class MatMulNode extends BinaryArithmeticNode {
 
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("@");
@@ -516,6 +527,7 @@ public enum BinaryArithmetic {
         }
     }
 
+    @OperationProxy.Proxyable
     public abstract static class PowNode extends BinaryArithmeticNode {
 
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("** or pow()");
@@ -528,6 +540,7 @@ public enum BinaryArithmetic {
         }
     }
 
+    @OperationProxy.Proxyable
     public abstract static class DivModNode extends BinaryArithmeticRaiseNode {
 
         public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("divmod");
