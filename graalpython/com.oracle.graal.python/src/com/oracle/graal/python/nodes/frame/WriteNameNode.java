@@ -59,7 +59,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class WriteNameNode extends PNodeWithContext implements AccessNameNode {
 
     public final void execute(VirtualFrame frame, TruffleString attributeId, Object value) {
-        CompilerAsserts.partialEvaluationConstant(attributeId);
+        CompilerAsserts.compilationConstant(attributeId);
         executeImpl(frame, attributeId, value);
     }
 
