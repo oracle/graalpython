@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,7 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import os
 import sys, ast, unittest
 
 
@@ -88,6 +88,7 @@ def f(a):
     assert f(-2-3j) == "match sub"
 
 @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: mapping pattern matching")
 def test_long_mapping():
     def f(x):
         match d:
@@ -106,6 +107,7 @@ def test_long_mapping():
 
     assert star_match(d) == {33:33}
 
+@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: mapping pattern matching")
 def test_mutable_dict_keys():
     class MyObj:
         pass

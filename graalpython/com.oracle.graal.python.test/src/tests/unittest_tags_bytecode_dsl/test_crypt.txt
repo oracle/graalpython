@@ -1,0 +1,6 @@
+test.test_crypt.CryptTestCase.test_crypt @ linux-x86_64
+test.test_crypt.CryptTestCase.test_invalid_rounds @ linux-x86_64
+test.test_crypt.CryptTestCase.test_methods @ linux-x86_64
+test.test_crypt.CryptTestCase.test_salt @ linux-x86_64
+test.test_crypt.CryptTestCase.test_saltedcrypt @ linux-x86_64
+test.test_crypt.CryptTestCase.test_sha2_rounds @ linux-x86_64
