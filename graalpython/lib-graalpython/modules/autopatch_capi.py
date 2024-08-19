@@ -66,7 +66,7 @@ def replace_field_access(contents, match, replacement, assignment):
     level = 0
 
     def consume_whitespace_backwards(idx):
-        while idx > 0 and contents[idx].isspace():
+        while idx >= 0 and contents[idx].isspace():
             idx -= 1
         return idx
 
@@ -85,7 +85,7 @@ def replace_field_access(contents, match, replacement, assignment):
     def consume_pairwise_backwards(idx, l, r):
         level = 1
         idx -= 1
-        while level and idx:
+        while level and idx >= 0:
             c = contents[idx]
             if c == l:
                 level -= 1
@@ -95,12 +95,12 @@ def replace_field_access(contents, match, replacement, assignment):
         return idx
 
     def consume_identifier_backwards(idx):
-        while (contents[idx].isidentifier() or contents[idx].isdigit()) and idx:
+        while idx >= 0 and (contents[idx].isidentifier() or contents[idx].isdigit()):
             idx -= 1
         return idx
 
     first = True
-    while idx:
+    while idx >= 0:
         c = contents[idx]
         if c == ')' and first:
             idx = consume_pairwise_backwards(idx, '(', ')')
