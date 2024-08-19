@@ -59,24 +59,34 @@ if sys.implementation.name == 'graalpy':
 
     def test_replace_field_access():
         check_autopatched(
-            """
-            PyObject* type = obj->ob_type;
-            PyObject* type = ((PyObject*)obj)->ob_type;
-            const char* name = obj->ob_type->tp_name;
-            foo = objs[0]->ob_type;
-            return obj->ob_type;
-            return (PyObject*)obj->ob_type;
-            return ((PyObject*)obj)->ob_type;
-            (PyObject*)function_call(a, b, c(0))->ob_type->ob_base;
-            """,
-            """
-            PyObject* type = Py_TYPE(obj);
-            PyObject* type = Py_TYPE(((PyObject*)obj));
-            const char* name = Py_TYPE(obj)->tp_name;
-            foo = Py_TYPE(objs[0]);
-            return Py_TYPE(obj);
-            return (PyObject*)Py_TYPE(obj);
-            return Py_TYPE(((PyObject*)obj));
-            (PyObject*)Py_TYPE(function_call(a, b, c(0)))->ob_base;
-            """
+            'PyObject* type = obj->ob_type;',
+            'PyObject* type = Py_TYPE(obj);',
+        )
+        check_autopatched(
+            'PyObject* type = ((PyObject*)obj)->ob_type;',
+            'PyObject* type = Py_TYPE(((PyObject*)obj));',
+        )
+        check_autopatched(
+            'const char* name = obj->ob_type->tp_name;',
+            'const char* name = Py_TYPE(obj)->tp_name;',
+        )
+        check_autopatched(
+            'foo = objs[0]->ob_type;',
+            'foo = Py_TYPE(objs[0]);',
+        )
+        check_autopatched(
+            'return obj->ob_type;',
+            'return Py_TYPE(obj);',
+        )
+        check_autopatched(
+            'return (PyObject*)obj->ob_type;',
+            'return (PyObject*)Py_TYPE(obj);',
+        )
+        check_autopatched(
+            'return ((PyObject*)obj)->ob_type;',
+            'return Py_TYPE(((PyObject*)obj));',
+        )
+        check_autopatched(
+            '(PyObject*)function_call(a, b, c(0))->ob_type->ob_base;',
+            '(PyObject*)Py_TYPE(function_call(a, b, c(0)))->ob_base;',
         )
