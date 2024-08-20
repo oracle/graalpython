@@ -1361,7 +1361,7 @@ PyObject **
 PyTruffleTuple_GetItems(PyObject *op)
 {
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED
-    return GraalPy_get_PyTupleObject_ob_item(op);
+    return GraalPy_get_PyTupleObject_ob_item((PyTupleObject*) op);
 #else /* GRAALVM_PYTHON_LLVM_MANAGED */
     PyObject *res;
     PyObject **ob_item;
