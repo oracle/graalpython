@@ -1,5 +1,5 @@
 [[rules]]
-version = '== 3.0.10'
+version = '>= 3.0.10, < 3.0.12'
 patch = 'Cython-3.0.10.patch'
 license = 'Apache-2.0'
 

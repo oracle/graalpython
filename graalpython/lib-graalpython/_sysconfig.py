@@ -102,18 +102,18 @@ def _get_posix_vars():
     g['CFLAGS'] = ' '.join(cflags_default + [gnu_source])
     g['LDFLAGS'] = ""
     g['CCSHARED'] = fpic
-    g['LDSHARED_LINUX'] = "%s -shared %s" % (get_toolchain('CC'), fpic)
     if darwin_native:
-        g['LDSHARED'] = get_toolchain('CC') + " -bundle -undefined dynamic_lookup"
         g['LDFLAGS'] = "-bundle -undefined dynamic_lookup"
+        ldshared_common = g['LDFLAGS']
         g['LIBPYTHON'] = ''
     elif win32_native:
         g['LDFLAGS'] = f"-L{__graalpython__.capi_home.replace(os.path.sep, '/')}"
-        g['LDSHARED_WINDOWS'] = f"{g['LDSHARED_LINUX']} {g['LDFLAGS']}"
-        g['LDSHARED'] = g['LDSHARED_WINDOWS']
+        ldshared_common = f"-shared {fpic} {g['LDFLAGS']}"
     else:
-        g['LDSHARED'] = g['LDSHARED_LINUX']
+        ldshared_common = f"-shared {fpic}"
         g['LIBPYTHON'] = ''
+    g['LDSHARED'] = f"{g['CC']} {ldshared_common}"
+    g['LDCXXSHARED'] = f"{g['CXX']} {ldshared_common}"
     g['SOABI'] = so_abi
     g['EXT_SUFFIX'] = "." + so_abi + so_ext
     g['SHLIB_SUFFIX'] = so_ext
