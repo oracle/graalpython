@@ -90,3 +90,19 @@ if sys.implementation.name == 'graalpy':
             '(PyObject*)function_call(a, b, c(0))->ob_type->ob_base;',
             '(PyObject*)Py_TYPE(function_call(a, b, c(0)))->ob_base;',
         )
+        check_autopatched(
+            '''
+            #if SOME_MACRO
+            obj->ob_type->tp_free(self);
+            #else
+            obj->ob_type->tp_free(self);
+            #endif
+            ''',
+            '''
+            #if SOME_MACRO
+            Py_TYPE(obj)->tp_free(self);
+            #else
+            Py_TYPE(obj)->tp_free(self);
+            #endif
+            ''',
+        )

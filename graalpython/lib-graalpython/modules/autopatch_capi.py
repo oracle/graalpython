@@ -99,27 +99,31 @@ def replace_field_access(contents, match, replacement, assignment):
             idx -= 1
         return idx
 
-    first = True
+    allowed_tokens = {'()', '[]', '.', 'id'}
     while idx >= 0:
         c = contents[idx]
-        if c == ')' and first:
+        if '()' in allowed_tokens and c == ')':
             idx = consume_pairwise_backwards(idx, '(', ')')
-        elif c == ']':
+            allowed_tokens = {'[]', 'id'}
+        elif '[]' in allowed_tokens and c == ']':
             idx = consume_pairwise_backwards(idx, '[', ']')
-        elif c.isidentifier() or c.isdigit():
+            allowed_tokens = {'[]', 'id'}
+        elif 'id' in allowed_tokens and c.isidentifier() or c.isdigit():
             id_start = consume_identifier_backwards(idx)
             if contents[id_start + 1: idx + 1] == 'return':
                 idx += 1
                 break
             idx = id_start
-        elif c == '.':
+            allowed_tokens = {'.'}
+        elif '.' in allowed_tokens and c == '.':
             idx -= 1
-        elif c == '>' and idx > 1 and contents[idx - 1] == '-':
+            allowed_tokens = {'[]', 'id'}
+        elif '.' in allowed_tokens and c == '>' and idx > 1 and contents[idx - 1] == '-':
             idx -= 2
+            allowed_tokens = {'[]', 'id'}
         else:
             idx += 1
             break
-        first = False
         idx = consume_whitespace_backwards(idx)
 
     receiver_start = consume_whitespace_forward(idx)
