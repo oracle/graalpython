@@ -114,6 +114,7 @@ import java.util.stream.Collectors;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeSequenceBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrBuiltins;
@@ -410,12 +411,17 @@ public enum PythonBuiltinClassType implements TruffleObject {
     CArgObject("CArgObject", Flags.PUBLIC_BASE_WODICT),
     CThunkObject("CThunkObject", J__CTYPES, Flags.PUBLIC_BASE_WODICT),
     StgDict("StgDict", Flags.PRIVATE_DERIVED_WODICT, DICT_M_FLAGS, StgDictBuiltins.SLOTS),
-    PyCStructType("PyCStructType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCSTRUCTTYPE_M_FLAGS, PyCStructTypeBuiltins.SLOTS),
-    UnionType("UnionType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, UNIONTYPE_M_FLAGS, com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins.SLOTS),
-    PyCPointerType("PyCPointerType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCPOINTERTYPE_M_FLAGS),
-    PyCArrayType("PyCArrayType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCARRAYTYPE_M_FLAGS),
-    PyCSimpleType("PyCSimpleType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCSIMPLETYPE_M_FLAGS),
-    PyCFuncPtrType("PyCFuncPtrType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCFUNCPTRTYPE_M_FLAGS),
+    PyCStructType("PyCStructType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCSTRUCTTYPE_M_FLAGS, TpSlots.merge(CDataTypeSequenceBuiltins.SLOTS, PyCStructTypeBuiltins.SLOTS)),
+    UnionType(
+                    "UnionType",
+                    J__CTYPES,
+                    Flags.PUBLIC_BASE_WODICT,
+                    UNIONTYPE_M_FLAGS,
+                    TpSlots.merge(CDataTypeSequenceBuiltins.SLOTS, com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins.SLOTS)),
+    PyCPointerType("PyCPointerType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCPOINTERTYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
+    PyCArrayType("PyCArrayType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCARRAYTYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
+    PyCSimpleType("PyCSimpleType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCSIMPLETYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
+    PyCFuncPtrType("PyCFuncPtrType", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCFUNCPTRTYPE_M_FLAGS, CDataTypeSequenceBuiltins.SLOTS),
     Structure("Structure", J__CTYPES, Flags.PUBLIC_BASE_WODICT), /*- type = PyCStructType */
     Union("Union", J__CTYPES, Flags.PUBLIC_BASE_WODICT), /*- type = UnionType */
     PyCPointer("_Pointer", J__CTYPES, Flags.PUBLIC_BASE_WODICT, PYCPOINTER_M_FLAGS, PyCPointerBuiltins.SLOTS), /*- type = PyCPointerType */

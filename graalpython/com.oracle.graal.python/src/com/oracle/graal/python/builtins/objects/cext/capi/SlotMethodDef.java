@@ -64,7 +64,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNu
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_int;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_invert;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_lshift;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_multiply;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_negative;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_or;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_positive;
@@ -75,10 +74,8 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNu
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_true_divide;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_xor;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PySequenceMethods__sq_ass_item;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PySequenceMethods__sq_repeat;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_mapping;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_number;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_sequence;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_call;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_hash;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_init;
@@ -116,7 +113,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
@@ -137,7 +133,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.Hashfun
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InitWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.ObjobjargWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.RichcmpFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeargfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeobjargfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TernaryFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
@@ -167,7 +162,6 @@ public enum SlotMethodDef {
     /*-  AM_SEND(PyAsyncMethods__am_send, ASYNC_AM_SEND, TernaryFunctionWrapper::new, MethodsFlags.AM_SEND), */
 
     SQ_ASS_ITEM(PySequenceMethods__sq_ass_item, T___SETITEM__, SsizeobjargfuncWrapper::new, MethodsFlags.SQ_ASS_ITEM),
-    SQ_REPEAT(PySequenceMethods__sq_repeat, T___MUL__, SsizeargfuncWrapper::new, MethodsFlags.SQ_REPEAT),
 
     NB_ABSOLUTE(PyNumberMethods__nb_absolute, T___ABS__, UnaryFuncWrapper::new, MethodsFlags.NB_ABSOLUTE),
     NB_DIVMOD(PyNumberMethods__nb_divmod, T___DIVMOD__, BinaryFuncWrapper::new, MethodsFlags.NB_DIVMOD),
@@ -189,7 +183,6 @@ public enum SlotMethodDef {
     NB_INT(PyNumberMethods__nb_int, T___INT__, UnaryFuncWrapper::new, MethodsFlags.NB_INT),
     NB_INVERT(PyNumberMethods__nb_invert, T___INVERT__, UnaryFuncWrapper::new, MethodsFlags.NB_INVERT),
     NB_LSHIFT(PyNumberMethods__nb_lshift, T___LSHIFT__, BinaryFuncWrapper::new, MethodsFlags.NB_LSHIFT),
-    NB_MULTIPLY(PyNumberMethods__nb_multiply, T___MUL__, BinaryFuncWrapper::new, MethodsFlags.NB_MULTIPLY),
     NB_NEGATIVE(PyNumberMethods__nb_negative, T___NEG__, UnaryFuncWrapper::new, MethodsFlags.NB_NEGATIVE),
     NB_OR(PyNumberMethods__nb_or, T___OR__, BinaryFuncWrapper::new, MethodsFlags.NB_OR),
     NB_POSITIVE(PyNumberMethods__nb_positive, T___POS__, UnaryFuncWrapper::new, MethodsFlags.NB_POSITIVE),
@@ -236,10 +229,6 @@ public enum SlotMethodDef {
         //
         // Similarly for NB_ADD/NB_MUL (wrap_binaryfunc_l) and
         // SQ_CONCAT/SQ_REPEAT (wrap_binaryfunc)
-
-        initGroup(
-                        PyTypeObject__tp_as_sequence,
-                        SQ_REPEAT);
         initGroup(
                         PyTypeObject__tp_as_mapping,
                         MP_ASS_SUBSCRIPT);
@@ -265,7 +254,6 @@ public enum SlotMethodDef {
                         NB_INT,
                         NB_INVERT,
                         NB_LSHIFT,
-                        NB_MULTIPLY,
                         NB_NEGATIVE,
                         NB_OR,
                         NB_POSITIVE,

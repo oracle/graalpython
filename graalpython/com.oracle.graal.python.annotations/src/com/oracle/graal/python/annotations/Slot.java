@@ -97,12 +97,15 @@ public @interface Slot {
         nb_bool("__bool__"),
         /** foo + bar */
         nb_add("__add__, __radd__"),
+        nb_multiply("__mul__, __rmul__"),
         /** sequence length/size */
         sq_length("__len__"),
         /** sequence item: read element at index */
         sq_item("__getitem__"),
         /** seq + seq, nb_add is tried before */
         sq_concat("__add__"),
+        /** seq * number, nb_multiply is tried before */
+        sq_repeat("__mul__"),
         /** mapping length */
         mp_length("__len__"),
         /** mapping subscript, e.g. o[key], o[i:j] */

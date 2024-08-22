@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyNumberAddNode;
+import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -78,7 +79,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public enum BinaryArithmetic {
     Add(PyNumberAddNode::create),
     Sub(BinaryArithmeticFactory.SubNodeGen::create),
-    Mul(BinaryArithmeticFactory.MulNodeGen::create),
+    Mul(PyNumberMultiplyNode::create),
     TrueDiv(BinaryArithmeticFactory.TrueDivNodeGen::create),
     FloorDiv(BinaryArithmeticFactory.FloorDivNodeGen::create),
     Mod(BinaryArithmeticFactory.ModNodeGen::create),
@@ -217,47 +218,6 @@ public enum BinaryArithmetic {
         public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         // TODO: replace with 'createBinaryOp' once (GR-<1????>) is fixed
                         @Cached("createCallNode(Sub, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
-            return callNode.executeObject(frame, left, right);
-        }
-    }
-
-    public abstract static class MulNode extends BinaryArithmeticNode {
-
-        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("*");
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        public static int doII(int x, int y) throws ArithmeticException {
-            return Math.multiplyExact(x, y);
-        }
-
-        @Specialization(replaces = "doII")
-        public static long doIIL(int x, int y) {
-            return x * (long) y;
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        public static long doLL(long x, long y) {
-            return Math.multiplyExact(x, y);
-        }
-
-        @Specialization
-        public static double doDL(double left, long right) {
-            return left * right;
-        }
-
-        @Specialization
-        public static double doLD(long left, double right) {
-            return left * right;
-        }
-
-        @Specialization
-        public static double doDD(double left, double right) {
-            return left * right;
-        }
-
-        @Specialization
-        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createPyNumberMultiply(NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
     }

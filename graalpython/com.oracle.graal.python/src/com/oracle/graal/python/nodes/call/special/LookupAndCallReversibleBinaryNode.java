@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -244,14 +243,19 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
         return dispatch.executeObject(frame, callable, leftValue, rightValue);
     }
 
+    @SuppressWarnings("unused")
     private static boolean isFlagSequenceCompat(Node inliningTarget, Object leftClass, Object rightClass, SpecialMethodSlot slot, InlinedBranchProfile gotLeftBuiltinClassType,
                     InlinedBranchProfile gotRightBuiltinClassType) {
+        return false;
+        // Mul slot was converted to CPython like slots, this flag should never apply here
+        /*-
         if (PGuards.isNativeClass(leftClass) || PGuards.isNativeClass(rightClass)) {
             return false;
         }
         // see pypy descroperation.py#_make_binop_impl()
         boolean isSeqBugCompatOperation = (slot == SpecialMethodSlot.Mul);
         return isSeqBugCompatOperation && isFlagSequenceBugCompat(inliningTarget, leftClass, gotLeftBuiltinClassType) && !isFlagSequenceBugCompat(inliningTarget, rightClass, gotRightBuiltinClassType);
+        */
     }
 
     private static boolean isFlagSequenceBugCompat(Node inliningTarget, Object clazz, InlinedBranchProfile gotBuiltinClassType) {

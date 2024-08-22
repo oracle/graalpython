@@ -104,6 +104,7 @@ import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -125,7 +126,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.MulNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
@@ -548,44 +548,20 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
-    abstract static class PySequence_Repeat extends CApiBinaryBuiltinNode {
-        @Specialization(guards = "checkNode.execute(inliningTarget, obj)")
-        Object repeat(Object obj, long n,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("check") @Cached PySequenceCheckNode checkNode,
-                        @Cached("createMul()") MulNode mulNode) {
-            return mulNode.executeObject(null, obj, n);
-        }
-
-        @Specialization(guards = "!checkNode.execute(inliningTarget, obj)")
-        static Object repeat(Object obj, @SuppressWarnings("unused") Object n,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("check") @Cached PySequenceCheckNode checkNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
-        }
-
-        @NeverDefault
-        protected MulNode createMul() {
-            return (MulNode) BinaryArithmetic.Mul.create();
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
     abstract static class PySequence_InPlaceRepeat extends CApiBinaryBuiltinNode {
         @Specialization(guards = {"checkNode.execute(inliningTarget, obj)"}, limit = "1")
         static Object repeat(Object obj, long n,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
-                        @Cached("createMul()") MulNode mulNode,
+                        @Cached("createMul()") PyNumberMultiplyNode mulNode,
                         @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode) {
             Object imulCallable = lookupNode.execute(null, inliningTarget, obj, T___IMUL__);
             if (imulCallable != PNone.NO_VALUE) {
                 Object ret = callNode.executeWithoutFrame(imulCallable, n);
                 return ret;
             }
-            return mulNode.executeObject(null, obj, n);
+            return mulNode.execute(null, inliningTarget, obj, n);
         }
 
         @Specialization(guards = "!checkNode.execute(inliningTarget, obj)", limit = "1")
@@ -594,10 +570,6 @@ public final class PythonCextAbstractBuiltins {
                         @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
-        }
-
-        protected MulNode createMul() {
-            return (MulNode) BinaryArithmetic.Mul.create();
         }
     }
 

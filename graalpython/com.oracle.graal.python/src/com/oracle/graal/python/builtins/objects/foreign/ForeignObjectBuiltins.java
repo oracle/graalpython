@@ -27,7 +27,6 @@
 package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
@@ -49,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
@@ -57,7 +55,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RFLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
@@ -106,6 +103,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttr
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
@@ -127,7 +125,6 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
@@ -500,7 +497,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Shared @Cached(inline = false) PythonObjectFactory factory) {
             gil.release(true);
             try {
-                return factory.createTuple(unpackForeignArray(obj, lib, convert));
+                return factory.createList(unpackForeignArray(obj, lib, convert));
             } finally {
                 gil.acquire();
             }
@@ -513,112 +510,58 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.nb_add, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class AddNode extends BinaryOpBuiltinNode {
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class ForeignBinarySlotNode extends Node {
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right,
+                        boolean leftDoArray, boolean rightDoArray, BinaryOpNode binaryOpNode);
+
         @Specialization
-        static Object doIt(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
+        static Object doIt(VirtualFrame frame, Node inliningTarget, Object left, Object right,
+                        boolean leftDoArray, boolean rightDoArray, BinaryOpNode op,
                         @Cached IsForeignObjectNode isForeignLeft,
                         @Cached IsForeignObjectNode isForeignRight,
                         @Cached NormalizeForeignForBinopNode normalizeLeft,
-                        @Cached NormalizeForeignForBinopNode normalizeRight,
-                        @Cached PyNumberAddNode addNode) {
+                        @Cached NormalizeForeignForBinopNode normalizeRight) {
             boolean leftIsForeign = isForeignLeft.execute(inliningTarget, left);
             boolean rightIsForeign = isForeignRight.execute(inliningTarget, right);
             if (!leftIsForeign && !rightIsForeign) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
 
-            Object newLeft = normalizeLeft.execute(inliningTarget, left, true);
-            Object newRight = normalizeRight.execute(inliningTarget, right, true);
+            Object newLeft = normalizeLeft.execute(inliningTarget, left, leftDoArray);
+            Object newRight = normalizeRight.execute(inliningTarget, right, rightDoArray);
             assert newLeft == null || !IsForeignObjectNode.executeUncached(newLeft) : newLeft;
             assert newRight == null || !IsForeignObjectNode.executeUncached(newRight) : newRight;
             if (newLeft == null || newRight == null) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return addNode.execute(frame, inliningTarget, newLeft, newRight);
+            return op.executeObject(frame, newLeft, newRight);
         }
     }
 
-    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_add, isComplex = true)
     @GenerateNodeFactory
-    abstract static class MulNode extends ForeignBinaryNode {
-        MulNode() {
-            super(BinaryArithmetic.Mul.create(), false);
-        }
-
-        @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isBoolean(left)", "!lib.isNumber(left)", "!lib.isString(left)", "lib.hasArrayElements(left)", "lib.fitsInLong(right)"})
-        static Object doForeignArray(Object left, Object right,
+    abstract static class AddNode extends BinaryOpBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PRaiseNode raise,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Shared @Cached PForeignToPTypeNode convert,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached CastToJavaIntExactNode cast,
-                        @Shared @Cached GilNode gil) {
-            gil.release(true);
-            try {
-                long rightLong;
-                try {
-                    rightLong = lib.asLong(right);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("object does not unpack to index-sized int as it claims to");
-                }
-                return doMulArray(left, cast.execute(inliningTarget, rightLong), raise, factory, convert, lib);
-            } finally {
-                gil.acquire();
-            }
-        }
-
-        @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isBoolean(left)", "!lib.isNumber(left)", "!lib.isString(left)", "lib.hasArrayElements(left)", "lib.isBoolean(right)"})
-        static Object doForeignArrayForeignBoolean(Object left, Object right,
-                        @Shared @Cached PRaiseNode raise,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Shared @Cached PForeignToPTypeNode convert,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached GilNode gil) {
-            gil.release(true);
-            try {
-                boolean rightBoolean;
-                try {
-                    rightBoolean = lib.asBoolean(right);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("object does not unpack to boolean (to be used as index) as it claims to");
-                }
-                return doMulArray(left, rightBoolean ? 1 : 0, raise, factory, convert, lib);
-            } finally {
-                gil.acquire();
-            }
-        }
-
-        private static PythonAbstractObject doMulArray(Object left, int rightInt, PRaiseNode raise, PythonObjectFactory factory, PForeignToPTypeNode convert, InteropLibrary lib) {
-            try {
-                Object[] unpackForeignArray = unpackForeignArray(left, lib, convert);
-                if (unpackForeignArray != null) {
-                    if (rightInt < 0) {
-                        return factory.createList();
-                    }
-                    Object[] repeatedData = new Object[Math.multiplyExact(unpackForeignArray.length, rightInt)];
-
-                    for (int i = 0; i < rightInt; i++) {
-                        System.arraycopy(unpackForeignArray, 0, repeatedData, i * unpackForeignArray.length, unpackForeignArray.length);
-                    }
-
-                    return factory.createList(repeatedData);
-                }
-                return PNotImplemented.NOT_IMPLEMENTED;
-            } catch (ArithmeticException e) {
-                throw raise.raise(MemoryError);
-            }
+                        @Cached ForeignBinarySlotNode binarySlotNode,
+                        @Cached(inline = false) PyNumberAddNode addNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, true, true, addNode);
         }
     }
 
-    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_multiply, isComplex = true)
     @GenerateNodeFactory
-    abstract static class RMulNode extends MulNode {
+    abstract static class MulNode extends BinaryOpBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ForeignBinarySlotNode binarySlotNode,
+                        @Cached(inline = false) PyNumberMultiplyNode mulNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, true, true, mulNode);
+        }
     }
 
     @Builtin(name = J___SUB__, minNumOfPositionalArgs = 2)

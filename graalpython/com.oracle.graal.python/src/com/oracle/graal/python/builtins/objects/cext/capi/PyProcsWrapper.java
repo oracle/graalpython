@@ -308,6 +308,10 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
             return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_ADD);
         }
 
+        public static BinaryOpSlotFuncWrapper createMultiply(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_MULTIPLY);
+        }
+
         @ExportMessage
         Object execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,

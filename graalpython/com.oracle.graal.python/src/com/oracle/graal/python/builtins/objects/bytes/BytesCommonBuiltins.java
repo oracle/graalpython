@@ -48,9 +48,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
@@ -107,6 +105,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -328,19 +327,17 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_repeat, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class MulNode extends PythonBinaryBuiltinNode {
+    public abstract static class MulNode extends SqRepeatBuiltinNode {
         @Specialization
-        static PBytesLike mul(VirtualFrame frame, Object self, Object times,
+        static PBytesLike mul(VirtualFrame frame, Object self, int times,
                         @Bind("this") Node inliningTarget,
                         @Cached GetBytesStorage getBytesStorage,
-                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("createWithOverflowError()") SequenceStorageNodes.RepeatNode repeatNode,
                         @Cached BytesNodes.CreateBytesNode create,
                         @Cached PythonObjectFactory factory) {
-            SequenceStorage res = repeatNode.execute(frame, getBytesStorage.execute(inliningTarget, self), asSizeNode.executeExact(frame, inliningTarget, times));
+            SequenceStorage res = repeatNode.execute(frame, getBytesStorage.execute(inliningTarget, self), times);
             return create.execute(inliningTarget, factory, self, res);
         }
     }

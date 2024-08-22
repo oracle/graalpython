@@ -40,11 +40,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
@@ -93,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSu
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -912,13 +911,11 @@ public final class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_repeat, isComplex = true)
     @GenerateNodeFactory
-    abstract static class MulNode extends PythonBinaryBuiltinNode {
-
+    abstract static class MulNode extends SqRepeatBuiltinNode {
         @Specialization
-        static PList doPListInt(VirtualFrame frame, PList left, Object right,
+        static PList doPListInt(VirtualFrame frame, PList left, int right,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.RepeatNode repeatNode,
                         @Cached PythonObjectFactory factory,
@@ -929,12 +926,6 @@ public final class ListBuiltins extends PythonBuiltins {
             } catch (ArithmeticException | OutOfMemoryError e) {
                 throw raiseNode.get(inliningTarget).raise(MemoryError);
             }
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static PNotImplemented doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,9 +29,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class BinaryOpNode extends PNodeWithContext implements BinaryOp {
-
-    // TODO: (tfel) refactor this method (executeWith) into a separate node. Right now this breaks
-    // the lengths we go to to avoid boxing :(
     @Override
     public abstract Object executeObject(VirtualFrame frame, Object left, Object right);
 }

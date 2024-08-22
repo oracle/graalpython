@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import sys
-from . import CPyExtType, CPyExtHeapType, compile_module_from_string, assert_raises
+from . import CPyExtType, CPyExtHeapType, compile_module_from_string, assert_raises, compile_module_from_file
 
 SlotsGetter = CPyExtType("SlotsGetter",
                          """
@@ -584,3 +584,18 @@ def test_nb_add_sq_concat_static_managed_heap_inheritance():
         pass
 
     assert SlotsGetter.get_nb_add(ManagedDummy()) == SlotsGetter.get_nb_add(NbAddSqConcatStaticType())
+
+def test_sq_repeat_mul_without_rmul_inheritance():
+    mod = compile_module_from_file("fuzzer_test10")
+    Native0 = mod.create_Native0((object, ))
+    class Managed1(Native0):
+        def __add__(self): return self
+        def __mul__(self,o): return "__mul__result: " + str(o)
+        def __radd__(self): return NotImplemented
+        def __len__(self): return 1
+        def __getattribute__(self,name): return name
+        def __get__(self,obj,objtype=None): return "dummy"
+        def __setattr__(self,name,value): return None
+
+    assert 3 * Managed1() == 3
+    assert Managed1() * 3 == "__mul__result: 3"

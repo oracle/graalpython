@@ -41,9 +41,7 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SLOT1BINFULL;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_REPEAT;
 import static com.oracle.truffle.api.dsl.Cached.Shared;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -81,83 +79,6 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
     private static Object lookupAttrId(VirtualFrame frame, Object obj, Object objClass,
                     LookupSpecialMethodSlotNode getattr) {
         return getattr.execute(frame, objClass, obj);
-    }
-
-    // cpython://Objects/abstract.c#PyNumber_Multiply
-    protected abstract static class PyNumberMultiplyNode extends LookupAndCallNbNumbersBinaryNode {
-        PyNumberMultiplyNode(Supplier<NotImplementedHandler> handlerFactory) {
-            super(handlerFactory);
-        }
-
-        @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
-        @SuppressWarnings("truffle-static-method")
-        Object mulC(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
-                        @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
-                        @Exclusive @Cached GetClassNode getClassNode,
-                        @Exclusive @Cached("create(Mul)") LookupSpecialMethodSlotNode getattr,
-                        @Exclusive @Cached GetMethodsFlagsNode getMethodsFlagsNode,
-                        @Exclusive @Cached GetClassNode getlClassNode,
-                        @Exclusive @Cached GetClassNode getrClassNode,
-                        @Exclusive @Cached InlinedConditionProfile p1,
-                        @Exclusive @Cached InlinedConditionProfile p2,
-                        @Exclusive @Cached InlinedConditionProfile p3,
-                        @Exclusive @Cached BinaryOp1Node binaryOp1Node,
-                        @Exclusive @Cached Slot1BINFULLNode slot1BINFULLNode) {
-            return mul(frame, left, right, inliningTarget, getClassNode, getattr, getMethodsFlagsNode, getlClassNode,
-                            getrClassNode, p1, p2, p3, binaryOp1Node, slot1BINFULLNode);
-        }
-
-        @Specialization(replaces = "mulC")
-        @SuppressWarnings("truffle-static-method")
-        Object mul(VirtualFrame frame, Object left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached GetClassNode getClassNode,
-                        @Exclusive @Cached("create(Mul)") LookupSpecialMethodSlotNode getattr,
-                        @Exclusive @Cached GetMethodsFlagsNode getMethodsFlagsNode,
-                        @Exclusive @Cached GetClassNode getlClassNode,
-                        @Exclusive @Cached GetClassNode getrClassNode,
-                        @Exclusive @Cached InlinedConditionProfile p1,
-                        @Exclusive @Cached InlinedConditionProfile p2,
-                        @Exclusive @Cached InlinedConditionProfile p3,
-                        @Exclusive @Cached BinaryOp1Node binaryOp1Node,
-                        @Exclusive @Cached Slot1BINFULLNode slot1BINFULLNode) {
-            Object lClass = getlClassNode.execute(inliningTarget, left);
-            Object rClass = getrClassNode.execute(inliningTarget, right);
-            long lFlags = getMethodsFlagsNode.execute(inliningTarget, lClass);
-            long rFlags = getMethodsFlagsNode.execute(inliningTarget, rClass);
-            if (p1.profile(inliningTarget, ((lFlags | rFlags) & NB_MULTIPLY) != 0)) {
-                Object result;
-                SpecialMethodSlot slot = SpecialMethodSlot.Mul;
-                SpecialMethodSlot rslot = SpecialMethodSlot.RMul;
-                if (p2.profile(inliningTarget, BinaryOp1Node.isBothSLOT1BINFULL(lFlags, rFlags) || doSLOT1BINFULL(slot, lFlags, rFlags))) {
-                    result = slot1BINFULLNode.execute(frame, left, right, slot, rslot, lFlags, rFlags, lClass, rClass);
-                } else {
-                    result = binaryOp1Node.execute(frame, left, right, slot, rslot, lFlags, rFlags, lClass, rClass);
-                }
-                if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                    return result;
-                }
-            }
-            if (p3.profile(inliningTarget, ((lFlags | rFlags) & SQ_REPEAT) != 0)) {
-                Object seqObj = (lFlags & SQ_REPEAT) != 0 ? left : right;
-                Object seqClass = getClassNode.execute(inliningTarget, seqObj);
-                Object callable = getattr.execute(frame, seqClass, seqObj);
-                return ensureDispatch().executeObject(frame, callable, seqObj, seqObj == right ? left : right);
-            }
-            return runErrorHandler(frame, left, right);
-        }
-
-        @Override
-        public TruffleString getName() {
-            return SpecialMethodSlot.Mul.getName();
-        }
-
-        @Override
-        public TruffleString getRname() {
-            return SpecialMethodSlot.RMul.getName();
-        }
     }
 
     // cpython://Objects/abstract.c#binary_op
@@ -470,8 +391,7 @@ abstract class LookupAndCallNbNumbersBinaryNode extends LookupAndCallBinaryNode 
             return result == PNotImplemented.NOT_IMPLEMENTED &&
                             otherSlot == PNone.NO_VALUE &&
                             lClass == rClass &&
-                            (slot == SpecialMethodSlot.Mul ||
-                                            slot == SpecialMethodSlot.And ||
+                            (slot == SpecialMethodSlot.And ||
                                             slot == SpecialMethodSlot.Or ||
                                             slot == SpecialMethodSlot.Xor);
         }

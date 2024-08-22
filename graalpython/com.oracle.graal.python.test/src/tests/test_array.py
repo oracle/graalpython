@@ -111,3 +111,12 @@ def test_array_native_storage():
     del a[2:]
     a.insert(1, -1)
     assert a == array('l', [1, -1, 3])
+
+def test_mul():
+    a = array('l', [1, 2, 3])
+    assert len(a * 0) == 0
+
+    b = a * 1
+    a[2] = 42
+    assert list(a) == [1, 2, 42]
+    assert list(b) == [1, 2, 3]

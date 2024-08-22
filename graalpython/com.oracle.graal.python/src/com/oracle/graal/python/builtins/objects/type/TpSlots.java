@@ -49,7 +49,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -198,9 +200,11 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 public record TpSlots(TpSlot nb_bool, //
                 TpSlot nb_add,
+                TpSlot nb_multiply, //
                 TpSlot sq_length, //
                 TpSlot sq_item, //
                 TpSlot sq_concat, //
+                TpSlot sq_repeat, //
                 TpSlot mp_length, //
                 TpSlot mp_subscript, //
                 TpSlot combined_sq_mp_length, //
@@ -309,6 +313,14 @@ public record TpSlots(TpSlot nb_bool, //
                         CFields.PyNumberMethods__nb_add,
                         PExternalFunctionWrapper.BINARYFUNC,
                         BinaryOpSlotFuncWrapper::createAdd),
+        NB_MULTIPLY(
+                        TpSlots::nb_multiply,
+                        TpSlotBinaryOpPython.class,
+                        TpSlotBinaryOpBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_multiply,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinaryOpSlotFuncWrapper::createMultiply),
         SQ_LENGTH(
                         TpSlots::sq_length,
                         TpSlotPythonSingle.class,
@@ -332,6 +344,14 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotGroup.AS_SEQUENCE,
                         CFields.PySequenceMethods__sq_item,
                         PExternalFunctionWrapper.GETITEM,
+                        SsizeargfuncSlotWrapper::new),
+        SQ_REPEAT(
+                        TpSlots::sq_repeat,
+                        TpSlotPythonSingle.class,
+                        TpSlotSizeArgFunBuiltin.class,
+                        TpSlotGroup.AS_SEQUENCE,
+                        CFields.PySequenceMethods__sq_repeat,
+                        PExternalFunctionWrapper.SSIZE_ARG,
                         SsizeargfuncSlotWrapper::new),
         MP_LENGTH(
                         TpSlots::mp_length,
@@ -538,6 +558,10 @@ public record TpSlots(TpSlot nb_bool, //
         public static TpSlotDef withNoFunction(TruffleString name, PExternalFunctionWrapper wrapper) {
             return new TpSlotDef(name, null, wrapper, null);
         }
+
+        public static TpSlotDef withNoFunction(TruffleString name, PExternalFunctionWrapper wrapper, HPySlotWrapper hpyWrapper) {
+            return new TpSlotDef(name, null, wrapper, hpyWrapper);
+        }
     }
 
     /**
@@ -575,11 +599,21 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.NB_ADD,
                         TpSlotDef.withoutHPy(T___ADD__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
                         TpSlotDef.withoutHPy(T___RADD__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_MULTIPLY,
+                        TpSlotDef.withoutHPy(T___MUL__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.withoutHPy(T___RMUL__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_BOOL, TpSlotDef.withSimpleFunction(T___BOOL__, PExternalFunctionWrapper.INQUIRY));
         addSlotDef(s, TpSlotMeta.MP_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC, HPySlotWrapper.LENFUNC));
         addSlotDef(s, TpSlotMeta.MP_SUBSCRIPT, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.SQ_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC, HPySlotWrapper.LENFUNC));
+        // sq_concat does not have a slotdef for __radd__ unlike sq_repeat. This have consequences
+        // w.r.t. inheritance from native classes, where sq_repeat is not overridden by __mul__.
+        // Makes one wonder whether this CPython behavior is intended.
+        // see test_sq_repeat_mul_without_rmul_inheritance
         addSlotDef(s, TpSlotMeta.SQ_CONCAT, TpSlotDef.withNoFunction(T___ADD__, PExternalFunctionWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.SQ_REPEAT,
+                        TpSlotDef.withNoFunction(T___MUL__, PExternalFunctionWrapper.SSIZE_ARG, HPySlotWrapper.INDEXARGFUNC),
+                        TpSlotDef.withNoFunction(T___RMUL__, PExternalFunctionWrapper.SSIZE_ARG, HPySlotWrapper.INDEXARGFUNC));
         addSlotDef(s, TpSlotMeta.SQ_ITEM, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.GETITEM, HPySlotWrapper.SQ_ITEM));
 
         SLOTDEFS = s;
@@ -1157,9 +1191,11 @@ public record TpSlots(TpSlot nb_bool, //
             return new TpSlots(
                             get(TpSlotMeta.NB_BOOL), //
                             get(TpSlotMeta.NB_ADD), //
+                            get(TpSlotMeta.NB_MULTIPLY), //
                             get(TpSlotMeta.SQ_LENGTH), //
                             get(TpSlotMeta.SQ_ITEM), //
                             get(TpSlotMeta.SQ_CONCAT), //
+                            get(TpSlotMeta.SQ_REPEAT), //
                             get(TpSlotMeta.MP_LENGTH), //
                             get(TpSlotMeta.MP_SUBSCRIPT), //
                             sq_mp_length, //

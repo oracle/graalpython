@@ -176,7 +176,6 @@ public abstract class ToNativeTypeNode {
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_invert, getSlot(obj, SlotMethodDef.NB_INVERT));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_lshift, getSlot(obj, SlotMethodDef.NB_LSHIFT));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_matrix_multiply, nullValue);
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_multiply, getSlot(obj, SlotMethodDef.NB_MULTIPLY));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_negative, getSlot(obj, SlotMethodDef.NB_NEGATIVE));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_or, getSlot(obj, SlotMethodDef.NB_OR));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_positive, getSlot(obj, SlotMethodDef.NB_POSITIVE));
@@ -198,7 +197,6 @@ public abstract class ToNativeTypeNode {
 
         // TODO: Heap types defining __add__/__mul__ have sq_concat/sq_repeat == NULL in CPython, so
         // this may have unintended effects
-        writePointerNode.write(mem, CFields.PySequenceMethods__sq_repeat, getSlot(obj, SlotMethodDef.SQ_REPEAT));
         writePointerNode.write(mem, CFields.PySequenceMethods__was_sq_slice, nullValue);
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_ass_item, getSlot(obj, SlotMethodDef.SQ_ASS_ITEM));
         writePointerNode.write(mem, CFields.PySequenceMethods__was_sq_ass_slice, nullValue);

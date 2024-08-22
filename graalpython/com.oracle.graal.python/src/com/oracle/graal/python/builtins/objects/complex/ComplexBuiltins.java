@@ -52,13 +52,11 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
@@ -478,10 +476,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(value = SlotKind.nb_multiply, isComplex = true)
     @GenerateNodeFactory
-    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
-    abstract static class MulNode extends PythonBinaryBuiltinNode {
+    abstract static class MulNode extends BinaryOpBuiltinNode {
         @Specialization
         static Object doComplex(Object leftObj, Object rightObj,
                         @Bind("this") Node inliningTarget,
