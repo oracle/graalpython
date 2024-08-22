@@ -4,8 +4,9 @@
 [![](https://img.shields.io/badge/pyenv-graalpy-blue)](#start-replacing-cpython-with-graalpy) 
 </a> [![Join Slack][badge-slack]][slack] [![GraalVM on Twitter][badge-twitter]][twitter] [![License](https://img.shields.io/badge/license-UPL-green)](#license)
 
-GraalPy is a high-performance implementation of the [Python](https://www.python.org/) language for the JVM built on [GraalVM](https://www.graalvm.org/).
-GraalPy has first-class support for embedding in Java and can turn Python applications into fast, standalone binaries.
+GraalPy is a high-performance implementation of the [Python](https://www.python.org/) language for the JVM built on [GraalVM](https://www.graalvm.org/). 
+GraalPy is a Python 3.11 compliant runtime. 
+It has first-class support for embedding in Java and can turn Python applications into fast, standalone binaries.
 GraalPy is ready for production running pure Python code and has experimental support for many popular native extension modules.
 
 ## Why GraalPy?
