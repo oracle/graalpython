@@ -60,8 +60,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_LAST_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LAST_VALUE;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_MODULE_CLASS;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CAUSE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CONTEXT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___TRACEBACK__;
@@ -553,9 +551,9 @@ public final class PythonCextErrBuiltins {
         @Specialization
         Object setCause(Object exc, Object cause,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectSetAttr setAttrNode) {
-            setAttrNode.execute(inliningTarget, exc, T___CAUSE__, cause);
-            return PNone.NONE;
+                        @Cached ExceptionNodes.SetCauseNode setCauseNode) {
+            setCauseNode.execute(inliningTarget, exc, cause != PNone.NO_VALUE ? cause : PNone.NONE);
+            return PNone.NO_VALUE;
         }
     }
 
@@ -564,8 +562,8 @@ public final class PythonCextErrBuiltins {
         @Specialization
         Object getCause(Object exc,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttrNode) {
-            return noneToNativeNull(inliningTarget, getAttrNode.execute(inliningTarget, exc, T___CAUSE__));
+                        @Cached ExceptionNodes.GetCauseNode getCauseNode) {
+            return noneToNativeNull(inliningTarget, getCauseNode.execute(inliningTarget, exc));
         }
     }
 
@@ -574,8 +572,8 @@ public final class PythonCextErrBuiltins {
         @Specialization
         Object setCause(Object exc,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttrNode) {
-            return noneToNativeNull(inliningTarget, getAttrNode.execute(inliningTarget, exc, T___CONTEXT__));
+                        @Cached ExceptionNodes.GetContextNode getContextNode) {
+            return noneToNativeNull(inliningTarget, getContextNode.execute(inliningTarget, exc));
         }
     }
 
@@ -584,9 +582,9 @@ public final class PythonCextErrBuiltins {
         @Specialization
         Object setContext(Object exc, Object context,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectSetAttr setAttrNode) {
-            setAttrNode.execute(inliningTarget, exc, T___CONTEXT__, context);
-            return PNone.NONE;
+                        @Cached ExceptionNodes.SetContextNode setContextNode) {
+            setContextNode.execute(inliningTarget, exc, context != PNone.NO_VALUE ? context : PNone.NONE);
+            return PNone.NO_VALUE;
         }
     }
 
@@ -596,8 +594,8 @@ public final class PythonCextErrBuiltins {
         @Specialization
         Object getTraceback(Object exc,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttrNode) {
-            return noneToNativeNull(inliningTarget, getAttrNode.execute(inliningTarget, exc, T___TRACEBACK__));
+                        @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
+            return noneToNativeNull(inliningTarget, getTracebackNode.execute(inliningTarget, exc));
         }
     }
 
