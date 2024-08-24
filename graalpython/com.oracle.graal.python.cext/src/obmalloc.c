@@ -84,7 +84,6 @@ int PyTruffle_AllocMemory(size_t size) {
 	    PyTruffle_Log(PY_TRUFFLE_LOG_CONFIG, "PyTruffle_AllocMemory: exceeding PyTruffle_NativeMemoryGCBarrier (%lu) with allocation of size %lu, current PyTruffle_AllocatedMemory: %lu\n", PyTruffle_NativeMemoryGCBarrier, size, PyTruffle_AllocatedMemory);
 
 	    size_t delay = 0;
-	    int iteration = 0;
 	    for (int iteration = 0; iteration < MAX_COLLECTION_RETRIES; iteration++) {
 	    	GraalPyTruffle_TriggerGC(delay);
 	    	delay += COLLECTION_DELAY_INCREMENT;

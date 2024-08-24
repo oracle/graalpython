@@ -532,7 +532,8 @@ _PyStructSequence_InitType(PyTypeObject *type, PyStructSequence_Desc *desc,
 #endif // GraalPy change
 
     if (PyType_Ready(type) < 0) {
-        PyMem_Free(members);
+        // GraalPy change: not initialized
+        // PyMem_Free(members);
         return -1;
     }
     Py_INCREF(type);

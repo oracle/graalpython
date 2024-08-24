@@ -80,12 +80,12 @@ target_compile_definitions(${TARGET_LZMASUPPORT} PRIVATE NDEBUG)
 
 if(WIN32)
     target_compile_options(${TARGET_LZMA} PRIVATE /Z7 /O2)
-    target_compile_options(${TARGET_LZMASUPPORT} PRIVATE /Z7 /O2 /WX)
+    target_compile_options(${TARGET_LZMASUPPORT} PRIVATE /Z7 /O2 /W3 /WX)
 else()
     target_compile_options(${TARGET_LZMA} PRIVATE -fPIC -DPIC -g -O2)
     target_compile_definitions(${TARGET_LZMA} PRIVATE PIC)
 
-    target_compile_options(${TARGET_LZMASUPPORT} PRIVATE -g -O3)
+    target_compile_options(${TARGET_LZMASUPPORT} PRIVATE -g -O3 -Wall -Werror)
 endif()
 
 # don't install into the system but into the MX project's output dir

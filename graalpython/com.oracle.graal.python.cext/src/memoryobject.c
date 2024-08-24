@@ -754,7 +754,6 @@ PyObject *
 PyMemoryView_FromBuffer(const Py_buffer *info)
 {
     // GraalPy change: different implementation
-    Py_ssize_t ndim = info->ndim;
     if (info->buf == NULL) {
         PyErr_SetString(PyExc_ValueError,
             "PyMemoryView_FromBuffer(): info->buf must not be NULL");
@@ -3334,7 +3333,6 @@ PyTruffle_MemoryViewFromObject(PyObject *v, int flags)
         if (PyObject_GetBuffer(v, buffer, flags) < 0) {
             return NULL;
         }
-        Py_ssize_t ndim = buffer->ndim;
         int needs_release = 0;
         if (buffer->obj != NULL) {
             PyBufferProcs *pb;

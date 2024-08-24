@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -298,14 +298,6 @@ static off_heap_buffer* lzma_allocate_buffer(size_t items)
     return o;
 }
 
-static off_heap_buffer* lzma_create_copy_buffer(Byte *src, ssize_t len) {
-    off_heap_buffer *dest = lzma_allocate_buffer(len);
-    if (dest && len > 0) {
-        memcpy(dest->buf, src, len);
-    }
-    return dest; 
-}
-
 static void lzma_release_buffer(off_heap_buffer *o) {
     if (!o) {
         return;
@@ -327,14 +319,6 @@ static void lzma_release_buffer(off_heap_buffer *o) {
 
     free(o->buf);
     free(o);
-}
-
-static off_heap_buffer* lzma_get_ref(off_heap_buffer* o) {
-    if (o) {
-        LOG_FINEST("off_heap_buffer(ref_count: %zu + 1)\n", o->ref_count);
-        o->ref_count++;
-    }
-    return o;
 }
 
 // nfi_function: name('createStream') map('lzmast_stream*', 'POINTER')
@@ -621,7 +605,7 @@ int lzma_set_filter_spec_bcj(lzmast_stream *lzmast, int fidx, int64_t* opts) {
 
 // nfi_function: name('encodeFilter') map('lzmast_stream*', 'POINTER')
 int lzma_encode_filter_spec(lzmast_stream *lzmast, int64_t* opts) {
-    lzma_ret lzret;
+    lzma_ret lzret = LZMA_PROG_ERROR;
     uint32_t encoded_size;
     lzma_filter filter;
 

@@ -114,7 +114,6 @@ PyTuple_GetItem(PyObject *op, Py_ssize_t i) {
         PyErr_BadInternalCall();
         return NULL;
     }
-    PyObject *res;
     PyObject **ob_item;
     if (points_to_py_handle_space(op)) {
         const PyObject *ptr = pointer_to_stub((PyObject *) op);
@@ -1363,7 +1362,6 @@ PyTruffleTuple_GetItems(PyObject *op)
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED
     return GraalPy_get_PyTupleObject_ob_item((PyTupleObject*) op);
 #else /* GRAALVM_PYTHON_LLVM_MANAGED */
-    PyObject *res;
     PyObject **ob_item;
     if (points_to_py_handle_space(op)) {
         GraalPyVarObject *ptr = (GraalPyVarObject *) pointer_to_stub(op);

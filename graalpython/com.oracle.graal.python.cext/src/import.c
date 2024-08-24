@@ -2551,7 +2551,10 @@ static struct PyModuleDef imp_module = {
 PyMODINIT_FUNC
 PyInit__imp(void)
 {
-    return PyModuleDef_Init(&imp_module);
+    // GraalPy change: we intrinsify this module in Java, no one should call this directly,
+    // so to be safe we bail out
+    printf("Function PyInit__imp not implemented in GraalPy. The _imp module is available, but not implemented as extension.\n");
+    exit(-1);
 }
 
 

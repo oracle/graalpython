@@ -359,6 +359,8 @@ class TestPyLong(CPyExtTestCase):
     test_PyLong_FromString = CPyExtFunction(
         lambda args: int(args[0], args[1]),
         lambda: (
+            ("00", 0),
+            ("03", 0),
             ("  12 ", 10),
             ("  12abg13 ", 22),
             ("12", 0),
