@@ -10,7 +10,7 @@ redirect_from: /reference-manual/python/Packages/
 
 ## Choosing the GraalPy Runtime
 
-GraalPy provides a Python 3.10 compliant runtime. 
+GraalPy provides a Python 3.11 compliant runtime. 
 A primary goal is to support PyTorch, SciPy, and their constituent libraries, as well as to work with other data science and machine learning libraries from the rich Python ecosystem.
 GraalPy is distributed as an ahead-of-time compiled native executable, compact in size.
 

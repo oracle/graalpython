@@ -8,8 +8,6 @@ redirect_from:
   - /reference-manual/python/FAQ/
 ---
 
-Go [here](Python-Runtime.md) to get started with GraalPy as CPython replacement.
-
 # Getting Started with GraalPy on the JVM
 
 You can use GraalPy with GraalVM JDK, Oracle JDK, or OpenJDK.
@@ -186,6 +184,10 @@ GraalPy comes with a tool to obtain the required JAR files from Maven.
         }
     }
     ```
+
+## GraalPy as CPython Replacement
+
+Go [here](Python-Runtime.md) to get started with GraalPy as CPython replacement.
 
 #### Related Documentation
 
