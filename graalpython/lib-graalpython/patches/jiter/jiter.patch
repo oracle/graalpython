@@ -1,0 +1,22 @@
+diff --git a/crates/jiter/src/py_string_cache.rs b/crates/jiter/src/py_string_cache.rs
+index 96dcf66..21e6979 100644
+--- a/crates/jiter/src/py_string_cache.rs
++++ b/crates/jiter/src/py_string_cache.rs
+@@ -200,7 +200,7 @@ pub fn pystring_fast_new<'py>(py: Python<'py>, s: &str, ascii_only: bool) -> Bou
+ 
+ /// Faster creation of PyString from an ASCII string, inspired by
+ /// https://github.com/ijl/orjson/blob/3.10.0/src/str/create.rs#L41
+-#[cfg(not(PyPy))]
++#[cfg(all(not(PyPy), not(GraalPy)))]
+ unsafe fn pystring_ascii_new<'py>(py: Python<'py>, s: &str) -> Bound<'py, PyString> {
+     let ptr = pyo3::ffi::PyUnicode_New(s.len() as isize, 127);
+     // see https://github.com/pydantic/jiter/pull/72#discussion_r1545485907
+@@ -212,7 +212,7 @@ unsafe fn pystring_ascii_new<'py>(py: Python<'py>, s: &str) -> Bound<'py, PyStri
+ }
+ 
+ // ffi::PyUnicode_DATA seems to be broken for pypy, hence this, marked as unsafe to avoid warnings
+-#[cfg(PyPy)]
++#[cfg(any(PyPy, GraalPy))]
+ unsafe fn pystring_ascii_new<'py>(py: Python<'py>, s: &str) -> Bound<'py, PyString> {
+     PyString::new_bound(py, s)
+ }
