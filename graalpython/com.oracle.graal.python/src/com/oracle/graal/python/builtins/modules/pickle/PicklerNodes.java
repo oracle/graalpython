@@ -57,6 +57,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.lib.PyObjectSetItem;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.builtins.Python3Core;
@@ -67,8 +68,6 @@ import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.CachedHashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -132,8 +131,8 @@ public final class PicklerNodes {
         @Child private HiddenAttr.ReadNode readHiddenAttributeNode;
         @Child private IsBuiltinObjectProfile errProfile;
         @Child private InlineIsBuiltinClassProfile isBuiltinClassProfile;
-        @Child private HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode;
         @Child private HashingStorageSetItem setHashingStorageItemNode;
+        @Child private PyObjectSetItem pyObjectSetItemNode;
         @Child private CachedHashingStorageGetItem getHashingStorageItemNode;
         @Child private SequenceStorageNodes.GetItemNode getSeqStorageItemNode;
         @Child private PyNumberAsSizeNode asSizeNode;
@@ -539,21 +538,12 @@ public final class PicklerNodes {
             return (PickleState) state;
         }
 
-        protected HashingStorage getHashingStorage(VirtualFrame frame, Object iterator) {
-            if (getHashingStorageNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getHashingStorageNode = insert(HashingCollectionNodesFactory.GetHashingStorageNodeGen.create());
-            }
-            return getHashingStorageNode.executeCached(frame, iterator);
-        }
-
-        protected Object getDictItem(VirtualFrame frame, Object dict, Object key) {
-            final HashingStorage hashingStorage = getHashingStorage(frame, dict);
+        protected Object getDictItem(VirtualFrame frame, PDict dict, Object key) {
             if (getHashingStorageItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getHashingStorageItemNode = insert(CachedHashingStorageGetItem.create());
             }
-            return getHashingStorageItemNode.execute(frame, hashingStorage, key);
+            return getHashingStorageItemNode.execute(frame, dict.getDictStorage(), key);
         }
 
         protected void setDictItem(VirtualFrame frame, PDict dict, Object key, Object value) {
@@ -567,6 +557,14 @@ public final class PicklerNodes {
                 setHashingStorageItemNode = insert(HashingStorageSetItem.create());
             }
             return setHashingStorageItemNode.executeCached(frame, storage, key, value);
+        }
+
+        protected void pyObjectSetItem(VirtualFrame frame, Object container, Object key, Object value) {
+            if (pyObjectSetItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                pyObjectSetItemNode = insert(PyObjectSetItem.create());
+            }
+            pyObjectSetItemNode.executeCached(frame, container, key, value);
         }
 
         protected IsBuiltinObjectProfile ensureErrProfile() {
@@ -684,7 +682,7 @@ public final class PicklerNodes {
             return getMapping(frame, state.nameMapping2To3, state.importMapping2To3, T_CP_NAME_MAPPING, T_CP_IMPORT_MAPPING, moduleName, globalName);
         }
 
-        private Pair<TruffleString, TruffleString> getMapping(VirtualFrame frame, Object nameMapping, Object importMapping,
+        private Pair<TruffleString, TruffleString> getMapping(VirtualFrame frame, PDict nameMapping, PDict importMapping,
                         TruffleString nameMappingLabel, TruffleString importMappingLabel, TruffleString moduleName, TruffleString globalName) {
             Object key = factory().createTuple(new Object[]{moduleName, globalName});
             Object item = getDictItem(frame, nameMapping, key);
@@ -766,7 +764,7 @@ public final class PicklerNodes {
                 throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNABLE_TO_GET_S, T_SYS_MODULES);
             }
 
-            final HashingStorage storage = getHashingStorage(frame, sysModules);
+            final HashingStorage storage = sysModules.getDictStorage();
             HashingStorageIterator it = getHashingStorageIterator(storage);
             HashingStorageIteratorNext nextNode = ensureHashingStorageIteratorNext();
             HashingStorageIteratorKey getKeyNode = ensureHashingStorageIteratorKey();

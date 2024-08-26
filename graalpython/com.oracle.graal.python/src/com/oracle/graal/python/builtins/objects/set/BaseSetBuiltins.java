@@ -283,10 +283,10 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         static PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PBaseSet left, PBaseSet right,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile leftProfile,
-                        @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
+                        @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Cached HashingStorageNodes.HashingStorageDiff diffNode,
                         @Cached PythonObjectFactory factory) {
-            HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), getHashingStorageNode.execute(frame, inliningTarget, right));
+            HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), getSetStorageNode.execute(frame, inliningTarget, right));
             if (leftProfile.profile(inliningTarget, left instanceof PFrozenSet)) {
                 return factory.createFrozenSet(storage);
             } else {
@@ -307,9 +307,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         @Specialization
         static boolean isSubSetGeneric(VirtualFrame frame, PBaseSet self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
+                        @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Cached HashingStorageCompareKeys compareKeys) {
-            HashingStorage otherStorage = getHashingStorageNode.execute(frame, inliningTarget, other);
+            HashingStorage otherStorage = getSetStorageNode.execute(frame, inliningTarget, other);
             return compareKeys.execute(frame, inliningTarget, self.getDictStorage(), otherStorage) <= 0;
         }
     }
@@ -320,9 +320,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         @Specialization
         static boolean isSuperSetGeneric(VirtualFrame frame, PBaseSet self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
+                        @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Cached HashingStorageCompareKeys compareKeys) {
-            HashingStorage otherStorage = getHashingStorageNode.execute(frame, inliningTarget, other);
+            HashingStorage otherStorage = getSetStorageNode.execute(frame, inliningTarget, other);
             return compareKeys.execute(frame, inliningTarget, otherStorage, self.getDictStorage()) <= 0;
         }
 

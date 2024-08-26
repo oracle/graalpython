@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -56,21 +55,16 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -156,7 +150,6 @@ public abstract class HashingCollectionNodes {
      * Gets clone of the keys of the storage with all values either set to given value or with no
      * guarantees about the values if {@link PNone#NO_VALUE} is passed as {@code value}.
      */
-    @ImportStatic({PGuards.class, PythonOptions.class})
     @GenerateInline(inlineByDefault = true)
     public abstract static class GetClonedHashingStorageNode extends PNodeWithContext {
         public abstract HashingStorage execute(VirtualFrame frame, Node inliningTarget, Object iterator, Object value);
@@ -237,13 +230,6 @@ public abstract class HashingCollectionNodes {
             }
         }
 
-        @Fallback
-        @InliningCutoff
-        static HashingStorage fail(Object other, @SuppressWarnings("unused") Object value,
-                        @Cached(inline = false) PRaiseNode raise) {
-            throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
-        }
-
         @NeverDefault
         public static GetClonedHashingStorageNode create() {
             return GetClonedHashingStorageNodeGen.create();
@@ -271,8 +257,7 @@ public abstract class HashingCollectionNodes {
      * guarantee about the values!
      */
     @GenerateInline(inlineByDefault = true)
-    @ImportStatic({SpecialMethodNames.class, PGuards.class})
-    public abstract static class GetHashingStorageNode extends PNodeWithContext {
+    public abstract static class GetSetStorageNode extends PNodeWithContext {
 
         public abstract HashingStorage execute(VirtualFrame frame, Node inliningTarget, Object iterator);
 

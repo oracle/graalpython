@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
@@ -201,7 +200,6 @@ public class UnpicklerBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(obj)", "!isDeleteMarker(obj)"})
         static Object set(VirtualFrame frame, PUnpickler self, Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached HashingStorageGetIterator getStorageIter,
@@ -212,9 +210,9 @@ public class UnpicklerBuiltins extends PythonBuiltins {
             if (obj instanceof PUnpicklerMemoProxy) {
                 final PUnpickler unpickler = ((PUnpicklerMemoProxy) obj).getUnpickler();
                 self.setMemo(unpickler.getMemoCopy());
-            } else if (obj instanceof PDict) {
+            } else if (obj instanceof PDict dict) {
                 self.setMemo(new Object[sizeNode.execute(frame, inliningTarget, obj)]);
-                final HashingStorage dictStorage = getHashingStorageNode.execute(frame, inliningTarget, obj);
+                final HashingStorage dictStorage = dict.getDictStorage();
                 HashingStorageIterator it = getStorageIter.execute(inliningTarget, dictStorage);
                 while (storageIterNext.execute(inliningTarget, dictStorage, it)) {
                     Object key = storageIterKey.execute(inliningTarget, dictStorage, it);

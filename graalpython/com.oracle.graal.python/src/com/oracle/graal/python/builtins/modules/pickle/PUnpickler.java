@@ -736,7 +736,7 @@ public class PUnpickler extends PythonBuiltinObject {
             return pDataPopNode.execute(self.stack);
         }
 
-        protected Object pDataPopTuple(PUnpickler self, int start) {
+        protected PTuple pDataPopTuple(PUnpickler self, int start) {
             if (pDataPopTupleNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 pDataPopTupleNode = insert(PData.PDataPopTupleNode.create());
@@ -1145,8 +1145,8 @@ public class PUnpickler extends PythonBuiltinObject {
 
             Object set = self.stack.data[mark - 1];
             if (set instanceof PSet) {
-                Object items = pDataPopTuple(self, mark);
-                final HashingStorage union = ((PSet) set).getDictStorage().unionCached(getHashingStorage(frame, items), ensureHashingStorageCopy(), ensureHashingStorageAddAllToOther());
+                PTuple items = pDataPopTuple(self, mark);
+                final HashingStorage union = ((PSet) set).getDictStorage().unionCached(getClonedHashingStorage(frame, items), ensureHashingStorageCopy(), ensureHashingStorageAddAllToOther());
                 ((PSet) set).setDictStorage(union);
             } else {
                 Object add_func;
@@ -1413,10 +1413,8 @@ public class PUnpickler extends PythonBuiltinObject {
                 }
                 Object dict = lookupAttributeStrict(frame, inst, T___DICT__);
 
-                final HashingStorage storage = getHashingStorage(frame, state);
+                final HashingStorage storage = ((PDict) state).getDictStorage();
                 // entries = hashLib.entries(storage);
-                final HashingStorage dictStorage = getHashingStorage(frame, dict);
-                ensureHashingStorageAddAllToOther().executeCached(frame, storage, dictStorage);
 
                 HashingStorageIterator it = getHashingStorageIterator(storage);
                 HashingStorageIteratorNext nextNode = ensureHashingStorageIteratorNext();
@@ -1429,9 +1427,7 @@ public class PUnpickler extends PythonBuiltinObject {
                     // the keys)
                     // if (PyUnicode_CheckExact(d_key))
                     // PyUnicode_InternInPlace(&d_key);
-                    // TODO: shouldn't this be setting the storage back to the dict? The issue is
-                    // that it may be a temporary storage created in getHashingStorage
-                    setHashingStorageItem(frame, dictStorage, getKeyNode.executeCached(storage, it), getValueNode.executeCached(storage, it));
+                    pyObjectSetItem(frame, dict, getKeyNode.executeCached(storage, it), getValueNode.executeCached(storage, it));
                 }
             }
 
@@ -1440,7 +1436,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 if (!(slotstate instanceof PDict)) {
                     throw raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.S_STATE_NOT_DICT, "slot");
                 }
-                final HashingStorage storage = getHashingStorage(frame, slotstate);
+                final HashingStorage storage = ((PDict) slotstate).getDictStorage();
                 HashingStorageIterator it = getHashingStorageIterator(storage);
                 HashingStorageIteratorNext nextNode = ensureHashingStorageIteratorNext();
                 HashingStorageIteratorKey getKeyNode = ensureHashingStorageIteratorKey();
@@ -1766,9 +1762,7 @@ public class PUnpickler extends PythonBuiltinObject {
             obj = findClass(frame, ctx.getCore(), self, moduleName, className);
 
             // Cache code -> obj.
-            // cpython expects a PyDict so this is a safe cast
-            assert st.extensionCache instanceof PDict;
-            setDictItem(frame, (PDict) st.extensionCache, code, obj);
+            setDictItem(frame, st.extensionCache, code, obj);
             pDataPush(self, obj);
         }
 
