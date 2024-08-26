@@ -1,8 +1,2 @@
 [[rules]]
-version = '== 1.0.0'
-patch = 'meson-1.0.0.patch'
-license = 'Apache-2.0'
-
-[[rules]]
-install-priority = 10
 version = '== 1.2.2'
