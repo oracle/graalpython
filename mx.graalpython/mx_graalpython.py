@@ -29,7 +29,6 @@ import datetime
 import fnmatch
 import glob
 import itertools
-import json
 import os
 import pathlib
 import re
@@ -2022,11 +2021,6 @@ def update_import_cmd(args):
         join(enterprisedir, "ci"),
         join(overlaydir, "python", "graal-enterprise", "ci"),
         dirs_exist_ok=True)
-
-    # update the graal-enterprise revision in the overlay (used by benchmarks)
-    with open(join(overlaydir, "python", "imported-constants.json"), 'w') as fp:
-        d = {'GRAAL_ENTERPRISE_REVISION': revisions['graalpython-enterprise']}
-        json.dump(d, fp, indent=2)
 
     repos_updated = []
 
