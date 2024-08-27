@@ -44,6 +44,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.GeneratorE
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
+import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
@@ -53,6 +55,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -60,6 +63,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -71,22 +75,24 @@ public abstract class ThrowNode extends PNodeWithContext {
     private static final TruffleString T_THROW = tsLiteral("throw");
 
     // Returns true when the generator finished
-    public abstract boolean execute(VirtualFrame frame, int stackTop, Object iter, PException exception);
+    public abstract boolean execute(VirtualFrame frame, int stackTop, Object iter, AbstractTruffleException exception);
 
     @Specialization
-    boolean doGenerator(VirtualFrame frame, int stackTop, PGenerator generator, PException exception,
+    static boolean doGenerator(VirtualFrame frame, int stackTop, PGenerator generator, AbstractTruffleException exception,
                     @Bind("this") Node inliningTarget,
                     @Cached CommonGeneratorBuiltins.ThrowNode throwNode,
                     @Cached CommonGeneratorBuiltins.CloseNode closeNode,
+                    @Exclusive @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                     @Exclusive @Cached IsBuiltinObjectProfile profileExit,
                     @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
                     @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
-        if (profileExit.profileException(inliningTarget, exception, GeneratorExit)) {
+        Object exceptionObject = getEscapedExceptionNode.execute(inliningTarget, exception);
+        if (profileExit.profileObject(inliningTarget, exceptionObject, GeneratorExit)) {
             closeNode.execute(frame, generator);
             throw exception;
         } else {
             try {
-                Object value = throwNode.execute(frame, generator, exception.getEscapedException(), PNone.NO_VALUE, PNone.NO_VALUE);
+                Object value = throwNode.execute(frame, generator, exceptionObject, PNone.NO_VALUE, PNone.NO_VALUE);
                 frame.setObject(stackTop, value);
                 return false;
             } catch (PException e) {
@@ -97,17 +103,21 @@ public abstract class ThrowNode extends PNodeWithContext {
     }
 
     @Fallback
-    static boolean doOther(VirtualFrame frame, int stackTop, Object obj, PException exception,
+    static boolean doOther(VirtualFrame frame, int stackTop, Object obj, AbstractTruffleException exception,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectLookupAttr lookupThrow,
                     @Cached PyObjectLookupAttr lookupClose,
                     @Cached CallNode callThrow,
                     @Cached CallNode callClose,
                     @Cached WriteUnraisableNode writeUnraisableNode,
+                    @Cached GetClassNode getClassNode,
+                    @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
+                    @Exclusive @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                     @Exclusive @Cached IsBuiltinObjectProfile profileExit,
                     @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
                     @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
-        if (profileExit.profileException(inliningTarget, exception, GeneratorExit)) {
+        Object exceptionObject = getEscapedExceptionNode.execute(inliningTarget, exception);
+        if (profileExit.profileObject(inliningTarget, exceptionObject, GeneratorExit)) {
             Object close = PNone.NO_VALUE;
             try {
                 close = lookupClose.execute(frame, inliningTarget, obj, T_CLOSE);
@@ -124,7 +134,9 @@ public abstract class ThrowNode extends PNodeWithContext {
                 throw exception;
             }
             try {
-                Object value = callThrow.execute(frame, throwMethod, exception.getEscapedException());
+                Object type = getClassNode.execute(inliningTarget, exceptionObject);
+                Object tb = getTracebackNode.execute(inliningTarget, exceptionObject);
+                Object value = callThrow.execute(frame, throwMethod, type, exceptionObject, tb);
                 frame.setObject(stackTop, value);
                 return false;
             } catch (PException e) {

@@ -28,9 +28,9 @@ package com.oracle.graal.python.builtins.objects.function;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -205,23 +205,23 @@ public final class PArguments {
         arguments[INDEX_CURRENT_FRAME_INFO] = info;
     }
 
-    public static PException getException(Object[] arguments) {
-        return (PException) getExceptionUnchecked(arguments);
+    public static AbstractTruffleException getException(Object[] arguments) {
+        return (AbstractTruffleException) getExceptionUnchecked(arguments);
     }
 
-    public static PException getException(Frame frame) {
-        return (PException) getExceptionUnchecked(frame.getArguments());
+    public static AbstractTruffleException getException(Frame frame) {
+        return (AbstractTruffleException) getExceptionUnchecked(frame.getArguments());
     }
 
     public static Object getExceptionUnchecked(Object[] arguments) {
         return arguments[INDEX_CURRENT_EXCEPTION];
     }
 
-    public static void setException(Frame frame, PException exc) {
+    public static void setException(Frame frame, AbstractTruffleException exc) {
         setException(frame.getArguments(), exc);
     }
 
-    public static void setException(Object[] arguments, PException exc) {
+    public static void setException(Object[] arguments, AbstractTruffleException exc) {
         setExceptionUnchecked(arguments, exc);
     }
 

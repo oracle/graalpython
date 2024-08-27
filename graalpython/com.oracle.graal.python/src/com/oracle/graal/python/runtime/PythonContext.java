@@ -131,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
+import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -194,6 +195,7 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -288,13 +290,13 @@ public final class PythonContext extends Python3Core {
         WeakReference<PLock> sentinelLock;
 
         /* corresponds to 'PyThreadState.curexc_value' */
-        private PException currentException;
+        private AbstractTruffleException currentException;
 
         /* corresponds to 'PyThreadState.curexc_traceback' */
         private LazyTraceback currentTraceback;
 
         /* corresponds to 'PyThreadState.exc_info' */
-        private PException caughtException = PException.NO_EXCEPTION;
+        private AbstractTruffleException caughtException = PException.NO_EXCEPTION;
 
         /* set to emulate Py_ReprEnter/Leave */
         HashSet<Object> reprObjectSet;
@@ -390,7 +392,7 @@ public final class PythonContext extends Python3Core {
             reprObjectSet.remove(item);
         }
 
-        public PException getCurrentException() {
+        public AbstractTruffleException getCurrentException() {
             return currentException;
         }
 
@@ -399,32 +401,39 @@ public final class PythonContext extends Python3Core {
             this.currentTraceback = null;
         }
 
-        public void setCurrentException(PException currentException) {
+        public void setCurrentException(AbstractTruffleException currentException) {
             this.currentException = currentException;
-            if (currentException.getEscapedException() instanceof PBaseException pythonException) {
+            if (currentException instanceof PException pe && pe.getEscapedException() instanceof PBaseException pythonException) {
                 this.currentTraceback = pythonException.getTraceback();
             } else {
-                Object tb = ExceptionNodes.GetTracebackNode.executeUncached(currentException.getEscapedException());
+                Object exceptionObject = GetEscapedExceptionNode.executeUncached(currentException);
+                Object tb = ExceptionNodes.GetTracebackNode.executeUncached(exceptionObject);
                 this.currentTraceback = tb instanceof PTraceback ptb ? new LazyTraceback(ptb) : null;
             }
         }
 
-        public void setCurrentException(PException currentException, LazyTraceback currentTraceback) {
+        public void setCurrentException(AbstractTruffleException currentException, LazyTraceback currentTraceback) {
             this.currentException = currentException;
             this.currentTraceback = currentTraceback;
         }
 
-        public PException getCurrentExceptionForReraise() {
+        public AbstractTruffleException getCurrentExceptionForReraise() {
             syncTracebackToException();
-            return currentException.getExceptionForReraise(false);
+            if (currentException instanceof PException pe) {
+                return pe.getExceptionForReraise(false);
+            } else {
+                return currentException;
+            }
         }
 
         public void syncTracebackToException() {
-            if (currentException.getUnreifiedException() instanceof PBaseException pythonException) {
-                pythonException.setTraceback(currentTraceback);
-            } else {
-                PTraceback materialized = currentTraceback != null ? MaterializeLazyTracebackNode.executeUncached(currentTraceback) : null;
-                ExceptionNodes.SetTracebackNode.executeUncached(currentException.getUnreifiedException(), materialized != null ? materialized : PNone.NONE);
+            if (currentException instanceof PException pe) {
+                if (pe.getUnreifiedException() instanceof PBaseException pythonException) {
+                    pythonException.setTraceback(currentTraceback);
+                } else {
+                    PTraceback materialized = currentTraceback != null ? MaterializeLazyTracebackNode.executeUncached(currentTraceback) : null;
+                    ExceptionNodes.SetTracebackNode.executeUncached(pe.getUnreifiedException(), materialized != null ? materialized : PNone.NONE);
+                }
             }
         }
 
@@ -436,11 +445,11 @@ public final class PythonContext extends Python3Core {
             this.currentTraceback = currentTraceback;
         }
 
-        public PException getCaughtException() {
+        public AbstractTruffleException getCaughtException() {
             return caughtException;
         }
 
-        public void setCaughtException(PException caughtException) {
+        public void setCaughtException(AbstractTruffleException caughtException) {
             this.caughtException = caughtException;
         }
 

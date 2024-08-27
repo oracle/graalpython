@@ -288,6 +288,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
+import com.oracle.graal.python.builtins.objects.exception.GetUnreifiedExceptionNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -378,6 +380,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -1700,15 +1703,17 @@ public abstract class GraalHPyContextFunctions {
         static Object doGeneric(GraalHPyContext hpyContext, Object exc,
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached GetUnreifiedExceptionNode getUnreifiedExceptionNode,
                         @Cached RecursiveExceptionMatches exceptionMatches) {
-            PException err = getThreadStateNode.execute(inliningTarget, hpyContext.getContext()).getCurrentException();
+            AbstractTruffleException err = getThreadStateNode.execute(inliningTarget, hpyContext.getContext()).getCurrentException();
             if (err == null) {
                 return 0;
             }
             if (exc == NULL_HANDLE_DELEGATE) {
                 return 0;
             }
-            return exceptionMatches.execute(hpyContext, err.getUnreifiedException(), exc);
+            Object exceptionObject = getUnreifiedExceptionNode.execute(inliningTarget, err);
+            return exceptionMatches.execute(hpyContext, exceptionObject, exc);
         }
     }
 
@@ -1752,11 +1757,13 @@ public abstract class GraalHPyContextFunctions {
                         @Bind("this") Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached WriteUnraisableNode writeUnraisableNode,
+                        @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                         @Cached ClearCurrentExceptionNode clearCurrentExceptionNode) {
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, hpyContext.getContext());
-            PException exception = threadState.getCurrentException();
+            AbstractTruffleException exception = threadState.getCurrentException();
             clearCurrentExceptionNode.execute(inliningTarget, threadState);
-            writeUnraisableNode.execute(null, exception.getEscapedException(), null, (object instanceof PNone) ? PNone.NONE : object);
+            Object exceptionObject = getEscapedExceptionNode.execute(inliningTarget, exception);
+            writeUnraisableNode.execute(null, exceptionObject, null, (object instanceof PNone) ? PNone.NONE : object);
             return 0; // void
         }
     }

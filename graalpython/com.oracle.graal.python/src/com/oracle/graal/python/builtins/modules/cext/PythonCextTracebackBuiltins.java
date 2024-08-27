@@ -57,11 +57,11 @@ import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -89,7 +89,7 @@ public final class PythonCextTracebackBuiltins {
                         @Cached PythonObjectFactory factory) {
             PythonLanguage language = PythonLanguage.get(inliningTarget);
             PythonContext.PythonThreadState threadState = PythonContext.get(inliningTarget).getThreadState(language);
-            PException currentException = threadState.getCurrentException();
+            AbstractTruffleException currentException = threadState.getCurrentException();
             if (currentException != null) {
                 PTraceback currentTraceback = null;
                 if (threadState.getCurrentTraceback() != null) {

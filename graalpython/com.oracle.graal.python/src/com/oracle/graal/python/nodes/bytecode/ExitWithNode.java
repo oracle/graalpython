@@ -85,12 +85,14 @@ public abstract class ExitWithNode extends PNodeWithContext {
         if (exception == PNone.NONE) {
             callExit.execute(virtualFrame, exit, contextManager, PNone.NONE, PNone.NONE, PNone.NONE);
         } else {
-            PException savedExcState = PArguments.getException(virtualFrame);
+            AbstractTruffleException savedExcState = PArguments.getException(virtualFrame);
             try {
                 Object pythonException = exception;
                 if (exception instanceof PException) {
                     PArguments.setException(virtualFrame, (PException) exception);
                     pythonException = ((PException) exception).getEscapedException();
+                } else if (exception instanceof AbstractTruffleException) {
+                    PArguments.setException(virtualFrame, (AbstractTruffleException) exception);
                 }
                 Object excType = getClassNode.execute(inliningTarget, pythonException);
                 Object excTraceback = getTracebackNode.execute(inliningTarget, pythonException);

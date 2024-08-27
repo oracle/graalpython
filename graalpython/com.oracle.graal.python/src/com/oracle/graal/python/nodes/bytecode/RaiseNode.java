@@ -52,6 +52,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -127,16 +128,19 @@ public abstract class RaiseNode extends PNodeWithContext {
 
     // raise
     @Specialization(guards = "isNoValue(type)")
-    public static void reraise(VirtualFrame frame, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") Object cause, boolean rootNodeVisible,
+    static void reraise(VirtualFrame frame, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") Object cause, boolean rootNodeVisible,
                     @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached PRaiseNode.Lazy raise,
-                    @Exclusive @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                    @Exclusive @Cached InlinedConditionProfile hasCurrentException) {
-        PException caughtException = getCaughtExceptionNode.execute(frame);
-        if (hasCurrentException.profile(inliningTarget, caughtException == null)) {
-            throw raise.get(inliningTarget).raise(RuntimeError, ErrorMessages.NO_ACTIVE_EX_TO_RERAISE);
+                    @Cached PRaiseNode raise,
+                    @Cached GetCaughtExceptionNode getCaughtExceptionNode,
+                    @Cached InlinedConditionProfile hasPException) {
+        AbstractTruffleException caughtException = getCaughtExceptionNode.execute(frame);
+        if (hasPException.profile(inliningTarget, caughtException instanceof PException)) {
+            throw ((PException) caughtException).getExceptionForReraise(rootNodeVisible);
+        } else if (caughtException != null) {
+            throw caughtException;
+        } else {
+            throw raise.raise(RuntimeError, ErrorMessages.NO_ACTIVE_EX_TO_RERAISE);
         }
-        throw caughtException.getExceptionForReraise(rootNodeVisible);
     }
 
     // raise <exception>
