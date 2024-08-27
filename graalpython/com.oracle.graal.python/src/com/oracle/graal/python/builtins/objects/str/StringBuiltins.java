@@ -98,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
@@ -1046,7 +1045,6 @@ public final class StringBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         static PDict doDict(VirtualFrame frame, Object cls, PDict from, Object to, Object z,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
                         @Exclusive @Cached CastToTruffleStringCheckedNode cast,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
@@ -1058,7 +1056,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached HashingStorageIteratorValue iterValue,
                         @Shared @Cached PythonObjectFactory factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            HashingStorage srcStorage = getHashingStorageNode.execute(frame, inliningTarget, from);
+            HashingStorage srcStorage = from.getDictStorage();
             HashingStorage destStorage = PDict.createNewStorage(lenNode.execute(inliningTarget, srcStorage));
             HashingStorageIterator it = getIter.execute(inliningTarget, srcStorage);
             while (iterHasNext.execute(inliningTarget, srcStorage, it)) {

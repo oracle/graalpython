@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
@@ -252,7 +251,6 @@ public class PicklerBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(obj)", "!isDeleteMarker(obj)"})
         static Object set(VirtualFrame frame, PPickler self, Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -265,9 +263,9 @@ public class PicklerBuiltins extends PythonBuiltins {
             if (obj instanceof PPicklerMemoProxy) {
                 final PPickler pickler = ((PPicklerMemoProxy) obj).getPickler();
                 newMemo = pickler.getMemo().copy();
-            } else if (obj instanceof PDict) {
+            } else if (obj instanceof PDict dict) {
                 newMemo = new MemoTable();
-                final HashingStorage dictStorage = getHashingStorageNode.execute(frame, inliningTarget, obj);
+                final HashingStorage dictStorage = dict.getDictStorage();
                 HashingStorageIterator it = getIter.execute(inliningTarget, dictStorage);
                 while (iterNext.execute(inliningTarget, dictStorage, it)) {
                     Object value = iterValue.execute(inliningTarget, dictStorage, it);

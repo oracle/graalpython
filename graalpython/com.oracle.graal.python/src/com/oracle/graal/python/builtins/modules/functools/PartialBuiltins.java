@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
@@ -352,7 +351,6 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Cached PyDictCheckExactNode dictCheckExactNode,
                         @Cached PyTupleGetItem getItemNode,
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
-                        @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
                         @Cached HashingStorageCopy copyStorageNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -385,7 +383,7 @@ public final class PartialBuiltins extends PythonBuiltins {
             if (fnKwargs == PNone.NONE) {
                 fnKwargsDict = factory.createDict();
             } else if (!dictCheckExactNode.execute(inliningTarget, fnKwargs)) {
-                fnKwargsDict = factory.createDict(copyStorageNode.execute(inliningTarget, getHashingStorageNode.execute(frame, inliningTarget, fnKwargs)));
+                fnKwargsDict = factory.createDict(copyStorageNode.execute(inliningTarget, ((PDict) fnKwargs).getDictStorage()));
             } else {
                 fnKwargsDict = (PDict) fnKwargs;
             }

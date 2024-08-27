@@ -63,6 +63,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -1413,7 +1415,7 @@ public class PPickler extends PythonBuiltinObject {
         }
 
         private void batchDictExact(VirtualFrame frame, PPickler pickler, PDict dict) {
-            final HashingStorage storage = getHashingStorage(frame, dict);
+            final HashingStorage storage = dict.getDictStorage();
             final int length = getHashingStorageLength(storage);
             // Special-case len(d) == 1 to save space.
             if (length == 1) {
@@ -1478,9 +1480,8 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void batchSetExact(VirtualFrame frame, PPickler pickler, Object obj) {
-            final HashingStorage storage = getHashingStorage(frame, obj);
-            saveSetHashingStorageBatched(frame, pickler, storage);
+        private void batchSetExact(VirtualFrame frame, PPickler pickler, PSet set) {
+            saveSetHashingStorageBatched(frame, pickler, set.getDictStorage());
         }
 
         private void batchSet(VirtualFrame frame, PPickler pickler, Object obj) {
@@ -1526,8 +1527,8 @@ public class PPickler extends PythonBuiltinObject {
             }
 
             // Write in batches of BATCHSIZE.
-            if (PGuards.isPSet(obj)) {
-                batchSetExact(frame, pickler, obj);
+            if (obj instanceof PSet set) {
+                batchSetExact(frame, pickler, set);
             } else {
                 batchSet(frame, pickler, obj);
             }
@@ -1547,9 +1548,8 @@ public class PPickler extends PythonBuiltinObject {
 
             write(pickler, PickleUtils.OPCODE_MARK);
 
-            if (PGuards.isPFrozenSet(obj)) {
-                final HashingStorage storage = getHashingStorage(frame, obj);
-                saveSetHashingStorage(frame, pickler, storage);
+            if (obj instanceof PFrozenSet set) {
+                saveSetHashingStorage(frame, pickler, set.getDictStorage());
             } else {
                 final Object iterator = getIter(frame, obj);
                 saveFrozenSetIterator(frame, pickler, iterator);
