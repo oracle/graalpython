@@ -120,6 +120,7 @@ public abstract class SpecialAttributeNames {
     public static final TruffleString T___TEXT_SIGNATURE__ = tsLiteral(J___TEXT_SIGNATURE__);
 
     public static final String J___SIGNATURE__ = "__signature__";
+    public static final TruffleString T__SIGNATURE__ = tsLiteral(J___SIGNATURE__);
 
     public static final String J___TRACEBACK__ = "__traceback__";
     public static final TruffleString T___TRACEBACK__ = tsLiteral(J___TRACEBACK__);

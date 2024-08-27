@@ -301,8 +301,13 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(none)")
-        static TruffleString getBuiltin(PBuiltinFunction self, @SuppressWarnings("unused") PNone none) {
+        @TruffleBoundary
+        static TruffleString getBuiltin(PBuiltinFunction self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget) {
             Signature signature = self.getSignature();
+            if (signature.isHidden()) {
+                throw PRaiseNode.raiseUncached(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, self, T___TEXT_SIGNATURE__);
+            }
             return signatureToText(signature, false);
         }
 

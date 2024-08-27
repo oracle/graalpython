@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.T_SELF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -45,6 +44,8 @@ public final class Signature {
     private final boolean isVarArgsMarker;
     private final boolean takesVarKeywordArgs;
     private final boolean checkEnclosingType;
+    // See javadoc for isHidden
+    private final boolean hidden;
 
     @CompilationFinal(dimensions = 1) private final TruffleString[] positionalParameterNames;
     @CompilationFinal(dimensions = 1) private final TruffleString[] keywordOnlyNames;
@@ -68,6 +69,11 @@ public final class Signature {
 
     public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
                     TruffleString[] parameterIds, TruffleString[] keywordNames, boolean checkEnclosingType, TruffleString raiseErrorName) {
+        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames, checkEnclosingType, raiseErrorName, false);
+    }
+
+    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+                    TruffleString[] parameterIds, TruffleString[] keywordNames, boolean checkEnclosingType, TruffleString raiseErrorName, boolean hidden) {
         this.positionalOnlyArgIndex = positionOnlyArgIndex;
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.varArgIndex = takesVarArgs;
@@ -76,26 +82,18 @@ public final class Signature {
         this.keywordOnlyNames = (keywordNames != null) ? keywordNames : PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         this.checkEnclosingType = checkEnclosingType;
         this.raiseErrorName = raiseErrorName;
+        this.hidden = hidden;
     }
 
     public static Signature createVarArgsAndKwArgsOnly() {
         return new Signature(-1, true, 0, false, null, null);
     }
 
-    public Signature createWithSelf() {
-        TruffleString[] parameterIdsWithSelf = new TruffleString[getParameterIds().length + 1];
-        parameterIdsWithSelf[0] = T_SELF;
-        PythonUtils.arraycopy(getParameterIds(), 0, parameterIdsWithSelf, 1, parameterIdsWithSelf.length - 1);
-
-        return new Signature(-1, takesVarKeywordArgs, varArgIndex, isVarArgsMarker,
-                        parameterIdsWithSelf, keywordOnlyNames);
-    }
-
-    public final int getNumOfRequiredKeywords() {
+    public int getNumOfRequiredKeywords() {
         return keywordOnlyNames.length;
     }
 
-    public final int getMaxNumOfPositionalArgs() {
+    public int getMaxNumOfPositionalArgs() {
         return positionalParameterNames.length;
     }
 
@@ -104,31 +102,31 @@ public final class Signature {
      * @return The index to the positional only argument marker ('/'). Which means that all
      *         positional only argument have index smaller than this.
      */
-    public final int getPositionalOnlyArgIndex() {
+    public int getPositionalOnlyArgIndex() {
         return positionalOnlyArgIndex;
     }
 
-    public final int getVarargsIdx() {
+    public int getVarargsIdx() {
         return varArgIndex;
     }
 
-    public final boolean takesVarArgs() {
+    public boolean takesVarArgs() {
         return varArgIndex != -1;
     }
 
-    public final boolean isVarArgsMarker() {
+    public boolean isVarArgsMarker() {
         return isVarArgsMarker;
     }
 
-    public final boolean takesVarKeywordArgs() {
+    public boolean takesVarKeywordArgs() {
         return takesVarKeywordArgs;
     }
 
-    public final TruffleString[] getParameterIds() {
+    public TruffleString[] getParameterIds() {
         return positionalParameterNames;
     }
 
-    public final TruffleString[] getKeywordNames() {
+    public TruffleString[] getKeywordNames() {
         return keywordOnlyNames;
     }
 
@@ -147,31 +145,32 @@ public final class Signature {
         return visibleKeywordNames.toArray(TruffleString[]::new);
     }
 
-    public final boolean takesKeywordArgs() {
+    public boolean takesKeywordArgs() {
         return keywordOnlyNames.length > 0 || takesVarKeywordArgs;
     }
 
-    public final boolean takesRequiredKeywordArgs() {
-        return this.keywordOnlyNames.length > 0;
-    }
-
-    public final boolean takesPositionalOnly() {
+    public boolean takesPositionalOnly() {
         return !takesVarArgs() && !takesVarKeywordArgs && !isVarArgsMarker && keywordOnlyNames.length == 0;
     }
 
-    public final boolean takesNoArguments() {
+    public boolean takesNoArguments() {
         return positionalParameterNames.length == 0 && takesPositionalOnly();
     }
 
-    public final boolean takesOneArgument() {
-        return positionalParameterNames.length == 1 && takesPositionalOnly();
-    }
-
-    public final boolean checkEnclosingType() {
+    public boolean checkEnclosingType() {
         return checkEnclosingType;
     }
 
-    public final TruffleString getRaiseErrorName() {
+    public TruffleString getRaiseErrorName() {
         return raiseErrorName;
+    }
+
+    /**
+     * Hidden signatures won't be shown to python as {@code __signature__} or
+     * {@code __text_signature__}. This is done to hide generic C function signatures, because it
+     * breaks assumptions of some packages, namely {@code pythran}
+     */
+    public boolean isHidden() {
+        return hidden;
     }
 }

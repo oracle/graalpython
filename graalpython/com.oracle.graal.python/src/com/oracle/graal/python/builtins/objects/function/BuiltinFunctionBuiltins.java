@@ -26,10 +26,12 @@
 
 package com.oracle.graal.python.builtins.objects.function;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_GETATTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SIGNATURE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T__SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OBJCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.T_DOLLAR_DECL_TYPE;
@@ -144,8 +146,13 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
     public abstract static class SignatureNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object doIt(PBuiltinFunction fun) {
-            return createInspectSignagure(fun.getSignature(), false);
+        @TruffleBoundary
+        static Object doIt(PBuiltinFunction fun,
+                        @Bind("this") Node inliningTarget) {
+            if (fun.getSignature().isHidden()) {
+                throw PRaiseNode.raiseUncached(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T__SIGNATURE__);
+            }
+            return createInspectSignature(fun.getSignature(), false);
         }
 
         private enum ParameterKinds {
@@ -166,7 +173,7 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public static Object createInspectSignagure(Signature signature, boolean skipSelf) {
+        public static Object createInspectSignature(Signature signature, boolean skipSelf) {
             PythonModule inspect = ImportNode.importModule(tsLiteral("inspect"));
             Object inspectSignature = PyObjectGetAttr.executeUncached(inspect, tsLiteral("Signature"));
             Object inspectParameter = PyObjectGetAttr.executeUncached(inspect, tsLiteral("Parameter"));
