@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTextIOWrapper;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
@@ -94,6 +95,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T__DEALLOC_WAR
 import static com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.setNewline;
 import static com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.validateNewline;
 import static com.oracle.graal.python.nodes.ErrorMessages.A_STRICTLY_POSITIVE_INTEGER_IS_REQUIRED;
+import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_DELETE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_DO_NONZERO_END_RELATIVE_SEEKS;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_RECONSTRUCT_LOGICAL_FILE_POSITION;
@@ -136,6 +138,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -1157,7 +1160,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J__CHUNK_SIZE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J__CHUNK_SIZE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
     @GenerateNodeFactory
     abstract static class ChunkSizeNode extends PythonBuiltinNode {
 
@@ -1166,7 +1169,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             return self.getChunkSize();
         }
 
-        @Specialization(guards = {"self.isOK()", "!self.isDetached()", "!isNoValue(arg)"})
+        @Specialization(guards = {"self.isOK()", "!self.isDetached()", "!isNoValue(arg)", "!isDeleteMarker(arg)"})
         static Object chunkSize(VirtualFrame frame, PTextIO self, Object arg,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -1177,6 +1180,12 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             }
             self.setChunkSize(size);
             return 0;
+        }
+
+        @Specialization(guards = {"self.isOK()", "!self.isDetached()"})
+        static Object noDelete(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") DescriptorDeleteMarker marker,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, CANNOT_DELETE);
         }
 
         @Specialization(guards = "!self.isOK()")

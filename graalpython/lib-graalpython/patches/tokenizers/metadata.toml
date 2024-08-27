@@ -1,4 +1,9 @@
 [[rules]]
+version = '>= 0.19'
+patch = 'tokenizers-0.19-plus.patch'
+license = 'Apache-2.0'
+
+[[rules]]
 version = '== 0.13.3'
 patch = 'tokenizers-0.13.3.patch'
 license = 'Apache-2.0'

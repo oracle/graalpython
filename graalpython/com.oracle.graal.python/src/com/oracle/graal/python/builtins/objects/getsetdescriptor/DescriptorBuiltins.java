@@ -40,12 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
-import static com.oracle.graal.python.builtins.modules.io.IONodes.T__CHUNK_SIZE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -226,11 +224,6 @@ public final class DescriptorBuiltins extends PythonBuiltins {
             } else {
                 branchProfile.enter(inliningTarget);
                 if (descr.getSet() != null) {
-                    if (descr.getName().equalsUncached(T__CHUNK_SIZE, TS_ENCODING)) {
-                        // This is a special error message case. see
-                        // Modules/_io/textio.c:textiowrapper_chunk_size_set
-                        throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.CANNOT_DELETE);
-                    }
                     throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getNameNode.execute(inliningTarget, descr.getType()), descr.getName());
                 } else {
                     throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, descr.getName(), obj);

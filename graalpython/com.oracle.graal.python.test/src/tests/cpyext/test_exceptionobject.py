@@ -46,8 +46,9 @@ __dir__ = __file__.rpartition("/")[0]
 
 try:
     raise TypeError
-except:
+except TypeError as e:
     TB = sys.exc_info()[2]
+    exception_with_traceback = e
 
 
 class TestExceptionobject(object):
@@ -148,18 +149,80 @@ def raise_exception_without_cause():
         return e
 
 
+exception_with_cause = AssertionError()
+exception_with_cause.__cause__ = NameError()
+exception_with_context = AssertionError()
+exception_with_context.__context__ = AttributeError()
+
 class TestExceptionobjectFunctions(CPyExtTestCase):
 
     test_PyException_SetTraceback = CPyExtFunction(
-        lambda args: 0,
+        lambda args: args[1],
         lambda: (
-            (
-                AssertionError(), TB
-            ),
+            (AssertionError(), TB),
+            (exception_with_traceback, None),
         ),
-        resultspec="i",
-        argspec="OO",
-        arguments=["PyObject* exc", "PyObject* tb"],
+        code='''
+        static PyObject* wrap_PyException_SetTraceback(PyObject* exc, PyObject* traceback) {
+            PyException_SetTraceback(exc, traceback);
+            traceback = PyException_GetTraceback(exc);
+            if (traceback == NULL) {
+                Py_RETURN_NONE;
+            } else {
+                return traceback;
+            }
+        }
+        ''',
+        callfunction='wrap_PyException_SetTraceback',
+        argspec='OO',
+        arguments=['PyObject* exc', 'PyObject* traceback'],
+        resultspec='O',
+    )
+
+    test_PyException_SetCause = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            (AssertionError(), NameError()),
+            (exception_with_context, None),
+        ),
+        code='''
+        static PyObject* wrap_PyException_SetCause(PyObject* exc, PyObject* cause) {
+            PyException_SetCause(exc, cause != Py_None ? cause : NULL);
+            cause = PyException_GetCause(exc);
+            if (cause == NULL) {
+                Py_RETURN_NONE;
+            } else {
+                return cause;
+            }
+        }
+        ''',
+        callfunction='wrap_PyException_SetCause',
+        argspec='OO',
+        arguments=['PyObject* exc', 'PyObject* cause'],
+        resultspec='O',
+    )
+
+    test_PyException_SetContext = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            (AssertionError(), NameError()),
+            (exception_with_cause, None),
+        ),
+        code='''
+        static PyObject* wrap_PyException_SetContext(PyObject* exc, PyObject* context) {
+            PyException_SetContext(exc, context != Py_None ? context : NULL);
+            context = PyException_GetContext(exc);
+            if (context == NULL) {
+                Py_RETURN_NONE;
+            } else {
+                return context;
+            }
+        }
+        ''',
+        callfunction='wrap_PyException_SetContext',
+        argspec='OO',
+        arguments=['PyObject* exc', 'PyObject* context'],
+        resultspec='O',
     )
 
 
