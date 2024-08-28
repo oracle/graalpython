@@ -61,12 +61,16 @@ public class GraalPyRunner {
     private static final String EXE_SUFFIX = IS_WINDOWS ? ".exe" : "";
 
     public static void run(Set<String> classpath, SubprocessLog log, String... args) throws IOException, InterruptedException {
+        run(String.join(File.pathSeparator, classpath), log, args);
+    }
+
+    public static void run(String classpath, SubprocessLog log, String... args) throws IOException, InterruptedException {
         String workdir = System.getProperty("exec.workingdir");
         Path java = Paths.get(System.getProperty("java.home"), "bin", "java");
         List<String> cmd = new ArrayList<>();
         cmd.add(java.toString());
         cmd.add("-classpath");
-        cmd.add(String.join(File.pathSeparator, classpath));
+        cmd.add(classpath);
         cmd.add("com.oracle.graal.python.shell.GraalPythonMain");
         cmd.addAll(List.of(args));
         var pb = new ProcessBuilder(cmd);
