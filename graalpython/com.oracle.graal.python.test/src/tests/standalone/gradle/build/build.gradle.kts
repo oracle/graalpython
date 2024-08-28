@@ -1,6 +1,6 @@
 plugins {
     application
-    id("org.graalvm.python")
+    id("org.graalvm.python") version "24.2.0"
     id("org.graalvm.buildtools.native") version "0.10.2"
 }
 
