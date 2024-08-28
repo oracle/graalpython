@@ -1464,7 +1464,7 @@ suite = {
                 "tag": ["default", "public"],
             },
         },
-        "graalpy-gradle-plugin": {
+        "org.graalvm.python.gradle.plugin": {
             "class": "MavenProject",
             "subDir": "graalpython",
             "noMavenJavadoc": True,

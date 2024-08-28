@@ -1,10 +1,7 @@
-rootProject.name = "graalpy-gradle-test-project"
-
-buildscript {
+pluginManagement {
     repositories {
-        maven(url="https://repo.gradle.org/gradle/libs-releases/")
-    }
-    dependencies {
-        classpath("org.graalvm.python:graalpy-gradle-plugin:24.2.0")
+        gradlePluginPortal()
     }
 }
+
+rootProject.name = "graalpy-gradle-test-project"

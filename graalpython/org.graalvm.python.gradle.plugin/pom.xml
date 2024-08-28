@@ -45,7 +45,7 @@ SOFTWARE.
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.graalvm.python</groupId>
-    <artifactId>graalpy-gradle-plugin</artifactId>
+    <artifactId>org.graalvm.python.gradle.plugin</artifactId>
     <packaging>jar</packaging>
     <!-- This version is always overridden when deploying using mx -->
     <version>24.2.0</version>
@@ -59,6 +59,7 @@ SOFTWARE.
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <graalpy.version>24.2.0</graalpy.version>
         <gradle.version>6.1.1</gradle.version>
+        <slf4j.version>2.0.13</slf4j.version>
     </properties>
 
     <profiles>
@@ -75,18 +76,12 @@ SOFTWARE.
         </profile>
     </profiles>
 
-
     <dependencies>
         <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy</artifactId>
             <version>3.0.22</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.gradle</groupId>
-            <artifactId>gradle-tooling-api</artifactId>
-            <version>8.8</version>
         </dependency>
         <dependency>
             <groupId>org.gradle</groupId>
@@ -142,7 +137,12 @@ SOFTWARE.
             <version>${gradle.version}</version>
             <scope>provided</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.graalvm.python</groupId>
             <artifactId>python-embedding-tools</artifactId>
