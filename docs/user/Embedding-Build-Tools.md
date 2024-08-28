@@ -7,7 +7,7 @@ permalink: /reference-manual/python/Embedding-Build-Tools/
 
 # Embedding Build Tools
 
-The GraalPy Maven and Gradle plugins provide functionality to manage resources required for embedding Python in Java-based applications:
+The GraalPy **Maven** and **Gradle** plugins provide functionality to manage resources required for embedding Python in Java-based applications:
 
 This embedding relevant resources can be one of the following:  
 - Python application files, for example, Python sources which are part of the project.
@@ -15,16 +15,19 @@ This embedding relevant resources can be one of the following:
 - The Standard library which is necessary to make a generated native executable self-contained.
 
 Besides physically managing and distributing this files by the plugins, it is also necessary to make them available at runtime by accordingly 
-configuring the GraalPy context in your Java code. `GraalPyResources.java` TODO - how link to file/javadoc? provides factory methods 
-to create a **GraalPy context** suitable for accessing Python embedding relevant resources with a **virtual filessystem** or from a dedicated **external directory**.
+configuring the GraalPy **context** in your Java code. [GraalPyResources](https://github.com/oracle/graalpython/blob/master/graalpython/org.graalvm.python.embedding/src/org/graalvm/python/embedding/utils/GraalPyResources.java) provides factory methods 
+to create a context suitable for accessing Python embedding relevant resources with a **virtual filessystem** or from a dedicated **external directory**.
 
-### Virtual filesystem
+### Virtual Filesystem
 
 Resource files in a Maven or Gradle project are typically located in dedicated project resource directories, and then distributed in 
 one application file (JAR or native image).
 
 The GraalPy virtual filesystem can access resource files as standard Java resources and make them available to Python code running in GraalPy so
-that it can use standard Python IO to access those files. 
+that it can use standard Python IO to access those files. In order to make this work, it is necessary for the resource files to have their resource root directory
+set to `/org.graalvm.python.vfs` which then becomes the virtual filesystem root and is in python code mapped to the
+virtual filesystem mount point, by default `/graalpy_vfs`. For example a python file with the real filesystem path `${project_resources_directory}/org.graalvm.python.vfs/src/foo/bar.py` 
+will have at runtime the path `/graalpy_vfs/src/foo/bar.py`.
 
 Each kind of the resource files is held in a different project resource directory:
 - `${project_resources_directory}/org.graalvm.python.vfs/src` - is used for Python application files. Contents of this directory are not directly managed by the plugin, 
@@ -34,13 +37,12 @@ and its contents are generated and managed entirely by the plugin. Any manual ch
 - `${project_generated_resources_directory}/org.graalvm.python.vfs/home` - this directory is used for the Standard library 
 and its contents are generated and managed entirely by the plugin. Any manual changes may be overwritten.
 
-`GraalPyResources.java` provides factory methods to create a GraalPy context with a default or custom virtual filesystem configuration. 
-For more information on how to configure a virtual filesystem, refer to `VirtualFileSystem.Builder` TODO - how link to file/javadoc?.
+[GraalPyResources](https://github.com/oracle/graalpython/blob/master/graalpython/org.graalvm.python.embedding/src/org/graalvm/python/embedding/utils/GraalPyResources.java) provides factory methods to create a GraalPy context with a default or custom virtual filesystem configuration. For more information on how to configure a virtual filesystem, refer to [VirtualFileSystem.Builder](https://github.com/oracle/graalpython/blob/master/graalpython/org.graalvm.python.embedding/src/org/graalvm/python/embedding/utils/VirtualFileSystem.java).
 
-### Resources in an external directory
+### Resources in an External Directory
 
 As an alternative to the virtual filesystem, it is also possible to configure the plugin to hold the resource files in an external directory.
-`GraalPyResources.java` provides methods to create a GraalPy context preconfigured to work with a dedicated resources directory as long at it has the following structure:
+[GraalPyResources](https://github.com/oracle/graalpython/blob/master/graalpython/org.graalvm.python.embedding/src/org/graalvm/python/embedding/utils/GraalPyResources.java) provides methods to create a GraalPy context preconfigured to work with a dedicated resources directory as long at it has the following structure:
 - `${resources_directory}/src` - is used for Python application files. Contents of this directory are not directly managed by the plugin,
 only added to the final application file (JAR or native image). 
 - `${resources_directory}/venv` - this directory is used for the Python virtual environment holding third-party Python packages
@@ -52,7 +54,8 @@ Note, that by storing the resource files in an external directory, they are not 
 
 ### GraalPy Context
 
-Regarding the particular resource paths, a GraalPy context instance created by factory methods in `GraalPyResources` is preconfigured in the following way:
+Regarding the particular resource paths, a GraalPy context instance created by factory methods in [GraalPyResources](https://github.com/oracle/graalpython/blob/master/graalpython/org.graalvm.python.embedding/src/org/graalvm/python/embedding/utils/GraalPyResources.java) 
+is preconfigured in the following way:
 - `${resources_root_directory}/home` - is reserved for the GraalPy Standard Library. GraalPy context will be configured to 
 use this standard library as if set in `PYTHONHOME` environment variable.
 - `${resources_root_directory}/venv` - is reserved for a Python virtual environment holding third-party packages. 

@@ -67,7 +67,7 @@ In order to distribute the resulting application for other systems, follow these
 
 ## Gradle
 
-1. Create a Java application with Gradle using the command below and follow the prompts (select a build script language, select a test framework, and so on):
+1. Create a Java application with Gradle using the command below and follow the prompts (select the Groovy build script language, select a test framework, and so on):
     ```bash
     gradle init --type java-application \
                 --project-name interop  \
@@ -123,28 +123,21 @@ In order to distribute the resulting application for other systems, follow these
    5.1. In _app/build.gradle_:
    - add the graalpy-gradle-plugin to the `plugins` section:
    ```
-   id "org.graalvm.python"
+   id "org.graalvm.python" version "24.2.0"
    ```
 
    - configure the GraalPy Gradle plugin:  
    ```
    graalPy { 
-     packages = ["termcolor==2.2"]
+      packages = ["termcolor==2.2"]
    }
    ```
    
-   5.2, In _settings.gradle_, add the following build script configuration.
-   Note that all buildscript blocks must appear before any plugins blocks.
+   5.2, In _settings.gradle_, add the following `pluginManagement` configuration.
    ```
-   buildscript {
+   pluginManagement {
       repositories {
-         mavenCentral()
-         maven {
-            url "https://repo.gradle.org/gradle/libs-releases/"
-         }
-      }
-      dependencies {
-         classpath "org.graalvm.python:graalpy-gradle-plugin:24.2.0"
+         gradlePluginPortal()        
       }
    }
    ```
@@ -170,7 +163,7 @@ In order to distribute the resulting application for other systems, follow these
       }
       ```
    
-See also [Embedding Build Tools](Embedding-Build-Tools.md#graalpy-gradle-plugin) for more information about the GraalPy Gradle Plugin.
+See also [Embedding Build Tools](Embedding-Build-Tools.md) for more information about the GraalPy Gradle Plugin.
 
 ## Ant, CMake, Makefile or Other Build Systems Without Direct Support for Maven Dependencies
 
