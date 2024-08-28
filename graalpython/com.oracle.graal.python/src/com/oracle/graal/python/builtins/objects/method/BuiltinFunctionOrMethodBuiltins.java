@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SIGNATURE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T__SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
@@ -54,9 +56,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.BuiltinFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -143,8 +148,13 @@ public final class BuiltinFunctionOrMethodBuiltins extends PythonBuiltins {
     abstract static class SignatureNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object doIt(Object fun) {
-            return BuiltinFunctionBuiltins.SignatureNode.createInspectSignagure(GetSignatureNode.executeUncached(fun), true);
+        public Object doIt(Object fun,
+                        @Bind("this") Node inliningTarget) {
+            Signature signature = GetSignatureNode.executeUncached(fun);
+            if (signature.isHidden()) {
+                throw PRaiseNode.raiseUncached(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T__SIGNATURE__);
+            }
+            return BuiltinFunctionBuiltins.SignatureNode.createInspectSignature(signature, true);
         }
     }
 }

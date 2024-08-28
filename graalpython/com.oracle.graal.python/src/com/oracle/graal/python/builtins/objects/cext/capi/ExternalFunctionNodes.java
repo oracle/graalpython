@@ -55,6 +55,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -807,8 +808,16 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
+    private static Signature createSignature(boolean takesVarKeywordArgs, int varArgIndex, TruffleString[] parameters, boolean checkEnclosingType, boolean hidden) {
+        return new Signature(-1, takesVarKeywordArgs, varArgIndex, false, parameters, KEYWORDS_HIDDEN_CALLABLE, checkEnclosingType, T_EMPTY_STRING, hidden);
+    }
+
+    private static Signature createSignatureWithClosure(boolean takesVarKeywordArgs, int varArgIndex, TruffleString[] parameters, boolean checkEnclosingType, boolean hidden) {
+        return new Signature(-1, takesVarKeywordArgs, varArgIndex, false, parameters, KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, checkEnclosingType, T_EMPTY_STRING, hidden);
+    }
+
     static final class MethDirectRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, true, 0, false, null, KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = createSignature(true, 0, null, false, true);
 
         private MethDirectRoot(PythonLanguage lang, TruffleString name, PExternalFunctionWrapper provider) {
             super(lang, name, true, provider);
@@ -1117,7 +1126,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(true, 1, tsArray("self"), true, true);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -1165,7 +1174,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethVarargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, 1, tsArray("self"), true, true);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
@@ -1259,7 +1268,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethInquiryRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self"), true, false);
 
         public MethInquiryRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
             super(language, name, isStatic);
@@ -1286,7 +1295,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethNoargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self"), true, true);
 
         public MethNoargsRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
             super(language, name, isStatic);
@@ -1313,7 +1322,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethORoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "arg"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "arg"), true, true);
         @Child private ReadIndexedArgumentNode readArgNode;
 
         public MethORoot(PythonLanguage language, TruffleString name, boolean isStatic) {
@@ -1346,7 +1355,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethFastcallWithKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(true, 1, tsArray("self"), true, true);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -1393,7 +1402,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethMethodRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, tsArray("self", "cls"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(true, 1, tsArray("self", "cls"), true, true);
         @Child private PythonObjectFactory factory;
         @Child private ReadIndexedArgumentNode readClsNode;
         @Child private ReadVarArgsNode readVarargsNode;
@@ -1444,7 +1453,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethFastcallRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, 1, tsArray("self"), true, true);
         @Child private ReadVarArgsNode readVarargsNode;
 
         public MethFastcallRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
@@ -1481,7 +1490,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for C function type {@code allocfunc} and {@code ssizeargfunc}.
      */
     static class AllocFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "nitems"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "nitems"), true, false);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
@@ -1521,7 +1530,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a get attribute function (C type {@code getattrfunc}).
      */
     static final class GetAttrFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "key"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "key"), true, false);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
         @Child private CStructAccess.FreeNode free;
@@ -1562,7 +1571,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a set attribute function (C type {@code setattrfunc}).
      */
     static final class SetAttrFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "key", "value"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "key", "value"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
@@ -1608,7 +1617,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a rich compare function (C type {@code richcmpfunc}).
      */
     static final class RichCmpFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "other", "op"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "other", "op"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
@@ -1653,7 +1662,7 @@ public abstract class ExternalFunctionNodes {
      * Implements semantics of {@code typeobject.c: wrap_sq_item}.
      */
     static final class GetItemRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "i"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "i"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private GetIndexNode getIndexNode;
 
@@ -1689,7 +1698,7 @@ public abstract class ExternalFunctionNodes {
      * Implements semantics of {@code typeobject.c: wrap_sq_setitem}.
      */
     static final class SetItemRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "i", "value"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "i", "value"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private GetIndexNode getIndexNode;
@@ -1730,7 +1739,7 @@ public abstract class ExternalFunctionNodes {
      * Implements semantics of {@code typeobject.c:wrap_descr_get}
      */
     public static final class DescrGetRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "obj", "type"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "obj", "type"), true, false);
         @Child private ReadIndexedArgumentNode readObj;
         @Child private ReadIndexedArgumentNode readType;
 
@@ -1770,7 +1779,7 @@ public abstract class ExternalFunctionNodes {
      * Implements semantics of {@code typeobject.c:wrap_descr_delete}
      */
     public static final class DescrDeleteRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "obj"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "obj"), true, false);
         @Child private ReadIndexedArgumentNode readObj;
 
         public DescrDeleteRootNode(PythonLanguage language, TruffleString name) {
@@ -1806,7 +1815,7 @@ public abstract class ExternalFunctionNodes {
      * Implements semantics of {@code typeobject.c:wrap_delattr}
      */
     public static final class DelAttrRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "obj"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "obj"), true, false);
         @Child private ReadIndexedArgumentNode readObj;
 
         public DelAttrRootNode(PythonLanguage language, TruffleString name) {
@@ -1844,7 +1853,7 @@ public abstract class ExternalFunctionNodes {
      * NULL 3rd argument.
      */
     static final class MpDelItemRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "i"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "i"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
 
         MpDelItemRootNode(PythonLanguage language, TruffleString name) {
@@ -1881,7 +1890,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for reverse binary operations.
      */
     static final class MethReverseRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "obj"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "obj"), true, false);
         @Child private ReadIndexedArgumentNode readArg0Node;
         @Child private ReadIndexedArgumentNode readArg1Node;
 
@@ -1928,7 +1937,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for native power function (with an optional third argument).
      */
     static class MethPowRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, 0, false, tsArray("args"), KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = createSignature(false, 0, tsArray("args"), false, false);
 
         @Child private ReadVarArgsNode readVarargsNode;
 
@@ -1995,7 +2004,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for native power function (with an optional third argument).
      */
     static final class MethRichcmpOpRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "other"), KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "other"), true, false);
         @Child private ReadIndexedArgumentNode readArgNode;
 
         private final int op;
@@ -2093,7 +2102,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for C function type {@code getter}.
      */
     public static class GetterRoot extends GetSetRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, true);
+        private static final Signature SIGNATURE = createSignatureWithClosure(false, -1, tsArray("self"), true, false);
 
         public GetterRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
@@ -2120,7 +2129,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for C function type {@code setter}.
      */
     public static class SetterRoot extends GetSetRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self", "value"), KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, true);
+        private static final Signature SIGNATURE = createSignatureWithClosure(false, -1, tsArray("self", "value"), true, false);
 
         @Child private ReadIndexedArgumentNode readArgNode;
 
