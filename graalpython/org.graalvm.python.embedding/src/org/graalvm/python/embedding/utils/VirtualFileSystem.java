@@ -653,6 +653,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     }
 
     @Override
+    @Deprecated
     public Path parsePath(URI uri) {
         if (uri.getScheme().equals("file")) {
             return Paths.get(uri);
@@ -662,11 +663,13 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     }
 
     @Override
+    @Deprecated
     public Path parsePath(String path) {
         return Paths.get(path);
     }
 
     @Override
+    @Deprecated
     public void checkAccess(Path path, Set<? extends AccessMode> modes, LinkOption... linkOptions) throws IOException {
         if (pathIsInVfs(path)) {
             if (modes.contains(AccessMode.WRITE)) {
@@ -683,6 +686,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     }
 
     @Override
+    @Deprecated
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
         if (delegate == null || pathIsInVfs(dir)) {
             throw new SecurityException("read-only filesystem");
@@ -692,6 +696,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     }
 
     @Override
+    @Deprecated
     public void delete(Path path) throws IOException {
         if (delegate == null || pathIsInVfs(path)) {
             throw new SecurityException("read-only filesystem");
@@ -701,6 +706,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     }
 
     @Override
+    @Deprecated
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
         if (delegate != null && !pathIsInVfs(path)) {
             return delegate.newByteChannel(path, options, attrs);
@@ -779,6 +785,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     }
 
     @Override
+    @Deprecated
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
         if (delegate != null && !pathIsInVfs(dir)) {
             return delegate.newDirectoryStream(dir, filter);
@@ -804,6 +811,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     }
 
     @Override
+    @Deprecated
     public Path toAbsolutePath(Path path) {
         Path result;
         if (shouldExtract(path)) {
@@ -815,6 +823,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     }
 
     @Override
+    @Deprecated
     public Path toRealPath(Path path, LinkOption... linkOptions) throws IOException {
         Path result;
         if (shouldExtract(path)) {
@@ -826,6 +835,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     }
 
     @Override
+    @Deprecated
     public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
         if (delegate != null && !pathIsInVfs(path)) {
             return delegate.readAttributes(path, attributes, options);
