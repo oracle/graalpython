@@ -55,11 +55,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectNotTypeNodeGen;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectTpDictNodeGen;
-import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -71,10 +67,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -162,19 +154,13 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     }
 
     // foreign object or primitive
-    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)"})
     @InliningCutoff
-    protected static Object readForeign(Object object, TruffleString key,
-                    @Bind("this") Node inliningTarget,
-                    @Cached IsForeignObjectNode isForeignObjectNode,
-                    @Cached ReadAttributeFromForeign read) {
-        if (isForeignObjectNode.execute(inliningTarget, object)) {
-            // there's an implicit condition profile from the isForeignObjectNode active
-            // specializations
-            return read.execute(object, key);
-        } else {
-            return PNone.NO_VALUE;
-        }
+    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)"})
+    protected static Object readForeignOrPrimitive(Object object, TruffleString key) {
+        // Foreign members are tried after the regular attribute lookup, see
+        // ForeignObjectBuiltins.GetAttributeNode. If we looked them up here
+        // they would get precedence over attributes in the MRO.
+        return PNone.NO_VALUE;
     }
 
     // native objects. We distinguish reading at the objects dictoffset or the tp_dict
@@ -184,7 +170,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 64 -> 47
     protected abstract static class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
-        @Specialization(insertBefore = "readForeign")
+        @Specialization(insertBefore = "readForeignOrPrimitive")
         protected static Object readNativeObject(PythonAbstractNativeObject object, TruffleString key,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached GetDictIfExistsNode getDict,
@@ -196,7 +182,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 68 -> 51
     protected abstract static class ReadAttributeFromObjectTpDictNode extends ReadAttributeFromObjectNode {
-        @Specialization(insertBefore = "readForeign")
+        @Specialization(insertBefore = "readForeignOrPrimitive")
         protected static Object readNativeClass(PythonAbstractNativeObject object, TruffleString key,
                         @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode getNativeDict,
@@ -215,25 +201,4 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
         return PNone.NO_VALUE;
     }
 
-    @ImportStatic(PythonOptions.class)
-    @GenerateUncached
-    @GenerateInline(false) // footprint reduction 32 -> 13
-    protected abstract static class ReadAttributeFromForeign extends PNodeWithContext {
-        public abstract Object execute(Object object, Object key);
-
-        @Specialization
-        static Object read(Object object, Object key,
-                        @Cached CastToJavaStringNode castNode,
-                        @Cached PForeignToPTypeNode fromForeign,
-                        @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read) {
-            try {
-                String member = castNode.execute(key);
-                if (read.isMemberReadable(object, member)) {
-                    return fromForeign.executeConvert(read.readMember(object, member));
-                }
-            } catch (CannotCastException | UnknownIdentifierException | UnsupportedMessageException ignored) {
-            }
-            return PNone.NO_VALUE;
-        }
-    }
 }

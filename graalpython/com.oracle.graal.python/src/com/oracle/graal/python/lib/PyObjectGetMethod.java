@@ -42,6 +42,7 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -61,8 +62,10 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.ForeignMethod;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -212,14 +215,20 @@ public abstract class PyObjectGetMethod extends Node {
     @InliningCutoff
     static Object getForeignMethod(VirtualFrame frame, Node inliningTarget, Object receiver, TruffleString name,
                     @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
+                    @Exclusive @Cached PyObjectGetAttr getAttr,
+                    @Cached BuiltinClassProfiles.IsBuiltinObjectProfile isAttrError,
                     @Cached(inline = false) TruffleString.ToJavaStringNode toJavaString,
-                    @CachedLibrary("receiver") InteropLibrary lib,
-                    @Exclusive @Cached PyObjectGetAttr getAttr) {
-        String jName = toJavaString.execute(name);
-        if (lib.isMemberInvocable(receiver, jName)) {
-            return new BoundDescriptor(new ForeignMethod(receiver, jName));
-        } else {
-            return new BoundDescriptor(getAttr.execute(frame, inliningTarget, receiver, name));
+                    @CachedLibrary("receiver") InteropLibrary lib) {
+        try {
+            return getGenericAttr(frame, inliningTarget, receiver, name, getAttr);
+        } catch (PException e) {
+            e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, isAttrError);
+            String jName = toJavaString.execute(name);
+            if (lib.isMemberInvocable(receiver, jName)) {
+                return new BoundDescriptor(new ForeignMethod(receiver, jName));
+            } else {
+                throw e;
+            }
         }
     }
 

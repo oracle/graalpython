@@ -6,6 +6,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 ## Version 24.2.0
 * Updated developer metadata of Maven artifacts.
 * Added gradle plugin for polyglot embedding of Python packages into Java.
+* When calling a method on a foreign object in Python code, Python methods are now prioritized over foreign members.
 
 ## Version 24.1.0
 * GraalPy is now considered stable for pure Python workloads. While many workloads involving native extension modules work, we continue to consider them experimental. You can use the command-line option `--python.WarnExperimentalFeatures` to enable warnings for such modules at runtime. In Java embeddings the warnings are enabled by default and you can suppress them by setting the context option 'python.WarnExperimentalFeatures' to 'false'.
