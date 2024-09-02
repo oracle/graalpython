@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsSubClassNode;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.ExitNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.ExcInfoNode;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsFactory.ExcInfoNodeFactory;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
@@ -444,11 +445,15 @@ public final class PythonCextErrBuiltins {
 
     @CApiBuiltin(ret = Void, args = {Int}, call = Direct)
     abstract static class PyErr_PrintEx extends CApiUnaryBuiltinNode {
+        static ExcInfoNode createExcInfoNode() {
+            return ExcInfoNodeFactory.create(null);
+        }
+
         @TruffleBoundary
         @Specialization
         static Object raise(int set_sys_last_vars,
                         @Cached IsInstanceNode isInstanceNode,
-                        @Cached ExcInfoNode excInfoNode,
+                        @Cached(neverDefault = true, value = "createExcInfoNode()") ExcInfoNode excInfoNode,
                         @Cached PyErr_Restore restoreNode,
                         @Cached PyFile_WriteObject writeFileNode,
                         @Cached ExitNode exitNode,

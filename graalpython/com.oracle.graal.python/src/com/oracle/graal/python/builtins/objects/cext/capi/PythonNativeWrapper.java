@@ -119,11 +119,11 @@ public abstract class PythonNativeWrapper implements TruffleObject {
      * transition code will consider that and eagerly return the pointer object. If {@code true} is
      * returned, the wrapper must also implement {@link #getReplacement(InteropLibrary)} which
      * returns the pointer object. Furthermore, wrappers must use
-     * {@link #registerReplacement(Object, InteropLibrary)} to register the allocated native memory
-     * in order that the native pointer can be resolved to the managed wrapper in the
+     * {@link #registerReplacement(Object, boolean, InteropLibrary)} to register the allocated
+     * native memory in order that the native pointer can be resolved to the managed wrapper in the
      * <it>native-to-Python</it> transition.
      * </p>
-     * 
+     *
      * @return {@code true} if the wrapper should be materialized eagerly, {@code false} otherwise.
      */
     public final boolean isReplacingWrapper() {

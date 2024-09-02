@@ -152,7 +152,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.GetFrameNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.SetDlopenFlagsClinicProviderGen;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsFactory.ExcInfoNodeFactory;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltins;
 import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
@@ -856,12 +855,6 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exceptionObject), exceptionObject, traceback});
             }
         }
-
-        @NeverDefault
-        public static ExcInfoNode create() {
-            return ExcInfoNodeFactory.create(null);
-        }
-
     }
 
     // ATTENTION: this is intentionally a PythonBuiltinNode and not PythonUnaryBuiltinNode,

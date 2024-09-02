@@ -235,7 +235,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
          *
          * @param inliningTarget The inlining target.
          * @param callableOrName This object can either be the function/method object or just a name
-         *            ({@link TruffleString)}. It is primarily used to create error messages. It is
+         *            ({@link TruffleString}). It is primarily used to create error messages. It is
          *            also used to check if the function
          * @param userArguments The positional arguments as provided by the caller (must not be
          *            {@code null} but may be empty).
