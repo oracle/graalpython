@@ -1101,8 +1101,9 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile isAttrError,
                         @Cached ForeignGetattrNode foreignGetattrNode) {
             try {
-                // We want the default Python way __getattribute__, but fallback to reading through
-                // interop library in what would be __getattr__
+                // We want the default Python attribute lookup first and try foreign members last.
+                // Because method calls in a Python source should prioritize Python methods over
+                // foreign methods.
                 return objectGetattrNode.execute(frame, self, name);
             } catch (PException e) {
                 e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, isAttrError);
