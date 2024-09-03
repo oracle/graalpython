@@ -108,12 +108,12 @@ suite = {
             ],
             "digest": "sha512:16920fd41f398696c563417049472c0d81abb2d293ecb45bbbe97c12651669833e34eac238e2e4a6f8761ea58fb39806425d2741e88e8c3097fe2b5457ebf488",
         },
-        "XZ-5.2.6": {
+        "XZ-5.6.2": {
             "urls": [
-                "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/xz-5.2.6.tar.gz",
+                "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/xz-5.6.2.tar.gz",
             ],
             "packedResource": True,
-            "digest": "sha512:090958dd6c202c989746686094c86707ad4ae835026640080fc0a9d0fad699821b7d5cb3a67e6700661a0938818ba153662366f89ab8ec47e0bae4a3fe9b1961",
+            "digest": "sha512:c32c32c95e3541b906e0284e66a953ace677e0ce6af2084e7b122600047bf7542c1b0fabb5909b19ff79fba6def530be674df1c675b22a47a8d57f3f0b736a82",
         },
         "BOUNCYCASTLE-PROVIDER": {
             "digest": "sha512:fb10c3c089921c8173ad285329f730e0e78de175d1b50b9bdd79c6a85a265af9b3331caa0c1ed57e5f47047319ce3b0f3bb5def0a3db9cccf2755cc95e145e52",
@@ -636,10 +636,10 @@ suite = {
                 "bin/<lib:lzmasupport>",
             ],
             "cmakeConfig": {
-                "XZ_SRC": "<path:XZ-5.2.6>",
+                "XZ_SRC": "<path:XZ-5.6.2>",
                 "XZ_VERSION_MAJOR": "5",
-                "XZ_VERSION_MINOR": "2",
-                "XZ_VERSION_PATCH": "6",
+                "XZ_VERSION_MINOR": "6",
+                "XZ_VERSION_PATCH": "2",
             },
             "os_arch": {
                 "windows": {
@@ -654,7 +654,7 @@ suite = {
                 },
             },
             "buildDependencies": [
-                "XZ-5.2.6",
+                "XZ-5.6.2",
             ],
         },
 
