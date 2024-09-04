@@ -18,16 +18,15 @@ Other build systems (Ant, Make, CMake, ...) can also be used with a bit more man
 
 GraalPy can generate a Maven project that embeds Python packages into a Java application using [Maven artefacts](https://mvnrepository.com/artifact/org.graalvm.python).
 
-
 1. Since version 24.0, the GraalPy project publishes a Maven archetype to generate a starter project:
    ```bash
    mvn archetype:generate \
      -DarchetypeGroupId=org.graalvm.python \
      -DarchetypeArtifactId=graalpy-archetype-polyglot-app \
-     -DarchetypeVersion=24.0.0
+     -DarchetypeVersion=24.2.0
    ```
 
-2. Build a native executable using the [GraalVM Native Image](https://www.graalvm.org/latest/reference-manual/native-image/) plugin that was added for you automatically:
+2. Build a native executable using the [ GraalVM Native Image "tool"](https://www.graalvm.org/latest/reference-manual/native-image/) plugin that was added for you automatically:
     ```bash
     mvn -Pnative package
     ```
@@ -38,9 +37,10 @@ GraalPy can generate a Maven project that embeds Python packages into a Java app
     ```
     The application prints "hello java" to the console.
 
-The project uses the [GraalVM SDK Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) with additional features to manage Python virtual environments and integrate Python package dependencies with a Maven workflow.
+The project uses the [GraalVM Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) with additional features to manage Python virtual environments and integrate Python package dependencies with a Maven workflow.
 The Java code and the _pom.xml_ file are heavily documented and the generated code describes available features.
-(If you do not wish to use Maven, the archetype Java code also provides guidance to create a custom embedding.)
+
+See also [Embedding Build Tools](Embedding-Build-Tools.md#graalpy-maven-plugin) for more information about the GraalPy Maven Plugin.
 
 ### Creating Cross-platform JARs with Native Python Packages
 
@@ -67,7 +67,7 @@ In order to distribute the resulting application for other systems, follow these
 
 ## Gradle
 
-1. Create a Java application with Gradle using the command below and follow the prompts (select a build script language, select a test framework, and so on):
+1. Create a Java application with Gradle using the command below and follow the prompts (select the Groovy build script language, select a test framework, and so on):
     ```bash
     gradle init --type java-application \
                 --project-name interop  \
@@ -88,34 +88,14 @@ In order to distribute the resulting application for other systems, follow these
     ```
 
 2. Open your project configuration file, _app/build.gradle_, and modify it as follows. 
-    - Include the GraalPy support and the [GraalVM SDK Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) in the `dependencies` section:
+    - Include the GraalPy support and the [GraalVM Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) in the `dependencies` section:
 
         ```
-        implementation("org.graalvm.polyglot:polyglot:24.0.0")
-        implementation("org.graalvm.polyglot:python:24.0.0")
+        implementation("org.graalvm.polyglot:polyglot:24.2.0")
+        implementation("org.graalvm.polyglot:python:24.2.0")
         ```
 
-    - We recommend you use the Java modules build. Add the appropriate plugin to the `plugins` section:
-        ```
-        id("org.javamodularity.moduleplugin") version "1.8.12"
-        ```
-
-    - To run the application as a module rather than from the classpath, edit the `application` section to look like this:
-        ```
-        application {
-            mainClass.set("interop.App")
-            mainModule.set("interop")
-        }
-        ```
-
-3. Create a new file named _app/src/main/java/module-info.java_ with the following contents:
-    ```java
-    module interop {
-        requires org.graalvm.polyglot;
-    }
-    ```
-
-4. Finally, replace the code in the file named _App.java_ as follows for a small Python embedding:
+3. Finally, replace the code in the file named _App.java_ as follows for a small Python embedding:
     ```java
     package interop;
 
@@ -130,13 +110,60 @@ In order to distribute the resulting application for other systems, follow these
     }
     ```
 
-5. Run the application with Gradle:
+4. Run the application with Gradle:
     ```bash
     ./gradlew run
     ```
     The application prints "Hello Python!" to the console.
 
 > Note: The performance of the GraalPy runtime depends on the JDK in which you embed it. For more information, see [Runtime Optimization Support](https://www.graalvm.org/latest/reference-manual/embed-languages/#runtime-optimization-support).
+
+5. Optionally, you can also use a third-party Python package:
+
+   5.1. In _app/build.gradle_:
+   - add the graalpy-gradle-plugin to the `plugins` section:
+   ```
+   id "org.graalvm.python" version "24.2.0"
+   ```
+
+   - configure the GraalPy Gradle plugin:  
+   ```
+   graalPy { 
+      packages = ["termcolor==2.2"]
+   }
+   ```
+   
+   5.2, In _settings.gradle_, add the following `pluginManagement` configuration.
+   ```
+   pluginManagement {
+      repositories {
+         gradlePluginPortal()        
+      }
+   }
+   ```
+
+   5.3. Update the file named _App.java_ as follows:
+      ```java
+      package interop;
+   
+      import org.graalvm.polyglot.*;
+      import org.graalvm.python.embedding.utils.GraalPyResources;
+   
+      class App {
+      ...
+      public static void main(String[] args) {
+          try (Context context = GraalPyResources.createContext()) {
+              String src = """
+              from termcolor import colored
+              colored_text = colored("hello java", "red", attrs=["reverse", "blink"])
+              print(colored_text)
+              """;
+              context.eval("python", src);
+          }
+      }
+      ```
+   
+See also [Embedding Build Tools](Embedding-Build-Tools.md) for more information about the GraalPy Gradle Plugin.
 
 ## Ant, CMake, Makefile or Other Build Systems Without Direct Support for Maven Dependencies
 
@@ -160,13 +187,13 @@ GraalPy comes with a tool to obtain the required JAR files from Maven.
     In a POSIX shell:
     ```bash
     export GRAALPY_HOME=$(graalpy -c 'print(__graalpython__.home)')
-    "${GRAALPY_HOME}/libexec/graalpy-polyglot-get" -a python -o lib -v "24.0.0"
+    "${GRAALPY_HOME}/libexec/graalpy-polyglot-get" -a python -o lib -v "24.2.0"
     ```
 
     In PowerShell:
     ```
     $GRAALPY_HOME = graalpy -c "print(__graalpython__.home)"
-    & "$GRAALPY_HOME/libexec/graalpy-polyglot-get" -a python -o lib -v "24.0.0"
+    & "$GRAALPY_HOME/libexec/graalpy-polyglot-get" -a python -o lib -v "24.2.0"
     ```
 
     These commands download all GraalPy dependencies into the _lib_ directory.
