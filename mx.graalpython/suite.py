@@ -116,22 +116,22 @@ suite = {
             "digest": "sha512:090958dd6c202c989746686094c86707ad4ae835026640080fc0a9d0fad699821b7d5cb3a67e6700661a0938818ba153662366f89ab8ec47e0bae4a3fe9b1961",
         },
         "BOUNCYCASTLE-PROVIDER": {
-            "digest": "sha512:dbc5b525d805823b53dbaded11547155a14f795212ce6fe1e93d6da431081ea9480718ea2fc17dc7906f8489aadb68e781afd1e771d26f9f8a09b21552bb165c",
-            "sourceDigest": "sha512:4ce8b88e26af98c3cb8a3691ace366e960e36a8225d14685447b4aa9838b92334bdb63f8ba4baf651d28c8e063e21d0cbca8f2fcf8eecd003362ae62b6c87dbd",
+            "digest": "sha512:fb10c3c089921c8173ad285329f730e0e78de175d1b50b9bdd79c6a85a265af9b3331caa0c1ed57e5f47047319ce3b0f3bb5def0a3db9cccf2755cc95e145e52",
+            "sourceDigest": "sha512:7b06374b75040a1dba9419e17be29a155f01b14961521adcb8e980397b6ac7e2de55958e74ad41ba94766c4e992935abbd94fb964dbf806445a63a7346c0ae2e",
             "maven": {
               "groupId": "org.bouncycastle",
               "artifactId": "bcprov-jdk18on",
-              "version": "1.76",
+              "version": "1.78.1",
             },
             "moduleName": "org.bouncycastle.provider",
         },
         "BOUNCYCASTLE-PKIX": {
-            "digest": "sha512:b924374168e25f21ab7f6dd4f6755e55a401cbbbaa0d6f17a0c9bf59e61dc42750b200c494c413f6f8c27fc16d9312f51fc15c979e4298916f5bd0c329cbbffa",
-            "sourceDigest": "sha512:6945aedc041f9282ee3569aef46c6df8940643e5a66236c5e95fafdc4dead4b94d3d64f32750ce2f131b4fdd398aacd200968103fc3e4d22eb2dc171aedb48dd",
+            "digest": "sha512:d71a45844a7946b6a70315254e82a335d2df5e402b2d5a3b496fa69b355184338011b49c5f1c76026764a76f62f2bc140c25db2881bca91dde9677a25c6d587b",
+            "sourceDigest": "sha512:8508e9b26c60cc2fd3219d8ab0d3928891ecc42926e7c862c0fbf9940a4bcffe35c4a76c3934b33ed4311817dbf3b0b50068482f7c5f550261a50cc97879923a",
             "maven": {
                 "groupId": "org.bouncycastle",
                 "artifactId": "bcpkix-jdk18on",
-                "version": "1.76",
+                "version": "1.78.1",
             },
             "moduleName": "org.bouncycastle.pkix",
         },
