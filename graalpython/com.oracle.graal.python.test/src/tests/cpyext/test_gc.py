@@ -510,10 +510,10 @@ class TestGCRefCycles:
         assert_is_alive(ID_OBJ14)
         assert_is_strong(htid_l2)
         assert_is_strong(htid_l3)
-        assert_is_weak(htid_l)
-        assert_is_weak(htid_l1)
-        assert_is_weak(htid_l4)
-        assert_is_weak(htid_d0)
+        assert_is_strong(htid_l)
+        assert_is_strong(htid_l1)
+        assert_is_strong(htid_l4)
+        assert_is_strong(htid_d0)
 
         rescued_obj4 = l1[0]
         del l1
@@ -561,8 +561,8 @@ class TestGCRefCycles:
         assert_is_freed(ID_OBJ5)
         assert_is_freed(ID_OBJ12)
         assert_is_freed(ID_OBJ13)
-        assert_is_weak(htid_l2)
-        assert_is_weak(htid_l3)
+        assert_is_strong(htid_l2)
+        assert_is_strong(htid_l3)
 
 
     @skipIf(GRAALPY and not GRAALPY_NATIVE, "Python GC only used in native mode")
@@ -662,8 +662,8 @@ class TestGCRefCycles:
         self._trigger_gc()
         assert_is_freed(0)
         assert_is_freed(1)
-        assert_is_weak(htid_l0)
-        assert_is_weak(htid_l1)
+        assert_is_strong(htid_l0)
+        assert_is_strong(htid_l1)
 
     def test_module_globals(self):
         self._trigger_gc()
@@ -787,7 +787,7 @@ class TestGCRefCycles:
                             PyObject *list_c = PyTuple_GET_ITEM(__pyx_args, 0);
                             Py_INCREF(list_c);
                             Py_DECREF(((struct struct_GC_Test_C *)self)->_test_list_c);
-                            printf("list_c: %p\\n", list_c);
+                            // printf("list_c: %p\\n", list_c);
                             ((struct struct_GC_Test_C *)self)->_test_list_c = list_c;
                             return 0;
                         }
