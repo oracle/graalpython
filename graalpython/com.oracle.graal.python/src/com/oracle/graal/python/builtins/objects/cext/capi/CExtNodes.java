@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArra
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ClearCurrentExceptionNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
@@ -1946,6 +1947,7 @@ public abstract class CExtNodes {
                         @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached(inline = false) FromCharPointerNode fromCharPointerNode,
                         @Cached(inline = false) PythonObjectFactory factory,
+                        @Cached EnsureExecutableNode ensureCallableNode,
                         @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttributeToPythonObjectNode) {
             Object methodNamePtr = readPointerNode.readStructArrayElement(methodDef, element, PyMethodDef__ml_name);
@@ -1966,7 +1968,7 @@ public abstract class CExtNodes {
             // TODO(fa) support static and class methods
             PExternalFunctionWrapper sig = PExternalFunctionWrapper.fromMethodFlags(flags);
             RootCallTarget callTarget = PExternalFunctionWrapper.getOrCreateCallTarget(sig, PythonLanguage.get(factory), methodName, true, CExtContext.isMethStatic(flags));
-            mlMethObj = CExtContext.ensureExecutable(mlMethObj, sig);
+            mlMethObj = ensureCallableNode.execute(inliningTarget, mlMethObj, sig);
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
             PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
             writeHiddenAttrNode.execute(inliningTarget, function, METHOD_DEF_PTR, methodDef);

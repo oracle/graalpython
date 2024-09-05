@@ -86,7 +86,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.Setattr
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeargfuncSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -700,7 +700,7 @@ public record TpSlots(TpSlot nb_bool, //
             }
             // There is no mapping from this pointer to existing TpSlot, we create a new
             // TpSlotNative wrapping the executable
-            Object executable = CExtContext.ensureExecutable(field, def.nativeSignature);
+            Object executable = EnsureExecutableNode.executeUncached(field, def.nativeSignature);
             builder.set(def, TpSlotNative.createCExtSlot(executable));
         }
         return builder.build();

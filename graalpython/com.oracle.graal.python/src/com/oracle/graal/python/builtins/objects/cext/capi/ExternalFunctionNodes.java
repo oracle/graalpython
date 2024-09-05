@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ClearCurrentExceptionNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
@@ -694,7 +695,7 @@ public abstract class ExternalFunctionNodes {
                 }
 
                 // ensure that 'callable' is executable via InteropLibrary
-                Object boundCallable = CExtContext.ensureExecutable(callable, sig);
+                Object boundCallable = EnsureExecutableNode.executeUncached(callable, sig);
                 kwDefaults = ExternalFunctionNodes.createKwDefaults(boundCallable);
                 slot = TpSlotNative.createCExtSlot(boundCallable);
             }

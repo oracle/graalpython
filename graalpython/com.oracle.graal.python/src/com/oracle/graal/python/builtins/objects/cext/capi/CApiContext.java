@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -604,7 +605,7 @@ public final class CApiContext extends CExtContext {
         String name = symbol.getName();
         try {
             Object nativeSymbol = InteropLibrary.getUncached().readMember(PythonContext.get(null).getCApiContext().getLLVMLibrary(), name);
-            nativeSymbol = CExtContext.ensureExecutable(nativeSymbol, symbol);
+            nativeSymbol = EnsureExecutableNode.executeUncached(nativeSymbol, symbol);
             VarHandle.storeStoreFence();
             return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
         } catch (UnsupportedMessageException | UnknownIdentifierException e) {
