@@ -98,6 +98,7 @@
 #define PY_TRUFFLE_DEBUG_CAPI 0x30
 
 typedef struct mmap_object mmap_object;
+typedef struct _gc_runtime_state GCState; // originally in 'gcmodule.c'
 
 /* Private types are defined here because we need to declare the type cast. */
 

@@ -63,6 +63,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Pair;
 import org.graalvm.nativeimage.ImageInfo;
@@ -94,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
@@ -197,6 +199,12 @@ public final class CApiContext extends CExtContext {
      * is actually a native mirror of {@link #primitiveNativeWrapperCache}.
      */
     private Object nativeSmallIntsArray;
+
+    /**
+     * Pointer to the native {@code GCState GC state}. This corresponds to CPython's
+     * {@code PyInterpreterState.gc}.
+     */
+    private Object gcState;
 
     /** Same as {@code import.c: extensions} but we don't keep a PDict; just a bare Java HashMap. */
     private final HashMap<Pair<TruffleString, TruffleString>, PythonModule> extensions = new HashMap<>(4);
@@ -522,6 +530,28 @@ public final class CApiContext extends CExtContext {
             }
         }
         return true;
+    }
+
+    /**
+     * Returns or allocates (on demand) the {@code GCState}.
+     */
+    Object getOrCreateGCState() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (gcState == null) {
+            gcState = CStructAccess.AllocateNode.allocUncached(CStructs.GCState);
+        }
+        return gcState;
+    }
+
+    /**
+     * Deallocates the native {@code GCState} (pointer {@link #gcState}).
+     */
+    private void freeGCState() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (gcState != null) {
+            FreeNode.executeUncached(gcState);
+            gcState = null;
+        }
     }
 
     public Object getModuleByIndex(int i) {
@@ -895,15 +925,22 @@ public final class CApiContext extends CExtContext {
     public void exitCApiContext() {
         CompilerAsserts.neverPartOfCompilation();
         /*
-         * Polling the native reference queue is the only task we can do here because deallocating
-         * objects may run arbitrary guest code that can again call into the interpreter.
-         */
-        CApiTransitions.pollReferenceQueue();
-        /*
          * Deallocating native storages and objects may run arbitrary guest code. So, we need to
          * ensure that the GIL is held.
          */
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
+            /*
+             * Polling the native reference queue is the only task we can do here because
+             * deallocating objects may run arbitrary guest code that can again call into the
+             * interpreter.
+             */
+            CApiTransitions.pollReferenceQueue();
+            PythonThreadState threadState = getContext().getThreadState(getContext().getLanguage());
+            Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
+            if (nativeThreadState != null) {
+                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_GC_COLLECT_NO_FAIL, nativeThreadState);
+                CApiTransitions.pollReferenceQueue();
+            }
             CApiTransitions.deallocateNativeWeakRefs(getContext());
         }
     }
@@ -954,6 +991,7 @@ public final class CApiContext extends CExtContext {
             }
         }
         pyCFunctionWrappers.clear();
+        freeGCState();
         /*
          * If the static symbol cache is not null, then it is guaranteed that this context instance
          * was the exclusive user of it. We can now reset the state such that other contexts created

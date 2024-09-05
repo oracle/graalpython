@@ -37,11 +37,12 @@
 #endif // GraalPy change
 #include "pycore_object.h"
 #include "pycore_pyerrors.h"
-#if 0 // GraalPy change
 #include "pycore_pystate.h"     // _PyThreadState_GET()
 #include "pydtrace.h"
 
+#if 0 // GraalPy change
 typedef struct _gc_runtime_state GCState;
+#endif // GraalPy change
 
 /*[clinic input]
 module gc
@@ -137,11 +138,20 @@ gc_decref(PyGC_Head *g)
 #define GEN_HEAD(gcstate, n) (&(gcstate)->generations[n].head)
 
 
+// GraalPy change
+static inline GCState *
+graalpy_get_gc_state(PyThreadState *tstate)
+{
+    return tstate->gc;
+}
+
+
 static GCState *
 get_gc_state(void)
 {
-    PyInterpreterState *interp = _PyInterpreterState_GET();
-    return &interp->gc;
+    // GraalPy change: different implementation
+    PyThreadState *tstate = _PyThreadState_GET();
+    return graalpy_get_gc_state(tstate);
 }
 
 
@@ -165,6 +175,7 @@ _PyGC_InitState(GCState *gcstate)
 }
 
 
+#if 0 // GraalPy change
 PyStatus
 _PyGC_Init(PyInterpreterState *interp)
 {
@@ -182,6 +193,7 @@ _PyGC_Init(PyInterpreterState *interp)
 
     return _PyStatus_OK();
 }
+#endif // GraalPy change
 
 
 /*
@@ -1197,7 +1209,7 @@ gc_collect_main(PyThreadState *tstate, int generation,
     PyGC_Head finalizers;  /* objects with, & reachable from, __del__ */
     PyGC_Head *gc;
     _PyTime_t t1 = 0;   /* initialize to prevent a compiler warning */
-    GCState *gcstate = &tstate->interp->gc;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
 
     // gc_collect_main() must not be called before _PyGC_Init
     // or after _PyGC_Fini()
@@ -1363,7 +1375,7 @@ invoke_gc_callback(PyThreadState *tstate, const char *phase,
     assert(!_PyErr_Occurred(tstate));
 
     /* we may get called very early */
-    GCState *gcstate = &tstate->interp->gc;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
     if (gcstate->callbacks == NULL) {
         return;
     }
@@ -1415,7 +1427,7 @@ gc_collect_with_callback(PyThreadState *tstate, int generation)
 static Py_ssize_t
 gc_collect_generations(PyThreadState *tstate)
 {
-    GCState *gcstate = &tstate->interp->gc;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
     /* Find the oldest generation (highest numbered) where the count
      * exceeds the threshold.  Objects in the that generation and
      * generations younger than it will be collected. */
@@ -1468,6 +1480,7 @@ gc_collect_generations(PyThreadState *tstate)
     return n;
 }
 
+#if 0 // GraalPy change
 #include "clinic/gcmodule.c.h"
 
 /*[clinic input]
@@ -2045,6 +2058,7 @@ PyInit_gc(void)
 {
     return PyModuleDef_Init(&gcmodule);
 }
+#endif // GraalPy change
 
 /* C API for controlling the state of the garbage collector */
 int
@@ -2077,7 +2091,7 @@ Py_ssize_t
 PyGC_Collect(void)
 {
     PyThreadState *tstate = _PyThreadState_GET();
-    GCState *gcstate = &tstate->interp->gc;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
 
     if (!gcstate->enabled) {
         return 0;
@@ -2109,7 +2123,7 @@ _PyGC_CollectNoFail(PyThreadState *tstate)
        during interpreter shutdown (and then never finish it).
        See http://bugs.python.org/issue8713#msg195178 for an example.
        */
-    GCState *gcstate = &tstate->interp->gc;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
     if (gcstate->collecting) {
         return 0;
     }
@@ -2121,6 +2135,7 @@ _PyGC_CollectNoFail(PyThreadState *tstate)
     return n;
 }
 
+#if 0 // GraalPy change
 void
 _PyGC_DumpShutdownStats(PyInterpreterState *interp)
 {
@@ -2157,6 +2172,7 @@ _PyGC_DumpShutdownStats(PyInterpreterState *interp)
         }
     }
 }
+#endif // GraalPy change
 
 
 static void
@@ -2176,6 +2192,7 @@ gc_fini_untrack(PyGC_Head *list)
 }
 
 
+#if 0 // GraalPy change
 void
 _PyGC_Fini(PyInterpreterState *interp)
 {
@@ -2195,6 +2212,7 @@ _PyGC_Fini(PyInterpreterState *interp)
         }
     }
 }
+#endif // GraalPy change
 
 /* for debugging */
 void
@@ -2216,7 +2234,6 @@ visit_validate(PyObject *op, void *parent_raw)
     return 0;
 }
 #endif
-#endif // GraalPy change
 
 
 /* extension modules might be compiled with GC support so these
@@ -2240,7 +2257,6 @@ PyObject_GC_UnTrack(void *op_raw)
     }
 }
 
-#if 0 // GraalPy change
 int
 PyObject_IS_GC(PyObject *obj)
 {
@@ -2254,7 +2270,7 @@ _PyObject_GC_Link(PyObject *op)
     assert(((uintptr_t)g & (sizeof(uintptr_t)-1)) == 0);  // g must be correctly aligned
 
     PyThreadState *tstate = _PyThreadState_GET();
-    GCState *gcstate = &tstate->interp->gc;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
     g->_gc_next = 0;
     g->_gc_prev = 0;
     gcstate->generations[0].count++; /* number of allocated GC objects */
@@ -2288,23 +2304,39 @@ gc_alloc(size_t basicsize, size_t presize)
     _PyObject_GC_Link(op);
     return op;
 }
-#endif // GraalPy change
 
 PyObject *
 _PyObject_GC_New(PyTypeObject *tp)
 {
-    // GraalPy change: different implementation
-    return _PyObject_New(tp);
+    size_t presize = _PyType_PreHeaderSize(tp);
+    PyObject *op = gc_alloc(_PyObject_SIZE(tp), presize);
+    if (op == NULL) {
+        return NULL;
+    }
+    _PyObject_Init(op, tp);
+    return op;
 }
 
 PyVarObject *
 _PyObject_GC_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
 {
-    // GraalPy change: different implementation
-    return _PyObject_NewVar(tp, nitems);
+    size_t size;
+    PyVarObject *op;
+
+    if (nitems < 0) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    size_t presize = _PyType_PreHeaderSize(tp);
+    size = _PyObject_VAR_SIZE(tp, nitems);
+    op = (PyVarObject *)gc_alloc(size, presize);
+    if (op == NULL) {
+        return NULL;
+    }
+    _PyObject_InitVar(op, tp, nitems);
+    return op;
 }
 
-#if 0 // GraalPy change
 PyVarObject *
 _PyObject_GC_Resize(PyVarObject *op, Py_ssize_t nitems)
 {
@@ -2322,17 +2354,29 @@ _PyObject_GC_Resize(PyVarObject *op, Py_ssize_t nitems)
     Py_SET_SIZE(op, nitems);
     return op;
 }
-#endif // GraalPy change
 
 void
 PyObject_GC_Del(void *op)
 {
-    // GraalPy change: different implementation
-    size_t presize = _PyType_PreHeaderSize(((PyObject *)op)->ob_type);
+    size_t presize = _PyType_PreHeaderSize(Py_TYPE(op)); // GraalPy change
+    PyGC_Head *g = AS_GC(op);
+    if (_PyObject_GC_IS_TRACKED(op)) {
+#ifdef Py_DEBUG
+        if (PyErr_WarnExplicitFormat(PyExc_ResourceWarning, "gc", 0,
+                                     "gc", NULL, "Object of type %s is not untracked before destruction",
+        ((PyObject*)op)->ob_type->tp_name)) {
+            PyErr_WriteUnraisable(NULL);
+        }
+#endif
+        gc_list_remove(g);
+    }
+    GCState *gcstate = get_gc_state();
+    if (gcstate->generations[0].count > 0) {
+        gcstate->generations[0].count--;
+    }
     PyObject_Free(((char *)op)-presize);
 }
 
-#if 0 // GraalPy change
 int
 PyObject_GC_IsTracked(PyObject* obj)
 {
@@ -2350,4 +2394,3 @@ PyObject_GC_IsFinalized(PyObject *obj)
     }
     return 0;
 }
-#endif // GraalPy change

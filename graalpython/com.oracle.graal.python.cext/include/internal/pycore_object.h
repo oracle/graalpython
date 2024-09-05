@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
-// #include "pycore_gc.h"            // _PyObject_GC_IS_TRACKED()
+#include "pycore_gc.h"            // _PyObject_GC_IS_TRACKED()
 // #include "pycore_interp.h"        // PyInterpreterState.gc
 // #include "pycore_pystate.h"       // _PyInterpreterState_GET()
 // #include "pycore_runtime.h"       // _PyRuntime
@@ -206,8 +206,9 @@ _PyObject_IS_GC(PyObject *obj)
 static inline size_t
 _PyType_PreHeaderSize(PyTypeObject *tp)
 {
-    // GraalPy change: remove CPython's GC header; also we put only one pointer for dict, we don't store it inlined
-    return _PyType_HasFeature(tp, Py_TPFLAGS_MANAGED_DICT) * sizeof(PyObject *);
+    // GraalPy change: we put only one pointer for dict, we don't store it inlined
+    return _PyType_IS_GC(tp) * sizeof(PyGC_Head) +
+        _PyType_HasFeature(tp, Py_TPFLAGS_MANAGED_DICT) *  sizeof(PyObject *);
 }
 
 void _PyObject_GC_Link(PyObject *op);

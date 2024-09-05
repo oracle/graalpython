@@ -338,6 +338,7 @@ public enum CFields {
     PyThreadState__curexc_traceback(PyObject),
     PyThreadState__dict(PyObject),
     PyThreadState__small_ints(PyObjectPtr),
+    PyThreadState__gc(Pointer),
 
     PyBaseExceptionObject__dict(PyObject),
     PyBaseExceptionObject__args(PyObject),

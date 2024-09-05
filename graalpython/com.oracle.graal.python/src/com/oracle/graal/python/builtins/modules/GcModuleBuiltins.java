@@ -70,6 +70,11 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     private static final TruffleString GENERATION = PythonUtils.tsLiteral("generation");
     private static final TruffleString COLLECTED = PythonUtils.tsLiteral("collected");
     private static final TruffleString UNCOLLECTABLE = PythonUtils.tsLiteral("uncollectable");
+    private static final int DEBUG_STATS = 1;
+    private static final int DEBUG_COLLECTABLE = 1 << 1;
+    private static final int DEBUG_UNCOLLECTABLE = 1 << 2;
+    private static final int DEBUG_SAVEALL = 1 << 5;
+    private static final int DEBUG_LEAK = DEBUG_COLLECTABLE | DEBUG_UNCOLLECTABLE | DEBUG_SAVEALL;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -78,10 +83,12 @@ public final class GcModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        addBuiltinConstant("DEBUG_LEAK", 0);
-        addBuiltinConstant("DEBUG_UNCOLLECTABLE", 0);
-        addBuiltinConstant("DEBUG_UNCOLLECTABLE", 0);
-        addBuiltinConstant(CALLBACKS, PythonObjectFactory.getUncached().createList());
+        addBuiltinConstant("DEBUG_STATS", DEBUG_STATS);
+        addBuiltinConstant("DEBUG_COLLECTABLE", DEBUG_COLLECTABLE);
+        addBuiltinConstant("DEBUG_UNCOLLECTABLE", DEBUG_UNCOLLECTABLE);
+        addBuiltinConstant("DEBUG_SAVEALL", DEBUG_SAVEALL);
+        addBuiltinConstant("DEBUG_LEAK", DEBUG_LEAK);
+        addBuiltinConstant(CALLBACKS, core.factory().createList());
         super.initialize(core);
     }
 

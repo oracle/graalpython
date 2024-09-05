@@ -43,6 +43,8 @@
 #include <time.h>
 #include <trufflenfi.h>
 
+#include "pycore_gc.h" // _PyGC_InitState
+
 #define ASSERTIONS
 
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED
@@ -286,6 +288,8 @@ static void initialize_globals() {
 #ifndef GRAALVM_PYTHON_LLVM_MANAGED
     // store the thread state into a thread local variable
     tstate_current = GraalPyTruffleThreadState_Get(&tstate_current);
+    // this needs PyThreadState; this is the earliest we can do it
+    _PyGC_InitState(tstate_current->gc);
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
     _Py_NoneStructReference = GraalPyTruffle_None();
     _Py_NotImplementedStructReference = GraalPyTruffle_NotImplemented();
