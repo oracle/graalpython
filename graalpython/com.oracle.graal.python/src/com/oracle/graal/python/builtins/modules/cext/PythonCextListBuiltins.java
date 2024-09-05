@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteB
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.XDecRefPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
@@ -331,8 +332,14 @@ public final class PythonCextListBuiltins {
 
         @Specialization
         static long doGeneric(PList self, Object outItems,
-                        @Cached CStructAccess.WritePointerNode writePointerNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
+                        @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
             SequenceStorage sequenceStorage = self.getSequenceStorage();
+            if (sequenceStorage instanceof ObjectSequenceStorage objectStorage) {
+                sequenceStorage = toNativeStorageNode.execute(inliningTarget, objectStorage, false);
+                self.setSequenceStorage(sequenceStorage);
+            }
             if (sequenceStorage instanceof NativeObjectSequenceStorage nativeStorage) {
                 writePointerNode.write(outItems, nativeStorage.getPtr());
                 return nativeStorage.length();
