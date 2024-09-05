@@ -633,29 +633,9 @@ is_referenced_from_managed(PyGC_Head *gc)
  * a Java array that is then referenced from each wrapper of native objects in
  * the reference cycle. Therefore, if a native object of the cycle is then again
  * used in managed code, it will keep all objects of the cycle alive.
+ * 
+ * see `GraalPyTruffleObject_ReplicateNativeReferences`
  */
-#if 0
-static void
-break_cycles_with_managed_objects(PyGC_Head *young)
-{
-    // previous elem in the young list, used for restore gc_prev.
-    PyGC_Head *gc = GC_NEXT(young);
-
-    /* Invariant:  all objects that are part of a reference cycle have either
-     * 'gc_refs == 0' if it is a native object or 'gc_refs == MANAGED_REFCNT'
-     * if it is managed object.
-     */
-    while (gc != young) {
-        PyObject *op = FROM_GC(gc);
-        if (is_managed(op) && gc_get_refs(gc) == MANAGED_REFCNT
-                && Py_REFCNT(op) > MANAGED_REFCNT) {
-            traverseproc traverse = Py_TYPE(op)->tp_traverse;
-            collect_cycle_objects(op);
-        }
-        gc = (PyGC_Head*)UNTAG(gc)->_gc_next;
-    }
-}
-#endif
 
 /* GraalPy change: additions end */
 
