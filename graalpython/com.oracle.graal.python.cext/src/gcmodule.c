@@ -771,7 +771,7 @@ visit_reachable(PyObject *op, PyGC_Head *reachable)
         gc_list_append(gc, reachable);
         gc_set_refs(gc, gc_refs_reset);
     }
-    else if (gc_refs == 0) {
+    else if (gc_refs == 0 || (gc_refs == MANAGED_REFCNT && is_managed(gc))) {
         /* This is in move_unreachable's 'young' list, but
          * the traversal hasn't yet gotten to it.  All
          * we need to do is tell move_unreachable that it's
@@ -881,7 +881,7 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
                 assert (PyTruffle_PythonGC());
                 /* Move gc to weak_candidates *AND* set NEXT_MASK_UNREACHABLE.
                  * However, since we clear PREV_MASK_COLLECTING, it won't be
-                 * moved back to 'young' by 'vsit_reachable'.
+                 * moved back to 'young' by 'visit_reachable'.
                  */
                 // gc_list_move(gc, weak_candidates);
                 gc_list_move_with_mask_unreachable(prev, gc, weak_candidates);
