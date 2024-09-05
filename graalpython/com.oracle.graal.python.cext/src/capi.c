@@ -319,6 +319,8 @@ picklebuf_getbuf(PyPickleBufferObject *self, Py_buffer *view, int flags)
 
 static void empty_releasebuf(PyObject *self, Py_buffer *view) {}
 
+static int dummy_traverse(PyObject *self, visitproc f, void *i) {return 0;}
+
 static void initialize_bufferprocs() {
     static PyBufferProcs bytes_as_buffer = {
         (getbufferproc)bytes_buffer_getbuffer,       /* bf_getbuffer */
@@ -352,6 +354,8 @@ static void initialize_bufferprocs() {
     picklebuf_as_buffer.bf_releasebuffer = empty_releasebuf,
     PyPickleBuffer_Type.tp_as_buffer = &picklebuf_as_buffer;
     GraalPy_set_PyTypeObject_tp_as_buffer(&PyPickleBuffer_Type, &picklebuf_as_buffer);
+
+    _PyExc_Exception.tp_traverse = &dummy_traverse;
 }
 
 int is_builtin_type(PyTypeObject *tp) {
