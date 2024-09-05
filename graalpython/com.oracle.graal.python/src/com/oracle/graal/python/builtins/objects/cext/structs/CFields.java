@@ -345,6 +345,7 @@ public enum CFields {
     GCState__debug(Int),
     GCState__generations(Pointer),
     GCState__generation0(Pointer),
+    GCState__collecting(Int),
 
     GCGeneration__count(Int),
 

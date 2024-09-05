@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.PythonLanguage.CONTEXT_INSENSITIVE_SINGLETONS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.pollReferenceQueue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
@@ -713,7 +714,7 @@ public final class CApiContext extends CExtContext {
         for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
             delay += 50;
             doGc(delay);
-            CApiTransitions.pollReferenceQueue();
+            pollReferenceQueue();
             PythonContext.triggerAsyncActions(caller);
             if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
                 allocatedMemory += size;
@@ -958,12 +959,12 @@ public final class CApiContext extends CExtContext {
              * deallocating objects may run arbitrary guest code that can again call into the
              * interpreter.
              */
-            CApiTransitions.ensurePollRefQueueCleanup();
+            pollReferenceQueue();
             PythonThreadState threadState = getContext().getThreadState(getContext().getLanguage());
             Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
             if (nativeThreadState != null) {
                 PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_GC_COLLECT_NO_FAIL, nativeThreadState);
-                CApiTransitions.pollReferenceQueue();
+                pollReferenceQueue();
             }
             CApiTransitions.deallocateNativeWeakRefs(getContext());
         }

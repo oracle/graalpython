@@ -103,7 +103,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -1506,11 +1505,19 @@ public abstract class CApiTransitions {
                 int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
                 PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer, idx);
                 if (reference == null) {
+                    int collecting = readI32Node.read(pythonContext.getCApiContext().getGCState(), CFields.GCState__collecting);
+                    if (collecting == 1) {
+                        return PNone.NO_VALUE;
+                    }
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was freed: " + Long.toHexString(pointer));
                 }
                 wrapper = reference.get();
                 if (wrapper == null) {
+                    int collecting = readI32Node.read(pythonContext.getCApiContext().getGCState(), CFields.GCState__collecting);
+                    if (collecting == 1) {
+                        return PNone.NO_VALUE;
+                    }
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                 }

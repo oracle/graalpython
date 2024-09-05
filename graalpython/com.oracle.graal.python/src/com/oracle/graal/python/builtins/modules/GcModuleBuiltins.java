@@ -180,7 +180,12 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             Runtime runtime = Runtime.getRuntime();
             long freeMemory = runtime.freeMemory();
             try {
-                CApiTransitions.ensurePollRefQueueCleanup();
+                PythonUtils.forceFullGC();
+                try {
+                    Thread.sleep(15);
+                } catch (InterruptedException e) {
+                    // doesn't matter, just trying to give the GC more time
+                }
             } finally {
                 gil.acquire();
             }
