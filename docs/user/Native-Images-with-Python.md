@@ -1,5 +1,5 @@
 ---
-layout: docs-experimental
+layout: docs
 toc_group: python
 link_title: Native Java-Python Applications
 permalink: /reference-manual/python/native-applications/

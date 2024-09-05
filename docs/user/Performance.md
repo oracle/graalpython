@@ -1,5 +1,5 @@
 ---
-layout: docs-experimental
+layout: docs
 toc_group: python
 link_title: Python Performance
 permalink: /reference-manual/python/Performance/

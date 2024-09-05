@@ -1,5 +1,5 @@
 ---
-layout: docs-experimental
+layout: docs
 toc_group: python
 link_title: Embedding Permissions
 permalink: /reference-manual/python/Embedding-Permissions/
