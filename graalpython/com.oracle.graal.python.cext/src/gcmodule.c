@@ -589,6 +589,7 @@ visit_strong_reachable(PyObject *op, void *unused)
         _PyObject_GC_TRACK(op);
     }
     GraalPyTruffle_NotifyRefCount(op, Py_REFCNT(op));
+    return 0;
 }
 
 /* Performs an upcall to test if the given object is referenced from managed
