@@ -1134,7 +1134,9 @@ _PyDict_MaybeUntrack(PyObject *op)
     if (!PyDict_CheckExact(op) || !_PyObject_GC_IS_TRACKED(op))
         return;
 
-    // TODO(fa): upcall
+    // GraalPy change: do an upcall to consider all dict elements
+    if (!GraalPyTruffleDict_MaybeUntrack(op))
+        return;
 
 #if 0 // GraalPy change
     mp = (PyDictObject *) op;
@@ -3507,8 +3509,16 @@ dict_popitem_impl(PyDictObject *self)
 static int
 dict_traverse(PyObject *op, visitproc visit, void *arg)
 {
-    return GraalPyTruffleDict_Traverse(op, visit, arg);
-
+    /* In GraalPy, we must generally not traverse objects with a managed storage
+     * because if they have references to a native object, the Python GC would
+     * incorrectly decref/incref reachable objects. This is because we refer to
+     * native objects through a managed wrapper and we only add MANAGED_REFCNT
+     * when we create teh wrapper and we don't incref per reference.
+     * For example, assume this dict would reference a native object 'n' eleven
+     * times. When we create the wrapper for 'n', we would add MANAGED_REFCNT to
+     * the refcnt. During a GC, 'n' would be visited eleven times such that the
+     * refcnt could fall below 0.
+     */
 #if 0 // GraalPy change: different implementation
     PyDictObject *mp = (PyDictObject *)op;
     PyDictKeysObject *keys = mp->ma_keys;
@@ -3536,8 +3546,8 @@ dict_traverse(PyObject *op, visitproc visit, void *arg)
             }
         }
     }
-    return 0;
 #endif // GraalPy change
+    return 0;
 }
 
 static int

@@ -1188,12 +1188,19 @@ traverse_slots(PyTypeObject *type, PyObject *self, visitproc visit, void *arg)
     return 0;
 }
 
-// GraalPy change: replaced 'static' with 'PyAPI_FUNC'
+/* GraalPy change: replaced 'static' with 'PyAPI_FUNC' because we lookup the
+ * symbol in Java to use it if a type receives 'toNative'.
+ */
 PyAPI_FUNC(int)
 subtype_traverse(PyObject *self, visitproc visit, void *arg)
 {
     PyTypeObject *type, *base;
     traverseproc basetraverse;
+
+    // GraalPy change: don't traverse managed objects
+    if (points_to_py_handle_space(self)) {
+        return 0;
+    }
 
     /* Find the nearest base with a different tp_traverse,
        and traverse slots while we're at it */
@@ -1209,9 +1216,6 @@ subtype_traverse(PyObject *self, visitproc visit, void *arg)
         assert(base);
     }
 
-
-    // GraalPy change: don't do this for managed objects
-    if (!points_to_py_handle_space(self)) {
 #if 0 // GraalPy change: we don't have inlined managed dict values
         if (type->tp_flags & Py_TPFLAGS_MANAGED_DICT) {
             assert(type->tp_dictoffset);
@@ -1222,16 +1226,10 @@ subtype_traverse(PyObject *self, visitproc visit, void *arg)
         }
 #endif // GraalPy change
 
-        if (type->tp_dictoffset != base->tp_dictoffset) {
-            PyObject **dictptr = _PyObject_DictPointer(self);
-            if (dictptr && *dictptr)
-                Py_VISIT(*dictptr);
-        }
-    } else {
-        int err = GraalPyTruffleObject_VisitInstanceAttributes(self, visit, arg);
-        if (err) {
-            return err;
-        }
+    if (type->tp_dictoffset != base->tp_dictoffset) {
+        PyObject **dictptr = _PyObject_DictPointer(self);
+        if (dictptr && *dictptr)
+            Py_VISIT(*dictptr);
     }
 
     if (type->tp_flags & Py_TPFLAGS_HEAPTYPE

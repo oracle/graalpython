@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins.CFunctionNewExMethodNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TraverseDynamicObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -100,7 +99,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextModuleBuiltins {
@@ -272,12 +270,10 @@ public final class PythonCextModuleBuiltins {
                         @Cached CStructAccess.ReadI64Node readI64Node,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached EnsureExecutableNode ensureExecutableNode,
-                        @Cached InlinedBranchProfile branchProfile,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached ExternalFunctionInvokeNode externalFunctionInvokeNode,
                         @Cached(inline = false) CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode,
-                        @Cached TraverseDynamicObjectNode traverseDynamicObjectNode) {
+                        @Cached(inline = false) PythonToNativeNode toNativeNode) {
 
             /*
              * As in 'moduleobject.c: module_traverse': 'if (m->md_def && m->md_def->m_traverse &&
@@ -290,7 +286,6 @@ public final class PythonCextModuleBuiltins {
                     long mSize = readI64Node.read(mdDef, CFields.PyModuleDef__m_size);
                     Object mdState = self.getNativeModuleState();
                     if (mSize <= 0 || (mdState != null && !lib.isNull(mdState))) {
-                        branchProfile.enter(inliningTarget);
                         PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
                         Object traverseExecutable = ensureExecutableNode.execute(inliningTarget, mTraverse, PExternalFunctionWrapper.TRAVERSEPROC);
                         Object res = externalFunctionInvokeNode.call(null, inliningTarget, threadState, TIMING, T__M_TRAVERSE, traverseExecutable, toNativeNode.execute(self), visitFun, arg);
@@ -301,8 +296,7 @@ public final class PythonCextModuleBuiltins {
                     }
                 }
             }
-            Object visitExecutable = ensureExecutableNode.execute(inliningTarget, visitFun, PExternalFunctionWrapper.VISITPROC);
-            return traverseDynamicObjectNode.execute(null, inliningTarget, self, visitExecutable, arg);
+            return 0;
         }
     }
 }

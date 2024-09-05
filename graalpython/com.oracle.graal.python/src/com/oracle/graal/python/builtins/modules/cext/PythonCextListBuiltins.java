@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TraverseSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.XDecRefPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
@@ -82,8 +81,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -329,20 +326,16 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer, Pointer, Pointer}, call = Ignored)
-    abstract static class PyTruffleList_TraverseManagedOrGetItems extends CApiQuaternaryBuiltinNode {
+    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
+    abstract static class PyTruffleList_TryGetItems extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static long doGeneric(PList self, Object outItems, Object visitFun, Object arg,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CStructAccess.WritePointerNode writePointerNode,
-                        @Cached TraverseSequenceStorageNode traverseSequenceStorageNode) {
+        static long doGeneric(PList self, Object outItems,
+                        @Cached CStructAccess.WritePointerNode writePointerNode) {
             SequenceStorage sequenceStorage = self.getSequenceStorage();
             if (sequenceStorage instanceof NativeObjectSequenceStorage nativeStorage) {
                 writePointerNode.write(outItems, nativeStorage.getPtr());
                 return nativeStorage.length();
-            } else if (sequenceStorage instanceof ObjectSequenceStorage || sequenceStorage instanceof MroSequenceStorage) {
-                return traverseSequenceStorageNode.execute(inliningTarget, (BasicSequenceStorage) sequenceStorage, visitFun, arg);
             }
             return 0;
         }

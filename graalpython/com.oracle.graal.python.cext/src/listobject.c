@@ -43,12 +43,13 @@
 static int
 _list_clear(PyListObject *a)
 {
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
     int64_t i;
     PyObject **item;
 
     /* Because XDECREF can recursively invoke operations on
        this list, we make it empty first. */
-    i = GraalPyTruffleList_ClearManagedOrGetItems((PyObject *)a, &item);
+    i = GraalPyTruffleList_TryGetItems((PyObject *)a, &item);
     if (i > 0) {
         assert(item != NULL);
         while (--i >= 0) {
@@ -61,19 +62,25 @@ _list_clear(PyListObject *a)
     /* Never fails; the return value can be ignored.
        Note that there is no guarantee that the list is actually empty
        at this point, because XDECREF may have populated it again! */
+#endif
     return 0;
 }
 
 static int
 list_traverse(PyListObject *o, visitproc visit, void *arg)
 {
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
     int64_t size, i;
     PyObject **ob_item;
 
-    size = GraalPyTruffleList_TraverseManagedOrGetItems((PyObject *)o, &ob_item,
-                                                        visit, arg);
+    /* In GraalPy, we only traverse the list if it has a native storage (which
+     * is indicated by 'size > 0'). We don't traverse managed storages. For an
+     * explanation, see 'dictobject.c: dict_traverse'.
+     */
+    size = GraalPyTruffleList_TryGetItems((PyObject *)o, &ob_item);
     for (i = size; --i >= 0; )
         Py_VISIT(ob_item[i]);
+#endif
     return 0;
 }
 

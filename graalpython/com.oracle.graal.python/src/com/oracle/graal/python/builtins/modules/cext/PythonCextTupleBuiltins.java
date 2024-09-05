@@ -43,8 +43,6 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
@@ -58,7 +56,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TraverseSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
@@ -72,7 +69,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -207,20 +203,6 @@ public final class PythonCextTupleBuiltins {
 
         private static Object doGetSlice(SequenceStorage storage, Node inliningTarget, Object iLow, Object iHigh, GetItemNode getItemNode, PySliceNew sliceNode) {
             return getItemNode.execute(null, storage, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE));
-        }
-    }
-
-    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer, Pointer}, call = Ignored)
-    abstract static class PyTruffleTuple_TraverseManaged extends CApiTernaryBuiltinNode {
-
-        @Specialization
-        static long doGeneric(PTuple self, Object visitFun, Object arg,
-                        @Bind("this") Node inliningTarget,
-                        @Cached TraverseSequenceStorageNode traverseSequenceStorageNode) {
-            if (self.getSequenceStorage() instanceof BasicSequenceStorage basicSequenceStorage) {
-                return traverseSequenceStorageNode.execute(inliningTarget, basicSequenceStorage, visitFun, arg);
-            }
-            return 0;
         }
     }
 }

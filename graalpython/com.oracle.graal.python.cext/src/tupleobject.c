@@ -646,9 +646,7 @@ static int
 tupletraverse(PyTupleObject *o, visitproc visit, void *arg)
 {
     // GraalPy change: different implementation
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-    return GraalPyTruffleTuple_TraverseManaged((PyObject *)o, visit, arg);
-#else /* GRAALVM_PYTHON_LLVM_MANAGED */
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
     Py_ssize_t size, i;
     PyObject **ob_item;
 
@@ -660,19 +658,21 @@ tupletraverse(PyTupleObject *o, visitproc visit, void *arg)
         GraalPyVarObject *go = (GraalPyVarObject *)pointer_to_stub(o);
         size = go->ob_size;
         ob_item = go->ob_item;
-        if (ob_item == NULL) {
-            return GraalPyTruffleTuple_TraverseManaged((PyObject *)o,
-                    visit, arg);
-        }
     } else {
         ob_item = o->ob_item;
         size = Py_SIZE(o);
     }
 
-    for (i = size; --i >= 0; )
-        Py_VISIT(ob_item[i]);
-    return 0;
+    /* In GraalPy, we only traverse the tuple if it has a native storage (which
+     * is indicated by 'ob_item != NULL'). We don't traverse managed storages.
+     * For an explanation, see 'dictobject.c: dict_traverse'.
+     */
+    if (ob_item != NULL) {
+        for (i = size; --i >= 0; )
+            Py_VISIT(ob_item[i]);
+    }
 #endif /* GRAALVM_PYTHON_LLVM_MANAGED */
+    return 0;
 }
 
 #if 0 // GraalPy change
