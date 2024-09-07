@@ -319,8 +319,6 @@ picklebuf_getbuf(PyPickleBufferObject *self, Py_buffer *view, int flags)
 
 static void empty_releasebuf(PyObject *self, Py_buffer *view) {}
 
-static int dummy_traverse(PyObject *self, visitproc f, void *i) {return 0;}
-
 static void initialize_bufferprocs() {
     static PyBufferProcs bytes_as_buffer = {
         (getbufferproc)bytes_buffer_getbuffer,       /* bf_getbuffer */
@@ -355,7 +353,14 @@ static void initialize_bufferprocs() {
     PyPickleBuffer_Type.tp_as_buffer = &picklebuf_as_buffer;
     GraalPy_set_PyTypeObject_tp_as_buffer(&PyPickleBuffer_Type, &picklebuf_as_buffer);
 
+}
+
+
+static int dummy_traverse(PyObject *self, visitproc f, void *i) {return 0;}
+
+static void initialize_gc_types_related_slots() {
     _PyExc_Exception.tp_traverse = &dummy_traverse;
+    _PyWeakref_RefType.tp_free = &GraalPyObject_GC_Del;
 }
 
 int is_builtin_type(PyTypeObject *tp) {
@@ -899,6 +904,7 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures,
     initialize_exceptions();
     initialize_hashes();
     initialize_bufferprocs();
+    initialize_gc_types_related_slots();
     _PyFloat_InitState(NULL);
 
     // TODO: initialize during cext initialization doesn't work at the moment
