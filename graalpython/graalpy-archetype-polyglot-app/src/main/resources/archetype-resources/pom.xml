@@ -10,7 +10,7 @@
 
 #set( $symbol_dollar = '$' )
   <properties>
-    <graalpy.version>24.1.0</graalpy.version>
+    <graalpy.version>24.1.1</graalpy.version>
     <graalpy.edition>python-community</graalpy.edition>
     <native-maven-plugin.version>0.9.28</native-maven-plugin.version>
     <maven.compiler.target>17</maven.compiler.target>
