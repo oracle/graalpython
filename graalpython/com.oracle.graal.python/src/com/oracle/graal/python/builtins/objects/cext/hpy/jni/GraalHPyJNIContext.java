@@ -440,6 +440,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         initJNINativeFastPaths(nativePointer);
     }
 
+    @SuppressWarnings("restricted")
     public static void loadJNIBackend() {
         if (!(ImageInfo.inImageBuildtimeCode() || jniBackendLoaded)) {
             String pythonJNIPath;
