@@ -39,7 +39,7 @@
  * SOFTWARE.
  */
 
-package org.graalvm.python.embedding.tools.jbang;
+package org.graalvm.python.jbang;
 
 import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
 import org.graalvm.python.embedding.tools.exec.SubprocessLog;
@@ -154,18 +154,7 @@ public class JBangIntegration {
             // include python stdlib in image
             try {
                 VFSUtils.copyGraalPyHome(calculateClasspath(dependencies), home, null, null, LOG);
-                var niConfig = temporaryJar.resolve("META-INF").resolve("native-image");
-                Files.createDirectories(niConfig);
-                Files.writeString(niConfig.resolve("native-image.properties"), "Args = -H:-CopyLanguageResources");
-                Files.writeString(niConfig.resolve("resource-config.json"), """
-                                {
-                                  "resources": {
-                                    "includes": [
-                                      {"pattern": "vfs/.*"}
-                                    ]
-                                  }
-                                }
-                                """);
+                VFSUtils.writeNativeImageConfig(temporaryJar.resolve("META-INF"), "graalpy-jbang-integration");
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }

@@ -40,10 +40,7 @@
  */
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //JAVA 17+
-//DEPS org.graalvm.python:python-language:${env.GRAALPY_VERSION:24.0.0}
-//DEPS org.graalvm.python:python-resources:${env.GRAALPY_VERSION:24.0.0}
-//DEPS org.graalvm.python:python-launcher:${env.GRAALPY_VERSION:24.0.0}
-//DEPS org.graalvm.python:python-embedding:${env.GRAALPY_VERSION:24.0.0}
+//DEPS org.graalvm.python:graalpy-jbang:${env.GRAALPY_VERSION:24.2.0}
 //PIP termcolor
 
 import org.graalvm.polyglot.Context;
