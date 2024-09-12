@@ -41,17 +41,14 @@
 
 package org.graalvm.python.jbang;
 
-import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
 import org.graalvm.python.embedding.tools.exec.SubprocessLog;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -71,6 +68,7 @@ import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
 public class JBangIntegration {
     private static final String PIP = "//PIP";
     private static final String PIP_DROP = "//PIP_DROP";
+    private static final String RESOURCES_DIRECTORY = "//PYTHON_RESOURCES_DIRECTORY";
     private static final String PYTHON_LANGUAGE = "python-language";
     private static final String PYTHON_RESOURCES = "python-resources";
     private static final String PYTHON_LAUNCHER = "python-launcher";
@@ -80,6 +78,7 @@ public class JBangIntegration {
 
     private static final SubprocessLog LOG = new SubprocessLog() {
     };
+    private static final String JBANG_COORDINATES = "org.graalvm.python:graalpy-jbang:jar";
 
     /**
      *
@@ -99,29 +98,86 @@ public class JBangIntegration {
                     List<Map.Entry<String, String>> repositories,
                     List<Map.Entry<String, Path>> dependencies,
                     List<String> comments,
-                    boolean nativeImage) {
-        Path vfs = temporaryJar.resolve(VFS_ROOT);
-        Path venv = vfs.resolve(VFS_VENV);
-        Path home = vfs.resolve(VFS_HOME);
+                    boolean nativeImage) throws IOException {
 
-        try {
-            Files.createDirectories(vfs);
-        } catch (IOException e) {
-            throw new Error(e);
-        }
-
+        Path resourcesDirectory = null;
+        List<String> pkgs = new ArrayList<>();
+        boolean seenResourceDir = false;
         for (String comment : comments) {
-            if (comment.startsWith(PIP)) {
-                ensureVenv(venv, dependencies);
-                try {
-                    String[] pkgs = Arrays.stream(comment.substring(PIP.length()).trim().split(" ")).filter(s -> !s.trim().isEmpty()).toArray(String[]::new);
-                    GraalPyRunner.runPip(venv, "install", LOG, pkgs);
-                } catch (IOException | InterruptedException e) {
-                    throw new RuntimeException(e);
+            if (comment.startsWith(RESOURCES_DIRECTORY)) {
+                if (seenResourceDir) {
+                    throw new IllegalStateException("only one " + RESOURCES_DIRECTORY + " comment is allowed");
                 }
+                seenResourceDir = true;
+                String path = comment.substring(RESOURCES_DIRECTORY.length()).trim();
+                if (!path.isEmpty()) {
+                    resourcesDirectory = Path.of(path);
+                }
+            } else if (comment.startsWith(PIP)) {
+                pkgs.addAll(Arrays.stream(comment.substring(PIP.length()).trim().split(" ")).filter(s -> !s.trim().isEmpty()).collect(Collectors.toList()));
             }
         }
-        if (Files.exists(venv)) {
+        if (!pkgs.isEmpty()) {
+            log("python packages: " + pkgs);
+        }
+
+        Path vfs = null;
+        Path venv;
+        Path home;
+        if (resourcesDirectory == null) {
+            vfs = temporaryJar.resolve(VFS_ROOT);
+            Files.createDirectories(vfs);
+            venv = vfs.resolve(VFS_VENV);
+            home = vfs.resolve(VFS_HOME);
+        } else {
+            log("python resources directory: " + resourcesDirectory);
+            venv = resourcesDirectory.resolve(VFS_VENV);
+            home = resourcesDirectory.resolve(VFS_HOME);
+        }
+
+        if (resourcesDirectory != null || !pkgs.isEmpty()) {
+            handleVenv(venv, dependencies, pkgs, comments, resourcesDirectory == null);
+        }
+
+        if (nativeImage) {
+            // include python stdlib in image
+            try {
+                VFSUtils.copyGraalPyHome(calculateClasspath(dependencies), home, null, null, LOG);
+                VFSUtils.writeNativeImageConfig(temporaryJar.resolve("META-INF"), "graalpy-jbang-integration");
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        if (vfs != null) {
+            try {
+                VFSUtils.generateVFSFilesList(vfs);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return new HashMap<>();
+    }
+
+    private static Path getLauncherPath(String projectPath) {
+        return Paths.get(projectPath, LAUNCHER).toAbsolutePath();
+    }
+
+    private static void handleVenv(Path venv, List<Map.Entry<String, Path>> dependencies, List<String> pkgs, List<String> comments, boolean dropPip) throws IOException {
+        String graalPyVersion = dependencies.stream().filter((e) -> e.getKey().startsWith(JBANG_COORDINATES)).map(e -> e.getKey().substring(JBANG_COORDINATES.length() + 1)).findFirst().orElseGet(
+                        null);
+        if (graalPyVersion == null) {
+            // perhaps already checked by jbang
+            throw new IllegalStateException("could not resolve GraalPy version from provided dependencies");
+        }
+        Path venvParent = venv.getParent();
+        if (venvParent == null) {
+            // perhaps already checked by jbang
+            throw new IllegalStateException("could not resolve parent for venv path: " + venv);
+        }
+        VFSUtils.createVenv(venv, pkgs, getLauncherPath(venvParent.toString()), () -> calculateClasspath(dependencies), graalPyVersion, LOG, (txt) -> LOG.log(txt));
+
+        if (dropPip) {
             try {
                 Stream<Path> filter = Files.list(venv.resolve("lib")).filter(p -> p.getFileName().toString().startsWith("python3"));
                 // on windows, there doesn't have to be python3xxxx folder.
@@ -146,109 +202,6 @@ public class JBangIntegration {
                     }
                 }
             } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        if (nativeImage) {
-            // include python stdlib in image
-            try {
-                VFSUtils.copyGraalPyHome(calculateClasspath(dependencies), home, null, null, LOG);
-                VFSUtils.writeNativeImageConfig(temporaryJar.resolve("META-INF"), "graalpy-jbang-integration");
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        try {
-            VFSUtils.generateVFSFilesList(vfs);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return new HashMap<>();
-    }
-
-    private static Path getLauncherPath(String projectPath) {
-        return Paths.get(projectPath, LAUNCHER);
-    }
-
-    private static void generateLaunchers(List<Map.Entry<String, Path>> dependencies, String projectPath) {
-        System.out.println("Generating GraalPy launchers");
-        var launcher = getLauncherPath(projectPath);
-        if (!Files.exists(launcher)) {
-            var classpath = calculateClasspath(dependencies);
-            var java = Paths.get(System.getProperty("java.home"), "bin", "java");
-            if (!IS_WINDOWS) {
-                var script = String.format("""
-                                #!/usr/bin/env bash
-                                %s -classpath %s %s --python.Executable="$0" "$@"
-                                """,
-                                java,
-                                String.join(File.pathSeparator, classpath),
-                                "com.oracle.graal.python.shell.GraalPythonMain");
-                try {
-                    Path parent = launcher.getParent();
-                    if (parent != null) {
-                        Files.createDirectories(parent);
-                    }
-                    Files.writeString(launcher, script);
-                    var perms = Files.getPosixFilePermissions(launcher);
-                    perms.addAll(List.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.OTHERS_EXECUTE));
-                    Files.setPosixFilePermissions(launcher, perms);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            } else {
-                // on windows, generate a venv launcher
-                var script = String.format("""
-                                import os, shutil, struct, venv
-                                from pathlib import Path
-                                vl = os.path.join(venv.__path__[0], 'scripts', 'nt', 'graalpy.exe')
-                                tl = os.path.join(r'%s')
-                                os.makedirs(Path(tl).parent.absolute(), exist_ok=True)
-                                shutil.copy(vl, tl)
-                                cmd = r'%s -classpath "%s" %s'
-                                pyvenvcfg = os.path.join(os.path.dirname(tl), "pyvenv.cfg")
-                                with open(pyvenvcfg, 'w', encoding='utf-8') as f:
-                                    f.write('venvlauncher_command = ')
-                                    f.write(cmd)
-                                """,
-                                launcher,
-                                java,
-                                String.join(File.pathSeparator, classpath),
-                                "com.oracle.graal.python.shell.GraalPythonMain");
-                File tmp;
-                try {
-                    tmp = File.createTempFile("create_launcher", ".py");
-                    tmp.deleteOnExit();
-                    try (var wr = new FileWriter(tmp)) {
-                        wr.write(script);
-                    }
-                    GraalPyRunner.run(calculateClasspath(dependencies), LOG, tmp.getAbsolutePath());
-                } catch (IOException | InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-    }
-
-    private static void ensureVenv(Path venv, List<Map.Entry<String, Path>> dependencies) {
-        if (Files.exists(venv)) {
-            return;
-        }
-        Path venvDirectory = venv.toAbsolutePath();
-        Path parent = venv.getParent();
-        if (parent != null) {
-            String parentString = parent.toString();
-            generateLaunchers(dependencies, parentString);
-            try {
-                GraalPyRunner.runLauncher(getLauncherPath(parentString).toString(), LOG, "-m", "venv", venvDirectory.toString(), "--without-pip");
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            try {
-                GraalPyRunner.runVenvBin(venvDirectory, "graalpy", LOG, "-I", "-m", "ensurepip");
-            } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -283,5 +236,9 @@ public class JBangIntegration {
             classpath.add(r.toAbsolutePath().toString());
         }
         return classpath;
+    }
+
+    private static void log(String txt) {
+        LOG.log("[graalpy jbang integration] " + txt);
     }
 }
