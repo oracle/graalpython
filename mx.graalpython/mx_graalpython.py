@@ -2320,14 +2320,6 @@ def warn_about_old_hardcoded_version():
     Ensure hardcoded versions everywhere are what we expect, either matching the master version
     or one of the latest releases.
     """
-    graal_major = int(GRAAL_VERSION.split(".")[0])
-    graal_minor = int(GRAAL_VERSION.split(".")[1])
-
-    def hardcoded_ver_is_too_far_behind_master(m):
-        hardcoded_major = int(m.group(1).split(".")[0])
-        if hardcoded_major < graal_major:
-            if graal_minor > 0 or hardcoded_major < graal_minor - 1:
-                return f"Hardcoded version in `{m.group().strip()}` is too far behind {graal_major}.{graal_minor}. Update it to the latest released version."
 
     def hardcoded_ver_is_behind_major_minor(m):
         if m.group(1) != GRAAL_VERSION_MAJ_MIN:
@@ -2345,13 +2337,13 @@ def warn_about_old_hardcoded_version():
             r"^  <version>(\d+\.\d+)(?:\.\d+)*</version>" : hardcoded_ver_is_behind_major_minor,
         },
         "graalpython/graalpy-jbang/examples/hello.java": {
-            r"//DEPS org.graalvm.python:python[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_too_far_behind_master,
+            r"//DEPS org.graalvm.python:graalpy-jbang[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_behind_major_minor,
         },
         "graalpython/graalpy-jbang/templates/graalpy-template_local_repo.java.qute": {
-            r"//DEPS org.graalvm.python:python[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_too_far_behind_master,
+            r"//DEPS org.graalvm.python:graalpy-jbang[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_behind_major_minor,
         },
         "graalpython/graalpy-jbang/templates/graalpy-template.java.qute": {
-            r"//DEPS org.graalvm.python:python[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_too_far_behind_master,
+            r"//DEPS org.graalvm.python:graalpy-jbang[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_behind_major_minor,
         },
         "graalpython/graalpy-archetype-polyglot-app/src/main/resources/archetype-resources/pom.xml": {
             r'<graalpy.version>(\d+\.\d+)(?:\.\d+)*</graalpy.version>' : hardcoded_ver_is_behind_major_minor,
@@ -2363,13 +2355,17 @@ def warn_about_old_hardcoded_version():
         with open(full_path, "r", encoding="utf-8") as f:
             content = f.read()
         for pattern, test in patterns.items():
+            patternString = pattern
             pattern = re.compile(pattern, flags=re.M)
-            start = 0
-            while m := pattern.search(content, start):
-                mx.logvv(f"[{SUITE.name}] {path} with hardcoded version `{m.group()}'")
-                if msg := test(m):
-                    replacements.add((path, msg))
-                start = m.end()
+            if not pattern.search(content, 0):
+                replacements.add((path, f"Found no occurrence of pattern '${patternString}'"))
+            else:
+                start = 0
+                while m := pattern.search(content, start):
+                    mx.logvv(f"[{SUITE.name}] {path} with hardcoded version `{m.group()}'")
+                    if msg := test(m):
+                        replacements.add((path, msg))
+                    start = m.end()
     if replacements:
         mx.abort("\n".join([
             ": ".join(r) for r in replacements
