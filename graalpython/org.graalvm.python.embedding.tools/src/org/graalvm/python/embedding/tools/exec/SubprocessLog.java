@@ -47,7 +47,7 @@ public interface SubprocessLog {
     }
 
     default void subProcessErr(CharSequence err) {
-        System.out.println(err);
+        System.err.println(err);
     }
 
     default void log(CharSequence txt) {
