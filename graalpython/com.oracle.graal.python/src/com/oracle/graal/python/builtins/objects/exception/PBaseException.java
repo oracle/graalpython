@@ -247,14 +247,21 @@ public class PBaseException extends PythonObject {
             } else {
                 return typeName;
             }
-        } else if (args.getSequenceStorage().length() == 0) {
-            return typeName;
-        } else if (args.getSequenceStorage().length() == 1) {
-            SequenceStorage store = args.getSequenceStorage();
-            Object item = GetItemScalarNode.executeUncached(store, 0);
-            return typeName + ": " + item.toString();
         } else {
-            return typeName + ": " + args.toString();
+            SequenceStorage storage = args.getSequenceStorage();
+            if (storage.length() == 0) {
+                return typeName;
+            } else {
+                StringBuilder builder = new StringBuilder(typeName);
+                builder.append(": ");
+                for (int i = 0; i < storage.length(); i++) {
+                    if (i > 0) {
+                        builder.append(", ");
+                    }
+                    builder.append(GetItemScalarNode.executeUncached(storage, i));
+                }
+                return builder.toString();
+            }
         }
     }
 
