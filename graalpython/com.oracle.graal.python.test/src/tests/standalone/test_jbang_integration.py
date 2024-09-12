@@ -203,13 +203,13 @@ class TestJBangIntegration(unittest.TestCase):
         test_file_path = os.path.join(work_dir, test_file)
         self.addLocalMavenRepo(test_file_path)
 
-        tested_code = "print (f\'This is test text and result is {123456789 * 1000}\')"
-        expected_text = "This is test text and result is 123456789000"
+        tested_code = "from termcolor import colored; print(colored('hello java', 'red', attrs=['reverse', 'blink']))"
         command = [JBANG_CMD, "--verbose",  test_file_path, tested_code]
         out, result = run_cmd(command)
 
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}\n")
-        self.assertTrue(expected_text in out, f"Expected text:\n{expected_text}\nbut in stdout was:\n{out}")
+        self.assertTrue("Successfully installed termcolor" in out, f"Expected text:\nSuccessfully installed termcolor\nbut in stdout was:\n{out}")
+        self.assertTrue("hello java" in out, f"Expected text:\nhello java\nbut in stdout was:\n{out}")
 
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     @unittest.skipUnless('win32' not in sys.platform, "Currently the jbang native image on Win gate fails.")
@@ -227,13 +227,13 @@ class TestJBangIntegration(unittest.TestCase):
 
         test_file_path = os.path.join(work_dir, test_file)
         self.addLocalMavenRepo(test_file_path)
-        tested_code = "print (f\'This is test text and result is {147258369 * 1000}\')"
-        expected_text = "This is test text and result is 147258369000"
+        tested_code = "from termcolor import colored; print(colored('hello java', 'red', attrs=['reverse', 'blink']))"
         command = [JBANG_CMD, "--verbose", "--native", test_file_path, tested_code]
         out, result = run_cmd(command)
 
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}")
-        self.assertTrue(expected_text in out, f"Expected text:\n{expected_text}\nbut in stdout was:\n{out}")
+        self.assertTrue("Successfully installed termcolor" in out, f"Expected text:\nSuccessfully installed termcolor")
+        self.assertTrue("hello java" in out, f"Expected text:\nhello java\nbut in stdout was:\n{out}")
 
 
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
@@ -248,13 +248,13 @@ class TestJBangIntegration(unittest.TestCase):
         self.assertTrue(result == 0, f"Creating template {template_name} failed")
 
         test_file_path = os.path.join(work_dir, test_file)
-        tested_code = "print (f\'This is test text and result is {987654321 * 1000}\')"
-        expected_text = "This is test text and result is 987654321000"
+        tested_code = "from termcolor import colored; print(colored('hello java', 'red', attrs=['reverse', 'blink']))"
         command = [JBANG_CMD, "--verbose", test_file_path, tested_code]
         out, result = run_cmd(command)
 
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}")
-        self.assertTrue(expected_text in out, f"Expected text:\n{expected_text}\nbut in stdout was:\n{out}")
+        self.assertTrue("Successfully installed termcolor" in out, f"Expected text:\nSuccessfully installed termcolor")
+        self.assertTrue("hello java" in out, f"Expected text:\nhello java\nbut in stdout was:\n{out}")
 
 
 unittest.skip_deselected_test_functions(globals())
