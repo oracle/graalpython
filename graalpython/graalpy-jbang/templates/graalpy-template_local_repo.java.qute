@@ -9,7 +9,8 @@
 //REPOS local=file://{path_to_local_repo}
 {|
 //DEPS org.graalvm.python:graalpy-jbang:${env.GRAALPY_VERSION:24.2.0}
-//PIP termcolor
+// specify python packages and their versions as if used with pip
+//PIP termcolor==2.2
 |}
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
