@@ -184,3 +184,10 @@ def patch_pom_repositories(pom):
                 </pluginRepositories>
                 </project>
                 """))
+
+def replace_in_file(file, str, replace_str):
+    with open(file, "r") as f:
+        contents = f.read()
+    assert str in contents
+    with open(file, "w") as f:
+        f.write(contents.replace(str, replace_str))
