@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -243,7 +243,7 @@ public abstract class SSLOperationNode extends PNodeWithContext {
                             if (socket.hasSavedException()) {
                                 throw socket.getAndClearSavedException();
                             }
-                            throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
+                            throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING));
                         }
                         break;
                     case WANTS_WRITE:
@@ -263,7 +263,7 @@ public abstract class SSLOperationNode extends PNodeWithContext {
                             if (socket.hasSavedException()) {
                                 throw socket.getAndClearSavedException();
                             }
-                            throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
+                            throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING));
                         }
                         break;
                 }

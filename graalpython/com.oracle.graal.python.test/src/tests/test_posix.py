@@ -36,6 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import errno
 
 try:
     __graalpython__.posix_module_backend()
@@ -883,8 +884,13 @@ class SysconfTests(unittest.TestCase):
             os.sysconf(object())
         with self.assertRaisesRegex(ValueError, 'unrecognized'):
             os.sysconf("nonexistent")
-        with self.assertRaisesRegex(OSError, "Invalid argument"):
+        try:
             os.sysconf(123456)
+        except OSError as e:
+            # We used to have a bug that the args would contain Java null for the filename in the args
+            assert e.args == (errno.EINVAL, "Invalid argument")
+        else:
+            assert False
 
 
 if __name__ == '__main__':

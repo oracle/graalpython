@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -306,7 +306,7 @@ public final class MultiprocessingGraalPyModuleBuiltins extends PythonBuiltins {
                                     throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                                 },
                                 () -> {
-                                    throw PConstructAndRaiseNode.getUncached().raiseOSError(null, OSErrorEnum.EPIPE.getNumber(), OSErrorEnum.EPIPE.getMessage(), null);
+                                    throw PConstructAndRaiseNode.getUncached().raiseOSError(null, OSErrorEnum.EPIPE);
                                 });
                 return bytes.length;
             } finally {
