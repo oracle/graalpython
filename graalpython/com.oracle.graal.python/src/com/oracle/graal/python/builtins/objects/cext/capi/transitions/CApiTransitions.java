@@ -953,11 +953,11 @@ public abstract class CApiTransitions {
             long taggedPointer = HandlePointerConverter.stubToPointer(stubPointer);
 
             writeLongNode.write(stubPointer, CFields.PyObject__ob_refcnt, initialRefCount);
-            writeObjectNode.write(stubPointer, CFields.PyObject__ob_type, type);
 
             // TODO(fa): this should not require the GIL (GR-51314)
             boolean acquired = gil.acquire();
             try {
+                writeObjectNode.write(stubPointer, CFields.PyObject__ob_type, type);
                 int idx = nativeStubLookupReserve(handleContext);
                 // We don't allow 'handleTableIndex == 0' to avoid that zeroed memory
                 // accidentally maps to some valid object.
@@ -1214,6 +1214,7 @@ public abstract class CApiTransitions {
                         @Cached InlinedConditionProfile isStrongProfile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             CompilerAsserts.partialEvaluationConstant(needsTransfer);
+            assert PythonContext.get(inliningTarget).ownsGil();
             pollReferenceQueue();
             PythonNativeWrapper wrapper = getWrapper.execute(obj);
 
@@ -1222,7 +1223,6 @@ public abstract class CApiTransitions {
                 return replacement;
             }
 
-            assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
             assert obj != PNone.NO_VALUE;
             if (!lib.isPointer(wrapper)) {
                 lib.toNative(wrapper);
@@ -1532,6 +1532,7 @@ public abstract class CApiTransitions {
                         @Cached InlinedConditionProfile isHandleSpaceProfile,
                         @Cached InlinedExactClassProfile wrapperProfile) {
 
+            assert PythonContext.get(null).ownsGil();
             CompilerAsserts.partialEvaluationConstant(stealing);
             PythonNativeWrapper wrapper;
 
@@ -1588,6 +1589,7 @@ public abstract class CApiTransitions {
 
     private static long addNativeRefCount(long pointer, long refCntDelta, boolean ignoreIfDead) {
         assert PythonContext.get(null).isNativeAccessAllowed();
+        assert PythonContext.get(null).ownsGil();
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
         if (ignoreIfDead && refCount == 0) {
             return 0;
@@ -1603,6 +1605,7 @@ public abstract class CApiTransitions {
 
     private static long subNativeRefCount(long pointer, long refCntDelta) {
         assert PythonContext.get(null).isNativeAccessAllowed();
+        assert PythonContext.get(null).ownsGil();
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount - refCntDelta) >= 0 : String.format("refcnt below zero during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
@@ -1615,6 +1618,7 @@ public abstract class CApiTransitions {
 
     public static long readNativeRefCount(long pointer) {
         assert PythonContext.get(null).isNativeAccessAllowed();
+        assert PythonContext.get(null).ownsGil();
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
         assert refCount == IMMORTAL_REFCNT || (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value for %016x (%d %016x)\n", pointer, refCount, refCount);
         if (LOGGER.isLoggable(Level.FINEST)) {
@@ -1624,6 +1628,8 @@ public abstract class CApiTransitions {
     }
 
     public static void writeNativeRefCount(long pointer, long newValue) {
+        assert PythonContext.get(null).isNativeAccessAllowed();
+        assert PythonContext.get(null).ownsGil();
         assert newValue > 0 : PythonUtils.formatJString("refcnt value to write below zero for %016x (%d %016x)\n", pointer, newValue, newValue);
         if (LOGGER.isLoggable(Level.FINEST)) {
             LOGGER.finest(PythonUtils.formatJString("writeNativeRefCount(%x, %d (%x))", pointer, newValue, newValue));
