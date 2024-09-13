@@ -442,7 +442,9 @@ public final class SuperBuiltins extends PythonBuiltins {
                         @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached GetObjectTypeNode getObjectType,
-                        @Cached CastToTruffleStringCheckedNode castToTruffleStringNode) {
+                        @Cached CastToTruffleStringCheckedNode castToTruffleStringNode,
+                        @Cached InlinedConditionProfile hasDescrGetProfile,
+                        @Cached InlinedConditionProfile getObjectIsStartObjectProfile) {
             Object startType = getObjectType.execute(inliningTarget, self);
             if (startType == null) {
                 return genericGetAttr(frame, self, attr);
@@ -482,7 +484,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 Object res = readFromDict.execute(tmp, stringAttr);
                 if (res != PNone.NO_VALUE) {
                     TpSlots resSlots = getSlotsNode.execute(inliningTarget, res);
-                    if (resSlots.tp_descr_get() != null) {
+                    if (hasDescrGetProfile.profile(inliningTarget, resSlots.tp_descr_get() != null)) {
                         /*
                          * Only pass 'obj' param if this is instance-mode super (See SF ID #743627)
                          */
@@ -495,7 +497,13 @@ public final class SuperBuiltins extends PythonBuiltins {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             getObject = insert(GetObjectNodeGen.create());
                         }
-                        res = callGetSlotNode.executeCached(frame, resSlots.tp_descr_get(), res, getObject.executeCached(self) == startType ? PNone.NO_VALUE : self.getObject(), startType);
+                        Object obj;
+                        if (getObjectIsStartObjectProfile.profile(inliningTarget, getObject.executeCached(self) == startType)) {
+                            obj = PNone.NO_VALUE;
+                        } else {
+                            obj = self.getObject();
+                        }
+                        res = callGetSlotNode.executeCached(frame, resSlots.tp_descr_get(), res, obj, startType);
                     }
                     return res;
                 }
