@@ -289,22 +289,32 @@ public final class NumericSupport {
         }
     }
 
-    public BigInteger getBigInteger(byte[] buffer, int index) {
-        return getBigInteger(buffer, index, buffer.length - index);
+    public BigInteger getBigInteger(byte[] buffer, boolean signed) {
+        return getBigInteger(buffer, 0, buffer.length, signed);
     }
 
     @TruffleBoundary
-    public BigInteger getBigInteger(byte[] buffer, int index, int numBytes) throws IndexOutOfBoundsException {
-        assert numBytes <= buffer.length - index;
-        final byte[] bytes;
-        if (index == 0 && numBytes == buffer.length) {
-            bytes = PythonUtils.arrayCopyOfRange(buffer, index, index + numBytes);
-        } else {
-            bytes = buffer;
+    public BigInteger getBigInteger(byte[] buffer, int offset, int length, boolean signed) throws IndexOutOfBoundsException {
+        assert length <= buffer.length - offset;
+        if (length == 0) {
+            return BigInteger.ZERO;
         }
-        // bytes are always in big endian order
-        if (!bigEndian) {
-            reverse(bytes);
+        /*
+         * BigInteger always expects signed big-endian. For unsigned, we prepend a 0 byte to the
+         * number as a dummy positive sign.
+         */
+        if (bigEndian && signed) {
+            return new BigInteger(buffer, offset, length);
+        }
+        int dstOffset = signed ? 0 : 1;
+        byte[] bytes = new byte[length + dstOffset];
+        if (bigEndian) {
+            System.arraycopy(buffer, offset, bytes, dstOffset, length);
+        } else {
+            // Need to reverse to make it big endian
+            for (int i = 0; i < length; i++) {
+                bytes[bytes.length - i - 1] = buffer[offset + i];
+            }
         }
         return new BigInteger(bytes);
     }

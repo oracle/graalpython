@@ -56,7 +56,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_UCS4;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_UNICODE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR_LIST;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_WCHAR_PTR;
@@ -1066,7 +1065,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyLong_DivmodNear", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_Format", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_Frexp", ret = Double, args = {PyLongObject, PY_SSIZE_T_PTR}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyLong_FromByteArray", ret = PyObject, args = {CONST_UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_FromBytes", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, Int}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_GCD", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_Lshift", ret = PyObject, args = {PyObject, SIZE_T}, call = NotImplemented)

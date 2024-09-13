@@ -1383,6 +1383,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_CONVERSION_SPECIFICATION = tsLiteral("Invalid conversion specification");
     public static final TruffleString INTERNAL_EXCEPTION_OCCURED = tsLiteral("internal exception occurred");
     public static final TruffleString ATTRIBUTE_TYPE_VALUE_MUST_BE_BOOL = tsLiteral("attribute type value must be bool");
+    public static final TruffleString BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT = tsLiteral("byte array too long to convert to int");
 
     public static final TruffleString INVALID_SEQ_ITEM = tsLiteral("sequence item %d: expected str instance, %p found");
     public static final TruffleString NEW_X_ISNT_TYPE_OBJ = tsLiteral("%s.__new__(X): X is not a type object (%p)");

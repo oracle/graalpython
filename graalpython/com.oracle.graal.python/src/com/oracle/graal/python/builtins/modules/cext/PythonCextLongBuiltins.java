@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.LONG_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
@@ -64,6 +65,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -76,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFacto
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins.NegNode;
+import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -462,6 +465,22 @@ public final class PythonCextLongBuiltins {
         static Object convert(TruffleString s, int base,
                         @Cached IntNode intNode) {
             return intNode.executeWith(null, s, base);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct)
+    abstract static class _PyLong_FromByteArray extends CApiQuaternaryBuiltinNode {
+        @Specialization
+        static Object convert(Object charPtr, long size, int littleEndian, int signed,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CStructAccess.ReadByteNode readByteNode,
+                        @Cached IntNodes.PyLongFromByteArray fromByteArray,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (size != (int) size) {
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
+            }
+            byte[] bytes = readByteNode.readByteArray(charPtr, (int) size);
+            return fromByteArray.execute(inliningTarget, bytes, littleEndian == 0, signed != 0);
         }
     }
 }

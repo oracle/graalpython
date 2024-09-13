@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -173,52 +173,40 @@ public final class IntNodes {
     }
 
     /**
-     * Equivalent to CPython's {@code _PyLong_FromByteArray}. View the n unsigned bytes as a binary
-     * integer in base 256, and return a Python int with the same numeric value.
+     * Equivalent to CPython's {@code _PyLong_FromByteArray}.
      */
     @GenerateInline(inlineByDefault = true)
     public abstract static class PyLongFromByteArray extends Node {
-        public abstract Object execute(Node inliningTarget, byte[] data, boolean bigEndian);
+        public abstract Object execute(Node inliningTarget, byte[] data, boolean bigEndian, boolean signed);
 
-        public final Object executeCached(byte[] data, boolean bigEndian) {
-            return execute(this, data, bigEndian);
-        }
-
-        protected static boolean fitsInLong(byte[] data) {
-            return data.length <= Long.BYTES;
+        public final Object executeCached(byte[] data, boolean bigEndian, boolean signed) {
+            return execute(this, data, bigEndian, signed);
         }
 
         protected static int asWellSizedData(int len) {
-            switch (len) {
-                case 1:
-                case 2:
-                case 4:
-                case 8:
-                    return len;
-                default:
-                    return -1;
-            }
+            return switch (len) {
+                case 1, 2, 4, 8 -> len;
+                default -> -1;
+            };
         }
 
-        @Specialization(guards = "data.length == cachedDataLen", limit = "4")
-        static Object doLong(byte[] data, boolean bigEndian,
+        @Specialization(guards = {"!signed", "data.length == cachedDataLen"}, limit = "4")
+        static long doLong(byte[] data, boolean bigEndian, @SuppressWarnings("unused") boolean signed,
                         @Cached("asWellSizedData(data.length)") int cachedDataLen) {
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             return support.getLong(data, 0, cachedDataLen);
         }
 
-        @Specialization(guards = "fitsInLong(data)")
-        static long doArbitraryBytesLong(byte[] data, boolean bigEndian) {
-            NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
-            BigInteger integer = support.getBigInteger(data, 0);
-            return PInt.longValue(integer);
-        }
-
-        @Specialization(guards = "!fitsInLong(data)")
-        static Object doPInt(byte[] data, boolean bigEndian,
+        @Specialization
+        static Object doOther(byte[] data, boolean bigEndian, boolean signed,
                         @Cached(inline = false) PythonObjectFactory factory) {
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
-            return factory.createInt(support.getBigInteger(data, 0));
+            BigInteger integer = support.getBigInteger(data, signed);
+            if (PInt.bigIntegerFitsInLong(integer)) {
+                return PInt.longValue(integer);
+            } else {
+                return factory.createInt(support.getBigInteger(data, signed));
+            }
         }
     }
 }

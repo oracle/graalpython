@@ -701,7 +701,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 pyLongFromByteArray = insert(IntNodesFactory.PyLongFromByteArrayNodeGen.create());
             }
-            return pyLongFromByteArray.executeCached(data, bigEndian);
+            return pyLongFromByteArray.executeCached(data, bigEndian, true);
         }
 
         protected void setAttribute(VirtualFrame frame, Object object, Object key, Object value) {
