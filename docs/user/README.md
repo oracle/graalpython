@@ -18,12 +18,12 @@ Other build systems (Ant, Make, CMake, ...) can also be used with a bit more man
 
 GraalPy can generate a Maven project that embeds Python packages into a Java application using [Maven artefacts](https://mvnrepository.com/artifact/org.graalvm.python).
 
-1. Since version 24.0, the GraalPy project publishes a Maven archetype to generate a starter project:
+1. GraalPy project publishes a Maven archetype to generate a starter project:
    ```bash
    mvn archetype:generate \
      -DarchetypeGroupId=org.graalvm.python \
      -DarchetypeArtifactId=graalpy-archetype-polyglot-app \
-     -DarchetypeVersion=24.2.0
+     -DarchetypeVersion=24.1.0
    ```
 
 2. Build a native executable using the [ GraalVM Native Image "tool"](https://www.graalvm.org/latest/reference-manual/native-image/) plugin that was added for you automatically:
