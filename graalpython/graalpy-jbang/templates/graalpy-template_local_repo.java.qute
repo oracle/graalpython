@@ -11,6 +11,7 @@
 //DEPS org.graalvm.python:python-resources:${env.GRAALPY_VERSION:24.1.0}
 //DEPS org.graalvm.python:python-launcher:${env.GRAALPY_VERSION:24.1.0}
 //DEPS org.graalvm.python:python-embedding:${env.GRAALPY_VERSION:24.1.0}
+//DEPS org.graalvm.python:python-embedding-tools:${env.GRAALPY_VERSION:24.1.0}
 //PIP termcolor
 |}
 import org.graalvm.polyglot.Context;
