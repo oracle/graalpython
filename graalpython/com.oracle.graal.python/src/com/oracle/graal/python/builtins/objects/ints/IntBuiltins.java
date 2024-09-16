@@ -2841,11 +2841,11 @@ public final class IntBuiltins extends PythonBuiltins {
                         @Cached IntNodes.PyLongFromByteArray fromByteArray,
                         @Cached CallNode callCtor,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            boolean bigEndian;
+            boolean littleEndian;
             if (equalNode.execute(byteorder, T_BIG, TS_ENCODING)) {
-                bigEndian = true;
+                littleEndian = false;
             } else if (equalNode.execute(byteorder, T_LITTLE, TS_ENCODING)) {
-                bigEndian = false;
+                littleEndian = true;
             } else {
                 throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
             }
@@ -2860,7 +2860,7 @@ public final class IntBuiltins extends PythonBuiltins {
             } else {
                 bytes = bytesFromObject.execute(frame, object);
             }
-            Object result = fromByteArray.execute(inliningTarget, bytes, bigEndian, signed);
+            Object result = fromByteArray.execute(inliningTarget, bytes, littleEndian, signed);
             if (isBuiltinIntProfile.profileClass(inliningTarget, cl, PythonBuiltinClassType.PInt)) {
                 return result;
             } else {

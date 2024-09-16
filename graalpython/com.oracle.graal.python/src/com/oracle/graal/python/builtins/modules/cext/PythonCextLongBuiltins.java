@@ -480,7 +480,7 @@ public final class PythonCextLongBuiltins {
                 throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
             }
             byte[] bytes = readByteNode.readByteArray(charPtr, (int) size);
-            return fromByteArray.execute(inliningTarget, bytes, littleEndian == 0, signed != 0);
+            return fromByteArray.execute(inliningTarget, bytes, littleEndian != 0, signed != 0);
         }
     }
 }

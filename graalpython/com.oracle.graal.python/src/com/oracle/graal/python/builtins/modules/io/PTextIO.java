@@ -421,7 +421,7 @@ public final class PTextIO extends PTextIOBase {
             SERIALIZE.putInt(buffer, Long.BYTES + Integer.BYTES, cookie.bytesToFeed);
             SERIALIZE.putInt(buffer, Long.BYTES + Integer.BYTES * 2, cookie.charsToSkip);
             SERIALIZE.putByte(buffer, Long.BYTES + Integer.BYTES * 3, cookie.needEOF);
-            return IntNodes.PyLongFromByteArray.executeUncached(buffer, false, false);
+            return IntNodes.PyLongFromByteArray.executeUncached(buffer, true, false);
         }
 
         public static CookieType parse(long v, Node inliningTarget, InlinedConditionProfile overflow, PRaiseNode.Lazy raise) {

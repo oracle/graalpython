@@ -180,18 +180,18 @@ public final class IntNodes {
     @GenerateInline(inlineByDefault = true)
     @GenerateUncached
     public abstract static class PyLongFromByteArray extends Node {
-        public abstract Object execute(Node inliningTarget, byte[] data, boolean bigEndian, boolean signed);
+        public abstract Object execute(Node inliningTarget, byte[] data, boolean littleEndian, boolean signed);
 
-        public final Object executeCached(byte[] data, boolean bigEndian, boolean signed) {
-            return execute(this, data, bigEndian, signed);
+        public final Object executeCached(byte[] data, boolean littleEndian, boolean signed) {
+            return execute(this, data, littleEndian, signed);
         }
 
-        public static Object executeUncached(byte[] data, boolean bigEndian, boolean signed) {
-            return IntNodesFactory.PyLongFromByteArrayNodeGen.getUncached().execute(null, data, bigEndian, signed);
+        public static Object executeUncached(byte[] data, boolean littleEndian, boolean signed) {
+            return IntNodesFactory.PyLongFromByteArrayNodeGen.getUncached().execute(null, data, littleEndian, signed);
         }
 
         @Specialization
-        static Object doOther(Node inliningTarget, byte[] data, boolean bigEndian, boolean signed,
+        static Object doOther(Node inliningTarget, byte[] data, boolean littleEndian, boolean signed,
                         @Cached InlinedBranchProfile fastPath1,
                         @Cached InlinedBranchProfile fastPath2,
                         @Cached InlinedBranchProfile fastPath4,
@@ -199,7 +199,7 @@ public final class IntNodes {
                         @Cached InlinedBranchProfile generic,
                         @Cached(inline = false) PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
+            NumericSupport support = littleEndian ? NumericSupport.littleEndian() : NumericSupport.bigEndian();
             if (signed) {
                 switch (data.length) {
                     case 1 -> {
