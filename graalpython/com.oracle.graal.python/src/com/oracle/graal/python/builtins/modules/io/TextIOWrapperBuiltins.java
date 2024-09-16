@@ -876,11 +876,10 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Exclusive @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodTell,
-                        @Exclusive @Cached PyLongAsLongNode asLongNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Exclusive @Cached PyLongAsLongNode asLongNode) {
             PTextIO.CookieType cookie = getCookie(frame, inliningTarget, self, writeFlushNode, callMethodFlush, callMethodTell, asLongNode);
             /* We haven't moved from the snapshot point. */
-            return PTextIO.CookieType.build(cookie, factory);
+            return PTextIO.CookieType.build(cookie);
         }
 
         @Specialization(guards = {
@@ -907,7 +906,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyLongAsLongNode asLongNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @CachedLibrary(limit = "2") InteropLibrary isString,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             PTextIO.CookieType cookie = getCookie(frame, inliningTarget, self, writeFlushNode, callMethodFlush, callMethodTell, asLongNode);
             byte[] snapshotNextInput = self.getSnapshotNextInput();
@@ -957,7 +956,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
                 /* The returned cookie corresponds to the last safe start point. */
                 cookie.charsToSkip = decodedCharsUsed;
-                return PTextIO.CookieType.build(cookie, factory);
+                return PTextIO.CookieType.build(cookie);
             }
 
             int charsDecoded = 0;
@@ -1007,7 +1006,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
             /* The returned cookie corresponds to the last safe start point. */
             cookie.charsToSkip = decodedCharsUsed;
-            return PTextIO.CookieType.build(cookie, factory);
+            return PTextIO.CookieType.build(cookie);
         }
 
         static void fail(VirtualFrame frame, Node inliningTarget, PTextIO self, Object savedState,

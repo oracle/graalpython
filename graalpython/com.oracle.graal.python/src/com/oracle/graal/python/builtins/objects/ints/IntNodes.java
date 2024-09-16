@@ -40,11 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_LARGE_TO_CONVERT;
 
 import java.math.BigInteger;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.NumericSupport;
@@ -55,6 +56,7 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 /**
  * Namespace containing equivalent nodes of {@code _Pylong_XXX} private function from
@@ -153,7 +155,7 @@ public final class IntNodes {
             try {
                 support.putBigInteger(bytes, 0, PInt.longToBigInteger(value), size);
             } catch (OverflowException oe) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, TOO_LARGE_TO_CONVERT, "int");
+                throw raiseNode.get(inliningTarget).raise(OverflowError, TOO_LARGE_TO_CONVERT, "int");
             }
             return bytes;
         }
@@ -166,7 +168,7 @@ public final class IntNodes {
             try {
                 support.putBigInteger(bytes, 0, value.getValue(), size);
             } catch (OverflowException oe) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, TOO_LARGE_TO_CONVERT, "int");
+                throw raiseNode.get(inliningTarget).raise(OverflowError, TOO_LARGE_TO_CONVERT, "int");
             }
             return bytes;
         }
@@ -176,6 +178,7 @@ public final class IntNodes {
      * Equivalent to CPython's {@code _PyLong_FromByteArray}.
      */
     @GenerateInline(inlineByDefault = true)
+    @GenerateUncached
     public abstract static class PyLongFromByteArray extends Node {
         public abstract Object execute(Node inliningTarget, byte[] data, boolean bigEndian, boolean signed);
 
@@ -183,29 +186,51 @@ public final class IntNodes {
             return execute(this, data, bigEndian, signed);
         }
 
-        protected static int asWellSizedData(int len) {
-            return switch (len) {
-                case 1, 2, 4, 8 -> len;
-                default -> -1;
-            };
-        }
-
-        @Specialization(guards = {"!signed", "data.length == cachedDataLen"}, limit = "4")
-        static long doLong(byte[] data, boolean bigEndian, @SuppressWarnings("unused") boolean signed,
-                        @Cached("asWellSizedData(data.length)") int cachedDataLen) {
-            NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
-            return support.getLong(data, 0, cachedDataLen);
+        public static Object executeUncached(byte[] data, boolean bigEndian, boolean signed) {
+            return IntNodesFactory.PyLongFromByteArrayNodeGen.getUncached().execute(null, data, bigEndian, signed);
         }
 
         @Specialization
-        static Object doOther(byte[] data, boolean bigEndian, boolean signed,
-                        @Cached(inline = false) PythonObjectFactory factory) {
+        static Object doOther(Node inliningTarget, byte[] data, boolean bigEndian, boolean signed,
+                        @Cached InlinedBranchProfile fastPath1,
+                        @Cached InlinedBranchProfile fastPath2,
+                        @Cached InlinedBranchProfile fastPath4,
+                        @Cached InlinedBranchProfile fastPath8,
+                        @Cached InlinedBranchProfile generic,
+                        @Cached(inline = false) PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
-            BigInteger integer = support.getBigInteger(data, signed);
-            if (PInt.bigIntegerFitsInLong(integer)) {
-                return PInt.longValue(integer);
-            } else {
-                return factory.createInt(support.getBigInteger(data, signed));
+            if (signed) {
+                switch (data.length) {
+                    case 1 -> {
+                        fastPath1.enter(inliningTarget);
+                        return (int) support.getByte(data, 0);
+                    }
+                    case 2 -> {
+                        fastPath2.enter(inliningTarget);
+                        return (int) support.getShort(data, 0);
+                    }
+                    case 4 -> {
+                        fastPath4.enter(inliningTarget);
+                        return support.getInt(data, 0);
+                    }
+                    case 8 -> {
+                        fastPath8.enter(inliningTarget);
+                        return support.getLong(data, 0);
+                    }
+                }
+            }
+            generic.enter(inliningTarget);
+            try {
+                BigInteger integer = support.getBigInteger(data, signed);
+                if (PInt.bigIntegerFitsInLong(integer)) {
+                    long longValue = PInt.longValue(integer);
+                    return PInt.isIntRange(longValue) ? (int) longValue : longValue;
+                } else {
+                    return factory.createInt(integer);
+                }
+            } catch (OverflowException e) {
+                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
             }
         }
     }

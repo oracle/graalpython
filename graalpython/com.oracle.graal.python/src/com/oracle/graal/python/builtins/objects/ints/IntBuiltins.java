@@ -121,7 +121,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSu
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
@@ -131,8 +130,8 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -141,6 +140,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -2829,77 +2829,30 @@ public final class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FromBytesNode extends PythonClinicBuiltinNode {
 
-        @Child private LookupAndCallVarargsNode constructNode;
-
-        private static byte[] littleToBig(byte[] bytes) {
-            // PInt uses Java BigInteger which are big-endian
-            byte[] bigEndianBytes = new byte[bytes.length];
-            for (int i = 0; i < bytes.length; i++) {
-                bigEndianBytes[bytes.length - i - 1] = bytes[i];
-            }
-            return bigEndianBytes;
-        }
-
-        @TruffleBoundary
-        public static BigInteger createBigInteger(byte[] bytes, boolean isBigEndian, boolean signed) {
-            if (bytes.length == 0) {
-                // in case of empty byte array
-                return BigInteger.ZERO;
-            }
-            BigInteger result;
-            if (isBigEndian) { // big byteorder
-                result = signed ? new BigInteger(bytes) : new BigInteger(1, bytes);
-            } else { // little byteorder
-                byte[] converted = littleToBig(bytes);
-                result = signed ? new BigInteger(converted) : new BigInteger(1, converted);
-            }
-            return result;
-        }
-
-        @TruffleBoundary
-        private static boolean isBigEndian(Node raisingNode, TruffleString order) {
-            if (order.equalsUncached(T_BIG, TS_ENCODING)) {
-                return true;
-            }
-            if (order.equalsUncached(T_LITTLE, TS_ENCODING)) {
-                return false;
-            }
-            throw PRaiseNode.raiseUncached(raisingNode, PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
-        }
-
-        private Object createIntObject(Object cl, BigInteger number, PythonObjectFactory factory) {
-            PythonBuiltinClassType type = null;
-            if (cl instanceof PythonBuiltinClass) {
-                type = ((PythonBuiltinClass) cl).getType();
-            } else if (cl instanceof PythonBuiltinClassType) {
-                type = (PythonBuiltinClassType) cl;
-            }
-            if (type == PythonBuiltinClassType.PInt) {
-                return factory.createInt(number);
-            }
-            if (constructNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                constructNode = insert(LookupAndCallVarargsNode.create(SpecialMethodNames.T___CALL__));
-            }
-            return constructNode.execute(null, cl, new Object[]{cl, factory.createInt(number)});
-        }
-
-        private Object compute(Object cl, byte[] bytes, TruffleString byteorder, boolean signed, PythonObjectFactory factory) {
-            BigInteger bi = createBigInteger(bytes, isBigEndian(this, byteorder), signed);
-            return createIntObject(cl, bi, factory);
-        }
-
         @Specialization
-        Object fromObject(VirtualFrame frame, Object cl, Object object, TruffleString byteorder, boolean signed,
+        static Object fromObject(VirtualFrame frame, Object cl, Object object, TruffleString byteorder, boolean signed,
                         @Bind("this") Node inliningTarget,
                         @Cached("create(Bytes)") LookupAndCallUnaryNode callBytes,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile isBuiltinIntProfile,
+                        @Cached InlinedBranchProfile hasBytesProfile,
+                        @Cached TruffleString.EqualNode equalNode,
                         @Cached BytesNodes.BytesFromObject bytesFromObject,
-                        @Cached PythonObjectFactory factory,
+                        @Cached IntNodes.PyLongFromByteArray fromByteArray,
+                        @Cached CallNode callCtor,
                         @Cached PRaiseNode.Lazy raiseNode) {
+            boolean bigEndian;
+            if (equalNode.execute(byteorder, T_BIG, TS_ENCODING)) {
+                bigEndian = true;
+            } else if (equalNode.execute(byteorder, T_LITTLE, TS_ENCODING)) {
+                bigEndian = false;
+            } else {
+                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
+            }
             byte[] bytes;
             Object bytesObj = callBytes.executeObject(frame, object);
             if (bytesObj != PNone.NO_VALUE) {
+                hasBytesProfile.enter(inliningTarget);
                 if (!(bytesObj instanceof PBytes)) {
                     throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__);
                 }
@@ -2907,7 +2860,12 @@ public final class IntBuiltins extends PythonBuiltins {
             } else {
                 bytes = bytesFromObject.execute(frame, object);
             }
-            return compute(cl, bytes, byteorder, signed, factory);
+            Object result = fromByteArray.execute(inliningTarget, bytes, bigEndian, signed);
+            if (isBuiltinIntProfile.profileClass(inliningTarget, cl, PythonBuiltinClassType.PInt)) {
+                return result;
+            } else {
+                return callCtor.execute(frame, cl, result);
+            }
         }
 
         @Override

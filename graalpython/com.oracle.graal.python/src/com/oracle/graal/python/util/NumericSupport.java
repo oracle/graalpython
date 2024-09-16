@@ -289,34 +289,34 @@ public final class NumericSupport {
         }
     }
 
-    public BigInteger getBigInteger(byte[] buffer, boolean signed) {
+    public BigInteger getBigInteger(byte[] buffer, boolean signed) throws OverflowException {
         return getBigInteger(buffer, 0, buffer.length, signed);
     }
 
     @TruffleBoundary
-    public BigInteger getBigInteger(byte[] buffer, int offset, int length, boolean signed) throws IndexOutOfBoundsException {
+    public BigInteger getBigInteger(byte[] buffer, int offset, int length, boolean signed) throws OverflowException {
         assert length <= buffer.length - offset;
         if (length == 0) {
             return BigInteger.ZERO;
         }
-        /*
-         * BigInteger always expects signed big-endian. For unsigned, we prepend a 0 byte to the
-         * number as a dummy positive sign.
-         */
-        if (bigEndian && signed) {
-            return new BigInteger(buffer, offset, length);
-        }
-        int dstOffset = signed ? 0 : 1;
-        byte[] bytes = new byte[length + dstOffset];
-        if (bigEndian) {
-            System.arraycopy(buffer, offset, bytes, dstOffset, length);
-        } else {
+        byte[] bytes = buffer;
+        if (!bigEndian) {
             // Need to reverse to make it big endian
+            bytes = new byte[length];
             for (int i = 0; i < length; i++) {
-                bytes[bytes.length - i - 1] = buffer[offset + i];
+                bytes[length - i - 1] = buffer[offset + i];
             }
+            offset = 0;
         }
-        return new BigInteger(bytes);
+        try {
+            if (signed) {
+                return new BigInteger(bytes, offset, length);
+            } else {
+                return new BigInteger(1, bytes, offset, length);
+            }
+        } catch (ArithmeticException e) {
+            throw OverflowException.INSTANCE;
+        }
     }
 
     @TruffleBoundary
