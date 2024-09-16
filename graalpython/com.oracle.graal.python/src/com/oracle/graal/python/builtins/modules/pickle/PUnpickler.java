@@ -696,12 +696,12 @@ public class PUnpickler extends PythonBuiltinObject {
             return addAllToOther;
         }
 
-        protected Object longFromBytes(byte[] data, boolean bigEndian) {
+        protected Object longFromBytes(byte[] data, boolean littleEndian) {
             if (pyLongFromByteArray == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 pyLongFromByteArray = insert(IntNodesFactory.PyLongFromByteArrayNodeGen.create());
             }
-            return pyLongFromByteArray.executeCached(data, bigEndian);
+            return pyLongFromByteArray.executeCached(data, littleEndian, true);
         }
 
         protected void setAttribute(VirtualFrame frame, Object object, Object key, Object value) {
@@ -910,7 +910,7 @@ public class PUnpickler extends PythonBuiltinObject {
             } else {
                 // Read the raw little-endian bytes and convert.
                 final ByteArrayView pdata = read(frame, self, size);
-                value = longFromBytes(pdata.getBytes(size), false);
+                value = longFromBytes(pdata.getBytes(size), true);
             }
             pDataPush(self, value);
         }

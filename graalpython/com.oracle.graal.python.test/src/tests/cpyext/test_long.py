@@ -454,3 +454,21 @@ class TestPyLong(CPyExtTestCase):
         arguments=["PyObject* n", "int base"],
         cmpfunc=unhandled_error_compare,
     )
+
+    test__PyLong_FromByteArray = CPyExtFunction(
+        lambda args: int.from_bytes(args[0], 'little' if args[1] else 'big', signed=args[2]),
+        lambda: (
+            (b'', 1, 1),
+            (b'\x00\x0009', 0, 1),
+            (b'90\x00\x00\x00\x00\x00\x00', 1, 1),
+            (b'\xff\xff\xcf\xc7', 0, 1),
+            (b'\xff\xff\xff\xff\xff\xff\xff\xab', 0, 0),
+            (b'\xab\xff\xff\xff\xff\xff\xff\xff', 1, 0),
+            (b'\xff\xff\xff\xff\xff\xff\xff\xff', 0, 1),
+            (b'\xff\xff\xff\xff\xff\xff\xff\xff', 1, 1),
+        ),
+        resultspec="O",
+        argspec="y#ii",
+        arguments=["const char* bytes", "Py_ssize_t size", "int little_endian", "int is_signed"],
+        cmpfunc=unhandled_error_compare,
+    )

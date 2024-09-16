@@ -460,7 +460,8 @@ class FromBytesTests(unittest.TestCase):
             b'\x80\x00': -32768,
             b'\x00\xff\xff': 65535,
             b'\xff\x00\x00': -65536,
-            b'\x80\x00\x00': -8388608
+            b'\x80\x00\x00': -8388608,
+            b'\xa0\x00\x00\x00\x00\x00\x00\x00': -6917529027641081856,
         }
         self.check(tests1, 'big', signed=True)
 
@@ -487,7 +488,8 @@ class FromBytesTests(unittest.TestCase):
             b'\x00\x80': -32768,
             b'\xff\xff\x00': 65535,
             b'\x00\x00\xff': -65536,
-            b'\x00\x00\x80': -8388608
+            b'\x00\x00\x80': -8388608,
+            b'\x00\x00\x00\x00\x00\x00\x00\xa0': -6917529027641081856,
         }
         self.check(tests2, 'little', signed=True)
 
@@ -505,6 +507,7 @@ class FromBytesTests(unittest.TestCase):
             b'\x80\x00': 32768,
             b'\xff\xff': 65535,
             b'\x01\x00\x00': 65536,
+            b'\xa0\x00\x00\x00\x00\x00\x00\x00': 11529215046068469760,
         }
         self.check(tests3, 'big', signed=False)
 
@@ -522,6 +525,7 @@ class FromBytesTests(unittest.TestCase):
             b'\x00\x80': 32768,
             b'\xff\xff': 65535,
             b'\x00\x00\x01': 65536,
+            b'\x00\x00\x00\x00\x00\x00\x00\xa0': 11529215046068469760,
         }
         self.check(tests4, 'little', signed=False)
 

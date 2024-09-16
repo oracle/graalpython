@@ -289,24 +289,34 @@ public final class NumericSupport {
         }
     }
 
-    public BigInteger getBigInteger(byte[] buffer, int index) {
-        return getBigInteger(buffer, index, buffer.length - index);
+    public BigInteger getBigInteger(byte[] buffer, boolean signed) throws OverflowException {
+        return getBigInteger(buffer, 0, buffer.length, signed);
     }
 
     @TruffleBoundary
-    public BigInteger getBigInteger(byte[] buffer, int index, int numBytes) throws IndexOutOfBoundsException {
-        assert numBytes <= buffer.length - index;
-        final byte[] bytes;
-        if (index == 0 && numBytes == buffer.length) {
-            bytes = PythonUtils.arrayCopyOfRange(buffer, index, index + numBytes);
-        } else {
-            bytes = buffer;
+    public BigInteger getBigInteger(byte[] buffer, int offset, int length, boolean signed) throws OverflowException {
+        assert length <= buffer.length - offset;
+        if (length == 0) {
+            return BigInteger.ZERO;
         }
-        // bytes are always in big endian order
+        byte[] bytes = buffer;
         if (!bigEndian) {
-            reverse(bytes);
+            // Need to reverse to make it big endian
+            bytes = new byte[length];
+            for (int i = 0; i < length; i++) {
+                bytes[length - i - 1] = buffer[offset + i];
+            }
+            offset = 0;
         }
-        return new BigInteger(bytes);
+        try {
+            if (signed) {
+                return new BigInteger(bytes, offset, length);
+            } else {
+                return new BigInteger(1, bytes, offset, length);
+            }
+        } catch (ArithmeticException e) {
+            throw OverflowException.INSTANCE;
+        }
     }
 
     @TruffleBoundary

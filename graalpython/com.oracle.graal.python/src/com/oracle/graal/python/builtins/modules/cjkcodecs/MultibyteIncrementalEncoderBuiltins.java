@@ -286,7 +286,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
             // for the encoder object.
             // memcpy(statebytes + statesize, self.state.c, MULTIBYTECODECSTATE);
             // statesize += MULTIBYTECODECSTATE;
-            Object stateobj = fromByteArray.execute(inliningTarget, statebytes, false);
+            Object stateobj = fromByteArray.execute(inliningTarget, statebytes, true, true);
             assert (stateobj instanceof PInt); // since statebytes.length > 8, we will get a PInt
             writeHiddenAttrNode.execute(inliningTarget, (PInt) stateobj, HiddenAttr.ENCODER_OBJECT, self.state);
             return stateobj;

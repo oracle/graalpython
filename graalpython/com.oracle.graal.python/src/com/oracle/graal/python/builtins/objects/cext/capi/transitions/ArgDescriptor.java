@@ -184,7 +184,7 @@ public enum ArgDescriptor {
     CONST_PY_UNICODE("const Py_UNICODE*"),
     CONST_PYCONFIG_PTR("const PyConfig*"),
     CONST_PYPRECONFIG_PTR("const PyPreConfig*"),
-    CONST_UNSIGNED_CHAR_PTR("const unsigned char*"),
+    CONST_UNSIGNED_CHAR_PTR(ArgBehavior.Pointer, "const unsigned char*"),
     CONST_VOID_PTR(ArgBehavior.Pointer, "const void*"),
     CONST_VOID_PTR_LIST("const void**"),
     CONST_WCHAR_PTR(ArgBehavior.Pointer, "const wchar_t*"),

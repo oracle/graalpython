@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,13 +47,13 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.ByteArrayOutputStream;
-import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
+import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
@@ -413,15 +413,15 @@ public final class PTextIO extends PTextIOBase {
             this.needEOF = 0;
         }
 
-        public static PInt build(CookieType cookie, PythonObjectFactory factory) {
+        @TruffleBoundary
+        public static Object build(CookieType cookie) {
             byte[] buffer = new byte[COOKIE_BUF_LEN];
             SERIALIZE.putLong(buffer, 0, cookie.startPos);
             SERIALIZE.putInt(buffer, Long.BYTES, cookie.decFlags);
             SERIALIZE.putInt(buffer, Long.BYTES + Integer.BYTES, cookie.bytesToFeed);
             SERIALIZE.putInt(buffer, Long.BYTES + Integer.BYTES * 2, cookie.charsToSkip);
             SERIALIZE.putByte(buffer, Long.BYTES + Integer.BYTES * 3, cookie.needEOF);
-            BigInteger v = IntBuiltins.FromBytesNode.createBigInteger(buffer, false, false);
-            return factory.createInt(v);
+            return IntNodes.PyLongFromByteArray.executeUncached(buffer, true, false);
         }
 
         public static CookieType parse(long v, Node inliningTarget, InlinedConditionProfile overflow, PRaiseNode.Lazy raise) {
