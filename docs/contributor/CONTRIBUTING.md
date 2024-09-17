@@ -16,17 +16,33 @@ git clone https://github.com/graalvm/mx.git
 ```
 Make sure to add the `mx` directory to your `PATH`.
 
-You can always use the latest stable JDK for development.
-You can also download a suitable JDK using mx:
-```bash
-mx fetch-jdk
+Use `mx` to get additional projects at the right versions.
+From within your `graalpython` checkout, run:
 ```
-Make sure that the `JAVA_HOME` environment variable is set.
+mx sforceimport
+```
+
+You can then download a suitable JDK:
+```bash
+mx -p ../graal/vm --env ce-python fetch-jdk -A --jdk-id labsjdk-ce-latest
+```
+
+Make sure that the `JAVA_HOME` environment variable is set:
+```bash
+export JAVA_HOME="${HOME}/.mx/jdks/labsjdk-ce-latest
+```
+
+(Or on Windows)
+```
+$env:JAVA_HOME="$HOME\.mx\jdks\labsjdk-ce-latest"
+```
 
 For building GraalPy, you will also need some native build tools and libraries. On a Debian based system, install:
 ```bash
 sudo apt install build-essential libc++-12-dev zlib1g-dev cmake
 ```
+
+(On Windows, make sure you are running in a Visual Studio Developer Powershell, that should have everything you need.)
 
 Lastly, download maven, extract it and include it on your `PATH`.
 
@@ -36,7 +52,8 @@ If it succeeds without errors, you should already be able to run `mx python` and
 
 For development, we recommend running `mx ideinit` next.
 This will generate configurations for Eclipse, IntelliJ, and NetBeans so that you can open the projects in these IDEs.
-If you use another editor with support for the [Eclipse language server](https://github.com/eclipse/eclipse.jdt.ls) we have also had reports of useable development setups with that, but it's not something we support.
+See also the documentation in mx for [setting up your IDE](https://github.com/graalvm/mx/blob/master/docs/IDE.md).
+If you use another editor (such as VSCode, Emacs, or Neovim) with support for the [Eclipse language server](https://github.com/eclipse/eclipse.jdt.ls) or [Apache NetBeans language server](https://marketplace.visualstudio.com/items?itemName=ASF.apache-netbeans-java), you can also get useable development setups with that, but it's not something we explicitly support.
 
 ## Development Layout
 
