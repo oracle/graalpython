@@ -53,3 +53,28 @@ This helps ensure that expected code is inlined (or not).
 When I identify something that takes long using gprofng, for example, I find it useful to check if that stuff is inlined as expected on SVM during the HostInliningPhase.
 
 Supposedly Intel VTune and Oracle Developer Studio work well, but I haven't tried them.
+
+## Memory Usage
+
+Memory usage is best tracked with VisualVM for the Java heap.
+For best performance we keep references to long-lived user objects (mostly functions, classes, and modules) directly in the AST nodes when using the default configuration of a single Python context (as is used when running the launcher).
+For better sharing of warm-up and where absolutely best peak performance is not needed, contexts can be configured with a shared engine and the ASTs will be shared across contexts.
+However, that implies we *must* not store any user objects strongly in the ASTs.
+We test that we have no PythonObjects alive after a Context is closed that are run as part of our JUnit tests.
+These can be run by themselves, for example, like so:
+
+```bash
+mx python-leak-test --lang python \
+    --shared-engine \
+      --code 'import site, json' \
+      --forbidden-class com.oracle.graal.python.builtins.objects.object.PythonObject \
+      --keep-dump
+```
+
+The `--keep-dump` option will print the heapdump location and leave the file there rather than deleting it.
+It can then be opened for example with VisualVM to check for the paths of any leaked object, if there are any.
+
+For native code, use native memory profiling tools.
+I have used [`massif`](https://valgrind.org/docs/manual/ms-manual.html) in the past to find allocations and memory issues in native extensions, but be aware of the large overhead.
+However, once you do find something interesting using `massif`, [`rr`](https://rr-project.org/) is a good option to dive further into it, because then you can break around places massif found allocations, and use memory breakpoints and reverse and forward execution to find where the memory is allocated and released.
+This can be useful to identify memory leaks in our C API emulation.
