@@ -127,6 +127,11 @@ If the IDE was initialized properly by using the command mentioned above, the ex
 
 Both of these commands also work when you have a `graalpy` executable, e.g. inside a `venv`.
 
+For debugging the C API and native extensions, first make sure you rebuild (`mx clean` first!) graalpything with the environment variable `CFLAGS=-g` set.
+This will keep debug symbols in our C API implementation which should allow you to use `gdb` or [`rr`](https://rr-project.org/) to debug.
+When you build an SVM image, debugging the entire application is possible, and there are [docs](https://www.graalvm.org/reference-manual/native-image/guides/debug-native-image-process/) to see Java code when inside the native debugger.
+Make sure you find and keep the `libpythonvm.so.debug` file around next to your GraalPy build, you can find it somewhere under `graal/sdk/mxbuild`.
+
 ## Advanced Commands to Develop and Debug
 
 Here are some advanced commands to debug test failures and fix issues.
