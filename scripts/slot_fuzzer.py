@@ -65,6 +65,7 @@ SLOTS_TESTER = '''
 import sys
 import re
 import traceback
+import operator
 def slots_tester(Klass, other_klasses):
     def test(fun, name):
         try:
@@ -153,8 +154,13 @@ def slots_tester(Klass, other_klasses):
         obj1 = Klass()
         test(lambda: obj1 + obj2, f"{Klass} + {type(obj2)}")
         test(lambda: obj2 + obj1, f"{type(obj2)} + {Klass}")
+        test(lambda: obj1 * obj2, f"{Klass} * {type(obj2)}")
+        test(lambda: obj2 * obj1, f"{type(obj2)} * {Klass}")
+        test(lambda: operator.concat(obj1, obj2), f"operator.concat({type(obj2)}, {Klass})")
+        test(lambda: operator.mul(obj1, obj2), f"operator.mul({type(obj2)}, {Klass})")
         test_dunder(obj1, "__add__", obj2)
         test_dunder(obj1, "__radd__", obj2)
+        test_dunder(obj1, "__mul__", obj2)
 
 '''
 
@@ -230,9 +236,11 @@ PyObject *global_stash2;
 SLOTS = [
     Slot('tp_as_number', 'nb_bool', 'int $name$(PyObject* self)', ['1', '0', None]),
     Slot('tp_as_number', 'nb_add', 'PyObject* $name$(PyObject* self, PyObject *other)', ['Py_NewRef(self)', 'PyLong_FromLong(0)', None]),
+    Slot('tp_as_number', 'nb_multiply', 'PyObject* $name$(PyObject* self, PyObject *other)', ['Py_NewRef(self)', 'PyLong_FromLong(1)', None]),
     Slot('tp_as_sequence', 'sq_length', 'Py_ssize_t $name$(PyObject* self)', ['0', '1', '42', None]),
     Slot('tp_as_sequence', 'sq_item', 'PyObject* $name$(PyObject* self, Py_ssize_t index)', ['Py_NewRef(self)', 'PyLong_FromSsize_t(index + 1)', None]),
     Slot('tp_as_sequence', 'sq_concat', 'PyObject* $name$(PyObject* self, PyObject *other)', ['Py_NewRef(self)', 'PyLong_FromLong(10)', None]),
+    Slot('tp_as_sequence', 'sq_repeat', 'PyObject* $name$(PyObject* self, Py_ssize_t count)', ['Py_NewRef(self)', 'PyLong_FromLong(count)', None]),
     Slot('tp_as_mapping', 'mp_length', 'Py_ssize_t $name$(PyObject* self)', ['0', '1', '42', None]),
     Slot('tp_as_mapping', 'mp_subscript', 'PyObject* $name$(PyObject* self, PyObject* key)', ['Py_RETURN_FALSE', 'Py_NewRef(key)', None]),
     Slot(NO_GROUP, 'tp_getattr', 'PyObject* $name$(PyObject* self, char *name)', ['Py_RETURN_NONE', 'Py_RETURN_FALSE', 'Py_NewRef(self)', None,
@@ -284,8 +292,9 @@ global_descr_val = None
 
 MAGIC = {
     '__bool__(self)': ['True', 'False', None],
-    '__add__(self)': ['self', '"__add__result"', "NotImplemented", None],
-    '__radd__(self)': ['self', '"__add__result"', "NotImplemented", None],
+    '__add__(self, other)': ['self', '"__add__result"', "NotImplemented", "str(other)", None],
+    '__mul__(self, other)': ['self', '"__mul__result"', "NotImplemented", "repr(other)", None],
+    '__radd__(self, other)': ['self', '"__radd__result"', "NotImplemented", "'radd' + str(other)", None],
     '__len__(self)': ['0', '1', '42', None],
     '__getattribute__(self,name)': ['name', '42', 'global_dict1[name]', None],
     '__getattr__(self,name)': ['name+"abc"', 'False', 'global_dict1[name]', None],

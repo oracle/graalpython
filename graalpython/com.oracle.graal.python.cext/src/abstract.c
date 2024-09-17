@@ -885,6 +885,7 @@ PyNumber_Check(PyObject *o)
     PyNumberMethods *nb = Py_TYPE(o)->tp_as_number;
     return nb && (nb->nb_index || nb->nb_int || nb->nb_float || PyComplex_Check(o));
 }
+#endif // GraalPy
 
 /* Binary operators */
 
@@ -1108,6 +1109,7 @@ ternary_op(PyObject *v,
         return binary_op(v, w, NB_SLOT(op), op_name); \
     }
 
+#if 0 // GraalPy
 BINARY_FUNC(PyNumber_Or, nb_or, "|")
 BINARY_FUNC(PyNumber_Xor, nb_xor, "^")
 BINARY_FUNC(PyNumber_And, nb_and, "&")
@@ -1754,6 +1756,7 @@ PySequence_Concat(PyObject *s, PyObject *o)
     }
     return type_error("'%.200s' object can't be concatenated", s);
 }
+#endif // GraalPy
 
 PyObject *
 PySequence_Repeat(PyObject *o, Py_ssize_t count)
@@ -1786,6 +1789,7 @@ PySequence_Repeat(PyObject *o, Py_ssize_t count)
     return type_error("'%.200s' object can't be repeated", o);
 }
 
+#if 0 // GraalPy change
 PyObject *
 PySequence_InPlaceConcat(PyObject *s, PyObject *o)
 {

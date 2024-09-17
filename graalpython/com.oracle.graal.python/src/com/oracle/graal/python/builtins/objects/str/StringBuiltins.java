@@ -48,11 +48,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
@@ -134,6 +132,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSu
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -1851,11 +1850,10 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_repeat, isComplex = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class MulNode extends PythonBinaryBuiltinNode {
+    abstract static class MulNode extends SqRepeatBuiltinNode {
 
         @Specialization(guards = "right <= 0")
         static TruffleString doStringIntNonPositive(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") int right) {
@@ -1869,14 +1867,12 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static TruffleString doGeneric(VirtualFrame frame, Object self, Object rightObj,
+        static TruffleString doGeneric(Object self, int right,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringCheckedNode castSelfNode,
-                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached InlinedConditionProfile isNegativeProfile,
                         @Shared("repeat") @Cached TruffleString.RepeatNode repeatNode) {
             TruffleString selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "index", self);
-            int right = asSizeNode.executeExact(frame, inliningTarget, rightObj);
             if (isNegativeProfile.profile(inliningTarget, right <= 0)) {
                 return T_EMPTY_STRING;
             }

@@ -41,7 +41,9 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMUL__;
 
 import java.util.Arrays;
 
@@ -103,7 +105,8 @@ public class TpSlotBinaryOp {
     }
 
     public enum BinaryOpSlot {
-        NB_ADD(T___ADD__, T___RADD__);
+        NB_ADD(T___ADD__, T___RADD__),
+        NB_MULTIPLY(T___MUL__, T___RMUL__);
 
         private static final BinaryOpSlot[] VALUES = values();
         private final TruffleString name;
@@ -118,6 +121,7 @@ public class TpSlotBinaryOp {
             // switch instead of using TpSlotMeta for better inlining on fast-path
             return switch (this) {
                 case NB_ADD -> slots.nb_add();
+                case NB_MULTIPLY -> slots.nb_multiply();
             };
         }
 

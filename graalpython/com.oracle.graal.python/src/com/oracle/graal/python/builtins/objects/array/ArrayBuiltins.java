@@ -50,11 +50,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
@@ -94,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSu
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -155,8 +154,10 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedByteValueProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
@@ -223,36 +224,40 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
-    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index)
+    @Slot(value = SlotKind.sq_repeat, isComplex = true)
     @GenerateNodeFactory
-    abstract static class MulNode extends PythonBinaryClinicBuiltinNode {
-        @Specialization
-        Object concat(PArray self, int value,
+    abstract static class MulNode extends SqRepeatBuiltinNode {
+        @Specialization(guards = "self.getLength() > 0")
+        static PArray concat(PArray self, int valueIn,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Cached InlinedBranchProfile negativeSize,
+                        @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached PythonObjectFactory factory) {
+            int value = valueIn;
+            if (value < 0) {
+                negativeSize.enter(inliningTarget);
+                value = 0;
+            }
             try {
                 int newLength = Math.max(PythonUtils.multiplyExact(self.getLength(), value), 0);
                 PArray newArray = factory.createArray(self.getFormatString(), self.getFormat(), newLength);
                 int segmentLength = self.getBytesLength();
-                for (int i = 0; i < value; i++) {
+                loopProfile.profileCounted(inliningTarget, value);
+                for (int i = 0; loopProfile.inject(inliningTarget, i < value); i++) {
                     bufferLib.readIntoBuffer(self.getBuffer(), 0, newArray.getBuffer(), segmentLength * i, segmentLength, bufferLib);
                 }
                 return newArray;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(this, MemoryError);
+                throw PRaiseNode.raiseUncached(inliningTarget, MemoryError);
             }
         }
 
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return ArrayBuiltinsClinicProviders.MulNodeClinicProviderGen.INSTANCE;
+        @Fallback
+        static PArray doZeroSize(Object self, @SuppressWarnings("unused") int value) {
+            return (PArray) self;
         }
-    }
-
-    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
-    abstract static class RMulNode extends MulNode {
     }
 
     @Builtin(name = J___IMUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})

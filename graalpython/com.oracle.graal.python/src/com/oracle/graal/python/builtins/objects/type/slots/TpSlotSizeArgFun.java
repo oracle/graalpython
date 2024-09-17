@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotHPyNativ
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.FixNegativeIndexNodeGen;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.WrapIndexArgFuncBuiltinNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.WrapSqItemBuiltinNodeGen;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -118,7 +119,11 @@ public class TpSlotSizeArgFun {
             return switch (wrapper) {
                 case GETITEM -> createBuiltin(core, type, tsName, BuiltinSlotWrapperSignature.BINARY, wrapper,
                                 WrapperNodeFactory.wrap(getNodeFactory(), WrapSqItemBuiltinNode.class, WrapSqItemBuiltinNodeGen::create));
-                default -> throw new IllegalStateException(Objects.toString(wrapper));
+                case SSIZE_ARG -> createBuiltin(core, type, tsName, BuiltinSlotWrapperSignature.BINARY, wrapper,
+                                WrapperNodeFactory.wrap(getNodeFactory(), WrapIndexArgFuncBuiltinNode.class,
+                                                WrapIndexArgFuncBuiltinNodeGen::create));
+                default ->
+                    throw new IllegalStateException(Objects.toString(wrapper));
             };
         }
     }
@@ -140,12 +145,16 @@ public class TpSlotSizeArgFun {
     public abstract static class SqItemBuiltinNode extends SizeArgFunBuiltinNode {
     }
 
+    /**
+     * Implements semantics of {@code typeobject.c: wrap_sq_item}.
+     */
     public abstract static class WrapSqItemBuiltinNode extends PythonBinaryBuiltinNode {
-        private @Child SizeArgFunBuiltinNode slotNode;
+        private @Child SqItemBuiltinNode slotNode;
         private @Child FixNegativeIndex fixNegativeIndex;
 
         protected WrapSqItemBuiltinNode(SizeArgFunBuiltinNode slotNode) {
-            this.slotNode = slotNode;
+            // We take SizeArgFunBuiltinNode just so that we can reuse WrapperNodeFactory machinery
+            this.slotNode = (SqItemBuiltinNode) slotNode;
         }
 
         @Specialization(guards = "index >= 0")
@@ -166,6 +175,34 @@ public class TpSlotSizeArgFun {
                 }
                 size = fixNegativeIndex.execute(frame, size, index);
             }
+            return slotNode.execute(frame, self, size);
+        }
+    }
+
+    public abstract static class SqRepeatBuiltinNode extends SizeArgFunBuiltinNode {
+    }
+
+    /**
+     * Implements semantics of {@code typeobject.c: wrap_indexargfunc}.
+     */
+    public abstract static class WrapIndexArgFuncBuiltinNode extends PythonBinaryBuiltinNode {
+        private @Child SizeArgFunBuiltinNode slotNode;
+
+        protected WrapIndexArgFuncBuiltinNode(SizeArgFunBuiltinNode slotNode) {
+            this.slotNode = slotNode;
+        }
+
+        @Specialization(guards = "index >= 0")
+        Object doIntIndex(VirtualFrame frame, Object self, int index) {
+            return slotNode.execute(frame, self, index);
+        }
+
+        @Specialization(replaces = "doIntIndex")
+        @SuppressWarnings("truffle-static-method")
+        Object doGeneric(VirtualFrame frame, Object self, Object index,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int size = asSizeNode.executeExact(frame, inliningTarget, index, PythonBuiltinClassType.OverflowError);
             return slotNode.execute(frame, self, size);
         }
     }

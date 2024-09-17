@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,8 +51,10 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PySequenceConcat;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -103,6 +105,28 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetItem getItem) {
             return getItem.execute(frame, inliningTarget, value, index);
+        }
+    }
+
+    @Builtin(name = "concat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class ConcatNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doObject(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PySequenceConcat concatNode) {
+            return concatNode.execute(frame, inliningTarget, left, right);
+        }
+    }
+
+    @Builtin(name = "mul", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class MulNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doObject(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyNumberMultiplyNode mulNode) {
+            return mulNode.execute(frame, inliningTarget, left, right);
         }
     }
 

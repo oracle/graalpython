@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
@@ -54,7 +53,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RFLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
@@ -351,8 +349,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_multiply, isComplex = true)
     @GenerateNodeFactory
     abstract static class MulNode extends AbstractNumericBinaryBuiltin {
 

@@ -426,6 +426,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PySequence_Length", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PySequence_SetItem", ret = Int, args = {PyObject, Py_ssize_t, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PySequence_Size", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PySequence_Repeat", ret = PyObject, args = {PyObject, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PySlice_AdjustIndices", ret = Py_ssize_t, args = {Py_ssize_t, PY_SSIZE_T_PTR, PY_SSIZE_T_PTR, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PySlice_Start", ret = PyObject, args = {PySliceObject}, call = CImpl)
     @CApiBuiltin(name = "PySlice_Step", ret = PyObject, args = {PySliceObject}, call = CImpl)

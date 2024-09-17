@@ -353,12 +353,9 @@ public abstract class ExternalFunctionNodes {
         VARARGS(5, PyObjectTransfer, PyObject, PyObject),            // METH_VARARGS
         NOARGS(6, PyObjectTransfer, PyObject, PyObject),             // METH_NOARGS
         O(7, PyObjectTransfer, PyObject, PyObject),                  // METH_O
-        METHOD(8, PyObjectTransfer, PyObject, PyTypeObject, Pointer, Py_ssize_t, PyObject),  // METH_FASTCALL
-                                                                                             // |
-                                                                                             // METH_KEYWORDS
-                                                                                             // |
-                                                                                             // METH_METHOD
-        ALLOC(10, PyObjectTransfer, PyObject, Py_ssize_t),
+        // METH_FASTCALL | METH_KEYWORDS | METH_METHOD:
+        METHOD(8, PyObjectTransfer, PyObject, PyTypeObject, Pointer, Py_ssize_t, PyObject),
+        ALLOC(10, PyObjectTransfer, PyTypeObject, Py_ssize_t),
         GETATTR(11, PyObjectTransfer, PyObject, CharPtrAsTruffleString),
         SETATTR(12, InitResult, PyObject, CharPtrAsTruffleString, PyObject),
         RICHCMP(13, PyObjectTransfer, PyObject, PyObject, Int),
@@ -395,7 +392,8 @@ public abstract class ExternalFunctionNodes {
         TP_STR(44, PyObjectTransfer, PyObject),
         TP_REPR(45, PyObjectTransfer, PyObject),
         DESCR_DELETE(46, InitResult, PyObject, PyObject, PyObject), // the last one is always NULL
-        DELATTRO(47, InitResult, PyObject, PyObject, PyObject); // the last one is always NULL
+        DELATTRO(47, InitResult, PyObject, PyObject, PyObject), // the last one is always NULL
+        SSIZE_ARG(48, PyObjectTransfer, PyObject, Py_ssize_t);
 
         private static int defaults(int x) {
             return x;
@@ -466,6 +464,7 @@ public abstract class ExternalFunctionNodes {
             Function<PythonLanguage, RootNode> rootNodeFunction;
             switch (sig) {
                 case ALLOC:
+                case SSIZE_ARG:
                     nodeKlass = AllocFuncRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new AllocFuncRootNode(l, name, sig) : l -> new AllocFuncRootNode(l, name);
                     break;
@@ -1661,6 +1660,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Implements semantics of {@code typeobject.c: wrap_sq_item}.
      */
+    // TODO: can we remove this???
     static final class GetItemRootNode extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "i"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;

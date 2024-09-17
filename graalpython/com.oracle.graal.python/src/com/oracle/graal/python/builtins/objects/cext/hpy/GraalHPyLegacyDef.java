@@ -197,10 +197,10 @@ public abstract class GraalHPyLegacyDef {
         Py_sq_concat(40, NO_TP_SLOT, T___ADD__),
         Py_sq_contains(41, NO_TP_SLOT, T___CONTAINS__, PExternalFunctionWrapper.OBJOBJPROC),
         Py_sq_inplace_concat(42, NO_TP_SLOT, T___IADD__),
-        Py_sq_inplace_repeat(43, NO_TP_SLOT, T___IMUL__, PExternalFunctionWrapper.ALLOC),
+        Py_sq_inplace_repeat(43, NO_TP_SLOT, T___IMUL__, PExternalFunctionWrapper.SSIZE_ARG),
         Py_sq_item(44, TpSlotMeta.SQ_ITEM, T___GETITEM__, PExternalFunctionWrapper.GETITEM),
         Py_sq_length(45, NO_TP_SLOT, T___LEN__, PExternalFunctionWrapper.LENFUNC),
-        Py_sq_repeat(46, NO_TP_SLOT, T___MUL__, PExternalFunctionWrapper.ALLOC),
+        Py_sq_repeat(46, NO_TP_SLOT, T___MUL__, PExternalFunctionWrapper.SSIZE_ARG),
 
         // PyAsyncMethods, NO_TP_SLOT
         Py_am_await(77, NO_TP_SLOT),

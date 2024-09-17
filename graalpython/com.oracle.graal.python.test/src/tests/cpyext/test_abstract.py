@@ -46,6 +46,8 @@ from . import CPyExtTestCase, CPyExtFunction, CPyExtType, unhandled_error_compar
 
 __dir__ = __file__.rpartition("/")[0]
 
+from .test_modsupport import MySeq
+
 
 def _safe_check(v, type_check):
     try:
@@ -291,12 +293,39 @@ class DummyDequeLen(set):
         return 42
 
 
+class SeqWithMulAdd:
+    def __getitem__(self, item):
+        return item
+
+    def __mul__(self, other):
+        return "mul:" + str(other)
+
+    def __add__(self, other):
+        return "add:" + str(other)
+
+    def __str__(self):
+        return "SeqWithMulAdd"
+
+class NonSeqWithMulAdd:
+    def __mul__(self, other):
+        return "not expected!"
+
+    def __add__(self, other):
+        return "not expected!"
+
+
 class DictSubclassWithSequenceMethods(dict):
     def __getitem__(self, key):
         return key
 
     def __setitem__(self, key, value):
         pass
+
+    def __add__(self, other):
+        return "not expected!"
+
+    def __mul__(self, other):
+        return "not expected!"
 
 
 def _default_bin_arith_args():
@@ -1487,8 +1516,17 @@ class TestAbstract(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    def _reference_seq_repeat(args):
+        match args[0]:
+            case SeqWithMulAdd():
+                return "mul:" + str(args[1])
+            case NonSeqWithMulAdd() | DictSubclassWithSequenceMethods():
+                raise TypeError(f"{type(args[1])} object can't be repeated")
+            case _:
+                return args[0] * args[1]
+
     test_PySequence_Repeat = CPyExtFunction(
-        lambda args: args[0] * args[1],
+        _reference_seq_repeat,
         lambda: (
             ((1,), 0),
             ((1,), 1),
@@ -1500,6 +1538,9 @@ class TestAbstract(CPyExtTestCase):
             ("hello", 1),
             ("hello", 3),
             ({}, 0),
+            (SeqWithMulAdd(), 42),
+            (NonSeqWithMulAdd(), 24),
+            (DictSubclassWithSequenceMethods(), 5),
         ),
         resultspec="O",
         argspec='On',
@@ -1527,8 +1568,19 @@ class TestAbstract(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    def _reference_seq_concat(args):
+        match args[0]:
+            case SeqWithMulAdd():
+                if hasattr(args[1], "__getitem__"):
+                    return "add:" + str(args[1])
+                raise TypeError("SeqWithMulAdd object can't be concatenated")
+            case NonSeqWithMulAdd() | DictSubclassWithSequenceMethods():
+                raise TypeError(f"{type(args[1])} object can't be concatenated")
+            case _:
+                return args[0] + args[1]
+
     test_PySequence_Concat = CPyExtFunction(
-        lambda args: args[0] + args[1],
+        _reference_seq_concat,
         lambda: (
             ((1,), tuple()),
             ((1,), list()),
@@ -1542,6 +1594,13 @@ class TestAbstract(CPyExtTestCase):
             ("hello", ""),
             ({}, []),
             ([], {}),
+            (SeqWithMulAdd(), 1),
+            (SeqWithMulAdd(), SeqWithMulAdd()),
+            (SeqWithMulAdd(), [1,2,3]),
+            (NonSeqWithMulAdd(), 2),
+            (NonSeqWithMulAdd(), [1,2,3]),
+            (DictSubclassWithSequenceMethods(), (1,2,3)),
+            ((1,2,3), DictSubclassWithSequenceMethods()),
         ),
         resultspec="O",
         argspec='OO',

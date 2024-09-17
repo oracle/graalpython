@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,15 +51,14 @@ import static com.oracle.graal.python.builtins.modules.ctypes.PyCArrayTypeBuilti
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T__TYPE_;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARRAY_LENGTH_MUST_BE_0_NOT_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_A_TYPE_OBJECT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
@@ -70,14 +69,13 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.function.builtins.clinic.IndexConversionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -98,22 +96,16 @@ import com.oracle.truffle.api.strings.TruffleString;
                 PyCSimpleType,
 })
 public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = CDataTypeSequenceBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CDataTypeSequenceBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2, parameterNames = {"itemtype", "length"})
-    @ArgumentClinic(name = "length", conversionClass = IndexConversionNode.class)
+    @Slot(value = SlotKind.sq_repeat, isComplex = true)
     @GenerateNodeFactory
-    abstract static class RepeatNode extends PythonBinaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return CDataTypeSequenceBuiltinsClinicProviders.RepeatNodeClinicProviderGen.INSTANCE;
-        }
-
+    abstract static class RepeatNode extends SqRepeatBuiltinNode {
         // TODO: weakref ctypes.cache values
         @Specialization(guards = "length >= 0")
         static Object PyCArrayType_from_ctype(VirtualFrame frame, Object itemtype, int length,

@@ -54,7 +54,6 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPL
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_LSHIFT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_MATRIX_MULTIPLY;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_OR;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_POWER;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_REMAINDER;
@@ -102,7 +101,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
@@ -116,7 +114,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RFLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RLSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RPOW__;
@@ -256,8 +253,6 @@ public enum SpecialMethodSlot {
     Sub(T___SUB__, NB_SUBTRACT),
     RSub(T___RSUB__, NB_SUBTRACT),
     // Don't add SQ_REPEAT, CPython doesn't add a wrapper for it
-    Mul(T___MUL__, NB_MULTIPLY),
-    RMul(T___RMUL__, NB_MULTIPLY),
     MatMul(T___MATMUL__, NB_MATRIX_MULTIPLY),
     RMatMul(T___RMATMUL__, NB_MATRIX_MULTIPLY),
     Mod(T___MOD__, NB_REMAINDER),
@@ -331,7 +326,6 @@ public enum SpecialMethodSlot {
         And.reverse = RAnd;
         Or.reverse = ROr;
         Sub.reverse = RSub;
-        Mul.reverse = RMul;
         DivMod.reverse = RDivMod;
         TrueDiv.reverse = RTrueDiv;
         FloorDiv.reverse = RFloorDiv;
@@ -1026,15 +1020,7 @@ public enum SpecialMethodSlot {
                     return RShift;
                 }
                 break;
-            case 'm' * 26 + 'u':    // mu
-                if (eqNode.execute(name, T___MUL__, TS_ENCODING)) {
-                    return Mul;
-                }
-                break;
             case 'r' * 26 + 'm':    // rm
-                if (eqNode.execute(name, T___RMUL__, TS_ENCODING)) {
-                    return RMul;
-                }
                 if (eqNode.execute(name, T___RMATMUL__, TS_ENCODING)) {
                     return RMatMul;
                 }

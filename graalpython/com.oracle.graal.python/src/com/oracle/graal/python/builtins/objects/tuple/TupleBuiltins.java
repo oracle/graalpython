@@ -35,10 +35,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
@@ -78,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSu
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -480,13 +479,12 @@ public final class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_repeat, isComplex = true)
     @GenerateNodeFactory
-    abstract static class MulNode extends PythonBinaryBuiltinNode {
+    abstract static class MulNode extends SqRepeatBuiltinNode {
 
         @Specialization
-        static Object doTuple(VirtualFrame frame, Object left, Object right,
+        static Object doTuple(VirtualFrame frame, Object left, int repeats,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTupleCheckExactNode checkTuple,
                         @Cached GetTupleStorage getLeft,
@@ -494,7 +492,6 @@ public final class TupleBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached SequenceStorageNodes.RepeatNode repeatNode,
                         @Cached PythonObjectFactory.Lazy factory) {
-            int repeats = asSizeNode.executeExact(frame, inliningTarget, right);
             if (isSingleRepeat.profile(inliningTarget, repeats == 1 && checkTuple.execute(inliningTarget, left))) {
                 return left;
             } else {

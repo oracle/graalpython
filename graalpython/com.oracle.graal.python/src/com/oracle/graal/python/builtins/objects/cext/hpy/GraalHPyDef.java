@@ -386,7 +386,7 @@ public abstract class GraalHPyDef {
         HPY_SQ_INPLACE_REPEAT(43, NO_TP_SLOT, HPySlotWrapper.INDEXARGFUNC, T___IMUL__),
         HPY_SQ_ITEM(44, TpSlotMeta.SQ_ITEM, HPySlotWrapper.SQ_ITEM, T___GETITEM__),
         HPY_SQ_LENGTH(45, TpSlotMeta.SQ_LENGTH, HPySlotWrapper.LENFUNC, T___LEN__),
-        HPY_SQ_REPEAT(46, NO_TP_SLOT, HPySlotWrapper.INDEXARGFUNC, T___MUL__, T___RMUL__),
+        HPY_SQ_REPEAT(46, TpSlotMeta.SQ_REPEAT, HPySlotWrapper.INDEXARGFUNC, T___MUL__, T___RMUL__),
         HPY_TP_CALL(50, NO_TP_SLOT, HPySlotWrapper.CALL, T___CALL__),
         HPY_TP_HASH(59, NO_TP_SLOT, HPySlotWrapper.HASHFUNC, T___HASH__),
         HPY_TP_INIT(60, NO_TP_SLOT, HPySlotWrapper.INIT, T___INIT__),

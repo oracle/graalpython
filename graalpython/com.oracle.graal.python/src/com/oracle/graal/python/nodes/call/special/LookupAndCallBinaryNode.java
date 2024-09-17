@@ -115,11 +115,6 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     @NeverDefault
-    public static LookupAndCallBinaryNode createPyNumberMultiply(Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallNbNumbersBinaryNodeFactory.PyNumberMultiplyNodeGen.create(handlerFactory);
-    }
-
-    @NeverDefault
     public static LookupAndCallBinaryNode createBinaryOp(SpecialMethodSlot slot, SpecialMethodSlot rslot, Supplier<NotImplementedHandler> handlerFactory) {
         return LookupAndCallNbNumbersBinaryNodeFactory.BinaryOpNodeGen.create(slot, rslot, handlerFactory);
     }
