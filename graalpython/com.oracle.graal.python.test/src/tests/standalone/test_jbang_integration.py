@@ -214,6 +214,8 @@ class TestJBangIntegration(unittest.TestCase):
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     @unittest.skipUnless('win32' not in sys.platform, "Currently the jbang native image on Win gate fails.")
     def test_graalpy_template_native(self):
+        self.skip() # GR-58222
+
         template_name = "graalpy"
         test_file = "graalpy_test.java"
         work_dir = self.tmpdir

@@ -336,7 +336,7 @@ def create_jobs(
                     "uses": "actions/setup-python@v5",
                     "if": "inputs.graalpy == ''",
                     "with": {
-                        "python-version": "graalpy24.0",
+                        "python-version": "graalpy24.1",
                     },
                 }
             )

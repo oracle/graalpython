@@ -30,7 +30,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -70,7 +70,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -112,7 +112,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -154,7 +154,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -195,7 +195,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -238,7 +238,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -283,7 +283,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -341,7 +341,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -392,7 +392,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -452,7 +452,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -503,7 +503,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -553,7 +553,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -595,7 +595,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -636,7 +636,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -676,7 +676,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
@@ -728,7 +728,7 @@ jobs:
         uses: actions/setup-python@v5
         if: inputs.graalpy == ''
         with:
-          python-version: graalpy24.0
+          python-version: graalpy24.1
       - name: Setup local GraalPy venv
         if: inputs.graalpy == ''
         run: python -m venv graalpy
