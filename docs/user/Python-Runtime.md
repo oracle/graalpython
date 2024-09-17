@@ -72,6 +72,8 @@ The four GraalPy runtimes are identified as follows, using the general pattern _
 
 ## Installing GraalPy
 
+> NOTE: There will be a delay between GraalPy release and its availability on Pyenv.
+
 ### Linux
 
 The easiest way to install GraalPy on Linux is to use [Pyenv](https://github.com/pyenv/pyenv) (the Python version manager).

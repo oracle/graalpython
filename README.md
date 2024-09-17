@@ -92,6 +92,7 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
   ```bash
   pyenv shell graalpy-24.1.0
   ```
+  > NOTE: There will be a delay between GraalPy release and its availability on Pyenv. Make sure to update Pyenv.
   
   Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
   
@@ -108,6 +109,8 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
   ```bash
   pyenv shell graalpy-24.1.0
   ```
+  > NOTE: There will be a delay between GraalPy release and its availability on Pyenv. Make sure to update Pyenv.
+
   Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
   
   1. Find the download that matches the pattern _graalpy-XX.Y.Z-macos-amd64.tar.gz_ or _graalpy-XX.Y.Z-macos-aarch64.tar.gz_ (depending on your platform) and download. 
@@ -132,6 +135,8 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
   ```cmd
   pyenv shell graalpy-24.1.0-windows-amd64
   ```
+  > NOTE: There will be a delay between GraalPy release and its availability on Pyenv. Make sure to update Pyenv.
+
   Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
   
   1. Find the download that matches the pattern _graalpy-XX.Y.Z-windows-amd64.tar.gz_ and download.
