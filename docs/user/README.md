@@ -12,7 +12,7 @@ redirect_from:
 
 You can use GraalPy with GraalVM JDK, Oracle JDK, or OpenJDK.
 You can easily add GraalPy to your Java application using Maven or Gradle build tools as shown below.
-Other build systems (Ant, Make, CMake, ...) can also be used with a bit more manual work.
+Other build systems (Ant, Make, CMake, and so on) can also be used with a bit more manual work.
 
 ## Maven
 
@@ -54,7 +54,6 @@ In order to distribute the resulting application for other systems, follow these
 2. Unzip each of the JAR files (substituting the correct names for the JAR files).
    A special file, _vfs/fileslist.txt_ needs to be concatenated from each JAR file.
    Finally, create a new _combined.jar_ from the combination of all files and with the concatenated _fileslist.txt_.
-
     ```bash
     unzip linux.jar -d combined
     mv combined/vfs/fileslist.txt fileslist-linux.txt
@@ -66,6 +65,8 @@ In order to distribute the resulting application for other systems, follow these
     ```
 
 ## Gradle
+
+> Note: GraalPy Gradle Plugin will become available as of GraalPy version 24.1.1, planned for October 15, 2024.
 
 1. Create a Java application with Gradle using the command below and follow the prompts (select the Groovy build script language, select a test framework, and so on):
     ```bash
@@ -89,10 +90,9 @@ In order to distribute the resulting application for other systems, follow these
 
 2. Open your project configuration file, _app/build.gradle_, and modify it as follows. 
     - Include the GraalPy support and the [GraalVM Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) in the `dependencies` section:
-
         ```
-        implementation("org.graalvm.polyglot:polyglot:24.2.0")
-        implementation("org.graalvm.polyglot:python:24.2.0")
+        implementation("org.graalvm.polyglot:polyglot:24.1.1")
+        implementation("org.graalvm.polyglot:python:24.1.1")
         ```
 
 3. Finally, replace the code in the file named _App.java_ as follows for a small Python embedding:
@@ -116,14 +116,14 @@ In order to distribute the resulting application for other systems, follow these
     ```
     The application prints "Hello Python!" to the console.
 
-> Note: The performance of the GraalPy runtime depends on the JDK in which you embed it. For more information, see [Runtime Optimization Support](https://www.graalvm.org/latest/reference-manual/embed-languages/#runtime-optimization-support).
+    > Note: The performance of the GraalPy runtime depends on the JDK in which you embed it. For more information, see [Runtime Optimization Support](https://www.graalvm.org/latest/reference-manual/embed-languages/#runtime-optimization-support).
 
 5. Optionally, you can also use a third-party Python package:
 
    5.1. In _app/build.gradle_:
    - add the graalpy-gradle-plugin to the `plugins` section:
    ```
-   id "org.graalvm.python" version "24.2.0"
+   id "org.graalvm.python" version "24.1.1"
    ```
 
    - configure the GraalPy Gradle plugin:  
@@ -133,7 +133,7 @@ In order to distribute the resulting application for other systems, follow these
    }
    ```
    
-   5.2, In _settings.gradle_, add the following `pluginManagement` configuration.
+   5.2. In _settings.gradle_, add the following `pluginManagement` configuration.
    ```
    pluginManagement {
       repositories {
@@ -187,13 +187,13 @@ GraalPy comes with a tool to obtain the required JAR files from Maven.
     In a POSIX shell:
     ```bash
     export GRAALPY_HOME=$(graalpy -c 'print(__graalpython__.home)')
-    "${GRAALPY_HOME}/libexec/graalpy-polyglot-get" -a python -o lib -v "24.2.0"
+    "${GRAALPY_HOME}/libexec/graalpy-polyglot-get" -a python -o lib -v "24.1.0"
     ```
 
     In PowerShell:
     ```
     $GRAALPY_HOME = graalpy -c "print(__graalpython__.home)"
-    & "$GRAALPY_HOME/libexec/graalpy-polyglot-get" -a python -o lib -v "24.2.0"
+    & "$GRAALPY_HOME/libexec/graalpy-polyglot-get" -a python -o lib -v "24.1.0"
     ```
 
     These commands download all GraalPy dependencies into the _lib_ directory.

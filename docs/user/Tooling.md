@@ -30,7 +30,8 @@ You can inspect variables, set watch expressions, interactively evaluate code sn
 
 3. Open your Chrome browser and enter the URL provided. 
 Now you can inspect the stack, variables, evaluate variables, and selected expressions in a tooltip, and so on. For example: 
-    ![Chrome Inspector](./assets/Chrome_Inspector.png)
+
+   ![Chrome Inspector](./assets/Chrome_Inspector.png)
 
 ## Profiling
 
