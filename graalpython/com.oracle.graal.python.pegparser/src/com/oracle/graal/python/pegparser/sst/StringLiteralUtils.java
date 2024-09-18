@@ -970,122 +970,138 @@ public abstract class StringLiteralUtils {
     }
 
     private static <T> T unescapeString(SourceRange sourceRange, ErrorCallback errorCallback, String st, PythonStringFactory<T> stringFactory) {
-        if (!st.contains("\\")) {
+        int backslashIndex = st.indexOf('\\');
+        if (backslashIndex < 0) {
             return stringFactory.fromJavaString(st);
         }
         PythonStringFactory.PythonStringBuilder<T> sb = stringFactory.createBuilder(st.length());
-        boolean wasDeprecationWarning = false;
-        for (int i = 0; i < st.length(); i++) {
-            char ch = st.charAt(i);
-            if (ch == '\\') {
-                char nextChar = (i == st.length() - 1) ? '\\' : st.charAt(i + 1);
-                // Octal escape?
-                if (nextChar >= '0' && nextChar <= '7') {
-                    String code = "" + nextChar;
-                    i++;
-                    if ((i < st.length() - 1) && st.charAt(i + 1) >= '0' && st.charAt(i + 1) <= '7') {
-                        code += st.charAt(i + 1);
-                        i++;
-                        if ((i < st.length() - 1) && st.charAt(i + 1) >= '0' && st.charAt(i + 1) <= '7') {
-                            code += st.charAt(i + 1);
-                            i++;
-                        }
-                    }
-                    sb.appendCodePoint(Integer.parseInt(code, 8));
-                    continue;
-                }
-                switch (nextChar) {
-                    case '\\':
-                        ch = '\\';
-                        break;
-                    case 'a':
-                        ch = '\u0007';
-                        break;
-                    case 'b':
-                        ch = '\b';
-                        break;
-                    case 'f':
-                        ch = '\f';
-                        break;
-                    case 'n':
-                        ch = '\n';
-                        break;
-                    case 'r':
-                        ch = '\r';
-                        break;
-                    case 't':
-                        ch = '\t';
-                        break;
-                    case 'v':
-                        ch = '\u000b';
-                        break;
-                    case '\"':
-                        ch = '\"';
-                        break;
-                    case '\'':
-                        ch = '\'';
-                        break;
-                    case '\r':
-                        nextChar = (i == st.length() - 2) ? '\\' : st.charAt(i + 2);
-                        if (nextChar == '\n') {
-                            i++;
-                        }
-                        i++;
-                        continue;
-                    case '\n':
-                        i++;
-                        continue;
-                    // Hex Unicode: u????
-                    case 'u':
-                        int code = getHexValue(st, sourceRange, i + 2, 4, errorCallback);
-                        if (code < 0) {
-                            return stringFactory.fromJavaString(st);
-                        }
-                        sb.appendCodePoint(code);
-                        i += 5;
-                        continue;
-                    // Hex Unicode: U????????
-                    case 'U':
-                        code = getHexValue(st, sourceRange, i + 2, 8, errorCallback);
-                        if (Character.isValidCodePoint(code)) {
-                            sb.appendCodePoint(code);
-                        } else {
-                            errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, String.format(UNICODE_ERROR + ILLEGAL_CHARACTER, i, i + 9));
-                            return stringFactory.fromJavaString(st);
-                        }
-                        i += 9;
-                        continue;
-                    // Hex Unicode: x??
-                    case 'x':
-                        code = getHexValue(st, sourceRange, i + 2, 2, errorCallback);
-                        if (code < 0) {
-                            return stringFactory.fromJavaString(st);
-                        }
-                        sb.appendCodePoint(code);
-                        i += 3;
-                        continue;
-                    case 'N':
-                        // a character from Unicode Data Database
-                        i = doCharacterName(st, sourceRange, sb, i + 2, errorCallback);
-                        if (i < 0) {
-                            return stringFactory.fromJavaString(st);
-                        }
-                        continue;
-                    default:
-                        if (!wasDeprecationWarning) {
-                            wasDeprecationWarning = true;
-                            warnInvalidEscapeSequence(errorCallback, sourceRange, nextChar);
-                        }
-                        sb.appendCodePoint(ch);
-                        sb.appendCodePoint(nextChar);
-                        i++;
-                        continue;
-                }
-                i++;
+        boolean emittedDeprecationWarning = false;
+        int substringStart = 0;
+        do {
+            if (backslashIndex != 0) {
+                sb.appendString(st.substring(substringStart, backslashIndex));
             }
-            sb.appendCodePoint(ch);
+            if (backslashIndex + 1 < st.length()) {
+                substringStart = processEscapeSequence(sourceRange, errorCallback, st, sb, backslashIndex + 1);
+                if (substringStart == backslashIndex + 1) {
+                    sb.appendCodePoint('\\');
+                    if (!emittedDeprecationWarning) {
+                        emittedDeprecationWarning = true;
+                        warnInvalidEscapeSequence(errorCallback, sourceRange, st.codePointAt(substringStart));
+                    }
+                }
+            } else {
+                // Lone backslash at the end, can occur in f-strings
+                substringStart = backslashIndex;
+                break;
+            }
+        } while ((backslashIndex = st.indexOf('\\', substringStart)) >= 0);
+        if (substringStart < st.length()) {
+            sb.appendString(st.substring(substringStart));
         }
         return sb.build();
+    }
+
+    private static <T> int processEscapeSequence(SourceRange sourceRange, ErrorCallback errorCallback, String st, PythonStringFactory.PythonStringBuilder<T> sb, int startIndex) {
+        int cp = st.codePointAt(startIndex);
+        int i = startIndex + Character.charCount(cp);
+        return switch (cp) {
+            case '\\' -> {
+                sb.appendCodePoint('\\');
+                yield i;
+            }
+            case 'a' -> {
+                sb.appendCodePoint('\u0007');
+                yield i;
+            }
+            case 'b' -> {
+                sb.appendCodePoint('\b');
+                yield i;
+            }
+            case 'f' -> {
+                sb.appendCodePoint('\f');
+                yield i;
+            }
+            case 'n' -> {
+                sb.appendCodePoint('\n');
+                yield i;
+            }
+            case 'r' -> {
+                sb.appendCodePoint('\r');
+                yield i;
+            }
+            case 't' -> {
+                sb.appendCodePoint('\t');
+                yield i;
+            }
+            case 'v' -> {
+                sb.appendCodePoint('\u000b');
+                yield i;
+            }
+            case '\"' -> {
+                sb.appendCodePoint('\"');
+                yield i;
+            }
+            case '\'' -> {
+                sb.appendCodePoint('\'');
+                yield i;
+            }
+            case '\r', '\n' -> i;
+            // Octal code point
+            case '0', '1', '2', '3', '4', '5', '6', '7' -> {
+                int octalValue = cp - '0';
+                cp = i < st.length() ? st.codePointAt(i) : 0;
+                if (cp >= '0' && cp <= '7') {
+                    i++;
+                    octalValue = octalValue * 8 + cp - '0';
+                    cp = i < st.length() ? st.codePointAt(i) : 0;
+                    if (cp >= '0' && cp <= '7') {
+                        i++;
+                        octalValue = octalValue * 8 + cp - '0';
+                    }
+                }
+                sb.appendCodePoint(octalValue);
+                yield i;
+            }
+            // Hex Unicode: u????
+            case 'u' -> {
+                int code = getHexValue(st, sourceRange, i, 4, errorCallback);
+                if (code < 0) {
+                    yield startIndex;
+                }
+                sb.appendCodePoint(code);
+                yield i + 4;
+            }
+            // Hex Unicode: U????????
+            case 'U' -> {
+                int code = getHexValue(st, sourceRange, i, 8, errorCallback);
+                if (Character.isValidCodePoint(code)) {
+                    sb.appendCodePoint(code);
+                } else {
+                    errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, String.format(UNICODE_ERROR + ILLEGAL_CHARACTER, i, i + 9));
+                    yield startIndex;
+                }
+                yield i + 8;
+            }
+            // Hex Unicode: x??
+            case 'x' -> {
+                int code = getHexValue(st, sourceRange, i, 2, errorCallback);
+                if (code < 0) {
+                    yield startIndex;
+                }
+                sb.appendCodePoint(code);
+                yield i + 2;
+            }
+            case 'N' -> {
+                i = doCharacterName(st, sourceRange, sb, i, errorCallback);
+                if (i < 0) {
+                    yield startIndex;
+                }
+                yield i;
+                // a character from Unicode Data Database
+            }
+            default -> startIndex;
+        };
     }
 
     private static int getHexValue(String text, SourceRange sourceRange, int start, int len, ErrorCallback errorCb) {
@@ -1130,7 +1146,7 @@ public abstract class StringLiteralUtils {
      * @param text a text that contains /N{...} escape sequence
      * @param sb string builder where the result code point will be written
      * @param offset this is offset of the open brace
-     * @return offset of the close brace or {@code -1} if an error was signaled
+     * @return offset after the close brace or {@code -1} if an error was signaled
      */
     private static int doCharacterName(String text, SourceRange sourceRange, PythonStringFactory.PythonStringBuilder<?> sb, int offset, ErrorCallback errorCallback) {
         if (offset >= text.length()) {
@@ -1155,7 +1171,7 @@ public abstract class StringLiteralUtils {
             errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
             return -1;
         }
-        return closeIndex;
+        return closeIndex + 1;
     }
 
     // Names for most control characters that mean 0-31, not some symbol
@@ -1216,8 +1232,8 @@ public abstract class StringLiteralUtils {
         return -1;
     }
 
-    public static void warnInvalidEscapeSequence(ErrorCallback errorCallback, SourceRange sourceRange, char nextChar) {
-        errorCallback.onWarning(WarningType.Deprecation, sourceRange, "invalid escape sequence '\\%c'", nextChar);
+    public static void warnInvalidEscapeSequence(ErrorCallback errorCallback, SourceRange sourceRange, int nextCodePoint) {
+        errorCallback.onWarning(WarningType.Deprecation, sourceRange, "invalid escape sequence '\\%c'", nextCodePoint);
     }
 
     private static final String UNICODE_ERROR = "(unicode error) 'unicodeescape' codec can't decode bytes in position %d-%d:";
