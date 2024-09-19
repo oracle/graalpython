@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1191,3 +1191,7 @@ def test_str_add_result_type():
     assert ('' + 'a').__class__ == str
     assert ('a' + '').__class__ == str
     assert ('a' + 'a').__class__ == str
+
+def test_literal_with_nonbmp_and_escapes():
+    # Check that escape processing didn't accidentally break the emoji into surrogates
+    assert len("\\🤗\\") == 3
