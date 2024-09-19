@@ -1100,9 +1100,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * functions. This may hold onto call targets created by one extension used in a context that
      * was closed in the meanwhile and no other context ever loads the extension.
      */
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends RootNode> klass, Enum<?> signature, TruffleString name,
-                    boolean doArgumentAndResultConversion) {
-        return createCachedCallTargetUnsafe(rootNodeFunction, true, klass, signature, name, doArgumentAndResultConversion);
+    public RootCallTarget createCachedExternalFunWrapperCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction,
+                    Class<? extends RootNode> klass, Enum<?> signature, TruffleString name,
+                    boolean doArgumentAndResultConversion, boolean isStatic) {
+        return createCachedCallTargetUnsafe(rootNodeFunction, true, klass, signature, name, doArgumentAndResultConversion, isStatic);
     }
 
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Enum<?> signature, TruffleString name,
