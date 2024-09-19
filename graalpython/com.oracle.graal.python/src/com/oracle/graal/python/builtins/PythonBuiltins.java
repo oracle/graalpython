@@ -173,7 +173,7 @@ public abstract class PythonBuiltins {
                 declaresExplicitSelf = true;
             }
             TruffleString tsName = toTruffleStringUncached(builtin.name());
-            RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, declaresExplicitSelf), factory.getNodeClass(),
+            RootCallTarget callTarget = core.getLanguage().initBuiltinCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, declaresExplicitSelf), factory.getNodeClass(),
                             builtin.name());
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : toTruffleStringUncached(builtin.doc());
             int flags = PBuiltinFunction.getFlags(builtin, callTarget);

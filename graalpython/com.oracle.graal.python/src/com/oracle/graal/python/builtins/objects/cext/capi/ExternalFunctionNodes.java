@@ -620,7 +620,7 @@ public abstract class ExternalFunctionNodes {
                 default:
                     throw CompilerDirectives.shouldNotReachHere();
             }
-            return language.createCachedCallTarget(rootNodeFunction, nodeKlass, sig, name, doArgAndResultConversion);
+            return language.createCachedExternalFunWrapperCallTarget(rootNodeFunction, nodeKlass, sig, name, doArgAndResultConversion, isStatic);
         }
 
         public static PBuiltinFunction createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, int sig,
