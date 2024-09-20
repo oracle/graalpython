@@ -262,17 +262,17 @@ import polyglot
 import numpy
 
 polyglot.register_interop_behavior(numpy.int32,
-                                   is_number=True,
-                                   fitsInByte=lambda v: -128 <= v < 128,
-                                   fitsInShort=lambda v: -0x8000 <= v < 0x8000
-fitsInInt = True,
-fitsInLong = True,
-fitsInBigInteger = True,
-asByte = int,
-asShort = int,
-asInt = int,
-asLong = int,
-asBigInteger = int,
+    is_number=True,
+    fitsInByte=lambda v: -128 <= v < 128,
+    fitsInShort=lambda v: -0x8000 <= v < 0x8000,
+    fitsInInt = True,
+    fitsInLong = True,
+    fitsInBigInteger = True,
+    asByte = int,
+    asShort = int,
+    asInt = int,
+    asLong = int,
+    asBigInteger = int,
 )
 ```
 
