@@ -402,12 +402,9 @@ class MyPythonClass:
 
 ### Supported messages
 
-The majority (with some exceptions) of the interop messages are supported by the interop behavior extension API, as
-shown in the table below.  
-The naming convention for the `register_interop_behavior` keyword arguments follows the _snake_case_ naming convention,
-i.e. the interop `fitsInLong` message
-becomes `fits_in_long` and so on. Each message can be extended with a **pure python function** (default keyword
-arguments, free vars and cell vars are not allowed) or a **boolean constant**.
+The majority (with some exceptions) of the interop messages are supported by the interop behavior extension API, as shown in the table below.  
+The naming convention for the `register_interop_behavior` keyword arguments follows the _snake_case_ naming convention, i.e. the interop `fitsInLong` message 
+becomes `fits_in_long` and so on. Each message can be extended with a **pure python function** (default keyword arguments, free vars and cell vars are not allowed) or a **boolean constant**. 
 The table below describes the supported interop messages:
 
 | Message                  | Extension argument name     | Expected return type                                                                                  |
