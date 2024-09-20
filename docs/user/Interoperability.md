@@ -319,7 +319,10 @@ class Main {
 }
 ```
 #### Interop Types
-The `register_interop_type` API allows the usage of python classes for foreign objects:
+The `register_interop_type` API allows the usage of python classes for foreign objects.
+The type of such a foreign object will no longer be `foreign`. 
+Instead, it will be a generated class with the registered python classes and `foreign` and as super classes.
+This allows mapping foreign methods and attributes to Python's magic method or more idiomatic Python code.
 
 ```java
 package org.example;
@@ -366,6 +369,7 @@ import java
 from polyglot import register_interop_type
 
 print(my_java_object.getX()) # 42
+print(type(my_java_object)) # <class 'foreign'>
 
 class MyPythonClass:
    def get_tuple(self):
@@ -376,13 +380,23 @@ foreign_class = java.type("org.example.MyJavaClass")
 register_interop_type(foreign_class, MyPythonClass)
 
 print(my_java_object.get_tuple()) # (42, 17)
+print(type(my_java_object)) # <class 'polyglot.Java_org.example.MyJavaClass_generated'>
+print(type(my_java_object).mro()) # [generated_class, MyPythonClass, foreign, object]
 
 class MyPythonClassTwo:
-    def __str__(self):
-        return f"MyJavaInstance(x={self.getX()}, y={self.getY()}"
+   def get_tuple(self):
+      return (self.getY(), self.getX())
+   def __str__(self):
+      return f"MyJavaInstance(x={self.getX()}, y={self.getY()}"
 
-register_interop_type(foreign_class, MyPythonClassTwo)
+# If 'allow_method_overwrites=False' or not given, this would lead to an error due to the method conflict of 'get_tuple'  
+register_interop_type(foreign_class, MyPythonClassTwo, allow_method_overwrites=True)
 
+# A newly registered class will be before already registered classes in the mro.
+# It allows overwriting methods from already registered classes with the flag 'allow_method_overwrites=True'
+print(type(my_java_object).mro()) # [generated_class, MyPythonClassTwo, MyPythonClass, foreign, object]
+
+print(my_java_object.get_tuple()) # (17, 42)
 print(my_java_object) # MyJavaInstance(x=42, y=17)
 ```
 
