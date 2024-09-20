@@ -1,4 +1,5 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
+//JAVA 17+
 {#for dep in dependencies.orEmpty}
 //DEPS {dep}
 {/for}
