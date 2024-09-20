@@ -322,7 +322,7 @@ class Main {
 The `register_interop_type` API allows the usage of python classes for foreign objects.
 The type of such a foreign object will no longer be `foreign`. 
 Instead, it will be a generated class with the registered python classes and `foreign` and as super classes.
-This allows mapping foreign methods and attributes to Python's magic method or more idiomatic Python code.
+This allows custom mapping of foreign methods and attributes to Python's magic methods or more idiomatic Python code.
 
 ```java
 package org.example;
