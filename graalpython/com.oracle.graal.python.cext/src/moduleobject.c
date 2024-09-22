@@ -828,10 +828,15 @@ module_getattro(PyModuleObject *m, PyObject *name)
                 "module has no attribute '%U'", name);
     return NULL;
 }
+#endif // GraalPy change
 
 static int
 module_traverse(PyModuleObject *m, visitproc visit, void *arg)
 {
+    // GraalPy change
+    if (points_to_py_handle_space(m)) {
+        return GraalPyTruffleModule_Traverse((PyObject *)m, visit, arg);
+    }
     /* bpo-39824: Don't call m_traverse() if m_size > 0 and md_state=NULL */
     if (m->md_def && m->md_def->m_traverse
         && (m->md_def->m_size <= 0 || m->md_state != NULL))
@@ -847,6 +852,10 @@ module_traverse(PyModuleObject *m, visitproc visit, void *arg)
 static int
 module_clear(PyModuleObject *m)
 {
+    // GraalPy change: managed objects don't need to be cleared
+    if (points_to_py_handle_space(m)) {
+        return 0;
+    }
     /* bpo-39824: Don't call m_clear() if m_size > 0 and md_state=NULL */
     if (m->md_def && m->md_def->m_clear
         && (m->md_def->m_size <= 0 || m->md_state != NULL))
@@ -865,6 +874,7 @@ module_clear(PyModuleObject *m)
     return 0;
 }
 
+#if 0 // GraalPy change
 static PyObject *
 module_dir(PyObject *self, PyObject *args)
 {
@@ -962,47 +972,47 @@ static PyGetSetDef module_getsets[] = {
     {"__annotations__", (getter)module_get_annotations, (setter)module_set_annotations},
     {NULL}
 };
+#endif // GraalPy change
 
 PyTypeObject PyModule_Type = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
     "module",                                   /* tp_name */
     sizeof(PyModuleObject),                     /* tp_basicsize */
     0,                                          /* tp_itemsize */
-    (destructor)module_dealloc,                 /* tp_dealloc */
+    0,                                          /* tp_dealloc */ // GraalPy change: nulled
     0,                                          /* tp_vectorcall_offset */
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
     0,                                          /* tp_as_async */
-    (reprfunc)module_repr,                      /* tp_repr */
+    0,                                          /* tp_repr */ // GraalPy change: nulled
     0,                                          /* tp_as_number */
     0,                                          /* tp_as_sequence */
     0,                                          /* tp_as_mapping */
     0,                                          /* tp_hash */
     0,                                          /* tp_call */
     0,                                          /* tp_str */
-    (getattrofunc)module_getattro,              /* tp_getattro */
-    PyObject_GenericSetAttr,                    /* tp_setattro */
+    0,                                          /* tp_getattro */ // GraalPy change: nulled
+    0,                                          /* tp_setattro */ // GraalPy change: nulled
     0,                                          /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
         Py_TPFLAGS_BASETYPE,                    /* tp_flags */
-    module___init____doc__,                     /* tp_doc */
+    0,                                          /* tp_doc */ // GraalPy change: nulled
     (traverseproc)module_traverse,              /* tp_traverse */
     (inquiry)module_clear,                      /* tp_clear */
     0,                                          /* tp_richcompare */
-    offsetof(PyModuleObject, md_weaklist),      /* tp_weaklistoffset */
+    0,                                          /* tp_weaklistoffset */ // GraalPy change: nulled
     0,                                          /* tp_iter */
     0,                                          /* tp_iternext */
-    module_methods,                             /* tp_methods */
-    module_members,                             /* tp_members */
-    module_getsets,                             /* tp_getset */
+    0,                                          /* tp_methods */ // GraalPy change: nulled
+    0,                                          /* tp_members */ // GraalPy change: nulled
+    0,                                          /* tp_getset */ // GraalPy change: nulled
     0,                                          /* tp_base */
     0,                                          /* tp_dict */
     0,                                          /* tp_descr_get */
     0,                                          /* tp_descr_set */
-    offsetof(PyModuleObject, md_dict),          /* tp_dictoffset */
-    module___init__,                            /* tp_init */
+    0,                                          /* tp_dictoffset */ // GraalPy change: nulled
+    0,                                          /* tp_init */ // GraalPy change: nulled
     0,                                          /* tp_alloc */
-    new_module,                                 /* tp_new */
-    PyObject_GC_Del,                            /* tp_free */
+    0,                                          /* tp_new */ // GraalPy change: nulled
+    GraalPyObject_GC_Del,                       /* tp_free */ // GraalPy change: different function
 };
-#endif // GraalPy change

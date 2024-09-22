@@ -331,7 +331,7 @@ PY_TRUFFLE_TYPE(PyMemberDescr_Type,              "member_descriptor",          &
 PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyMemoryView_Type, "memoryview",                 &PyType_Type, offsetof(PyMemoryViewObject, ob_array), sizeof(Py_ssize_t)) \
 PY_TRUFFLE_TYPE(PyMethod_Type,                   "method",                     &PyType_Type, sizeof(PyMethodObject)) \
 PY_TRUFFLE_TYPE(PyMethodDescr_Type,              "method_descriptor",          &PyType_Type, sizeof(PyMethodDescrObject)) \
-PY_TRUFFLE_TYPE(PyModule_Type,                   "module",                     &PyType_Type, sizeof(PyModuleObject)) \
+PY_TRUFFLE_TYPE_EXTERN(PyModule_Type,            "module"                      ) \
 PY_TRUFFLE_TYPE(PyModuleDef_Type,                "moduledef",                  &PyType_Type, sizeof(struct PyModuleDef)) \
 PY_TRUFFLE_TYPE(PyProperty_Type,                 "property",                   &PyType_Type, sizeof(propertyobject)) \
 PY_TRUFFLE_TYPE(PyRange_Type,                    "range",                      &PyType_Type, sizeof(rangeobject)) \

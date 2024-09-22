@@ -394,8 +394,9 @@ public abstract class ExternalFunctionNodes {
         TP_REPR(45, PyObjectTransfer, PyObject),
         DESCR_DELETE(46, InitResult, PyObject, PyObject, PyObject), // the last one is always NULL
         DELATTRO(47, InitResult, PyObject, PyObject, PyObject), // the last one is always NULL
-        SSIZE_ARG(48, PyObjectTransfer, PyObject, Py_ssize_t);
-        VISITPROC(49, Int, PyObject, Pointer);
+        SSIZE_ARG(48, PyObjectTransfer, PyObject, Py_ssize_t),
+        VISITPROC(49, Int, PyObject, Pointer),
+        TRAVERSEPROC(50, Int, PyObject, Pointer, Pointer);
 
         private static int defaults(int x) {
             return x;
