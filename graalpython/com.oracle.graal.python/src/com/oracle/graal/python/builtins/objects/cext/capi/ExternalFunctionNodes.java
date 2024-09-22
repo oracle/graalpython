@@ -403,7 +403,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = values();
-        @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] BY_ID = new PExternalFunctionWrapper[50];
+        @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] BY_ID = new PExternalFunctionWrapper[51];
 
         public final String signature;
         public final ArgDescriptor returnValue;

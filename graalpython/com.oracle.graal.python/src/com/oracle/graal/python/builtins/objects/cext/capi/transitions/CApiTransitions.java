@@ -101,6 +101,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -1952,7 +1954,7 @@ public abstract class CApiTransitions {
                 assert ref.pointer == wrapper.getNativePointer();
                 if (refCount > MANAGED_REFCNT && !ref.isStrongReference()) {
                     ref.setStrongReference(wrapper);
-                    if (ref.gc) {
+                    if (ref.gc && PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC)) {
                         // gc = AS_GC(op)
                         long gc = wrapper.getNativePointer() - CStructs.PyGC_Head.size();
                         gcTrackNode.execute(inliningTarget, gc);

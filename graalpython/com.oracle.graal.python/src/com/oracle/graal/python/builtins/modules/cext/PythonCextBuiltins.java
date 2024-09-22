@@ -1490,6 +1490,8 @@ public final class PythonCextBuiltins {
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode,
                         @Cached GcNativePtrToPythonNode gcNativePtrToPythonNode) {
+            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+
             boolean loggable = GC_LOGGER.isLoggable(LEVEL);
             long lPointer = coerceNativePointerToLongNode.execute(inliningTarget, pointer);
             assert lPointer != 0;
@@ -1613,6 +1615,7 @@ public final class PythonCextBuiltins {
                         @Cached UpdateRefNode updateRefNode) {
             // guaranteed by the guard
             assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
+            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
 
             long head = HandlePointerConverter.pointerToStub(coerceToLongNode.execute(inliningTarget, weakCandidates));
             // PyGC_Head *gc = GC_NEXT(head)
@@ -1680,15 +1683,18 @@ public final class PythonCextBuiltins {
     private static final int LOG_FINE = 0x8;
     private static final int LOG_FINER = 0x10;
     private static final int LOG_FINEST = 0x20;
-    private static final int DEBUG_CAPI = 0x30;
+    private static final int DEBUG_CAPI = 0x40;
+    private static final int PYTHON_GC = 0x80;
 
     @CApiBuiltin(ret = Int, call = Ignored)
     abstract static class PyTruffle_Native_Options extends CApiNullaryBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         int getNativeOptions() {
             int options = 0;
-            if (getContext().getOption(PythonOptions.TraceNativeMemory)) {
+            PythonContext context = PythonContext.get(null);
+            if (context.getOption(PythonOptions.TraceNativeMemory)) {
                 options |= TRACE_MEM;
             }
             if (LOGGER.isLoggable(Level.INFO)) {
@@ -1708,6 +1714,9 @@ public final class PythonCextBuiltins {
             }
             if (PythonContext.DEBUG_CAPI) {
                 options |= DEBUG_CAPI;
+            }
+            if (context.getOption(PythonOptions.PythonGC)) {
+                options |= PYTHON_GC;
             }
             return options;
         }

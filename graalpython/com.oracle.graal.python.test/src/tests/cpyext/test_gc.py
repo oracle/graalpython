@@ -190,6 +190,8 @@ class TestGCRefCycles:
                                 #define N 16
                                 static int freed[N];
 
+                                static PyObject *global_obj = NULL;
+
                                 static int tc0_init(TestCycle0Object* self, PyObject* args, PyObject *kwargs) {
                                     if (!PyArg_ParseTuple(args, "i", &self->idx)) {
                                         return -1;
@@ -240,6 +242,11 @@ class TestGCRefCycles:
                                     }
                                     return PyBool_FromLong(freed[l]);
                                 }
+
+                                static PyObject* tc0_set_global_obj(PyObject* unused, PyObject* arg) {
+                                    Py_XSETREF(global_obj, Py_NewRef(arg));
+                                    return Py_NewRef(Py_None);
+                                }
                                 ''',
                                 includes='#include <stdio.h>',
                                 cmembers="""int idx;
@@ -247,6 +254,7 @@ class TestGCRefCycles:
                                 tp_init='(initproc)tc0_init',
                                 tp_methods="""
                                 {"set_obj", (PyCFunction)tc0_set_obj, METH_O, ""},
+                                {"set_global_obj", (PyCFunction)tc0_set_global_obj, METH_O | METH_CLASS, ""},
                                 {"get_obj", (PyCFunction)tc0_get_obj, METH_NOARGS, ""},
                                 {"is_freed", (PyCFunction)tc0_is_freed, METH_O | METH_CLASS, ""}
                                 """,
@@ -281,11 +289,20 @@ class TestGCRefCycles:
         obj5 = TestCycle0(3)
         obj6 = TestCycle0(4)
         obj7 = TestCycle0(5)
+        obj8 = TestCycle0(6)
+        obj9 = TestCycle0(7)
+        obj10 = TestCycle0(8)
 
         # establish cycle: obj2 -> obj3 -> l -> obj2
         obj2.set_obj(obj3)
         l = [obj2]
         obj3.set_obj(l)
+
+        # establish cycle: obj4 => obj5 =ht=> l1 => obj6 => obj4
+        # init:             1       1         10     11
+        # decref:           0       0         10     11
+        # move_unreachable: 1       1         10     11
+        # broken cycle:    obj4 => obj5 =ht-> l1 => obj6 => obj4
 
         # establish cycle: obj4 -> obj5 -> l1 -> obj4
         obj4.set_obj(obj5)
@@ -297,6 +314,20 @@ class TestGCRefCycles:
         d0 = {0: obj6}
         obj7.set_obj(d0)
 
+        # J-> obj9 -> obj8 -> ["hello"]
+        obj8.set_obj(["hello"])
+        obj9.set_obj(obj8)
+        del obj8
+
+        #                   N => obj10 =ht=> ["world"]
+        # init:                    1            11
+        # decref:                  1            10
+        # move_unreachable:        1            10
+        # broken cycle:     N => obj10 =ht-> ["world"]
+        obj10.set_obj(["hello"])
+        TestCycle0.set_global_obj(obj10)
+        del obj10
+
         # everything should still be alive
         assert not TestCycle0.is_freed(0)
         assert not TestCycle0.is_freed(1)
@@ -304,6 +335,9 @@ class TestGCRefCycles:
         assert not TestCycle0.is_freed(3)
         assert not TestCycle0.is_freed(4)
         assert not TestCycle0.is_freed(5)
+        assert not TestCycle0.is_freed(6)
+        assert not TestCycle0.is_freed(7)
+        assert not TestCycle0.is_freed(8)
 
         del obj2, l, obj3
         del obj4, obj5
@@ -318,6 +352,9 @@ class TestGCRefCycles:
         # because l1 is still alive
         assert not TestCycle0.is_freed(2)
         assert not TestCycle0.is_freed(3)
+        assert not TestCycle0.is_freed(6)
+        assert not TestCycle0.is_freed(7)
+        assert not TestCycle0.is_freed(8)
 
         rescued_obj4 = l1[0]
         del l1

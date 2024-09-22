@@ -754,13 +754,17 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
             // young->_gc_prev == gc.  Don't do gc = GC_NEXT(gc) before!
             // GraalPy change
             // CALL_TRAVERSE(traverse, op, visit_reachable, (void *)young);
-            cycle.head = NULL;
-            cycle.n = 0;
-            assert (cycle.reachable == weak_candidates );
-            CALL_TRAVERSE(traverse, op, visit_collect_managed_referents, (void *)&cycle);
+            if (PyTruffle_PythonGC()) {
+                cycle.head = NULL;
+                cycle.n = 0;
+                assert (cycle.reachable == weak_candidates );
+                CALL_TRAVERSE(traverse, op, visit_collect_managed_referents, (void *)&cycle);
 
-            /* replicate any native reference to managed objects to Java */
-            push_native_references_to_managed(op, &cycle);
+                /* replicate any native reference to managed objects to Java */
+                push_native_references_to_managed(op, &cycle);
+            } else {
+                CALL_TRAVERSE(traverse, op, visit_reachable, (void *)young);
+            }
 
             // relink gc_prev to prev element.
             _PyGCHead_SET_PREV(gc, prev);
@@ -1350,7 +1354,9 @@ deduce_unreachable(PyGC_Head *base, PyGC_Head *unreachable) {
     /* Make handle table references of all objects in 'weak_candidates' weak.
      * This *MUST NOT* be done before native references to managed objects are
      * replicated in Java. Otherwise, we might end up with dangling pointers. */
-    commit_weak_candidate(&weak_candidates);
+    if (PyTruffle_PythonGC()) {
+        commit_weak_candidate(&weak_candidates);
+    }
 }
 
 /* Handle objects that may have resurrected after a call to 'finalize_garbage', moving

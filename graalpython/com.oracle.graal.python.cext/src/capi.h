@@ -96,7 +96,8 @@
 #define PY_TRUFFLE_LOG_FINE 0x8
 #define PY_TRUFFLE_LOG_FINER 0x10
 #define PY_TRUFFLE_LOG_FINEST 0x20
-#define PY_TRUFFLE_DEBUG_CAPI 0x30
+#define PY_TRUFFLE_DEBUG_CAPI 0x40
+#define PY_TRUFFLE_PYTHON_GC 0x80
 
 typedef struct mmap_object mmap_object;
 typedef struct _gc_runtime_state GCState; // originally in 'gcmodule.c'
@@ -187,6 +188,10 @@ static MUST_INLINE int PyTruffle_Debug_CAPI() {
     return Py_Truffle_Options & PY_TRUFFLE_DEBUG_CAPI;
 }
 
+static MUST_INLINE int PyTruffle_PythonGC() {
+    return Py_Truffle_Options & PY_TRUFFLE_PYTHON_GC;
+}
+
 static void
 PyTruffle_Log(int level, const char *format, ...)
 {
@@ -251,6 +256,8 @@ Py_LOCAL_SYMBOL int is_builtin_type(PyTypeObject *tp);
 #define JWRAPPER_DESCR_DELETE                46
 #define JWRAPPER_DELATTRO                    47
 #define JWRAPPER_SSIZE_ARG                   48
+#define JWRAPPER_VISITPROC                   49
+#define JWRAPPER_TRAVERSEPROC                50
 
 
 static inline int get_method_flags_wrapper(int flags) {
@@ -361,7 +368,7 @@ PY_TRUFFLE_TYPE(UnionType_Type,                  "_ctypes.UnionType",          &
 PY_TRUFFLE_TYPE(PyCPointerType_Type,             "PyCPointerType",             &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyCArrayType_Type,               "PyCArrayType",               &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyCoro_Type,                     "coroutine",                  &PyType_Type, sizeof(PyCoroObject)) \
-PY_TRUFFLE_TYPE(Py_GenericAliasType,    "types.GenericAlias", 		&PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE(Py_GenericAliasType,             "types.GenericAlias", 		   &PyType_Type, sizeof(PyObject)) \
 /* PyPickleBufferObject (PyObject_HEAD + Py_buffer + PyObject*) is defined within Objects/picklebufobject.c, so its not exposed. */ \
 PY_TRUFFLE_TYPE(PyPickleBuffer_Type,             "_pickle.PickleBuffer",       &PyType_Type, sizeof(PyPickleBufferObject)) \
 PY_TRUFFLE_TYPE_UNIMPLEMENTED(_PyAIterWrapper_Type) \

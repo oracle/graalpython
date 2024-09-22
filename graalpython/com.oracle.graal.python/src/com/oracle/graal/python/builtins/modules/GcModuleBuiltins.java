@@ -64,6 +64,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -150,8 +151,9 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                 } while ((cb = next.execute(frame, iter)) != null);
             }
             long freedMemory = javaCollect(inliningTarget, gil);
+            PythonContext pythonContext = PythonContext.get(inliningTarget);
             // call native 'gc_collect' if C API context is already available
-            if (PythonContext.get(inliningTarget).getCApiContext() != null) {
+            if (PythonContext.get(inliningTarget).getCApiContext() != null && pythonContext.getOption(PythonOptions.PythonGC)) {
                 Object executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
                 PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
                 Object result = invokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, SYMBOL.getTsName(), executable, level);
