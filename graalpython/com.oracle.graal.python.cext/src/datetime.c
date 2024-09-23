@@ -739,7 +739,11 @@ static PyObject *
 time_alloc(PyTypeObject *type, Py_ssize_t aware)
 {
     size_t size = aware ? sizeof(PyDateTime_Time) : sizeof(_PyDateTime_BaseTime);
-    PyObject *self = (PyObject *)PyObject_Malloc(size);
+    /* GraalPy change: use PyObject_Calloc instead of PyObject_Malloc such that
+     * memory is zeroed because we don't initialized the object anywhere else.
+     * CPython does initialization in 'time_new'.
+     */
+    PyObject *self = (PyObject *)PyObject_Calloc(1, size);
     if (self == NULL) {
         return PyErr_NoMemory();
     }
@@ -751,7 +755,8 @@ static PyObject *
 datetime_alloc(PyTypeObject *type, Py_ssize_t aware)
 {
     size_t size = aware ? sizeof(PyDateTime_DateTime) : sizeof(_PyDateTime_BaseDateTime);
-    PyObject *self = (PyObject *)PyObject_Malloc(size);
+    // GraalPy change: PyObject_Calloc instead of PyObject_Malloc (see above)
+    PyObject *self = (PyObject *)PyObject_Calloc(1, size);
     if (self == NULL) {
         return PyErr_NoMemory();
     }
@@ -2878,7 +2883,6 @@ static PyNumberMethods delta_as_number = {
 };
 #endif // GraalPy change
 
-// GraalPy change: nulled slots
 static PyTypeObject PyDateTime_DeltaType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "datetime.timedelta",                               /* tp_name */
@@ -2889,25 +2893,25 @@ static PyTypeObject PyDateTime_DeltaType = {
     0,                                                  /* tp_getattr */
     0,                                                  /* tp_setattr */
     0,                                                  /* tp_as_async */
-    0,                                                  /* tp_repr */
-    0,                                                  /* tp_as_number */
+    0,                                                  /* tp_repr */ // GraalPy change: nulled
+    0,                                                  /* tp_as_number */ // GraalPy change: nulled
     0,                                                  /* tp_as_sequence */
     0,                                                  /* tp_as_mapping */
-    0,                                                  /* tp_hash */
+    0,                                                  /* tp_hash */ // GraalPy change: nulled
     0,                                                  /* tp_call */
-    0,                                                  /* tp_str */
-    0,                                                  /* tp_getattro */
+    0,                                                  /* tp_str */ // GraalPy change: nulled
+    0,                                                  /* tp_getattro */ // GraalPy change: nulled
     0,                                                  /* tp_setattro */
     0,                                                  /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,           /* tp_flags */
-    0,                                                  /* tp_doc */
+    0,                                                  /* tp_doc */ // GraalPy change: nulled
     0,                                                  /* tp_traverse */
     0,                                                  /* tp_clear */
-    0,                                                  /* tp_richcompare */
+    0,                                                  /* tp_richcompare */ // GraalPy change: nulled
     0,                                                  /* tp_weaklistoffset */
     0,                                                  /* tp_iter */
     0,                                                  /* tp_iternext */
-    0,                                                  /* tp_methods */
+    0,                                                  /* tp_methods */ // GraalPy change: nulled
     delta_members,                                      /* tp_members */
     0,                                                  /* tp_getset */
     0,                                                  /* tp_base */
@@ -2917,7 +2921,7 @@ static PyTypeObject PyDateTime_DeltaType = {
     0,                                                  /* tp_dictoffset */
     0,                                                  /* tp_init */
     0,                                                  /* tp_alloc */
-    0,                                                  /* tp_new */
+    0,                                                  /* tp_new */ // GraalPy change: nulled
     0,                                                  /* tp_free */
 };
 
@@ -3780,25 +3784,25 @@ static PyTypeObject PyDateTime_DateType = {
     0,                                                  /* tp_getattr */
     0,                                                  /* tp_setattr */
     0,                                                  /* tp_as_async */
-    0,                                                  /* tp_repr */
-    0,                                                  /* tp_as_number */
+    0,                                                  /* tp_repr */ // GraalPy change: nulled
+    0,                                                  /* tp_as_number */ // GraalPy change: nulled
     0,                                                  /* tp_as_sequence */
     0,                                                  /* tp_as_mapping */
     (hashfunc)date_hash,                                /* tp_hash */
     0,                                                  /* tp_call */
-    0,                                                  /* tp_str */
-    0,                                                  /* tp_getattro */
+    0,                                                  /* tp_str */ // GraalPy change: nulled
+    0,                                                  /* tp_getattro */ // GraalPy change: nulled
     0,                                                  /* tp_setattro */
     0,                                                  /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,           /* tp_flags */
-    0,                                                  /* tp_doc */
+    0,                                                  /* tp_doc */ // GraalPy change: nulled
     0,                                                  /* tp_traverse */
     0,                                                  /* tp_clear */
-    0,                                                  /* tp_richcompare */
+    0,                                                  /* tp_richcompare */ // GraalPy change: nulled
     0,                                                  /* tp_weaklistoffset */
     0,                                                  /* tp_iter */
     0,                                                  /* tp_iternext */
-    0,                                                  /* tp_methods */
+    0,                                                  /* tp_methods */ // GraalPy change: nulled
     0,                                                  /* tp_members */
     date_getset,                                        /* tp_getset */
     0,                                                  /* tp_base */
@@ -3808,7 +3812,7 @@ static PyTypeObject PyDateTime_DateType = {
     0,                                                  /* tp_dictoffset */
     0,                                                  /* tp_init */
     0,                                                  /* tp_alloc */
-    0,                                                  /* tp_new */
+    0,                                                  /* tp_new */ // GraalPy change: nulled
     0,                                                  /* tp_free */
 };
 
@@ -4016,18 +4020,18 @@ static PyTypeObject PyDateTime_TZInfoType = {
     0,                                          /* tp_hash */
     0,                                          /* tp_call */
     0,                                          /* tp_str */
-    0,                                          /* tp_getattro */
+    0,                                          /* tp_getattro */ // GraalPy change: nulled
     0,                                          /* tp_setattro */
     0,                                          /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   /* tp_flags */
-    0,                                          /* tp_doc */
+    0,                                          /* tp_doc */ // GraalPy change: nulled
     0,                                          /* tp_traverse */
     0,                                          /* tp_clear */
     0,                                          /* tp_richcompare */
     0,                                          /* tp_weaklistoffset */
     0,                                          /* tp_iter */
     0,                                          /* tp_iternext */
-    0,                                          /* tp_methods */
+    0,                                          /* tp_methods */ // GraalPy change: nulled
     0,                                          /* tp_members */
     0,                                          /* tp_getset */
     0,                                          /* tp_base */
@@ -4037,7 +4041,7 @@ static PyTypeObject PyDateTime_TZInfoType = {
     0,                                          /* tp_dictoffset */
     0,                                          /* tp_init */
     0,                                          /* tp_alloc */
-    0,                                          /* tp_new */
+    0,                                          /* tp_new */ // GraalPy change: nulled
     0,                                          /* tp_free */
 };
 
@@ -4512,6 +4516,7 @@ time_new(PyTypeObject *type, PyObject *args, PyObject *kw)
     }
     return self;
 }
+#endif // GraalPy change
 
 /*
  * Destructor.
@@ -4526,6 +4531,7 @@ time_dealloc(PyDateTime_Time *self)
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
+#if 0 // GraalPy change
 /*
  * Indirect access to tzinfo methods.
  */
@@ -4992,36 +4998,35 @@ All arguments are optional. tzinfo may be None, or an instance of\n\
 a tzinfo subclass. The remaining arguments may be ints.\n");
 #endif // GraalPy change
 
-// GraalPy change: null the slots
 static PyTypeObject PyDateTime_TimeType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "datetime.time",                            /* tp_name */
     sizeof(PyDateTime_Time),                    /* tp_basicsize */
     0,                                          /* tp_itemsize */
-    0,                                          /* tp_dealloc */
+    (destructor)time_dealloc,                   /* tp_dealloc */
     0,                                          /* tp_vectorcall_offset */
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
     0,                                          /* tp_as_async */
-    0,                                          /* tp_repr */
+    0,                                          /* tp_repr */ // GraalPy change: nulled
     0,                                          /* tp_as_number */
     0,                                          /* tp_as_sequence */
     0,                                          /* tp_as_mapping */
-    0,                                          /* tp_hash */
+    0,                                          /* tp_hash */ // GraalPy change: nulled
     0,                                          /* tp_call */
-    0,                                          /* tp_str */
+    0,                                          /* tp_str */ // GraalPy change: nulled
     PyObject_GenericGetAttr,                    /* tp_getattro */
     0,                                          /* tp_setattro */
     0,                                          /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   /* tp_flags */
-    0,                                          /* tp_doc */
+    0,                                          /* tp_doc */ // GraalPy change: nulled
     0,                                          /* tp_traverse */
     0,                                          /* tp_clear */
-    0,                                          /* tp_richcompare */
+    0,                                          /* tp_richcompare */ // GraalPy change: nulled
     0,                                          /* tp_weaklistoffset */
     0,                                          /* tp_iter */
     0,                                          /* tp_iternext */
-    0,                                          /* tp_methods */
+    0,                                          /* tp_methods */ // GraalPy change: nulled
     0,                                          /* tp_members */
     time_getset,                                /* tp_getset */
     0,                                          /* tp_base */
@@ -5031,7 +5036,7 @@ static PyTypeObject PyDateTime_TimeType = {
     0,                                          /* tp_dictoffset */
     0,                                          /* tp_init */
     time_alloc,                                 /* tp_alloc */
-    0,                                          /* tp_new */
+    0,                                          /* tp_new */ // GraalPy change: nulled
     0,                                          /* tp_free */
 };
 
@@ -5813,6 +5818,7 @@ error:
 
     return NULL;
 }
+#endif // GraalPy change
 
 /*
  * Destructor.
@@ -5827,6 +5833,7 @@ datetime_dealloc(PyDateTime_DateTime *self)
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
+#if 0 // GraalPy change
 /*
  * Indirect access to tzinfo methods.
  */
@@ -6920,36 +6927,35 @@ static PyNumberMethods datetime_as_number = {
 };
 #endif// GraalPy change
 
-// GraalPy change: null the slots
 static PyTypeObject PyDateTime_DateTimeType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "datetime.datetime",                        /* tp_name */
     sizeof(PyDateTime_DateTime),                /* tp_basicsize */
     0,                                          /* tp_itemsize */
-    0,                                          /* tp_dealloc */
+    (destructor)datetime_dealloc,               /* tp_dealloc */
     0,                                          /* tp_vectorcall_offset */
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
     0,                                          /* tp_as_async */
-    0,                                          /* tp_repr */
-    0,                                          /* tp_as_number */
+    0,                                          /* tp_repr */ // GraalPy change: nulled
+    0,                                          /* tp_as_number */ // GraalPy change: nulled
     0,                                          /* tp_as_sequence */
     0,                                          /* tp_as_mapping */
-    0,                                          /* tp_hash */
+    0,                                          /* tp_hash */ // GraalPy change: nulled
     0,                                          /* tp_call */
-    0,                                          /* tp_str */
-    0,                                          /* tp_getattro */
+    0,                                          /* tp_str */ // GraalPy change: nulled
+    0,                                          /* tp_getattro */ // GraalPy change: nulled
     0,                                          /* tp_setattro */
     0,                                          /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   /* tp_flags */
-    0,                                          /* tp_doc */
+    0,                                          /* tp_doc */ // GraalPy change: nulled
     0,                                          /* tp_traverse */
     0,                                          /* tp_clear */
-    0,                                          /* tp_richcompare */
+    0,                                          /* tp_richcompare */ // GraalPy change: nulled
     0,                                          /* tp_weaklistoffset */
     0,                                          /* tp_iter */
     0,                                          /* tp_iternext */
-    0,                                          /* tp_methods */
+    0,                                          /* tp_methods */ // GraalPy change: nulled
     0,                                          /* tp_members */
     datetime_getset,                            /* tp_getset */
     &PyDateTime_DateType,                       /* tp_base */
@@ -6959,7 +6965,7 @@ static PyTypeObject PyDateTime_DateTimeType = {
     0,                                          /* tp_dictoffset */
     0,                                          /* tp_init */
     datetime_alloc,                             /* tp_alloc */
-    0,                                          /* tp_new */
+    0,                                          /* tp_new */ // GraalPy change: nulled
     0,                                          /* tp_free */
 };
 

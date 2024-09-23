@@ -275,6 +275,27 @@ public final class PythonContext extends Python3Core {
         }
     }
 
+    public static final class GCState {
+        private boolean enabled = true;
+        private int debug;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public int getDebug() {
+            return debug;
+        }
+
+        public void setDebug(int debug) {
+            this.debug = debug;
+        }
+    }
+
     /**
      * A class to store thread-local data mostly like CPython's {@code PyThreadState}.
      */
@@ -764,7 +785,7 @@ public final class PythonContext extends Python3Core {
     private final AsyncHandler.SharedFinalizer sharedFinalizer;
 
     // decides if we run the async weakref callbacks and destructors
-    private boolean gcEnabled = true;
+    private final GCState gcState = new GCState();
 
     // A thread-local to store the full path to the currently active import statement, for Jython
     // compat
@@ -2569,12 +2590,8 @@ public final class PythonContext extends Python3Core {
         throw CompilerDirectives.shouldNotReachHere("not yet implemented");
     }
 
-    public boolean isGcEnabled() {
-        return gcEnabled;
-    }
-
-    public void setGcEnabled(boolean flag) {
-        gcEnabled = flag;
+    public GCState getGcState() {
+        return gcState;
     }
 
     public AsyncHandler.SharedFinalizer getSharedFinalizer() {

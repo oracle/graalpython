@@ -87,6 +87,7 @@ enum ArgBehavior {
     Int32("SINT32", "I", "jint", "int", ToInt32Node::create, null, null, null),
     UInt32("UINT32", "I", "jint", "int", ToInt32Node::create, FromUInt32Node::create, FromUInt32Node.getUncached(), null),
     Int64("SINT64", "J", "jlong", "long", ToInt64Node::create, null, null, null),
+    UInt64("UINT64", "J", "jlong", "long", ToInt64Node::create, null, null, null),
     Long("SINT64", "J", "jlong", "long", ToInt64Node::create, FromLongNode::create, FromLongNode.getUncached(), null),
     Float32("FLOAT", "F", "jfloat", "float", null, null, null, null),
     Float64("DOUBLE", "D", "jdouble", "double", null, null, null, null),
@@ -288,8 +289,8 @@ public enum ArgDescriptor {
     TIMESPEC_PTR("struct timespec*"),
     TIMEVAL_PTR("struct timeval*"),
     TM_PTR("struct tm*"),
-    UINTPTR_T(ArgBehavior.Pointer, "uintptr_t"),
-    UINT64_T(ArgBehavior.Int64, "uint64_t"),
+    UINTPTR_T(ArgBehavior.UInt64, "uintptr_t"),
+    UINT64_T(ArgBehavior.UInt64, "uint64_t"),
     UNSIGNED_CHAR_PTR(ArgBehavior.Pointer, "unsigned char*"),
     UNSIGNED_INT(ArgBehavior.UInt32, "unsigned int"),
     UNSIGNED_LONG(ArgBehavior.Long, "unsigned long"),
@@ -480,8 +481,18 @@ public enum ArgDescriptor {
     }
 
     public boolean isIntType() {
-        return behavior == ArgBehavior.Int32 || behavior == ArgBehavior.UInt32 || behavior == ArgBehavior.Int64 || behavior == ArgBehavior.Long || behavior == ArgBehavior.Char16 ||
-                        behavior == ArgBehavior.Unknown;
+        switch (behavior) {
+            case Int32:
+            case UInt32:
+            case Int64:
+            case UInt64:
+            case Long:
+            case Char16:
+            case Unknown:
+                return true;
+            default:
+                return false;
+        }
     }
 
     public boolean isFloatType() {
@@ -493,7 +504,7 @@ public enum ArgDescriptor {
     }
 
     public boolean isI64() {
-        return behavior == ArgBehavior.Int64 || behavior == ArgBehavior.Long;
+        return behavior == ArgBehavior.Int64 || behavior == ArgBehavior.Long || behavior == ArgBehavior.UInt64;
     }
 
     public boolean isI8() {

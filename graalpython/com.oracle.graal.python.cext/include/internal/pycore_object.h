@@ -14,10 +14,14 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
-// #include "pycore_gc.h"            // _PyObject_GC_IS_TRACKED()
-// #include "pycore_interp.h"        // PyInterpreterState.gc
-// #include "pycore_pystate.h"       // _PyInterpreterState_GET()
-// #include "pycore_runtime.h"       // _PyRuntime
+#include "pycore_gc.h"            // _PyObject_GC_IS_TRACKED()
+#if 0 // GraalPy change
+#include "pycore_interp.h"        // PyInterpreterState.gc
+#endif
+#include "pycore_pystate.h"       // _PyInterpreterState_GET()
+#if 0 // GraalPy change
+#include "pycore_runtime.h"       // _PyRuntime
+#endif
 
 #define _PyObject_IMMORTAL_INIT(type) \
     { \
@@ -134,8 +138,28 @@ static inline void _PyObject_GC_TRACK(
 #endif
     PyObject *op)
 {
-    // GraalPy change
-    PyObject_GC_Track(op);
+    _PyObject_ASSERT_FROM(op, !_PyObject_GC_IS_TRACKED(op),
+                          "object already tracked by the garbage collector",
+                          filename, lineno, __func__);
+
+    PyGC_Head *gc = _Py_AS_GC(op);
+    _PyObject_ASSERT_FROM(op,
+                          (gc->_gc_prev & _PyGC_PREV_MASK_COLLECTING) == 0,
+                          "object is in generation which is garbage collected",
+                          filename, lineno, __func__);
+
+#if 0 // GraalPy change
+    PyInterpreterState *interp = _PyInterpreterState_GET();
+    PyGC_Head *generation0 = interp->gc.generation0;
+#else // GraalPy change
+    PyThreadState *tstate = _PyThreadState_GET();
+    PyGC_Head *generation0 = tstate->gc->generation0;
+#endif // GraalPy change
+    PyGC_Head *last = (PyGC_Head*)(generation0->_gc_prev);
+    _PyGCHead_SET_NEXT(last, gc);
+    _PyGCHead_SET_PREV(gc, last);
+    _PyGCHead_SET_NEXT(gc, generation0);
+    generation0->_gc_prev = (uintptr_t)gc;
 }
 
 /* Tell the GC to stop tracking this object.
@@ -155,13 +179,26 @@ static inline void _PyObject_GC_UNTRACK(
 #endif
     PyObject *op)
 {
-    // GraalPy change
-    PyObject_GC_UnTrack(op);
+    _PyObject_ASSERT_FROM(op, _PyObject_GC_IS_TRACKED(op),
+                          "object not tracked by the garbage collector",
+                          filename, lineno, __func__);
+
+    PyGC_Head *gc = _Py_AS_GC(op);
+    PyGC_Head *prev = _PyGCHead_PREV(gc);
+    PyGC_Head *next = _PyGCHead_NEXT(gc);
+    _PyGCHead_SET_NEXT(prev, next);
+    _PyGCHead_SET_PREV(next, prev);
+    _PyGCHead_UNTAG(gc)->_gc_next = 0;
+    _PyGCHead_UNTAG(gc)->_gc_prev &= _PyGC_PREV_MASK_FINALIZED;
 }
 
 // Macros to accept any type for the parameter, and to automatically pass
 // the filename and the filename (if NDEBUG is not defined) where the macro
 // is called.
+#ifdef GRAALVM_PYTHON_LLVM_MANAGED
+#  define _PyObject_GC_TRACK(op)
+#  define _PyObject_GC_UNTRACK(op)
+#else
 #ifdef NDEBUG
 #  define _PyObject_GC_TRACK(op) \
         _PyObject_GC_TRACK(_PyObject_CAST(op))
@@ -172,6 +209,7 @@ static inline void _PyObject_GC_UNTRACK(
         _PyObject_GC_TRACK(__FILE__, __LINE__, _PyObject_CAST(op))
 #  define _PyObject_GC_UNTRACK(op) \
         _PyObject_GC_UNTRACK(__FILE__, __LINE__, _PyObject_CAST(op))
+#endif
 #endif
 
 #ifdef Py_REF_DEBUG
@@ -197,7 +235,12 @@ _PyObject_IS_GC(PyObject *obj)
 {
     return (PyType_IS_GC(Py_TYPE(obj))
             && (Py_TYPE(obj)->tp_is_gc == NULL
-                || Py_TYPE(obj)->tp_is_gc(obj)));
+                || Py_TYPE(obj)->tp_is_gc(obj))
+            /* GraalPy change: our built-in types do not yet consistently
+               declare the HAVE_GC flag. So, also check if 'tp_traverse'
+               is there. */
+            && (!points_to_py_handle_space(obj)
+                || Py_TYPE(obj)->tp_traverse != NULL));
 }
 
 // Fast inlined version of PyType_IS_GC()
@@ -206,11 +249,14 @@ _PyObject_IS_GC(PyObject *obj)
 static inline size_t
 _PyType_PreHeaderSize(PyTypeObject *tp)
 {
-    // GraalPy change: remove CPython's GC header; also we put only one pointer for dict, we don't store it inlined
-    return _PyType_HasFeature(tp, Py_TPFLAGS_MANAGED_DICT) * sizeof(PyObject *);
+    // GraalPy change: we put only one pointer for dict, we don't store it inlined
+    return _PyType_IS_GC(tp) * sizeof(PyGC_Head) +
+        _PyType_HasFeature(tp, Py_TPFLAGS_MANAGED_DICT) *  sizeof(PyObject *);
 }
 
 void _PyObject_GC_Link(PyObject *op);
+
+void _GraalPyObject_GC_NotifyOwnershipTransfer(PyObject *op);
 
 // Usage: assert(_Py_CheckSlotResult(obj, "__getitem__", result != NULL));
 extern int _Py_CheckSlotResult(
@@ -245,8 +291,7 @@ static inline PyDictValues **_PyObject_ValuesPointer(PyObject *obj)
 static inline PyObject **_PyObject_ManagedDictPointer(PyObject *obj)
 {
     assert(Py_TYPE(obj)->tp_flags & Py_TPFLAGS_MANAGED_DICT);
-    // GraalPy change: ours is at a different offset
-    return ((PyObject **)obj)-1;
+    return ((PyObject **)obj)-3;
 }
 
 #define MANAGED_DICT_OFFSET (((int)sizeof(PyObject *))*-3)

@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.GetUnreifiedExceptionNode;
@@ -105,7 +104,7 @@ public final class PThreadState extends PythonStructNativeWrapper {
         PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
 
         Object ptr = CStructAccess.AllocateNode.allocUncached(CStructs.PyThreadState);
-        CStructAccess.WritePointerNode writePtrNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
+        CStructAccess.WritePointerNode writePtrNode = CStructAccess.WritePointerNode.getUncached();
         PythonContext pythonContext = PythonContext.get(null);
         PDict threadStateDict = threadState.getDict();
         if (threadStateDict == null) {
@@ -113,13 +112,14 @@ public final class PThreadState extends PythonStructNativeWrapper {
             threadState.setDict(threadStateDict);
         }
         writePtrNode.write(ptr, CFields.PyThreadState__dict, toNative.execute(threadStateDict));
-        CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+        CApiContext cApiContext = pythonContext.getCApiContext();
         writePtrNode.write(ptr, CFields.PyThreadState__small_ints, cApiContext.getOrCreateSmallInts());
         if (threadState.getCurrentException() != null) {
             // See TransformExceptionToNativeNode
             Object exceptionType = GetClassNode.executeUncached(GetUnreifiedExceptionNode.executeUncached(threadState.getCurrentException()));
             CStructAccess.WritePointerNode.getUncached().write(ptr, CFields.PyThreadState__curexc_type, PythonToNativeNode.getUncached().execute(exceptionType));
         }
+        writePtrNode.write(ptr, CFields.PyThreadState__gc, cApiContext.getGCState());
         return ptr;
     }
 }

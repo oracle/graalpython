@@ -156,8 +156,12 @@ _Py_IncRef(PyObject *o)
     if (refcnt != IMMORTAL_REFCNT)
     {
         Py_SET_REFCNT(o, refcnt + 1);
-        if (points_to_py_handle_space(o) && refcnt == MANAGED_REFCNT) {
-            GraalPyTruffle_NotifyRefCount(o, refcnt + 1);
+        if (refcnt == MANAGED_REFCNT) {
+            if (points_to_py_handle_space(o)) {
+                GraalPyTruffle_NotifyRefCount(o, refcnt + 1);
+            } else if (_PyObject_IS_GC(o)) {
+                _GraalPyObject_GC_NotifyOwnershipTransfer(o);
+            }
         }
     }
 }
@@ -2272,6 +2276,7 @@ finally:
     /* ignore exceptions because there is no way to report them. */
     PyErr_Restore(error_type, error_value, error_traceback);
 }
+#endif // GraalPy change
 
 /* Trashcan support. */
 
@@ -2365,6 +2370,7 @@ _PyTrash_cond(PyObject *op, destructor dealloc)
 }
 
 
+#if 0 // GraalPy change
 void _Py_NO_RETURN
 _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
                        const char *file, int line, const char *function)
@@ -2637,29 +2643,38 @@ Py_ssize_t _Py_SIZE(PyObject *obj) {
     return PyTruffle_SIZE(obj);
 }
 
-void PyTruffle_SET_TYPE(PyObject *a, PyTypeObject *b) {
-	if (points_to_py_handle_space(a)) {
-		printf("changing the type of an object is not supported\n");
-	} else {
-		a->ob_type = b;
-	}
-}
-void PyTruffle_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
-	if (points_to_py_handle_space(a)) {
-		Graal_PyTruffle_SET_SIZE(a, b);
-	} else {
-		a->ob_size = b;
-	}
+void
+PyTruffle_SET_TYPE(PyObject *a, PyTypeObject *b)
+{
+    if (points_to_py_handle_space(a)) {
+        PyTruffle_Log(PY_TRUFFLE_LOG_INFO,
+                "changing the type of an object is not supported\n");
+    } else {
+        a->ob_type = b;
+    }
 }
 
-#define DEFERRED_NOTIFY_SIZE 16
+void
+PyTruffle_SET_SIZE(PyVarObject *a, Py_ssize_t b)
+{
+    if (points_to_py_handle_space(a)) {
+        Graal_PyTruffle_SET_SIZE(a, b);
+    } else {
+        a->ob_size = b;
+    }
+}
+
+#define DEFERRED_NOTIFY_SIZE 1
+#if DEFERRED_NOTIFY_SIZE > 1
 static PyObject *deferred_notify_ops[DEFERRED_NOTIFY_SIZE];
 static int deferred_notify_cur = 0;
+#endif
 
 static inline void
 _decref_notify(const PyObject *op, const Py_ssize_t updated_refcnt)
 {
     if (points_to_py_handle_space(op) && updated_refcnt <= MANAGED_REFCNT) {
+#if DEFERRED_NOTIFY_SIZE > 1
         if (PyTruffle_Debug_CAPI() && updated_refcnt < MANAGED_REFCNT) {
             Py_FatalError("Refcount of native stub fell below MANAGED_REFCNT");
         }
@@ -2669,6 +2684,9 @@ _decref_notify(const PyObject *op, const Py_ssize_t updated_refcnt)
             deferred_notify_cur = 0;
             GraalPyTruffle_BulkNotifyRefCount(deferred_notify_ops, DEFERRED_NOTIFY_SIZE);
         }
+#else
+        GraalPyTruffle_BulkNotifyRefCount(&op, 1);
+#endif
     }
 }
 

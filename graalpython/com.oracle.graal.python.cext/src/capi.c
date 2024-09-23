@@ -43,7 +43,7 @@
 #include <time.h>
 #include <trufflenfi.h>
 
-#define ASSERTIONS
+#include "pycore_gc.h" // _PyGC_InitState
 
 #ifdef GRAALVM_PYTHON_LLVM_MANAGED
 int points_to_py_handle_space(void* ptr) {
@@ -196,11 +196,13 @@ PyTypeObject GLOBAL_NAME = {\
     0,                                          /* tp_is_gc */\
 };
 
+#define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, NAME)
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) PyTypeObject GLOBAL_NAME;
 
 PY_TYPE_OBJECTS
 
 #undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_EXTERN
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 
 
@@ -223,9 +225,11 @@ static void initialize_builtin_types_and_structs() {
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs...");
 	static int64_t builtin_types[] = {
 #define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) &GLOBAL_NAME, __TYPE_NAME__,
+#define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, __TYPE_NAME__) &GLOBAL_NAME, __TYPE_NAME__,
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
     PY_TYPE_OBJECTS
 #undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_EXTERN
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
         NULL, NULL
 	};
@@ -348,13 +352,24 @@ static void initialize_bufferprocs() {
     picklebuf_as_buffer.bf_releasebuffer = empty_releasebuf,
     PyPickleBuffer_Type.tp_as_buffer = &picklebuf_as_buffer;
     GraalPy_set_PyTypeObject_tp_as_buffer(&PyPickleBuffer_Type, &picklebuf_as_buffer);
+
+}
+
+
+static int dummy_traverse(PyObject *self, visitproc f, void *i) {return 0;}
+
+static void initialize_gc_types_related_slots() {
+    _PyExc_Exception.tp_traverse = &dummy_traverse;
+    _PyWeakref_RefType.tp_free = &GraalPyObject_GC_Del;
 }
 
 int is_builtin_type(PyTypeObject *tp) {
 #define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) (tp == &GLOBAL_NAME) ||
+#define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, __TYPE_NAME__) PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, 0, 0, 0, 0, 0, 0, 0)
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
     return PY_TYPE_OBJECTS 0;
 #undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_EXTERN
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 }
 
@@ -460,25 +475,32 @@ PyAPI_FUNC(void) PyTruffle_DECREF(PyObject* obj) {
     Py_DECREF(obj);
 }
 
-/** to be used from Java code only; calls DECREF */
-PyAPI_FUNC(Py_ssize_t) PyTruffle_SUBREF(intptr_t ptr, Py_ssize_t value) {
-	PyObject* obj = (PyObject*) ptr; // avoid type attachment at the interop boundary
-#ifdef ASSERTIONS
-	if (obj->ob_refcnt & 0xFFFFFFFF00000000L) {
-		char buf[1024];
-		sprintf(buf, "suspicious refcnt value during managed adjustment for %p (%zd 0x%zx - %zd)\n", obj, obj->ob_refcnt, obj->ob_refcnt, value);
-		Py_FatalError(buf);
-	}
-	if ((obj->ob_refcnt - value) < 0) {
-		char buf[1024];
-		sprintf(buf, "refcnt below zero during managed adjustment for %p (%zd 0x%zx - %zd)\n", obj, obj->ob_refcnt, obj->ob_refcnt, value);
-		Py_FatalError(buf);
-	}
-//	printf("refcnt value during managed adjustment for %p (%zd 0x%zx - %zd)\n", obj, obj->ob_refcnt, obj->ob_refcnt, value);
-#endif // ASSERTIONS
+/** to be used from Java code only; calls '_Py_Dealloc' */
+PyAPI_FUNC(Py_ssize_t)
+PyTruffle_SUBREF(intptr_t ptr, Py_ssize_t value)
+{
+    PyObject *obj = (PyObject*)ptr; // avoid type attachment at the interop boundary
+#ifndef NDEBUG
+    if (obj->ob_refcnt & 0xFFFFFFFF00000000L) {
+        char buf[1024];
+        sprintf(buf,
+                "suspicious refcnt value during managed adjustment for %p (%zd 0x%zx - %zd)\n",
+                obj, obj->ob_refcnt, obj->ob_refcnt, value);
+        Py_FatalError(buf);
+    }
+    if ((obj->ob_refcnt - value) < 0) {
+        char buf[1024];
+        sprintf(buf,
+                "refcnt below zero during managed adjustment for %p (%zd 0x%zx - %zd)\n",
+                obj, obj->ob_refcnt, obj->ob_refcnt, value);
+        Py_FatalError(buf);
+    }
+#endif // NDEBUG
 
     Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
     if (new_value == 0) {
+        PyTruffle_Log(PY_TRUFFLE_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
+                __func__, obj);
         _Py_Dealloc(obj);
     }
 #ifdef Py_REF_DEBUG
@@ -489,30 +511,38 @@ PyAPI_FUNC(Py_ssize_t) PyTruffle_SUBREF(intptr_t ptr, Py_ssize_t value) {
     return new_value;
 }
 
-/** to be used from Java code only; calls DECREF */
-PyAPI_FUNC(Py_ssize_t) PyTruffle_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) {
-
-	for (int i = 0; i < len; i++) {
-    	PyObject *obj = (PyObject*) ptrArray[i];
+/** to be used from Java code only; calls '_Py_Dealloc' */
+PyAPI_FUNC(Py_ssize_t)
+PyTruffle_bulk_DEALLOC(intptr_t ptrArray[], int64_t len)
+{
+    for (int i = 0; i < len; i++) {
+        PyObject *obj = (PyObject*)ptrArray[i];
+        PyTruffle_Log(PY_TRUFFLE_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
+                __func__, obj);
         _Py_Dealloc(obj);
     }
     return 0;
 }
 
 /** to be used from Java code only and only at exit; calls _Py_Dealloc */
-PyAPI_FUNC(Py_ssize_t) PyTruffle_shutdown_bulk_DEALLOC(intptr_t ptrArray[], int64_t len) {
-    /* some objects depends on others which might get deallocated in the process
-        of an earlier deallocation of the other object. To avoid double deallocations,
-        we, temporarly, make all objects immortal artificially */
-	for (int i = 0; i < len; i++) {
-    	PyObject *obj = (PyObject*) ptrArray[i];
+PyAPI_FUNC(Py_ssize_t)
+PyTruffle_shutdown_bulk_DEALLOC(intptr_t ptrArray[], int64_t len)
+{
+    /* some objects depends on others which might get deallocated in the
+       process of an earlier deallocation of the other object. To avoid double
+       deallocations, we, temporarily, make all objects immortal artificially */
+    for (int i = 0; i < len; i++) {
+        PyObject *obj = (PyObject*)ptrArray[i];
         obj->ob_refcnt = 999999999; // object.h:_Py_IMMORTAL_REFCNT
     }
-	for (int i = 0; i < len; i++) {
-    	PyObject *obj = (PyObject*) ptrArray[i];
+    for (int i = 0; i < len; i++) {
+        PyObject *obj = (PyObject*)ptrArray[i];
         if (Py_TYPE(obj)->tp_dealloc != object_dealloc) {
-            /* we don't need to care about objects with default deallocation process */
+            /* we don't need to care about objects with default deallocation
+               process */
             obj->ob_refcnt = 0;
+            PyTruffle_Log(PY_TRUFFLE_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
+                    __func__, obj);
             _Py_Dealloc(obj);
         }
     }
@@ -853,12 +883,16 @@ void _PyFloat_InitState(PyInterpreterState* state);
 Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
 Py_LOCAL_SYMBOL int32_t graalpy_finalizing;
 
-PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures) {
+PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures, GCState *gc) {
     clock_t t = clock();
 
     if (env) {
         TRUFFLE_CONTEXT = (*env)->getTruffleContext(env);
     }
+
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+    _PyGC_InitState(gc);
+#endif
 
     initialize_builtins(builtin_closures);
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
@@ -870,6 +904,7 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures)
     initialize_exceptions();
     initialize_hashes();
     initialize_bufferprocs();
+    initialize_gc_types_related_slots();
     _PyFloat_InitState(NULL);
 
     // TODO: initialize during cext initialization doesn't work at the moment

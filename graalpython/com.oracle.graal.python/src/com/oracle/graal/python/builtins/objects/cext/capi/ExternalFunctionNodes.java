@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ClearCurrentExceptionNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
@@ -393,14 +394,16 @@ public abstract class ExternalFunctionNodes {
         TP_REPR(45, PyObjectTransfer, PyObject),
         DESCR_DELETE(46, InitResult, PyObject, PyObject, PyObject), // the last one is always NULL
         DELATTRO(47, InitResult, PyObject, PyObject, PyObject), // the last one is always NULL
-        SSIZE_ARG(48, PyObjectTransfer, PyObject, Py_ssize_t);
+        SSIZE_ARG(48, PyObjectTransfer, PyObject, Py_ssize_t),
+        VISITPROC(49, Int, PyObject, Pointer),
+        TRAVERSEPROC(50, Int, PyObject, Pointer, Pointer);
 
         private static int defaults(int x) {
             return x;
         }
 
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = values();
-        @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] BY_ID = new PExternalFunctionWrapper[50];
+        @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] BY_ID = new PExternalFunctionWrapper[51];
 
         public final String signature;
         public final ArgDescriptor returnValue;
@@ -694,7 +697,7 @@ public abstract class ExternalFunctionNodes {
                 }
 
                 // ensure that 'callable' is executable via InteropLibrary
-                Object boundCallable = CExtContext.ensureExecutable(callable, sig);
+                Object boundCallable = EnsureExecutableNode.executeUncached(callable, sig);
                 kwDefaults = ExternalFunctionNodes.createKwDefaults(boundCallable);
                 slot = TpSlotNative.createCExtSlot(boundCallable);
             }

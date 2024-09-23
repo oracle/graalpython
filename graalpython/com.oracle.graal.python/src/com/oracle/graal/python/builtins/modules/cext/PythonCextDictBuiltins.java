@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_HASH_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
@@ -59,6 +60,8 @@ import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_P_HAS_NO_ATTR_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
 
+import java.util.logging.Level;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
@@ -70,12 +73,15 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -106,12 +112,17 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -578,6 +589,67 @@ public final class PythonCextDictBuiltins {
         @Fallback
         int fallback(Object dict, @SuppressWarnings("unused") Object b, @SuppressWarnings("unused") Object override) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
+    abstract static class PyTruffleDict_MaybeUntrack extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static int doPDict(@SuppressWarnings("unused") PDict self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached HashingStorageNodes.HashingStorageForEach forEachNode,
+                        @Cached DictTraverseCallback traverseCallback) {
+            HashingStorage dictStorage = self.getDictStorage();
+            boolean res = forEachNode.execute(null, inliningTarget, dictStorage, traverseCallback, false);
+            if (CApiContext.GC_LOGGER.isLoggable(Level.FINE)) {
+                CApiContext.GC_LOGGER.fine(PythonUtils.formatJString("Maybe untrack dict %s: %s", self, res));
+            }
+            return PInt.intValue(res);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class DictTraverseCallback extends HashingStorageForEachCallback<Boolean> {
+
+        @Override
+        public abstract Boolean execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, Boolean s);
+
+        @Specialization
+        static Boolean doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, Boolean accumulator,
+                        @Cached HashingStorageIteratorKey nextKey,
+                        @Cached HashingStorageIteratorValue nextValue) {
+            if (!accumulator) {
+                return false;
+            }
+
+            Object key = nextKey.execute(inliningTarget, storage, it);
+            if (isTracked(key, null)) {
+                return false;
+            }
+
+            Object value = nextValue.execute(inliningTarget, storage, it);
+            if (isTracked(value, null)) {
+                return false;
+            }
+            return true;
+        }
+
+        /*
+         * #define _PyObject_GC_MAY_BE_TRACKED(obj) \ (PyObject_IS_GC(obj) && \
+         * (!PyTuple_CheckExact(obj) || _PyObject_GC_IS_TRACKED(obj)))
+         */
+        static boolean isTracked(Object object, CStructAccess.ReadI64Node readI64Node) {
+            // TODO(fa): implement properly
+            return true;
+            // #define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)
+            // long gcNext = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_prev);
+            // if (_PyObject_GC_IS_TRACKED(op))
+            // if (gcNext != 0) {
+            // return true;
+            // }
+            // return false;
         }
     }
 }

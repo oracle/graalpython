@@ -209,7 +209,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
         TypeNodes.SetTypeFlagsNode.executeUncached(weakrefModule.getAttribute(T_CALLABLE_PROXY_TYPE), TypeFlags.DEFAULT | TypeFlags.HAVE_GC);
         final PythonContext ctx = core.getContext();
         core.getContext().registerAsyncAction(() -> {
-            if (!ctx.isGcEnabled()) {
+            if (!ctx.getGcState().isEnabled()) {
                 return null;
             }
             Reference<? extends Object> reference = null;

@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactor
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.FreeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.GetElementPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadI32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteIntNodeGen;
@@ -250,13 +251,12 @@ public class CStructAccess {
         }
 
         @Specialization
-        static Object getLong(long pointer, long offset) {
-            assert offset >= 0;
+        static long getLong(long pointer, long offset) {
             return pointer + offset;
         }
 
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
-        static Object getPointer(Object pointer, long offset,
+        static long getPointer(Object pointer, long offset,
                         @CachedLibrary("pointer") InteropLibrary lib) {
             return getLong(asPointer(pointer, lib), offset);
         }
@@ -403,6 +403,10 @@ public class CStructAccess {
     @ImportStatic(PGuards.class)
     @GenerateUncached
     public abstract static class ReadI32Node extends ReadBaseNode {
+
+        public static int readUncached(Object pointer, CFields field) {
+            return ReadI32NodeGen.getUncached().read(pointer, field);
+        }
 
         abstract int execute(Object pointer, long offset);
 
@@ -762,11 +766,6 @@ public class CStructAccess {
             return result;
         }
 
-        public final Object readStructArrayElement(Object pointer, long element, CFields field) {
-            assert accepts(field);
-            return execute(pointer, element * field.struct.size() + field.offset());
-        }
-
         @Specialization
         static Object readLong(long pointer, long offset,
                         @Shared @Cached NativePtrToPythonNode toPython) {
@@ -1067,6 +1066,10 @@ public class CStructAccess {
 
         public final void writeArrayElement(Object pointer, long element, int value) {
             execute(pointer, element * Integer.BYTES, value);
+        }
+
+        public final void writeStructArrayElement(Object pointer, long element, CFields field, int value) {
+            execute(pointer, element * field.struct.size() + field.offset(), value);
         }
 
         @Specialization

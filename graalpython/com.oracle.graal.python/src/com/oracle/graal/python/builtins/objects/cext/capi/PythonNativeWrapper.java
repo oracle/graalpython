@@ -198,31 +198,17 @@ public abstract class PythonNativeWrapper implements TruffleObject {
             return MANAGED_REFCNT;
         }
 
-        /**
-         * Adjusts the native wrapper's reference to be weak (if {@code refCount <= MANAGED_REFCNT})
-         * or to be strong (if {@code refCount > MANAGED_REFCNT}) if there is a reference. This
-         * method should be called at appropriate points in the program, e.g., it should be called
-         * from native code if the refcount falls below {@link #MANAGED_REFCNT}.
-         */
-        public final void updateRef(Node inliningTarget, long refCount, InlinedConditionProfile hasRefProfile) {
-            if (hasRefProfile.profile(inliningTarget, ref != null)) {
-                if (refCount > MANAGED_REFCNT && !ref.isStrongReference()) {
-                    ref.setStrongReference(this);
-                } else if (refCount <= MANAGED_REFCNT && ref.isStrongReference()) {
-                    ref.setStrongReference(null);
-                }
-            }
-        }
-
         @TruffleBoundary(allowInlining = true)
-        public void incRef() {
+        public long incRef() {
             assert isNative();
             long pointer = HandlePointerConverter.pointerToStub(getNativePointer());
             long refCount = CApiTransitions.readNativeRefCount(pointer);
+            assert refCount >= PythonAbstractObjectNativeWrapper.MANAGED_REFCNT : "invalid refcnt " + refCount + " during incRef in " + Long.toHexString(getNativePointer());
             if (refCount != IMMORTAL_REFCNT) {
                 CApiTransitions.writeNativeRefCount(pointer, refCount + 1);
+                return refCount + 1;
             }
-            assert refCount >= PythonAbstractObjectNativeWrapper.MANAGED_REFCNT : "invalid refcnt " + refCount + " during incRef in " + Long.toHexString(getNativePointer());
+            return IMMORTAL_REFCNT;
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -234,11 +220,6 @@ public abstract class PythonNativeWrapper implements TruffleObject {
                 long updatedRefCount = refCount - 1;
                 CApiTransitions.writeNativeRefCount(pointer, updatedRefCount);
                 assert updatedRefCount >= PythonAbstractObjectNativeWrapper.MANAGED_REFCNT : "invalid refcnt " + updatedRefCount + " during decRef in " + Long.toHexString(getNativePointer());
-                if (updatedRefCount == PythonAbstractObjectNativeWrapper.MANAGED_REFCNT && ref != null) {
-                    // make weak
-                    assert ref.isStrongReference();
-                    ref.setStrongReference(null);
-                }
                 return updatedRefCount;
             }
             return refCount;

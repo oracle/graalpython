@@ -57,9 +57,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseAndGetHandleNode;
@@ -1399,7 +1399,7 @@ public abstract class HPyExternalFunctionNodes {
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
-            target = CExtContext.ensureExecutable(target, PExternalFunctionWrapper.GETTER);
+            target = EnsureExecutableNode.executeUncached(target, PExternalFunctionWrapper.GETTER);
             return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }
@@ -1484,7 +1484,7 @@ public abstract class HPyExternalFunctionNodes {
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
-            target = CExtContext.ensureExecutable(target, PExternalFunctionWrapper.SETTER);
+            target = EnsureExecutableNode.executeUncached(target, PExternalFunctionWrapper.SETTER);
             return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }

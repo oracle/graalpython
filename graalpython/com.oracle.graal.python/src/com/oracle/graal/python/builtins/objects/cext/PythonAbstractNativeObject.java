@@ -76,16 +76,31 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.TriState;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
+    /**
+     * A reference to the native object. This usually is a pointer object (i.e. responds to
+     * {@link InteropLibrary#isPointer(Object)} with {@code true}) but can also be something the
+     * emulates native memory.
+     */
     public final Object object;
     public TpSlots slots;
     public NativeObjectReference ref;
+
+    /**
+     * Replicates the native references of this native object in Java.
+     * <p>
+     * Native objects, that have a traverse function, may have references (i.e. native fields of
+     * type {@code PyObject *}) to other objects. Whenever the Python GC detects a possible
+     * reference cycle, we will replicate those native references in Java to give control to the
+     * Java GC when objects may die.
+     * </p>
+     */
+    private Object[] replicatedNativeReferences;
 
     public PythonAbstractNativeObject(Object object) {
         // GR-50245
@@ -96,13 +111,26 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         this.object = object;
     }
 
+    @Override
     public int compareTo(Object o) {
         return 0;
     }
 
+    @Override
     public void lookupChanged() {
         // TODO invalidate cached native MRO
         throw CompilerDirectives.shouldNotReachHere("not yet implemented");
+    }
+
+    /**
+     * For a description, see {@link #replicatedNativeReferences}.
+     */
+    public void setReplicatedNativeReferences(Object[] replicatedNativeReferences) {
+        this.replicatedNativeReferences = replicatedNativeReferences;
+    }
+
+    public Object[] getReplicatedNativeReferences() {
+        return replicatedNativeReferences;
     }
 
     @Override
@@ -130,21 +158,15 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         return Objects.equals(object, other.object);
     }
 
-    public boolean equalsProfiled(Object obj, ValueProfile profile) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        PythonAbstractNativeObject other = (PythonAbstractNativeObject) obj;
-        return Objects.equals(profile.profile(object), profile.profile(other.object));
+    @TruffleBoundary
+    public String toStringWithContext() {
+        return "PythonAbstractNativeObject(" + PythonUtils.formatPointer(object) + ')';
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonUtils.formatJString("PythonAbstractNativeObject(%s)", object);
+        return "PythonAbstractNativeObject(" + object + ')';
     }
 
     @ExportMessage

@@ -340,23 +340,16 @@ PyDoc_STRVAR(slice_doc,
 slice(start, stop[, step])\n\
 \n\
 Create a slice object.  This is used for extended slicing (e.g. a[0:10:2]).");
+#endif // GraalPy change
 
 static void
 slice_dealloc(PySliceObject *r)
 {
-    PyInterpreterState *interp = _PyInterpreterState_GET();
-    _PyObject_GC_UNTRACK(r);
-    Py_DECREF(r->step);
-    Py_DECREF(r->start);
-    Py_DECREF(r->stop);
-    if (interp->slice_cache == NULL) {
-        interp->slice_cache = r;
-    }
-    else {
-        PyObject_GC_Del(r);
-    }
+    // GraalPy change: different implementation
+    GraalPyObject_GC_Del(r);
 }
 
+#if 0 // GraalPy change
 static PyObject *
 slice_repr(PySliceObject *r)
 {
@@ -632,13 +625,12 @@ slice_richcompare(PyObject *v, PyObject *w, int op)
     Py_DECREF(t2);
     return res;
 }
+#endif // GraalPy change
 
 static int
 slice_traverse(PySliceObject *v, visitproc visit, void *arg)
 {
-    Py_VISIT(v->start);
-    Py_VISIT(v->stop);
-    Py_VISIT(v->step);
+    // GraalPy change: different implementation; nothing to do
     return 0;
 }
 
@@ -652,7 +644,7 @@ PyTypeObject PySlice_Type = {
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
     0,                                          /* tp_as_async */
-    (reprfunc)slice_repr,                       /* tp_repr */
+    0,                                          /* tp_repr */ // GraalPy change: nulled
     0,                                          /* tp_as_number */
     0,                                          /* tp_as_sequence */
     0,                                          /* tp_as_mapping */
@@ -663,15 +655,15 @@ PyTypeObject PySlice_Type = {
     0,                                          /* tp_setattro */
     0,                                          /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,    /* tp_flags */
-    slice_doc,                                  /* tp_doc */
+    0,                                          /* tp_doc */ // GraalPy change: nulled
     (traverseproc)slice_traverse,               /* tp_traverse */
     0,                                          /* tp_clear */
-    slice_richcompare,                          /* tp_richcompare */
+    0,                                          /* tp_richcompare */ // GraalPy change: nulled
     0,                                          /* tp_weaklistoffset */
     0,                                          /* tp_iter */
     0,                                          /* tp_iternext */
-    slice_methods,                              /* tp_methods */
-    slice_members,                              /* tp_members */
+    0,                                          /* tp_methods */ // GraalPy change: nulled
+    0,                                          /* tp_members */ // GraalPy change: nulled
     0,                                          /* tp_getset */
     0,                                          /* tp_base */
     0,                                          /* tp_dict */
@@ -680,9 +672,8 @@ PyTypeObject PySlice_Type = {
     0,                                          /* tp_dictoffset */
     0,                                          /* tp_init */
     0,                                          /* tp_alloc */
-    slice_new,                                  /* tp_new */
+    0,                                          /* tp_new */ // GraalPy change: nulled
 };
-#endif // GraalPy change
 
 // GraalPy additions
 

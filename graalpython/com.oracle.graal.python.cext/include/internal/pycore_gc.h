@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -27,8 +27,11 @@ typedef struct {
 #define _Py_AS_GC(o) ((PyGC_Head *)(o)-1)
 #define _PyGC_Head_UNUSED PyGC_Head
 
+// GraalPy change
+#define _PyGCHead_UNTAG(PTR) ((PyGC_Head *)(((uintptr_t) (PTR)) & ~HANDLE_BASE))
+
 /* True if the object is currently tracked by the GC. */
-#define _PyObject_GC_IS_TRACKED(o) (_Py_AS_GC(o)->_gc_next != 0)
+#define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)
 
 /* True if the object may be tracked by the GC in the future, or already is.
    This can be useful to implement some optimizations. */
@@ -48,21 +51,21 @@ typedef struct {
 
 // Lowest bit of _gc_next is used for flags only in GC.
 // But it is always 0 for normal code.
-#define _PyGCHead_NEXT(g)        ((PyGC_Head*)(g)->_gc_next)
-#define _PyGCHead_SET_NEXT(g, p) _Py_RVALUE((g)->_gc_next = (uintptr_t)(p))
+#define _PyGCHead_NEXT(g)        ((PyGC_Head*)_PyGCHead_UNTAG(g)->_gc_next)
+#define _PyGCHead_SET_NEXT(g, p) _Py_RVALUE(_PyGCHead_UNTAG(g)->_gc_next = (uintptr_t)(p))
 
 // Lowest two bits of _gc_prev is used for _PyGC_PREV_MASK_* flags.
-#define _PyGCHead_PREV(g) ((PyGC_Head*)((g)->_gc_prev & _PyGC_PREV_MASK))
+#define _PyGCHead_PREV(g) ((PyGC_Head*)(_PyGCHead_UNTAG(g)->_gc_prev & _PyGC_PREV_MASK))
 #define _PyGCHead_SET_PREV(g, p) do { \
     assert(((uintptr_t)p & ~_PyGC_PREV_MASK) == 0); \
-    (g)->_gc_prev = ((g)->_gc_prev & ~_PyGC_PREV_MASK) \
+    _PyGCHead_UNTAG(g)->_gc_prev = (_PyGCHead_UNTAG(g)->_gc_prev & ~_PyGC_PREV_MASK) \
         | ((uintptr_t)(p)); \
     } while (0)
 
 #define _PyGCHead_FINALIZED(g) \
-    (((g)->_gc_prev & _PyGC_PREV_MASK_FINALIZED) != 0)
+    ((_PyGCHead_UNTAG(g)->_gc_prev & _PyGC_PREV_MASK_FINALIZED) != 0)
 #define _PyGCHead_SET_FINALIZED(g) \
-    _Py_RVALUE((g)->_gc_prev |= _PyGC_PREV_MASK_FINALIZED)
+    _Py_RVALUE(_PyGCHead_UNTAG(g)->_gc_prev |= _PyGC_PREV_MASK_FINALIZED)
 
 #define _PyGC_FINALIZED(o) \
     _PyGCHead_FINALIZED(_Py_AS_GC(o))

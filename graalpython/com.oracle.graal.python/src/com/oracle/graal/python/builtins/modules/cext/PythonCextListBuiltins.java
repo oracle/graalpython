@@ -43,7 +43,10 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyListObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
@@ -61,6 +64,10 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.XDecRefPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
@@ -75,6 +82,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
@@ -86,7 +95,6 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextListBuiltins {
 
-    ///////////// list /////////////
     @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
     abstract static class PyList_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = "size < 0")
@@ -284,6 +292,64 @@ public final class PythonCextListBuiltins {
         static int reverse(PList self,
                         @Cached ListBuiltins.ListReverseNode reverseNode) {
             reverseNode.execute(null, self);
+            return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
+    abstract static class PyTruffleList_ClearManagedOrGetItems extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static long doGeneric(PList self, Object outItems,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
+                        @Cached XDecRefPointerNode xDecRefPointerNode) {
+            SequenceStorage sequenceStorage = self.getSequenceStorage();
+            if (sequenceStorage instanceof NativeObjectSequenceStorage nativeStorage) {
+                writePointerNode.write(outItems, nativeStorage.getPtr());
+                int length = nativeStorage.length();
+                nativeStorage.setNewLength(0);
+                return length;
+            } else {
+                assert sequenceStorage instanceof ObjectSequenceStorage;
+                ObjectSequenceStorage objectStorage = (ObjectSequenceStorage) sequenceStorage;
+
+                for (int i = objectStorage.length(); --i >= 0;) {
+                    Object item = objectStorage.getObjectItemNormalized(i);
+                    if (item instanceof PythonAbstractNativeObject nativeObject) {
+                        xDecRefPointerNode.execute(inliningTarget, nativeObject.getPtr());
+                        // replace the item to avoid re-visiting
+                        objectStorage.setObjectItemNormalized(i, PNone.NONE);
+                    }
+                }
+            }
+            return 0;
+        }
+    }
+
+    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
+    abstract static class PyTruffleList_TryGetItems extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static long doGeneric(PList self, Object outItems,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CStructAccess.WritePointerNode writePointerNode,
+                        @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
+            SequenceStorage sequenceStorage = self.getSequenceStorage();
+            if (sequenceStorage instanceof ObjectSequenceStorage objectStorage) {
+                sequenceStorage = toNativeStorageNode.execute(inliningTarget, objectStorage, false);
+                self.setSequenceStorage(sequenceStorage);
+            }
+            if (sequenceStorage instanceof NativeObjectSequenceStorage nativeStorage) {
+                writePointerNode.write(outItems, nativeStorage.getPtr());
+                return nativeStorage.length();
+            }
+            return 0;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        static long doGeneric(PNone none, Object ignore) {
             return 0;
         }
     }

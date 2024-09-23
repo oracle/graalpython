@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.PythonLanguage.CONTEXT_INSENSITIVE_SINGLETONS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.pollReferenceQueue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
@@ -76,6 +77,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCall
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -84,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -94,9 +97,11 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -165,6 +170,7 @@ public final class CApiContext extends CExtContext {
      */
     public static final int DEFAULT_RECURSION_LIMIT = 1000;
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
+    public static final TruffleLogger GC_LOGGER = PythonLanguage.getLogger(CApiContext.LOGGER_CAPI_NAME + ".gc");
 
     /* a random number between 1 and 20 */
     private static final int MAX_COLLECTION_RETRIES = 17;
@@ -197,6 +203,12 @@ public final class CApiContext extends CExtContext {
      * is actually a native mirror of {@link #primitiveNativeWrapperCache}.
      */
     private Object nativeSmallIntsArray;
+
+    /**
+     * Pointer to the native {@code GCState GC state}. This corresponds to CPython's
+     * {@code PyInterpreterState.gc}.
+     */
+    private Object gcState;
 
     /** Same as {@code import.c: extensions} but we don't keep a PDict; just a bare Java HashMap. */
     private final HashMap<Pair<TruffleString, TruffleString>, PythonModule> extensions = new HashMap<>(4);
@@ -524,6 +536,43 @@ public final class CApiContext extends CExtContext {
         return true;
     }
 
+    /**
+     * Allocates the {@code GCState} which needs to happen very early in the C API initialization
+     * phase. <it>Very early</it> means it needs to happen before the first object (that takes part
+     * in the GC) is sent to native. This could, e.g., be the thread-state dict that is allocated
+     * when creating the {@link PThreadState native thread state}.
+     */
+    public Object createGCState() {
+        CompilerAsserts.neverPartOfCompilation();
+        assert gcState == null;
+        Object ptr = CStructAccess.AllocateNode.allocUncached(CStructs.GCState);
+        CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__enabled, PInt.intValue(getContext().getGcState().isEnabled()));
+        CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__debug, getContext().getGcState().getDebug());
+        gcState = ptr;
+        return gcState;
+    }
+
+    /**
+     * Fast-path method to retrieve the {@code GCState} pointer. This must only be called after
+     * {@link #createGCState()} was called the first time which should happen very early during C
+     * API context initialization.
+     */
+    public Object getGCState() {
+        assert gcState != null;
+        return gcState;
+    }
+
+    /**
+     * Deallocates the native {@code GCState} (pointer {@link #gcState}).
+     */
+    private void freeGCState() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (gcState != null) {
+            FreeNode.executeUncached(gcState);
+            gcState = null;
+        }
+    }
+
     public Object getModuleByIndex(int i) {
         if (i < modulesByIndex.size()) {
             return modulesByIndex.get(i);
@@ -569,7 +618,7 @@ public final class CApiContext extends CExtContext {
         String name = symbol.getName();
         try {
             Object nativeSymbol = InteropLibrary.getUncached().readMember(PythonContext.get(null).getCApiContext().getLLVMLibrary(), name);
-            nativeSymbol = CExtContext.ensureExecutable(nativeSymbol, symbol);
+            nativeSymbol = EnsureExecutableNode.executeUncached(nativeSymbol, symbol);
             VarHandle.storeStoreFence();
             return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
         } catch (UnsupportedMessageException | UnknownIdentifierException e) {
@@ -665,7 +714,7 @@ public final class CApiContext extends CExtContext {
         for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
             delay += 50;
             doGc(delay);
-            CApiTransitions.pollReferenceQueue();
+            pollReferenceQueue();
             PythonContext.triggerAsyncActions(caller);
             if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
                 allocatedMemory += size;
@@ -810,13 +859,19 @@ public final class CApiContext extends CExtContext {
                 CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative);
                 context.setCApiContext(cApiContext);
                 try (BuiltinArrayWrapper builtinArrayWrapper = new BuiltinArrayWrapper()) {
+                    /*
+                     * The GC state needs to be created before the first managed object is sent to
+                     * native. This is because the native object stub could take part in GC and will
+                     * then already require the GC state.
+                     */
+                    Object gcState = cApiContext.createGCState();
                     if (useNative) {
-                        Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,(SINT32):POINTER):VOID", "exec").build()).call();
+                        Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
                         initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                        U.execute(initFunction, builtinArrayWrapper);
+                        U.execute(initFunction, builtinArrayWrapper, gcState);
                     } else {
                         assert U.isExecutable(initFunction);
-                        U.execute(initFunction, NativePointer.createNull(), builtinArrayWrapper);
+                        U.execute(initFunction, NativePointer.createNull(), builtinArrayWrapper, gcState);
                     }
                 }
 
@@ -895,15 +950,22 @@ public final class CApiContext extends CExtContext {
     public void exitCApiContext() {
         CompilerAsserts.neverPartOfCompilation();
         /*
-         * Polling the native reference queue is the only task we can do here because deallocating
-         * objects may run arbitrary guest code that can again call into the interpreter.
-         */
-        CApiTransitions.pollReferenceQueue();
-        /*
          * Deallocating native storages and objects may run arbitrary guest code. So, we need to
          * ensure that the GIL is held.
          */
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
+            /*
+             * Polling the native reference queue is the only task we can do here because
+             * deallocating objects may run arbitrary guest code that can again call into the
+             * interpreter.
+             */
+            pollReferenceQueue();
+            PythonThreadState threadState = getContext().getThreadState(getContext().getLanguage());
+            Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
+            if (nativeThreadState != null) {
+                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_GC_COLLECT_NO_FAIL, nativeThreadState);
+                pollReferenceQueue();
+            }
             CApiTransitions.deallocateNativeWeakRefs(getContext());
         }
     }
@@ -954,6 +1016,7 @@ public final class CApiContext extends CExtContext {
             }
         }
         pyCFunctionWrappers.clear();
+        freeGCState();
         /*
          * If the static symbol cache is not null, then it is guaranteed that this context instance
          * was the exclusive user of it. We can now reset the state such that other contexts created

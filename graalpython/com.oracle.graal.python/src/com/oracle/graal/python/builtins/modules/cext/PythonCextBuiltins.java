@@ -46,6 +46,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionE
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.GC_LOGGER;
+import static com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.NEXT_MASK_UNREACHABLE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
@@ -62,6 +64,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.GraalPyGC_CycleNode__item;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.GraalPyGC_CycleNode__next;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyGetSetDef__closure;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyGetSetDef__doc;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyGetSetDef__get;
@@ -115,17 +119,22 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonWrapperNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateRefNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -134,6 +143,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CConstants;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -141,14 +151,17 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -185,6 +198,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
@@ -370,6 +384,11 @@ public final class PythonCextBuiltins {
         protected final PException badInternalCall(String argName) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC, getName(), argName);
+        }
+
+        @NonIdempotent
+        protected final boolean isNativeAccessAllowed() {
+            return getContext().isNativeAccessAllowed();
         }
 
         private String getName() {
@@ -917,7 +936,7 @@ public final class PythonCextBuiltins {
      * marked with this annotation. The information in the annotation allows code generation,
      * argument conversions (based on {@link ArgDescriptor}s), and verification of the C API
      * implementation in general.
-     *
+     * <p>
      * Apart from being placed on classes that implement {@link CApiBuiltinNode}, this annotation is
      * also used in {@link CApiFunction} to list all functions that are implemented in C code or
      * that are not currently implemented.
@@ -1043,7 +1062,7 @@ public final class PythonCextBuiltins {
          * custom slots at a time where the C API is not yet loaded. So we need to check if any of
          * the base classes defines custom slots and adapt the basicsize to allocate space for the
          * slots and add the native member slot descriptors.
-         * 
+         * <p>
          * Additionally, at this point the native slots have been inherited on the native side, here
          * we transfer the result of that inheritance process to the slots mirror on the managed
          * side.
@@ -1276,41 +1295,23 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     @ImportStatic(CApiGuards.class)
-    abstract static class PyTruffle_Object_Free extends CApiUnaryBuiltinNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffle_Object_Free.class);
+    abstract static class PyTruffleObject_GC_Del extends CApiUnaryBuiltinNode {
 
-        @Specialization(guards = "!isCArrayWrapper(nativeWrapper)")
-        static PNone doNativeWrapper(PythonNativeWrapper nativeWrapper,
+        @Specialization(limit = "3")
+        static PNone doObject(Object ptr,
                         @Bind("this") Node inliningTarget,
-                        @Cached ClearNativeWrapperNode clearNativeWrapperNode,
-                        @Cached PyTruffleObjectFree freeNode) {
-            // if (nativeWrapper.getRefCount() > 0) {
-            // CompilerDirectives.transferToInterpreterAndInvalidate();
-            // throw new IllegalStateException("deallocating native object with refcnt > 0");
-            // }
-
-            // clear native wrapper
-            Object delegate = nativeWrapper.getDelegate();
-            clearNativeWrapperNode.execute(inliningTarget, delegate, nativeWrapper);
-
-            freeNode.execute(inliningTarget, nativeWrapper);
+                        @Cached PyObjectGCDelNode pyObjectGCDelNode,
+                        @CachedLibrary("ptr") InteropLibrary lib) {
+            // we expect a pointer object here because this is called from native
+            assert CApiTransitions.isBackendPointerObject(ptr);
+            if (lib.isPointer(ptr)) {
+                try {
+                    pyObjectGCDelNode.execute(inliningTarget, lib.asPointer(ptr));
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
             return PNone.NO_VALUE;
-        }
-
-        @Specialization
-        static PNone arrayWrapper(@SuppressWarnings("unused") CArrayWrapper object) {
-            // It's a pointer to a managed object but doesn't need special handling, so we just
-            // ignore it.
-            return PNone.NO_VALUE;
-        }
-
-        @Specialization(guards = "!isNativeWrapper(object)")
-        static PNone doOther(@SuppressWarnings("unused") Object object) {
-            throw CompilerDirectives.shouldNotReachHere("Attempted to free a managed object");
-        }
-
-        protected static boolean isCArrayWrapper(Object obj) {
-            return obj instanceof CArrayWrapper;
         }
     }
 
@@ -1320,34 +1321,31 @@ public final class PythonCextBuiltins {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTraceMalloc_Track.class);
 
         @Specialization(guards = {"isSingleContext()", "domain == cachedDomain"}, limit = "3")
-        static int doCachedDomainIdx(@SuppressWarnings("unused") int domain, Object pointerObject, long size,
+        static int doCachedDomainIdx(@SuppressWarnings("unused") int domain, long ptrVal, long size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Shared @Cached GetThreadStateNode getThreadStateNode,
-                        @CachedLibrary("pointerObject") InteropLibrary lib,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
                         @Cached("lookupDomain(inliningTarget, domain)") int cachedDomainIdx) {
 
             // this will also be called if the allocation failed
-            if (!lib.isNull(pointerObject)) {
+            if (ptrVal != 0) {
                 CApiContext cApiContext = getCApiContext(inliningTarget);
-                Object key = CApiContext.asPointer(pointerObject, lib);
-                cApiContext.getTraceMallocDomain(cachedDomainIdx).track(key, size);
+                cApiContext.getTraceMallocDomain(cachedDomainIdx).track(ptrVal, size);
                 cApiContext.increaseMemoryPressure(null, inliningTarget, getThreadStateNode, indirectCallData, size);
                 if (LOGGER.isLoggable(Level.FINE)) {
-                    LOGGER.fine(() -> PythonUtils.formatJString("Tracking memory (size: %d): %s", size, CApiContext.asHex(key)));
+                    LOGGER.fine(PythonUtils.formatJString("Tracking memory (size: %d): %s", size, CApiContext.asHex(ptrVal)));
                 }
             }
             return 0;
         }
 
-        @Specialization(replaces = "doCachedDomainIdx", limit = "3")
-        static int doGeneric(int domain, Object pointerObject, long size,
+        @Specialization(replaces = "doCachedDomainIdx")
+        static int doGeneric(int domain, long ptrVal, long size,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @CachedLibrary("pointerObject") InteropLibrary lib,
                         @Shared @Cached GetThreadStateNode getThreadStateNode) {
-            return doCachedDomainIdx(domain, pointerObject, size, inliningTarget, indirectCallData, getThreadStateNode, lib, domain, lookupDomain(inliningTarget, domain));
+            return doCachedDomainIdx(domain, ptrVal, size, inliningTarget, indirectCallData, getThreadStateNode, domain, lookupDomain(inliningTarget, domain));
         }
 
         static int lookupDomain(Node inliningTarget, int domain) {
@@ -1361,25 +1359,22 @@ public final class PythonCextBuiltins {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTraceMalloc_Untrack.class);
 
         @Specialization(guards = {"isSingleContext()", "domain == cachedDomain"}, limit = "3")
-        int doCachedDomainIdx(@SuppressWarnings("unused") int domain, Object pointerObject,
+        int doCachedDomainIdx(@SuppressWarnings("unused") int domain, long ptrVal,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
-                        @Cached("lookupDomain(domain)") int cachedDomainIdx,
-                        @CachedLibrary("pointerObject") InteropLibrary lib) {
+                        @Cached("lookupDomain(domain)") int cachedDomainIdx) {
 
             CApiContext cApiContext = getCApiContext();
-            Object key = CApiContext.asPointer(pointerObject, lib);
-            long trackedMemorySize = cApiContext.getTraceMallocDomain(cachedDomainIdx).untrack(key);
+            long trackedMemorySize = cApiContext.getTraceMallocDomain(cachedDomainIdx).untrack(ptrVal);
             cApiContext.reduceMemoryPressure(trackedMemorySize);
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(() -> PythonUtils.formatJString("Untracking memory (size: %d): %s", trackedMemorySize, CApiContext.asHex(key)));
+                LOGGER.fine(PythonUtils.formatJString("Untracking memory (size: %d): %s", trackedMemorySize, CApiContext.asHex(ptrVal)));
             }
             return 0;
         }
 
         @Specialization(replaces = "doCachedDomainIdx")
-        int doGeneric(int domain, Object pointerObject,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return doCachedDomainIdx(domain, pointerObject, domain, lookupDomain(domain), lib);
+        int doGeneric(int domain, long ptrVal) {
+            return doCachedDomainIdx(domain, ptrVal, domain, lookupDomain(domain));
         }
 
         int lookupDomain(int domain) {
@@ -1431,23 +1426,275 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class PyTruffleObject_GC_UnTrack extends PyTruffleGcTracingNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleObject_GC_UnTrack.class);
-
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            LOGGER.finer(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
+            GC_LOGGER.finer(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().untrackObject(ptr, ref, className);
         }
     }
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class PyTruffleObject_GC_Track extends PyTruffleGcTracingNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleObject_GC_Track.class);
-
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            LOGGER.finer(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
+            GC_LOGGER.finer(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().trackObject(ptr, ref, className);
+        }
+    }
+
+    /**
+     * Replicates native references in Java.
+     * <p>
+     * This upcall is the core function for Python GC support. It replicates native references in
+     * Java such that the Java GC sees all references (and also cycles) and can properly collect
+     * everything.
+     * </p>
+     * <p>
+     * In order to save managed-native round trips, this upcall function expects the native pointer
+     * of a primary object and the pointer to a single linked list (node type
+     * {@link CStructs#GraalPyGC_CycleNode}) that contains the referents. The referents are usually
+     * determined by traversing the primary object.
+     * </p>
+     * <p>
+     * If the primary object is a native object, a Python module (with native module state) or a
+     * list/tuple with a native storage, the native references will be replicated. Other object
+     * types may be added if they also have some native memory that may contain object references
+     * (e.g. a module object may store references in its native module state).
+     * </p>
+     * <p>
+     * The pointers of the referents in the single linked list are resolved (in particular, this
+     * means that it ensures the existence of a {@link PythonAbstractNativeObject} for each native
+     * object) and then stored in a Java object array which is then attached to the primary object.
+     * </p>
+     */
+    @CApiBuiltin(ret = Void, args = {Pointer, Pointer, Int}, call = Ignored)
+    abstract static class PyTruffleObject_ReplicateNativeReferences extends CApiTernaryBuiltinNode {
+        private static final Level LEVEL = Level.FINER;
+
+        @Specialization(guards = "isNativeAccessAllowed()")
+        static Object doGeneric(Object pointer, Object listHead, int n,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CStructAccess.ReadObjectNode readObjectNode,
+                        @Cached CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode,
+                        @Cached GcNativePtrToPythonNode gcNativePtrToPythonNode) {
+            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+
+            boolean loggable = GC_LOGGER.isLoggable(LEVEL);
+            long lPointer = coerceNativePointerToLongNode.execute(inliningTarget, pointer);
+            assert lPointer != 0;
+            Object object = gcNativePtrToPythonNode.execute(inliningTarget, lPointer);
+
+            /*
+             * If 'object' is null, there is no 'PythonAbstractNativeObject' wrapper for the native
+             * object. This means that the native object is not referenced from managed code. So, we
+             * don't need to replicate native references.
+             */
+
+            Object repr = object;
+            Object[] referents = null;
+            if (object instanceof PythonAbstractNativeObject || object instanceof PythonModule || isTupleWithNativeStorage(object) || isListWithNativeStorage(object)) {
+                /*
+                 * Note: it is important that we first collect the objects such that we have strong
+                 * Java references to them on the Java stack and then we overwrite the
+                 * 'replicatedNativeReferences' field. This is because the referents may already be
+                 * weakly referenced from the handle table and such referents may already be in the
+                 * previous array and then it could happen, that they die during list processing.
+                 */
+                Object[] oldReferents;
+                referents = new Object[n];
+                if (object instanceof PythonAbstractNativeObject nativeObject) {
+                    if (loggable) {
+                        repr = nativeObject.toStringWithContext();
+                    }
+                    oldReferents = nativeObject.getReplicatedNativeReferences();
+                    nativeObject.setReplicatedNativeReferences(referents);
+                } else if (object instanceof PythonModule module) {
+                    oldReferents = module.getReplicatedNativeReferences();
+                    module.setReplicatedNativeReferences(referents);
+                } else {
+                    assert isTupleWithNativeStorage(object) || isListWithNativeStorage(object);
+                    NativeSequenceStorage nativeSequenceStorage = getNativeSequenceStorage(object);
+                    oldReferents = nativeSequenceStorage.getReplicatedNativeReferences();
+                    nativeSequenceStorage.setReplicatedNativeReferences(referents);
+                }
+                // Collect referents (traverse native list and resolve pointers)
+                Object cur = listHead;
+                for (int i = 0; i < n; i++) {
+                    referents[i] = readObjectNode.read(cur, GraalPyGC_CycleNode__item);
+                    cur = readPointerNode.read(cur, GraalPyGC_CycleNode__next);
+                }
+
+                /*
+                 * As described above: Ensure that the 'old' replicated references are strong until
+                 * this point. Otherwise, weakly referenced managed objects could die.
+                 */
+                java.lang.ref.Reference.reachabilityFence(oldReferents);
+
+                if (loggable) {
+                    GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Replicated native refs of %s to managed: %s", repr, arraysToString(referents)));
+                }
+            } else if (object == null && loggable) {
+                GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Did not replicate native refs of %s: no wrapper", CApiContext.asHex(lPointer)));
+            }
+            return PNone.NO_VALUE;
+        }
+
+        private static NativeSequenceStorage getNativeSequenceStorage(Object object) {
+            NativeSequenceStorage nativeSequenceStorage;
+            if (object instanceof PTuple tuple) {
+                // cast is ensured by 'isTupleWithNativeStorage'
+                nativeSequenceStorage = (NativeSequenceStorage) tuple.getSequenceStorage();
+            } else {
+                assert object instanceof PList;
+                // casts are ensured by 'isListWithNativeStorage'
+                nativeSequenceStorage = (NativeSequenceStorage) ((PList) object).getSequenceStorage();
+            }
+            return nativeSequenceStorage;
+        }
+
+        @Specialization(guards = "!isNativeAccessAllowed()")
+        @SuppressWarnings("unused")
+        static Object doManaged(Object pointer, Object listHead, int n) {
+            return PNone.NO_VALUE;
+        }
+
+        @TruffleBoundary
+        private static String arraysToString(Object[] arr) {
+            return Arrays.toString(arr);
+        }
+
+        private static boolean isTupleWithNativeStorage(Object object) {
+            return object instanceof PTuple tuple && tuple.getSequenceStorage() instanceof NativeSequenceStorage;
+        }
+
+        private static boolean isListWithNativeStorage(Object object) {
+            return object instanceof PList list && list.getSequenceStorage() instanceof NativeSequenceStorage;
+        }
+    }
+
+    /**
+     * Iterates over all objects in the given GC list and makes all
+     * {@link com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference
+     * handle table references} of the denoted objects weak. This is used to break reference cycles
+     * that involve managed objects.
+     */
+    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
+    abstract static class PyTruffleObject_GC_EnsureWeak extends CApiUnaryBuiltinNode {
+        @Specialization(guards = "isNativeAccessAllowed()")
+        static Object doNative(Object weakCandidates,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceToLongNode,
+                        @Cached CStructAccess.ReadI64Node readI64Node,
+                        @Cached CStructAccess.WriteLongNode writeLongNode,
+                        @Cached NativePtrToPythonWrapperNode nativePtrToPythonWrapperNode,
+                        @Cached UpdateRefNode updateRefNode) {
+            // guaranteed by the guard
+            assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
+            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+
+            /*
+             * The list's head is a dummy node that can not be a tagged pointer because it is not an
+             * object and always allocated in native.
+             */
+            long head = coerceToLongNode.execute(inliningTarget, weakCandidates);
+            assert !HandlePointerConverter.pointsToPyHandleSpace(head);
+
+            // PyGC_Head *gc = GC_NEXT(head)
+            long gc = readI64Node.read(head, CFields.PyGC_Head___gc_next);
+            /*
+             * The list's head is not polluted with NEXT_MASK_UNREACHABLE. See 'move_weak_reachable'
+             * at the end of the function.
+             */
+            assert (gc & NEXT_MASK_UNREACHABLE) == 0;
+            while (gc != head) {
+                assert (gc & NEXT_MASK_UNREACHABLE) == 0;
+
+                // PyObject *op = FROM_GC(gc)
+                long op = gc + CStructs.PyGC_Head.size();
+
+                PythonNativeWrapper wrapper = nativePtrToPythonWrapperNode.execute(inliningTarget, op, true);
+                if (wrapper instanceof PythonAbstractObjectNativeWrapper abstractObjectNativeWrapper) {
+                    if (GC_LOGGER.isLoggable(Level.FINE)) {
+                        GC_LOGGER.fine(PythonUtils.formatJString("Breaking reference cycle for %s", abstractObjectNativeWrapper.ref));
+                    }
+                    updateRefNode.execute(inliningTarget, abstractObjectNativeWrapper, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT);
+                }
+
+                // next = GC_NEXT(gc)
+                long gcUntagged = HandlePointerConverter.pointerToStub(gc);
+                long nextTaggedWithMask = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next);
+                // remove NEXT_MASK_UNREACHABLE flag
+                long next = nextTaggedWithMask & ~NEXT_MASK_UNREACHABLE;
+                /*
+                 * We expect to process 'weak_candidates' which all have NEXT_MASK_UNREACHABLE set
+                 * except of the list head (which is a dummy node)
+                 */
+                assert next == head || (nextTaggedWithMask & NEXT_MASK_UNREACHABLE) != 0;
+
+                /*
+                 * This is a "dirty" untrack since we just overwrite '_gc_prev' and '_gc_next' with
+                 * zero. Here it is fine because (a) managed objects will never have flags set in
+                 * '_gc_prev' that need to be preserved, and (b) because we untrack all objects in
+                 * this list anyway.
+                 */
+                writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_next, 0);
+                writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_prev, 0);
+
+                gc = next;
+            }
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "!isNativeAccessAllowed()")
+        static Object doNative(@SuppressWarnings("unused") Object weakCandidates) {
+            return PNone.NO_VALUE;
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
+    abstract static class PyTruffle_IsReferencedFromManaged extends CApiUnaryBuiltinNode {
+        @Specialization(guards = "isNativeAccessAllowed()")
+        static int doNative(Object pointer,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceToLongNode,
+                        @Cached GcNativePtrToPythonNode gcNativePtrToPythonNode) {
+            // guaranteed by the guard
+            assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
+            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+
+            long lPointer = coerceToLongNode.execute(inliningTarget, pointer);
+            // this upcall doesn't make sense for managed objects
+            assert !HandlePointerConverter.pointsToPyHandleSpace(lPointer);
+
+            Object object = gcNativePtrToPythonNode.execute(inliningTarget, lPointer);
+            return PInt.intValue(object != null);
+        }
+
+        @Specialization(guards = "!isNativeAccessAllowed()")
+        static Object doManaged(@SuppressWarnings("unused") Object pointer) {
+            return PInt.intValue(false);
+        }
+    }
+
+    @CApiBuiltin(ret = Void, call = Ignored)
+    abstract static class PyTruffle_EnableReferneceQueuePolling extends CApiNullaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(@Bind("this") Node inliningTarget) {
+            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
+            CApiTransitions.enableReferenceQueuePolling(handleContext);
+            return PNone.NO_VALUE;
+        }
+    }
+
+    @CApiBuiltin(ret = Int, call = Ignored)
+    abstract static class PyTruffle_DisableReferneceQueuePolling extends CApiNullaryBuiltinNode {
+        @Specialization
+        static int doGeneric(@Bind("this") Node inliningTarget) {
+            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
+            return PInt.intValue(CApiTransitions.disableReferenceQueuePolling(handleContext));
         }
     }
 
@@ -1457,15 +1704,18 @@ public final class PythonCextBuiltins {
     private static final int LOG_FINE = 0x8;
     private static final int LOG_FINER = 0x10;
     private static final int LOG_FINEST = 0x20;
-    private static final int DEBUG_CAPI = 0x30;
+    private static final int DEBUG_CAPI = 0x40;
+    private static final int PYTHON_GC = 0x80;
 
     @CApiBuiltin(ret = Int, call = Ignored)
     abstract static class PyTruffle_Native_Options extends CApiNullaryBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         int getNativeOptions() {
             int options = 0;
-            if (getContext().getOption(PythonOptions.TraceNativeMemory)) {
+            PythonContext context = PythonContext.get(null);
+            if (context.getOption(PythonOptions.TraceNativeMemory)) {
                 options |= TRACE_MEM;
             }
             if (LOGGER.isLoggable(Level.INFO)) {
@@ -1485,6 +1735,9 @@ public final class PythonCextBuiltins {
             }
             if (PythonContext.DEBUG_CAPI) {
                 options |= DEBUG_CAPI;
+            }
+            if (context.getOption(PythonOptions.PythonGC)) {
+                options |= PYTHON_GC;
             }
             return options;
         }

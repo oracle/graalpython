@@ -92,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -152,7 +153,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonCextObjectBuiltins {
@@ -165,9 +165,11 @@ public abstract class PythonCextObjectBuiltins {
         @Specialization
         static Object doGeneric(PythonAbstractObjectNativeWrapper wrapper, long refCount,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile hasRefProfile) {
+                        @Cached UpdateRefNode updateRefNode) {
             assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(wrapper.getNativePointer())) == refCount;
-            wrapper.updateRef(inliningTarget, refCount, hasRefProfile);
+            // refcounting on an immortal object should be a NOP
+            assert refCount != PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
+            updateRefNode.execute(inliningTarget, wrapper, refCount);
             return PNone.NO_VALUE;
         }
     }
@@ -178,13 +180,13 @@ public abstract class PythonCextObjectBuiltins {
         @Specialization
         static Object doGeneric(Object arrayPointer, int len,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile hasRefProfile,
+                        @Cached UpdateRefNode updateRefNode,
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached ToPythonWrapperNode toPythonWrapperNode) {
 
             /*
              * It may happen that due to several inc- and decrefs applied to a borrowed reference,
-             * that the same pointer is in the list several times. To avoid crashed, we do the
+             * that the same pointer is in the list several times. To avoid crashes, we do the
              * processing in two phases: first, we resolve the pointers to wrappers and second, we
              * update the reference counts. In this way, we avoid that a reference is made weak when
              * processed the first time and may then be invalid if processed the second time.
@@ -197,7 +199,9 @@ public abstract class PythonCextObjectBuiltins {
             for (int i = 0; i < resolved.length; i++) {
                 if (resolved[i] instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
                     long refCount = CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(objectNativeWrapper.getNativePointer()));
-                    objectNativeWrapper.updateRef(inliningTarget, refCount, hasRefProfile);
+                    // refcounting on an immortal object should be a NOP
+                    assert refCount != PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
+                    updateRefNode.execute(inliningTarget, objectNativeWrapper, refCount);
                 }
             }
             return PNone.NO_VALUE;

@@ -50,6 +50,8 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dealloc;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_del;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_free;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_is_gc;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_traverse;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_vectorcall_offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
 
@@ -74,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -83,11 +86,11 @@ import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBasicSizeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetDictOffsetNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemSizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetDictOffsetNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -314,8 +317,31 @@ public abstract class ToNativeTypeNode {
             docObj = ctx.getNativeNull();
         }
         writePtrNode.write(mem, CFields.PyTypeObject__tp_doc, docObj);
-        // TODO: return a proper traverse function, or at least a dummy
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, nullValue);
+
+        Object tpTraverse = nullValue;
+        Object tpIsGc = nullValue;
+        if ((flags & TypeFlags.HAVE_GC) != 0) {
+            /*
+             * In CPython, classes created via 'type_new' will always have 'subtype_traverse' (this
+             * is done in 'typeobject.c: type_new_alloc'). We don't set this in our 'CreateTypeNode'
+             * already because we don't know if the class will ever be used in native code. So, we
+             * do it here.
+             */
+            if (clazz instanceof PythonClass) {
+                tpTraverse = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_SUBTYPE_TRAVERSE);
+            } else {
+                tpTraverse = lookup(clazz, PyTypeObject__tp_traverse, HiddenAttr.TRAVERSE);
+            }
+            /*
+             * We allow 'tp_traverse' to be null for built-in classes until we've implemented for
+             * all of them. Once this is done, 'tp_traverse' must not be null here for all classes.
+             */
+            assert clazz instanceof PythonBuiltinClass || tpTraverse != nullValue;
+            tpIsGc = lookup(clazz, PyTypeObject__tp_is_gc, HiddenAttr.IS_GC);
+        }
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, tpTraverse);
+        writePtrNode.write(mem, CFields.PyTypeObject__tp_is_gc, tpIsGc);
+
         writePtrNode.write(mem, CFields.PyTypeObject__tp_richcompare, lookup(clazz, SlotMethodDef.TP_RICHCOMPARE));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_iter, lookup(clazz, SlotMethodDef.TP_ITER));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_iternext, lookup(clazz, SlotMethodDef.TP_ITERNEXT));
@@ -349,7 +375,7 @@ public abstract class ToNativeTypeNode {
         }
 
         // TODO properly implement 'tp_dictoffset' for builtin classes
-        writeI64Node.write(mem, CFields.PyTypeObject__tp_dictoffset, GetDictOffsetNodeGen.getUncached().execute(null, clazz));
+        writeI64Node.write(mem, CFields.PyTypeObject__tp_dictoffset, GetDictOffsetNode.executeUncached(clazz));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_init, lookup(clazz, SlotMethodDef.TP_INIT));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_alloc, lookup(clazz, PyTypeObject__tp_alloc, HiddenAttr.ALLOC));
         // T___new__ is magically a staticmethod for Python types. The tp_new slot lookup
@@ -361,7 +387,6 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_new, ManagedMethodWrappers.createKeywords(newFunction));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_free, lookup(clazz, PyTypeObject__tp_free, HiddenAttr.FREE));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_clear, lookup(clazz, PyTypeObject__tp_clear, HiddenAttr.CLEAR));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_is_gc, nullValue);
         if (clazz.basesTuple == null) {
             clazz.basesTuple = factory.createTuple(GetBaseClassesNode.executeUncached(clazz));
         }

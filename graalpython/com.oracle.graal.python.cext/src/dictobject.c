@@ -124,8 +124,10 @@ As a consequence of this, split keys have a maximum size of 16.
 #include "pycore_call.h"          // _PyObject_CallNoArgs()
 #include "pycore_code.h"          // stats
 #include "pycore_dict.h"          // PyDictKeysObject
+#endif // GraalPy change
 #include "pycore_gc.h"            // _PyObject_GC_IS_TRACKED()
 #include "pycore_object.h"        // _PyObject_GC_TRACK()
+#if 0 // GraalPy change
 #include "pycore_pyerrors.h"      // _PyErr_Fetch()
 #include "pycore_pystate.h"       // _PyThreadState_GET()
 #include "stringlib/eq.h"         // unicode_eq()
@@ -1120,15 +1122,21 @@ _PyDict_HasOnlyStringKeys(PyObject *dict)
             } \
         } \
     } while(0)
+#endif // GraalPy change
 
 void
 _PyDict_MaybeUntrack(PyObject *op)
 {
+#if 0 // GraalPy change
     PyDictObject *mp;
     PyObject *value;
     Py_ssize_t i, numentries;
 
     if (!PyDict_CheckExact(op) || !_PyObject_GC_IS_TRACKED(op))
+        return;
+
+    // GraalPy change: do an upcall to consider all dict elements
+    if (!GraalPyTruffleDict_MaybeUntrack(op))
         return;
 
     mp = (PyDictObject *) op;
@@ -1164,8 +1172,10 @@ _PyDict_MaybeUntrack(PyObject *op)
         }
     }
     _PyObject_GC_UNTRACK(op);
+#endif // GraalPy change
 }
 
+#if 0 // GraalPy change
 /* Internal function to find slot for an item from its hash
    when it is known that the key is not present in the dict.
 
@@ -3494,10 +3504,22 @@ dict_popitem_impl(PyDictObject *self)
     ASSERT_CONSISTENT(self);
     return res;
 }
+#endif // GraalPy change
 
 static int
 dict_traverse(PyObject *op, visitproc visit, void *arg)
 {
+    /* In GraalPy, we must generally not traverse objects with a managed storage
+     * because if they have references to a native object, the Python GC would
+     * incorrectly decref/incref reachable objects. This is because we refer to
+     * native objects through a managed wrapper and we only add MANAGED_REFCNT
+     * when we create teh wrapper and we don't incref per reference.
+     * For example, assume this dict would reference a native object 'n' eleven
+     * times. When we create the wrapper for 'n', we would add MANAGED_REFCNT to
+     * the refcnt. During a GC, 'n' would be visited eleven times such that the
+     * refcnt could fall below 0.
+     */
+#if 0 // GraalPy change: different implementation
     PyDictObject *mp = (PyDictObject *)op;
     PyDictKeysObject *keys = mp->ma_keys;
     Py_ssize_t i, n = keys->dk_nentries;
@@ -3524,6 +3546,7 @@ dict_traverse(PyObject *op, visitproc visit, void *arg)
             }
         }
     }
+#endif // GraalPy change
     return 0;
 }
 
@@ -3534,6 +3557,7 @@ dict_tp_clear(PyObject *op)
     return 0;
 }
 
+#if 0 // GraalPy change
 static PyObject *dictiter_new(PyDictObject *, PyTypeObject *);
 
 Py_ssize_t
@@ -3805,38 +3829,39 @@ PyDoc_STRVAR(dictionary_doc,
 "        d[k] = v\n"
 "dict(**kwargs) -> new dictionary initialized with the name=value pairs\n"
 "    in the keyword argument list.  For example:  dict(one=1, two=2)");
+#endif // GraalPy change
 
 PyTypeObject PyDict_Type = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
     "dict",
     sizeof(PyDictObject),
     0,
-    (destructor)dict_dealloc,                   /* tp_dealloc */
+    0,                                          /* tp_dealloc */ // GraalPy change: nulled
     0,                                          /* tp_vectorcall_offset */
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
     0,                                          /* tp_as_async */
-    (reprfunc)dict_repr,                        /* tp_repr */
-    &dict_as_number,                            /* tp_as_number */
-    &dict_as_sequence,                          /* tp_as_sequence */
-    &dict_as_mapping,                           /* tp_as_mapping */
+    0,                                          /* tp_repr */ // GraalPy change: nulled
+    0,                                          /* tp_as_number */ // GraalPy change: nulled
+    0,                                          /* tp_as_sequence */ // GraalPy change: nulled
+    0,                                          /* tp_as_mapping */ // GraalPy change: nulled
     PyObject_HashNotImplemented,                /* tp_hash */
     0,                                          /* tp_call */
     0,                                          /* tp_str */
-    PyObject_GenericGetAttr,                    /* tp_getattro */
+    0,                                          /* tp_getattro */ // GraalPy change: nulled
     0,                                          /* tp_setattro */
     0,                                          /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
         Py_TPFLAGS_BASETYPE | Py_TPFLAGS_DICT_SUBCLASS |
         _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_MAPPING,  /* tp_flags */
-    dictionary_doc,                             /* tp_doc */
+    0,                                          /* tp_doc */ // GraalPy change: nulled
     dict_traverse,                              /* tp_traverse */
     dict_tp_clear,                              /* tp_clear */
-    dict_richcompare,                           /* tp_richcompare */
+    0,                                          /* tp_richcompare */ // GraalPy change: nulled
     0,                                          /* tp_weaklistoffset */
-    (getiterfunc)dict_iter,                     /* tp_iter */
+    0,                                          /* tp_iter */
     0,                                          /* tp_iternext */
-    mapp_methods,                               /* tp_methods */
+    0,                                          /* tp_methods */ // GraalPy change: nulled
     0,                                          /* tp_members */
     0,                                          /* tp_getset */
     0,                                          /* tp_base */
@@ -3844,13 +3869,14 @@ PyTypeObject PyDict_Type = {
     0,                                          /* tp_descr_get */
     0,                                          /* tp_descr_set */
     0,                                          /* tp_dictoffset */
-    dict_init,                                  /* tp_init */
-    _PyType_AllocNoTrack,                       /* tp_alloc */
-    dict_new,                                   /* tp_new */
-    PyObject_GC_Del,                            /* tp_free */
+    0,                                          /* tp_init */ // GraalPy change: nulled
+    0,                                          /* tp_alloc */ // GraalPy change: nulled
+    0,                                          /* tp_new */ // GraalPy change: nulled
+    GraalPyObject_GC_Del,                       /* tp_free */ // GraalPy change: different function
+#if 0 // GraalPy change
     .tp_vectorcall = dict_vectorcall,
-};
 #endif // GraalPy change
+};
 
 /* For backward compatibility with old dictionary interface */
 

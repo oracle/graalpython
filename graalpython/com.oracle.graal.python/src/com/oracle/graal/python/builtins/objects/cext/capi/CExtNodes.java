@@ -41,10 +41,11 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GRAALPY_OBJECT_GC_DEL;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_NO_OP_CLEAR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_DEALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GC_DEL;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_FREE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TYPE_GENERIC_ALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
@@ -92,7 +93,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromC
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PyErrFetchNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PyErrOccurredNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.UnicodeFromFormatNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
@@ -102,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ResolveHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
@@ -109,6 +114,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArra
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ClearCurrentExceptionNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
@@ -142,6 +148,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
@@ -158,6 +165,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
@@ -896,7 +904,16 @@ public abstract class CExtNodes {
             if (managedMemberName == HiddenAttr.ALLOC) {
                 symbol = FUN_PY_TYPE_GENERIC_ALLOC;
             } else if (managedMemberName == HiddenAttr.FREE) {
-                symbol = FUN_PY_OBJECT_GC_DEL;
+                /*
+                 * See 'typeobject.c: inherit_slots': A bit of magic to plug in the correct default
+                 * tp_free function when a derived class adds gc, didn't define tp_free, and the
+                 * base uses the default non-gc tp_free.
+                 */
+                if ((GetTypeFlagsNode.executeUncached(cls) & TypeFlags.HAVE_GC) != 0) {
+                    symbol = FUN_GRAALPY_OBJECT_GC_DEL;
+                } else {
+                    symbol = FUN_PY_OBJECT_FREE;
+                }
             } else if (managedMemberName == HiddenAttr.CLEAR) {
                 // This will need to be subtype_clear when we implement native GC
                 symbol = FUN_NO_OP_CLEAR;
@@ -1172,6 +1189,7 @@ public abstract class CExtNodes {
                         @Cached(inline = false) CApiTransitions.ToPythonWrapperNode toPythonWrapperNode,
                         @Cached InlinedBranchProfile isWrapperProfile,
                         @Cached InlinedBranchProfile isNativeObject,
+                        @Cached UpdateRefNode updateRefNode,
                         @Cached(inline = false) CStructAccess.ReadI64Node readRefcount,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeRefcount,
                         @Cached(inline = false) PCallCapiFunction callDealloc) {
@@ -1196,7 +1214,7 @@ public abstract class CExtNodes {
             PythonNativeWrapper wrapper = toPythonWrapperNode.executeWrapper(pointer, false);
             if (wrapper instanceof PythonAbstractObjectNativeWrapper objectWrapper) {
                 isWrapperProfile.enter(inliningTarget);
-                objectWrapper.decRef();
+                updateRefNode.execute(inliningTarget, objectWrapper, objectWrapper.decRef());
             } else if (wrapper == null) {
                 isNativeObject.enter(inliningTarget);
                 assert NativeToPythonNode.executeUncached(new NativePointer(pointer)) instanceof PythonAbstractNativeObject;
@@ -1276,11 +1294,12 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object resolveLongCached(Node inliningTarget, long pointer,
-                        @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
+                        @Exclusive @Cached ResolveHandleNode resolveHandleNode,
+                        @Exclusive @Cached UpdateRefNode updateRefNode) {
             Object lookup = CApiTransitions.lookupNative(pointer);
             if (lookup != null) {
                 if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                    objectNativeWrapper.incRef();
+                    updateRefNode.execute(inliningTarget, objectNativeWrapper, objectNativeWrapper.incRef());
                 }
                 return lookup;
             }
@@ -1293,7 +1312,8 @@ public abstract class CExtNodes {
         @Specialization(guards = "!isLong(pointerObject)")
         static Object resolveGeneric(Node inliningTarget, Object pointerObject,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Exclusive @Cached ResolveHandleNode resolveHandleNode) {
+                        @Exclusive @Cached ResolveHandleNode resolveHandleNode,
+                        @Exclusive @Cached UpdateRefNode updateRefNode) {
             if (lib.isPointer(pointerObject)) {
                 Object lookup;
                 long pointer;
@@ -1305,7 +1325,7 @@ public abstract class CExtNodes {
                 lookup = CApiTransitions.lookupNative(pointer);
                 if (lookup != null) {
                     if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                        objectNativeWrapper.incRef();
+                        updateRefNode.execute(inliningTarget, objectNativeWrapper, objectNativeWrapper.incRef());
                     }
                     return lookup;
                 }
@@ -1385,6 +1405,10 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class UnicodeFromFormatNode extends Node {
         private static Pattern pattern;
+
+        public static Object executeUncached(TruffleString format, Object vaList) {
+            return UnicodeFromFormatNodeGen.getUncached().execute(null, format, vaList);
+        }
 
         private static Matcher match(String formatStr) {
             if (pattern == null) {
@@ -1930,6 +1954,7 @@ public abstract class CExtNodes {
                         @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached(inline = false) FromCharPointerNode fromCharPointerNode,
                         @Cached(inline = false) PythonObjectFactory factory,
+                        @Cached EnsureExecutableNode ensureCallableNode,
                         @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttributeToPythonObjectNode) {
             Object methodNamePtr = readPointerNode.readStructArrayElement(methodDef, element, PyMethodDef__ml_name);
@@ -1950,7 +1975,7 @@ public abstract class CExtNodes {
             // TODO(fa) support static and class methods
             PExternalFunctionWrapper sig = PExternalFunctionWrapper.fromMethodFlags(flags);
             RootCallTarget callTarget = PExternalFunctionWrapper.getOrCreateCallTarget(sig, PythonLanguage.get(factory), methodName, true, CExtContext.isMethStatic(flags));
-            mlMethObj = CExtContext.ensureExecutable(mlMethObj, sig);
+            mlMethObj = ensureCallableNode.execute(inliningTarget, mlMethObj, sig);
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
             PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
             writeHiddenAttrNode.execute(inliningTarget, function, METHOD_DEF_PTR, methodDef);
@@ -2186,6 +2211,50 @@ public abstract class CExtNodes {
                 }
             }
             return null;
+        }
+    }
+
+    /**
+     * Similar to CPython's macro {@code Py_VISIT}, this node will call the provided visit function
+     * on the item if that item is a native object. This is because we assume that the traverse and
+     * visit functions are only used in the Python GC to determine reference cycles due to reference
+     * counting. If a reference cycle is <it>interrupted</it> by a managed reference, we are fine
+     * because the Java GC will correctly handle that.
+     */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class VisitNode extends Node {
+
+        /**
+         * Calls the visit function on the given item.
+         *
+         * @param frame The virtual frame (may be {code null}).
+         * @param inliningTarget The inlining target.
+         * @param threadState The Python thread state (must not be {@code null}).
+         * @param item The item to visit (may be {@code null}). Only a native object will be
+         *            visited.
+         * @param visitFunction The visit function to call. This is expected to be an
+         *            {@link InteropLibrary#isExecutable(Object) executable} interop object (must
+         *            not be {@code null}).
+         * @param visitArg The argument for the visit function as provided by the root caller.
+         * @return {@code 0} on success, {@code !=0} on error
+         */
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, Object item, Object visitFunction, Object visitArg);
+
+        @Specialization
+        static int doGeneric(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, Object item, Object visitFunction, Object visitArg,
+                        @Cached InlinedConditionProfile isNativeObjectProfile,
+                        @Cached ExternalFunctionInvokeNode externalFunctionInvokeNode,
+                        @Cached(inline = false) CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode,
+                        @Cached(inline = false) PythonToNativeNode toNativeNode) {
+            assert InteropLibrary.getUncached().isExecutable(visitFunction);
+            if (isNativeObjectProfile.profile(inliningTarget, item instanceof PythonAbstractNativeObject)) {
+                Object result = externalFunctionInvokeNode.call(frame, inliningTarget, threadState, CApiGCSupport.VISIT_TIMING, StringLiterals.T_VISIT, visitFunction,
+                                toNativeNode.execute(item), visitArg);
+                return (int) checkPrimitiveFunctionResultNode.executeLong(threadState, StringLiterals.T_VISIT, result);
+            }
+            return 0;
         }
     }
 }

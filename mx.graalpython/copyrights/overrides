@@ -182,6 +182,7 @@ graalpython/com.oracle.graal.python.cext/include/osmodule.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/patchlevel.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pybuffer.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pycapsule.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/pydtrace.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyerrors.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyexpat.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyframe.h,python.copyright

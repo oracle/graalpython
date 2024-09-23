@@ -206,12 +206,16 @@ struct _ts {
     /* The bottom-most frame on the stack. */
     _PyCFrame root_cframe;
 
-    /* GraalVM change: We add field 'small_ints' which roughly corresponds to
+    /* GraalPy change: We add field 'small_ints' which roughly corresponds to
        field '_PyRuntimeState._Py_global_objects.small_ints'. We do so because
        we maintain the runtime state in Java objects and don't want to allocate
        the large structures and arrays where for us, most fields will be zero.
     */
     PyObject **small_ints;
+
+    /* GraalPy change: We add field 'gc' which corresponds to field
+       '&interp->gc'. */
+    struct _gc_runtime_state *gc;
 };
 
 

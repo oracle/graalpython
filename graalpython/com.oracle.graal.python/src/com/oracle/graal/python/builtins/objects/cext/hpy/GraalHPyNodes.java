@@ -71,8 +71,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.ReadGenericNode;
@@ -724,10 +724,12 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static GetSetDescriptor doGeneric(GraalHPyContext context, Object owner, Object legacyGetSetDef, int i,
+                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "context") GraalHPyCAccess.ReadPointerNode readPointerNode,
                         @Cached(parameters = "context") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PythonObjectFactory factory,
+                        @Cached EnsureExecutableNode ensureExecutableNode,
                         @Cached WriteAttributeToPythonObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
 
@@ -765,14 +767,14 @@ public abstract class GraalHPyNodes {
             PythonLanguage lang = PythonLanguage.get(raiseNode);
             PBuiltinFunction getterObject = null;
             if (!isNullNode.execute(context, getterFunPtr)) {
-                Object getterFunInteropPtr = CExtContext.ensureExecutable(context.nativeToInteropPointer(getterFunPtr), PExternalFunctionWrapper.GETTER);
+                Object getterFunInteropPtr = ensureExecutableNode.execute(inliningTarget, context.nativeToInteropPointer(getterFunPtr), PExternalFunctionWrapper.GETTER);
                 getterObject = HPyLegacyGetSetDescriptorGetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, getterFunInteropPtr, closurePtr);
             }
 
             PBuiltinFunction setterObject = null;
             boolean hasSetter = !isNullNode.execute(context, setterFunPtr);
             if (hasSetter) {
-                Object setterFunInteropPtr = CExtContext.ensureExecutable(context.nativeToInteropPointer(setterFunPtr), PExternalFunctionWrapper.SETTER);
+                Object setterFunInteropPtr = ensureExecutableNode.execute(inliningTarget, context.nativeToInteropPointer(setterFunPtr), PExternalFunctionWrapper.SETTER);
                 setterObject = HPyLegacyGetSetDescriptorSetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, setterFunInteropPtr, closurePtr);
             }
 
@@ -1155,7 +1157,7 @@ public abstract class GraalHPyNodes {
             TpSlotMeta tpSlot = slot.getTpSlot();
             if (tpSlot != null) {
                 // Slot that directly maps to a CPython compatible slot
-                Object boundExecutable = CExtContext.ensureExecutable(slotData.impl(), tpSlot.getNativeSignature());
+                Object boundExecutable = EnsureExecutableNode.executeUncached(slotData.impl(), tpSlot.getNativeSignature());
                 tpSlotsBuilder.set(tpSlot, TpSlotNative.createHPySlot(boundExecutable));
                 return null;
             }
@@ -1266,7 +1268,7 @@ public abstract class GraalHPyNodes {
             if (tpSlot != null) {
                 // Note: not a HPy native slot, just plain native slot, because it is legacy and
                 // expects PyObject* arguments
-                Object boundExecutable = CExtContext.ensureExecutable(pfuncPtr, tpSlot.getNativeSignature());
+                Object boundExecutable = EnsureExecutableNode.executeUncached(pfuncPtr, tpSlot.getNativeSignature());
                 tpSlotsBuilder.set(tpSlot, TpSlotNative.createCExtSlot(boundExecutable));
                 return true;
             }

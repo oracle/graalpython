@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,18 +41,31 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -86,6 +99,48 @@ public final class PythonCextSysBuiltins {
                 // PySys_GetObject delegates to PyDict_GetItem
                 // which suppresses all exceptions for historical reasons
                 return getNativeNull();
+            }
+        }
+    }
+
+    private static Object selectOut(int fd) {
+        CompilerAsserts.neverPartOfCompilation();
+        Object file;
+        PythonModule sys = PythonContext.get(null).lookupBuiltinModule(T_SYS);
+        if (fd == 0) {
+            file = sys.getAttribute(T_STDOUT);
+        } else {
+            file = sys.getAttribute(T_STDERR);
+        }
+        return file;
+    }
+
+    @CApiBuiltin(ret = Int, args = {Int, ConstCharPtrAsTruffleString}, call = Ignored)
+    abstract static class PyTruffleSys_WriteStd extends CApiBinaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static Object doGeneric(int fd, TruffleString msg) {
+            try {
+                PyObjectCallMethodObjArgs.executeUncached(selectOut(fd), T_WRITE, msg);
+                return 0;
+            } catch (PException e) {
+                return -1;
+            }
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {Int, ConstCharPtrAsTruffleString, VA_LIST_PTR}, call = Ignored)
+    abstract static class PyTruffleSys_FormatStd extends CApiTernaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static Object doGeneric(int fd, TruffleString format, Object vaList) {
+            try {
+                Object msg = UnicodeFromFormatNode.executeUncached(format, vaList);
+                PyObjectCallMethodObjArgs.executeUncached(selectOut(fd), T_WRITE, msg);
+                return 0;
+            } catch (PException e) {
+                // do not propagate any exception to native
+                return -1;
             }
         }
     }

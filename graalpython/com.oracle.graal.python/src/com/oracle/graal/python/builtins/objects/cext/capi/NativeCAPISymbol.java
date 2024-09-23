@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
@@ -130,7 +131,8 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_OBJECT_NEW("PyTruffle_Object_New", PyObjectTransfer, PyTypeObject),
     FUN_PY_TYPE_READY("PyType_Ready", Int, PyTypeObject),
     FUN_PY_TYPE_GENERIC_ALLOC("PyType_GenericAlloc", PyObjectTransfer, PyTypeObject, Py_ssize_t),
-    FUN_PY_OBJECT_GC_DEL("PyObject_GC_Del", Void, Pointer),
+    FUN_GRAALPY_OBJECT_GC_DEL("GraalPyObject_GC_Del", Void, Pointer),
+    FUN_PY_OBJECT_FREE("PyObject_Free", Void, Pointer),
     FUN_PY_UNICODE_GET_LENGTH("PyUnicode_GetLength", Py_ssize_t, PyObject),
     FUN_PY_TRUFFLE_FREE("PyTruffle_Free", ArgDescriptor.Void, Pointer),
     FUN_PYMEM_ALLOC("PyMem_Calloc", Pointer, SIZE_T, SIZE_T),
@@ -159,6 +161,10 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL("PyTruffleCData_InitBufferProtocol", ArgDescriptor.Void, PyTypeObject),
     FUN_TRUFFLE_CHECK_TYPE_READY("truffle_check_type_ready", ArgDescriptor.Void, PyTypeObject),
     FUN_PYOBJECT_HASH_NOT_IMPLEMENTED("PyObject_HashNotImplemented", ArgDescriptor.Py_hash_t, PyObject),
+    FUN_PY_GC_COLLECT_NO_FAIL("_PyGC_CollectNoFail", Py_ssize_t, PyThreadState),
+    FUN_GRAALPY_GC_COLLECT("GraalPyGC_Collect", Py_ssize_t, Int),
+    FUN_SUBTYPE_TRAVERSE("subtype_traverse", Int, PyObject, Pointer, Pointer),
+    FUN_GRAALPYOBJECT_GC_NOTIFYOWNERSHIPTRANSFER("_GraalPyObject_GC_NotifyOwnershipTransfer", Void, PyObject),
 
     /* PyDateTime_CAPI */
 

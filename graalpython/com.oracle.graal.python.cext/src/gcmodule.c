@@ -37,11 +37,30 @@
 #endif // GraalPy change
 #include "pycore_object.h"
 #include "pycore_pyerrors.h"
-#if 0 // GraalPy change
 #include "pycore_pystate.h"     // _PyThreadState_GET()
 #include "pydtrace.h"
 
+static inline int
+call_traverse(traverseproc traverse, PyObject *op, visitproc visit, void *arg)
+{
+    if (!traverse) {
+        PyTruffle_Log(PY_TRUFFLE_LOG_FINE,
+                      "type '%.100s' is a GC type but tp_traverse is NULL",
+                      Py_TYPE((op))->tp_name);
+        return 0;
+    } else {
+        return traverse(op, (visitproc)visit, arg);
+    }
+
+}
+
+#define CALL_TRAVERSE(traverse, op, visit_fun, ctx) ((void) call_traverse((traverse), (op), (visitproc)(visit_fun), (ctx)))
+
+#define is_managed points_to_py_handle_space
+
+#if 0 // GraalPy change
 typedef struct _gc_runtime_state GCState;
+#endif // GraalPy change
 
 /*[clinic input]
 module gc
@@ -55,6 +74,8 @@ module gc
 
 #define GC_NEXT _PyGCHead_NEXT
 #define GC_PREV _PyGCHead_PREV
+
+#define UNTAG _PyGCHead_UNTAG
 
 // update_refs() set this bit for all objects in current generation.
 // subtract_refs() and move_unreachable() uses this to distinguish
@@ -86,32 +107,32 @@ module gc
 static inline int
 gc_is_collecting(PyGC_Head *g)
 {
-    return (g->_gc_prev & PREV_MASK_COLLECTING) != 0;
+    return (UNTAG(g)->_gc_prev & PREV_MASK_COLLECTING) != 0;
 }
 
 static inline void
 gc_clear_collecting(PyGC_Head *g)
 {
-    g->_gc_prev &= ~PREV_MASK_COLLECTING;
+    UNTAG(g)->_gc_prev &= ~PREV_MASK_COLLECTING;
 }
 
 static inline Py_ssize_t
 gc_get_refs(PyGC_Head *g)
 {
-    return (Py_ssize_t)(g->_gc_prev >> _PyGC_PREV_SHIFT);
+    return (Py_ssize_t)(UNTAG(g)->_gc_prev >> _PyGC_PREV_SHIFT);
 }
 
 static inline void
 gc_set_refs(PyGC_Head *g, Py_ssize_t refs)
 {
-    g->_gc_prev = (g->_gc_prev & ~_PyGC_PREV_MASK)
+    UNTAG(g)->_gc_prev = (UNTAG(g)->_gc_prev & ~_PyGC_PREV_MASK)
         | ((uintptr_t)(refs) << _PyGC_PREV_SHIFT);
 }
 
 static inline void
 gc_reset_refs(PyGC_Head *g, Py_ssize_t refs)
 {
-    g->_gc_prev = (g->_gc_prev & _PyGC_PREV_MASK_FINALIZED)
+    UNTAG(g)->_gc_prev = (UNTAG(g)->_gc_prev & _PyGC_PREV_MASK_FINALIZED)
         | PREV_MASK_COLLECTING
         | ((uintptr_t)(refs) << _PyGC_PREV_SHIFT);
 }
@@ -122,7 +143,7 @@ gc_decref(PyGC_Head *g)
     _PyObject_ASSERT_WITH_MSG(FROM_GC(g),
                               gc_get_refs(g) > 0,
                               "refcount is too small");
-    g->_gc_prev -= 1 << _PyGC_PREV_SHIFT;
+    UNTAG(g)->_gc_prev -= 1 << _PyGC_PREV_SHIFT;
 }
 
 /* set for debugging information */
@@ -137,11 +158,20 @@ gc_decref(PyGC_Head *g)
 #define GEN_HEAD(gcstate, n) (&(gcstate)->generations[n].head)
 
 
+// GraalPy change
+static inline GCState *
+graalpy_get_gc_state(PyThreadState *tstate)
+{
+    return tstate->gc;
+}
+
+
 static GCState *
 get_gc_state(void)
 {
-    PyInterpreterState *interp = _PyInterpreterState_GET();
-    return &interp->gc;
+    // GraalPy change: different implementation
+    PyThreadState *tstate = _PyThreadState_GET();
+    return graalpy_get_gc_state(tstate);
 }
 
 
@@ -165,6 +195,7 @@ _PyGC_InitState(GCState *gcstate)
 }
 
 
+#if 0 // GraalPy change
 PyStatus
 _PyGC_Init(PyInterpreterState *interp)
 {
@@ -182,6 +213,7 @@ _PyGC_Init(PyInterpreterState *interp)
 
     return _PyStatus_OK();
 }
+#endif // GraalPy change
 
 
 /*
@@ -242,21 +274,21 @@ gc_list_init(PyGC_Head *list)
 {
     // List header must not have flags.
     // We can assign pointer by simple cast.
-    list->_gc_prev = (uintptr_t)list;
-    list->_gc_next = (uintptr_t)list;
+    UNTAG(list)->_gc_prev = (uintptr_t)list;
+    UNTAG(list)->_gc_next = (uintptr_t)list;
 }
 
 static inline int
 gc_list_is_empty(PyGC_Head *list)
 {
-    return (list->_gc_next == (uintptr_t)list);
+    return (UNTAG(list)->_gc_next == (uintptr_t)list);
 }
 
 /* Append `node` to `list`. */
 static inline void
 gc_list_append(PyGC_Head *node, PyGC_Head *list)
 {
-    PyGC_Head *last = (PyGC_Head *)list->_gc_prev;
+    PyGC_Head *last = (PyGC_Head *)UNTAG(list)->_gc_prev;
 
     // last <-> node
     _PyGCHead_SET_PREV(node, last);
@@ -264,7 +296,7 @@ gc_list_append(PyGC_Head *node, PyGC_Head *list)
 
     // node <-> list
     _PyGCHead_SET_NEXT(node, list);
-    list->_gc_prev = (uintptr_t)node;
+    UNTAG(list)->_gc_prev = (uintptr_t)node;
 }
 
 /* Remove `node` from the gc list it's currently in. */
@@ -277,7 +309,7 @@ gc_list_remove(PyGC_Head *node)
     _PyGCHead_SET_NEXT(prev, next);
     _PyGCHead_SET_PREV(next, prev);
 
-    node->_gc_next = 0; /* object is not currently tracked */
+    UNTAG(node)->_gc_next = 0; /* object is not currently tracked */
 }
 
 /* Move `node` from the gc list it's currently in (which is not explicitly
@@ -295,10 +327,10 @@ gc_list_move(PyGC_Head *node, PyGC_Head *list)
 
     /* Relink at end of new list. */
     // list must not have flags.  So we can skip macros.
-    PyGC_Head *to_prev = (PyGC_Head*)list->_gc_prev;
+    PyGC_Head *to_prev = (PyGC_Head*)UNTAG(list)->_gc_prev;
     _PyGCHead_SET_PREV(node, to_prev);
     _PyGCHead_SET_NEXT(to_prev, node);
-    list->_gc_prev = (uintptr_t)node;
+    UNTAG(list)->_gc_prev = (uintptr_t)node;
     _PyGCHead_SET_NEXT(node, list);
 }
 
@@ -381,8 +413,8 @@ enum flagstates {collecting_clear_unreachable_clear,
 static void
 validate_list(PyGC_Head *head, enum flagstates flags)
 {
-    assert((head->_gc_prev & PREV_MASK_COLLECTING) == 0);
-    assert((head->_gc_next & NEXT_MASK_UNREACHABLE) == 0);
+    assert((UNTAG(head)->_gc_prev & PREV_MASK_COLLECTING) == 0);
+    assert((UNTAG(head)->_gc_next & NEXT_MASK_UNREACHABLE) == 0);
     uintptr_t prev_value = 0, next_value = 0;
     switch (flags) {
         case collecting_clear_unreachable_clear:
@@ -404,11 +436,11 @@ validate_list(PyGC_Head *head, enum flagstates flags)
     PyGC_Head *gc = GC_NEXT(head);
     while (gc != head) {
         PyGC_Head *trueprev = GC_PREV(gc);
-        PyGC_Head *truenext = (PyGC_Head *)(gc->_gc_next  & ~NEXT_MASK_UNREACHABLE);
+        PyGC_Head *truenext = (PyGC_Head *)(UNTAG(gc)->_gc_next  & ~NEXT_MASK_UNREACHABLE);
         assert(truenext != NULL);
         assert(trueprev == prev);
-        assert((gc->_gc_prev & PREV_MASK_COLLECTING) == prev_value);
-        assert((gc->_gc_next & NEXT_MASK_UNREACHABLE) == next_value);
+        assert((UNTAG(gc)->_gc_prev & PREV_MASK_COLLECTING) == prev_value);
+        assert((UNTAG(gc)->_gc_next & NEXT_MASK_UNREACHABLE) == next_value);
         prev = gc;
         gc = truenext;
     }
@@ -420,6 +452,192 @@ validate_list(PyGC_Head *head, enum flagstates flags)
 
 /*** end of list stuff ***/
 
+/* GraalPy change: additions start */
+
+static int
+visit_reachable(PyObject *op, PyGC_Head *reachable);
+
+/* A traversal callback for move_weak_candidates.
+ *
+ * This function is only used to traverse the referents of an object that was
+ * moved from 'unreachable' to 'young' because it was made reachable due to a
+ * weak candidate (a managed object). Therefore, we know that the caller of this
+ * function is part of a reference cycle. So, if the visited object is a managed
+ * object, we need to push this native reference into Java.
+ */
+static int
+visit_collect_managed_referents(PyObject *op, GraalPyGC_Cycle *cycle)
+{
+    // We're only interested in objects in the generation being collected.
+    if (!_PyObject_IS_GC(op)) {
+        return 0;
+    }
+
+    // capture references to objects (to replicate them in Java)
+    GraalPyGC_CycleNode *n = (GraalPyGC_CycleNode *)malloc(sizeof(GraalPyGC_CycleNode));
+    if (n == NULL) {
+        return -1;
+    }
+    n->item = op;
+    n->next = cycle->head;
+    cycle->head = n;
+    cycle->n++;
+
+    return visit_reachable(op, cycle->reachable);
+}
+
+/* Traverses the references of the given object and if it has references to
+ * managed objects that have 'gc_refs <= MANAGED_REFCNT', all native references
+ * will be pushed to Java.
+ */
+static int
+push_native_references_to_managed(PyObject *op, GraalPyGC_Cycle *cycle)
+{
+    GraalPyGC_CycleNode *n;
+    GraalPyGC_CycleNode *next;
+
+    // avoid costly upcalls
+    if (cycle->n > 0) {
+        GraalPyTruffleObject_ReplicateNativeReferences(op, cycle->head, cycle->n);
+    }
+
+    // destroy list
+    for (n = cycle->head; n != NULL; n = next) {
+        assert (_PyObject_IS_GC(n->item));
+        // rescue 'next'
+        next = n->next;
+        // free current node
+        free(n);
+    }
+    cycle->head = NULL;
+    return 0;
+}
+
+static int
+visit_weak_reachable(PyObject *op, PyGC_Head *reachable)
+{
+    if (!_PyObject_IS_GC(op)) {
+        return 0;
+    }
+
+    PyGC_Head *gc = AS_GC(op);
+
+    /* 'visit_reachable' tests at this point for 'gc_is_collecting(gc)'.
+     * In this case, we don't because for weak candidates, we already
+     * cleared the flag to avoid that 'visit_reachable' is moving them
+     * back into 'young' list in the previous phase. However,
+     * 'NEXT_MASK_UNREACHABLE' is set.
+     */
+
+    // It would be a logic error elsewhere if the collecting flag were set on
+    // an untracked object.
+    assert(UNTAG(gc)->_gc_next != 0);
+
+    /* Note: one could expect that we need to test
+     * 'gc_get_refs(gc) == MANAGED_REFCNT' but that's no longer true because in
+     * the previous phase (i.e. 'move_unreachable') when we move the object into
+     * list 'weak_candidates', we already relink _gc_prev which is also used to
+     * store gc_refs. So, we solely need to rely on flag NEXT_MASK_UNREACHABLE.
+     * Recall that this flag indicates if the node is currently in 'unreachable'
+     * or in 'weak_candidates'. The node cannot be in 'unreachable' because then
+     * it would have been moved to 'reachable' already in phase
+     * 'move_unreachable'.
+     */
+    if (UNTAG(gc)->_gc_next & NEXT_MASK_UNREACHABLE) {
+        _PyObject_ASSERT_WITH_MSG(op, Py_REFCNT(op) > MANAGED_REFCNT, "refcount is too small");
+
+        /* This object must be in 'weak_candidates' and will be made weak if it
+         * remains there. However, this visit function is only called if the
+         * owner of the reference is reachable from managed and strongly
+         * reachable from native. In this situation, we need to rescure the weak
+         * candidate. This is best explained by an example. Assume 'n0' is a
+         * native object and 'm0' is a managed object.
+         *
+         * Java/native => n0 =ht=> m0
+         *
+         * In this example, we will replicate the reference 'n0 =ht=> m0' to
+         * Java into the appropriate 'PythonAbstractNativeObject' wrapper. If
+         * the Java reference disappears (i.e. the wrapper dies), replicated
+         * reference is lost. Now, 'n0' is still strongly reachable from native
+         * and if 'm0' would then only be weakly referenced, we end up with a
+         * dangling pointer.
+         */
+        // Manually unlink gc from unreachable list because the list functions
+        // don't work right in the presence of NEXT_MASK_UNREACHABLE flags.
+        PyGC_Head *prev = GC_PREV(gc);
+        PyGC_Head *next = (PyGC_Head*)(UNTAG(gc)->_gc_next & ~NEXT_MASK_UNREACHABLE);
+        _PyObject_ASSERT(FROM_GC(prev),
+                         UNTAG(prev)->_gc_next & NEXT_MASK_UNREACHABLE);
+        _PyObject_ASSERT(FROM_GC(next),
+                         UNTAG(next)->_gc_next & NEXT_MASK_UNREACHABLE);
+        UNTAG(prev)->_gc_next = UNTAG(gc)->_gc_next;  // copy NEXT_MASK_UNREACHABLE
+        _PyGCHead_SET_PREV(next, prev);
+
+        gc_list_append(gc, reachable);
+    }
+    return 0;
+}
+
+static int
+visit_strong_reachable(PyObject *op, void *unused)
+{
+    if (!is_managed(op) || !_PyObject_IS_GC(op)) {
+        return 0;
+    }
+
+    if (!_PyObject_GC_IS_TRACKED(op)) {
+        _PyObject_GC_TRACK(op);
+    }
+    GraalPyTruffle_NotifyRefCount(op, Py_REFCNT(op));
+    return 0;
+}
+
+/* Performs an upcall to test if the given object is referenced from managed
+ * code.
+ */
+static inline int
+is_referenced_from_managed(PyGC_Head *gc)
+{
+    return is_managed(gc) || GraalPyTruffle_IsReferencedFromManaged(FROM_GC(gc));
+}
+
+/* Breaks a reference cycle that involves managed objects. This is done by
+ * making the handle table reference of the managed object weak.
+ *
+ * This is necessary because if a native object references a managed object, the
+ * reference count of the native object stub will be increased such that it is
+ * larger than MANAGED_REFCNT and the corresponding handle table reference will
+ * be strong. It is then impossible to collect the managed object because we
+ * don't know if it is only referenced from native objects (via the handle
+ * table) or if there is another reference somewhere in the interpreter from
+ * managed code.
+ *
+ * Making the handle table reference weak is dangerous. This is best explained
+ * by an example: Assume we have a managed list 'l' and a native object 'n'
+ * in a reference cycle:
+ *
+ *   l -> n -> l
+ *
+ * This is how it is implemented:
+ *
+ *   handle_table -> (ptr(l), l)
+ *   l -> n -> ptr(l)
+ *
+ * If managed code still references 'l', it can indirectly access 'n' and create
+ * a strong reference to it. This would make 'l' again reachable via the handle
+ * table but since it only weakly references 'l', the list may be collected by
+ * the Java GC leading to dangling pointer.
+ *
+ * We solve this by "transferring" the last collection to the Java GC. More
+ * specifically, we determine the objects of a reference cycle and store them in
+ * a Java array that is then referenced from each wrapper of native objects in
+ * the reference cycle. Therefore, if a native object of the cycle is then again
+ * used in managed code, it will keep all objects of the cycle alive.
+ * 
+ * see `GraalPyTruffleObject_ReplicateNativeReferences`
+ */
+
+/* GraalPy change: additions end */
 
 /* Set all gc_refs = ob_refcnt.  After this, gc_refs is > 0 and
  * PREV_MASK_COLLECTING bit is set for all objects in containers.
@@ -484,9 +702,8 @@ subtract_refs(PyGC_Head *containers)
     for (; gc != containers; gc = GC_NEXT(gc)) {
         PyObject *op = FROM_GC(gc);
         traverse = Py_TYPE(op)->tp_traverse;
-        (void) traverse(op,
-                        (visitproc)visit_decref,
-                        op);
+        // GraalPy change
+        CALL_TRAVERSE(traverse, op, visit_decref, op);
     }
 }
 
@@ -510,9 +727,10 @@ visit_reachable(PyObject *op, PyGC_Head *reachable)
     }
     // It would be a logic error elsewhere if the collecting flag were set on
     // an untracked object.
-    assert(gc->_gc_next != 0);
+    assert(UNTAG(gc)->_gc_next != 0);
 
-    if (gc->_gc_next & NEXT_MASK_UNREACHABLE) {
+    const Py_ssize_t gc_refs_reset = is_managed(gc) ? MANAGED_REFCNT + 1 : 1;
+    if (UNTAG(gc)->_gc_next & NEXT_MASK_UNREACHABLE) {
         /* This had gc_refs = 0 when move_unreachable got
          * to it, but turns out it's reachable after all.
          * Move it back to move_unreachable's 'young' list,
@@ -522,24 +740,24 @@ visit_reachable(PyObject *op, PyGC_Head *reachable)
         // Manually unlink gc from unreachable list because the list functions
         // don't work right in the presence of NEXT_MASK_UNREACHABLE flags.
         PyGC_Head *prev = GC_PREV(gc);
-        PyGC_Head *next = (PyGC_Head*)(gc->_gc_next & ~NEXT_MASK_UNREACHABLE);
+        PyGC_Head *next = (PyGC_Head*)(UNTAG(gc)->_gc_next & ~NEXT_MASK_UNREACHABLE);
         _PyObject_ASSERT(FROM_GC(prev),
-                         prev->_gc_next & NEXT_MASK_UNREACHABLE);
+                         UNTAG(prev)->_gc_next & NEXT_MASK_UNREACHABLE);
         _PyObject_ASSERT(FROM_GC(next),
-                         next->_gc_next & NEXT_MASK_UNREACHABLE);
-        prev->_gc_next = gc->_gc_next;  // copy NEXT_MASK_UNREACHABLE
+                         UNTAG(next)->_gc_next & NEXT_MASK_UNREACHABLE);
+        UNTAG(prev)->_gc_next = UNTAG(gc)->_gc_next;  // copy NEXT_MASK_UNREACHABLE
         _PyGCHead_SET_PREV(next, prev);
 
         gc_list_append(gc, reachable);
-        gc_set_refs(gc, 1);
+        gc_set_refs(gc, gc_refs_reset);
     }
-    else if (gc_refs == 0) {
+    else if (gc_refs == 0 || (gc_refs == MANAGED_REFCNT && is_managed(gc))) {
         /* This is in move_unreachable's 'young' list, but
          * the traversal hasn't yet gotten to it.  All
          * we need to do is tell move_unreachable that it's
          * reachable.
          */
-        gc_set_refs(gc, 1);
+        gc_set_refs(gc, gc_refs_reset);
     }
     /* Else there's nothing to do.
      * If gc_refs > 0, it must be in move_unreachable's 'young'
@@ -549,6 +767,23 @@ visit_reachable(PyObject *op, PyGC_Head *reachable)
         _PyObject_ASSERT_WITH_MSG(op, gc_refs > 0, "refcount is too small");
     }
     return 0;
+}
+
+static inline void
+gc_list_move_with_mask_unreachable(PyGC_Head *prev, PyGC_Head *gc, PyGC_Head *target_list)
+{
+    // Move gc to unreachable.
+    // No need to gc->next->prev = prev because it is single linked.
+    UNTAG(prev)->_gc_next = UNTAG(gc)->_gc_next;
+
+    // We can't use gc_list_append() here because we use
+    // NEXT_MASK_UNREACHABLE here.
+    PyGC_Head *last = GC_PREV(target_list);
+
+    UNTAG(last)->_gc_next = (NEXT_MASK_UNREACHABLE | (uintptr_t)gc);
+    _PyGCHead_SET_PREV(gc, last);
+    UNTAG(gc)->_gc_next = (NEXT_MASK_UNREACHABLE | (uintptr_t)target_list);
+    UNTAG(target_list)->_gc_prev = (uintptr_t)gc;
 }
 
 /* Move the unreachable objects from young to unreachable.  After this,
@@ -564,11 +799,16 @@ visit_reachable(PyObject *op, PyGC_Head *reachable)
  * So we can not gc_list_* functions for unreachable until we remove the flag.
  */
 static void
-move_unreachable(PyGC_Head *young, PyGC_Head *unreachable)
+move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
+        PyGC_Head *weak_candidates /* GraalPy change */)
 {
     // previous elem in the young list, used for restore gc_prev.
     PyGC_Head *prev = young;
     PyGC_Head *gc = GC_NEXT(young);
+    Py_ssize_t gc_refcnt;
+    GraalPyGC_Cycle cycle = { NULL, 0, young };
+
+    assert (young != weak_candidates);
 
     /* Invariants:  all objects "to the left" of us in young are reachable
      * (directly or indirectly) from outside the young list as it was at entry.
@@ -580,7 +820,8 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable)
      */
 
     while (gc != young) {
-        if (gc_get_refs(gc)) {
+        gc_refcnt = gc_get_refs(gc);
+        if (gc_refcnt) {
             /* gc is definitely reachable from outside the
              * original 'young'.  Mark it as such, and traverse
              * its pointers to find any other objects that may
@@ -589,20 +830,48 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable)
              * so we have to wait until it returns to determine
              * the next object to visit.
              */
+
             PyObject *op = FROM_GC(gc);
             traverseproc traverse = Py_TYPE(op)->tp_traverse;
             _PyObject_ASSERT_WITH_MSG(op, gc_get_refs(gc) > 0,
                                       "refcount is too small");
             // NOTE: visit_reachable may change gc->_gc_next when
             // young->_gc_prev == gc.  Don't do gc = GC_NEXT(gc) before!
-            (void) traverse(op,
-                    (visitproc)visit_reachable,
-                    (void *)young);
-            // relink gc_prev to prev element.
-            _PyGCHead_SET_PREV(gc, prev);
+            // GraalPy change
+            // CALL_TRAVERSE(traverse, op, visit_reachable, (void *)young);
+            if (PyTruffle_PythonGC()) {
+                cycle.head = NULL;
+                cycle.n = 0;
+                assert (cycle.reachable == weak_candidates );
+                CALL_TRAVERSE(traverse, op, visit_collect_managed_referents, (void *)&cycle);
+
+                /* replicate any native reference to managed objects to Java */
+                push_native_references_to_managed(op, &cycle);
+            } else {
+                CALL_TRAVERSE(traverse, op, visit_reachable, (void *)young);
+            }
+
             // gc is not COLLECTING state after here.
             gc_clear_collecting(gc);
-            prev = gc;
+
+            if (gc_refcnt == MANAGED_REFCNT && is_managed(gc) &&
+                    Py_REFCNT(op) > MANAGED_REFCNT) {
+                // Assertion is enough because if Python GC is disabled, we will
+                // never track managed objects.
+                assert (PyTruffle_PythonGC());
+                /* Move gc to weak_candidates *AND* set NEXT_MASK_UNREACHABLE.
+                 * However, since we clear PREV_MASK_COLLECTING, it won't be
+                 * moved back to 'young' by 'visit_reachable'.
+                 */
+                // gc_list_move(gc, weak_candidates);
+                gc_list_move_with_mask_unreachable(prev, gc, weak_candidates);
+            }
+            else {
+                // relink gc_prev to prev element.
+                _PyGCHead_SET_PREV(gc, prev);
+
+                prev = gc;
+            }
         }
         else {
             /* This *may* be unreachable.  To make progress,
@@ -613,28 +882,81 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable)
              * young if that's so, and we'll see it again.
              */
             // Move gc to unreachable.
-            // No need to gc->next->prev = prev because it is single linked.
-            prev->_gc_next = gc->_gc_next;
 
-            // We can't use gc_list_append() here because we use
-            // NEXT_MASK_UNREACHABLE here.
-            PyGC_Head *last = GC_PREV(unreachable);
             // NOTE: Since all objects in unreachable set has
             // NEXT_MASK_UNREACHABLE flag, we set it unconditionally.
             // But this may pollute the unreachable list head's 'next' pointer
             // too. That's semantically senseless but expedient here - the
             // damage is repaired when this function ends.
-            last->_gc_next = (NEXT_MASK_UNREACHABLE | (uintptr_t)gc);
-            _PyGCHead_SET_PREV(gc, last);
-            gc->_gc_next = (NEXT_MASK_UNREACHABLE | (uintptr_t)unreachable);
-            unreachable->_gc_prev = (uintptr_t)gc;
+            gc_list_move_with_mask_unreachable(prev, gc, unreachable);
         }
-        gc = (PyGC_Head*)prev->_gc_next;
+        gc = (PyGC_Head*)UNTAG(prev)->_gc_next;
     }
     // young->_gc_prev must be last element remained in the list.
-    young->_gc_prev = (uintptr_t)prev;
+    UNTAG(young)->_gc_prev = (uintptr_t)prev;
     // don't let the pollution of the list head's next pointer leak
-    unreachable->_gc_next &= ~NEXT_MASK_UNREACHABLE;
+    UNTAG(unreachable)->_gc_next &= ~NEXT_MASK_UNREACHABLE;
+    // the pollution of the weak_candidates list head's next pointer is fixed in
+    // 'move_weak_reachable'
+}
+
+/* GraalPy change: added 'move_weak_reachable' */
+static void
+move_weak_reachable(PyGC_Head *young, PyGC_Head *weak_candidates)
+{
+    // previous elem in the young list, used for restore gc_prev.
+    PyGC_Head *prev = young;
+    PyGC_Head *gc = GC_NEXT(young);
+
+    assert (young != weak_candidates);
+    /* This phase is only necessary if managed objects take part in the Python
+     * GC. The caller must already check this option.
+     */
+    assert (PyTruffle_PythonGC());
+
+    /* Invariants:  all objects "to the left" of us in young are reachable
+     * (directly or indirectly) from outside the young list as it was at entry.
+     *
+     * All other objects from the original young "to the left" of us are in
+     * unreachable now, and have NEXT_MASK_UNREACHABLE.  All objects to the
+     * left of us in 'young' now have been scanned, and no objects here
+     * or to the right have been scanned yet.
+     */
+
+    while (gc != young) {
+        Py_ssize_t gc_refcnt = gc_get_refs(gc);
+
+        assert(gc_is_collecting(gc));
+
+        /* This phase is done after 'move_unreachable' and so all object
+         * remaining in 'young' must have a non-zero gc_refcnt.
+         */
+        assert(gc_refcnt);
+        /* If gc_refcnt s not MANAGED_REFCNT, then we know that this object is
+         * referenced from native (e.g. stored in a global field). In case that
+         * 'gc_refcnt == MANAGED_REFCNT' we don't know if the object is only
+         * referenced from managed or has many referenced from native. We need
+         * to disambiguate by doing an upcall an check if there is a wrapper.
+         * If not, then we also know that there are several references from
+         * native.
+         */
+        if (gc_refcnt > 0 && (gc_refcnt > MANAGED_REFCNT || !is_referenced_from_managed(gc))) {
+            PyObject* op = FROM_GC(gc);
+            traverseproc traverse = Py_TYPE(op)->tp_traverse;
+            CALL_TRAVERSE(traverse, op, visit_weak_reachable, (void *)young);
+        }
+
+        // relink gc_prev to prev element.
+        _PyGCHead_SET_PREV(gc, prev);
+        // gc is not COLLECTING state after here.
+        gc_clear_collecting(gc);
+
+        prev = gc;
+        gc = (PyGC_Head*)UNTAG(prev)->_gc_next;
+    }
+    // young->_gc_prev must be last element remained in the list.
+    UNTAG(young)->_gc_prev = (uintptr_t)prev;
+    UNTAG(weak_candidates)->_gc_next &= ~NEXT_MASK_UNREACHABLE;
 }
 
 static void
@@ -666,6 +988,22 @@ untrack_dicts(PyGC_Head *head)
     }
 }
 
+/* Try to untrack all currently tracked dictionaries */
+static inline void
+commit_weak_candidate(PyGC_Head *weak_candidates)
+{
+    // avoid upcalls for empty lists
+    if (!gc_list_is_empty(weak_candidates)) {
+        /* This call will overwrite '_gc_prev' and '_gc_next' with zero which
+         * essentially untracks all objects. The list 'weak_candidates' is no
+         * longer used after that but just to be sure, we re-init it to have a
+         * valid head.
+         */
+        GraalPyTruffleObject_GC_EnsureWeak(weak_candidates);
+        gc_list_init(weak_candidates);
+    }
+}
+
 /* Return true if object has a pre-PEP 442 finalization method. */
 static int
 has_legacy_finalizer(PyObject *op)
@@ -682,7 +1020,7 @@ static void
 move_legacy_finalizers(PyGC_Head *unreachable, PyGC_Head *finalizers)
 {
     PyGC_Head *gc, *next;
-    assert((unreachable->_gc_next & NEXT_MASK_UNREACHABLE) == 0);
+    assert((UNTAG(unreachable)->_gc_next & NEXT_MASK_UNREACHABLE) == 0);
 
     /* March over unreachable.  Move objects with finalizers into
      * `finalizers`.
@@ -690,9 +1028,9 @@ move_legacy_finalizers(PyGC_Head *unreachable, PyGC_Head *finalizers)
     for (gc = GC_NEXT(unreachable); gc != unreachable; gc = next) {
         PyObject *op = FROM_GC(gc);
 
-        _PyObject_ASSERT(op, gc->_gc_next & NEXT_MASK_UNREACHABLE);
-        gc->_gc_next &= ~NEXT_MASK_UNREACHABLE;
-        next = (PyGC_Head*)gc->_gc_next;
+        _PyObject_ASSERT(op, UNTAG(gc)->_gc_next & NEXT_MASK_UNREACHABLE);
+        UNTAG(gc)->_gc_next &= ~NEXT_MASK_UNREACHABLE;
+        next = (PyGC_Head*)UNTAG(gc)->_gc_next;
 
         if (has_legacy_finalizer(op)) {
             gc_clear_collecting(gc);
@@ -708,11 +1046,11 @@ clear_unreachable_mask(PyGC_Head *unreachable)
     assert(((uintptr_t)unreachable & NEXT_MASK_UNREACHABLE) == 0);
 
     PyGC_Head *gc, *next;
-    assert((unreachable->_gc_next & NEXT_MASK_UNREACHABLE) == 0);
+    assert((UNTAG(unreachable)->_gc_next & NEXT_MASK_UNREACHABLE) == 0);
     for (gc = GC_NEXT(unreachable); gc != unreachable; gc = next) {
-        _PyObject_ASSERT((PyObject*)FROM_GC(gc), gc->_gc_next & NEXT_MASK_UNREACHABLE);
-        gc->_gc_next &= ~NEXT_MASK_UNREACHABLE;
-        next = (PyGC_Head*)gc->_gc_next;
+        _PyObject_ASSERT((PyObject*)FROM_GC(gc), UNTAG(gc)->_gc_next & NEXT_MASK_UNREACHABLE);
+        UNTAG(gc)->_gc_next &= ~NEXT_MASK_UNREACHABLE;
+        next = (PyGC_Head*)UNTAG(gc)->_gc_next;
     }
     validate_list(unreachable, collecting_set_unreachable_clear);
 }
@@ -742,9 +1080,8 @@ move_legacy_finalizer_reachable(PyGC_Head *finalizers)
     for (; gc != finalizers; gc = GC_NEXT(gc)) {
         /* Note that the finalizers list may grow during this. */
         traverse = Py_TYPE(FROM_GC(gc))->tp_traverse;
-        (void) traverse(FROM_GC(gc),
-                        (visitproc)visit_move,
-                        (void *)finalizers);
+        // GraalPy change
+        CALL_TRAVERSE(traverse, FROM_GC(gc), visit_move, (void *)finalizers);
     }
 }
 
@@ -1043,12 +1380,14 @@ delete_garbage(PyThreadState *tstate, GCState *gcstate,
 static void
 clear_freelists(PyInterpreterState *interp)
 {
+#if 0 // GraalPy change
     _PyTuple_ClearFreeList(interp);
     _PyFloat_ClearFreeList(interp);
     _PyList_ClearFreeList(interp);
     _PyDict_ClearFreeList(interp);
     _PyAsyncGen_ClearFreeLists(interp);
     _PyContext_ClearFreeList(interp);
+#endif // GraalPy change
 }
 
 // Show stats for objects in each generations
@@ -1099,6 +1438,9 @@ by a call to 'move_legacy_finalizers'), the 'unreachable' list is not a normal
 list and we can not use most gc_list_* functions for it. */
 static inline void
 deduce_unreachable(PyGC_Head *base, PyGC_Head *unreachable) {
+    /* GraalPy change: managed objects; candidates for a weak reference */
+    PyGC_Head weak_candidates;
+
     validate_list(base, collecting_clear_unreachable_clear);
     /* Using ob_refcnt and gc_refs, calculate which objects in the
      * container set are reachable from outside the set (i.e., have a
@@ -1144,9 +1486,33 @@ deduce_unreachable(PyGC_Head *base, PyGC_Head *unreachable) {
      * worth complicating the code to speed just a little.
      */
     gc_list_init(unreachable);
-    move_unreachable(base, unreachable);  // gc_prev is pointer again
+    gc_list_init(&weak_candidates);
+    move_unreachable(base, unreachable, &weak_candidates);  // gc_prev is pointer again
     validate_list(base, collecting_clear_unreachable_clear);
+    validate_list(&weak_candidates, collecting_clear_unreachable_clear);
     validate_list(unreachable, collecting_set_unreachable_set);
+
+    /* GraalPy change: process weak_candidates to break reference cycles with
+     * managed objects
+     */
+
+    /* We now have replicated all native references to Java. This means that any
+     * native object that is part of a reference cycle and this cycle involves
+     * a managed object is now referenced from managed. */
+
+    /* Make handle table references of all objects in 'weak_candidates' weak.
+     * This *MUST NOT* be done before native references to managed objects are
+     * replicated in Java. Otherwise, we might end up with dangling pointers. */
+    if (PyTruffle_PythonGC()) {
+        /* The replication of native references to Java may have updated
+         * reference counts. We now need the updated ones in order to correctly
+         * process 'weak_candidates'.
+         */
+        update_refs(base);  // gc_prev is used for gc_refs
+        subtract_refs(base);
+        move_weak_reachable(base, &weak_candidates);
+        commit_weak_candidate(&weak_candidates);
+    }
 }
 
 /* Handle objects that may have resurrected after a call to 'finalize_garbage', moving
@@ -1197,7 +1563,12 @@ gc_collect_main(PyThreadState *tstate, int generation,
     PyGC_Head finalizers;  /* objects with, & reachable from, __del__ */
     PyGC_Head *gc;
     _PyTime_t t1 = 0;   /* initialize to prevent a compiler warning */
-    GCState *gcstate = &tstate->interp->gc;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
+
+    if (GraalPyTruffle_DisableReferneceQueuePolling()) {
+        // reference queue polling is currently active; cannot proceed
+        return m + n;
+    }
 
     // gc_collect_main() must not be called before _PyGC_Init
     // or after _PyGC_Fini()
@@ -1207,7 +1578,8 @@ gc_collect_main(PyThreadState *tstate, int generation,
     if (gcstate->debug & DEBUG_STATS) {
         PySys_WriteStderr("gc: collecting generation %d...\n", generation);
         show_stats_each_generations(gcstate);
-        t1 = _PyTime_GetPerfCounter();
+        // GraalPy change
+        // t1 = _PyTime_GetPerfCounter();
     }
 
     if (PyDTrace_GC_START_ENABLED())
@@ -1303,7 +1675,9 @@ gc_collect_main(PyThreadState *tstate, int generation,
             debug_cycle("uncollectable", FROM_GC(gc));
     }
     if (gcstate->debug & DEBUG_STATS) {
-        double d = _PyTime_AsSecondsDouble(_PyTime_GetPerfCounter() - t1);
+        // GraalPy change
+        // double d = _PyTime_AsSecondsDouble(_PyTime_GetPerfCounter() - t1);
+        double d = 0.0;
         PySys_WriteStderr(
             "gc: done, %zd unreachable, %zd uncollectable, %.4fs elapsed\n",
             n+m, n, d);
@@ -1348,6 +1722,8 @@ gc_collect_main(PyThreadState *tstate, int generation,
         PyDTrace_GC_DONE(n + m);
     }
 
+    GraalPyTruffle_EnableReferneceQueuePolling();
+
     assert(!_PyErr_Occurred(tstate));
     return n + m;
 }
@@ -1363,7 +1739,7 @@ invoke_gc_callback(PyThreadState *tstate, const char *phase,
     assert(!_PyErr_Occurred(tstate));
 
     /* we may get called very early */
-    GCState *gcstate = &tstate->interp->gc;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
     if (gcstate->callbacks == NULL) {
         return;
     }
@@ -1415,7 +1791,7 @@ gc_collect_with_callback(PyThreadState *tstate, int generation)
 static Py_ssize_t
 gc_collect_generations(PyThreadState *tstate)
 {
-    GCState *gcstate = &tstate->interp->gc;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
     /* Find the oldest generation (highest numbered) where the count
      * exceeds the threshold.  Objects in the that generation and
      * generations younger than it will be collected. */
@@ -1468,6 +1844,7 @@ gc_collect_generations(PyThreadState *tstate)
     return n;
 }
 
+#if 0 // GraalPy change
 #include "clinic/gcmodule.c.h"
 
 /*[clinic input]
@@ -1510,6 +1887,7 @@ gc_isenabled_impl(PyObject *module)
 {
     return PyGC_IsEnabled();
 }
+#endif // GraalPy change
 
 /*[clinic input]
 gc.collect -> Py_ssize_t
@@ -1536,7 +1914,7 @@ gc_collect_impl(PyObject *module, int generation)
         return -1;
     }
 
-    GCState *gcstate = &tstate->interp->gc;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
     Py_ssize_t n;
     if (gcstate->collecting) {
         /* already collecting, don't do anything */
@@ -1550,6 +1928,7 @@ gc_collect_impl(PyObject *module, int generation)
     return n;
 }
 
+#if 0 // GraalPy change
 /*[clinic input]
 gc.set_debug
 
@@ -2045,6 +2424,9 @@ PyInit_gc(void)
 {
     return PyModuleDef_Init(&gcmodule);
 }
+#endif // GraalPy change
+
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
 
 /* C API for controlling the state of the garbage collector */
 int
@@ -2077,7 +2459,7 @@ Py_ssize_t
 PyGC_Collect(void)
 {
     PyThreadState *tstate = _PyThreadState_GET();
-    GCState *gcstate = &tstate->interp->gc;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
 
     if (!gcstate->enabled) {
         return 0;
@@ -2100,7 +2482,8 @@ PyGC_Collect(void)
     return n;
 }
 
-Py_ssize_t
+// GraalPy change: exported sym because called from Java
+PyAPI_FUNC(Py_ssize_t)
 _PyGC_CollectNoFail(PyThreadState *tstate)
 {
     /* Ideally, this function is only called on interpreter shutdown,
@@ -2109,7 +2492,7 @@ _PyGC_CollectNoFail(PyThreadState *tstate)
        during interpreter shutdown (and then never finish it).
        See http://bugs.python.org/issue8713#msg195178 for an example.
        */
-    GCState *gcstate = &tstate->interp->gc;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
     if (gcstate->collecting) {
         return 0;
     }
@@ -2120,7 +2503,39 @@ _PyGC_CollectNoFail(PyThreadState *tstate)
     gcstate->collecting = 0;
     return n;
 }
+#else
+int
+PyGC_Enable(void)
+{
+    return 0;
+}
 
+int
+PyGC_Disable(void)
+{
+    return 0;
+}
+
+int
+PyGC_IsEnabled(void)
+{
+    return 0;
+}
+
+Py_ssize_t
+PyGC_Collect(void)
+{
+    return 0;
+}
+
+PyAPI_FUNC(Py_ssize_t)
+_PyGC_CollectNoFail(PyThreadState *tstate)
+{
+    return 0;
+}
+#endif
+
+#if 0 // GraalPy change
 void
 _PyGC_DumpShutdownStats(PyInterpreterState *interp)
 {
@@ -2157,6 +2572,7 @@ _PyGC_DumpShutdownStats(PyInterpreterState *interp)
         }
     }
 }
+#endif // GraalPy change
 
 
 static void
@@ -2176,6 +2592,7 @@ gc_fini_untrack(PyGC_Head *list)
 }
 
 
+#if 0 // GraalPy change
 void
 _PyGC_Fini(PyInterpreterState *interp)
 {
@@ -2195,7 +2612,9 @@ _PyGC_Fini(PyInterpreterState *interp)
         }
     }
 }
+#endif // GraalPy change
 
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
 /* for debugging */
 void
 _PyGC_Dump(PyGC_Head *g)
@@ -2216,7 +2635,6 @@ visit_validate(PyObject *op, void *parent_raw)
     return 0;
 }
 #endif
-#endif // GraalPy change
 
 
 /* extension modules might be compiled with GC support so these
@@ -2225,22 +2643,42 @@ visit_validate(PyObject *op, void *parent_raw)
 void
 PyObject_GC_Track(void *op_raw)
 {
-    // GraalPy change: different implementation
+    // GraalPy change
     if (PyTruffle_Trace_Memory()) {
         GraalPyTruffleObject_GC_Track(op_raw);
     }
+    PyObject *op = _PyObject_CAST(op_raw);
+    if (_PyObject_GC_IS_TRACKED(op)) {
+        _PyObject_ASSERT_FAILED_MSG(op,
+                                    "object already tracked "
+                                    "by the garbage collector");
+    }
+    _PyObject_GC_TRACK(op);
+
+#ifdef Py_DEBUG
+    /* Check that the object is valid: validate objects traversed
+       by tp_traverse() */
+    traverseproc traverse = Py_TYPE(op)->tp_traverse;
+    (void)traverse(op, visit_validate, op);
+#endif
 }
 
 void
 PyObject_GC_UnTrack(void *op_raw)
 {
-    // GraalPy change: different implementation
+    // GraalPy change
     if (PyTruffle_Trace_Memory()) {
         GraalPyTruffleObject_GC_UnTrack(op_raw);
     }
+    PyObject *op = _PyObject_CAST(op_raw);
+    /* Obscure:  the Py_TRASHCAN mechanism requires that we be able to
+     * call PyObject_GC_UnTrack twice on an object.
+     */
+    if (_PyObject_GC_IS_TRACKED(op)) {
+        _PyObject_GC_UNTRACK(op);
+    }
 }
 
-#if 0 // GraalPy change
 int
 PyObject_IS_GC(PyObject *obj)
 {
@@ -2254,9 +2692,9 @@ _PyObject_GC_Link(PyObject *op)
     assert(((uintptr_t)g & (sizeof(uintptr_t)-1)) == 0);  // g must be correctly aligned
 
     PyThreadState *tstate = _PyThreadState_GET();
-    GCState *gcstate = &tstate->interp->gc;
-    g->_gc_next = 0;
-    g->_gc_prev = 0;
+    GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
+    UNTAG(g)->_gc_next = 0;
+    UNTAG(g)->_gc_prev = 0;
     gcstate->generations[0].count++; /* number of allocated GC objects */
     if (gcstate->generations[0].count > gcstate->generations[0].threshold &&
         gcstate->enabled &&
@@ -2270,6 +2708,28 @@ _PyObject_GC_Link(PyObject *op)
     }
 }
 
+#else
+
+void
+_PyGC_Dump(PyGC_Head *g) {}
+
+void
+PyObject_GC_Track(void *op_raw) {}
+
+void
+PyObject_GC_UnTrack(void *op_raw) {}
+
+int
+PyObject_IS_GC(PyObject *obj)
+{
+    return 0;
+}
+
+void
+_PyObject_GC_Link(PyObject *op) {}
+
+#endif
+
 static PyObject *
 gc_alloc(size_t basicsize, size_t presize)
 {
@@ -2282,29 +2742,49 @@ gc_alloc(size_t basicsize, size_t presize)
     if (mem == NULL) {
         return _PyErr_NoMemory(tstate);
     }
-    ((PyObject **)mem)[0] = NULL;
-    ((PyObject **)mem)[1] = NULL;
+    // GraalPy change: different header layout
+    // ((PyObject **)mem)[0] = NULL;
+    // ((PyObject **)mem)[1] = NULL;
+    memset(mem, '\0', presize);
     PyObject *op = (PyObject *)(mem + presize);
     _PyObject_GC_Link(op);
     return op;
 }
-#endif // GraalPy change
 
 PyObject *
 _PyObject_GC_New(PyTypeObject *tp)
 {
-    // GraalPy change: different implementation
-    return _PyObject_New(tp);
+    size_t presize = _PyType_PreHeaderSize(tp);
+    PyObject *op = gc_alloc(_PyObject_SIZE(tp), presize);
+    if (op == NULL) {
+        return NULL;
+    }
+    _PyObject_Init(op, tp);
+    return op;
 }
 
 PyVarObject *
 _PyObject_GC_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
 {
-    // GraalPy change: different implementation
-    return _PyObject_NewVar(tp, nitems);
+    size_t size;
+    PyVarObject *op;
+
+    if (nitems < 0) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    size_t presize = _PyType_PreHeaderSize(tp);
+    size = _PyObject_VAR_SIZE(tp, nitems);
+    op = (PyVarObject *)gc_alloc(size, presize);
+    if (op == NULL) {
+        return NULL;
+    }
+    _PyObject_InitVar(op, tp, nitems);
+    return op;
 }
 
-#if 0 // GraalPy change
+#ifndef GRAALVM_PYTHON_LLVM_MANAGED
+
 PyVarObject *
 _PyObject_GC_Resize(PyVarObject *op, Py_ssize_t nitems)
 {
@@ -2322,17 +2802,29 @@ _PyObject_GC_Resize(PyVarObject *op, Py_ssize_t nitems)
     Py_SET_SIZE(op, nitems);
     return op;
 }
-#endif // GraalPy change
 
 void
 PyObject_GC_Del(void *op)
 {
-    // GraalPy change: different implementation
-    size_t presize = _PyType_PreHeaderSize(((PyObject *)op)->ob_type);
+    size_t presize = _PyType_PreHeaderSize(Py_TYPE(op)); // GraalPy change
+    PyGC_Head *g = AS_GC(op);
+    if (_PyObject_GC_IS_TRACKED(op)) {
+#ifdef Py_DEBUG
+        if (PyErr_WarnExplicitFormat(PyExc_ResourceWarning, "gc", 0,
+                                     "gc", NULL, "Object of type %s is not untracked before destruction",
+        ((PyObject*)op)->ob_type->tp_name)) {
+            PyErr_WriteUnraisable(NULL);
+        }
+#endif
+        gc_list_remove(g);
+    }
+    GCState *gcstate = get_gc_state();
+    if (gcstate->generations[0].count > 0) {
+        gcstate->generations[0].count--;
+    }
     PyObject_Free(((char *)op)-presize);
 }
 
-#if 0 // GraalPy change
 int
 PyObject_GC_IsTracked(PyObject* obj)
 {
@@ -2350,4 +2842,69 @@ PyObject_GC_IsFinalized(PyObject *obj)
     }
     return 0;
 }
-#endif // GraalPy change
+
+
+void
+GraalPyObject_GC_Del(void *op)
+{
+    if (is_managed(op)) {
+        GraalPyTruffleObject_GC_Del(op);
+    } else {
+        PyObject_GC_Del(op);
+    }
+}
+
+/* Exposes 'gc_collect_impl' such that we can call it from Java. */
+PyAPI_FUNC(Py_ssize_t)
+GraalPyGC_Collect(int generation)
+{
+    return gc_collect_impl(NULL, generation);
+}
+
+PyAPI_FUNC(void)
+_GraalPyObject_GC_NotifyOwnershipTransfer(PyObject *op)
+{
+    if (!is_managed(op) && _PyObject_IS_GC(op) && _PyObject_GC_IS_TRACKED(op)) {
+        traverseproc traverse = Py_TYPE(op)->tp_traverse;
+        CALL_TRAVERSE(traverse, op, visit_strong_reachable, NULL);
+    }
+}
+#else
+
+
+PyVarObject *
+_PyObject_GC_Resize(PyVarObject *op, Py_ssize_t nitems)
+{
+    return NULL;
+}
+
+void
+PyObject_GC_Del(void *op) {}
+
+int
+PyObject_GC_IsTracked(PyObject* obj)
+{
+    return 0;
+}
+
+int
+PyObject_GC_IsFinalized(PyObject *obj)
+{
+    return 1;
+}
+
+
+void
+GraalPyObject_GC_Del(void *op) {}
+
+/* Exposes 'gc_collect_impl' such that we can call it from Java. */
+PyAPI_FUNC(Py_ssize_t)
+GraalPyGC_Collect(int generation)
+{
+    return 0;
+}
+
+PyAPI_FUNC(void)
+_GraalPyObject_GC_NotifyOwnershipTransfer(PyObject *op) {}
+
+#endif
