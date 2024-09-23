@@ -1,0 +1,20 @@
+diff --git a/src/greenlet/TThreadStateDestroy.cpp b/src/greenlet/TThreadStateDestroy.cpp
+index 37fcc8c..8cf33ae 100644
+--- a/src/greenlet/TThreadStateDestroy.cpp
++++ b/src/greenlet/TThreadStateDestroy.cpp
+@@ -71,6 +71,7 @@ private:
+     static bool
+     MarkGreenletDeadIfNeeded(ThreadState* const state)
+     {
++#if 0 // GraalPy change
+         if (state && state->has_main_greenlet()) {
+             // mark the thread as dead ASAP.
+             // this is racy! If we try to throw or switch to a
+@@ -83,6 +84,7 @@ private:
+            return true;
+         }
+         return false;
++#endif // GraalPy change
+     }
+ 
+     static void
