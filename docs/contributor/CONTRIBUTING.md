@@ -16,17 +16,33 @@ git clone https://github.com/graalvm/mx.git
 ```
 Make sure to add the `mx` directory to your `PATH`.
 
-You can always use the latest stable JDK for development.
-You can also download a suitable JDK using mx:
-```bash
-mx fetch-jdk
+Use `mx` to get additional projects at the right versions.
+From within your `graalpython` checkout, run:
 ```
-Make sure that the `JAVA_HOME` environment variable is set.
+mx sforceimport
+```
+
+You can then download a suitable JDK:
+```bash
+mx -p ../graal/vm --env ce-python fetch-jdk -A --jdk-id labsjdk-ce-latest
+```
+
+Make sure that the `JAVA_HOME` environment variable is set:
+```bash
+export JAVA_HOME="${HOME}/.mx/jdks/labsjdk-ce-latest
+```
+
+(Or on Windows)
+```
+$env:JAVA_HOME="$HOME\.mx\jdks\labsjdk-ce-latest"
+```
 
 For building GraalPy, you will also need some native build tools and libraries. On a Debian based system, install:
 ```bash
 sudo apt install build-essential libc++-12-dev zlib1g-dev cmake
 ```
+
+(On Windows, make sure you are running in a Visual Studio Developer Powershell, that should have everything you need.)
 
 Lastly, download maven, extract it and include it on your `PATH`.
 
@@ -36,7 +52,8 @@ If it succeeds without errors, you should already be able to run `mx python` and
 
 For development, we recommend running `mx ideinit` next.
 This will generate configurations for Eclipse, IntelliJ, and NetBeans so that you can open the projects in these IDEs.
-If you use another editor with support for the [Eclipse language server](https://github.com/eclipse/eclipse.jdt.ls) we have also had reports of useable development setups with that, but it's not something we support.
+See also the documentation in mx for [setting up your IDE](https://github.com/graalvm/mx/blob/master/docs/IDE.md).
+If you use another editor (such as VSCode, Emacs, or Neovim) with support for the [Eclipse language server](https://github.com/eclipse/eclipse.jdt.ls) or [Apache NetBeans language server](https://marketplace.visualstudio.com/items?itemName=ASF.apache-netbeans-java), you can also get useable development setups with that, but it's not something we explicitly support.
 
 ## Development Layout
 
@@ -109,6 +126,11 @@ The command will also start a debug server, which can be used in an IDE.
 If the IDE was initialized properly by using the command mentioned above, the existing `GraalDebug` run configuration can be used to debug.
 
 Both of these commands also work when you have a `graalpy` executable, e.g. inside a `venv`.
+
+For debugging the C API and native extensions, first make sure you rebuild (`mx clean` first!) graalpything with the environment variable `CFLAGS=-g` set.
+This will keep debug symbols in our C API implementation which should allow you to use `gdb` or [`rr`](https://rr-project.org/) to debug.
+When you build an SVM image, debugging the entire application is possible, and there are [docs](https://www.graalvm.org/reference-manual/native-image/guides/debug-native-image-process/) to see Java code when inside the native debugger.
+Make sure you find and keep the `libpythonvm.so.debug` file around next to your GraalPy build, you can find it somewhere under `graal/sdk/mxbuild`.
 
 ## Advanced Commands to Develop and Debug
 
@@ -299,22 +321,3 @@ mx --env ../../graal/vm/mx.vm/ce \
     --jvm-config=native \
     --python-vm-config=default --
 ```
-
-## Finding Memory Leaks
-
-For best performance we keep references to long-lived user objects (mostly functions, classes, and modules) directly in the AST nodes when using the default configuration of a single Python context (as is used when running the launcher).
-For better sharing of warm-up and where absolutely best peak performance is not needed, contexts can be configured with a shared engine and the ASTs will be shared across contexts.
-However, that implies we *must* not store any user objects strongly in the ASTs.
-We test that we have no PythonObjects alive after a Context is closed that are run as part of our JUnit tests.
-These can be run by themselves, for example, like so:
-
-```bash
-mx python-leak-test --lang python \
-    --shared-engine \
-      --code 'import site, json' \
-      --forbidden-class com.oracle.graal.python.builtins.objects.object.PythonObject \
-      --keep-dump
-```
-
-The `--keep-dump` option will print the heapdump location and leave the file there rather than deleting it.
-It can then be opened for example with VisualVM to check for the paths of any leaked object, if there are any.
