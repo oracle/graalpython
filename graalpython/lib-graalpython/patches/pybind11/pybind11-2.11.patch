@@ -1,0 +1,120 @@
+diff --git a/pybind11/include/pybind11/detail/common.h b/pybind11/include/pybind11/detail/common.h
+index c51d1d6..3976dd3 100644
+--- a/pybind11/include/pybind11/detail/common.h
++++ b/pybind11/include/pybind11/detail/common.h
+@@ -299,7 +299,7 @@ PYBIND11_WARNING_DISABLE_MSVC(4505)
+ #    define PYBIND11_INTERNAL_NUMPY_1_ONLY_DETECTED
+ #endif
+ 
+-#if defined(PYPY_VERSION) && !defined(PYBIND11_SIMPLE_GIL_MANAGEMENT)
++#if (defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)) && !defined(PYBIND11_SIMPLE_GIL_MANAGEMENT)
+ #    define PYBIND11_SIMPLE_GIL_MANAGEMENT
+ #endif
+ 
+diff --git a/pybind11/include/pybind11/detail/internals.h b/pybind11/include/pybind11/detail/internals.h
+index 232bc32..acde741 100644
+--- a/pybind11/include/pybind11/detail/internals.h
++++ b/pybind11/include/pybind11/detail/internals.h
+@@ -449,7 +449,7 @@ inline void translate_local_exception(std::exception_ptr p) {
+ 
+ inline object get_python_state_dict() {
+     object state_dict;
+-#if PYBIND11_INTERNALS_VERSION <= 4 || PY_VERSION_HEX < 0x03080000 || defined(PYPY_VERSION)
++#if PYBIND11_INTERNALS_VERSION <= 4 || PY_VERSION_HEX < 0x03080000 || defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)
+     state_dict = reinterpret_borrow<object>(PyEval_GetBuiltins());
+ #else
+ #    if PY_VERSION_HEX < 0x03090000
+diff --git a/pybind11/include/pybind11/detail/type_caster_base.h b/pybind11/include/pybind11/detail/type_caster_base.h
+index e40e44b..e7b94af 100644
+--- a/pybind11/include/pybind11/detail/type_caster_base.h
++++ b/pybind11/include/pybind11/detail/type_caster_base.h
+@@ -459,7 +459,7 @@ PYBIND11_NOINLINE handle get_object_handle(const void *ptr, const detail::type_i
+ }
+ 
+ inline PyThreadState *get_thread_state_unchecked() {
+-#if defined(PYPY_VERSION)
++#if defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)
+     return PyThreadState_GET();
+ #elif PY_VERSION_HEX < 0x030D0000
+     return _PyThreadState_UncheckedGet();
+diff --git a/pybind11/include/pybind11/eval.h b/pybind11/include/pybind11/eval.h
+index bd5f981..ee27167 100644
+--- a/pybind11/include/pybind11/eval.h
++++ b/pybind11/include/pybind11/eval.h
+@@ -94,18 +94,18 @@ void exec(const char (&s)[N], object global = globals(), object local = object()
+     eval<eval_statements>(s, std::move(global), std::move(local));
+ }
+ 
+-#if defined(PYPY_VERSION)
++#if defined(PYPY_VERSION) || defined(GRAALVM_PYTHON)
+ template <eval_mode mode = eval_statements>
+ object eval_file(str, object, object) {
+-    pybind11_fail("eval_file not supported in PyPy3. Use eval");
++    pybind11_fail("eval_file not supported in PyPy3 or GraalPy. Use eval");
+ }
+ template <eval_mode mode = eval_statements>
+ object eval_file(str, object) {
+-    pybind11_fail("eval_file not supported in PyPy3. Use eval");
++    pybind11_fail("eval_file not supported in PyPy3 or GraalPy. Use eval");
+ }
+ template <eval_mode mode = eval_statements>
+ object eval_file(str) {
+-    pybind11_fail("eval_file not supported in PyPy3. Use eval");
++    pybind11_fail("eval_file not supported in PyPy3 or GraalPy. Use eval");
+ }
+ #else
+ template <eval_mode mode = eval_statements>
+diff --git a/pybind11/include/pybind11/pybind11.h b/pybind11/include/pybind11/pybind11.h
+index 949bc9b..6e17baa 100644
+--- a/pybind11/include/pybind11/pybind11.h
++++ b/pybind11/include/pybind11/pybind11.h
+@@ -573,8 +573,7 @@ protected:
+                 // chain.
+                 chain_start = rec;
+                 rec->next = chain;
+-                auto rec_capsule
+-                    = reinterpret_borrow<capsule>(((PyCFunctionObject *) m_ptr)->m_self);
++                auto rec_capsule = reinterpret_borrow<capsule>(PyCFunction_GET_SELF(m_ptr));
+                 rec_capsule.set_pointer(unique_rec.release());
+                 guarded_strdup.release();
+             } else {
+@@ -636,9 +635,15 @@ protected:
+ 
+         /* Install docstring */
+         auto *func = (PyCFunctionObject *) m_ptr;
++#if !defined(GRAALVM_PYTHON)
+         //std::free(const_cast<char *>(GraalPyCFunction_GetDoc((PyObject*)(func))));
+         // Install docstring if it's non-empty (when at least one option is enabled)
+         GraalPyCFunction_SetDoc((PyObject*)(func), signatures.empty() ? nullptr : PYBIND11_COMPAT_STRDUP(signatures.c_str()));
++#else
++        std::free(const_cast<char *>(GraalPyCFunction_GetDoc(m_ptr)));
++        GraalPyCFunction_SetDoc(
++            m_ptr, signatures.empty() ? nullptr : PYBIND11_COMPAT_STRDUP(signatures.c_str()));
++#endif
+ 
+         if (rec->is_method) {
+             m_ptr = PYBIND11_INSTANCE_METHOD_NEW(m_ptr, rec->scope.ptr());
+@@ -2766,8 +2771,8 @@ get_type_override(const void *this_ptr, const type_info *this_type, const char *
+     }
+ 
+     /* Don't call dispatch code if invoked from overridden function.
+-       Unfortunately this doesn't work on PyPy. */
+-#if !defined(PYPY_VERSION)
++       Unfortunately this doesn't work on PyPy and GraalPy. */
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+ #    if PY_VERSION_HEX >= 0x03090000
+     PyFrameObject *frame = PyThreadState_GetFrame(PyThreadState_Get());
+     if (frame != nullptr) {
+diff --git a/pybind11/include/pybind11/pytypes.h b/pybind11/include/pybind11/pytypes.h
+index 8052f2e..7aafab6 100644
+--- a/pybind11/include/pybind11/pytypes.h
++++ b/pybind11/include/pybind11/pytypes.h
+@@ -643,7 +643,7 @@ struct error_fetch_and_normalize {
+ 
+         bool have_trace = false;
+         if (m_trace) {
+-#if !defined(PYPY_VERSION)
++#if !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+             auto *tb = reinterpret_cast<PyTracebackObject *>(m_trace.ptr());
+ 
+             // Get the deepest trace possible.

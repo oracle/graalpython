@@ -1,7 +1,13 @@
 [[rules]]
+# Note: This patch is also inlined in torch
+version = '>= 2.11.0'
+patch = 'pybind11-2.11.patch'
+license = 'BSD-3-Clause'
+
+[[rules]]
 # Note: This patch file is also used directly outside of pip during onnxruntime build
 # Note: This patch file is also used directly outside of pip during tensorflow build
 # Note: This patch is also inlined in torch
-version = '>= 2.10.1'
+version = '>= 2.10.1, < 2.11.0'
 patch = 'pybind11-2.10.1.patch'
 license = 'BSD-3-Clause'
