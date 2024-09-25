@@ -102,10 +102,10 @@ index a8cd133..20dd1e6 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..6561986
+index 0000000..b456846
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,219 @@
+@@ -0,0 +1,214 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
@@ -149,14 +149,9 @@ index 0000000..6561986
 +                            rule['patch'] = package_dir / rule['patch']
 +                self._repository[normalized_name] = metadata
 +
-+    def rule_applicable(self, rule):
-+        if not __graalpython__.use_system_toolchain and rule.get('ignore-rule-on-llvm'):
-+            return False
-+        return True
-+
 +    def get_rules(self, name):
 +        if metadata := self._repository.get(normalize_name(name)):
-+            return [rule for rule in metadata['rules'] if self.rule_applicable(rule)]
++            return metadata['rules']
 +
 +    def get_add_sources(self, name):
 +        if metadata := self._repository.get(normalize_name(name)):

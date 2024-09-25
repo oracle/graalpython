@@ -60,7 +60,7 @@ ALLOWED_WITH_CLAUSES = {
 }
 
 SECTIONS = frozenset({'rules', 'add-sources'})
-RULE_KEYS = frozenset({'version', 'patch', 'license', 'subdir', 'dist-type', 'install-priority', 'ignore-rule-on-llvm'})
+RULE_KEYS = frozenset({'version', 'patch', 'license', 'subdir', 'dist-type', 'install-priority'})
 
 
 def validate_metadata(package_dir, metadata):
@@ -93,8 +93,6 @@ def validate_metadata(package_dir, metadata):
             if version := rule.get('version'):
                 # Just try that it doesn't raise
                 SpecifierSet(version)
-            if ignore_on_llvm := rule.get('ignore-rule-on-llvm'):
-                assert isinstance(ignore_on_llvm, bool)
     for file in package_dir.iterdir():
         assert file.name == 'metadata.toml' or file in patches, f"Dangling file in patch directory: {file}"
     if add_sources := metadata.get('add-sources'):
