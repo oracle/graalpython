@@ -46,7 +46,7 @@ import unittest
 from tests.standalone import util
 
 
-class MavenPluginTest(util.PolyglotAppTestBase):
+class MavenPluginTest(util.BuildToolTestBase):
 
     def generate_app(self, tmpdir, target_dir, target_name, pom_template=None):
         cmd = util.GLOBAL_MVN_CMD + [
