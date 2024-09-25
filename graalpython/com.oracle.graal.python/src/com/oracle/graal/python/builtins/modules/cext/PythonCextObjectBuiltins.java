@@ -92,7 +92,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -165,7 +165,7 @@ public abstract class PythonCextObjectBuiltins {
         @Specialization
         static Object doGeneric(PythonAbstractObjectNativeWrapper wrapper, long refCount,
                         @Bind("this") Node inliningTarget,
-                        @Cached UpdateRefNode updateRefNode) {
+                        @Cached UpdateStrongRefNode updateRefNode) {
             assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(wrapper.getNativePointer())) == refCount;
             // refcounting on an immortal object should be a NOP
             assert refCount != PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
@@ -180,7 +180,7 @@ public abstract class PythonCextObjectBuiltins {
         @Specialization
         static Object doGeneric(Object arrayPointer, int len,
                         @Bind("this") Node inliningTarget,
-                        @Cached UpdateRefNode updateRefNode,
+                        @Cached UpdateStrongRefNode updateRefNode,
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached ToPythonWrapperNode toPythonWrapperNode) {
 
