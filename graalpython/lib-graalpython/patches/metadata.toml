@@ -310,21 +310,18 @@ version = '>= 2.0.0rc1, < 2.1'
 patch = 'numpy-2.0.0.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
-ignore-rule-on-llvm = true
 
 [[numpy.rules]]
 version = '== 1.26.4'
 patch = 'numpy-1.26.4.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
-ignore-rule-on-llvm = true
 
 [[numpy.rules]]
 version = '== 1.24.3'
 patch = 'numpy-1.24.3.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
-ignore-rule-on-llvm = true
 
 [[numpy.rules]]
 version = '== 1.23.5'
