@@ -63,44 +63,50 @@ SECTIONS = frozenset({'rules', 'add-sources'})
 RULE_KEYS = frozenset({'version', 'patch', 'license', 'subdir', 'dist-type', 'install-priority'})
 
 
-def validate_metadata(package_dir, metadata):
-    if unexpected_keys := set(metadata) - SECTIONS:
-        assert False, f"Unexpected top-level metadata keys: {unexpected_keys}"
+def validate_metadata(patches_dir):
+    with open(patches_dir / 'metadata.toml', 'rb') as f:
+        all_metadata = tomli.load(f)
     patches = set()
-    if rules := metadata.get('rules'):
-        for rule in rules:
-            if unexpected_keys := set(rule) - RULE_KEYS:
-                assert False, f"Unexpected rule keys: {unexpected_keys}"
-            if patch := rule.get('patch'):
-                patch_path = package_dir / patch
-                assert patch_path.is_file(), f"Patch file does not exists: {patch_path}"
-                patches.add(patch_path)
-                license_id = rule.get('license')
-                assert license_id, f"'license' not specified for patch {patch}"
-                license_id = re.sub(r'[()]', ' ', license_id)
-                for part in re.split(f'AND|OR', license_id):
-                    part = part.strip()
-                    if ' WITH ' in part:
-                        part, exception = re.split(r'\s+WITH\s+', part, 1)
-                        assert exception in ALLOWED_WITH_CLAUSES, \
-                            f"License WITH clause {exception} not in allowed list of clauses: {', '.join(ALLOWED_WITH_CLAUSES)}"
-                    assert part in ALLOWED_LICENSES, \
-                        f"License {part} not in allowed list of licenses: {', '.join(ALLOWED_LICENSES)}"
-            if install_priority := rule.get('install-priority'):
-                assert isinstance(install_priority, int), "'rules.install_priority' must be an int"
-            if dist_type := rule.get('dist-type'):
-                assert dist_type in ('wheel', 'sdist'), "'rules.dist_type' must be on of 'wheel', 'sdist'"
-            if version := rule.get('version'):
-                # Just try that it doesn't raise
-                SpecifierSet(version)
-    for file in package_dir.iterdir():
-        assert file.name == 'metadata.toml' or file in patches, f"Dangling file in patch directory: {file}"
-    if add_sources := metadata.get('add-sources'):
-        for add_source in add_sources:
-            if unexpected_keys := set(add_source) - {'version', 'url'}:
-                assert False, f"Unexpected add_source keys: {unexpected_keys}"
-            assert add_source.get('version'), f"Missing 'add_sources.version' key in {package_dir}"
-            assert add_source.get('url'), f"Missing 'add_sources.url' key in {package_dir}"
+    for package, metadata in all_metadata.items():
+        try:
+            if unexpected_keys := set(metadata) - SECTIONS:
+                assert False, f"Unexpected top-level metadata keys: {unexpected_keys}"
+            if rules := metadata.get('rules'):
+                for rule in rules:
+                    if unexpected_keys := set(rule) - RULE_KEYS:
+                        assert False, f"Unexpected rule keys: {unexpected_keys}"
+                    if patch := rule.get('patch'):
+                        patch_path = patches_dir / patch
+                        assert patch_path.is_file(), f"Patch file does not exists: {patch_path}"
+                        patches.add(patch_path)
+                        license_id = rule.get('license')
+                        assert license_id, f"'license' not specified for patch {patch}"
+                        license_id = re.sub(r'[()]', ' ', license_id)
+                        for part in re.split(f'AND|OR', license_id):
+                            part = part.strip()
+                            if ' WITH ' in part:
+                                part, exception = re.split(r'\s+WITH\s+', part, 1)
+                                assert exception in ALLOWED_WITH_CLAUSES, \
+                                    f"License WITH clause {exception} not in allowed list of clauses: {', '.join(ALLOWED_WITH_CLAUSES)}"
+                            assert part in ALLOWED_LICENSES, \
+                                f"License {part} not in allowed list of licenses: {', '.join(ALLOWED_LICENSES)}"
+                    if install_priority := rule.get('install-priority'):
+                        assert isinstance(install_priority, int), "'rules.install_priority' must be an int"
+                    if dist_type := rule.get('dist-type'):
+                        assert dist_type in ('wheel', 'sdist'), "'rules.dist_type' must be on of 'wheel', 'sdist'"
+                    if version := rule.get('version'):
+                        # Just try that it doesn't raise
+                        SpecifierSet(version)
+            if add_sources := metadata.get('add-sources'):
+                for add_source in add_sources:
+                    if unexpected_keys := set(add_source) - {'version', 'url'}:
+                        assert False, f"Unexpected add_source keys: {unexpected_keys}"
+                    assert add_source.get('version'), "Missing 'add_sources.version' key"
+                    assert add_source.get('url'), "Missing 'add_sources.url' key"
+        except Exception as e:
+            raise AssertionError(f"{package}: {e}")
+    for file in patches_dir.iterdir():
+        assert not file.name.endswith('patch') or file in patches, f"Dangling patch file: {file}"
 
 
 def main():
@@ -109,20 +115,7 @@ def main():
 
     args = parser.parse_args()
 
-    errors = []
-    for package_dir in args.patches_dir.iterdir():
-        if package_dir.is_dir():
-            try:
-                if (metadata_path := package_dir / 'metadata.toml').is_file():
-                    with open(metadata_path, 'rb') as f:
-                        metadata = tomli.load(f)
-                        validate_metadata(package_dir, metadata)
-                else:
-                    assert False, f"Patch directory without metadata: {package_dir}"
-            except AssertionError as e:
-                errors.append(f"\t{package_dir.name}: {e}")
-    if errors:
-        sys.exit("Patch metadata validation failed:\n" + '\n'.join(errors))
+    validate_metadata(args.patches_dir)
 
 
 if __name__ == '__main__':

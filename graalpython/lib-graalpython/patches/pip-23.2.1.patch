@@ -102,10 +102,10 @@ index a8cd133..20dd1e6 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..b456846
+index 0000000..2a67f4b
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,214 @@
+@@ -0,0 +1,209 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
@@ -120,10 +120,10 @@ index 0000000..b456846
 +from pip._vendor.packaging.specifiers import SpecifierSet
 +from pip._vendor.packaging.version import VERSION_PATTERN
 +
-+PATCHES_BASE_DIRS = [os.path.join(__graalpython__.core_home, "patches")]
-+if hasattr(__graalpython__, "tdebug"):
-+    PATCHES_BASE_DIRS += os.environ.get('PIPLOADER_PATCHES_BASE_DIRS', "").split(",")
-+
++METADATA_PATH = os.environ.get(
++    'PIP_GRAALPY_METADATA',
++    os.path.join(__graalpython__.core_home, 'patches', 'metadata.toml'),
++)
 +DISABLE_PATCHING = os.environ.get('PIP_GRAALPY_DISABLE_PATCHING', '').lower() in ('true', '1')
 +DISABLE_VERSION_SELECTION = os.environ.get('PIP_GRAALPY_DISABLE_VERSION_SELECTION', '').lower() in ('true', '1')
 +
@@ -133,25 +133,16 @@ index 0000000..b456846
 +
 +
 +class PatchRepository:
-+    def __init__(self, base_dirs):
++    def __init__(self, metadata_path):
 +        self._repository = {}
-+        for base_dir in base_dirs:
-+            for package_dir in Path(base_dir).iterdir():
-+                denormalized_name = package_dir.name
-+                normalized_name = normalize_name(denormalized_name)
-+                metadata = {}
-+                if (metadata_path := package_dir / 'metadata.toml').is_file():
-+                    with open(metadata_path, 'rb') as f:
-+                        metadata = tomli.load(f)
-+                    metadata.setdefault('rules', [])
-+                    for rule in metadata['rules']:
-+                        if 'patch' in rule:
-+                            rule['patch'] = package_dir / rule['patch']
-+                self._repository[normalized_name] = metadata
++        self.metadata_path = Path(metadata_path)
++        if self.metadata_path.exists():
++            with open(self.metadata_path, 'rb') as f:
++                self._repository = {normalize_name(name): metadata for name, metadata in tomli.load(f).items()}
 +
 +    def get_rules(self, name):
 +        if metadata := self._repository.get(normalize_name(name)):
-+            return metadata['rules']
++            return metadata.get('rules')
 +
 +    def get_add_sources(self, name):
 +        if metadata := self._repository.get(normalize_name(name)):
@@ -185,6 +176,9 @@ index 0000000..b456846
 +                    continue
 +                return rule
 +
++    def resolve_patch(self, patch_path):
++        return self.metadata_path.parent / patch_path
++
 +
 +__PATCH_REPOSITORY = None
 +
@@ -192,7 +186,7 @@ index 0000000..b456846
 +def get_patch_repository():
 +    global __PATCH_REPOSITORY
 +    if not __PATCH_REPOSITORY:
-+        __PATCH_REPOSITORY = PatchRepository(PATCHES_BASE_DIRS)
++        __PATCH_REPOSITORY = PatchRepository(METADATA_PATH)
 +    return __PATCH_REPOSITORY
 +
 +
@@ -246,6 +240,7 @@ index 0000000..b456846
 +            location = os.path.join(location, subdir)
 +    if rule:
 +        if patch := rule.get('patch'):
++            patch = repository.resolve_patch(patch)
 +            print(f"Patching package {name} using {patch}")
 +            exe = '.exe' if os.name == 'nt' else ''
 +            try:

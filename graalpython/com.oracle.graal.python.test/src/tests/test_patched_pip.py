@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -97,7 +97,7 @@ if sys.implementation.name == "graalpy":
             shutil.copytree(self.venv_template_dir, self.venv_dir, symlinks=True)
             self.patch_dir = Path(tempfile.mkdtemp()).resolve()
             self.pip_env = os.environ.copy()
-            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = str(self.patch_dir)
+            self.pip_env['PIP_GRAALPY_PATCHES_URL'] = str(self.patch_dir)
             self.index_dir = Path(tempfile.mkdtemp()).resolve()
 
         def tearDown(self):
@@ -106,18 +106,16 @@ if sys.implementation.name == "graalpy":
             shutil.rmtree(self.index_dir, ignore_errors=True)
 
         def prepare_config(self, name, rules):
-            package_dir = self.patch_dir / name
-            package_dir.mkdir(exist_ok=True)
             toml_lines = []
             for rule in rules:
-                toml_lines.append('[[rules]]')
+                toml_lines.append(f'[[{name}.rules]]')
                 for k, v in rule.items():
                     if not k.startswith('$'):
                         toml_lines.append(f'{k} = {v!r}')
                 if patch := rule.get('patch'):
-                    with open(package_dir / patch, 'w') as f:
+                    with open(self.patch_dir / patch, 'w') as f:
                         f.write(PATCH_TEMPLATE.format(rule.get('$patch-text', 'Patched')))
-            with open(package_dir / 'metadata.toml', 'w') as f:
+            with open(self.patch_dir / 'metadata.toml', 'w') as f:
                 f.write('\n'.join(toml_lines))
 
         def build_package(self, name, version):
