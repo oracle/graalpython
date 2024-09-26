@@ -1,0 +1,20 @@
+diff --git a/setup.py b/setup.py
+index c0c1050..acadf1e 100644
+--- a/setup.py
++++ b/setup.py
+@@ -56,6 +56,8 @@ def write_version_file():
+ pytorch_dep = "torch"
+ if os.getenv("PYTORCH_VERSION"):
+     pytorch_dep += "==" + os.getenv("PYTORCH_VERSION")
++else:
++    pytorch_dep += "==" + torch.__version__
+ 
+ requirements = [
+     "numpy",
+diff --git a/version.txt b/version.txt
+index 2b79645..41915c7 100644
+--- a/version.txt
++++ b/version.txt
+@@ -1 +1 @@
+-0.19.1a0
++0.19.1
