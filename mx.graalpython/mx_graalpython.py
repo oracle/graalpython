@@ -29,7 +29,6 @@ import datetime
 import fnmatch
 import glob
 import itertools
-import json
 import os
 import pathlib
 import re
@@ -1551,6 +1550,10 @@ def graalpython_gate_runner(args, tasks):
                 f"{pathlib.Path(mvn_repo_path).as_uri()}/",
                 mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
             ])
+
+            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/mvnw/.mvn/wrapper/maven-wrapper.properties", ["distributionUrl"])
+            if "distributionUrl" in urls:
+                env["MAVEN_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
 
             urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/gradle/gradle-test-project/gradle/wrapper/gradle-wrapper.properties", ["distributionUrl"])
             if "distributionUrl" in urls:

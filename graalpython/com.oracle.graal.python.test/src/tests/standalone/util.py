@@ -42,7 +42,7 @@ import shutil
 import subprocess
 import sys
 
-MAVEN_VERSION = "3.9.6"
+MAVEN_VERSION = "3.9.8"
 GRADLE_VERSION = "8.9"
 
 def run_cmd(cmd, env, cwd=None, print_out=False, gradle=False):
