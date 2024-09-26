@@ -3,7 +3,7 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
-## Version 24.2.0
+## Version 24.1.1
 * Updated developer metadata of Maven artifacts.
 * Added gradle plugin for polyglot embedding of Python packages into Java.
 
