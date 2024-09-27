@@ -117,6 +117,8 @@ Remember to use the appropriate `GraalPyResources` API to create the Context.
 
 ## GraalPy Gradle Plugin Configuration
 
+> Note: GraalPy Gradle Plugin will become available as of GraalPy version 24.1.1, planned for October 15, 2024.
+
 Add the plugin configuration in the `GraalPy` block in the _build.gradle_ file.
 The **packages** element declares a list of third-party Python packages to be downloaded and installed by the plugin.
 - The Python packages and their versions are specified as if used with `pip`.
