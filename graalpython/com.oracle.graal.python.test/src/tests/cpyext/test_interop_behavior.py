@@ -38,16 +38,16 @@
 # SOFTWARE.
 
 import sys
-from unittest import skipIf
-from . import CPyExtType
+from unittest import skipIf, TestCase
 
+from . import CPyExtType
 
 if sys.implementation.name == "graalpy":
     import polyglot
     from __graalpython__ import is_native
     is_windows = sys.platform == "win32"
 
-    class TestPyStructNumericSequenceTypes(object):
+    class TestPyStructNumericSequenceTypes(TestCase):
 
         @skipIf(is_native, "not supported in native mode")
         def test_interop_assertions(self):
@@ -130,6 +130,34 @@ if sys.implementation.name == "graalpy":
             except Exception as e:
                 # print("Error : ", e)
                 assert False
+
+        @skipIf(is_native, "not supported in native mode")
+        def test_decorator_usage(self):
+            class MyType(object):
+                data = 100000000000
+
+            t = MyType()
+            with self.assertRaises(ValueError):
+                # Fail, because argument is not a type
+                @polyglot.interop_behavior(t)
+                class MyTypeBehavior:
+                    @staticmethod
+                    def is_number(_):
+                        return True
+
+            with self.assertRaises(ValueError):
+                # Fail, because method decorated
+                @polyglot.interop_behavior(MyType)
+                def is_number(_):
+                    return True
+
+            # multiple decorator and custom CPyExtType should work
+            @polyglot.interop_behavior(CPyExtType("dummy", ""))
+            @polyglot.interop_behavior(MyType)
+            class MyTypeBehavior:
+                @staticmethod
+                def is_number(_):
+                    return True
 
         @skipIf(is_windows, "GR-51663: fails on windows")
         def test_native_sequence_interop(self):

@@ -259,7 +259,8 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     @Fallback
-    static Object getForeign(@SuppressWarnings("unused") Object object) {
-        return PythonBuiltinClassType.ForeignObject;
+    static Object getForeign(Object object,
+                    @Cached(inline = false) GetRegisteredClassNode getRegisteredClassNode) {
+        return getRegisteredClassNode.execute(object);
     }
 }

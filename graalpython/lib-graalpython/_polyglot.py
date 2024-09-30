@@ -38,8 +38,78 @@
 # SOFTWARE.
 
 import datetime
-import time
 import polyglot
+import time
+
+
+def interop_type(foreign_class, allow_method_overwrites=False):
+    """
+    @interop_type(foreign_class, allow_method_overwrites=False)
+
+    Registers the annotated python class for the given foreign_class.
+    Every instance of foreign_class or its subclasses will be treated as an instance of pythonClass.
+
+    Multiple registrations per foreign_class are allowed.
+    If two registered classes for the same foreign_class define the same method, an error will be raised.
+    If allow_method_overwrites=True, defining the same method is explicitly allowed.
+    In case of method conflicts, the newest registered class "wins".
+
+    Example registering a custom interop type for the java class YourClass
+
+    >>> from polyglot import interop_type
+    >>> import java
+
+    >>> YourClass = java.type("fully.qualified.package.path.YourClass")
+
+    >>> @polyglot.interop_type(YourClass)
+    >>> class JYourClass:
+    ...     def __str__(self):
+    ...         return self.getClass().getSimpleName()
+
+    >>> yourClassObject = YourClass()
+    >>> print(yourClassObject)
+    YourClass
+
+    Per default registering classes with the same methods for one foreign_class raises an error.
+    If you want to overwrite methods defined in JYourClass use "allow_method_overwrites=True":
+
+    >>> @polyglot.interop_type(YourClass, allow_method_overwrites=True)
+    >>> class NewJYourClass:
+    ...     def __str__(self):
+    ...         return self.getClass().getName()
+
+    >>> print(yourClassObject)  # Note: yourClassObject is still the same instance
+    fully.qualified.package.path.YourClass
+    """
+
+    def wrapper(python_class):
+        polyglot.register_interop_type(foreign_class, python_class, allow_method_overwrites=allow_method_overwrites)
+        # return python class to allow multiple @interop_type
+        return python_class
+
+    return wrapper
+
+
+setattr(polyglot, "interop_type", interop_type)
+
+
+def interop_behavior(receiver):
+    if not isinstance(receiver, type):
+        raise ValueError(f"The first argument must be a type, not {receiver}")
+
+    def wrapper(python_class):
+        if not isinstance(python_class, type):
+            raise ValueError(f"The first argument must be a python class, not {python_class}")
+
+        # extracting the function from the staticmethod with __func__
+        messages = {key: value.__func__ for key, value in vars(python_class).items() if isinstance(value, staticmethod)}
+        polyglot.register_interop_behavior(receiver, **messages)
+        return python_class
+
+    return wrapper
+
+
+setattr(polyglot, "interop_behavior", interop_behavior)
 
 
 def _date_time_tz(dt: datetime.datetime):
@@ -72,7 +142,6 @@ polyglot.register_interop_behavior(time.struct_time,
                                    is_time=True, as_time=lambda t: (t.tm_hour, t.tm_min, t.tm_sec, 0),
                                    is_time_zone=lambda t: t.tm_zone is not None or t.tm_gmtoff is not None,
                                    as_time_zone=_struct_time_tz)
-
 
 # example extending time.struct_time using the decorator wrapper
 #

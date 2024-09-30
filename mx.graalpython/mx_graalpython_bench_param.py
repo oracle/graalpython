@@ -75,6 +75,7 @@ MICRO_BENCHMARKS = {
     'generator-notaligned-sized': ITER_10 + ['30_000'],
     'generator-sized': ITER_10 + ['30_000'],
     'genexp-builtin-call-sized': ITER_10 + ['50_000'],
+    'java-register': ITER_10 + ['2_000'],
     'list-comp': ITER_10 + ['5000'],
     'list-indexing': ITER_10 + ['1000000'],
     'list-indexing-from-constructor': ITER_10 + ['10000000'],

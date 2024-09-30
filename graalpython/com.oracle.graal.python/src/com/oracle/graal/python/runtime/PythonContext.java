@@ -127,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -848,6 +849,18 @@ public final class PythonContext extends Python3Core {
     private final NativePointer nativeNull = NativePointer.createNull();
 
     public RootCallTarget signatureContainer;
+
+    // Used to store classes registered for interop behavior by the user
+    // Keys: MetaObject/Class | Value: PythonClass[]
+    public final ObjectHashMap interopTypeRegistry = new ObjectHashMap();
+
+    // Used to store classes generated for interop behavior by the user
+    // Keys: MetaObject/Class | Value: PythonClass
+    // Gets cleared every time a user registers a new class
+    public final ObjectHashMap interopGeneratedClassCache = new ObjectHashMap();
+
+    // Invalidated every time a user registers a class
+    public final CyclicAssumption interopTypeRegistryCacheValidAssumption = new CyclicAssumption("InteropTypeRegistryCacheValid");
 
     public TruffleString getPyPackageContext() {
         return pyPackageContext;

@@ -329,6 +329,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public final Assumption singleThreadedAssumption = Truffle.getRuntime().createAssumption("Only a single thread is active");
 
     /**
+     * This assumption is valid as long as there is no registered class for custom interop behavior.
+     */
+    public final Assumption noInteropTypeRegisteredAssumption = Truffle.getRuntime().createAssumption("No class for interop registered");
+
+    /**
      * A thread-safe map to retrieve (and cache) singleton instances of call targets, e.g., for
      * Arithmetic operations, wrappers, named cext functions, etc. This reduces the number of call
      * targets and allows AST sharing across contexts. The key in this map is either a single value

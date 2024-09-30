@@ -267,8 +267,8 @@ class BenchRunner(object):
 
     @staticmethod
     def get_bench_module(bench_file):
-        name = bench_file.rpartition("/")[2].partition(".")[0].replace('.py', '')
-        directory = bench_file.rpartition("/")[0]
+        name = bench_file.rpartition(os.sep)[2].partition(".")[0].replace('.py', '')
+        directory = bench_file.rpartition(os.sep)[0]
         pkg = []
         while any(f.endswith("__init__.py") for f in os.listdir(directory)):
             directory, slash, postfix = directory.rpartition("/")
