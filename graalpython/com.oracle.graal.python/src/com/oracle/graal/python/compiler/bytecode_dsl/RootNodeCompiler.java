@@ -4072,25 +4072,25 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                  * @formatter:off
                  * try {
                  *   try_catch_else
-                 * } finally {
-                 *   finally_body
                  * } catch uncaught_ex {
                  *   save current exception
                  *   set the current exception to uncaught_ex
                  *   markCaught(uncaught_ex)
                  *   try {
                  *     finally_body
-                 *   } finally {
-                 *     restore current exception
                  *   } catch handler_ex {
                  *     restore current exception
                  *     markCaught(handler_ex)
                  *     reraise handler_ex
+                 *   } otherwise {
+                 *     restore current exception
                  *   }
                  *   reraise uncaught_ex
+                 * } otherwise {
+                 *   finally_body
                  * }
                  */
-                b.beginTryFinallyCatch(() -> {
+                b.beginTryCatchOtherwise(() -> {
                     b.beginBlock(); // finally
                         visitSequence(node.finalBody);
                     b.endBlock();
@@ -4107,7 +4107,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                             b.emitLoadException();
                         b.endMarkExceptionAsCaught();
 
-                        b.beginTryFinallyCatch(() -> emitRestoreCurrentException(savedException));
+                        b.beginTryCatchOtherwise(() -> emitRestoreCurrentException(savedException));
                             b.beginBlock(); // try
                                 visitSequence(node.finalBody);
                             b.endBlock(); // try
@@ -4123,13 +4123,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                                     b.emitLoadException();
                                 b.endReraise();
                             b.endBlock(); // catch
-                        b.endTryFinallyCatch();
+                        b.endTryCatchOtherwise();
 
                         b.beginReraise();
                             b.emitLoadException();
                         b.endReraise();
                     b.endBlock(); // catch
-                b.endTryFinallyCatch();
+                b.endTryCatchOtherwise();
                 // @formatter:on
             } else {
                 emitTryExceptElse(node);
@@ -4173,13 +4173,13 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                  *       assign ex to handler_1_name
                  *       try {
                  *         handler_1_body
-                 *       } finally {
-                 *         unbind handler_1_name
                  *       } catch handler_1_ex {
                  *         unbind handler_1_name
                  *         // Freeze the bci before it gets rethrown.
                  *         markCaught(handler_ex)
                  *         throw handler_1_ex
+                 *       } otherwise {
+                 *         unbind handler_1_name
                  *       }
                  *       goto afterElse
                  *     }
@@ -4188,14 +4188,14 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                  *     // case 1: bare except
                  *     bare_except_body
                  *     goto afterElse
-                 *   } finally {
-                 *     // Exception handled. Restore the exception state.
-                 *     restore current exception
                  *   } catch handler_ex {
                  *     // A handler raised or no handler was found. Restore exception state and reraise.
                  *     restore current exception
                  *     markCaught(handler_ex) // (no-op if handler_ex is the original exception)
                  *     reraise handler_ex
+                 *   } otherwise {
+                 *     // Exception handled. Restore the exception state.
+                 *     restore current exception
                  *   }
                  *   // case 2: no bare except (we only reach this point if no handler matched/threw)
                  *   reraise ex
@@ -4222,7 +4222,7 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                             b.emitLoadException(); // ex
                         b.endMarkExceptionAsCaught();
 
-                        b.beginTryFinallyCatch(() -> emitRestoreCurrentException(savedException));
+                        b.beginTryCatchOtherwise(() -> emitRestoreCurrentException(savedException));
                             b.beginBlock(); // try
                                 SourceRange bareExceptRange = null;
                                 for (ExceptHandlerTy h : node.handlers) {
@@ -4252,7 +4252,7 @@ boolean newStatement = beginSourceSection(h, b);
                                             b.endUnwrapException();
                                         endStoreLocal(handler.name, b);
 
-                                        b.beginTryFinallyCatch(() -> emitUnbindHandlerVariable(handler));
+                                        b.beginTryCatchOtherwise(() -> emitUnbindHandlerVariable(handler));
                                             b.beginBlock(); // try
                                                 visitSequence(handler.body);
                                             b.endBlock(); // try
@@ -4268,7 +4268,7 @@ boolean newStatement = beginSourceSection(h, b);
                                                     b.emitLoadException(); // handler_i_ex
                                                 b.endThrow();
                                             b.endBlock(); // catch
-                                        b.endTryFinallyCatch();
+                                        b.endTryCatchOtherwise();
                                     } else { // bare except
                                         b.beginBlock();
                                             visitSequence(handler.body);
@@ -4298,7 +4298,7 @@ boolean newStatement = beginSourceSection(h, b);
                                     b.emitLoadException(); // handler_ex
                                 b.endReraise();
                             b.endBlock(); // catch
-                        b.endTryFinallyCatch();
+                        b.endTryCatchOtherwise();
 
                         /**
                          * Each handler branches to afterElse. If we reach this point and there was not a
@@ -4423,11 +4423,11 @@ boolean newStatement = beginSourceSection(h, b);
              *   try {
              *     x = value
              *     bar
-             *   } finally {
-             *     call __exit__(None, None, None)
              *   } catch ex {
              *     if not __exit__(...):
              *       raise
+             *   } otherwise {
+             *     call __exit__(None, None, None)
              *   }
              * @formatter:on
              *
@@ -4478,7 +4478,7 @@ boolean newStatement = beginSourceSection(h, b);
                     b.endContextManagerExit();
                 };
             }
-            b.beginTryFinallyCatch(finallyHandler);
+            b.beginTryCatchOtherwise(finallyHandler);
             b.beginBlock(); // try
             if (item.optionalVars != null) {
                 item.optionalVars.accept(new StoreVisitor(() -> b.emitLoadLocal(value)));
@@ -4520,7 +4520,7 @@ boolean newStatement = beginSourceSection(h, b);
             }
             b.endBlock(); // catch
 
-            b.endTryFinallyCatch();
+            b.endTryCatchOtherwise();
             b.endBlock();
             endSourceSection(b, newStatement);
         }

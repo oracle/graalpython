@@ -3168,9 +3168,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @ExplodeLoop
         private static void doExploded(VirtualFrame frame, LocalSetterRange locals, Object[] values,
                         BytecodeNode bytecode, int bci) {
-            CompilerAsserts.partialEvaluationConstant(values.length);
+            CompilerAsserts.partialEvaluationConstant(locals.getLength());
             assert values.length == locals.getLength();
-            for (int i = 0; i < values.length; i++) {
+            for (int i = 0; i < locals.getLength(); i++) {
                 locals.setObject(bytecode, bci, frame, i, values[i]);
             }
         }
@@ -3178,7 +3178,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         private static void doRegular(VirtualFrame frame, LocalSetterRange locals, Object[] values,
                         BytecodeNode bytecode, int bci) {
             assert values.length == locals.getLength();
-            for (int i = 0; i < values.length; i++) {
+            for (int i = 0; i < locals.getLength(); i++) {
                 locals.setObject(bytecode, bci, frame, i, values[i]);
             }
         }
