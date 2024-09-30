@@ -57,7 +57,7 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
@@ -112,7 +112,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "collect", parameterNames = {"$self", "generation"}, declaresExplicitSelf = true)
     @ArgumentClinic(name = "generation", conversion = ClinicConversion.Int, defaultValue = "2")
     @GenerateNodeFactory
-    abstract static class GcCollectNode extends PythonClinicBuiltinNode {
+    abstract static class GcCollectNode extends PythonBinaryClinicBuiltinNode {
         private static final NativeCAPISymbol SYMBOL = NativeCAPISymbol.FUN_GRAALPY_GC_COLLECT;
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, SYMBOL.getName());
 

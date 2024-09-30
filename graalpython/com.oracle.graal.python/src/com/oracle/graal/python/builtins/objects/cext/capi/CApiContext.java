@@ -499,9 +499,14 @@ public final class CApiContext extends CExtContext {
     public Object createGCState() {
         CompilerAsserts.neverPartOfCompilation();
         assert gcState == null;
+        PythonContext.GCState state = getContext().getGcState();
         Object ptr = CStructAccess.AllocateNode.allocUncached(CStructs.GCState);
-        CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__enabled, PInt.intValue(getContext().getGcState().isEnabled()));
-        CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__debug, getContext().getGcState().getDebug());
+        CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__enabled, PInt.intValue(state.isEnabled()));
+        CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__debug, state.getDebug());
+        Object generations = CStructAccess.GetElementPtrNode.getUncached().getElementPtr(ptr, CFields.GCState__generations);
+        for (int i = 0; i < state.getThresholds().length; i++) {
+            CStructAccess.WriteIntNode.getUncached().writeStructArrayElement(generations, i, CFields.GCGeneration__threshold, state.getThresholds()[i]);
+        }
         gcState = ptr;
         return gcState;
     }
