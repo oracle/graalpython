@@ -255,6 +255,7 @@ An example in this sense are the `numpy` numeric types (for example, `numpy.int3
 ### Usage Examples
 
 #### Interop Behavior
+
 A simple `register_interop_behavior` API is available to register interop behaviors for existing types:
 
 ```python
@@ -381,15 +382,16 @@ register_interop_type(foreign_class, MyPythonClass)
 
 print(my_java_object.get_tuple()) # (42, 17)
 print(type(my_java_object)) # <class 'polyglot.Java_org.example.MyJavaClass_generated'>
-print(type(my_java_object).mro()) # [generated_class, MyPythonClass, foreign, object]
+print(type(my_java_object).mro()) # [polyglot.Java_org.example.MyJavaClass_generated, MyPythonClass, foreign, object]
 
 class MyPythonClassTwo:
    def get_tuple(self):
       return (self.getY(), self.getX())
+   
    def __str__(self):
       return f"MyJavaInstance(x={self.getX()}, y={self.getY()}"
 
-# If 'allow_method_overwrites=False' or not given, this would lead to an error due to the method conflict of 'get_tuple'  
+# If 'allow_method_overwrites=True' is not given, this would lead to an error due to the method conflict of 'get_tuple'  
 register_interop_type(foreign_class, MyPythonClassTwo, allow_method_overwrites=True)
 
 # A newly registered class will be before already registered classes in the mro.
