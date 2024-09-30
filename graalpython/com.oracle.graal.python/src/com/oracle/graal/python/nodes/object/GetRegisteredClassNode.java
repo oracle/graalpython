@@ -138,6 +138,9 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
                     ObjectHashMap.GetNode getNode) {
         try {
             // lookup generated classes
+            // For now, we assume that the keys in the InteropGeneratedClassCache and
+            // InteropTypeRegistry do not call back to any python code.
+            // Otherwise, the pattern listed in IndirectCallContext#enter must be used.
             var possiblePythonClass = getNode.execute(null,
                             inliningTarget,
                             PythonContext.get(inliningTarget).interopGeneratedClassCache,

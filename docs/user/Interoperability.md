@@ -249,8 +249,174 @@ An example in this sense are the `numpy` numeric types (for example, `numpy.int3
 | register_interop_behavior       | Takes the receiver **type** as first argument. The remainder keyword arguments correspond to the respective interop messages. Not All interop messages are supported. |
 | get_registered_interop_behavior | Takes the receiver **type** as first argument. Returns the list of extended interop messages for the given type.                                                      |
 | @interop_behavior               | Class decorator, takes the receiver **type** as only argument. The interop messages are extended via **static** methods defined in the decorated class (supplier).            |
+| register_interop_type           | Takes a `foreign class` and `python class` as positional arguments and `allow_method_overwrites` as optional argument (default: `False`). Every instance of foreign class is then treated as an instance of the given python class. |
+| @interop_type                   | Class decorator, takes the `foreign class` and optionally `allow_method_overwrites` as arguments. The instances of foreign class will be treated as an instance of the annotated python class.                                      |
 
-#### Supported messages 
+### Usage Examples
+
+#### Interop Behavior
+
+A simple `register_interop_behavior` API is available to register interop behaviors for existing types:
+
+```python
+import polyglot
+import numpy
+
+polyglot.register_interop_behavior(numpy.int32,
+    is_number=True,
+    fitsInByte=lambda v: -128 <= v < 128,
+    fitsInShort=lambda v: -0x8000 <= v < 0x8000,
+    fitsInInt = True,
+    fitsInLong = True,
+    fitsInBigInteger = True,
+    asByte = int,
+    asShort = int,
+    asInt = int,
+    asLong = int,
+    asBigInteger = int,
+)
+```
+
+The `@interop_behavior` decorator may be more convenient when declaring more behaviors.
+Interop message extension is achieved via **static** methods of the decorated class.
+The names of the static methods are identical to the keyword names expected by `register_interop_behavior`.
+
+```python
+from polyglot import interop_behavior
+import numpy
+
+
+@interop_behavior(numpy.float64)
+class Int8InteropBehaviorSupplier:
+    @staticmethod
+    def is_number(_):
+        return True
+
+    @staticmethod
+    def fitsInDouble(_):
+        return True
+
+    @staticmethod
+    def asDouble(v):
+        return float(v)
+```
+
+Both classes can then behave as expected when embedded:
+
+```java
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.graalvm.polyglot.Context;
+
+class Main {
+    public static void main(String[] args) {
+        try (var context = Context.create()) {
+            context.eval("python", Files.readString(Path.of("path/to/interop/behavior/script.py")));
+            assert context.eval("python", "numpy.float64(12)").asDouble() == 12.0;
+            assert context.eval("python", "numpy.int32(12)").asByte() == 12;
+        }
+    }
+}
+```
+#### Interop Types
+The `register_interop_type` API allows the usage of python classes for foreign objects.
+The type of such a foreign object will no longer be `foreign`. 
+Instead, it will be a generated class with the registered python classes and `foreign` and as super classes.
+This allows custom mapping of foreign methods and attributes to Python's magic methods or more idiomatic Python code.
+
+```java
+package org.example;
+
+class MyJavaClass {
+      private int x;
+      private int y;
+      
+      public MyJavaClass(int x, int y) {
+         this.x = x;
+         this.y = y;
+      }
+
+      public int getX() {
+         return x;
+      }
+
+      public int getY() {
+         return y;
+      }
+   }
+```
+
+```java
+import org.example.MyJavaClass;
+        
+class Main {
+   
+
+   public static void main(String[] args) {
+      MyJavaClass myJavaObject = new MyJavaClass(42, 17);
+      try (var context = Context.create()) {
+         // myJavaObject will be globally available in example.py as my_java_object
+         context.getBindings("python").putMember("my_java_object", myJavaObject);
+         context.eval(Source.newBuilder("python", "example.py"));
+      }
+   }
+}
+```
+
+```python
+# example.py
+import java
+from polyglot import register_interop_type
+
+print(my_java_object.getX()) # 42
+print(type(my_java_object)) # <class 'foreign'>
+
+class MyPythonClass:
+   def get_tuple(self):
+      return (self.getX(), self.getY())
+
+foreign_class = java.type("org.example.MyJavaClass")
+
+register_interop_type(foreign_class, MyPythonClass)
+
+print(my_java_object.get_tuple()) # (42, 17)
+print(type(my_java_object)) # <class 'polyglot.Java_org.example.MyJavaClass_generated'>
+print(type(my_java_object).mro()) # [polyglot.Java_org.example.MyJavaClass_generated, MyPythonClass, foreign, object]
+
+class MyPythonClassTwo:
+   def get_tuple(self):
+      return (self.getY(), self.getX())
+   
+   def __str__(self):
+      return f"MyJavaInstance(x={self.getX()}, y={self.getY()}"
+
+# If 'allow_method_overwrites=True' is not given, this would lead to an error due to the method conflict of 'get_tuple'  
+register_interop_type(foreign_class, MyPythonClassTwo, allow_method_overwrites=True)
+
+# A newly registered class will be before already registered classes in the mro.
+# It allows overwriting methods from already registered classes with the flag 'allow_method_overwrites=True'
+print(type(my_java_object).mro()) # [generated_class, MyPythonClassTwo, MyPythonClass, foreign, object]
+
+print(my_java_object.get_tuple()) # (17, 42)
+print(my_java_object) # MyJavaInstance(x=42, y=17)
+```
+
+Registering classes may be more convenient with `@interop_type`:
+```python
+import java
+from polyglot import interop_type
+
+
+foreign_class = java.type("org.example.MyJavaClass")
+
+@interop_type(foreign_class)
+class MyPythonClass:
+   def get_tuple(self):
+      return (self.getX(), self.getY())
+```
+
+### Supported messages
 
 The majority (with some exceptions) of the interop messages are supported by the interop behavior extension API, as shown in the table below.  
 The naming convention for the `register_interop_behavior` keyword arguments follows the _snake_case_ naming convention, i.e. the interop `fitsInLong` message 
@@ -314,66 +480,3 @@ The table below describes the supported interop messages:
 | readHashValue            | read_hash_value             | object                                                                                                |
 | writeHashEntry           | write_hash_entry            | NoneType                                                                                              |
 | removeHashEntry          | remove_hash_entry           | NoneType                                                                                              | 
-
-### Usage Example
-
-A simple `register_interop_behavior` API is available to register interop behaviors for existing types:
-
-```python
-import polyglot
-import numpy
-
-polyglot.register_interop_behavior(numpy.int32,
-    is_number=True,
-    fitsInByte=lambda v: -128 <= v < 128,
-    fitsInShort=lambda v: -0x8000 <= v < 0x8000
-    fitsInInt=True,
-    fitsInLong=True,
-    fitsInBigInteger=True,
-    asByte=int,
-    asShort=int,
-    asInt=int,
-    asLong=int,
-    asBigInteger=int,
-)
-```
-
-The `@interop_behavior` decorator may be more convenient when declaring more behaviors.
-Interop message extension is achieved via **static** methods of the decorated class.
-The names of the static methods are identical to the keyword names expected by `register_interop_behavior`.
-
-```python
-from polyglot import interop_behavior
-import numpy
-
-@interop_behavior(numpy.float64)
-class Int8InteropBehaviorSupplier:
-    @staticmethod
-    def is_number(_): 
-        return True
-
-    @staticmethod
-    def fitsInDouble(_):
-        return True
-
-    @staticmethod
-    def asDouble(v):
-        return float(v)
-```
-
-Both classes can then behave as expected when embedded:
-```java
-import java.nio.file.Files;
-import java.nio.file.Path;
-import org.graalvm.polyglot.Context;
-
-class Main {
-    public static void main(String[] args) {
-        try (var context = Context.create()) {
-            context.eval("python", Files.readString(Path.of("path/to/interop/behavior/script.py")));
-            assert context.eval("python", "numpy.float64(12)").asDouble() == 12.0;
-            assert context.eval("python", "numpy.int32(12)").asByte() == 12;
-        }
-    }
-}
-```
