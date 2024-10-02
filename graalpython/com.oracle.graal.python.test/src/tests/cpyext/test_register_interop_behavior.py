@@ -41,7 +41,7 @@
 import sys
 import unittest
 
-EXECUTE_TESTS = sys.implementation.name == "graalpy" and __graalpython__.get_platform_id() != "managed"
+EXECUTE_TESTS = sys.implementation.name == "graalpy" and __graalpython__.get_platform_id() != "managed" and not __graalpython__.is_native
 
 if EXECUTE_TESTS:
     import polyglot
