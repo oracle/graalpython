@@ -52,7 +52,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_SWAPPED;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -750,10 +749,10 @@ public final class CFieldBuiltins extends PythonBuiltins {
             throw PRaiseNode.getUncached().raise(NotImplementedError, toTruffleStringUncached("Field setter %s is not supported yet."), setfunc.name());
         }
 
-        private static TruffleString CTYPES_CFIELD_CAPSULE_NAME_PYMEM = tsLiteral("_ctypes/cfield.c pymem");
+        private static final byte[] CTYPES_CFIELD_CAPSULE_NAME_PYMEM = PyCapsule.capsuleName("_ctypes/cfield.c pymem");
 
         private static PyCapsule createPyMemCapsule(Pointer pointer, PythonObjectFactory factory) {
-            PyCapsule capsule = factory.createCapsule(pointer, CTYPES_CFIELD_CAPSULE_NAME_PYMEM);
+            PyCapsule capsule = factory.createCapsuleJavaName(pointer, CTYPES_CFIELD_CAPSULE_NAME_PYMEM);
             new PointerReference(capsule, pointer, PythonContext.get(factory).getSharedFinalizer());
             return capsule;
         }

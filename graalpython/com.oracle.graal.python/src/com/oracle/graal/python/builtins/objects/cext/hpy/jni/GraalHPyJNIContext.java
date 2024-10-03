@@ -1249,14 +1249,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return 0;
     }
 
-    private long capsuleNameToNative(Object name) {
-        if (name instanceof TruffleString tname) {
-            // The capsule's name may either be a native pointer or a TruffleString.
-            return HPyJNIAsCharPointerNodeGen.getUncached().executeLong(context, tname, Encoding.UTF_8);
-        }
-        return coerceToPointer(name);
-    }
-
     private long createHPyObject(long typeHandle, long dataOutVar) {
         Object type = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle));
         PythonObject pythonObject;
@@ -1534,7 +1526,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         } else {
             hpyDestructor = 0;
         }
-        PyCapsule result = slowPathFactory.createCapsule(pointer, new NativePointer(name));
+        PyCapsule result = slowPathFactory.createCapsuleNativeName(pointer, new NativePointer(name));
         if (hpyDestructor != 0) {
             result.registerDestructor(hpyDestructor);
         }
@@ -1559,21 +1551,21 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     public long ctxCapsuleGet(long capsuleBits, int key, long namePtr) {
         Object capsule = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(capsuleBits));
         try {
-            if (!(capsule instanceof PyCapsule pyCapsule) || ((PyCapsule) capsule).getPointer() == null) {
+            if (!(capsule instanceof PyCapsule pyCapsule) || pyCapsule.getPointer() == null) {
                 return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(context, 0, ValueError, GraalHPyCapsuleGet.getErrorMessage(key));
             }
             GraalHPyCapsuleGet.isLegalCapsule(capsule, key, PRaiseNode.getUncached());
             Object result;
             switch (key) {
                 case CapsuleKey.Pointer -> {
-                    if (!capsuleNameMatches(namePtr, coerceToPointer(capsuleNameToNative(pyCapsule.getName())))) {
+                    if (!capsuleNameMatches(namePtr, coerceToPointer(pyCapsule.getNamePtr()))) {
                         return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(context, 0, ValueError, GraalHPyCapsuleGet.INCORRECT_NAME);
                     }
                     result = pyCapsule.getPointer();
                 }
                 case CapsuleKey.Context -> result = pyCapsule.getContext();
                 // The capsule's name may either be a native pointer or a TruffleString.
-                case CapsuleKey.Name -> result = capsuleNameToNative(pyCapsule.getName());
+                case CapsuleKey.Name -> result = pyCapsule.getNamePtr();
                 case CapsuleKey.Destructor -> result = pyCapsule.getDestructor();
                 default -> throw CompilerDirectives.shouldNotReachHere("invalid key");
             }

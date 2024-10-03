@@ -94,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -1605,8 +1606,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(DigestObject.create(type, getShape(type), name, digest));
     }
 
-    public final PyCapsule createCapsule(Object pointer, Object name) {
+    public final PyCapsule createCapsuleNativeName(Object pointer, Object name) {
         return createCapsule(new PyCapsule.CapsuleData(pointer, name));
+    }
+
+    public final PyCapsule createCapsuleJavaName(Object pointer, byte[] name) {
+        return createCapsule(new PyCapsule.CapsuleData(pointer, new CArrayWrappers.CByteArrayWrapper(name)));
     }
 
     public final PyCapsule createCapsule(PyCapsule.CapsuleData data) {
