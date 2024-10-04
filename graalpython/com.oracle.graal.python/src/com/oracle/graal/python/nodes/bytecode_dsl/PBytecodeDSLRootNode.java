@@ -225,6 +225,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.nodes.Node.Child;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -857,20 +858,24 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return MarshalModuleBuiltins.serializeCodeUnit(co);
     }
 
-    private static Object checkUnboundCell(PCell cell, int index, PBytecodeDSLRootNode rootNode, Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+    private static Object checkUnboundCell(PCell cell, int index, PBytecodeDSLRootNode rootNode, Node inliningTarget, InlinedConditionProfile nullProfile) {
         Object result = cell.getRef();
-        if (result == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            CodeUnit codeUnit = rootNode.getCodeUnit();
-            if (index < codeUnit.cellvars.length) {
-                TruffleString localName = codeUnit.cellvars[index];
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, localName);
-            } else {
-                TruffleString localName = codeUnit.freevars[index - codeUnit.cellvars.length];
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.NameError, ErrorMessages.UNBOUNDFREEVAR, localName);
-            }
+        if (nullProfile.profile(inliningTarget, result == null)) {
+            throw raiseUnboundCell(index, rootNode, inliningTarget);
         }
         return result;
+    }
+
+    @TruffleBoundary
+    private static PException raiseUnboundCell(int index, PBytecodeDSLRootNode rootNode, Node inliningTarget) {
+        CodeUnit codeUnit = rootNode.getCodeUnit();
+        if (index < codeUnit.cellvars.length) {
+            TruffleString localName = codeUnit.cellvars[index];
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, localName);
+        } else {
+            TruffleString localName = codeUnit.freevars[index - codeUnit.cellvars.length];
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.NameError, ErrorMessages.UNBOUNDFREEVAR, localName);
+        }
     }
 
     public PCell readClassCell(Frame frame) {
@@ -3073,8 +3078,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static Object doLoadCell(int index, PCell cell,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            return checkUnboundCell(cell, index, rootNode, inliningTarget, raiseNode);
+                        @Cached InlinedConditionProfile nullProfile) {
+            return checkUnboundCell(cell, index, rootNode, inliningTarget, nullProfile);
         }
     }
 
@@ -3088,7 +3093,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind Node inliningTarget,
                         @Cached ReadFromLocalsNode readLocalsNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached InlinedConditionProfile nullProfile) {
             CodeUnit co = rootNode.getCodeUnit();
             TruffleString name = co.freevars[index - co.cellvars.length];
             Object locals = PArguments.getSpecialArgument(frame);
@@ -3096,7 +3101,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             if (value != PNone.NO_VALUE) {
                 return value;
             } else {
-                return checkUnboundCell(cell, index, rootNode, inliningTarget, raiseNode);
+                return checkUnboundCell(cell, index, rootNode, inliningTarget, nullProfile);
             }
         }
     }
@@ -3126,8 +3131,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static void doClearCell(int index, PCell cell,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            checkUnboundCell(cell, index, rootNode, inliningTarget, raiseNode);
+                        @Cached InlinedConditionProfile nullProfile) {
+            checkUnboundCell(cell, index, rootNode, inliningTarget, nullProfile);
             cell.clearRef();
         }
     }
@@ -4121,13 +4126,17 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static Object doObject(int index, Object localValue,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            if (localValue == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                TruffleString localName = rootNode.getCodeUnit().varnames[index];
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, localName);
+                        @Cached InlinedConditionProfile nullProfile) {
+            if (nullProfile.profile(inliningTarget, localValue == null)) {
+                throw raiseUnboundLocal(index, rootNode, inliningTarget);
             }
             return localValue;
+        }
+
+        @TruffleBoundary
+        private static PException raiseUnboundLocal(int index, PBytecodeDSLRootNode rootNode, Node inliningTarget) {
+            TruffleString localName = rootNode.getCodeUnit().varnames[index];
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, localName);
         }
     }
 
