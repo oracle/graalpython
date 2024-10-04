@@ -2337,13 +2337,13 @@ def warn_about_old_hardcoded_version():
             r"^  <version>(\d+\.\d+)(?:\.\d+)*</version>" : hardcoded_ver_is_behind_major_minor,
         },
         "graalpython/graalpy-jbang/examples/hello.java": {
-            r"//DEPS org.graalvm.python:graalpy-jbang[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_behind_major_minor,
+            r"//DEPS org.graalvm.python:jbang[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_behind_major_minor,
         },
         "graalpython/graalpy-jbang/templates/graalpy-template_local_repo.java.qute": {
-            r"//DEPS org.graalvm.python:graalpy-jbang[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_behind_major_minor,
+            r"//DEPS org.graalvm.python:jbang[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_behind_major_minor,
         },
         "graalpython/graalpy-jbang/templates/graalpy-template.java.qute": {
-            r"//DEPS org.graalvm.python:graalpy-jbang[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_behind_major_minor,
+            r"//DEPS org.graalvm.python:jbang[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_behind_major_minor,
         },
         "graalpython/graalpy-archetype-polyglot-app/src/main/resources/archetype-resources/pom.xml": {
             r'<graalpy.version>(\d+\.\d+)(?:\.\d+)*</graalpy.version>' : hardcoded_ver_is_behind_major_minor,

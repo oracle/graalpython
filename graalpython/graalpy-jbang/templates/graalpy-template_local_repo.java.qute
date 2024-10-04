@@ -8,7 +8,7 @@
 //REPOS mc=https://repo1.maven.org/maven2/
 //REPOS local=file://{path_to_local_repo}
 {|
-//DEPS org.graalvm.python:graalpy-jbang:${env.GRAALPY_VERSION:24.2.0}
+//DEPS org.graalvm.python:jbang:${env.GRAALPY_VERSION:24.2.0}
 // specify python packages and their versions as if used with pip
 //PIP termcolor==2.2
 |}

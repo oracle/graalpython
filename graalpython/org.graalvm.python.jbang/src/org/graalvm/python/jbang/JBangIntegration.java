@@ -78,7 +78,7 @@ public class JBangIntegration {
 
     private static final SubprocessLog LOG = new SubprocessLog() {
     };
-    private static final String JBANG_COORDINATES = "org.graalvm.python:graalpy-jbang:jar";
+    private static final String JBANG_COORDINATES = "org.graalvm.python:jbang:jar";
 
     /**
      *
@@ -143,7 +143,7 @@ public class JBangIntegration {
             // include python stdlib in image
             try {
                 VFSUtils.copyGraalPyHome(calculateClasspath(dependencies), home, null, null, LOG);
-                VFSUtils.writeNativeImageConfig(temporaryJar.resolve("META-INF"), "graalpy-jbang-integration");
+                VFSUtils.writeNativeImageConfig(temporaryJar.resolve("META-INF"), "org.graalvm.polyglot.jbang");
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }

@@ -996,7 +996,7 @@ suite = {
             "description": "GraalPy JBang Integration",
             "maven": {
                 "groupId": "org.graalvm.python",
-                "artifactId": "graalpy-jbang",
+                "artifactId": "jbang",
                 "tag": ["default", "public"],
             },
         },
