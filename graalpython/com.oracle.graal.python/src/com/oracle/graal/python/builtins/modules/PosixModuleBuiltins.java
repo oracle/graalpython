@@ -43,6 +43,7 @@ import java.lang.management.ManagementFactory;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -133,6 +134,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -2571,8 +2573,30 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         Object exit(int status) {
-            // TODO: use a safepoint action to throw this exception to all running threads
-            throw new PythonExitException(this, status);
+            PythonContext context = getContext();
+            if (context.getOption(PythonOptions.RunViaLauncher)) {
+                Runtime.getRuntime().halt(status);
+            }
+            List<Thread> otherThreads = new ArrayList<>(Arrays.asList(context.getThreads()));
+            otherThreads.remove(context.getMainThread());
+            otherThreads.remove(Thread.currentThread());
+            context.getEnv().submitThreadLocal(otherThreads.toArray(new Thread[0]), new ThreadLocalAction(true, false) {
+                @Override
+                protected void perform(Access access) {
+                    throw new ThreadDeath();
+                }
+            });
+            if (Thread.currentThread() == context.getMainThread()) {
+                throw new PythonExitException(this, status);
+            } else {
+                context.getEnv().submitThreadLocal(new Thread[]{context.getMainThread()}, new ThreadLocalAction(true, false) {
+                    @Override
+                    protected void perform(Access access) {
+                        throw new PythonExitException(ExitNode.this, status);
+                    }
+                });
+            }
+            throw new ThreadDeath();
         }
     }
 
