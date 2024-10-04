@@ -964,6 +964,43 @@ class InteropTests(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, 'invalid instantiation of foreign object'):
             type(h).fromkeys(['a', 'b'], 42)
 
+    def test_java_iterator(self):
+        from java.util import ArrayList, LinkedHashSet
+
+        s = LinkedHashSet() # not hasArrayElements() and not hasHashEntries()
+        s.add(1)
+        s.add(2)
+        itr1 = s.iterator()
+        itr2 = iter(s)
+
+        l = ArrayList()
+        l.extend([1, 2])
+        itr3 = l.iterator() # call Java iterator(), iter(l) would call list.__iter__() and return a Python iterator
+
+        for itr in [itr1, itr2, itr3]:
+            iterator_type = type(iter([]))
+            assert isinstance(itr, iterator_type)
+            assert iterator_type in type(itr).mro()
+            self.assertEqual(['ForeignIterator', 'iterator', 'foreign', 'object'], [t.__name__ for t in type(itr).mro()])
+            assert '<polyglot.ForeignIterator object at 0x' in repr(itr), repr(itr)
+            assert '<polyglot.ForeignIterator object at 0x' in str(itr), str(itr)
+            assert bool(itr) == True
+
+            assert iter(itr) is itr
+
+            assert itr.__length_hint__() == 1
+            assert next(itr) == 1
+            assert next(itr) == 2
+            self.assertRaises(StopIteration, lambda: next(itr))
+            self.assertRaises(StopIteration, lambda: next(itr))
+            assert itr.__length_hint__() == 0
+
+            with self.assertRaisesRegex(TypeError, "descriptor requires a 'iterator' object but received a 'ForeignIterator'"):
+                itr.__reduce__()
+
+            with self.assertRaisesRegex(TypeError, "descriptor requires a 'iterator' object but received a 'ForeignIterator'"):
+                itr.__setstate__(0)
+
     def test_java_map_as_keywords(self):
         from java.util import HashMap, LinkedHashMap
 

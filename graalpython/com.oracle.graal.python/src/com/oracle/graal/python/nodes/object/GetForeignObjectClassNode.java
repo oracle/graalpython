@@ -83,7 +83,7 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         EXCEPTION("Exception", PythonBuiltinClassType.PBaseException),
         EXECUTABLE("Executable"),
         INSTANTIABLE("Instantiable"),
-        ITERATOR("Iterator"), // PythonBuiltinClassType.PIterator // must be before Iterable
+        ITERATOR("Iterator", PythonBuiltinClassType.PIterator), // must be before Iterable
         ITERABLE("Iterable"),
         META_OBJECT("Type"), // PythonBuiltinClassType.PythonClass ?
         NULL("None", PythonBuiltinClassType.PNone),

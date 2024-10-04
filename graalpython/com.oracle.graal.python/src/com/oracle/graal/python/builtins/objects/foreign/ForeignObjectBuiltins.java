@@ -49,7 +49,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
@@ -65,7 +64,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -154,7 +152,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
@@ -830,35 +827,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
-
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        static Object doForeignArray(Object iterator,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile notIterator,
-                        @Cached PRaiseNode raiseNode,
-                        @CachedLibrary("iterator") InteropLibrary lib,
-                        @Cached PForeignToPTypeNode convertNode,
-                        @Cached GilNode gil) {
-            if (notIterator.profile(inliningTarget, lib.isIterator(iterator))) {
-                gil.release(true);
-                try {
-                    return convertNode.executeConvert(lib.getIteratorNextElement(iterator));
-                } catch (StopIterationException e) {
-                    throw raiseNode.raiseStopIteration();
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere("iterator claimed to be iterator but wasn't");
-                } finally {
-                    gil.acquire();
-                }
-            } else {
-                throw raiseNode.raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___NEXT__);
-            }
-        }
-    }
-
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class NewNode extends PythonBuiltinNode {
@@ -940,7 +908,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    // TODO: PySequenceCheckNode can be removed once this is no longer defined
+    // TODO: PySequenceCheckNode special foreign handling can be removed once this is no longer
+    // defined
     @Slot(value = SlotKind.sq_item, isComplex = true)
     @GenerateNodeFactory
     abstract static class ForeignSqItemNode extends SqItemBuiltinNode {
@@ -1196,11 +1165,13 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
+                        @Cached ObjectNodes.DefaultObjectReprNode defaultReprNode,
                         @Cached InlinedBranchProfile isNull,
                         @Cached InlinedBranchProfile isBoolean,
                         @Cached InlinedBranchProfile isString,
                         @Cached InlinedBranchProfile isLong,
                         @Cached InlinedBranchProfile isDouble,
+                        @Cached InlinedBranchProfile isIterator,
                         @Cached InlinedBranchProfile defaultCase) {
             // Check if __repr__ is defined before foreign, if so call that, like object.__str__
             // would do
@@ -1255,6 +1226,9 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         gil.acquire();
                     }
                     return strNode.execute(frame, inliningTarget, value);
+                } else if (lib.isIterator(object)) {
+                    isIterator.enter(inliningTarget);
+                    return defaultReprNode.execute(frame, inliningTarget, object);
                 }
             } catch (UnsupportedMessageException e) {
                 // Fall back to the generic impl
