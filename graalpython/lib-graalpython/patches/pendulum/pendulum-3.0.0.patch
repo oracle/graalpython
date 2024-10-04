@@ -1,0 +1,13 @@
+diff --git a/rust/Cargo.toml b/rust/Cargo.toml
+index 0d76a89..08dc9bf 100644
+--- a/rust/Cargo.toml
++++ b/rust/Cargo.toml
+@@ -14,7 +14,7 @@ strip = true
+ overflow-checks = false
+ 
+ [dependencies]
+-pyo3 = { version = "0.19.0", features = ["extension-module", "generate-import-lib"] }
++pyo3 = { version = "0.21.0", features = ["extension-module", "generate-import-lib"] }
+ mimalloc = { version = "0.1.39", optional = true, default-features = false }
+ 
+ [features]
