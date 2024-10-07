@@ -85,13 +85,6 @@ def get_gp():
 
     return graalpy
 
-def replace_in_file(file, str, replace_str):
-    with open(file, "r") as f:
-        contents = f.read()
-    assert str in contents
-    with open(file, "w") as f:
-        f.write(contents.replace(str, replace_str))
-
 def patch_properties_file(properties_file, distribution_url_override):
     if distribution_url_override:
         new_lines = []
@@ -290,10 +283,10 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase):
             shutil.copyfile(os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs", "src", "hello.py"), os.path.join(src_dir, "hello.py"))
             shutil.rmtree(os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs"))
             # patch GraalPy.java
-            replace_in_file(os.path.join(target_dir, "src", "main", "java", "org", "example", "GraalPy.java"),
+            util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "org", "example", "GraalPy.java"),
                 "package org.example;",
                 "package org.example;\nimport java.nio.file.Path;")
-            replace_in_file(os.path.join(target_dir, "src", "main", "java", "org", "example", "GraalPy.java"),
+            util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "org", "example", "GraalPy.java"),
                 "GraalPyResources.createContext()",
                 "GraalPyResources.contextBuilder(Path.of(\"python-resources\")).build()")
 
@@ -336,7 +329,7 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase):
 
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
 
-            replace_in_file(build_file,
+            util.replace_in_file(build_file,
                 "implementation(\"org.graalvm.python:python-community:24.2.0\")",
                 "// implementation(\"org.graalvm.python:python-community:24.2.0\")")
 
@@ -498,9 +491,9 @@ class PolyglotAppGradleGroovyTest(PolyglotAppGradleTestBase):
             mvn_repos = ""
             for idx, custom_repo in enumerate(custom_repos.split(",")):
                 mvn_repos += f"maven {{ url \"{custom_repo}\" }}\n    "
-            replace_in_file(build_file,
+            util.replace_in_file(build_file,
                 "repositories {", f"repositories {{\n    mavenLocal()\n    {mvn_repos}")
-            replace_in_file(settings_file,
+            util.replace_in_file(settings_file,
                 "repositories {", f"repositories {{\n        {mvn_repos}")
 
         #print_file(build_file)
@@ -576,8 +569,8 @@ class PolyglotAppGradleKotlinTest(PolyglotAppGradleTestBase):
             for idx, custom_repo in enumerate(custom_repos.split(",")):
                 mvn_repos += f"maven(url=\"{custom_repo}\")\n    "
 
-            replace_in_file(build_file, "repositories {", f"repositories {{\n    mavenLocal()\n    {mvn_repos}")
-            replace_in_file(settings_file, "repositories {", f"repositories {{\n        {mvn_repos}")
+            util.replace_in_file(build_file, "repositories {", f"repositories {{\n    mavenLocal()\n    {mvn_repos}")
+            util.replace_in_file(settings_file, "repositories {", f"repositories {{\n        {mvn_repos}")
 
         #print_file(build_file)
         #print_file(settings_file)
@@ -727,15 +720,15 @@ class PolyglotAppTest(PolyglotAppTestBase):
             shutil.copyfile(os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs", "src", "hello.py"), os.path.join(src_dir, "hello.py"))
             shutil.rmtree(os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs"))
             # patch GraalPy.java
-            replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
+            util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
                 "package it.pkg;",
                 "package it.pkg;\nimport java.nio.file.Path;")
-            replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
+            util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
                 "GraalPyResources.createContext()",
                 "GraalPyResources.contextBuilder(Path.of(\"python-resources\")).build()")
 
             # patch pom.xml
-            replace_in_file(os.path.join(target_dir, "pom.xml"),
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"),
                 "<packages>",
                 "<pythonResourcesDirectory>${project.basedir}/python-resources</pythonResourcesDirectory>\n<packages>")
 
@@ -804,7 +797,7 @@ class PolyglotAppTest(PolyglotAppTestBase):
             util.check_ouput("termcolor", out, False)
 
             # remove ujson pkg from plugin config and check if unistalled
-            replace_in_file(os.path.join(target_dir, "pom.xml"), "<package>ujson</package>", "")
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "<package>ujson</package>", "")
 
             cmd = mvnw_cmd + ["process-resources"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
@@ -847,7 +840,7 @@ class PolyglotAppTest(PolyglotAppTestBase):
             # 2. process-resources with empty pythonHome includes and excludes
             shutil.copyfile(pom_template, os.path.join(target_dir, "pom.xml"))
             util.patch_pom_repositories(os.path.join(target_dir, "pom.xml"))
-            replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", "<pythonHome></pythonHome></configuration>")
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", "<pythonHome></pythonHome></configuration>")
             out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("Copying std lib to ", out, False)
@@ -855,7 +848,7 @@ class PolyglotAppTest(PolyglotAppTestBase):
 
             shutil.copyfile(pom_template, os.path.join(target_dir, "pom.xml"))
             util.patch_pom_repositories(os.path.join(target_dir, "pom.xml"))
-            replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", "<pythonHome><includes></includes><excludes></excludes></pythonHome></configuration>")
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", "<pythonHome><includes></includes><excludes></excludes></pythonHome></configuration>")
             out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("Copying std lib to ", out, False)
@@ -875,7 +868,7 @@ class PolyglotAppTest(PolyglotAppTestBase):
                             </excludes>
                         </pythonHome>
                     """
-            replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", home_tag + "</configuration>")
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", home_tag + "</configuration>")
             out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("Copying std lib to ", out, False)
@@ -892,7 +885,7 @@ class PolyglotAppTest(PolyglotAppTestBase):
                     </excludes>
                 </pythonHome>
             """
-            replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", home_tag + "</configuration>")
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", home_tag + "</configuration>")
             out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("Deleting GraalPy home due to changed includes or excludes", out)
@@ -925,7 +918,7 @@ class PolyglotAppTest(PolyglotAppTestBase):
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
 
-            replace_in_file(os.path.join(target_dir, "pom.xml"), "</packages>", "<package></package><package> </package></packages>")
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</packages>", "<package></package><package> </package></packages>")
 
             cmd = mvnw_cmd + ["process-resources"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)

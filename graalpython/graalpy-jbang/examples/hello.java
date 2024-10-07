@@ -40,11 +40,9 @@
  */
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //JAVA 17+
-//DEPS org.graalvm.python:python-language:${env.GRAALPY_VERSION:24.0.0}
-//DEPS org.graalvm.python:python-resources:${env.GRAALPY_VERSION:24.0.0}
-//DEPS org.graalvm.python:python-launcher:${env.GRAALPY_VERSION:24.0.0}
-//DEPS org.graalvm.python:python-embedding:${env.GRAALPY_VERSION:24.0.0}
-//PIP termcolor
+//DEPS org.graalvm.python:jbang:${env.GRAALPY_VERSION:24.2.0}
+// specify python packages and their versions as if used with pip
+//PIP termcolor==2.2
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
@@ -56,7 +54,7 @@ public class hello {
         try (Context context = GraalPyResources.createContext()) {
             switch (args.length) {
                 case 0:
-                    context.eval("python", "print('Hello from Python')");
+                    context.eval("python", "from termcolor import colored; print(print(colored('hello java', 'red', attrs=['reverse', 'blink'])))");
                     break;
                 case 1:
                     context.eval("python", args[0]);

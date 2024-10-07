@@ -334,6 +334,17 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
         },
 
+        "org.graalvm.python.jbang": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "org.graalvm.python.embedding.tools"
+            ],
+            "jacoco": "include",
+            "javaCompliance": "17+",
+            "checkstyle": "com.oracle.graal.python",
+        },
+
         "com.oracle.graal.python.annotations": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
@@ -946,7 +957,6 @@ suite = {
                 "exports": [
                     "org.graalvm.python.embedding.tools.vfs",
                     "org.graalvm.python.embedding.tools.exec",
-                    "org.graalvm.python.embedding.tools.jbang",
                 ]
             },
             "useModulePath": True,
@@ -963,6 +973,32 @@ suite = {
                 "tag": ["default", "public"],
             },
 
+        },
+
+        "GRAALPYTHON_JBANG": {
+            "moduleInfo": {
+                "name": "org.graalvm.python.jbang",
+                "exports": [
+                    "org.graalvm.python.jbang",
+                ]
+            },
+            "useModulePath": True,
+            "dependencies": [
+                "org.graalvm.python.jbang",
+            ],
+            "distDependencies": [
+                "GRAALPYTHON",
+                "GRAALPYTHON_RESOURCES",
+                "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON_EMBEDDING",
+                "GRAALPYTHON_EMBEDDING_TOOLS",
+            ],
+            "description": "GraalPy JBang Integration",
+            "maven": {
+                "groupId": "org.graalvm.python",
+                "artifactId": "jbang",
+                "tag": ["default", "public"],
+            },
         },
 
         "GRAALPYTHON-LAUNCHER": {
