@@ -1001,6 +1001,15 @@ class InteropTests(unittest.TestCase):
             with self.assertRaisesRegex(TypeError, "descriptor requires a 'iterator' object but received a 'ForeignIterator'"):
                 itr.__setstate__(0)
 
+    def test_java_iterable(self):
+        from java.util import LinkedHashSet
+        s = LinkedHashSet() # not hasArrayElements() and not hasHashEntries()
+        s.add(1)
+        s.add(2)
+        assert 2 in s
+        assert 2 in s
+        assert 3 not in s
+
     def test_java_map_as_keywords(self):
         from java.util import HashMap, LinkedHashMap
 

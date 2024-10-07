@@ -40,14 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.foreign;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.RemoveForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -64,7 +60,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownKeyException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -111,50 +106,6 @@ abstract class AccessForeignItemNodes {
         @SuppressWarnings("unused")
         Object doFail(Object object, Object key) {
             throw raise(TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, object);
-        }
-    }
-
-    protected abstract static class RemoveForeignItemNode extends AccessForeignItemBaseNode {
-
-        public abstract Object execute(VirtualFrame frame, Object object, Object idx);
-
-        @Specialization(guards = {"lib.hasHashEntries(object)"})
-        Object doHashKey(Object object, Object key,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached GilNode gil) {
-            if (lib.isHashEntryRemovable(object, key)) {
-                gil.release(true);
-                try {
-                    lib.removeHashEntry(object, key);
-                    return PNone.NONE;
-                } catch (UnknownKeyException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                } catch (UnsupportedMessageException e) {
-                    return raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_REMOVABLE, key, object);
-                } finally {
-                    gil.acquire();
-                }
-            }
-            throw keyError(this, key, lib, switchEncodingNode);
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        Object doFail(Object object, Object key) {
-            throw raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, object);
-        }
-
-        public static RemoveForeignItemNode create() {
-            return RemoveForeignItemNodeGen.create();
-        }
-    }
-
-    private static PException keyError(AccessForeignItemBaseNode node, Object key, InteropLibrary lib, TruffleString.SwitchEncodingNode switchEncodingNode) {
-        try {
-            return node.raise(KeyError, switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(key, true)), TS_ENCODING));
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 }
