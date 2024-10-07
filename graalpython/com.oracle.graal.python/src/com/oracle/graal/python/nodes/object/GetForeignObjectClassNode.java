@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -150,13 +151,15 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
     private PythonManagedClass classForTraits(int traits) {
         PythonManagedClass pythonClass = getContext().polyglotForeignClasses[traits];
         if (pythonClass == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+            if (isSingleContext(this)) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+            }
             pythonClass = resolvePolyglotForeignClass(traits);
-            getContext().polyglotForeignClasses[traits] = pythonClass;
         }
         return pythonClass;
     }
 
+    @TruffleBoundary
     private PythonManagedClass resolvePolyglotForeignClass(int traits) {
         PythonBuiltinClass base = getContext().lookupType(PythonBuiltinClassType.ForeignObject);
         if (traits == 0) {
@@ -196,6 +199,8 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         pythonClass.setAttribute(T___MODULE__, T_POLYGLOT);
 
         polyglotModule.setAttribute(name, pythonClass);
+
+        getContext().polyglotForeignClasses[traits] = pythonClass;
 
         return pythonClass;
     }
