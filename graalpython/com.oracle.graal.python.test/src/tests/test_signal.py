@@ -83,8 +83,8 @@ def test_alarm2():
 
 
 def test_interrupt():
-    if sys.implementation.name == 'graalpy' and __graalpython__.is_managed_launcher():
-        # The keyboard interrupt handling works under managed, but sending SIGINT does not
+    if sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java':
+        # Sending SIGINT does not work when using the Java backend for posix
         return
     proc = subprocess.Popen(
         [sys.executable, '-c', 'import time; print("s", flush=True); time.sleep(60)'],

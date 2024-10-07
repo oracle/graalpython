@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "fa1e24df50e441b85e08436b31337e7e4486c6aa",
+                "version": "64d3e5d973f1d1b9c05f2408a7896efbad7d0157",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "fa1e24df50e441b85e08436b31337e7e4486c6aa",
+                "version": "64d3e5d973f1d1b9c05f2408a7896efbad7d0157",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "fa1e24df50e441b85e08436b31337e7e4486c6aa",
+                "version": "64d3e5d973f1d1b9c05f2408a7896efbad7d0157",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "fa1e24df50e441b85e08436b31337e7e4486c6aa",
+                "version": "64d3e5d973f1d1b9c05f2408a7896efbad7d0157",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -679,7 +679,6 @@ suite = {
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
-                            "LLVM_MODE": "native",
                             "GRAALPY_EXT": "<graalpy_ext:native>",
                         },
                         "results": [
@@ -699,7 +698,6 @@ suite = {
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
-                            "LLVM_MODE": "native",
                             "GRAALPY_EXT": "<graalpy_ext:native>",
                         },
                         "results": [
@@ -749,7 +747,6 @@ suite = {
                     "<others>": {
                         "cmakeConfig": {
                             "GRAALVM_LLVM_LIB_DIR": "<path:SULONG_NATIVE_HOME>/native/lib",
-                            "LLVM_MODE": "native",
                             "GRAALVM_HPY_INCLUDE_DIR": "<path:com.oracle.graal.python.hpy.llvm>/include",
                             "GRAALVM_PYTHON_INCLUDE_DIR": "<path:com.oracle.graal.python.cext>/include",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
@@ -760,7 +757,6 @@ suite = {
                 "<others>": {
                     "<others>": {
                         "cmakeConfig": {
-                            "LLVM_MODE": "native",
                             "GRAALVM_HPY_INCLUDE_DIR": "<path:com.oracle.graal.python.hpy.llvm>/include",
                             "GRAALVM_PYTHON_INCLUDE_DIR": "<path:com.oracle.graal.python.cext>/include",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
@@ -1005,7 +1001,6 @@ suite = {
             "moduleInfo": {
                 "name": "org.graalvm.py.launcher",
                 "exports": [
-                    "com.oracle.graal.python.shell to org.graalvm.py.enterprise.launcher",
                     "com.oracle.graal.python.shell to org.graalvm.launcher",
                 ],
             },

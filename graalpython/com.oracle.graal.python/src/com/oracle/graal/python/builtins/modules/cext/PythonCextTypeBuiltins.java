@@ -88,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -102,10 +101,8 @@ import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -186,17 +183,6 @@ public final class PythonCextTypeBuiltins {
                 }
             }
             return getNativeNull();
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyTypeObject}, call = Ignored, inlined = true)
-    @ImportStatic(PythonOptions.class)
-    abstract static class PyTruffleType_IsSubtype extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static int doGeneric(Object a, Object b,
-                        @Cached IsSubtypeNode isSubtypeNode) {
-            return PInt.intValue(isSubtypeNode.execute(a, b));
         }
     }
 

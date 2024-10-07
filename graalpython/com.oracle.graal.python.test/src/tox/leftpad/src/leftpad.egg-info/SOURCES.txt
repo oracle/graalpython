@@ -1,0 +1,10 @@
+LICENSE.txt
+MANIFEST.in
+pyproject.toml
+setup.cfg
+setup.py
+src/leftpad/__init__.py
+src/leftpad.egg-info/PKG-INFO
+src/leftpad.egg-info/SOURCES.txt
+src/leftpad.egg-info/dependency_links.txt
+src/leftpad.egg-info/top_level.txt

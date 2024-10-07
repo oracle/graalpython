@@ -301,7 +301,6 @@ PyFloat_AsDouble(PyObject *op)
 {
     // GraalPy change: read from native object stub or upcall for managed
     if (points_to_py_handle_space(op)) {
-#ifndef GRAALVM_PYTHON_LLVM_MANAGED
         if (PyFloat_Check(op)) {
             double val = ((GraalPyFloatObject*) pointer_to_stub(op))->ob_fval;
 #ifndef NDEBUG
@@ -311,7 +310,6 @@ PyFloat_AsDouble(PyObject *op)
 #endif
             return val;
         }
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
         return GraalPyTruffleFloat_AsDouble(op);
     }
 

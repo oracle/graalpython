@@ -39,7 +39,7 @@
 import math
 
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, \
-    is_native_object
+    is_native_object, RUNS_ON_LLVM
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -214,6 +214,8 @@ class TestPyOSDouble:
         assert tester.PyOS_double_to_string_test(190.08) == '190.080000'
 
     def test_PyOS_string_to_double(self):
+        if RUNS_ON_LLVM:
+            return
         TestPyOS_String_To_Double = CPyExtType(
             "TestPyOS_String_To_Double",
             '''

@@ -1,0 +1,5 @@
+[build-system]
+# We pin the setuptools version to avoid any surprises from upstream
+# We stick to the version that is bundled with GraalPy in ensurepip
+requires = ["setuptools==47.1.0", "wheel==0.37.1"]
+build-backend = "setuptools.build_meta"

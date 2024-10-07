@@ -720,9 +720,6 @@ class build_ext(Command):
                     template = template + '_d'
                 pythonlib = (template %
                        (sys.hexversion >> 24, (sys.hexversion >> 16) & 0xff))
-                # Begin Truffle change
-                pythonlib = f"python-{__graalpython__.get_platform_id()}"
-                # End Truffle change
                 # don't extend ext.libraries, it may be shared with other
                 # extensions, it is a reference to the original list
                 return ext.libraries + [pythonlib]

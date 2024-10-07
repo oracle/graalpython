@@ -1566,9 +1566,6 @@ PyType_IsSubtype(PyTypeObject *a, PyTypeObject *b)
     } else if (is_builtin_type(a) && !is_builtin_type(b)) {
         return 0;
     }
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-    return GraalPyTruffleType_IsSubtype(a, b);
-#else /* GRAALVM_PYTHON_LLVM_MANAGED */
     PyObject *mro;
 
     mro = a->tp_mro;
@@ -1587,7 +1584,6 @@ PyType_IsSubtype(PyTypeObject *a, PyTypeObject *b)
     else
         /* a is not completely initialized yet; follow tp_base */
         return type_is_subtype_base_chain(a, b);
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 /* Routines to do a method lookup in the type without looking in the

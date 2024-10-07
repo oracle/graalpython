@@ -139,7 +139,7 @@ static inline Py_ssize_t Py_REFCNT(PyObject *ob) {
 // bpo-39573: The Py_SET_TYPE() function must be used to set an object type.
 PyAPI_FUNC(PyTypeObject*) PyTruffle_TYPE(PyObject *ob);
 static inline PyTypeObject* Py_TYPE(PyObject *ob) {
-#if defined(GRAALVM_PYTHON) && !defined(GRAALVM_PYTHON_LLVM_MANAGED) && defined(NDEBUG)
+#if defined(GRAALVM_PYTHON) && defined(NDEBUG)
     return (pointer_to_stub(ob)->ob_type);
 #else
     return PyTruffle_TYPE(ob);

@@ -43,12 +43,11 @@ import time
 
 import os
 from unittest import skipIf
-from . import CPyExtType
+from . import CPyExtType, RUNS_ON_LLVM
 
 __dir__ = __file__.rpartition("/")[0]
 
 GRAALPY = sys.implementation.name == 'graalpy'
-GRAALPY_NATIVE = GRAALPY and __graalpython__.get_platform_id() == 'native'
 
 # typedef PyObject * (*unaryfunc)(PyObject *);
 # typedef PyObject * (*binaryfunc)(PyObject *, PyObject *);
@@ -125,7 +124,7 @@ GCTestClass = CPyExtType("GCTestClass",
 class TestGC1():
 
     def test_native_class(self):
-        if GRAALPY_NATIVE:
+        if GRAALPY:
             gc.enable()
             GCTestClass.resetCounters()
             a = GCTestClass.getCounters()
@@ -198,13 +197,13 @@ ID_OBJ14 = 12
 # don't rely on deterministic Java GC behavior by default on GraalPy
 RELY_ON_GC = os.environ.get("RELY_ON_GC", not GRAALPY)
 
-if GRAALPY_NATIVE and RELY_ON_GC:
+if GRAALPY and RELY_ON_GC:
     import warnings
     warnings.warn("Relying on deterministic Java GC behavior. "
                   "Tests may fail if the Java GC doesn't run at a certain program point or doesn't collect objects "
                   "as we expect.")
 
-if GRAALPY_NATIVE:
+if GRAALPY:
     get_handle_table_id = __graalpython__.get_handle_table_id
     def assert_is_strong(x): assert __graalpython__.is_strong_handle_table_ref(x)
     def assert_is_weak(x): assert not __graalpython__.is_strong_handle_table_ref(x)
@@ -217,12 +216,13 @@ else:
 class TestGCRefCycles:
     def _trigger_gc(self):
         gc.collect()
-        for i in range(4 if GRAALPY_NATIVE and RELY_ON_GC else 1):
+        for i in range(4 if GRAALPY and RELY_ON_GC else 1):
             time.sleep(0.25)
             gc.collect()
 
-    @skipIf(GRAALPY and not GRAALPY_NATIVE, "Python GC only used in native mode")
     def test_cycle_with_native_objects(self):
+        if RUNS_ON_LLVM:
+            return
         TestCycle0 = CPyExtType("TestCycle0",
                                 '''
                                 #define N 16
@@ -565,7 +565,6 @@ class TestGCRefCycles:
         assert_is_strong(htid_l3)
 
 
-    @skipIf(GRAALPY and not GRAALPY_NATIVE, "Python GC only used in native mode")
     def test_cycle_with_lists(self):
         TestCycle = CPyExtType("TestCycle",
                                '''

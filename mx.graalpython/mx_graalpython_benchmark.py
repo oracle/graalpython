@@ -387,8 +387,6 @@ class GraalPythonVmBase(GuestVm):
             dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
         if mx.suite("sulong", fatalIfMissing=False):
             dists.append('SULONG_NATIVE')
-            if mx.suite("sulong-managed", fatalIfMissing=False):
-                dists.append('SULONG_MANAGED')
 
         extra_polyglot_args += [
             "--python.CAPI=%s" % SUITE.extensions._get_capi_home(),
@@ -443,8 +441,7 @@ class GraalPythonVm(GraalPythonVmBase):
             cp = self.get_classpath()
             if len(cp) > 0:
                 extra_polyglot_args.append("--vm.classpath=" + ":".join(cp))
-            managed = '--llvm.managed' in extra_polyglot_args or '--llvm.managed=true' in extra_polyglot_args
-            launcher_name = 'graalpy-managed' if managed else 'graalpy'
+            launcher_name = 'graalpy'
             return host_vm.run_launcher(launcher_name, extra_polyglot_args + args, cwd)
 
     def get_extra_polyglot_args(self):
@@ -948,8 +945,6 @@ class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=t
             dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
         if mx.suite("sulong", fatalIfMissing=False):
             dists.append('SULONG_NATIVE')
-            if mx.suite("sulong-managed", fatalIfMissing=False):
-                dists.append('SULONG_MANAGED')
 
         vmArgs += [
             "-Dorg.graalvm.language.python.home=%s" % join(SUITE.dir, "graalpython"),
@@ -1036,8 +1031,6 @@ class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=to
             dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
         if mx.suite("sulong", fatalIfMissing=False):
             dists.append('SULONG_NATIVE')
-            if mx.suite("sulong-managed", fatalIfMissing=False):
-                dists.append('SULONG_MANAGED')
 
         vmArgs += [
             "-Dorg.graalvm.language.python.home=%s" % join(SUITE.dir, "graalpython"),

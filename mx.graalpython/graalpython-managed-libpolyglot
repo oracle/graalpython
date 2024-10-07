@@ -1,4 +1,0 @@
-DISABLE_INSTALLABLES=true
-DYNAMIC_IMPORTS=/substratevm,/graalpython-enterprise
-NATIVE_IMAGES=lib:polyglot
-NO_LICENSES=true

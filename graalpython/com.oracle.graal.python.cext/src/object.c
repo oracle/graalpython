@@ -2527,9 +2527,6 @@ int Py_IsFalse(PyObject *x)
 
 // GraalPy additions
 Py_ssize_t PyTruffle_REFCNT(PyObject *obj) {
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-    return IMMORTAL_REFCNT;
-#else /* GRAALVM_PYTHON_LLVM_MANAGED */
     Py_ssize_t res;
     if (points_to_py_handle_space(obj))
     {
@@ -2546,7 +2543,6 @@ Py_ssize_t PyTruffle_REFCNT(PyObject *obj) {
         res = obj->ob_refcnt;
     }
     return res;
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 // alias, currently used in PyO3
@@ -2555,7 +2551,6 @@ Py_ssize_t _Py_REFCNT(PyObject *obj) {
 }
 
 void PyTruffle_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
-#ifndef GRAALVM_PYTHON_LLVM_MANAGED
     PyObject *dest;
     if (points_to_py_handle_space(obj))
     {
@@ -2572,13 +2567,9 @@ void PyTruffle_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
         dest = obj;
     }
     dest->ob_refcnt = cnt;
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 PyTypeObject* PyTruffle_TYPE(PyObject *a) {
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-    return PyObject_ob_type(a);
-#else /* GRAALVM_PYTHON_LLVM_MANAGED */
     PyTypeObject *res;
     if (points_to_py_handle_space(a))
     {
@@ -2595,7 +2586,6 @@ PyTypeObject* PyTruffle_TYPE(PyObject *a) {
         res = a->ob_type;
     }
     return res;
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 // alias, currently used in PyO3
@@ -2605,9 +2595,6 @@ PyTypeObject* _Py_TYPE(PyObject *obj) {
 
 Py_ssize_t PyTruffle_SIZE(PyObject *ob) {
     PyVarObject* a = (PyVarObject*)ob;
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-	return PyVarObject_ob_size(a);
-#else /* GRAALVM_PYTHON_LLVM_MANAGED */
     Py_ssize_t res;
     if (points_to_py_handle_space(a))
     {
@@ -2635,7 +2622,6 @@ Py_ssize_t PyTruffle_SIZE(PyObject *ob) {
         res = a->ob_size;
     }
 	return res;
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 // alias, currently used in PyO3

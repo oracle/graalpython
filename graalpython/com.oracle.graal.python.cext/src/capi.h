@@ -83,10 +83,6 @@
 #include "pycore_global_objects.h" // _PY_NSMALLPOSINTS
 #include "pycore_gc.h" // PyGC_Head
 
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-#include <graalvm/llvm/polyglot.h>
-#endif
-
 #define SRC_CS "utf-8"
 
 /* Flags definitions representing global (debug) options. */
@@ -159,9 +155,7 @@ CAPI_BUILTINS
 
 PyAPI_DATA(uint32_t) Py_Truffle_Options;
 
-#ifndef GRAALVM_PYTHON_LLVM_MANAGED
 extern THREAD_LOCAL Py_LOCAL_SYMBOL PyThreadState *tstate_current;
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 
 extern Py_LOCAL_SYMBOL int graalpy_finalizing;
 

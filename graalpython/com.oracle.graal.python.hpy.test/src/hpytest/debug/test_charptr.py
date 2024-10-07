@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -210,7 +210,6 @@ def test_charptr_write_ptr(compiler, python_subprocess):
         assert result.stderr == b""
 
 
-@pytest.mark.xfail(__graalpython__.get_platform_id() == "managed", reason="unaligned memcpy is not supported")
 def test_charptr_correct_usage(compiler):
     mod = compiler.make_module("""
         #include <string.h>

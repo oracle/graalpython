@@ -9,7 +9,8 @@ redirect_from: /reference-manual/python/standalone-binaries/
 # Python Standalone Applications
 
 GraalPy enables you to create a Python application or library as a native application or JAR file with no external dependencies.
-The [Truffle framework](https://github.com/oracle/graal/tree/master/truffle) on which GraalPy is built, combined with the [Sulong LLVM runtime](https://github.com/oracle/graal/tree/master/sulong) that GraalPy leverages for managed execution of Python's native extensions, completely virtualizes all filesystem accesses, including those to the standard library and installed packages.
+The [Truffle framework](https://github.com/oracle/graal/tree/master/truffle) on which GraalPy is built virtualizes all filesystem accesses, including those to the standard library and installed pure Python packages.
+Packages that include native code can still circumvent this, however!
 
 GraalPy includes a module named `standalone` to create a Python binary for Linux, macOS, and Windows. 
 The modules bundles all your application's resources into a single file.
