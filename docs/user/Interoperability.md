@@ -26,10 +26,6 @@ byteArray = myBigInt.toByteArray()
 assert len(byteArray) == 1 and byteArray[0] == 42
 ```
 
-<aside markdown="1">
-For plain Python users, the `java` module is only available when running on the JVM distribution.
-</aside>
-
 To import packages from the `java` namespace, you can also use the conventional Python import syntax:
 ```python
 import java.util.ArrayList
