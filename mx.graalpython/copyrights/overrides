@@ -198,6 +198,7 @@ graalpython/com.oracle.graal.python.cext/include/pystrtod.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pythonrun.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pythread.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pytypedefs.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/rangeobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/setobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/sliceobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/structmember.h,python.copyright

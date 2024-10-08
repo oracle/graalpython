@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -64,6 +64,7 @@ struct timeval;
 #include "boolobject.h"
 #include "floatobject.h"
 #include "complexobject.h"
+#include "rangeobject.h"
 #include "memoryobject.h"
 #include "tupleobject.h"
 #include "listobject.h"
