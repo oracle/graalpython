@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Supplier;
 
+import com.oracle.graal.python.pegparser.PythonStringFactory.PythonStringBuilder;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
@@ -59,6 +60,7 @@ import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.sst.ConstantValue.Kind;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.ExprTy.Name;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.PatternTy;
@@ -112,16 +114,16 @@ public abstract class AbstractParser {
     private int currentPos; // position of the mark
     private final ArrayList<Token> tokens;
     private final Tokenizer tokenizer;
-    private final ErrorCallback errorCb;
+    final ErrorCallback errorCb;
     protected final NodeFactory factory;
-    private final PythonStringFactory<?> stringFactory;
+    final PythonStringFactory stringFactory;
     private final InputType startRule;
 
     private final EnumSet<Flags> flags;
-    private final int featureVersion;
+    final int featureVersion;
 
     protected int level = 0;
-    protected boolean callInvalidRules = false;
+    boolean callInvalidRules = false;
 
     private boolean parsingStarted;
 
@@ -144,10 +146,10 @@ public abstract class AbstractParser {
 
     protected abstract SSTNode runParser(InputType inputType);
 
-    AbstractParser(String source, SourceRange sourceRange, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
+    AbstractParser(String source, SourceRange sourceRange, PythonStringFactory stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
         this.currentPos = 0;
         this.tokens = new ArrayList<>();
-        this.tokenizer = Tokenizer.fromString(errorCb, source, getTokenizerFlags(startRule, flags), sourceRange);
+        this.tokenizer = Tokenizer.fromString(errorCb, stringFactory, source, getTokenizerFlags(startRule, flags), sourceRange);
         this.factory = new NodeFactory();
         this.errorCb = errorCb;
         this.stringFactory = stringFactory;
@@ -588,35 +590,285 @@ public abstract class AbstractParser {
     }
 
     /**
+     * _PyPegen_decode_fstring_part
+     */
+    private ExprTy.Constant decodeFStringPart(boolean isRaw, ExprTy.Constant constant, Token token) {
+        assert constant.value.kind == Kind.RAW;
+        int[] codePoints = stringFactory.toCodePoints(constant.value);
+        int len;
+        if (codePoints.length == 2 && codePoints[0] == codePoints[1] && (codePoints[0] == '{' || codePoints[0] == '}')) {
+            len = 1;
+        } else {
+            len = codePoints.length;
+        }
+        boolean isRawUpdated = isRaw || StringParser.indexOf(codePoints, 0, codePoints.length, '\\') < 0;
+        ConstantValue str = StringParser.decodeString(this, codePoints, isRawUpdated, 0, len, token);
+        return factory.createConstant(str, constant.getSourceRange());
+    }
+
+    /**
+     * unpack_top_level_joined_strs
+     */
+    private static ExprTy[] unpackTopLevelJoinedStrs(ExprTy[] rawExpressions) {
+        int reqSize = 0;
+        for (ExprTy expr : rawExpressions) {
+            if (expr instanceof ExprTy.JoinedStr joinedStr) {
+                reqSize += joinedStr.values.length;
+            } else {
+                reqSize++;
+            }
+        }
+
+        ExprTy[] expressions = new ExprTy[reqSize];
+        int reqIndex = 0;
+        for (ExprTy expr : rawExpressions) {
+            if (expr instanceof ExprTy.JoinedStr joinedStr) {
+                ExprTy[] values = joinedStr.values;
+                System.arraycopy(values, 0, expressions, reqIndex, values.length);
+                reqIndex += values.length;
+            } else {
+                expressions[reqIndex++] = expr;
+            }
+        }
+        return expressions;
+    }
+
+    /**
+     * _PyPegen_joined_str
+     */
+    public ExprTy joinedStr(Token a, ExprTy[] rawExpressions, Token b) {
+        ExprTy[] expr = unpackTopLevelJoinedStrs(rawExpressions);
+        int nItems = expr.length;
+
+        String quoteStr = tokenizer.getTokenString(a);
+        boolean isRaw = quoteStr.indexOf('r') >= 0 || quoteStr.indexOf('R') >= 0;
+
+        ExprTy[] seq = new ExprTy[nItems];
+
+        int index = 0;
+        for (ExprTy item : expr) {
+            if (item instanceof ExprTy.Constant constant) {
+                item = constant = decodeFStringPart(isRaw, constant, b);
+                if (constant.value.kind == Kind.RAW && stringFactory.isEmpty(constant.value)) {
+                    continue;
+                }
+            }
+            seq[index++] = item;
+        }
+
+        ExprTy[] resizedExprs = Arrays.copyOf(seq, index);
+        return factory.createJoinedStr(resizedExprs, a.sourceRange.withEnd(b.sourceRange));
+    }
+
+    /**
+     * _PyPegen_decoded_constant_from_token
+     */
+    public ExprTy decodedConstantFromToken(Token tok) {
+        ConstantValue cv = StringParser.decodeString(this, tokenizer.getCodePointsInput(), false, tok.startOffset, tok.endOffset - tok.startOffset, tok);
+        return factory.createConstant(cv, tok.getSourceRange());
+    }
+
+    /**
+     * _PyPegen_constant_from_token
+     */
+    public SSTNode constantFromToken(Token tok) {
+        return factory.createConstant(stringFactory.fromCodePoints(tokenizer.getCodePointsInput(), tok.startOffset, tok.endOffset - tok.startOffset), tok.sourceRange);
+    }
+
+    /**
+     * _PyPegen_constant_from_string
+     */
+    public ExprTy constantFromString(Token tok) {
+        assert tok.startOffset < tokenizer.getCodePointsInputLength();
+        assert tok.endOffset <= tokenizer.getCodePointsInputLength();
+        int[] codePoints = tokenizer.getCodePointsInput();
+        String kind = codePoints[tok.startOffset] == 'u' ? "u" : null;
+        ConstantValue cv = StringParser.parseString(this, codePoints, tok);
+        return factory.createConstant(cv, kind, tok.getSourceRange());
+    }
+
+    /**
+     * _PyPegen_formatted_value
+     */
+    public ExprTy formattedValue(ExprTy expression, Token debug, ResultTokenWithMetadata conversion,
+                    ResultTokenWithMetadata format, Token closingBrace, SourceRange sourceRange) {
+        int conversionVal = -1;
+        if (conversion != null) {
+            assert conversion.result() instanceof Name;
+            String conversionKind = ((ExprTy.Name) conversion.result()).id;
+            char first = conversionKind.length() == 1 ? conversionKind.charAt(0) : 0;
+            if (first != 's' && first != 'r' && first != 'a') {
+                raiseSyntaxErrorKnownLocation(conversion.result(), "f-string: invalid conversion character '%s': expected 's', 'r', or 'a'", conversionKind);
+            }
+            conversionVal = first;
+        } else if (debug != null && format == null) {
+            /* If no conversion is specified, use !r for debug expressions */
+            conversionVal = 'r';
+        }
+        ExprTy.FormattedValue formattedValue = factory.createFormattedValue(expression, conversionVal, format != null ? format.result : null, sourceRange);
+        if (debug != null) {
+            int debugEndLine;
+            int debugEndColumn;
+            ConstantValue debugMetadata;
+            if (conversion != null) {
+                debugEndLine = conversion.result.getSourceRange().startLine;
+                debugEndColumn = conversion.result.getSourceRange().startColumn;
+                debugMetadata = conversion.metadata;
+            } else if (format != null) {
+                debugEndLine = format.result.getSourceRange().startLine;
+                debugEndColumn = format.result.getSourceRange().startColumn + 1;
+                debugMetadata = format.metadata;
+            } else {
+                debugEndLine = sourceRange.endLine;
+                debugEndColumn = sourceRange.endColumn;
+                debugMetadata = closingBrace.metadata;
+            }
+            ExprTy.Constant debugText = factory.createConstant(debugMetadata,
+                            new SourceRange(sourceRange.startLine, sourceRange.startColumn + 1, debugEndLine, debugEndColumn - 1));
+            return factory.createJoinedStr(new ExprTy[]{debugText, formattedValue},
+                            new SourceRange(sourceRange.startLine, sourceRange.startColumn, debugEndLine, debugEndColumn));
+        }
+        return formattedValue;
+    }
+
+    /**
      * _PyPegen_concatenate_strings
      */
-    public SSTNode concatenateStrings(Token[] tokenArray) {
-        int n = tokenArray.length;
-        String[] values = new String[n];
-        SourceRange[] sourceRanges = new SourceRange[n];
-        for (int i = 0; i < n; i++) {
-            Token t = tokenArray[i];
-            values[i] = getText(t);
-            sourceRanges[i] = t.sourceRange;
+    public ExprTy concatenateStrings(ExprTy[] strings, SourceRange sourceRange) {
+        boolean fStringFound = false;
+        boolean unicodeStringFound = false;
+        boolean bytesFound = false;
+
+        int nFlattenedElements = 0;
+        for (ExprTy elem : strings) {
+            if (elem instanceof ExprTy.Constant constant) {
+                if (constant.value.kind == Kind.BYTES) {
+                    bytesFound = true;
+                } else {
+                    unicodeStringFound = true;
+                }
+                nFlattenedElements++;
+            } else if (elem instanceof ExprTy.JoinedStr joinedStr) {
+                nFlattenedElements += joinedStr.values.length;
+                fStringFound = true;
+            } else {
+                nFlattenedElements++;
+                fStringFound = true;
+            }
         }
-        FExprParser fexprParser = (code, sourceRange) -> (ExprTy) new Parser(code, sourceRange, stringFactory,
-                        new ErrorCallback() {
-                            @Override
-                            public void reportIncompleteSource(int line) {
-                                errorCb.reportIncompleteSource(line);
-                            }
 
-                            @Override
-                            public void onError(ErrorType errorType, SourceRange srcRange, String message) {
-                                errorCb.onError(errorType, srcRange, "f-string: " + message);
-                            }
+        if ((unicodeStringFound || fStringFound) && bytesFound) {
+            return (ExprTy) raiseSyntaxError("cannot mix bytes and nonbytes literals");
+        }
 
-                            @Override
-                            public void onWarning(WarningType warningType, SourceRange srcRange, String message) {
-                                errorCb.onWarning(warningType, srcRange, message);
-                            }
-                        }, InputType.FSTRING, flags, featureVersion).parse();
-        return factory.createString(values, sourceRanges, fexprParser, errorCb, stringFactory, featureVersion);
+        if (bytesFound) {
+            Object kind = ((ExprTy.Constant) strings[0]).kind;
+            int totalLen = 0;
+            for (ExprTy elem : strings) {
+                totalLen += ((ExprTy.Constant) elem).value.getBytes().length;
+            }
+            byte[] dest = new byte[totalLen];
+            int offset = 0;
+            for (ExprTy elem : strings) {
+                byte[] src = ((ExprTy.Constant) elem).value.getBytes();
+                System.arraycopy(src, 0, dest, offset, src.length);
+                offset += src.length;
+            }
+            return factory.createConstant(ConstantValue.ofBytes(dest), kind, sourceRange);
+        }
+
+        if (!fStringFound && strings.length == 1) {
+            return strings[0];
+        }
+
+        ExprTy[] flattened = new ExprTy[nFlattenedElements];
+        int curPos = 0;
+        for (ExprTy elem : strings) {
+            if (elem instanceof ExprTy.JoinedStr joined) {
+                for (ExprTy subvalue : joined.values) {
+                    flattened[curPos++] = subvalue;
+                }
+            } else {
+                flattened[curPos++] = elem;
+            }
+        }
+
+        /* calculate folded element count */
+        int nElements = 0;
+        boolean prevIsConstant = false;
+        for (ExprTy elem : flattened) {
+            /*
+             * The concatenation of a FormattedValue and an empty Constant should lead to the
+             * FormattedValue itself. Thus, we will not take any empty constants into account, just
+             * as in `_PyPegen_joined_str`
+             */
+            if (fStringFound && elem instanceof ExprTy.Constant constant &&
+                            constant.value.kind == Kind.RAW && stringFactory.isEmpty(constant.value)) {
+                continue;
+            }
+
+            if (!prevIsConstant || !(elem instanceof ExprTy.Constant)) {
+                nElements++;
+            }
+            prevIsConstant = elem instanceof ExprTy.Constant;
+        }
+
+        ExprTy[] values = new ExprTy[nElements];
+
+        /* build folded list */
+        PythonStringBuilder writer;
+        curPos = 0;
+        for (int i = 0; i < flattened.length; i++) {
+            ExprTy elem = flattened[i];
+
+            /*
+             * if the current elem and the following are constants, fold them and all consequent
+             * constants
+             */
+            if (elem instanceof ExprTy.Constant elemConst) {
+                if (i + 1 < flattened.length && flattened[i + 1] instanceof ExprTy.Constant) {
+                    ExprTy.Constant firstElemConst = elemConst;
+
+                    /*
+                     * When a string is getting concatenated, the kind of the string is determined
+                     * by the first string in the concatenation sequence.
+                     */
+                    Object kind = elemConst.kind;
+
+                    writer = stringFactory.createBuilder(0);
+                    ExprTy.Constant lastElemConst = elemConst;
+                    int j = i;
+                    for (; j < flattened.length; j++) {
+                        ExprTy currentElem = flattened[j];
+                        if (currentElem instanceof ExprTy.Constant currentElemConst) {
+                            writer.appendConstantValue(currentElemConst.value);
+                            lastElemConst = currentElemConst;
+                        } else {
+                            break;
+                        }
+                    }
+                    i = j - 1;
+
+                    elem = elemConst = factory.createConstant(writer.build(), kind, firstElemConst.getSourceRange().withEnd(lastElemConst.getSourceRange()));
+                }
+
+                /* Drop all empty constant strings */
+                if (fStringFound && elemConst.value.kind == Kind.RAW && stringFactory.isEmpty(elemConst.value)) {
+                    continue;
+                }
+            }
+            values[curPos++] = elem;
+        }
+
+        if (!fStringFound) {
+            assert nElements == 1;
+            ExprTy elem = values[0];
+            assert elem instanceof ExprTy.Constant;
+            return elem;
+        }
+
+        assert curPos == nElements;
+        return factory.createJoinedStr(values, sourceRange);
     }
 
     /**
@@ -649,6 +901,39 @@ public abstract class AbstractParser {
             }
         }
         return false;
+    }
+
+    /**
+     * _PyPegen_check_fstring_conversion
+     */
+    ResultTokenWithMetadata checkFstringConversion(Token convToken, ExprTy conv) {
+        if (convToken.sourceRange.startLine != conv.getSourceRange().startLine ||
+                        convToken.sourceRange.endColumn != conv.getSourceRange().startColumn) {
+            raiseSyntaxErrorKnownRange(convToken, conv, "f-string: conversion type must come right after the exclamanation mark");
+        }
+        return new ResultTokenWithMetadata(conv, convToken.metadata);
+    }
+
+    /**
+     * _PyPegen_setup_full_format_spec
+     */
+    ResultTokenWithMetadata setupFullFormatSpec(Token colon, ExprTy[] spec, SourceRange sourceRange) {
+        // This is needed to keep compatibility with 3.11, where an empty format spec
+        // is parsed as an *empty* JoinedStr node, instead of having an empty constant
+        // in it.
+        ExprTy[] fixedSpec;
+        if (spec.length == 1 && spec[0] instanceof ExprTy.Constant constant && constant.value.kind == Kind.RAW && stringFactory.isEmpty(constant.value)) {
+            fixedSpec = new ExprTy[0];
+        } else {
+            fixedSpec = spec;
+        }
+        ExprTy res;
+        if (fixedSpec.length == 0 || (fixedSpec.length == 1 && fixedSpec[0] instanceof ExprTy.Constant)) {
+            res = factory.createJoinedStr(fixedSpec, sourceRange);
+        } else {
+            res = concatenateStrings(fixedSpec, sourceRange);
+        }
+        return new ResultTokenWithMetadata(res, colon.metadata);
     }
 
     /**
@@ -1047,20 +1332,24 @@ public abstract class AbstractParser {
     }
 
     /**
+     * RAISE_SYNTAX_ERROR_ON_NEXT_TOKEN
+     */
+    SSTNode raiseSyntaxErrorOnNextToken(String msg) {
+        Token errorToken = peekToken();
+        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg);
+    }
+
+    /**
      * RAISE_ERROR_KNOWN_LOCATION the first param is a token, where error begins
      */
-    SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... arguments) {
+    public SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... arguments) {
         return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_LOCATION
      */
-    SSTNode raiseErrorKnownLocation(ErrorCallback.ErrorType typeError, SourceRange where, String msgIn, Object... argument) {
-        String msg = msgIn;
-        if (startRule == InputType.FSTRING) {
-            msg = "f-string: " + msgIn;
-        }
+    SSTNode raiseErrorKnownLocation(ErrorCallback.ErrorType typeError, SourceRange where, String msg, Object... argument) {
         errorIndicator = true;
         errorCb.onError(typeError, where, msg, argument);
         return null;
@@ -1078,6 +1367,13 @@ public abstract class AbstractParser {
      */
     SSTNode raiseErrorKnownLocation(ErrorCallback.ErrorType errorType, SSTNode where, String msg, Object... arguments) {
         return raiseErrorKnownLocation(errorType, where.getSourceRange(), msg, arguments);
+    }
+
+    /**
+     * RAISE_ERROR_KNOWN_RANGE
+     */
+    SSTNode raiseSyntaxErrorKnownRange(Token startToken, SSTNode endNode, String msg, Object... arguments) {
+        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startToken.sourceRange.withEnd(endNode.getSourceRange()), msg, arguments);
     }
 
     /**
@@ -1277,4 +1573,8 @@ public abstract class AbstractParser {
         assert position < tokens.size();
         return tokens.get(position);
     }
+
+    public record ResultTokenWithMetadata(ExprTy result, ConstantValue metadata) {
+    }
+
 }

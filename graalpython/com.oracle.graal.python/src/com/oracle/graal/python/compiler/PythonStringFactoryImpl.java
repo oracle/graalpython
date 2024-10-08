@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,29 +43,43 @@ package com.oracle.graal.python.compiler;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsbCapacity;
 
-import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.pegparser.PythonStringFactory;
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
-class PythonStringFactoryImpl implements PythonStringFactory<TruffleString> {
+public class PythonStringFactoryImpl implements PythonStringFactory {
 
     @Override
-    public PythonStringBuilder<TruffleString> createBuilder(int initialCodePointLength) {
+    public PythonStringBuilder createBuilder(int initialCodePointLength) {
         return new TruffleStringBuilderWrapper(tsbCapacity(initialCodePointLength));
     }
 
     @Override
-    public TruffleString fromJavaString(String s) {
-        return TruffleString.fromJavaStringUncached(s, TS_ENCODING);
+    public ConstantValue fromCodePoints(int[] codepoints, int start, int len) {
+        return ConstantValue.ofRaw(TruffleString.fromIntArrayUTF32Uncached(codepoints, start, len).switchEncodingUncached(TS_ENCODING));
     }
 
     @Override
-    public TruffleString emptyString() {
-        return StringLiterals.T_EMPTY_STRING;
+    public int[] toCodePoints(ConstantValue constantValue) {
+        TruffleString ts = constantValue.getRaw(TruffleString.class);
+        int len = ts.codePointLengthUncached(TS_ENCODING);
+        int[] res = new int[len];
+        int i = 0;
+        TruffleStringIterator it = ts.createCodePointIteratorUncached(TS_ENCODING);
+        while (it.hasNext()) {
+            res[i++] = it.nextUncached();
+        }
+        return res;
     }
 
-    private static class TruffleStringBuilderWrapper implements PythonStringBuilder<TruffleString> {
+    @Override
+    public boolean isEmpty(ConstantValue constantValue) {
+        return constantValue.getRaw(TruffleString.class).isEmpty();
+    }
+
+    private static class TruffleStringBuilderWrapper implements PythonStringBuilder {
         private final TruffleStringBuilder sb;
 
         TruffleStringBuilderWrapper(int initialCapacity) {
@@ -73,31 +87,28 @@ class PythonStringFactoryImpl implements PythonStringFactory<TruffleString> {
         }
 
         @Override
-        public PythonStringBuilder<TruffleString> appendString(String s) {
-            sb.appendStringUncached(TruffleString.fromJavaStringUncached(s, TS_ENCODING));
-            return this;
-        }
-
-        @Override
-        public PythonStringBuilder<TruffleString> appendPythonString(TruffleString s) {
-            sb.appendStringUncached(s);
-            return this;
-        }
-
-        @Override
-        public PythonStringBuilder<TruffleString> appendCodePoint(int codePoint) {
+        public PythonStringBuilder appendCodePoint(int codePoint) {
             sb.appendCodePointUncached(codePoint, 1, true);
             return this;
         }
 
         @Override
-        public boolean isEmpty() {
-            return sb.isEmpty();
+        public PythonStringBuilder appendConstantValue(ConstantValue constantValue) {
+            sb.appendStringUncached(constantValue.getRaw(TruffleString.class));
+            return this;
         }
 
         @Override
-        public TruffleString build() {
-            return sb.toStringUncached();
+        public PythonStringBuilder appendCodePoints(int[] codepoints, int offset, int count) {
+            for (int i = 0; i < count; ++i) {
+                sb.appendCodePointUncached(codepoints[offset + i]);
+            }
+            return this;
+        }
+
+        @Override
+        public ConstantValue build() {
+            return ConstantValue.ofRaw(sb.toStringUncached());
         }
     }
 }

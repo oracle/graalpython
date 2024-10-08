@@ -99,6 +99,7 @@ import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -717,7 +718,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
         }
         String fnName = "execute";
-        StmtTy astFunction = nodeFactory.createFunctionDef(fnName, astArgs, body, null, null, SourceRange.ARTIFICIAL_RANGE);
+        StmtTy astFunction = nodeFactory.createFunctionDef(fnName, astArgs, body, null, null, new TypeParamTy[0], SourceRange.ARTIFICIAL_RANGE);
         /*
          * We cannot use a return in a module, but we piggy-back on the fact that we return the last
          * expression in a module (see Compiler)

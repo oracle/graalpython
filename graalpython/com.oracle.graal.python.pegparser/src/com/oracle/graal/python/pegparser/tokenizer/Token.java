@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,6 +39,8 @@
  * SOFTWARE.
  */
 package com.oracle.graal.python.pegparser.tokenizer;
+
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
 
 /**
  * Kept close to CPython's token.c
@@ -100,17 +102,20 @@ public class Token {
         public static final int RARROW = 51;
         public static final int ELLIPSIS = 52;
         public static final int COLONEQUAL = 53;
-        public static final int OP = 54;
-        public static final int AWAIT = 55;
-        public static final int ASYNC = 56;
-        public static final int TYPE_IGNORE = 57;
-        public static final int TYPE_COMMENT = 58;
-        public static final int SOFT_KEYWORD = 59;
-        public static final int ERRORTOKEN = 60;
-        public static final int COMMENT = 61;
-        public static final int NL = 62;
-        public static final int ENCODING = 63;
-        public static final int N_TOKENS = 64;
+        public static final int EXCLAMATION = 54;
+        public static final int OP = 55;
+        public static final int AWAIT = 56;
+        public static final int ASYNC = 57;
+        public static final int TYPE_IGNORE = 58;
+        public static final int TYPE_COMMENT = 59;
+        public static final int SOFT_KEYWORD = 60;
+        public static final int FSTRING_START = 61;
+        public static final int FSTRING_MIDDLE = 62;
+        public static final int FSTRING_END = 63;
+        public static final int COMMENT = 64;
+        public static final int NL = 65;
+        public static final int ERRORTOKEN = 66;
+        public static final int N_TOKENS = 68;
 
         public static final String[] TOKEN_NAMES = new String[]{
                         "ENDMARKER",
@@ -167,16 +172,21 @@ public class Token {
                         "RARROW",
                         "ELLIPSIS",
                         "COLONEQUAL",
+                        "EXCLAMATION",
                         "OP",
                         "AWAIT",
                         "ASYNC",
                         "TYPE_IGNORE",
                         "TYPE_COMMENT",
                         "SOFT_KEYWORD",
+                        "FSTRING_START",
+                        "FSTRING_MIDDLE",
+                        "FSTRING_END",
+                        "COMMENT",
+                        "NL",
                         "<ERRORTOKEN>",
-                        "<COMMENT>",
-                        "<NL>",
-                        "<ENCODING>"
+                        "<ENCODING>",
+                        "<N_TOKENS>",
         };
     }
 
@@ -184,16 +194,18 @@ public class Token {
     public int level;
     public final SourceRange sourceRange;
     public final Object extraData;
-    final int startOffset;
-    final int endOffset;
+    public final int startOffset;
+    public final int endOffset;
+    public final ConstantValue metadata;
 
-    public Token(int type, int level, int startOffset, int endOffset, SourceRange sourceRange, Object extraData) {
+    public Token(int type, int level, int startOffset, int endOffset, SourceRange sourceRange, Object extraData, ConstantValue metadata) {
         this.type = type;
         this.level = level;
         this.startOffset = startOffset;
         this.endOffset = endOffset;
         this.sourceRange = sourceRange;
         this.extraData = extraData;
+        this.metadata = metadata;
     }
 
     @Override
@@ -211,6 +223,8 @@ public class Token {
 
     static int oneChar(int c) {
         switch (c) {
+            case '!':
+                return Kind.EXCLAMATION;
             case '%':
                 return Kind.PERCENT;
             case '&':

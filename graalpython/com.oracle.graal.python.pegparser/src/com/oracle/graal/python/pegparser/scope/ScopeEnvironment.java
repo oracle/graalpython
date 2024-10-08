@@ -67,7 +67,11 @@ import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.StmtTy.TypeAlias;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.ParamSpec;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVar;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 
 /**
@@ -1237,6 +1241,26 @@ public class ScopeEnvironment {
         @Override
         public Void visit(StmtTy.Pass aThis) {
             return null;
+        }
+
+        @Override
+        public Void visit(TypeAlias node) {
+            throw new IllegalStateException("visit(TypeAlias node)");
+        }
+
+        @Override
+        public Void visit(TypeVar node) {
+            throw new IllegalStateException("visit(TypeVar node)");
+        }
+
+        @Override
+        public Void visit(ParamSpec node) {
+            throw new IllegalStateException("visit(ParamSpec node)");
+        }
+
+        @Override
+        public Void visit(TypeVarTuple node) {
+            throw new IllegalStateException("visit(TypeVarTuple node)");
         }
     }
 }

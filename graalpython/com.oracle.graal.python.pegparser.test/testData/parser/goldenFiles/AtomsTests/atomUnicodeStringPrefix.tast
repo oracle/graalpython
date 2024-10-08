@@ -12,7 +12,7 @@ Module[1:0-1:55]
             RAW[1:23-1:35] Value: "abcdef"
             JoinedStr[1:37-1:54]
                  Values:
-                    FormattedValue[1:40-1:46]
+                    FormattedValue[1:39-1:47]
                         Value: RAW[1:40-1:46] Value: "abc" Kind: "u"
                         Conversion: -1
                     RAW[1:49-1:54] Value: "def"

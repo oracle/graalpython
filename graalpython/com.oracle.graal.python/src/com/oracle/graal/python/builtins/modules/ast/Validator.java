@@ -89,7 +89,11 @@ import com.oracle.graal.python.pegparser.sst.OperatorTy;
 import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.StmtTy.TypeAlias;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.ParamSpec;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVar;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -948,9 +952,29 @@ final class Validator implements SSTreeVisitor<Void> {
         return null;
     }
 
-    /*-
-    // Validation of sequences
-    */
+    @Override
+    public Void visit(TypeAlias node) {
+        throw new IllegalStateException("not implemented");
+    }
+
+    @Override
+    public Void visit(TypeVar node) {
+        throw new IllegalStateException("not implemented");
+    }
+
+    @Override
+    public Void visit(ParamSpec node) {
+        throw new IllegalStateException("not implemented");
+    }
+
+    @Override
+    public Void visit(TypeVarTuple node) {
+        throw new IllegalStateException("not implemented");
+    }
+
+/*-
+// Validation of sequences
+*/
 
     // Equivalent of validate_stmts
     private void validateStmts(StmtTy[] stmts) {

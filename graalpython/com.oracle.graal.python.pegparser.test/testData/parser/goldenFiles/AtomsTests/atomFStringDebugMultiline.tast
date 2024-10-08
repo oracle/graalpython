@@ -1,0 +1,19 @@
+Input:
+------
+f"""a{b
++ # comment
+c=}"""
+
+Output:
+-------
+Module[1:0-3:6]
+    JoinedStr[1:0-3:6]
+         Values:
+            RAW[1:4-3:2] Value: "ab\n+ \nc="
+            FormattedValue[1:5-3:3]
+                Value: 
+                    BinOp[1:6-3:1]
+                        Op: Add
+                        LHS: Name[1:6-1:7] Value: "b"
+                        RHS: Name[3:0-3:1] Value: "c"
+                Conversion: 114

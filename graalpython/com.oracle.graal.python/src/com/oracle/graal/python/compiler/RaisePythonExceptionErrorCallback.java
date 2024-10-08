@@ -63,6 +63,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PIncompleteSourceException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
@@ -73,13 +74,17 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
 
     private static final TruffleString DEFAULT_FILENAME = tsLiteral("<string>");
 
-    private final Source source;
+    private final Supplier<Source> sourceSupplier;
     private final boolean withJavaStackTrace;
     private List<DeprecationWarning> deprecationWarnings;
 
-    public RaisePythonExceptionErrorCallback(Source source, boolean withJavaStackTrace) {
-        this.source = source;
+    public RaisePythonExceptionErrorCallback(Supplier<Source> sourceSupplier, boolean withJavaStackTrace) {
+        this.sourceSupplier = sourceSupplier;
         this.withJavaStackTrace = withJavaStackTrace;
+    }
+
+    public RaisePythonExceptionErrorCallback(Source source, boolean withJavaStackTrace) {
+        this(() -> source, withJavaStackTrace);
     }
 
     private static class DeprecationWarning {
@@ -96,7 +101,7 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
 
     @Override
     public void reportIncompleteSource(int line) {
-        throw new PIncompleteSourceException("", null, line, source);
+        throw new PIncompleteSourceException("", null, line, sourceSupplier.get());
     }
 
     @Override
@@ -105,7 +110,7 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
     }
 
     public PException raiseSyntaxError(ErrorType errorType, SourceRange sourceRange, String message) {
-        throw raiseSyntaxError(errorType, sourceRange, toTruffleStringUncached(message), source, withJavaStackTrace);
+        throw raiseSyntaxError(errorType, sourceRange, toTruffleStringUncached(message), sourceSupplier.get(), withJavaStackTrace);
     }
 
     public static PException raiseSyntaxError(ErrorCallback.ErrorType errorType, SourceRange sourceRange, TruffleString message, Source source, boolean withJavaStackTrace) {
@@ -169,8 +174,8 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
         excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = filename;
         excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = sourceRange.startLine;
         excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = sourceRange.startColumn + 1;
-        excAttrs[SyntaxErrorBuiltins.IDX_END_LINENO] = sourceRange.endLine;
-        excAttrs[SyntaxErrorBuiltins.IDX_END_OFFSET] = sourceRange.endColumn + 1;
+        excAttrs[SyntaxErrorBuiltins.IDX_END_LINENO] = sourceRange.endLine == -1 ? PNone.NONE : sourceRange.endLine;
+        excAttrs[SyntaxErrorBuiltins.IDX_END_OFFSET] = sourceRange.endColumn == -1 ? PNone.NONE : sourceRange.endColumn + 1;
         // Not very nice. This counts on the implementation in traceback.py where if the value of
         // text attribute is NONE, then the line is not printed
         Object text = PNone.NONE;
@@ -229,6 +234,7 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
     @TruffleBoundary
     private void triggerDeprecationWarningsBoundary() {
         PythonModule warnings = PythonContext.get(null).lookupBuiltinModule(T__WARNINGS);
+        Source source = sourceSupplier.get();
         for (DeprecationWarning warning : deprecationWarnings) {
             try {
                 PyObjectCallMethodObjArgs.executeUncached(warnings, WarningsModuleBuiltins.T_WARN_EXPLICIT, //

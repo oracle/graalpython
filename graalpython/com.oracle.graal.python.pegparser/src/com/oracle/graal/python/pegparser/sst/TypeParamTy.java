@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,14 +38,65 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.pegparser;
 
-/**
- * Type of input for the parser
- */
-public enum InputType {
-    SINGLE,
-    FILE,
-    EVAL,
-    FUNCTION_TYPE,
+// Checkstyle: stop
+// JaCoCo Exclude
+//@formatter:off
+// Generated from Python.asdl by main_asdl_gen.py
+package com.oracle.graal.python.pegparser.sst;
+
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+
+public abstract class TypeParamTy extends SSTNode {
+
+    TypeParamTy(SourceRange sourceRange) {
+        super(sourceRange);
+    }
+
+    public static final class TypeVar extends TypeParamTy {
+        public final String name;
+        public final ExprTy bound;   // nullable
+
+        public TypeVar(String name, ExprTy bound, SourceRange sourceRange) {
+            super(sourceRange);
+            assert name != null;
+            this.name = name;
+            this.bound = bound;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static final class ParamSpec extends TypeParamTy {
+        public final String name;
+
+        public ParamSpec(String name, SourceRange sourceRange) {
+            super(sourceRange);
+            assert name != null;
+            this.name = name;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static final class TypeVarTuple extends TypeParamTy {
+        public final String name;
+
+        public TypeVarTuple(String name, SourceRange sourceRange) {
+            super(sourceRange);
+            assert name != null;
+            this.name = name;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
 }

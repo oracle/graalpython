@@ -1713,8 +1713,8 @@ public abstract class PythonObjectFactory extends Node {
                         new PStructUnpackIterator(PythonBuiltinClassType.PStructUnpackIterator, getShape(PythonBuiltinClassType.PStructUnpackIterator), struct, buffer));
     }
 
-    public final PTokenizerIter createTokenizerIter(Object cls, String sourceString) {
-        return trace(new PTokenizerIter(cls, getShape(cls), sourceString));
+    public final PTokenizerIter createTokenizerIter(Object cls, Supplier<int[]> inputSupplier, boolean extraTokens) {
+        return trace(new PTokenizerIter(cls, getShape(cls), inputSupplier, extraTokens));
     }
 
     @GenerateInline

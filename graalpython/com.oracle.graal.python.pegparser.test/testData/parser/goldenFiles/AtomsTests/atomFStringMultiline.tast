@@ -12,7 +12,7 @@ Module[1:0-5:16]
     JoinedStr[1:0-5:16]
          Values:
             RAW[1:4-1:15] Value: "First line."
-            FormattedValue[1:16-4:2]
+            FormattedValue[1:15-4:3]
                 Value: 
                     BinOp[2:3-4:2]
                         Op: Add
