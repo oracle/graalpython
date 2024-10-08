@@ -1077,9 +1077,8 @@ def native_image(args):
 def _graalpytest_driver():
     return os.path.join(SUITE.dir, "graalpython", "com.oracle.graal.python.test", "src", "graalpytest.py")
 
-
 def _graalpytest_root():
-    return os.path.join(mx.dependency("com.oracle.graal.python.test").get_output_root(), "bin", "tests")
+    return os.path.join(SUITE.dir, "graalpython", "com.oracle.graal.python.test", "src", "tests")
 
 
 # name of the project containing the HPy tests
@@ -1096,10 +1095,6 @@ def graalpytest(args):
     parser.add_argument('-k', dest="filter", default='', help='Test pattern.')
     parser.add_argument('test', nargs="*", default=[], help='Test file to run (specify absolute or relative; e.g. "/path/to/test_file.py" or "cpyext/test_object.py") ')
     args, unknown_args = parser.parse_known_args(args)
-
-    # ensure that the test distribution is up-to-date
-    if not DISABLE_REBUILD:
-        mx.command_function("build")(["--only", "com.oracle.graal.python.test"])
 
     testfiles = _list_graalpython_unittests(args.test)
     cmd_args = []
