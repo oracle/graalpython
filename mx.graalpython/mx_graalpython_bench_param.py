@@ -67,7 +67,6 @@ MICRO_BENCHMARKS = {
     'boolean-logic-sized': ITER_10 + ['5_000'],
     'builtin-len-tuple-sized': ITER_10 + ['1_000_000_000'],
     'builtin-len': ITER_10 + [],
-    'class-access': ITER_15 + ['10_000'],
     'call-method-polymorphic': ITER_10 + ['1000'],
     'for-range': ITER_15 + ['50000'],
     'function-call-sized': ITER_10 + ['2_000_000_000'],
@@ -75,7 +74,6 @@ MICRO_BENCHMARKS = {
     'generator-notaligned-sized': ITER_10 + ['30_000'],
     'generator-sized': ITER_10 + ['30_000'],
     'genexp-builtin-call-sized': ITER_10 + ['50_000'],
-    'java-register': ITER_10 + ['2_000'],
     'list-comp': ITER_10 + ['5000'],
     'list-indexing': ITER_10 + ['1000000'],
     'list-indexing-from-constructor': ITER_10 + ['10000000'],
@@ -133,7 +131,6 @@ MICRO_BENCHMARKS_SMALL = {
     'builtin-len-tuple-sized': ITER_6 + WARMUP_2 + ['10_000_000'],
     'builtin-len': ITER_10 + WARMUP_2 + ['2_500_000'],
     'bytecode-benchmark': ITER_6 + WARMUP_2 + ['500'],
-    'class-access': ITER_6 + WARMUP_2 + ['40'],
     'call-method-polymorphic': ITER_6 + WARMUP_2 + ['10'],
     'for-range': ITER_10 + WARMUP_2 + WARMUP_2 + ['50'],
     'function-call-sized': ITER_10 + WARMUP_2 + ['2_000_000'],
@@ -274,6 +271,7 @@ INTEROP_BENCHMARKS = {
     'euler_java': ITER_10 + ['200'],
     'image-magix': ITER_10 + ['10000'],
     'image-magix-java': ITER_10 + ['10000'],
+    'java-register': ITER_10 + ['2_000'],
 }
 
 
