@@ -465,7 +465,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
-                        @Cached(inline = false) GilNode gil) {
+                        @Cached GilNode gil) {
             gil.release(true);
             try {
                 return interop.hasIteratorNextElement(self) ? 1 : 0;
