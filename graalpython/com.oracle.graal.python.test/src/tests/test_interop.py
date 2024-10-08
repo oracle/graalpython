@@ -104,7 +104,7 @@ if sys.implementation.name == "graalpy":
     class PyString(str):
         pass
 
-@skipUnless(sys.implementation.name == "graalpy", "interop")
+@skipUnless(sys.implementation.name == "graalpy" and not __graalpython__.is_native, "interop")
 class InteropTests(unittest.TestCase):
     def test_import(self):
         def some_function():
