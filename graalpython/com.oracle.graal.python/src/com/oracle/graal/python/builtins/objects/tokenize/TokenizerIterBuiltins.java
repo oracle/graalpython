@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Token.Kind;
+import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.StatusCode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -92,32 +93,69 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
         static PTuple next(PTokenizerIter self,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayUTF32Node,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            Token token = self.getNextToken();
-            if (token.type == Kind.ERRORTOKEN || token.type == Kind.ENDMARKER) {
+            if (self.isDone()) {
                 throw raiseNode.get(inliningTarget).raiseStopIteration(T_EOF);
             }
-            int startColumn;
-            int endColumn;
-            if (token.type == Kind.INDENT || token.type == Kind.DEDENT) {
-                startColumn = -1;
-                endColumn = -1;
-            } else {
-                startColumn = token.sourceRange.startColumn;
-                endColumn = token.sourceRange.endColumn;
+            Token token = self.getNextToken();
+            String tokenStr = self.getTokenString(token);
+            int type = token.type;
+            boolean isTrailingToken = false;
+            if (type == Kind.ENDMARKER || (type == Kind.DEDENT && self.tokenizer.getDone() == StatusCode.EOF)) {
+                isTrailingToken = true;
             }
+            TruffleString line = self.tokenizer.isExtraTokens() && isTrailingToken ? TS_ENCODING.getEmpty() : self.getLine(token, fromIntArrayUTF32Node);
+
+            int startLine = token.sourceRange.startLine;
+            int endLine = token.sourceRange.endLine;
+            int startColumn = token.sourceRange.startColumn;
+            int endColumn = token.sourceRange.endColumn;
             if (token.type == Kind.NEWLINE) {
                 endColumn--;
             }
+            if (self.tokenizer.isExtraTokens()) {
+                if (isTrailingToken) {
+                    startLine += 1;
+                    endLine += 1;
+                    startColumn = 0;
+                    endColumn = 0;
+                }
+
+                if (type > Kind.DEDENT && type < Kind.OP) {
+                    type = Kind.OP;
+                } else if (type == Kind.ASYNC || type == Kind.AWAIT) {
+                    type = Kind.NAME;
+                } else if (type == Kind.NEWLINE) {
+                    if (!self.tokenizer.isImplicitNewline()) {
+                        if (!tokenStr.isEmpty() && tokenStr.charAt(0) == '\r') {
+                            tokenStr = "\r\n";
+                        } else {
+                            tokenStr = "\n";
+                        }
+                    } else {
+                        tokenStr = "";
+                    }
+                    endColumn++;
+                } else if (type == Kind.NL) {
+                    if (self.tokenizer.isImplicitNewline()) {
+                        tokenStr = "";
+                    }
+                }
+            } else if (type == Kind.INDENT || type == Kind.DEDENT) {
+                startColumn = -1;
+                endColumn = -1;
+            } else if (type == Kind.NEWLINE) {
+                tokenStr = "";
+            }
+
             return factory.createTuple(new Object[]{
-                            fromJavaStringNode.execute(self.getTokenString(token), TS_ENCODING),
-                            token.type,
-                            token.sourceRange.startLine,
-                            token.sourceRange.endLine,
-                            startColumn,
-                            endColumn,
-                            fromJavaStringNode.execute(self.getLine(token), TS_ENCODING)
+                            type,
+                            fromJavaStringNode.execute(tokenStr, TS_ENCODING),
+                            factory.createTuple(new Object[]{startLine, startColumn}),
+                            factory.createTuple(new Object[]{endLine, endColumn}),
+                            line
             });
         }
     }

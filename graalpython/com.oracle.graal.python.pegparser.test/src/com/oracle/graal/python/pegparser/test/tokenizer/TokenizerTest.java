@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,6 +58,7 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.pegparser.test.DefaultStringFactoryImpl;
 import com.oracle.graal.python.pegparser.test.TestErrorCallbackImpl;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
@@ -250,6 +251,84 @@ public class TokenizerTest {
                         "Token EQUAL [8, 9] (2, 2) (2, 3) '='",
                         "Token NUMBER [10, 11] (2, 4) (2, 5) '2'",
                         "Token NEWLINE [11, 12] (2, 5) (2, 6) ''"});
+    }
+
+    @Test
+    public void testFstringMultiline() {
+        checkTokens("""
+                        f""\"First line.{
+                        xy}
+                        Another line.""\"""",
+                        new String[]{
+                                        "Token FSTRING_START [0, 4] (1, 0) (1, 4) 'f\"\"\"'",
+                                        "Token FSTRING_MIDDLE [4, 15] (1, 4) (1, 15) 'First line.'",
+                                        "Token LBRACE [15, 16] (1, 15) (1, 16) '{'",
+                                        "Token NAME [17, 19] (2, 0) (2, 2) 'xy'",
+                                        "Token RBRACE [19, 20] (2, 2) (2, 3) '}'",
+                                        "Token FSTRING_MIDDLE [20, 34] (2, 3) (3, 13) '\nAnother line.'",
+                                        "Token FSTRING_END [34, 37] (3, 13) (3, 16) '\"\"\"'",
+                                        "Token NEWLINE [37, 38] (3, 16) (3, 17) ''",
+                        });
+    }
+
+    @Test
+    public void testFstringNested() {
+        checkTokens("f\"\"\"{f'''{f'{f\"{1+1}\"}'}'''}\"\"\"", new String[]{
+                        "Token FSTRING_START [0, 4] (1, 0) (1, 4) 'f\"\"\"'",
+                        "Token LBRACE [4, 5] (1, 4) (1, 5) '{'",
+                        "Token FSTRING_START [5, 9] (1, 5) (1, 9) 'f''''",
+                        "Token LBRACE [9, 10] (1, 9) (1, 10) '{'",
+                        "Token FSTRING_START [10, 12] (1, 10) (1, 12) 'f''",
+                        "Token LBRACE [12, 13] (1, 12) (1, 13) '{'",
+                        "Token FSTRING_START [13, 15] (1, 13) (1, 15) 'f\"'",
+                        "Token LBRACE [15, 16] (1, 15) (1, 16) '{'",
+                        "Token NUMBER [16, 17] (1, 16) (1, 17) '1'",
+                        "Token PLUS [17, 18] (1, 17) (1, 18) '+'",
+                        "Token NUMBER [18, 19] (1, 18) (1, 19) '1'",
+                        "Token RBRACE [19, 20] (1, 19) (1, 20) '}'",
+                        "Token FSTRING_END [20, 21] (1, 20) (1, 21) '\"'",
+                        "Token RBRACE [21, 22] (1, 21) (1, 22) '}'",
+                        "Token FSTRING_END [22, 23] (1, 22) (1, 23) '''",
+                        "Token RBRACE [23, 24] (1, 23) (1, 24) '}'",
+                        "Token FSTRING_END [24, 27] (1, 24) (1, 27) '''''",
+                        "Token RBRACE [27, 28] (1, 27) (1, 28) '}'",
+                        "Token FSTRING_END [28, 31] (1, 28) (1, 31) '\"\"\"'",
+                        "Token NEWLINE [31, 32] (1, 31) (1, 32) ''",
+        });
+    }
+
+    @Test
+    public void testFstringExclColon() {
+        checkTokens("f'a{x!r:.3f}b'", new String[]{
+                        "Token FSTRING_START [0, 2] (1, 0) (1, 2) 'f''",
+                        "Token FSTRING_MIDDLE [2, 3] (1, 2) (1, 3) 'a'",
+                        "Token LBRACE [3, 4] (1, 3) (1, 4) '{'",
+                        "Token NAME [4, 5] (1, 4) (1, 5) 'x'",
+                        "Token EXCLAMATION [5, 6] (1, 5) (1, 6) '!'",
+                        "Token NAME [6, 7] (1, 6) (1, 7) 'r'",
+                        "Token COLON [7, 8] (1, 7) (1, 8) ':'",
+                        "Token FSTRING_MIDDLE [8, 11] (1, 8) (1, 11) '.3f'",
+                        "Token RBRACE [11, 12] (1, 11) (1, 12) '}'",
+                        "Token FSTRING_MIDDLE [12, 13] (1, 12) (1, 13) 'b'",
+                        "Token FSTRING_END [13, 14] (1, 13) (1, 14) '''",
+                        "Token NEWLINE [14, 15] (1, 14) (1, 15) ''",
+        });
+    }
+
+    @Test
+    public void testFstringDebug() {
+        checkTokens("f'a{x+5=}'", new String[]{
+                        "Token FSTRING_START [0, 2] (1, 0) (1, 2) 'f''",
+                        "Token FSTRING_MIDDLE [2, 3] (1, 2) (1, 3) 'a'",
+                        "Token LBRACE [3, 4] (1, 3) (1, 4) '{'",
+                        "Token NAME [4, 5] (1, 4) (1, 5) 'x'",
+                        "Token PLUS [5, 6] (1, 5) (1, 6) '+'",
+                        "Token NUMBER [6, 7] (1, 6) (1, 7) '5'",
+                        "Token EQUAL [7, 8] (1, 7) (1, 8) '='",
+                        "Token RBRACE [8, 9] (1, 8) (1, 9) '}'",
+                        "Token FSTRING_END [9, 10] (1, 9) (1, 10) '''",
+                        "Token NEWLINE [10, 11] (1, 10) (1, 11) ''",
+        });
     }
 
     @Test
@@ -554,7 +633,8 @@ public class TokenizerTest {
                 fail("Unexpected call to onError");
             }
         };
-        return Tokenizer.fromString(errorCallback, code, EnumSet.of(interactive ? Tokenizer.Flag.INTERACTIVE : Tokenizer.Flag.EXEC_INPUT, Tokenizer.Flag.TYPE_COMMENT), null);
+        return Tokenizer.fromString(errorCallback, new DefaultStringFactoryImpl(), code, EnumSet.of(interactive ? Tokenizer.Flag.INTERACTIVE : Tokenizer.Flag.EXEC_INPUT, Tokenizer.Flag.TYPE_COMMENT),
+                        null);
     }
 
     private static Tokenizer createTokenizer(String code) {

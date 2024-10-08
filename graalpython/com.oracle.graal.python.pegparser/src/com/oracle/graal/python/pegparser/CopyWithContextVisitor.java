@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,7 +53,11 @@ import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.StmtTy.TypeAlias;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.ParamSpec;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVar;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 
 public final class CopyWithContextVisitor implements SSTreeVisitor<ExprTy> {
@@ -436,6 +440,26 @@ public final class CopyWithContextVisitor implements SSTreeVisitor<ExprTy> {
 
     @Override
     public ExprTy visit(TypeIgnoreTy.TypeIgnore node) {
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public ExprTy visit(TypeAlias node) {
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public ExprTy visit(TypeVar node) {
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public ExprTy visit(ParamSpec node) {
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public ExprTy visit(TypeVarTuple node) {
         throw new IllegalStateException();
     }
 

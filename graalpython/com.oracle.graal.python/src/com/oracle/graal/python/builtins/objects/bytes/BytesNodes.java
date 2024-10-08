@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesWithoutFrameNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -276,6 +277,10 @@ public abstract class BytesNodes {
     public abstract static class ToBytesWithoutFrameNode extends Node {
 
         public abstract byte[] execute(Node inliningTarget, Object object);
+
+        public static byte[] executeUncached(Object object) {
+            return ToBytesWithoutFrameNodeGen.getUncached().execute(null, object);
+        }
 
         @Specialization(limit = "3")
         static byte[] doBuffer(Node inliningTarget, Object object,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,24 +41,30 @@
 package com.oracle.graal.python.pegparser.test;
 
 import com.oracle.graal.python.pegparser.PythonStringFactory;
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
 
-public class DefaultStringFactoryImpl implements PythonStringFactory<String> {
+public class DefaultStringFactoryImpl implements PythonStringFactory {
     @Override
-    public PythonStringBuilder<String> createBuilder(int initialCodePointLength) {
+    public PythonStringBuilder createBuilder(int initialCodePointLength) {
         return new StringBuilderWrapper(initialCodePointLength);
     }
 
     @Override
-    public String emptyString() {
-        return "";
+    public ConstantValue fromCodePoints(int[] codepoints, int start, int len) {
+        return ConstantValue.ofRaw(new String(codepoints, start, len));
     }
 
     @Override
-    public String fromJavaString(String s) {
-        return s;
+    public int[] toCodePoints(ConstantValue constantValue) {
+        return constantValue.getRaw(String.class).codePoints().toArray();
     }
 
-    private static class StringBuilderWrapper implements PythonStringBuilder<String> {
+    @Override
+    public boolean isEmpty(ConstantValue constantValue) {
+        return constantValue.getRaw(String.class).isEmpty();
+    }
+
+    private static class StringBuilderWrapper implements PythonStringBuilder {
         private final StringBuilder sb;
 
         StringBuilderWrapper(int initialCapacity) {
@@ -66,31 +72,28 @@ public class DefaultStringFactoryImpl implements PythonStringFactory<String> {
         }
 
         @Override
-        public PythonStringBuilder<String> appendString(String s) {
-            sb.append(s);
+        public PythonStringBuilder appendCodePoint(int codePoint) {
+            sb.appendCodePoint(codePoint);
             return this;
         }
 
         @Override
-        public PythonStringBuilder<String> appendPythonString(String s) {
-            sb.append(s);
-            return null;
+        public PythonStringBuilder appendCodePoints(int[] codepoints, int offset, int count) {
+            for (int i = 0; i < count; ++i) {
+                sb.appendCodePoint(codepoints[offset + i]);
+            }
+            return this;
         }
 
         @Override
-        public PythonStringBuilder<String> appendCodePoint(int codePoint) {
-            sb.appendCodePoint(codePoint);
-            return null;
+        public PythonStringBuilder appendConstantValue(ConstantValue constantValue) {
+            sb.append(constantValue.getRaw(String.class));
+            return this;
         }
 
         @Override
-        public boolean isEmpty() {
-            return sb.length() == 0;
-        }
-
-        @Override
-        public String build() {
-            return sb.toString();
+        public ConstantValue build() {
+            return ConstantValue.ofRaw(sb.toString());
         }
     }
 }

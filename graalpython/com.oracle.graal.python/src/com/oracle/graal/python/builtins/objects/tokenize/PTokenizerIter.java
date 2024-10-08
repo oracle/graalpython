@@ -40,53 +40,126 @@
  */
 package com.oracle.graal.python.builtins.objects.tokenize;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import java.util.EnumSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.compiler.PythonStringFactoryImpl;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
-import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
+import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Token.Kind;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.Flag;
-import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.StatusCode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PTokenizerIter extends PythonBuiltinObject {
 
-    private final Source source;
     private final RaisePythonExceptionErrorCallback errorCallback;
-    private final Tokenizer tokenizer;
+    final Tokenizer tokenizer;
+    private int lastLineNo = -1;
+    private TruffleString lastLine;
+    private boolean done;
 
     @TruffleBoundary
-    public PTokenizerIter(Object cls, Shape instanceShape, String sourceString) {
+    public PTokenizerIter(Object cls, Shape instanceShape, Supplier<int[]> inputSupplier, boolean extraTokens) {
         super(cls, instanceShape);
-        source = Source.newBuilder(PythonLanguage.ID, sourceString, "<string>").build();
-        errorCallback = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(null)));
-        tokenizer = Tokenizer.fromString(errorCallback, sourceString, EnumSet.of(Flag.EXEC_INPUT), null);
+        errorCallback = new RaisePythonExceptionErrorCallback(this::getSource, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(null)));
+        EnumSet<Flag> flags = EnumSet.of(Flag.EXEC_INPUT);
+        if (extraTokens) {
+            flags.add(Flag.EXTRA_TOKENS);
+        }
+        tokenizer = Tokenizer.fromReadline(errorCallback, new PythonStringFactoryImpl(), flags, inputSupplier);
+    }
+
+    boolean isDone() {
+        return done;
     }
 
     @TruffleBoundary
     Token getNextToken() {
         Token token = tokenizer.next();
         errorCallback.triggerAndClearDeprecationWarnings();
-        if (token.type == Kind.ERRORTOKEN && tokenizer.getDone() == StatusCode.SYNTAX_ERROR) {
-            throw errorCallback.raiseSyntaxError(ErrorType.Syntax, token.sourceRange, (String) token.extraData);
+        if (token.type == Kind.ERRORTOKEN) {
+            reportTokenizerError();
+        }
+        if (token.type == Kind.ENDMARKER) {
+            done = true;
         }
         return token;
     }
 
     @TruffleBoundary
     String getTokenString(Token token) {
-        return token.type == Kind.NEWLINE ? "" : tokenizer.getTokenString(token);
+        return tokenizer.getTokenString(token);
     }
 
-    @TruffleBoundary
-    String getLine(Token token) {
-        return source.getCharacters(token.sourceRange.startLine) + "\n";
+    TruffleString getLine(Token token, TruffleString.FromIntArrayUTF32Node fromIntArrayUTF32Node) {
+        if (tokenizer.getCurrentLineNumber() == lastLineNo) {
+            return lastLine;
+        }
+        int lineStart;
+        if (token.type == Kind.STRING || token.type == Kind.FSTRING_MIDDLE) {
+            lineStart = tokenizer.getMultiLineStartIndex();
+        } else {
+            lineStart = tokenizer.getLineStartIndex();
+        }
+        int size = tokenizer.getCodePointsInputLength() - lineStart;
+        if (size > 1 && tokenizer.isImplicitNewline()) {
+            size -= 1;
+        }
+        if (size <= 0) {
+            return TS_ENCODING.getEmpty();
+        }
+        lastLine = fromIntArrayUTF32Node.execute(tokenizer.getCodePointsInput(), lineStart, size);
+        lastLineNo = tokenizer.getCurrentLineNumber();
+        return lastLine;
     }
+
+    private void reportTokenizerError() {
+        ErrorCallback.ErrorType errorType = ErrorCallback.ErrorType.Syntax;
+        String msg;
+        int colOffset = Math.max(0, tokenizer.getCodePointsInputLength() - tokenizer.getLineStartIndex() - 1);
+        switch (tokenizer.getDone()) {
+            case BAD_TOKEN:
+                msg = "invalid token";
+                break;
+            case EOF:
+                msg = "unexpected EOF in multi-line statement";
+                break;
+            case DEDENT_INVALID:
+                errorType = ErrorCallback.ErrorType.Indentation;
+                msg = "unindent does not match any outer indentation level";
+                break;
+            case TABS_SPACES_INCONSISTENT:
+                errorType = ErrorCallback.ErrorType.Tab;
+                msg = "inconsistent use of tabs and spaces in indentation";
+                break;
+            case TOO_DEEP_INDENTATION:
+                errorType = ErrorCallback.ErrorType.Indentation;
+                msg = "too many levels of indentation";
+                break;
+            case LINE_CONTINUATION_ERROR:
+                msg = "unexpected character after line continuation character";
+                break;
+            default:
+                msg = "unknown tokenization error";
+                break;
+        }
+        throw errorCallback.raiseSyntaxError(errorType, new SourceRange(tokenizer.getCurrentLineNumber(), colOffset, -1, -1), msg);
+    }
+
+    private Source getSource() {
+        String src = new String(tokenizer.getCodePointsInput(), 0, tokenizer.getCodePointsInputLength());
+        return Source.newBuilder(PythonLanguage.ID, src, "<string>").build();
+    }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,14 +55,14 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
-import com.oracle.graal.python.pegparser.ErrorCallback;
-import com.oracle.graal.python.pegparser.FutureFeature;
-import com.oracle.graal.python.pegparser.InputType;
-import com.oracle.graal.python.pegparser.Parser;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
 import com.oracle.graal.python.pegparser.AbstractParser.Flags;
+import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.pegparser.FutureFeature;
+import com.oracle.graal.python.pegparser.InputType;
+import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
@@ -217,7 +217,9 @@ public class ParserTestBase {
         ErrorCallback errorCb = new ErrorCallback() {
             @Override
             public void onError(ErrorCallback.ErrorType type, SourceRange sourceRange, String message) {
-                errors.add(String.format("%s[%d:%d-%d:%d]:%s", type.name(), sourceRange.startLine, sourceRange.startColumn, sourceRange.endLine, sourceRange.endColumn, message));
+                if (errors.isEmpty()) {
+                    errors.add(String.format("%s[%d:%d-%d:%d]:%s", type.name(), sourceRange.startLine, sourceRange.startColumn, sourceRange.endLine, sourceRange.endColumn, message));
+                }
             }
 
             @Override

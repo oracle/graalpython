@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -285,37 +285,37 @@ public class FuncDefTests extends ParserTestBase {
 
     @Test
     public void positionalOnlyArg07() throws Exception {
-        checkSyntaxErrorMessage("def name(p1, p2=None, /, p_or_kw, *, kw): pass", "non-default argument follows default argument");
+        checkSyntaxErrorMessage("def name(p1, p2=None, /, p_or_kw, *, kw): pass", "parameter without a default follows parameter with a default");
     }
 
     @Test
     public void positionalOnlyArg08() throws Exception {
-        checkSyntaxErrorMessage("def name(p1=None, p2, /, p_or_kw=None, *, kw): pass", "non-default argument follows default argument");
+        checkSyntaxErrorMessage("def name(p1=None, p2, /, p_or_kw=None, *, kw): pass", "parameter without a default follows parameter with a default");
     }
 
     @Test
     public void positionalOnlyArg09() throws Exception {
-        checkSyntaxErrorMessage("def name(p1=None, p2, /): pass", "non-default argument follows default argument");
+        checkSyntaxErrorMessage("def name(p1=None, p2, /): pass", "parameter without a default follows parameter with a default");
     }
 
     @Test
     public void positionalOnlyArg10() throws Exception {
-        checkSyntaxErrorMessage("def f(a, b = 5, /, c): pass", "non-default argument follows default argument");
+        checkSyntaxErrorMessage("def f(a, b = 5, /, c): pass", "parameter without a default follows parameter with a default");
     }
 
     @Test
     public void positionalOnlyArg11() throws Exception {
-        checkSyntaxErrorMessage("def f(a = 5, b, /, c): pass", "non-default argument follows default argument");
+        checkSyntaxErrorMessage("def f(a = 5, b, /, c): pass", "parameter without a default follows parameter with a default");
     }
 
     @Test
     public void positionalOnlyArg12() throws Exception {
-        checkSyntaxErrorMessage("def f(a = 5, b=1, /, c, *, d=2): pass", "non-default argument follows default argument");
+        checkSyntaxErrorMessage("def f(a = 5, b=1, /, c, *, d=2): pass", "parameter without a default follows parameter with a default");
     }
 
     @Test
     public void positionalOnlyArg13() throws Exception {
-        checkSyntaxErrorMessage("def f(a = 5, b, /): pass", "non-default argument follows default argument");
+        checkSyntaxErrorMessage("def f(a = 5, b, /): pass", "parameter without a default follows parameter with a default");
     }
 
     @Test
@@ -395,22 +395,22 @@ public class FuncDefTests extends ParserTestBase {
 
     @Test
     public void positionalOnlyArg29() throws Exception {
-        checkSyntaxErrorMessage("async def f(a, b = 5, /, c): pass", "non-default argument follows default argument");
+        checkSyntaxErrorMessage("async def f(a, b = 5, /, c): pass", "parameter without a default follows parameter with a default");
     }
 
     @Test
     public void positionalOnlyArg30() throws Exception {
-        checkSyntaxErrorMessage("async def f(a = 5, b, /, c): pass", "non-default argument follows default argument");
+        checkSyntaxErrorMessage("async def f(a = 5, b, /, c): pass", "parameter without a default follows parameter with a default");
     }
 
     @Test
     public void positionalOnlyArg31() throws Exception {
-        checkSyntaxErrorMessage("async def f(a = 5, b=1, /, c, d=2): pass", "non-default argument follows default argument");
+        checkSyntaxErrorMessage("async def f(a = 5, b=1, /, c, d=2): pass", "parameter without a default follows parameter with a default");
     }
 
     @Test
     public void positionalOnlyArg32() throws Exception {
-        checkSyntaxErrorMessage("async def f(a = 5, b, /): pass", "non-default argument follows default argument");
+        checkSyntaxErrorMessage("async def f(a = 5, b, /): pass", "parameter without a default follows parameter with a default");
     }
 
     @Test

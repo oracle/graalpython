@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,34 +40,46 @@
  */
 package com.oracle.graal.python.pegparser;
 
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
+
 /**
- * Used by the parser to construct run-time representation of string literals. In the graalpython
+ * Used by the parser to construct run-time representation of string literals. In the graalpy
  * interpreter, strings are represented by {@code TruffleString}. This interface allows the use of
  * the parser (e.g. in tools such as an IDE) without the dependency on Truffle - see
  * {@code DefaultStringFactoryImpl} in tests as an example that uses {@link String} for the
  * representation of python string literals. Note thought that this is not entirely correct since
  * {@link String} is not capable of distinguishing a SMP codepoint from a pair of corresponding
  * surrogates, which in Python are different: {@code '\U00010400' != '\uD801\uDC00'}.
- *
- * @param <T> the type used to represent string literals
  */
-public interface PythonStringFactory<T> {
+public interface PythonStringFactory {
 
-    PythonStringBuilder<T> createBuilder(int initialCodePointLength);
+    PythonStringBuilder createBuilder(int initialCodePointLength);
 
-    T emptyString();
+    ConstantValue fromCodePoints(int[] codepoints, int start, int len);
 
-    T fromJavaString(String s);
+    int[] toCodePoints(ConstantValue constantValue);
 
-    interface PythonStringBuilder<T> {
-        PythonStringBuilder<T> appendString(String s);
+    /**
+     * Determines whether a {@link ConstantValue} instance represents an empty string. The
+     * implementation can assume that the argument has been created by this factory.
+     */
+    boolean isEmpty(ConstantValue constantValue);
 
-        PythonStringBuilder<T> appendPythonString(T s);
+    interface PythonStringBuilder {
 
-        PythonStringBuilder<T> appendCodePoint(int codePoint);
+        PythonStringBuilder appendCodePoint(int codePoint);
 
-        boolean isEmpty();
+        PythonStringBuilder appendCodePoints(int[] codepoints, int offset, int count);
 
-        T build();
+        /**
+         * Appends a string represented be a {@link ConstantValue} instance. The implementation can
+         * assume that the argument has been created by this factory.
+         */
+        PythonStringBuilder appendConstantValue(ConstantValue constantValue);
+
+        /**
+         * @return a {@link ConstantValue} representing the string.
+         */
+        ConstantValue build();
     }
 }
