@@ -583,21 +583,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         final TruffleString gmultiarch = cat(PythonUtils.getPythonArch(), T_DASH, os.getName());
         addBuiltinConstant("__gmultiarch", gmultiarch);
 
-        PFileIO stdin = factory.createFileIO(PythonBuiltinClassType.PFileIO);
-        FileIOBuiltins.FileIOInit.internalInit(stdin, toTruffleStringUncached("<stdin>"), 0, IOMode.R);
-        addBuiltinConstant(T_STDIN, stdin);
-        addBuiltinConstant(T___STDIN__, stdin);
+        // Initialized later in postInitialize
+        addBuiltinConstant(T_STDIN, PNone.NONE);
+        addBuiltinConstant(T_STDOUT, PNone.NONE);
+        addBuiltinConstant(T_STDERR, PNone.NONE);
 
-        PFileIO stdout = factory.createFileIO(PythonBuiltinClassType.PFileIO);
-        FileIOBuiltins.FileIOInit.internalInit(stdout, toTruffleStringUncached("<stdout>"), 1, IOMode.W);
-        addBuiltinConstant(T_STDOUT, stdout);
-        addBuiltinConstant(T___STDOUT__, stdout);
-
-        PFileIO stderr = factory.createFileIO(PythonBuiltinClassType.PFileIO);
-        stderr.setUTF8Write(true);
-        FileIOBuiltins.FileIOInit.internalInit(stderr, toTruffleStringUncached("<stderr>"), 2, IOMode.W);
-        addBuiltinConstant(T_STDERR, stderr);
-        addBuiltinConstant(T___STDERR__, stderr);
         addBuiltinConstant("implementation", makeImplementation(factory, versionInfo, gmultiarch));
         addBuiltinConstant("hexversion", PythonLanguage.VERSION_HEX);
 
@@ -773,37 +763,52 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    public void initStd(Python3Core core) {
+    static void initStd(Python3Core core) {
         PythonObjectFactory factory = core.factory();
+        PythonContext context = core.getContext();
 
         // wrap std in/out/err
         GraalPythonModuleBuiltins gp = (GraalPythonModuleBuiltins) core.lookupBuiltinModule(T___GRAALPYTHON__).getBuiltins();
         TruffleString stdioEncoding = gp.getStdIOEncoding();
         TruffleString stdioError = gp.getStdIOError();
-        Object posixSupport = core.getContext().getPosixSupport();
+        Object posixSupport = context.getPosixSupport();
         PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
         PythonModule sysModule = core.lookupBuiltinModule(T_SYS);
 
-        PBuffered reader = factory.createBufferedReader(PythonBuiltinClassType.PBufferedReader);
-        BufferedReaderBuiltins.BufferedReaderInit.internalInit(reader, (PFileIO) getBuiltinConstant(T_STDIN), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
-                        posixLib);
-        setWrapper(T_STDIN, T___STDIN__, T_R, stdioEncoding, stdioError, reader, sysModule, factory);
+        // Note that stdin is always buffered, this only applies to stdout and stderr
+        boolean buffering = !context.getOption(PythonOptions.UnbufferedIO);
 
-        PBuffered writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
-        BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) getBuiltinConstant(T_STDOUT), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
-                        posixLib);
-        setWrapper(T_STDOUT, T___STDOUT__, T_W, stdioEncoding, stdioError, writer, sysModule, factory);
+        PFileIO stdinFileIO = factory.createFileIO(PythonBuiltinClassType.PFileIO);
+        FileIOBuiltins.FileIOInit.internalInit(stdinFileIO, toTruffleStringUncached("<stdin>"), 0, IOMode.RB);
+        PBuffered stdinBuffer = factory.createBufferedReader(PythonBuiltinClassType.PBufferedReader);
+        BufferedReaderBuiltins.BufferedReaderInit.internalInit(stdinBuffer, stdinFileIO, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport, posixLib);
+        setWrapper(T_STDIN, T___STDIN__, T_R, stdioEncoding, stdioError, stdinBuffer, sysModule, factory, true);
 
-        writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
-        BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) getBuiltinConstant(T_STDERR), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
-                        posixLib);
-        setWrapper(T_STDERR, T___STDERR__, T_W, stdioEncoding, T_BACKSLASHREPLACE, writer, sysModule, factory);
+        PFileIO stdoutFileIO = factory.createFileIO(PythonBuiltinClassType.PFileIO);
+        FileIOBuiltins.FileIOInit.internalInit(stdoutFileIO, toTruffleStringUncached("<stdout>"), 1, IOMode.WB);
+        Object stdoutBuffer = createBufferedIO(buffering, factory, stdoutFileIO, posixSupport, posixLib);
+        setWrapper(T_STDOUT, T___STDOUT__, T_W, stdioEncoding, stdioError, stdoutBuffer, sysModule, factory, buffering);
+
+        PFileIO stderr = factory.createFileIO(PythonBuiltinClassType.PFileIO);
+        FileIOBuiltins.FileIOInit.internalInit(stderr, toTruffleStringUncached("<stderr>"), 2, IOMode.WB);
+        Object stderrBuffer = createBufferedIO(buffering, factory, stderr, posixSupport, posixLib);
+        setWrapper(T_STDERR, T___STDERR__, T_W, stdioEncoding, T_BACKSLASHREPLACE, stderrBuffer, sysModule, factory, buffering);
     }
 
-    private static PTextIO setWrapper(TruffleString name, TruffleString specialName, TruffleString mode, TruffleString encoding, TruffleString error, PBuffered buffered, PythonModule sysModule,
-                    PythonObjectFactory factory) {
+    private static Object createBufferedIO(boolean buffering, PythonObjectFactory factory, PFileIO fileIo, Object posixSupport, PosixSupportLibrary posixLib) {
+        if (!buffering) {
+            return fileIo;
+        }
+        PBuffered writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
+        BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, fileIo, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport, posixLib);
+        return writer;
+    }
+
+    private static PTextIO setWrapper(TruffleString name, TruffleString specialName, TruffleString mode, TruffleString encoding, TruffleString error, Object buffer, PythonModule sysModule,
+                    PythonObjectFactory factory, boolean buffering) {
         PTextIO textIOWrapper = factory.createTextIO(PythonBuiltinClassType.PTextIOWrapper);
-        TextIOWrapperInitNodeGen.getUncached().execute(null, null, textIOWrapper, buffered, encoding, error, PNone.NONE, true, true);
+        TextIOWrapperInitNodeGen.getUncached().execute(null, null, textIOWrapper, buffer, encoding, error, PNone.NONE,
+                        /* line_buffering */ buffering, /* write_through */ !buffering);
 
         setAttribute(textIOWrapper, T_MODE, mode);
         setAttribute(sysModule, name, textIOWrapper);

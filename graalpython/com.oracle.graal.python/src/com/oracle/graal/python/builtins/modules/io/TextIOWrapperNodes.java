@@ -881,7 +881,6 @@ public abstract class TextIOWrapperNodes {
                 if (((PBuffered) buffer).isFastClosedChecks()) {
                     PFileIO f = ((PBuffered) buffer).getFileIORaw();
                     self.setFileIO(f);
-                    f.setUTF8Write(false);
                 }
             }
 

@@ -30,6 +30,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeErr
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SyntaxError;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.builtins.objects.PNone.NONE;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback.raiseSyntaxError;
@@ -1884,6 +1885,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
                         @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             Object stdout = getStdout();
+            // Allowed when stdout is not connected
+            if (stdout == NONE) {
+                return NONE;
+            }
             return printAllGiven(frame, values, T_SPACE, T_NEWLINE, stdout, false, inliningTarget, getWriteMethod, callWrite, callFlush, strNode);
         }
 
@@ -1941,6 +1946,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object file;
             if (fileIn instanceof PNone) {
                 file = getStdout();
+                // Allowed when stdout is not connected
+                if (file == NONE) {
+                    return NONE;
+                }
             } else {
                 file = fileIn;
             }
@@ -1973,7 +1982,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 readStdout = insert(ReadAttributeFromObjectNode.create());
             }
             Object stdout = readStdout.execute(sys, T_STDOUT);
-            if (stdout instanceof PNone) {
+            if (stdout == NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseUncached(this, RuntimeError, ErrorMessages.LOST_SYSSTDOUT);
             }

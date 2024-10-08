@@ -89,9 +89,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNCLOSED_FILE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_FALSE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TRUE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.O_APPEND;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CREAT;
@@ -113,7 +111,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FtruncateNode;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.LseekNode;
@@ -720,12 +717,12 @@ public final class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isClosed()", "self.isWritable()"})
         static Object write(VirtualFrame frame, PFileIO self, Object data,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetBytesToWriteNode getBytesToWriteNode,
+                        @Cached BytesNodes.ToBytesNode toBytes,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            byte[] bytes = getBytesToWriteNode.execute(frame, inliningTarget, self, data);
+            byte[] bytes = toBytes.execute(frame, data);
             try {
                 return PosixModuleBuiltins.WriteNode.write(self.getFD(), bytes, bytes.length, inliningTarget, posixLib, errorProfile, gil);
             } catch (PosixException e) {
@@ -747,25 +744,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
         static Object closedError(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object buf,
                         @Shared @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(ValueError, IO_CLOSED);
-        }
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
-    abstract static class GetBytesToWriteNode extends Node {
-        abstract byte[] execute(VirtualFrame frame, Node inliningTarget, PFileIO self, Object data);
-
-        @Specialization(guards = "!self.isUTF8Write()")
-        static byte[] doBytes(VirtualFrame frame, @SuppressWarnings("unused") PFileIO self, Object data,
-                        @Cached(inline = false) BytesNodes.ToBytesNode toBytes) {
-            return toBytes.execute(frame, data);
-        }
-
-        @Specialization(guards = "self.isUTF8Write()")
-        static byte[] doUtf8(Node inliningTarget, @SuppressWarnings("unused") PFileIO self, Object data,
-                        @Cached(inline = false) CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encode,
-                        @Cached CastToTruffleStringNode castStr) {
-            return encode.execute(castStr.execute(inliningTarget, data), T_UTF8, T_STRICT);
         }
     }
 
