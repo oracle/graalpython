@@ -939,7 +939,7 @@ suite = {
             "distDependencies": [
                 "sdk:POLYGLOT",
             ],
-            "description": "GraalPy Embedding",
+            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact provides convenience APIs to make embedding GraalPy with Python packages easier.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-embedding",
@@ -962,7 +962,7 @@ suite = {
             "distDependencies": [
                 "sdk:POLYGLOT",
             ],
-            "description": "GraalPy Embedding Tools",
+            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact contains utilities for tools that want to integrate GraalPy packages into the build process of Java applications.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-embedding-tools",
@@ -1015,7 +1015,7 @@ suite = {
                 "sdk:MAVEN_DOWNLOADER",
                 "sdk:NATIVEIMAGE",
             ],
-            "description": "GraalPython launcher",
+            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact provides a command-line launcher for GraalPy.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-launcher",
@@ -1088,7 +1088,7 @@ suite = {
                 "java.base",
             ],
             "compress": True,
-            "description": "GraalPython runtime resources",
+            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact includes the GraalPy standard library.",
             "maven": {
                 "artifactId": "python-resources",
                 "groupId": "org.graalvm.python",
@@ -1146,7 +1146,7 @@ suite = {
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
             },
-            "description": "GraalPython language",
+            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact includes the core language runtime without standard libraries.",
             "maven": {
                 "artifactId": "python-language",
                 "groupId": "org.graalvm.python",
@@ -1167,7 +1167,7 @@ suite = {
                 "GRAALPYTHON_RESOURCES",
                 "truffle:TRUFFLE_RUNTIME",
             ],
-            "description": "GraalPython engine.",
+            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This is a meta POM that pulls in GraalPy and the community edition of Truffle.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-community",
@@ -1184,7 +1184,7 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.processor",
             ],
-            "description": "GraalPython Java annotations processor",
+            "description": "GraalPy Java annotations processor",
             "overlaps": ["GRAALPYTHON"], # sharing the annotations
             "maven": False,
         },
@@ -1249,7 +1249,7 @@ suite = {
                 # We run the TCK with Python home served from resources
                 "GRAALPYTHON_RESOURCES",
             ],
-            "description" : "Truffle TCK provider for Python language.",
+            "description" : "Truffle TCK provider for GraalPy.",
             "license": "UPL",
             "maven": {
                 "groupId": "org.graalvm.python",
