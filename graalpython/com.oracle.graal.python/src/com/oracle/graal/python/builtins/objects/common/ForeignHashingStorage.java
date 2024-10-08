@@ -68,6 +68,11 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
+/*
+ * NOTE: We are not using IndirectCallContext here in this file because it seems unlikely that these interop messages
+ * would call back to Python and that we would also need precise frame info for that case.
+ * Adding it shouldn't hurt peak, but might be a non-trivial overhead in interpreter.
+ */
 public final class ForeignHashingStorage extends HashingStorage {
 
     public final Object foreignDict;

@@ -66,6 +66,11 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+/*
+ * NOTE: We are not using IndirectCallContext here in this file because it seems unlikely that these interop messages
+ * would call back to Python and that we would also need precise frame info for that case.
+ * Adding it shouldn't hurt peak, but might be a non-trivial overhead in interpreter.
+ */
 public final class ForeignSequenceStorage extends SequenceStorage {
 
     private final Object foreignArray;

@@ -145,6 +145,12 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
+/*
+ * NOTE: We are not using IndirectCallContext here in this file (except for CallNode)
+ * because it seems unlikely that these interop messages would call back to Python
+ * and that we would also need precise frame info for that case.
+ * Adding it shouldn't hurt peak, but might be a non-trivial overhead in interpreter.
+ */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
 public final class ForeignObjectBuiltins extends PythonBuiltins {
     public static TpSlots SLOTS = ForeignObjectBuiltinsSlotsGen.SLOTS;
