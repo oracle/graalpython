@@ -94,9 +94,9 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
 
     // Always return ForeignObject for meta objects (classes), because custom behavior should only
     // be added to instances.
-    @Specialization(guards = "interopLibrary.isMetaObject(foreignObject) || !interopLibrary.hasMetaObject(foreignObject)")
+    @Specialization(guards = "objectLibrary.isMetaObject(foreignObject) || !objectLibrary.hasMetaObject(foreignObject)")
     static Object getClassLookup(Object foreignObject,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") @Exclusive InteropLibrary interopLibrary,
+                    @SuppressWarnings("unused") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") @Exclusive InteropLibrary objectLibrary,
                     @Shared @Cached GetForeignObjectClassNode getForeignObjectClassNode) {
         return getForeignObjectClassNode.execute(foreignObject);
     }
@@ -104,27 +104,28 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
     @Specialization(guards = {"isSingleContext()",
                     "!objectLibrary.isMetaObject(foreignObject)",
                     "objectLibrary.hasMetaObject(foreignObject)",
-                    "objectLibrary.isIdentical(metaClass, cachedMetaClass, metaClassLibrary)"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "getContext().interopTypeRegistryCacheValidAssumption.getAssumption()")
+                    "metaObjectLibrary.isIdentical(metaObject, cachedMetaObject, cachedMetaObjectLibrary)"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "getContext().interopTypeRegistryCacheValidAssumption.getAssumption()")
     static Object getCachedClassLookup(@SuppressWarnings("unused") Object foreignObject,
                     @SuppressWarnings("unused") @CachedLibrary("foreignObject") InteropLibrary objectLibrary,
-                    @SuppressWarnings("unused") @Bind("getMetaObject(objectLibrary, foreignObject)") Object metaClass,
-                    @SuppressWarnings("unused") @Cached(value = "metaClass") Object cachedMetaClass,
-                    @SuppressWarnings("unused") @CachedLibrary("cachedMetaClass") InteropLibrary metaClassLibrary,
-                    @Cached(value = "lookupUncached($node, foreignObject, cachedMetaClass, metaClassLibrary)") Object pythonClass) {
+                    @SuppressWarnings("unused") @Bind("getMetaObject(objectLibrary, foreignObject)") Object metaObject,
+                    @SuppressWarnings("unused") @CachedLibrary("metaObject") InteropLibrary metaObjectLibrary,
+                    @SuppressWarnings("unused") @Cached("metaObject") Object cachedMetaObject,
+                    @SuppressWarnings("unused") @CachedLibrary("cachedMetaObject") InteropLibrary cachedMetaObjectLibrary,
+                    @Cached(value = "lookupUncached($node, foreignObject, cachedMetaObject)") Object pythonClass) {
         return pythonClass;
     }
 
     // used to catch the exception
-    static Object getMetaObject(InteropLibrary interopLibrary, Object foreignObject) {
+    static Object getMetaObject(InteropLibrary objectLibrary, Object foreignObject) {
         try {
-            return interopLibrary.getMetaObject(foreignObject);
+            return objectLibrary.getMetaObject(foreignObject);
         } catch (UnsupportedMessageException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 
-    static Object lookupUncached(Node inliningTarget, Object foreignObject, Object metaObject, InteropLibrary metaClassLibrary) {
-        return lookup(inliningTarget, InlinedConditionProfile.getUncached(), foreignObject, metaObject, metaClassLibrary, ObjectHashMapFactory.GetNodeGen.getUncached());
+    static Object lookupUncached(Node inliningTarget, Object foreignObject, Object metaObject) {
+        return lookup(inliningTarget, InlinedConditionProfile.getUncached(), foreignObject, metaObject, InteropLibrary.getUncached(), ObjectHashMapFactory.GetNodeGen.getUncached());
     }
 
     @Specialization(replaces = "getCachedClassLookup", guards = {"!objectLibrary.isMetaObject(foreignObject)", "objectLibrary.hasMetaObject(foreignObject)"})
@@ -140,8 +141,8 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
     static Object lookup(Node inliningTarget,
                     InlinedConditionProfile builtClassFoundProfile,
                     Object foreignObject,
-                    Object foreignMetaObject,
-                    InteropLibrary interopLibrary,
+                    Object metaObject,
+                    InteropLibrary metaObjectLibrary,
                     GetNode getNode) {
         try {
             // lookup generated classes
@@ -151,27 +152,27 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
             var possiblePythonClass = getNode.execute(null,
                             inliningTarget,
                             PythonContext.get(inliningTarget).interopGeneratedClassCache,
-                            foreignMetaObject,
-                            interopLibrary.identityHashCode(foreignMetaObject));
+                            metaObject,
+                            metaObjectLibrary.identityHashCode(metaObject));
 
             return builtClassFoundProfile.profile(inliningTarget, possiblePythonClass != null)
                             ? possiblePythonClass
-                            : lookupWithInheritance(inliningTarget, foreignObject, foreignMetaObject, interopLibrary);
+                            : lookupWithInheritance(inliningTarget, foreignObject, metaObject);
         } catch (UnsupportedMessageException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 
     private static PythonClass buildClassAndRegister(Object foreignObject,
-                    Object foreignMetaObject,
+                    Object metaObject,
                     Object[] bases,
                     Node inliningTarget,
-                    PutNode putNode,
-                    InteropLibrary interopLibrary) throws UnsupportedMessageException {
+                    PutNode putNode) throws UnsupportedMessageException {
+        InteropLibrary interopLibrary = InteropLibrary.getUncached();
         var context = PythonContext.get(inliningTarget);
         String languageName;
         try {
-            languageName = context.getEnv().getLanguageInfo(interopLibrary.getLanguage(foreignMetaObject)).getName();
+            languageName = context.getEnv().getLanguageInfo(interopLibrary.getLanguage(metaObject)).getName();
         } catch (UnsupportedMessageException e) {
             // some objects might not expose a language. Use "Foreign" as default
             languageName = "Foreign";
@@ -180,7 +181,7 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
         var className = PythonUtils.toTruffleStringUncached(String.format(
                         "%s_%s_generated",
                         languageName,
-                        interopLibrary.getMetaQualifiedName(foreignMetaObject)));
+                        interopLibrary.getMetaQualifiedName(metaObject)));
 
         // use length + 1 to make space for the foreign class
         var basesWithForeign = Arrays.copyOf(bases, bases.length + 1, PythonAbstractClass[].class);
@@ -193,19 +194,20 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
             // Catch the error to additionally print the collected classes and specify the error
             // occurred during class creation
             throw PRaiseNode.getUncached().raiseWithCause(PythonBuiltinClassType.TypeError, e, ErrorMessages.INTEROP_CLASS_CREATION_NOT_POSSIBLE,
-                            interopLibrary.getMetaQualifiedName(foreignMetaObject),
+                            interopLibrary.getMetaQualifiedName(metaObject),
                             Arrays.toString(basesWithForeign));
         }
         var module = context.lookupBuiltinModule(BuiltinNames.T_POLYGLOT);
         // set module attribute for nicer debug print, but don't add it to the module to prevent
         // access to the class
         pythonClass.setAttribute(SpecialAttributeNames.T___MODULE__, module.getAttribute(SpecialAttributeNames.T___NAME__));
-        putNode.put(null, inliningTarget, context.interopGeneratedClassCache, foreignMetaObject, InteropLibrary.getUncached().identityHashCode(foreignMetaObject), pythonClass);
+        putNode.put(null, inliningTarget, context.interopGeneratedClassCache, metaObject, InteropLibrary.getUncached().identityHashCode(metaObject), pythonClass);
         return pythonClass;
     }
 
     @TruffleBoundary
-    private static Object lookupWithInheritance(Node inliningTarget, Object foreignObject, Object foreignMetaObject, InteropLibrary interopLibrary) {
+    private static Object lookupWithInheritance(Node inliningTarget, Object foreignObject, Object metaObject) {
+        InteropLibrary interopLibrary = InteropLibrary.getUncached();
         // Try the full and expensive lookup
         try {
             var registry = PythonContext.get(inliningTarget).interopTypeRegistry;
@@ -216,23 +218,22 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
             var possiblePythonClasses = (Object[]) getNode.execute(null,
                             inliningTarget,
                             registry,
-                            foreignMetaObject,
-                            interopLibrary.identityHashCode(foreignMetaObject));
+                            metaObject,
+                            interopLibrary.identityHashCode(metaObject));
             if (possiblePythonClasses != null) {
                 Collections.addAll(foundClasses, possiblePythonClasses);
             }
 
             // Now search also for parent classes
-            searchAllParentClassesBfs(new Object[]{foreignMetaObject}, foundClasses, registry, getNode, inliningTarget);
+            searchAllParentClassesBfs(new Object[]{metaObject}, foundClasses, registry, getNode, inliningTarget);
 
             return foundClasses.isEmpty()
                             ? GetForeignObjectClassNode.getUncached().execute(foreignObject)
                             : buildClassAndRegister(foreignObject,
-                                            foreignMetaObject,
+                                            metaObject,
                                             foundClasses.toArray(),
                                             inliningTarget,
-                                            ObjectHashMapFactory.PutNodeGen.getUncached(),
-                                            interopLibrary);
+                                            ObjectHashMapFactory.PutNodeGen.getUncached());
         } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
