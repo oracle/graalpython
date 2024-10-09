@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ChainExceptionsNode;
@@ -100,6 +101,8 @@ import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.bytecode.BinarySubscrSeq;
+import com.oracle.graal.python.nodes.bytecode.BinarySubscrSeqFactory;
 import com.oracle.graal.python.nodes.bytecode.GetSendValueNode;
 import com.oracle.graal.python.nodes.bytecode.GetTPFlagsNode;
 import com.oracle.graal.python.nodes.bytecode.GetYieldFromIterNode;
@@ -1116,16 +1119,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIterNode) {
             return getIterNode.execute(frame, inliningTarget, receiver);
-        }
-    }
-
-    @Operation
-    public static final class GetItem {
-        @Specialization
-        public static Object perform(VirtualFrame frame, Object key, Object value,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectGetItem getItemNode) {
-            return getItemNode.execute(frame, inliningTarget, key, value);
         }
     }
 
@@ -2232,45 +2225,30 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = int.class)
     public static final class MakeDict {
         @Specialization
+        @ExplodeLoop
         public static PDict perform(VirtualFrame frame,
                         int entries,
                         @Variadic Object[] keysAndValues,
                         @Bind PBytecodeDSLRootNode rootNode,
+                        @Cached DictBuiltins.SetItemNode setItemNode,
                         @Cached DictNodes.UpdateNode updateNode) {
+            if (keysAndValues.length != entries * 2) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
             PDict dict = rootNode.factory.createDict();
-            if (entries <= EXPLODE_LOOP_THRESHOLD) {
-                doExploded(frame, keysAndValues, entries, updateNode, dict);
-            } else {
-                doRegular(frame, keysAndValues, entries, updateNode, dict);
+            for (int i = 0; i < entries; i++) {
+                Object key = keysAndValues[i * 2];
+                Object value = keysAndValues[i * 2 + 1];
+                // Each entry represents either a k: v pair or a **splats. splats have no key.
+                if (key == PNone.NO_VALUE) {
+                    updateNode.execute(frame, dict, value);
+                } else {
+                    setItemNode.execute(frame, dict, key, value);
+                }
             }
             return dict;
         }
 
-        @ExplodeLoop
-        private static void doExploded(VirtualFrame frame, Object[] keysAndValues, int entries, DictNodes.UpdateNode updateNode, PDict dict) {
-            CompilerAsserts.partialEvaluationConstant(entries);
-            for (int i = 0; i < entries; i++) {
-                Object key = keysAndValues[i * 2];
-                Object value = keysAndValues[i * 2 + 1];
-                if (key == PNone.NO_VALUE) {
-                    updateNode.execute(frame, dict, value);
-                } else {
-                    dict.setItem(key, value);
-                }
-            }
-        }
-
-        private static void doRegular(VirtualFrame frame, Object[] keysAndValues, int entries, DictNodes.UpdateNode updateNode, PDict dict) {
-            for (int i = 0; i < entries; i++) {
-                Object key = keysAndValues[i * 2];
-                Object value = keysAndValues[i * 2 + 1];
-                if (key == PNone.NO_VALUE) {
-                    updateNode.execute(frame, dict, value);
-                } else {
-                    dict.setItem(key, value);
-                }
-            }
-        }
     }
 
     @Operation
@@ -3212,22 +3190,25 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = LocalAccessor.class)
     public static final class KwargsMerge {
         @Specialization
         public static PDict doMerge(VirtualFrame frame,
+                        LocalAccessor callee,
                         PDict dict,
                         Object toMerge,
-                        Object function,
                         @Bind PBytecodeDSLRootNode rootNode,
+                        @Bind BytecodeNode bytecodeNode,
                         @Cached ConcatDictToStorageNode concatNode,
                         @Cached PRaiseNode raise) {
             try {
                 HashingStorage resultStorage = concatNode.execute(frame, dict.getDictStorage(), toMerge);
                 dict.setDictStorage(resultStorage);
             } catch (SameDictKeyException e) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, PyObjectFunctionStr.execute(function), e.getKey());
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, PyObjectFunctionStr.execute(callee.getObject(bytecodeNode, frame)),
+                                e.getKey());
             } catch (NonMappingException e) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, PyObjectFunctionStr.execute(function), toMerge);
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, PyObjectFunctionStr.execute(callee.getObject(bytecodeNode, frame)), toMerge);
             }
             return dict;
         }
@@ -3814,50 +3795,47 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     @ImportStatic(PGuards.class)
     public static final class BinarySubscript {
-        // TODO: support boxing elimination
-// @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
-// public static int doIntSequence(PList sequence, int index,
-// @Shared("list") @Cached("createForList()") SequenceStorageNodes.GetItemNode getItemNode) throws
-// UnexpectedResultException {
-// return getItemNode.executeInt(sequence.getSequenceStorage(), index);
-// }
-//
-// @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
-// public static int doIntTuple(PTuple sequence, int index,
-// @Shared("tuple") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) throws
-// UnexpectedResultException {
-// return getItemNode.executeInt(sequence.getSequenceStorage(), index);
-// }
-//
-// @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
-// public static double doDoubleSequence(PList sequence, int index,
-// @Shared("list") @Cached("createForList()") SequenceStorageNodes.GetItemNode getItemNode) throws
-// UnexpectedResultException {
-// return getItemNode.executeDouble(sequence.getSequenceStorage(), index);
-// }
-//
-// @Specialization(guards = "cannotBeOverriddenForImmutableType(sequence)")
-// public static double doDoubleTuple(PTuple sequence, int index,
-// @Shared("tuple") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) throws
-// UnexpectedResultException {
-// return getItemNode.executeDouble(sequence.getSequenceStorage(), index);
-// }
-// TODO: add @Shared to GetItemNodes
-
-        @Specialization(guards = "isBuiltinList(sequence)")
-        public static Object doObjectSequence(PList sequence, int index,
-                        @Cached("createForList()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(sequence.getSequenceStorage(), index);
+        // TODO: the result is not BE'd because of the UnexpectedResultException. maybe we should
+        // explicitly check for an int storage type?
+        @Specialization(rewriteOn = UnexpectedResultException.class)
+        public static int doIntList(PList list, int index,
+                        @Shared @Cached("createForList()") SequenceStorageNodes.GetItemNode getListItemNode) throws UnexpectedResultException {
+            return getListItemNode.executeInt(list.getSequenceStorage(), index);
         }
 
-        @Specialization(guards = "isBuiltinTuple(sequence)")
-        public static Object doObjectTuple(PTuple sequence, int index,
-                        @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(sequence.getSequenceStorage(), index);
+        @Specialization(rewriteOn = UnexpectedResultException.class)
+        public static double doDoubleList(PList list, int index,
+                        @Shared @Cached("createForList()") SequenceStorageNodes.GetItemNode getListItemNode) throws UnexpectedResultException {
+            return getListItemNode.executeDouble(list.getSequenceStorage(), index);
         }
 
-        @Specialization
-        public static Object doObjectKey(VirtualFrame frame, Object receiver, Object key,
+        @Specialization(replaces = {"doIntList", "doDoubleList"})
+        public static Object doObjectList(PList sequence, int index,
+                        @Shared @Cached("createForList()") SequenceStorageNodes.GetItemNode getListItemNode) {
+            return getListItemNode.execute(sequence.getSequenceStorage(), index);
+        }
+
+        @Specialization(rewriteOn = UnexpectedResultException.class)
+        public static int doIntTuple(PTuple tuple, int index,
+                        @Shared @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getTupleItemNode) throws UnexpectedResultException {
+            return getTupleItemNode.executeInt(tuple.getSequenceStorage(), index);
+
+        }
+
+        @Specialization(rewriteOn = UnexpectedResultException.class)
+        public static double doDoubleTuple(PTuple tuple, int index,
+                        @Shared @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getTupleItemNode) throws UnexpectedResultException {
+            return getTupleItemNode.executeDouble(tuple.getSequenceStorage(), index);
+        }
+
+        @Specialization(replaces = {"doIntTuple", "doDoubleTuple"})
+        public static Object doObjectTuple(PTuple tuple, int index,
+                        @Shared @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getTupleItemNode) {
+            return getTupleItemNode.execute(tuple.getSequenceStorage(), index);
+        }
+
+        @Fallback
+        public static Object doOther(VirtualFrame frame, Object receiver, Object key,
                         @Cached(inline = false) PyObjectGetItem getItemNode) {
             return getItemNode.executeCached(frame, receiver, key);
         }

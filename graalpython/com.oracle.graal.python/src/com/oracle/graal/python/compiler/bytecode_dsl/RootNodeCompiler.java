@@ -2144,11 +2144,10 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
         @Override
         public Void visit(ExprTy.Subscript node) {
             boolean newStatement = beginSourceSection(node, b);
-
-            b.beginGetItem();
+            b.beginBinarySubscript();
             node.value.accept(this);
             node.slice.accept(this);
-            b.endGetItem();
+            b.endBinarySubscript();
 
             endSourceSection(b, newStatement);
             return null;
@@ -2781,10 +2780,10 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 b.beginSetItem();
                 beginAugAssign();
 
-                b.beginGetItem();
+                b.beginBinarySubscript();
                 b.emitLoadLocal(target);
                 b.emitLoadLocal(slice);
-                b.endGetItem();
+                b.endBinarySubscript();
 
                 value.accept(StatementCompiler.this);
 
@@ -2924,10 +2923,9 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
             if (i == 0) {
                 emitKeywordGroup(groups[i], true, function);
             } else {
-                b.beginKwargsMerge();
+                b.beginKwargsMerge(function);
                 emitKeywordsRecursive(groups, i - 1, function);
                 emitKeywordGroup(groups[i], false, function);
-                b.emitLoadLocal(function);
                 b.endKwargsMerge();
             }
         }
@@ -2944,10 +2942,9 @@ public class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompi
                 SplatKeywords splatKeywords = (SplatKeywords) group;
 
                 if (copy) {
-                    b.beginKwargsMerge();
+                    b.beginKwargsMerge(function);
                     b.emitMakeEmptyDict();
                     splatKeywords.expr.accept(this);
-                    b.emitLoadLocal(function);
                     b.endKwargsMerge();
                 } else {
                     splatKeywords.expr.accept(this);
