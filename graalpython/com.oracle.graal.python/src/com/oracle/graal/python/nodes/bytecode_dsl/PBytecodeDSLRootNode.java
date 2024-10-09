@@ -3143,27 +3143,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = LocalRangeAccessor.class)
     public static final class StoreRange {
         @Specialization
+        @ExplodeLoop
         public static void perform(VirtualFrame frame, LocalRangeAccessor locals, Object[] values,
                         @Bind BytecodeNode bytecode) {
-            if (values.length <= EXPLODE_LOOP_THRESHOLD) {
-                doExploded(frame, locals, values, bytecode);
-            } else {
-                doRegular(frame, locals, values, bytecode);
-            }
-        }
-
-        @ExplodeLoop
-        private static void doExploded(VirtualFrame frame, LocalRangeAccessor locals, Object[] values,
-                        BytecodeNode bytecode) {
             CompilerAsserts.partialEvaluationConstant(locals.getLength());
-            assert values.length == locals.getLength();
-            for (int i = 0; i < locals.getLength(); i++) {
-                locals.setObject(bytecode, frame, i, values[i]);
-            }
-        }
-
-        private static void doRegular(VirtualFrame frame, LocalRangeAccessor locals, Object[] values,
-                        BytecodeNode bytecode) {
             assert values.length == locals.getLength();
             for (int i = 0; i < locals.getLength(); i++) {
                 locals.setObject(bytecode, frame, i, values[i]);
