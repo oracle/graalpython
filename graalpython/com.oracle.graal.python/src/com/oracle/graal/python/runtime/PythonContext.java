@@ -2191,7 +2191,7 @@ public final class PythonContext extends Python3Core {
                     boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;
                     if (!exitException) {
                         ExceptionUtils.printPythonLikeStackTrace(e);
-                        if (PythonOptions.isWithJavaStacktrace(getLanguage())) {
+                        if (PythonOptions.shouldPrintJavaStacktrace(getLanguage(), e)) {
                             e.printStackTrace(new PrintWriter(getStandardErr()));
                         }
                     }

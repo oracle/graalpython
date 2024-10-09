@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptor;
 import org.graalvm.options.OptionDescriptors;
@@ -230,11 +231,12 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Eagerly initialize source sections.", usageSyntax = "true|false") //
     public static final OptionKey<Boolean> ForceInitializeSourceSections = new OptionKey<>(false);
 
-    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Print the java stacktrace. Possible modes:" +
-                    "    1   Print Java stacktrace for Java exceptions only." +
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Print the Java stacktrace for exceptions. Possible modes:" +
+                    "    0   Do not print any Java stacktraces." +
+                    "    1   Print Java stacktrace for Java exceptions only (default)." +
                     "    2   Print Java stacktrace for Python exceptions only (ATTENTION: this will have a notable performance impact)." +
-                    "    3   Combines 1 and 2.", usageSyntax = "1|2|3") //
-    public static final OptionKey<Integer> WithJavaStacktrace = new OptionKey<>(0);
+                    "    3   Combines 1 and 2.", usageSyntax = "0|1|2|3") //
+    public static final OptionKey<Integer> WithJavaStacktrace = new OptionKey<>(1);
 
     @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "") //
     public static final OptionKey<Boolean> CatchGraalPythonExceptionForUnitTesting = new OptionKey<>(false);
@@ -522,12 +524,19 @@ public final class PythonOptions {
         return result;
     }
 
-    public static boolean isWithJavaStacktrace(PythonLanguage language) {
-        return language.getEngineOption(WithJavaStacktrace) > 0;
+    public static boolean isPExceptionWithJavaStacktrace(PythonLanguage language) {
+        return language.getEngineOption(WithJavaStacktrace) >= 2;
     }
 
-    public static boolean isPExceptionWithJavaStacktrace(PythonLanguage language) {
-        return language.getEngineOption(WithJavaStacktrace) > 1;
+    public static boolean shouldPrintJavaStacktrace(PythonLanguage language, Throwable throwable) {
+        int mode = language.getEngineOption(WithJavaStacktrace);
+        if (mode == 1) {
+            return !(throwable instanceof AbstractTruffleException);
+        } else if (mode == 2) {
+            return throwable instanceof AbstractTruffleException;
+        } else {
+            return mode == 3;
+        }
     }
 
     @TruffleBoundary
