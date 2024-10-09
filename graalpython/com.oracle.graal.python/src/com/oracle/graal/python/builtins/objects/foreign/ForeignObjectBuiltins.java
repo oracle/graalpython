@@ -336,11 +336,10 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     abstract static class NormalizeForeignForBinopNode extends Node {
-        // TODO doArray can be removed
-        public abstract Object execute(Node inliningTarget, Object value, boolean doArray);
+        public abstract Object execute(Node inliningTarget, Object value);
 
         @Specialization(guards = {"lib.isBoolean(obj)"})
-        Object doBool(Object obj, @SuppressWarnings("unused") boolean doArray,
+        Object doBool(Object obj,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached(inline = false) GilNode gil) {
             gil.release(true);
@@ -354,7 +353,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "lib.fitsInLong(obj)")
-        Object doLong(Object obj, @SuppressWarnings("unused") boolean doArray,
+        Object doLong(Object obj,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached(inline = false) GilNode gil) {
             assert !lib.isBoolean(obj);
@@ -369,7 +368,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!lib.fitsInLong(obj)", "lib.fitsInBigInteger(obj)"})
-        Object doBigInt(Object obj, @SuppressWarnings("unused") boolean doArray,
+        Object doBigInt(Object obj,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached(inline = false) GilNode gil,
                         @Cached(inline = false) PythonObjectFactory factory) {
@@ -385,7 +384,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!lib.fitsInLong(obj)", "!lib.fitsInBigInteger(obj)", "lib.fitsInDouble(obj)"})
-        Object doDouble(Object obj, @SuppressWarnings("unused") boolean doArray,
+        Object doDouble(Object obj,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached(inline = false) GilNode gil) {
             assert !lib.isBoolean(obj);
@@ -400,7 +399,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!lib.fitsInLong(obj)", "!lib.fitsInBigInteger(obj)", "!lib.fitsInDouble(obj)", "lib.isString(obj)"})
-        Object doString(Object obj, @SuppressWarnings("unused") boolean doArray,
+        Object doString(Object obj,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Shared @Cached(inline = false) GilNode gil) {
@@ -417,7 +416,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        public static Object doGeneric(Object left, boolean doArray) {
+        public static Object doGeneric(Object left) {
             return null;
         }
     }
@@ -425,12 +424,10 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     abstract static class ForeignBinarySlotNode extends Node {
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right,
-                        boolean leftDoArray, boolean rightDoArray, BinaryOpNode binaryOpNode);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right, BinaryOpNode binaryOpNode);
 
         @Specialization
-        static Object doIt(VirtualFrame frame, Node inliningTarget, Object left, Object right,
-                        boolean leftDoArray, boolean rightDoArray, BinaryOpNode op,
+        static Object doIt(VirtualFrame frame, Node inliningTarget, Object left, Object right, BinaryOpNode op,
                         @Cached IsForeignObjectNode isForeignLeft,
                         @Cached IsForeignObjectNode isForeignRight,
                         @Cached NormalizeForeignForBinopNode normalizeLeft,
@@ -441,8 +438,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
 
-            Object newLeft = normalizeLeft.execute(inliningTarget, left, leftDoArray);
-            Object newRight = normalizeRight.execute(inliningTarget, right, rightDoArray);
+            Object newLeft = normalizeLeft.execute(inliningTarget, left);
+            Object newRight = normalizeRight.execute(inliningTarget, right);
             assert newLeft == null || !IsForeignObjectNode.executeUncached(newLeft) : newLeft;
             assert newRight == null || !IsForeignObjectNode.executeUncached(newRight) : newRight;
             if (newLeft == null || newRight == null) {
@@ -460,7 +457,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
                         @Cached(inline = false) PyNumberAddNode addNode) {
-            return binarySlotNode.execute(frame, inliningTarget, left, right, true, true, addNode);
+            return binarySlotNode.execute(frame, inliningTarget, left, right, addNode);
         }
     }
 
@@ -472,7 +469,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
                         @Cached(inline = false) PyNumberMultiplyNode mulNode) {
-            return binarySlotNode.execute(frame, inliningTarget, left, right, true, true, mulNode);
+            return binarySlotNode.execute(frame, inliningTarget, left, right, mulNode);
         }
     }
 
