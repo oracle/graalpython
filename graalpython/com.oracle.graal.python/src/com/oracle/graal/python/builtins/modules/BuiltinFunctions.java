@@ -204,6 +204,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.bytecode.GetAIterNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -265,6 +266,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1200,7 +1202,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (AstModuleBuiltins.isAst(getContext(), wSource)) {
                 ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource, getParserInputType(mode, flags));
                 Source source = PythonUtils.createFakeSource(filename);
-                RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null, null, flags);
+                RootCallTarget rootCallTarget = getLanguage().compileModule(getContext(), mod, source, false, optimize, null, null, flags);
                 return wrapRootCallTarget(rootCallTarget, factory);
             }
             TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode, factory,
@@ -1211,8 +1213,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         private static PCode wrapRootCallTarget(RootCallTarget rootCallTarget, PythonObjectFactory factory) {
             RootNode rootNode = rootCallTarget.getRootNode();
-            if (rootNode instanceof PBytecodeRootNode) {
-                ((PBytecodeRootNode) rootNode).triggerDeferredDeprecationWarnings();
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                if (rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
+                    bytecodeDSLRootNode.triggerDeferredDeprecationWarnings();
+                }
+            } else if (rootNode instanceof PBytecodeRootNode bytecodeRootNode) {
+                bytecodeRootNode.triggerDeferredDeprecationWarnings();
             }
             return factory.createCode(rootCallTarget);
         }
@@ -2006,6 +2012,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // format(object, [format_spec])
     @Builtin(name = J_FORMAT, minNumOfPositionalArgs = 1, parameterNames = {"object", "format_spec"})
     @GenerateNodeFactory
+    @OperationProxy.Proxyable
     @ImportStatic(PGuards.class)
     public abstract static class FormatNode extends PythonBinaryBuiltinNode {
 

@@ -1056,6 +1056,17 @@ def impl_detail(msg=None, **guards):
         msg = msg.format(' or '.join(guardnames))
     return unittest.skip(msg)
 
+def bytecode_dsl_excluded(test):
+    """
+    Decorator for tests that don't apply to the Bytecode DSL interpreter.
+    """
+    try:
+        if sys.implementation.name == 'graalpy' and __graalpython__.is_bytecode_dsl_interpreter:
+            return unittest.skip("Not supported by the Bytecode DSL interpreter")
+    except NameError:
+        pass
+    return test
+
 def _parse_guards(guards):
     # Returns a tuple ({platform_name: run_me}, default_value)
     if not guards:

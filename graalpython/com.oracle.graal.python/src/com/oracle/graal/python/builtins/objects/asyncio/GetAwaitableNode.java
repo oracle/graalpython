@@ -51,20 +51,22 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
+@OperationProxy.Proxyable
 @SuppressWarnings("truffle-inlining")
 public abstract class GetAwaitableNode extends Node {
-    public abstract Object execute(Frame frame, Object arg);
+    public abstract Object execute(VirtualFrame frame, Object arg);
 
     @Specialization
     public static Object doGenerator(PGenerator generator,
@@ -83,7 +85,7 @@ public abstract class GetAwaitableNode extends Node {
     }
 
     @Specialization
-    public static Object doGeneric(Frame frame, Object awaitable,
+    public static Object doGeneric(VirtualFrame frame, Object awaitable,
                     @Bind("this") Node inliningTarget,
                     @Exclusive @Cached PRaiseNode.Lazy raiseNoAwait,
                     @Exclusive @Cached PRaiseNode.Lazy raiseNotIter,

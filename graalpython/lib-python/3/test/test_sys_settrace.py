@@ -1869,6 +1869,7 @@ def no_jump_without_trace_function():
         raise AssertionError("Trace-function-less jump failed to fail")
 
 
+@support.bytecode_dsl_excluded
 class JumpTestCase(unittest.TestCase):
     def setUp(self):
         self.addCleanup(sys.settrace, sys.gettrace())
