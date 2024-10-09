@@ -82,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolvePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
@@ -133,7 +132,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -614,8 +612,6 @@ public abstract class PythonCextObjectBuiltins {
                         @Cached CStructAccess.ReadI64Node readI64) {
             PythonContext context = getContext();
             PrintWriter stderr = new PrintWriter(context.getStandardErr());
-            CApiContext cApiContext = context.getCApiContext();
-            InteropLibrary lib = InteropLibrary.getUncached(ptrObject);
 
             // There are three cases we need to distinguish:
             // 1) The pointer object is a native pointer and is NOT a handle
@@ -623,21 +619,6 @@ public abstract class PythonCextObjectBuiltins {
             // 3) The pointer object is one of our native wrappers
 
             boolean isWrapper = CApiGuards.isNativeWrapper(ptrObject);
-
-            boolean pointsToHandleSpace = !isWrapper; // TODO: use CApiTransitions here
-            boolean isValidHandle = pointsToHandleSpace;
-
-            /*
-             * If the pointer points to the handle space but it's not a valid handle or if we do
-             * memory tracing and we know that the pointer is not allocated (was free'd), we assumed
-             * it's a use-after-free.
-             */
-            boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
-            if (pointsToHandleSpace && !isValidHandle || traceNativeMemory && !isWrapper && !cApiContext.isAllocated(ptrObject)) {
-                stderr.println(PythonUtils.formatJString("<object at %s is freed>", CApiContext.asPointer(ptrObject, lib)));
-                stderr.flush();
-                return 0;
-            }
 
             /*
              * At this point we don't know if the pointer is invalid, so we try to resolve it to an

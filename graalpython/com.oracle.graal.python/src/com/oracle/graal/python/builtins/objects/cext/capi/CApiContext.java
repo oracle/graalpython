@@ -58,13 +58,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Pair;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -108,11 +106,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -130,7 +125,6 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -165,24 +159,8 @@ public final class CApiContext extends CExtContext {
      */
     private static final Source MODINIT_SRC = Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "modinit").build();
 
-    /**
-     * The default C-level call recursion limit like {@code Py_DEFAULT_RECURSION_LIMIT}.
-     */
-    public static final int DEFAULT_RECURSION_LIMIT = 1000;
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
     public static final TruffleLogger GC_LOGGER = PythonLanguage.getLogger(CApiContext.LOGGER_CAPI_NAME + ".gc");
-
-    /* a random number between 1 and 20 */
-    private static final int MAX_COLLECTION_RETRIES = 17;
-
-    /** Total amount of allocated native memory (in bytes). */
-    private long allocatedMemory = 0;
-
-    private Map<Object, AllocInfo> allocatedNativeMemory;
-    private TraceMallocDomain[] traceMallocDomains;
-
-    /** Container of pointers that have seen to be free'd. */
-    private Map<Object, AllocInfo> freedNativeMemory;
 
     /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
     @CompilationFinal(dimensions = 1) private final PythonAbstractObjectNativeWrapper[] singletonNativePtrs;
@@ -369,30 +347,6 @@ public final class CApiContext extends CExtContext {
             }
         }
         return ptr;
-    }
-
-    public TraceMallocDomain getTraceMallocDomain(int domainIdx) {
-        return traceMallocDomains[domainIdx];
-    }
-
-    public int findOrCreateTraceMallocDomain(int id) {
-        int oldLength;
-        if (traceMallocDomains != null) {
-            for (int i = 0; i < traceMallocDomains.length; i++) {
-                if (traceMallocDomains[i].id == id) {
-                    return i;
-                }
-            }
-
-            // create new domain
-            oldLength = traceMallocDomains.length;
-            traceMallocDomains = Arrays.copyOf(traceMallocDomains, traceMallocDomains.length + 1);
-        } else {
-            oldLength = 0;
-            traceMallocDomains = new TraceMallocDomain[1];
-        }
-        traceMallocDomains[oldLength] = new TraceMallocDomain(id);
-        return oldLength;
     }
 
     public long nextTssKey() {
@@ -626,36 +580,6 @@ public final class CApiContext extends CExtContext {
         }
     }
 
-    @TruffleBoundary
-    public AllocInfo traceFree(Object ptr, @SuppressWarnings("unused") PFrame.Reference curFrame, @SuppressWarnings("unused") TruffleString clazzName) {
-        if (allocatedNativeMemory == null) {
-            allocatedNativeMemory = new HashMap<>();
-        }
-        if (freedNativeMemory == null) {
-            freedNativeMemory = new HashMap<>();
-        }
-        AllocInfo allocatedValue = allocatedNativeMemory.remove(ptr);
-        Object freedValue = freedNativeMemory.put(ptr, allocatedValue);
-        if (freedValue != null) {
-            LOGGER.severe(PythonUtils.formatJString("freeing memory that was already free'd %s (double-free)", asHex(ptr)));
-        } else if (allocatedValue == null) {
-            LOGGER.info(PythonUtils.formatJString("freeing non-allocated memory %s (maybe a double-free or we didn't trace the allocation)", asHex(ptr)));
-        }
-        return allocatedValue;
-    }
-
-    @TruffleBoundary
-    public void traceAlloc(Object ptr, PFrame.Reference curFrame, TruffleString clazzName, long size) {
-        if (allocatedNativeMemory == null) {
-            allocatedNativeMemory = new HashMap<>();
-        }
-        Object value = allocatedNativeMemory.put(ptr, new AllocInfo(clazzName, curFrame, size));
-        if (freedNativeMemory != null) {
-            freedNativeMemory.remove(ptr);
-        }
-        assert value == null : "native memory allocator reserved same memory twice";
-    }
-
     @SuppressWarnings("unused")
     public void trackObject(Object ptr, PFrame.Reference curFrame, TruffleString clazzName) {
         // TODO(fa): implement tracking of container objects for cycle detection
@@ -667,143 +591,11 @@ public final class CApiContext extends CExtContext {
     }
 
     /**
-     * Use this method to register memory that is known to be allocated (i.e. static variables like
-     * types). This is basically the same as
-     * {@link #traceAlloc(Object, PFrame.Reference, TruffleString, long)} but does not consider it
-     * to be an error if the memory is already allocated.
-     */
-    @TruffleBoundary
-    public void traceStaticMemory(Object ptr, PFrame.Reference curFrame, TruffleString clazzName) {
-        if (allocatedNativeMemory == null) {
-            allocatedNativeMemory = new HashMap<>();
-        }
-        if (freedNativeMemory != null) {
-            freedNativeMemory.remove(ptr);
-        }
-        allocatedNativeMemory.put(ptr, new AllocInfo(curFrame, clazzName));
-    }
-
-    @TruffleBoundary
-    public boolean isAllocated(Object ptr) {
-        if (freedNativeMemory != null && freedNativeMemory.containsKey(ptr)) {
-            assert !allocatedNativeMemory.containsKey(ptr);
-            return false;
-        }
-        return true;
-    }
-
-    public void increaseMemoryPressure(VirtualFrame frame, Node inliningTarget, GetThreadStateNode getThreadStateNode, IndirectCallData indirectCallData, long size) {
-        PythonContext context = getContext();
-        if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
-            allocatedMemory += size;
-            return;
-        }
-
-        PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
-        Object savedState = IndirectCallContext.enter(frame, threadState, indirectCallData);
-        try {
-            triggerGC(context, size, inliningTarget);
-        } finally {
-            IndirectCallContext.exit(frame, threadState, savedState);
-        }
-    }
-
-    @TruffleBoundary
-    public void triggerGC(PythonContext context, long size, Node caller) {
-        long delay = 0;
-        for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
-            delay += 50;
-            doGc(delay);
-            pollReferenceQueue();
-            PythonContext.triggerAsyncActions(caller);
-            if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
-                allocatedMemory += size;
-                return;
-            }
-        }
-        throw new OutOfMemoryError("native memory");
-    }
-
-    public void reduceMemoryPressure(long size) {
-        allocatedMemory -= size;
-    }
-
-    @TruffleBoundary
-    private static void doGc(long millis) {
-        LOGGER.fine("full GC due to native memory");
-        PythonUtils.forceFullGC();
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException x) {
-            // Restore interrupt status
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * Tests if any read/write access to the given pointer object is invalid. This should be used to
-     * test access before getting the type of reference count of native objects.
-     */
-    public void checkAccess(Object pointerObject, InteropLibrary lib) {
-        if (getContext().getOption(PythonOptions.TraceNativeMemory)) {
-            Object ptrVal = CApiContext.asPointer(pointerObject, lib);
-            if (!isAllocated(ptrVal)) {
-                LOGGER.severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
-            }
-        }
-    }
-
-    public static final class AllocInfo {
-        public final TruffleString typeName;
-        public final PFrame.Reference allocationSite;
-        public final long size;
-
-        public AllocInfo(TruffleString typeName, PFrame.Reference allocationSite, long size) {
-            this.typeName = typeName;
-            this.allocationSite = allocationSite;
-            this.size = size;
-        }
-
-        public AllocInfo(PFrame.Reference allocationSite, TruffleString typeName) {
-            this(typeName, allocationSite, -1);
-        }
-    }
-
-    public static final class TraceMallocDomain {
-        private final int id;
-        private final EconomicMap<Object, Long> allocatedMemory;
-
-        public TraceMallocDomain(int id) {
-            this.id = id;
-            this.allocatedMemory = EconomicMap.create();
-        }
-
-        @TruffleBoundary
-        public void track(Object pointerObject, long size) {
-            allocatedMemory.put(pointerObject, size);
-        }
-
-        @TruffleBoundary
-        public long untrack(Object pointerObject) {
-            Long value = allocatedMemory.removeKey(pointerObject);
-            if (value != null) {
-                // TODO(fa): be more restrictive?
-                return value;
-            }
-            return 0;
-        }
-
-        public int getId() {
-            return id;
-        }
-    }
-
-    /**
      * This represents whether the current process has already loaded an instance of the native CAPI
      * extensions - this can only be loaded once per process.
      */
-    private static AtomicBoolean nativeCAPILoaded = new AtomicBoolean();
-    private static AtomicBoolean warnedSecondContexWithNativeCAPI = new AtomicBoolean();
+    private static final AtomicBoolean nativeCAPILoaded = new AtomicBoolean();
+    private static final AtomicBoolean warnedSecondContexWithNativeCAPI = new AtomicBoolean();
 
     private Runnable nativeFinalizerRunnable;
     private Thread nativeFinalizerShutdownHook;

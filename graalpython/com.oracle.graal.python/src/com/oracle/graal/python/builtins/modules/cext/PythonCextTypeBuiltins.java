@@ -105,7 +105,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -297,9 +296,7 @@ public final class PythonCextTypeBuiltins {
             } else {
                 className = null;
             }
-            PythonContext context = getContext();
             Object primitivePtr = CApiContext.asPointer(ptr, ptrLib);
-            context.getCApiContext().traceStaticMemory(primitivePtr, null, className);
             LOGGER.fine(() -> PythonUtils.formatJString("Initializing native type %s (ptr = %s)", className, CApiContext.asHex(primitivePtr)));
             return 0;
         }
