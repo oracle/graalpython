@@ -51,8 +51,6 @@ version = '== 2.7.0'
 patch = 'cramjam-2.7.0.patch'
 license = 'MIT'
 
-# None of the patches are needed since 43.0, the pyo3 patches have been upstreamed
-
 [[cryptography.rules]]
 install-priority = 0
 version = '== 3.4.7'
@@ -786,4 +784,3 @@ install-priority = 0
 [[zstandard.rules]]
 patch = 'zstandard.patch'
 license = 'BSD-3-Clause'
-
