@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -214,12 +214,14 @@ public class IONodes {
     public static final TruffleString T_R = tsLiteral("r");
     public static final TruffleString T_W = tsLiteral("w");
     public static final TruffleString T_RB = tsLiteral("rb");
+    public static final TruffleString T_WB = tsLiteral("wb");
 
     @CompilerDirectives.ValueType
     public static final class IOMode {
         public static final IOMode R = new IOMode(T_R, true, false, false, 1);
         public static final IOMode W = new IOMode(T_W, false, true, false, 1);
         public static final IOMode RB = new IOMode(T_RB, true, false, true, 1);
+        public static final IOMode WB = new IOMode(T_WB, false, true, true, 1);
 
         boolean creating;
         boolean reading;

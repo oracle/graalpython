@@ -89,9 +89,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNCLOSED_FILE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_FALSE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TRUE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.O_APPEND;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CREAT;
@@ -113,7 +111,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FtruncateNode;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.LseekNode;
@@ -122,7 +119,6 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IONodes.IOMode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
@@ -713,59 +709,44 @@ public final class FileIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J_WRITE, minNumOfPositionalArgs = 2)
+    @Builtin(name = J_WRITE, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "b"})
+    @ArgumentClinic(name = "b", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
-    public abstract static class WriteNode extends PythonBinaryBuiltinNode {
+    public abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
 
-        @Specialization(guards = {"!self.isClosed()", "self.isWritable()"})
-        static Object write(VirtualFrame frame, PFileIO self, Object data,
+        @Specialization(limit = "3")
+        static Object write(VirtualFrame frame, PFileIO self, Object buffer,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetBytesToWriteNode getBytesToWriteNode,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached GilNode gil,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            byte[] bytes = getBytesToWriteNode.execute(frame, inliningTarget, self, data);
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return PosixModuleBuiltins.WriteNode.write(self.getFD(), bytes, bytes.length, inliningTarget, posixLib, errorProfile, gil);
-            } catch (PosixException e) {
-                if (e.getErrorCode() == EAGAIN.getNumber()) {
-                    return PNone.NONE;
+                if (self.isClosed()) {
+                    throw raiseNode.get(inliningTarget).raise(ValueError, IO_CLOSED);
                 }
-                errorProfile.enter(inliningTarget);
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+                if (!self.isWritable()) {
+                    throw raiseNode.get(inliningTarget).raise(IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "writing");
+                }
+                try {
+                    return PosixModuleBuiltins.WriteNode.write(self.getFD(), bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer),
+                                    inliningTarget, posixLib, errorProfile, gil);
+                } catch (PosixException e) {
+                    if (e.getErrorCode() == EAGAIN.getNumber()) {
+                        return PNone.NONE;
+                    }
+                    throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+                }
+            } finally {
+                bufferLib.release(buffer);
             }
         }
 
-        @Specialization(guards = {"!self.isClosed()", "!self.isWritable()"})
-        static Object notWritable(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object buf,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "writing");
-        }
-
-        @Specialization(guards = "self.isClosed()")
-        static Object closedError(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object buf,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, IO_CLOSED);
-        }
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
-    abstract static class GetBytesToWriteNode extends Node {
-        abstract byte[] execute(VirtualFrame frame, Node inliningTarget, PFileIO self, Object data);
-
-        @Specialization(guards = "!self.isUTF8Write()")
-        static byte[] doBytes(VirtualFrame frame, @SuppressWarnings("unused") PFileIO self, Object data,
-                        @Cached(inline = false) BytesNodes.ToBytesNode toBytes) {
-            return toBytes.execute(frame, data);
-        }
-
-        @Specialization(guards = "self.isUTF8Write()")
-        static byte[] doUtf8(Node inliningTarget, @SuppressWarnings("unused") PFileIO self, Object data,
-                        @Cached(inline = false) CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encode,
-                        @Cached CastToTruffleStringNode castStr) {
-            return encode.execute(castStr.execute(inliningTarget, data), T_UTF8, T_STRICT);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FileIOBuiltinsClinicProviders.WriteNodeClinicProviderGen.INSTANCE;
         }
     }
 
