@@ -42,19 +42,30 @@ package com.oracle.graal.python.builtins.objects.capsule;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Capsule;
 
+import java.nio.charset.StandardCharsets;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PyCapsule extends PythonBuiltinObject {
+
+    public static byte[] capsuleName(String string) {
+        return string.getBytes(StandardCharsets.US_ASCII);
+    }
+
+    public static boolean capsuleJavaNameIs(PyCapsule capsule, byte[] name) {
+        return capsule.getNamePtr() instanceof CArrayWrappers.CByteArrayWrapper wrapper && wrapper.getByteArray() == name;
+    }
+
     /*
      * This class provides indirection to all the data members. Capsule destructors take the
      * capsule, so we use this to recreate a temporary "resurrected" capsule for the destructor
@@ -62,13 +73,13 @@ public final class PyCapsule extends PythonBuiltinObject {
      */
     public static class CapsuleData {
         private Object pointer;
-        private Object name;
+        private Object namePtr;
         private Object context;
         private Object destructor;
 
-        public CapsuleData(Object pointer, Object name) {
+        public CapsuleData(Object pointer, Object namePtr) {
             this.pointer = pointer;
-            this.name = name;
+            this.namePtr = namePtr;
         }
 
         public Object getDestructor() {
@@ -101,12 +112,12 @@ public final class PyCapsule extends PythonBuiltinObject {
         data.pointer = pointer;
     }
 
-    public Object getName() {
-        return data.name;
+    public Object getNamePtr() {
+        return data.namePtr;
     }
 
-    public void setName(Object name) {
-        data.name = name;
+    public void setNamePtr(Object name) {
+        data.namePtr = name;
     }
 
     public Object getContext() {
@@ -133,13 +144,9 @@ public final class PyCapsule extends PythonBuiltinObject {
     @TruffleBoundary
     public String toDisplayString(@SuppressWarnings("unused") boolean allowSideEffects) {
         String quote, n;
-        if (data.name != null) {
+        if (data.namePtr != null) {
             quote = "\"";
-            if (data.name instanceof TruffleString) {
-                n = ((TruffleString) getName()).toJavaStringUncached();
-            } else {
-                n = CastToJavaStringNode.getUncached().execute(FromCharPointerNodeGen.getUncached().execute(data.name, false));
-            }
+            n = CastToJavaStringNode.getUncached().execute(FromCharPointerNodeGen.getUncached().execute(data.namePtr, false));
         } else {
             quote = "";
             n = "NULL";

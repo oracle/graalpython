@@ -80,6 +80,43 @@ class TestPyCapsule(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyCapsule_GetName = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            ("hello",),
+        ),
+        # Test that the returned name is pointer-identical, pybind11 relies on that
+        code='''int wrap_PyCapsule_Check(char * name) {
+            PyObject* capsule = PyCapsule_New((void *)1, name, NULL);
+            return PyCapsule_GetName(capsule) == name;
+        }
+        ''',
+        resultspec="i",
+        argspec='s',
+        arguments=["char* name"],
+        callfunction="wrap_PyCapsule_Check",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyCapsule_SetName = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            ("hello",),
+        ),
+        # Test that the returned name is pointer-identical, pybind11 relies on that
+        code='''int wrap_PyCapsule_Check(char * name) {
+            PyObject* capsule = PyCapsule_New((void *)1, NULL, NULL);
+            PyCapsule_SetName(capsule, name);
+            return PyCapsule_GetName(capsule) == name;
+        }
+        ''',
+        resultspec="i",
+        argspec='s',
+        arguments=["char* name"],
+        callfunction="wrap_PyCapsule_Check",
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyCapsule_GetContext = CPyExtFunction(
         lambda args: True,
         lambda: (

@@ -5463,22 +5463,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private void initCellVars(Frame localFrame) {
-        if (cellvars.length <= 32) {
-            initCellVarsExploded(localFrame);
-        } else {
-            initCellVarsLoop(localFrame);
-        }
-    }
-
     @ExplodeLoop
-    private void initCellVarsExploded(Frame localFrame) {
-        for (int i = 0; i < cellvars.length; i++) {
-            initCell(localFrame, i);
-        }
-    }
-
-    private void initCellVarsLoop(Frame localFrame) {
+    private void initCellVars(Frame localFrame) {
         for (int i = 0; i < cellvars.length; i++) {
             initCell(localFrame, i);
         }
@@ -5498,28 +5484,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @ExplodeLoop
     private void initFreeVars(Frame localFrame, Object[] originalArgs) {
         if (freevars.length > 0) {
-            if (freevars.length <= 32) {
-                initFreeVarsExploded(localFrame, originalArgs);
-            } else {
-                initFreeVarsLoop(localFrame, originalArgs);
+            PCell[] closure = PArguments.getClosure(originalArgs);
+            for (int i = 0; i < freevars.length; i++) {
+                localFrame.setObject(freeoffset + i, closure[i]);
             }
-        }
-    }
-
-    @ExplodeLoop
-    private void initFreeVarsExploded(Frame localFrame, Object[] originalArgs) {
-        PCell[] closure = PArguments.getClosure(originalArgs);
-        for (int i = 0; i < freevars.length; i++) {
-            localFrame.setObject(freeoffset + i, closure[i]);
-        }
-    }
-
-    private void initFreeVarsLoop(Frame localFrame, Object[] originalArgs) {
-        PCell[] closure = PArguments.getClosure(originalArgs);
-        for (int i = 0; i < freevars.length; i++) {
-            localFrame.setObject(freeoffset + i, closure[i]);
         }
     }
 

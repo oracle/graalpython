@@ -3400,7 +3400,7 @@ public abstract class GraalHPyContextFunctions {
                     throw raiseNode.raise(ValueError, ErrorMessages.INVALID_HPYCAPSULE_DESTRUCTOR);
                 }
             }
-            PyCapsule capsule = factory.createCapsule(pointer, namePtr);
+            PyCapsule capsule = factory.createCapsuleNativeName(pointer, namePtr);
             if (hpyDestructor != null) {
                 capsule.registerDestructor(hpyDestructor);
             }
@@ -3423,13 +3423,13 @@ public abstract class GraalHPyContextFunctions {
             Object result;
             switch (key) {
                 case CapsuleKey.Pointer -> {
-                    if (!nameMatchesNode.execute(inliningTarget, pyCapsule.getName(), namePtr)) {
+                    if (!nameMatchesNode.execute(inliningTarget, pyCapsule.getNamePtr(), namePtr)) {
                         throw raiseNode.raise(ValueError, INCORRECT_NAME);
                     }
                     result = pyCapsule.getPointer();
                 }
                 case CapsuleKey.Context -> result = pyCapsule.getContext();
-                case CapsuleKey.Name -> result = pyCapsule.getName();
+                case CapsuleKey.Name -> result = pyCapsule.getNamePtr();
                 case CapsuleKey.Destructor -> result = pyCapsule.getDestructor();
                 default -> throw CompilerDirectives.shouldNotReachHere("invalid key");
             }
@@ -3478,7 +3478,7 @@ public abstract class GraalHPyContextFunctions {
                 case CapsuleKey.Context -> pyCapsule.setContext(valuePtr);
                 case CapsuleKey.Name -> {
                     // we may assume that the pointer is owned
-                    pyCapsule.setName(fromCharPointerNode.execute(valuePtr, false));
+                    pyCapsule.setNamePtr(fromCharPointerNode.execute(valuePtr, false));
                 }
                 case CapsuleKey.Destructor -> pyCapsule.registerDestructor(isNullNode.execute(hpyContext, valuePtr) ? null : valuePtr);
                 default -> throw CompilerDirectives.shouldNotReachHere("invalid key");
@@ -3494,7 +3494,7 @@ public abstract class GraalHPyContextFunctions {
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object capsule, Object namePtr,
                         @Bind("this") Node inliningTarget,
                         @Cached PyCapsuleNameMatchesNode nameMatchesNode) {
-            return PInt.intValue(capsule instanceof PyCapsule pyCapsule && nameMatchesNode.execute(inliningTarget, pyCapsule.getName(), namePtr));
+            return PInt.intValue(capsule instanceof PyCapsule pyCapsule && nameMatchesNode.execute(inliningTarget, pyCapsule.getNamePtr(), namePtr));
         }
     }
 

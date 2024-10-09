@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.charset.Charset;
 import java.util.List;
@@ -56,11 +55,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins.PyCapsule_IsValid;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.DBCSMap.MappingType;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec.CodecType;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.builtins.objects.capsule.PyCapsuleNameMatchesNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -80,7 +77,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(defineModule = "_multibytecodec")
 public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
 
-    static final TruffleString PyMultibyteCodec_CAPSULE_NAME = tsLiteral("multibytecodec.__map_*");
+    static final byte[] PyMultibyteCodec_CAPSULE_NAME = PyCapsule.capsuleName("multibytecodec.__map_*");
     /** insufficient output buffer space */
     protected static final int MBERR_TOOSMALL = -1;
     /** incomplete input buffer */
@@ -113,7 +110,7 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
             if (midx != -1) {
                 DBCSMap h = maps[midx] = new DBCSMap(name, tsName, charset, mt);
                 codec.setAttribute(toTruffleStringUncached(h.charsetMapName),
-                                factory.createCapsule(h, PyMultibyteCodec_CAPSULE_NAME));
+                                factory.createCapsuleJavaName(h, PyMultibyteCodec_CAPSULE_NAME));
             }
         }
     }
@@ -130,17 +127,15 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object createCodec(PyCapsule arg,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyCapsuleNameMatchesNode nameMatchesNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            return createCodec(inliningTarget, arg, nameMatchesNode, factory, raiseNode);
+            return createCodec(inliningTarget, arg, factory, raiseNode);
         }
 
         static Object createCodec(Node inliningTarget, PyCapsule arg,
-                        PyCapsuleNameMatchesNode nameMatchesNode,
                         PythonObjectFactory factory,
                         PRaiseNode.Lazy raiseNode) {
-            if (PyCapsule_IsValid.doCapsule(arg, PyMultibyteCodec_CAPSULE_NAME, inliningTarget, nameMatchesNode) == 0) {
+            if (!PyCapsule.capsuleJavaNameIs(arg, PyMultibyteCodec_CAPSULE_NAME)) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, ARGUMENT_TYPE_INVALID);
             }
             MultibyteCodec codec;

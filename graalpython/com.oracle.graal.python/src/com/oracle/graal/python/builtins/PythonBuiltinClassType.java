@@ -548,7 +548,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // CPython uses separate keys, values, items python types for the iterators.
     ContextIterator("context_iterator", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
 
-    Capsule("capsule"),
+    Capsule("PyCapsule"),
 
     PTokenizerIter("TokenizerIter", "_tokenize"),
 

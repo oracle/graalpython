@@ -95,7 +95,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class PyDateTimeCAPIWrapper {
 
     static final TruffleString T_DATETIME_CAPI = tsLiteral("datetime_CAPI");
-    static final TruffleString T_PYDATETIME_CAPSULE_NAME = tsLiteral("datetime.datetime_CAPI");
+    static final byte[] T_PYDATETIME_CAPSULE_NAME = PyCapsule.capsuleName("datetime.datetime_CAPI");
 
     private static final TruffleString T_TIMEDELTA = tsLiteral("timedelta");
     public static final TruffleString T_TZINFO = tsLiteral("tzinfo");
@@ -118,7 +118,7 @@ public abstract class PyDateTimeCAPIWrapper {
 
         Object pointerObject = allocatePyDatetimeCAPI(datetimeModule);
 
-        PyCapsule capsule = context.factory().createCapsule(pointerObject, T_PYDATETIME_CAPSULE_NAME);
+        PyCapsule capsule = context.factory().createCapsuleJavaName(pointerObject, T_PYDATETIME_CAPSULE_NAME);
         PyObjectSetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI, capsule);
         assert PyObjectGetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI) != context.getNativeNull();
         return capsule;

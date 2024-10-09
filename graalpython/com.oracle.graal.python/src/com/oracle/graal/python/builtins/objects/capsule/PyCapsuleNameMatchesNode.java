@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,26 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.capsule;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Compares two names according to the semantics of PyCapsule's {@code name_matches} function (see C
- * code snippet below). The name objects can be {@link TruffleString}, native pointer objects, or
- * {@code null}.
+ * code snippet below). The name objects can be native pointer objects, or {@code null}.
  *
  * <pre>
  *     static int
@@ -79,36 +76,57 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class PyCapsuleNameMatchesNode extends Node {
     public abstract boolean execute(Node inliningTarget, Object name1, Object name2);
 
-    @Specialization(guards = "ignoredName2 == null")
-    static boolean common(@SuppressWarnings("unused") PNone ignoredName1, @SuppressWarnings("unused") Object ignoredName2) {
-        return true;
-    }
-
     @Specialization
-    static boolean ts(TruffleString n1, TruffleString n2,
-                    @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
-        if (n1 == null && n2 == null) {
-            return true;
+    static boolean compare(Node inliningTarget, Object name1, Object name2,
+                    @CachedLibrary(limit = "2") InteropLibrary lib,
+                    @Cached ReadByteNode readByteNode) {
+        try {
+            if (name1 != null && lib.isNull(name1)) {
+                name1 = null;
+            }
+            if (name2 != null && lib.isNull(name2)) {
+                name2 = null;
+            }
+            if (name1 == null || name2 == null) {
+                return name1 == name2;
+            }
+            if (lib.isPointer(name1) && lib.isPointer(name2) && lib.asPointer(name1) == lib.asPointer(name2)) {
+                return true;
+            }
+            for (int i = 0;; i++) {
+                byte b1 = readByteNode.execute(inliningTarget, name1, i);
+                byte b2 = readByteNode.execute(inliningTarget, name2, i);
+                if (b1 != b2) {
+                    return false;
+                }
+                if (b1 == 0) {
+                    return true;
+                }
+            }
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
         }
-        if (n1 == null || n2 == null) {
-            return false;
-        }
-        return equalNode.execute(n1, n2, TS_ENCODING);
     }
 
-    @Fallback
-    static boolean fallback(Object name1, Object name2,
-                    @Cached(inline = false) CExtNodes.FromCharPointerNode fromCharPtr,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
-        TruffleString n1 = name1 instanceof TruffleString ? (TruffleString) name1 : null;
-        TruffleString n2 = name2 instanceof TruffleString ? (TruffleString) name2 : null;
-        if (n1 == null) {
-            n1 = lib.isNull(name1) ? null : fromCharPtr.execute(name1, false);
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    abstract static class ReadByteNode extends Node {
+        public abstract byte execute(Node inliningTarget, Object ptr, int i);
+
+        @Specialization
+        static byte doManaged(CArrayWrappers.CByteArrayWrapper wrapper, int i) {
+            byte[] bytes = wrapper.getByteArray();
+            if (i < bytes.length) {
+                return bytes[i];
+            }
+            return 0;
         }
-        if (n2 == null) {
-            n2 = lib.isNull(name2) ? null : fromCharPtr.execute(name2, false);
+
+        @Fallback
+        static byte doNative(Object ptr, int i,
+                        @Cached(inline = false) CStructAccess.ReadByteNode readByteNode) {
+            return readByteNode.readArrayElement(ptr, i);
         }
-        return ts(n1, n2, equalNode);
     }
 }

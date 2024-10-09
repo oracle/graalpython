@@ -1496,6 +1496,8 @@ public abstract class ErrorMessages {
     public static final TruffleString ONLY_DEFAULT_DIGEST_LENGTHS = tsLiteral("only default digest lengths supported for shake");
     public static final TruffleString ONLY_DIGEST_SIZE_BLAKE_ARGUMENT = tsLiteral("blake2b/blake2s only supported for digest_size with non-default value");
     public static final TruffleString CALLED_WITH_INVALID_PY_CAPSULE_OBJECT = tsLiteral("%s called with invalid PyCapsule object");
+    public static final TruffleString CALLED_WITH_INCORRECT_NAME = tsLiteral("%s called with incorrect name");
+    public static final TruffleString CALLED_WITH_NULL_POINTER = tsLiteral("%s called with null pointer");
     public static final TruffleString PY_CAPSULE_IMPORT_S_IS_NOT_VALID = tsLiteral("PyCapsule_Import \"%s\" is not valid");
 
     // asyncio
