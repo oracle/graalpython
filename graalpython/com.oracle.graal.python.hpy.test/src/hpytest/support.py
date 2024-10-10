@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -32,8 +32,7 @@ import distutils
 
 PY2 = sys.version_info[0] == 2
 GRAALPYTHON = sys.implementation.name == 'graalpy'
-GRAALPYTHON_NATIVE = GRAALPYTHON and __graalpython__.get_platform_id() == 'native'
-DARWIN_NATIVE = sys.platform == 'darwin' and (not GRAALPYTHON or __graalpython__.get_platform_id() == 'native')
+DARWIN_NATIVE = sys.platform == 'darwin'
 
 HPY_ROOT = Path(__file__).parent.parent
 LOCK = FileLock(HPY_ROOT / ".hpy.lock")
@@ -86,7 +85,7 @@ def make_hpy_abi_fixture(ABIs, class_fixture=False):
                          "or a list of strings. Got: %s" % ABIs)
 
     # GraalPy only supports the debug mode if running native
-    if not GRAALPYTHON_NATIVE:
+    if not GRAALPYTHON:
         if 'debug' in ABIs:
             ABIs.remove('debug')
         elif 'hybrid+debug' in ABIs:

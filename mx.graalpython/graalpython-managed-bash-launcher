@@ -1,3 +1,0 @@
-DISABLE_INSTALLABLES=true
-DYNAMIC_IMPORTS=/graalpython-enterprise
-NO_LICENSES=true

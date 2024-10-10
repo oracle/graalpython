@@ -38,7 +38,7 @@
 # SOFTWARE.
 import datetime
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, is_native_object, IS_MANAGED_LAUNCHER
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, is_native_object
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -614,30 +614,28 @@ class TestDateTime(object):
         assert tester.getDate() == "foo"
 
 
-# GR-47546: Native subclasses of managed types don't work in managed mode
-if not IS_MANAGED_LAUNCHER:
-    class TestNativeSubclasses:
-        def test_time(self):
-            for t in (NativeTimeSubclass, ManagedNativeTimeSubclass):
-                x = t(hour=6)
-                assert is_native_object(x)
-                assert x.hour == 6
+class TestNativeSubclasses:
+    def test_time(self):
+        for t in (NativeTimeSubclass, ManagedNativeTimeSubclass):
+            x = t(hour=6)
+            assert is_native_object(x)
+            assert x.hour == 6
 
-        def test_date(self):
-            for t in (NativeDateSubclass, ManagedNativeDateSubclass):
-                x = t(1992, 4, 11)
-                assert is_native_object(x)
-                assert x.day == 11
+    def test_date(self):
+        for t in (NativeDateSubclass, ManagedNativeDateSubclass):
+            x = t(1992, 4, 11)
+            assert is_native_object(x)
+            assert x.day == 11
 
-        def test_datetime(self):
-            for t in (NativeDateTimeSubclass, ManagedNativeDateTimeSubclass):
-                x = t(1992, 4, 11, hour=13)
-                assert is_native_object(x)
-                assert x.day == 11
-                assert x.hour == 13
+    def test_datetime(self):
+        for t in (NativeDateTimeSubclass, ManagedNativeDateTimeSubclass):
+            x = t(1992, 4, 11, hour=13)
+            assert is_native_object(x)
+            assert x.day == 11
+            assert x.hour == 13
 
-        def test_timedelta(self):
-            for t in (NativeDeltaSubclass, ManagedNativeDeltaSubclass):
-                x = t(hours=6)
-                assert is_native_object(x)
-                assert x.seconds == 21600
+    def test_timedelta(self):
+        for t in (NativeDeltaSubclass, ManagedNativeDeltaSubclass):
+            x = t(hours=6)
+            assert is_native_object(x)
+            assert x.seconds == 21600

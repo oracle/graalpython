@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "fa1e24df50e441b85e08436b31337e7e4486c6aa",
+                "version": "64d3e5d973f1d1b9c05f2408a7896efbad7d0157",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "fa1e24df50e441b85e08436b31337e7e4486c6aa",
+                "version": "64d3e5d973f1d1b9c05f2408a7896efbad7d0157",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "fa1e24df50e441b85e08436b31337e7e4486c6aa",
+                "version": "64d3e5d973f1d1b9c05f2408a7896efbad7d0157",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "fa1e24df50e441b85e08436b31337e7e4486c6aa",
+                "version": "64d3e5d973f1d1b9c05f2408a7896efbad7d0157",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -679,7 +679,6 @@ suite = {
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
-                            "LLVM_MODE": "native",
                             "GRAALPY_EXT": "<graalpy_ext:native>",
                         },
                         "results": [
@@ -699,7 +698,6 @@ suite = {
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
-                            "LLVM_MODE": "native",
                             "GRAALPY_EXT": "<graalpy_ext:native>",
                         },
                         "results": [
@@ -749,7 +747,6 @@ suite = {
                     "<others>": {
                         "cmakeConfig": {
                             "GRAALVM_LLVM_LIB_DIR": "<path:SULONG_NATIVE_HOME>/native/lib",
-                            "LLVM_MODE": "native",
                             "GRAALVM_HPY_INCLUDE_DIR": "<path:com.oracle.graal.python.hpy.llvm>/include",
                             "GRAALVM_PYTHON_INCLUDE_DIR": "<path:com.oracle.graal.python.cext>/include",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
@@ -760,7 +757,6 @@ suite = {
                 "<others>": {
                     "<others>": {
                         "cmakeConfig": {
-                            "LLVM_MODE": "native",
                             "GRAALVM_HPY_INCLUDE_DIR": "<path:com.oracle.graal.python.hpy.llvm>/include",
                             "GRAALVM_PYTHON_INCLUDE_DIR": "<path:com.oracle.graal.python.cext>/include",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
@@ -943,7 +939,7 @@ suite = {
             "distDependencies": [
                 "sdk:POLYGLOT",
             ],
-            "description": "GraalPy Embedding",
+            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact provides convenience APIs to make embedding GraalPy with Python packages easier.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-embedding",
@@ -966,7 +962,7 @@ suite = {
             "distDependencies": [
                 "sdk:POLYGLOT",
             ],
-            "description": "GraalPy Embedding Tools",
+            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact contains utilities for tools that want to integrate GraalPy packages into the build process of Java applications.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-embedding-tools",
@@ -1005,7 +1001,6 @@ suite = {
             "moduleInfo": {
                 "name": "org.graalvm.py.launcher",
                 "exports": [
-                    "com.oracle.graal.python.shell to org.graalvm.py.enterprise.launcher",
                     "com.oracle.graal.python.shell to org.graalvm.launcher",
                 ],
             },
@@ -1020,7 +1015,7 @@ suite = {
                 "sdk:MAVEN_DOWNLOADER",
                 "sdk:NATIVEIMAGE",
             ],
-            "description": "GraalPython launcher",
+            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact provides a command-line launcher for GraalPy.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-launcher",
@@ -1093,7 +1088,7 @@ suite = {
                 "java.base",
             ],
             "compress": True,
-            "description": "GraalPython runtime resources",
+            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact includes the GraalPy standard library.",
             "maven": {
                 "artifactId": "python-resources",
                 "groupId": "org.graalvm.python",
@@ -1151,7 +1146,7 @@ suite = {
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
             },
-            "description": "GraalPython language",
+            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact includes the core language runtime without standard libraries.",
             "maven": {
                 "artifactId": "python-language",
                 "groupId": "org.graalvm.python",
@@ -1172,7 +1167,7 @@ suite = {
                 "GRAALPYTHON_RESOURCES",
                 "truffle:TRUFFLE_RUNTIME",
             ],
-            "description": "GraalPython engine.",
+            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This is a meta POM that pulls in GraalPy and the community edition of Truffle.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-community",
@@ -1189,7 +1184,7 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.processor",
             ],
-            "description": "GraalPython Java annotations processor",
+            "description": "GraalPy Java annotations processor",
             "overlaps": ["GRAALPYTHON"], # sharing the annotations
             "maven": False,
         },
@@ -1254,7 +1249,7 @@ suite = {
                 # We run the TCK with Python home served from resources
                 "GRAALPYTHON_RESOURCES",
             ],
-            "description" : "Truffle TCK provider for Python language.",
+            "description" : "Truffle TCK provider for GraalPy.",
             "license": "UPL",
             "maven": {
                 "groupId": "org.graalvm.python",

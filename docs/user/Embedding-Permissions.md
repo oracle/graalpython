@@ -35,7 +35,6 @@ This approach is the most compatible with CPython and provides bare access to th
 By default, this implementation bypasses the Truffle abstraction layer, and therefore it is not sandboxed and does not support custom implementations of [Truffle FileSystem service-provider](https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/io/FileSystem.html), and other Polyglot API providers related to system interfaces.
 
 The native backend is chosen by default when GraalPy is started via the `graalpy` or any other Python related launcher.
-The exceptions are Python related launchers with `-managed` suffix available only in Oracle GraalVM (for example, `graalpy-managed`), which by default use the `java` POSIX backend.
 
 #### Limitations of the Native Backend
 
@@ -49,7 +48,7 @@ Known limitations are:
 This backend uses the [Truffle abstraction layer](https://github.com/oracle/graal/blob/master/truffle/docs/README.md) and therefore supports custom Polyglot API providers related to system interfaces and sandboxing.
 Because this abstraction is POSIX agnostic, it does not expose all the necessary functionality. Some functionality is emulated, and some functionality is unsupported.
 
-The Java backend is the default when GraalPy is run via the `Context` API, that is, [embedded in Java applications](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md), or when it is launched using Python-related launchers with the `-managed` suffix (available only in Oracle GraalVM).
+The Java backend is the default when GraalPy is run via the `Context` API, that is, [embedded in Java applications](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md).
 
 #### Limitations of the Java Backend
 

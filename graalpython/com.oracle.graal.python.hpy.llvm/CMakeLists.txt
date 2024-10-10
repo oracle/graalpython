@@ -35,14 +35,12 @@ function(require_var var)
   endif()
 endfunction()
 
-require_var(LLVM_MODE)
-
 # default to CMake's source dir if not explicitly provided
 if(NOT DEFINED SRC_DIR)
     set(SRC_DIR "${CMAKE_SOURCE_DIR}")
 endif()
 
-set(TARGET_LIB "hpy-${LLVM_MODE}")
+set(TARGET_LIB "hpy-native")
 
 # don't install into the system but into the MX project's output dir
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})

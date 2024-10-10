@@ -48,20 +48,8 @@
 #define HANDLE_BASE 0x8000000000000000ULL
 #define IMMORTAL_REFCNT (INT64_MAX >> 1)
 
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-/*
- * We can't include sulong headers here, they include stdbool.h and CPython has a test that
- * Python.h won't pull in stdbool.h
- */
-PyAPI_FUNC(int) points_to_py_handle_space(void* ptr);
-#define stub_to_pointer(STUB_PTR) (STUB_PTR)
-#define pointer_to_stub(O) (O)
-#else /* GRAALVM_PYTHON_LLVM_MANAGED */
-
 #define points_to_py_handle_space(PTR) ((((uintptr_t) (PTR)) & HANDLE_BASE) != 0)
 #define stub_to_pointer(STUB_PTR) (((uintptr_t) (STUB_PTR)) | HANDLE_BASE)
 #define pointer_to_stub(PTR) ((PyObject *)(((uintptr_t) (PTR)) & ~HANDLE_BASE))
-
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 
 #endif /* SRC_HANDLES_H_ */

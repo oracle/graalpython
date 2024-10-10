@@ -34,6 +34,7 @@ import pathlib
 import re
 import shlex
 import shutil
+import subprocess
 import sys
 import time
 from functools import wraps
@@ -109,7 +110,15 @@ HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
 
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
-SANDBOXED_OPTIONS = ['--llvm.managed', '--llvm.deadPointerProtection=MASK', '--llvm.partialPointerConversion=false', '--python.PosixModuleBackend=java', '--python.Sha3ModuleBackend=java']
+
+SANDBOXED_OPTIONS = [
+    '--experimental-options',
+    '--python.UseSystemToolchain=false', # Use the Sulong toolchain
+    '--python.NativeModules=false', # Load extensions with Sulong
+    '--python.PosixModuleBackend=java',
+    '--python.Sha3ModuleBackend=java',
+]
+
 
 # Allows disabling rebuild for some mx commands such as graalpytest
 DISABLE_REBUILD = get_boolean_env('GRAALPYTHON_MX_DISABLE_REBUILD')
@@ -795,13 +804,10 @@ def python_gate(args):
     if "--tags" not in args:
         args += ["--tags"]
         tags = ["style"]
-        include_sandboxed = mx.suite("sulong-managed", fatalIfMissing=False) is not None
         for x in dir(GraalPythonTags):
             v = getattr(GraalPythonTags, x)
             if isinstance(v, str) and v.startswith("python-"):
-                if include_sandboxed and "sandboxed" in v:
-                    tags.append(v)
-                elif not include_sandboxed and "sandboxed" not in v:
+                if "sandboxed" not in v:
                     tags.append(v)
         args.append(",".join(tags))
     mx.log("Running mx python-gate " + " ".join(args))
@@ -843,8 +849,8 @@ def set_env(**environ):
         os.environ.update(old_environ)
 
 
-def _graalpy_launcher(managed=False):
-    name = 'graalpy-managed' if managed else 'graalpy'
+def _graalpy_launcher():
+    name = 'graalpy'
     return f"{name}.exe" if WIN32 else name
 
 
@@ -875,11 +881,11 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
             mx.abort(f"GRAALPY_HOME is not compatible with the requested JDK version.\n"
                      f"actual version: '{actual_jdk_version}', version string: {line}, requested version: {jdk_version}.")
 
-        launcher = os.path.join(python_home, 'bin', _graalpy_launcher(enterprise))
+        launcher = os.path.join(python_home, 'bin', _graalpy_launcher())
         out = mx.OutputCapture()
-        import_managed_status = mx.run([launcher, "-c", "import sys; assert 'Oracle GraalVM' in sys.version"], nonZeroIsFatal=False, out=out, err=out)
-        if enterprise != (import_managed_status == 0):
-            mx.abort(f"GRAALPY_HOME is not compatible with requested distribution kind ({import_managed_status=}, {enterprise=}, {out=}).")
+        import_ee_status = mx.run([launcher, "-c", "import sys; assert 'Oracle GraalVM' in sys.version"], nonZeroIsFatal=False, out=out, err=out)
+        if enterprise != (import_ee_status == 0):
+            mx.abort(f"GRAALPY_HOME is not compatible with requested distribution kind ({import_ee_status=}, {enterprise=}, {out=}).")
         return python_home
 
     env_file = 'ce-python'
@@ -887,7 +893,10 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     svm_component = '_SVM'
     if enterprise:
         env_file = 'ee-python'
-        vm_suite_path = os.path.join(mx.suite('graal-enterprise').dir, '..', 'vm-enterprise')
+        try:
+            vm_suite_path = os.path.join(mx.suite('graal-enterprise').dir, '..', 'vm-enterprise')
+        except:
+            vm_suite_path = os.path.join(SUITE.dir, '..', 'graal-enterprise', 'vm-enterprise')
         svm_component = '_SVM_SVMEE'
     if dev:
         if standalone_type == 'jvm':
@@ -922,14 +931,13 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     return python_home
 
 
-def graalpy_standalone(standalone_type, managed=False, enterprise=None, dev=False, build=True):
+def graalpy_standalone(standalone_type, enterprise=False, dev=False, build=True):
     assert standalone_type in ['native', 'jvm']
-    ee = managed if not enterprise else enterprise
     if standalone_type == 'native' and mx_gate.get_jacoco_agent_args():
-        return graalpy_standalone('jvm', managed=managed, enterprise=enterprise, dev=dev, build=build)
+        return graalpy_standalone('jvm', enterprise=enterprise, dev=dev, build=build)
 
-    home = graalpy_standalone_home(standalone_type, enterprise=ee, dev=dev, build=build)
-    launcher = os.path.join(home, 'bin', _graalpy_launcher(managed))
+    home = graalpy_standalone_home(standalone_type, enterprise=enterprise, dev=dev, build=build)
+    launcher = os.path.join(home, 'bin', _graalpy_launcher())
     return make_coverage_launcher_if_needed(launcher)
 
 def graalpy_standalone_jvm():
@@ -940,16 +948,12 @@ def graalpy_standalone_native():
     return graalpy_standalone('native')
 
 
-def graalpy_standalone_jvm_managed():
-    return graalpy_standalone('jvm', managed=True)
-
-
 def graalpy_standalone_jvm_enterprise():
-    return os.path.join(graalpy_standalone_home('jvm', enterprise=True), 'bin', _graalpy_launcher(managed=False))
+    return os.path.join(graalpy_standalone_home('jvm', enterprise=True), 'bin', _graalpy_launcher())
 
 
-def graalpy_standalone_native_managed():
-    return graalpy_standalone('native', managed=True)
+def graalpy_standalone_native_enterprise():
+    return os.path.join(graalpy_standalone_home('native', enterprise=True), 'bin', _graalpy_launcher())
 
 
 def graalvm_jdk():
@@ -1184,8 +1188,9 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
 
     # just to be able to verify, print C ext mode (also works for CPython)
     mx.run([python_binary,
+            *args,
             "-c",
-            "import sys; print('C EXT MODE: ' + (__graalpython__.get_platform_id() if sys.implementation.name == 'graalpy' else 'cpython'))"],
+            "import sys; print('C EXT MODE: ' + (__graalpython__.ext_mode if sys.implementation.name == 'graalpy' else 'cpython'))"],
             nonZeroIsFatal=True, env=env, out=out, err=err)
 
     # list all 1st-level tests and exclude the SVM-incompatible ones
@@ -1496,7 +1501,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_native_managed(), exclude=excluded_tests, report=report())
+            run_python_unittests(graalpy_standalone_jvm_enterprise(), args=SANDBOXED_OPTIONS, exclude=excluded_tests, report=report())
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
@@ -1516,7 +1521,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
-            run_hpy_unittests(graalpy_standalone_native_managed(), include_native=False, report=report())
+            run_hpy_unittests(graalpy_standalone_native_enterprise(), args=SANDBOXED_OPTIONS, include_native=False, report=report())
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
@@ -1576,7 +1581,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed Python tests', tasks, tags=[GraalPythonTags.tagged_sandboxed]) as task:
         if task:
-            run_tagged_unittests(graalpy_standalone_native_managed(), checkIfWithGraalPythonEE=True, cwd=SUITE.dir, report=report())
+            with set_env(GRAAL_PYTHON_ARGS=" ".join(SANDBOXED_OPTIONS)):
+                run_tagged_unittests(graalpy_standalone_native_enterprise(), checkIfWithGraalPythonEE=True, cwd=SUITE.dir, report=report())
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit, GraalPythonTags.windows]) as task:
@@ -1585,7 +1591,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_native_managed(), aot_compatible=True, report=report())
+            run_python_unittests(graalpy_standalone_native_enterprise(), args=SANDBOXED_OPTIONS, aot_compatible=True, report=report())
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
@@ -1620,6 +1626,15 @@ def graalpython_gate_runner(args, tasks):
                 "--native-images=",
                 "gate", "svm-truffle-tck-python",
             ])
+
+    with Task("Graalpython tox example", tasks, tags=["tox-example"]) as task:
+        if task:
+            try:
+                tox_example([])
+            except:
+                mx.log("TIP: run 'mx help tox-example' to learn more about reproducing this test locally")
+                raise
+
 
     with Task('Python exclusion of security relevant classes', tasks, tags=[GraalPythonTags.exclusions_checker]) as task:
         if task:
@@ -1725,6 +1740,118 @@ def graalpython_gate_runner(args, tasks):
 
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)
+
+
+def tox_example(args=None):
+    """
+    Runs the tox example: executing tox in a CPython venv, which then executes
+    pytest tests of an example package 'leftpad' on GraalPython.
+
+    To pass additional arguments to GraalPython, set the GRAAL_PYTHON_ARGS
+    environment variable, tox will forward it to GraalPython.
+
+    Run with '--help' to learn about supported options.
+    """
+    import argparse
+    parser = argparse.ArgumentParser(prog='mx tox-example')
+    parser.add_argument("--reuse-venv", action="store_true",
+                        help="Whether to reuse existing venv created by previous invocations of this command.")
+    opts = parser.parse_args(args)
+
+    graalpy = graalpy_standalone_jvm_enterprise()
+
+    tox_project_dir = os.path.join(
+        mx.project("com.oracle.graal.python.test", fatalIfMissing=True).dir,
+        "src",
+        "tox"
+    )
+
+    mx.log("Setting up CPython venv to run tox itself")
+    libs = [
+        "distlib==0.3.4",
+        "filelock==3.6.0",
+        "packaging==21.3",
+        "platformdirs==2.5.1",
+        "pluggy==1.0.0",
+        "py==1.11.0",
+        "pyparsing==3.0.7",
+        "six==1.16.0",
+        "toml==0.10.2",
+        "tox==3.24.5",
+        "virtualenv==20.13.4",
+        os.path.join(os.path.dirname(graalpy), "..", "graalpy_virtualenv"),
+    ]
+
+    def get_new_vm(project_name, svm=False, install_libs=None, reuse_existing=False):
+        if install_libs is None:
+            install_libs = []
+        import platform
+        mx.log("[platform] {}".format(platform.uname()))
+        path = os.path.join(mx.dependency("com.oracle.graal.python.test").get_output_root(), "tox_venv")
+        reuse = os.path.exists(path) and reuse_existing
+        action_name = "Reusing existing" if reuse else "Creating"
+        mx.logv("{} venv for {} in {}".format(action_name, project_name, path))
+
+        # remove any pre-existing venv to ensure that launchers are freshly created
+        if not reuse and os.path.isdir(path):
+            mx.log("Deleting pre-existing venv in {}".format(path))
+            from shutil import rmtree
+            rmtree(path)
+
+        quiet_opt = ["-q"] if not mx._opts.verbose else []
+        env_py3_home = os.environ.get("PYTHON3_HOME")
+        if env_py3_home:
+            python = os.path.join(env_py3_home, "python3")
+            mx.logv("Overriding 'python3' using environment variable PYTHON3_HOME to '{}'".format(python))
+        else:
+            python = "python3"
+        mx.log("{} CPython venv for {} (bin: {})".format(action_name, project_name, python))
+        if not reuse:
+            mx.run([python, "-m", "venv", "--clear", path])
+        vm = os.path.join(path, "bin", "python")
+
+        os.environ['VIRTUAL_ENV'] = path
+        os.environ['PATH'] = "{}:{}".format(os.path.join(path, "bin"), os.environ.get("PATH", ""))
+
+        if not reuse:
+            for lib in install_libs:
+                try:
+                    cmd = [vm, "-m", "pip"] + quiet_opt + ["install", lib]
+                    mx.log("running: {}".format(' '.join(cmd)))
+                    mx.run(cmd)
+                except:
+                    mx.abort("Could not install dependency %s" % install_libs)
+        os.environ['PYTHON'] = vm
+        os.environ["PYTHON_VM"] = vm
+        return vm
+
+    python3 = get_new_vm("tox", install_libs=libs, reuse_existing=opts.reuse_venv)
+
+    new_env = os.environ.copy()
+    new_env['PATH'] = new_env['PATH'] + os.pathsep + os.path.dirname(graalpy)
+    mx.log(f"Added {graalpy} to the PATH")
+
+    def check_output(expected, lines):
+        for e in expected:
+            if not any(e in l for l in lines):
+                mx.abort("Could not find expected {} in the output".format(e))
+
+    # Passing tests:
+    mx.log("Running {} -m tox -e graalpy".format(python3))
+    wd = os.path.join(tox_project_dir, "leftpad")
+    output = mx.LinesOutputCapture()
+    mx.log("Running {} -m tox -e graalpy".format(python3))
+    mx.run([python3, "-m", "tox"], env=new_env, cwd=wd, out=mx.TeeOutputCapture(output), err=subprocess.STDOUT)
+    check_output(["4 passed", "graalpy: commands succeeded"], output.lines)
+
+    # Failing tests:
+    mx.log("Running {} -m tox -e graalpy with intentionally failing tests".format(python3))
+    output = mx.LinesOutputCapture()
+    new_env['GRAALPY_LEFTPAD_FAIL'] = '1'
+    exit_code = mx.run([python3, "-m", "tox"], env=new_env, cwd=wd, out=mx.TeeOutputCapture(output), err=subprocess.STDOUT, nonZeroIsFatal=False)
+    check_output(["test_leftpad.py::test_leftpad_failing - AssertionError", "1 failed, 3 passed"], output.lines)
+    if exit_code == 0:
+        mx.abort("Expected the tests to fail")
 
 
 class ArchiveProject(mx.ArchivableProject):
@@ -1956,7 +2083,7 @@ def update_import_cmd(args):
         vc.git_command(SUITE.dir, ["checkout", "-b", f"update/GR-21590/{datetime.datetime.now().strftime('%d%m%y')}"])
         current_branch = vc.active_branch(SUITE.dir)
 
-    local_names = ["graalpython", "graalpython-apptests"]
+    local_names = ["graalpython"]
     repos = [os.path.join(SUITE.dir, "..", name) for name in local_names]
     suite_py_files = [os.path.join(SUITE.dir, "..", name, f"mx.{name}", "suite.py") for name in local_names]
     for suite_py in suite_py_files:
@@ -2182,12 +2309,9 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     }},
     standalone_dependencies_enterprise={**standalone_dependencies_common, **{
         **({} if mx.is_windows() else {
-            'LLVM Runtime Managed': ('lib/sulong', []),
             'LLVM Runtime Enterprise': ('lib/sulong', []),
             'LLVM Runtime Native Enterprise': ('lib/sulong', []),
-            'GraalVM Python EE managed libraries': ('', []),
         }),
-        'GraalVM Python EE': ('', []),
         'GraalVM Python license files EE': ('', []),
         'GraalVM enterprise license files': ('', ['LICENSE.txt', 'GRAALVM-README.md']),
     }},
@@ -2448,7 +2572,6 @@ def python_coverage(args):
                 {"args": []},
                 {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
                 {"hpy": True},
-                # {"args": ["--llvm.managed"]},
             ]
 
         common_coverage_args = [
@@ -3060,4 +3183,5 @@ mx.update_commands(SUITE, {
     'python-nodes-footprint': [node_footprint_analyzer, ''],
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
+    'tox-example': [tox_example, ''],
 })

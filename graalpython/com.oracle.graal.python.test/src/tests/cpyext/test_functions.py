@@ -40,7 +40,7 @@
 import array
 import sys
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, IS_MANAGED_LAUNCHER, CPyExtHeapType
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtHeapType, RUNS_ON_LLVM
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -315,7 +315,7 @@ class TestPyObject(CPyExtTestCase):
         resultspec="i",
     )
 
-    if not IS_MANAGED_LAUNCHER:
+    if not RUNS_ON_LLVM:
         __PyObject_AsFileDescriptor_FD0 = open(1, buffering=0, mode="wb")
         __PyObject_AsFileDescriptor_FD1 = open("%s/As_FileDescriptor_Testfile" % __dir__, buffering=0, mode="wb")
         test_PyObject_AsFileDescriptor = CPyExtFunction(

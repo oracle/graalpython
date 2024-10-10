@@ -43,7 +43,6 @@
 static int
 _list_clear(PyListObject *a)
 {
-#ifndef GRAALVM_PYTHON_LLVM_MANAGED
     int64_t i;
     PyObject **item;
 
@@ -62,14 +61,12 @@ _list_clear(PyListObject *a)
     /* Never fails; the return value can be ignored.
        Note that there is no guarantee that the list is actually empty
        at this point, because XDECREF may have populated it again! */
-#endif
     return 0;
 }
 
 static int
 list_traverse(PyListObject *o, visitproc visit, void *arg)
 {
-#ifndef GRAALVM_PYTHON_LLVM_MANAGED
     int64_t size, i;
     PyObject **ob_item;
 
@@ -86,7 +83,6 @@ list_traverse(PyListObject *o, visitproc visit, void *arg)
 
     for (i = size; --i >= 0; )
         Py_VISIT(ob_item[i]);
-#endif
     return 0;
 }
 

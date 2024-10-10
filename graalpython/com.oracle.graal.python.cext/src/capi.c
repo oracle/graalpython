@@ -45,12 +45,6 @@
 
 #include "pycore_gc.h" // _PyGC_InitState
 
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-int points_to_py_handle_space(void* ptr) {
-   return polyglot_is_value(ptr);
-}
-#endif
-
 typedef struct arrayobject {
     PyObject_VAR_HEAD
     char *ob_item;
@@ -282,15 +276,11 @@ PyObject* _Py_EllipsisObjectReference;
 PyObject* _Py_NoneStructReference;
 PyObject* _Py_NotImplementedStructReference;
 
-#ifndef GRAALVM_PYTHON_LLVM_MANAGED
 THREAD_LOCAL PyThreadState *tstate_current = NULL;
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 
 static void initialize_globals() {
-#ifndef GRAALVM_PYTHON_LLVM_MANAGED
     // store the thread state into a thread local variable
     tstate_current = GraalPyTruffleThreadState_Get(&tstate_current);
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
     _Py_NoneStructReference = GraalPyTruffle_None();
     _Py_NotImplementedStructReference = GraalPyTruffle_NotImplemented();
     _Py_EllipsisObjectReference = GraalPyTruffle_Ellipsis();
@@ -890,9 +880,7 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures,
         TRUFFLE_CONTEXT = (*env)->getTruffleContext(env);
     }
 
-#ifndef GRAALVM_PYTHON_LLVM_MANAGED
     _PyGC_InitState(gc);
-#endif
 
     initialize_builtins(builtin_closures);
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);

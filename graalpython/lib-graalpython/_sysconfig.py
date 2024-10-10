@@ -43,14 +43,11 @@ def _get_posix_vars():
     import _imp
     import sys
     import os
-    platform_id = __graalpython__.get_platform_id()
-    managed = platform_id == "managed"
-    native = platform_id == "native"
-    darwin_native = sys.platform == "darwin" and native
-    win32_native = sys.platform == "win32" and native
+    darwin_native = sys.platform == "darwin"
+    win32_native = sys.platform == "win32"
 
     # note: this must be kept in sync with _imp.extension_suffixes
-    so_abi = sys.implementation.cache_tag + "-" + platform_id + "-" + sys.implementation._multiarch
+    so_abi = sys.implementation.cache_tag + "-native-" + sys.implementation._multiarch
     if win32_native:
         so_ext = ".pyd"
     else:
@@ -92,10 +89,7 @@ def _get_posix_vars():
     cflags_default = list(opt_flags)
     if not use_system_toolchain:
         cflags_default += ["-Wno-unused-command-line-argument", "-DGRAALVM_PYTHON_LLVM"]
-        if managed:
-            cflags_default += ["-DGRAALVM_PYTHON_LLVM_MANAGED"]
-        elif native:
-            cflags_default += ["-DGRAALVM_PYTHON_LLVM_NATIVE"]
+        cflags_default += ["-DGRAALVM_PYTHON_LLVM_NATIVE"]
     if win32_native:
         cflags_default += ["-DMS_WINDOWS", "-DPy_ENABLE_SHARED", "-DHAVE_DECLSPEC_DLL"]
     g['CFLAGS_DEFAULT'] = ' '.join(cflags_default)

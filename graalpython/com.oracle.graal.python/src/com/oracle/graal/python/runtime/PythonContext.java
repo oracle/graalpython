@@ -201,14 +201,12 @@ import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.api.utilities.TriState;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
-import com.oracle.truffle.llvm.api.Toolchain;
 
 import sun.misc.Unsafe;
 
@@ -2651,13 +2649,6 @@ public final class PythonContext extends Python3Core {
     public String getLLVMSupportExt(String libName) {
         if (!getOption(PythonOptions.NativeModules)) {
             ensureLLVMLanguage(null);
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            String toolchainIdentifier = toolchain.getIdentifier();
-            if (!J_NATIVE.equals(toolchainIdentifier)) {
-                // if not native, we always assume a Linux-like system
-                return PythonContext.getSupportLibName(PythonOS.PLATFORM_LINUX, libName + '-' + toolchainIdentifier);
-            }
         }
         return PythonContext.getSupportLibName(libName + '-' + J_NATIVE);
     }
@@ -2672,34 +2663,21 @@ public final class PythonContext extends Python3Core {
             // sys.implementation._multiarch
             TruffleString multiArch = (TruffleString) PyObjectGetAttr.executeUncached(implementationObj, T__MULTIARCH);
 
-            TruffleString toolchainId = getPlatformId();
-
             // only use '.pyd' if we are on 'Win32-native'
             TruffleString soExt;
-            if (getPythonOS() == PLATFORM_DARWIN && T_NATIVE.equalsUncached(toolchainId, TS_ENCODING)) {
+            if (getPythonOS() == PLATFORM_DARWIN) {
                 // not ".dylib", similar to CPython:
                 // https://github.com/python/cpython/issues/37510
                 soExt = T_EXT_SO;
-            } else if (getPythonOS() == PLATFORM_WIN32 && T_NATIVE.equalsUncached(toolchainId, TS_ENCODING)) {
+            } else if (getPythonOS() == PLATFORM_WIN32) {
                 soExt = T_EXT_PYD;
             } else {
                 soExt = T_EXT_SO;
             }
 
-            soABI = cat(T_DOT, cacheTag, T_DASH, toolchainId, T_DASH, multiArch, soExt);
+            soABI = cat(T_DOT, cacheTag, T_DASH, T_NATIVE, T_DASH, multiArch, soExt);
         }
         return soABI;
-    }
-
-    public TruffleString getPlatformId() {
-        if (!getOption(PythonOptions.NativeModules)) {
-            ensureLLVMLanguage(null);
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            return toTruffleStringUncached(toolchain.getIdentifier());
-        } else {
-            return T_NATIVE;
-        }
     }
 
     public Thread getMainThread() {

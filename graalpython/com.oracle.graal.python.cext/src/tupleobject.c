@@ -112,9 +112,6 @@ PyTuple_Size(PyObject *op)
 PyObject *
 PyTuple_GetItem(PyObject *op, Py_ssize_t i) {
     // GraalPy change: different implementation
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-    return GraalPyTruffleTuple_GetItem(op, i);
-#else /* GRAALVM_PYTHON_LLVM_MANAGED */
     if (!PyTuple_Check(op)) {
         PyErr_BadInternalCall();
         return NULL;
@@ -137,7 +134,6 @@ PyTuple_GetItem(PyObject *op, Py_ssize_t i) {
     }
     assert(ob_item != NULL);
     return ob_item[i];
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 int
@@ -650,7 +646,6 @@ static int
 tupletraverse(PyTupleObject *o, visitproc visit, void *arg)
 {
     // GraalPy change: different implementation
-#ifndef GRAALVM_PYTHON_LLVM_MANAGED
     Py_ssize_t size, i;
     PyObject **ob_item;
 
@@ -675,7 +670,6 @@ tupletraverse(PyTupleObject *o, visitproc visit, void *arg)
         for (i = size; --i >= 0; )
             Py_VISIT(ob_item[i]);
     }
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
     return 0;
 }
 
@@ -1401,9 +1395,6 @@ void PyTruffle_Tuple_Dealloc(PyTupleObject* self) {
 PyObject **
 PyTruffleTuple_GetItems(PyObject *op)
 {
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-    return GraalPy_get_PyTupleObject_ob_item((PyTupleObject*) op);
-#else /* GRAALVM_PYTHON_LLVM_MANAGED */
     PyObject **ob_item;
     if (points_to_py_handle_space(op)) {
         GraalPyVarObject *ptr = (GraalPyVarObject *) pointer_to_stub(op);
@@ -1419,7 +1410,6 @@ PyTruffleTuple_GetItems(PyObject *op)
     }
     assert(ob_item != NULL);
     return ob_item;
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }
 
 /*
@@ -1428,9 +1418,5 @@ PyTruffleTuple_GetItems(PyObject *op)
  */
 PyObject*
 _PyTuple_GET_ITEM(PyObject* a, Py_ssize_t b) {
-#ifdef GRAALVM_PYTHON_LLVM_MANAGED
-    return GraalPyTruffleTuple_GetItem(a, b);
-#else /* GRAALVM_PYTHON_LLVM_MANAGED */
     return PyTruffleTuple_GetItems(a)[b];
-#endif /* GRAALVM_PYTHON_LLVM_MANAGED */
 }

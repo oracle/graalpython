@@ -47,14 +47,13 @@ if(WIN32)
 require_var(CAPI_INC_DIR)
 require_var(TRUFFLE_H_INC)
 require_var(TRUFFLE_NFI_H_INC)
-require_var(LLVM_MODE)
 require_var(GRAALPY_EXT)
 
 if(NOT DEFINED SRC_DIR)
     set(SRC_DIR "${CMAKE_SOURCE_DIR}")
 endif()
 
-set(TARGET_LIBPYTHON "python-${LLVM_MODE}")
+set(TARGET_LIBPYTHON "python-native")
 
 ######################################################################
 # common variables and compile/link options (for all build targets)
@@ -75,11 +74,7 @@ add_compile_definitions(
     GRAALVM_PYTHON_LLVM
 )
 
-if(${LLVM_MODE} STREQUAL "native")
-    add_compile_definitions(GRAALVM_PYTHON_LLVM_NATIVE)
-else()
-    add_compile_definitions(GRAALVM_PYTHON_LLVM_MANAGED)
-endif()
+add_compile_definitions(GRAALVM_PYTHON_LLVM_NATIVE)
 
 
 if(WIN32)

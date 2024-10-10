@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -107,7 +107,6 @@ class TestBuildValue(HPyTest):
             actual = mod.f(i)
             assert actual == expected, code
 
-    @pytest.mark.xfail(__graalpython__.get_platform_id() == "managed", reason="GR-38126")
     def test_bad_formats(self):
         test_cases = [
             ('return HPy_BuildValue(ctx, "(q)", 42);',

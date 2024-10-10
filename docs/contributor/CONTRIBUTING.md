@@ -273,7 +273,7 @@ There are also different options for how the Python interpreter is run, passed v
  * `default` - run using the standard options
  * `default-multi` - run using a shared engine, which is the mode that is recommended to embedders that want to spawn multiple isolated Python contexts
  * `native` - same as `default`, its name is due to the fact that it runs C extensions using a mixture of LLVM bitcode interpreted and compiled via GraalVM and real native libraries
- * `sandboxed` - this name is historical - this configuration requires Oracle GraalVM and runs all C extensions purely as LLVM bitcode on the GraalVM, without any access to the native OS libraries, i.e., using the `--llvm.managed` option for GraalVM.
+ * `sandboxed` - this name is historical - this configuration runs some modules such as the posix and sha3 modules with Java code instead of with native access.
 
 ### Configuration of the underlying GraalVM runtime
 

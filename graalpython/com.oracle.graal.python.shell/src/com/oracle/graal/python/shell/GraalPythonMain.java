@@ -1371,12 +1371,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     protected String getResolvedExecutableName() {
-        // Note that with thin launchers, both graalpy and graalpy-managed are actual executables
-        // that load and start GraalPy from a shared library
+        // Note that with thin launchers, graalpy is an actual executable
+        // that loads and starts GraalPy from a shared library
         if (ImageInfo.inImageRuntimeCode()) {
             // This is the fastest, most straightforward way to get the name of the actual
-            // executable, i.e., with symlinks resolved all the way down to either graalpy or
-            // graalpy-managed.
+            // executable, i.e., with symlinks resolved all the way down to graalpy
             String executableName = ProcessProperties.getExecutableName();
             if (executableName != null) {
                 return executableName;

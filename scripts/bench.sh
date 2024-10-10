@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -55,11 +55,6 @@ function bench-py-graal-core {
     info "benchmarking GRAALPYTHON with GRAAL-CORE"
     mx --dynamicimports /compiler benchmark micro-graalpython:*  --  --python-vm  graalpython  --python-vm-config default --jvm server --jvm-config graal-core
 }
-
-# function bench-py-graal-enterprise {
-#     info "benchmarking GRAALPYTHON with GRAAL-ENTERPRISE"
-#     mx --dynamicimports /compiler benchmark micro-graalpython:*  --  --python-vm  graalpython  --python-vm-config default --jvm server --jvm-config graal-enterprise
-# }
 
 function bench-cpython {
     info "benchmarking CPYTHON"

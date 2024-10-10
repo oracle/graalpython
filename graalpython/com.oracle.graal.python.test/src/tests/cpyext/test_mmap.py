@@ -39,8 +39,8 @@
 
 import mmap
 import tempfile
-
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+from unittest import skipIf
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, RUNS_ON_LLVM
 
 __dir__ = __file__.rpartition("/")[0]
 
@@ -53,6 +53,7 @@ def create_and_map_file():
     return mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
     
 
+@skipIf(RUNS_ON_LLVM, "Does not work on Sulong")
 class TestPyMmap(CPyExtTestCase):
 
     test_buffer = CPyExtFunction(

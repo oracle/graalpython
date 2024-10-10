@@ -39,7 +39,7 @@
 
 import sys
 
-if sys.platform != 'win32' and (sys.implementation.name != 'graalpy' or not __graalpython__.is_managed_launcher()):
+if sys.platform != 'win32' and (sys.implementation.name != 'graalpy' or __graalpython__.posix_module_backend() != 'java'):
     import os
     import re
     import select
