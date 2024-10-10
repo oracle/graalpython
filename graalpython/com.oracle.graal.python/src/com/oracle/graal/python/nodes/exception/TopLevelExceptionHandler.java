@@ -213,16 +213,18 @@ public final class TopLevelExceptionHandler extends RootNode {
         if (pe != null) {
             throw handlePythonException(pe);
         }
-        try {
-            boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;
-            if (!exitException) {
-                ExceptionUtils.printPythonLikeStackTrace(getContext(), e);
-                if (PythonOptions.shouldPrintJavaStacktrace(getPythonLanguage(), e)) {
-                    e.printStackTrace();
+        if (getContext().getOption(PythonOptions.AlwaysRunExcepthook)) {
+            try {
+                boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;
+                if (!exitException) {
+                    ExceptionUtils.printPythonLikeStackTrace(getContext(), e);
+                    if (PythonOptions.shouldPrintJavaStacktrace(getPythonLanguage(), e)) {
+                        e.printStackTrace();
+                    }
                 }
+            } catch (UnsupportedMessageException unsupportedMessageException) {
+                throw CompilerDirectives.shouldNotReachHere();
             }
-        } catch (UnsupportedMessageException unsupportedMessageException) {
-            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 

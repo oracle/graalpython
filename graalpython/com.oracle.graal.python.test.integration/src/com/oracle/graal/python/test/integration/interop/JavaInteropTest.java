@@ -50,6 +50,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -67,6 +68,7 @@ import org.graalvm.polyglot.proxy.ProxyExecutable;
 import org.graalvm.polyglot.proxy.ProxyHashMap;
 import org.graalvm.polyglot.proxy.ProxyObject;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -93,6 +95,7 @@ public class JavaInteropTest {
             Builder builder = Context.newBuilder();
             builder.allowExperimentalOptions(true);
             builder.allowAllAccess(true);
+            builder.option("engine.WarnInterpreterOnly", "false");
             builder.out(out);
             builder.err(err);
             context = builder.build();
@@ -195,6 +198,24 @@ public class JavaInteropTest {
             context.eval(script);
             Value main = context.getPolyglotBindings().getMember("foo");
             assertTrue(main.canExecute());
+        }
+
+        // From https://github.com/oracle/graalpython/issues/298
+        @Test
+        public void testHostException() {
+            try {
+                context.eval(createSource("import java; java.math.BigInteger.ONE.divide(java.math.BigInteger.ZERO)"));
+                fail();
+            } catch (PolyglotException e) {
+                Assert.assertTrue(e.isHostException());
+                Assert.assertTrue(e.asHostException() instanceof ArithmeticException);
+                Assert.assertTrue(e.getMessage(), e.getMessage().contains("divide by zero"));
+            }
+
+            String outString = out.toString(StandardCharsets.UTF_8);
+            String errString = err.toString(StandardCharsets.UTF_8);
+            Assert.assertTrue(outString, outString.isEmpty());
+            Assert.assertTrue(errString, errString.isEmpty());
         }
 
         @Test
