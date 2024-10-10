@@ -136,7 +136,7 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
             }
 
             if (allThreads) {
-                if (PythonOptions.isWithJavaStacktrace(language)) {
+                if (PythonOptions.isPExceptionWithJavaStacktrace(language)) {
                     PrintWriter err = new PrintWriter(context.getStandardErr());
                     Thread[] ths = context.getThreads();
                     for (Map.Entry<Thread, StackTraceElement[]> e : Thread.getAllStackTraces().entrySet()) {
@@ -165,7 +165,7 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
                     }
                 });
             } else {
-                if (PythonOptions.isWithJavaStacktrace(language)) {
+                if (PythonOptions.isPExceptionWithJavaStacktrace(language)) {
                     PrintWriter err = new PrintWriter(context.getStandardErr());
                     err.println();
                     err.println(Thread.currentThread());

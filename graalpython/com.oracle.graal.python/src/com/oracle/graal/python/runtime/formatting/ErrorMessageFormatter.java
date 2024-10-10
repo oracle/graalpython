@@ -133,7 +133,7 @@ public abstract class ErrorMessageFormatter {
     @TruffleBoundary
     private static String getMessage(Throwable exception) {
         String message = exception.getClass().getSimpleName() + ": " + exception.getMessage();
-        if (PythonOptions.isWithJavaStacktrace(PythonLanguage.get(null))) {
+        if (PythonOptions.shouldPrintJavaStacktrace(PythonLanguage.get(null), exception)) {
             StringWriter writer = new StringWriter();
             try (PrintWriter pw = new PrintWriter(writer)) {
                 exception.printStackTrace(pw);

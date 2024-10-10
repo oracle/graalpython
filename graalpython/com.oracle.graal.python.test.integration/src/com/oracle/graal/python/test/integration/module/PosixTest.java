@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,9 +25,9 @@
  */
 package com.oracle.graal.python.test.integration.module;
 
-import static com.oracle.graal.python.test.integration.PythonTests.assertLastLineError;
 import static com.oracle.graal.python.test.integration.PythonTests.assertLastLineErrorContains;
 import static com.oracle.graal.python.test.integration.PythonTests.assertPrints;
+import static com.oracle.graal.python.test.integration.PythonTests.assertPrintsToStdErr;
 import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -177,7 +177,7 @@ public class PosixTest {
     @Test
     public void stderr() {
         assumeFalse(IS_WINDOWS);
-        assertLastLineError("error\n", "import sys; sys.stderr.write('error\\n')");
+        assertPrintsToStdErr("error\n", "import sys; sys.stderr.write('error\\n')");
     }
 
     @Test
@@ -189,7 +189,7 @@ public class PosixTest {
     @Test
     public void printToStderr() {
         assumeFalse(IS_WINDOWS);
-        assertLastLineError("1-2...", "import sys; print('1', '2', sep='-', file=sys.stderr, end='...', flush=True)");
+        assertPrintsToStdErr("1-2...", "import sys; print('1', '2', sep='-', file=sys.stderr, end='...', flush=True)");
     }
 
     @Test

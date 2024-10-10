@@ -453,7 +453,7 @@ suite = {
             "spotbugsIgnoresGenerated": True,
         },
 
-        # GRAALPYTHON TESTS
+        # GRAALPYTHON_UNIT_TESTS
         "com.oracle.graal.python.test": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],

@@ -28,6 +28,7 @@ package com.oracle.graal.python.test.integration;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -38,6 +39,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
@@ -134,6 +136,13 @@ public class PythonTests {
         assertEquals(expected.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"), result.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"));
     }
 
+    public static void assertPrintsToStdErr(String expected, String code) {
+        final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
+        PythonTests.runScript(new String[0], code, System.out, byteArray);
+        String result = byteArray.toString().replaceAll("\r\n", "\n");
+        assertEquals(expected.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"), result.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"));
+    }
+
     public static Value eval(String code) {
         final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
         final PrintStream printStream = new PrintStream(byteArray);
@@ -218,16 +227,24 @@ public class PythonTests {
     }
 
     public static void runThrowableScript(String[] args, String source, OutputStream out, OutputStream err) {
-        try {
-            enterContext(args);
-            context.eval(createSource(source));
-        } catch (PolyglotException t) {
+        runThrowableScript(args, source, out, err, e -> {
             try {
                 Value printExc = context.eval(PRINT_EXC_TO_STDERR);
-                printExc.execute(t.getGuestObject());
+                printExc.execute(e.getGuestObject());
             } catch (Throwable ex) {
                 throw new RuntimeException("Error while printing the PolyglotException message to stderr.", ex);
             }
+        });
+    }
+
+    public static void runThrowableScript(String[] args, String source, OutputStream out, OutputStream err,
+                    Consumer<PolyglotException> exceptionHandler) {
+        try {
+            enterContext(args);
+            context.eval(createSource(source));
+            fail("The eval() should throw");
+        } catch (PolyglotException t) {
+            exceptionHandler.accept(t);
         } finally {
             flush(out, err);
             closeContext();
