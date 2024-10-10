@@ -40,11 +40,11 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -90,12 +90,13 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
                     @Cached PyDictCheckNode dictCheckNode,
                     @Cached GetClassNode getClassNode,
                     @Cached GetCachedTpSlotsNode getSlotsNode,
+                    @Cached IsForeignObjectNode isForeignObjectNode,
                     @Cached LazyInteropLibrary lazyLib) {
         if (dictCheckNode.execute(inliningTarget, object)) {
             return false;
         }
         Object type = getClassNode.execute(inliningTarget, object);
-        if (type == PythonBuiltinClassType.ForeignObject) {
+        if (isForeignObjectNode.execute(inliningTarget, object)) {
             return checkForeign(inliningTarget, object, lazyLib);
         }
         return getSlotsNode.execute(inliningTarget, type).sq_item() != null;

@@ -703,7 +703,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                  * seems more practical to just update it.
                  */
                 PDict dict = getDict.execute(inliningTarget, self);
-                addAllToOtherNode.execute(frame, inliningTarget, ((PDict) array[3]).getDictStorage(), dict.getDictStorage());
+                addAllToOtherNode.execute(frame, inliningTarget, ((PDict) array[3]).getDictStorage(), dict);
             }
 
             return PNone.NONE;

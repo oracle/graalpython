@@ -102,10 +102,10 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
     @GenerateInline(false) // footprint reduction 44 to 26
     abstract static class AddKeywordNode extends HashingStorageNodes.HashingStorageForEachCallback<CopyKeywordsState> {
         @Override
-        public abstract CopyKeywordsState execute(Frame frame, Node Node, HashingStorage storage, HashingStorageIterator it, CopyKeywordsState accumulator);
+        public abstract CopyKeywordsState execute(Frame frame, Node node, HashingStorage storage, HashingStorageIterator it, CopyKeywordsState accumulator);
 
         @Specialization
-        public CopyKeywordsState add(@SuppressWarnings("unused") Node Node, HashingStorage storage, HashingStorageNodes.HashingStorageIterator it, CopyKeywordsState state,
+        public CopyKeywordsState add(Frame frame, @SuppressWarnings("unused") Node node, HashingStorage storage, HashingStorageNodes.HashingStorageIterator it, CopyKeywordsState state,
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
@@ -113,7 +113,7 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
                         @Cached HashingStorageNodes.HashingStorageIteratorKeyHash itKeyHash,
                         @Cached HashingStorageNodes.HashingStorageGetItemWithHash getItem) {
             Object key = itKey.execute(inliningTarget, storage, it);
-            long hash = itKeyHash.execute(inliningTarget, storage, it);
+            long hash = itKeyHash.execute(frame, inliningTarget, storage, it);
             Object value = getItem.execute(null, inliningTarget, storage, key, hash);
             try {
                 state.addKeyword(castToTruffleStringNode.execute(inliningTarget, key), value);

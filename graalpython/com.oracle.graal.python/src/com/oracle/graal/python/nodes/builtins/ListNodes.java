@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyLi
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LIST;
+import static com.oracle.graal.python.nodes.ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -53,7 +54,6 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -73,12 +73,15 @@ import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ForeignSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -86,6 +89,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -98,12 +102,118 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
+/** See the docs on {@link com.oracle.graal.python.builtins.objects.list.ListBuiltins}. */
 public abstract class ListNodes {
+
+    @GenerateUncached
+    @GenerateInline(inlineByDefault = true)
+    public abstract static class GetListStorageNode extends PNodeWithContext {
+
+        public abstract SequenceStorage execute(Node inliningTarget, Object seq);
+
+        @Specialization
+        static SequenceStorage doPList(PList list) {
+            return list.getSequenceStorage();
+        }
+
+        @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, seq)", "interop.hasArrayElements(seq)"}, limit = "1")
+        static SequenceStorage doForeign(Node inliningTarget, Object seq,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
+                        @Cached InlinedBranchProfile errorProfile) {
+            try {
+                long size = interop.getArraySize(seq);
+                return new ForeignSequenceStorage(seq, PInt.long2int(inliningTarget, size, errorProfile));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        @Fallback
+        static SequenceStorage doFallback(Node inliningTarget, Object seq,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            throw raiseNode.get(inliningTarget).raise(TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "list", seq);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class UpdateListStorageNode extends PNodeWithContext {
+
+        public abstract void execute(Node inliningTarget, Object list, SequenceStorage oldStorage, SequenceStorage newStorage);
+
+        @Specialization
+        static void doPList(Node inliningTarget, PList list, SequenceStorage oldStorage, SequenceStorage newStorage,
+                        @Exclusive @Cached InlinedConditionProfile generalizedProfile) {
+            if (generalizedProfile.profile(inliningTarget, oldStorage != newStorage)) {
+                list.setSequenceStorage(newStorage);
+            }
+        }
+
+        @Fallback
+        static void doForeign(Node inliningTarget, Object list, SequenceStorage oldStorage, SequenceStorage newStorage,
+                        @Exclusive @Cached InlinedConditionProfile generalizedProfile,
+                        @Cached ForeignSequenceStorage.ClearNode clearNode,
+                        @Cached(inline = false) SequenceStorageNodes.ConcatBaseNode concatNode) {
+            if (generalizedProfile.profile(inliningTarget, oldStorage != newStorage)) {
+                // clear() + extend() to replace the contents
+                clearNode.execute(inliningTarget, (ForeignSequenceStorage) oldStorage);
+                var afterExtendStorage = concatNode.execute(oldStorage, oldStorage, newStorage);
+                assert afterExtendStorage == oldStorage;
+            }
+        }
+
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class ClearListStorageNode extends PNodeWithContext {
+
+        public abstract void execute(Node inliningTarget, Object list);
+
+        @Specialization
+        static void doPList(PList list) {
+            list.setSequenceStorage(EmptySequenceStorage.INSTANCE);
+        }
+
+        @Fallback
+        static void doForeign(Node inliningTarget, Object list,
+                        @Cached GetListStorageNode getStorageNode,
+                        @Cached ForeignSequenceStorage.ClearNode clearNode) {
+            var sequenceStorage = getStorageNode.execute(inliningTarget, list);
+            clearNode.execute(inliningTarget, (ForeignSequenceStorage) sequenceStorage);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class GetClassForNewListNode extends PNodeWithContext {
+
+        public abstract Object execute(Node inliningTarget, Object list);
+
+        @Specialization
+        static Object doPList(Node inliningTarget, PList list,
+                        @Cached GetClassNode.GetPythonObjectClassNode getClassNode) {
+            return getClassNode.execute(inliningTarget, list);
+        }
+
+        @Fallback
+        static Object doForeign(Node inliningTarget, Object list) {
+            assert InteropLibrary.getUncached().hasArrayElements(list);
+            // Avoid creating a PList object with type ForeignList
+            return PythonBuiltinClassType.PList;
+        }
+    }
 
     @GenerateUncached
     @ImportStatic({PGuards.class, PythonOptions.class})
@@ -149,9 +259,8 @@ public abstract class ListNodes {
         static PList fromList(Object cls, PList list,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PythonObjectFactory factory,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.CopyNode copyNode) {
-            return factory.createList(cls, copyNode.execute(inliningTarget, getSequenceStorageNode.execute(inliningTarget, list)));
+            return factory.createList(cls, copyNode.execute(inliningTarget, list.getSequenceStorage()));
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
@@ -319,7 +428,7 @@ public abstract class ListNodes {
     public abstract static class AppendNode extends PNodeWithContext {
         private static final BranchProfile[] DISABLED = new BranchProfile[]{BranchProfile.getUncached()};
 
-        public abstract void execute(PList list, Object value);
+        public abstract void execute(Object list, Object value);
 
         @NeverDefault
         public static BranchProfile[] getUpdateStoreProfile() {
@@ -333,7 +442,8 @@ public abstract class ListNodes {
         @Specialization
         public static void appendObjectGeneric(PList list, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached SequenceStorageNodes.AppendNode appendNode,
+                        // @Exclusive for truffle-interpreted-performance
+                        @Exclusive @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached(value = "getUpdateStoreProfile()", uncached = "getUpdateStoreProfileUncached()", dimensions = 1) BranchProfile[] updateStoreProfile) {
             if (updateStoreProfile[0] == null) {
                 // Executed for the first time. We don't pollute the AppendNode specializations,
@@ -356,6 +466,16 @@ public abstract class ListNodes {
                     list.getOrigin().reportUpdatedCapacity(newArrayBasedStore);
                 }
             }
+        }
+
+        @Fallback
+        public static void appendObjectForeign(Object list, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
+                        @Exclusive @Cached SequenceStorageNodes.AppendNode appendNode) {
+            var storage = getStorageNode.execute(inliningTarget, list);
+            SequenceStorage newStore = appendNode.execute(inliningTarget, storage, value, ListGeneralizationNode.SUPPLIER);
+            assert newStore == storage;
         }
 
         @NeverDefault

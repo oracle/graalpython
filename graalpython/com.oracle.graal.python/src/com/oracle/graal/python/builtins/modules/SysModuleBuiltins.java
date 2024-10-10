@@ -139,6 +139,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1358,7 +1359,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             pyTraceBackPrintNode.execute(frame, sys, out, tb);
         }
 
-        @CompilerDirectives.ValueType
+        @ValueType
         static final class SyntaxErrData {
             final Object message;
             final TruffleString fileName;

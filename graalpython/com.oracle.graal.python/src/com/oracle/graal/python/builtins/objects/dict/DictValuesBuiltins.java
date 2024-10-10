@@ -81,7 +81,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         static int run(PDictView self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
-            return lenNode.execute(inliningTarget, self.getWrappedDict().getDictStorage());
+            return lenNode.execute(inliningTarget, self.getWrappedStorage());
         }
     }
 
@@ -94,7 +94,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIterator,
                         @Cached PythonObjectFactory factory) {
-            HashingStorage storage = self.getWrappedDict().getDictStorage();
+            HashingStorage storage = self.getWrappedStorage();
             return factory.createDictValueIterator(getIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
@@ -108,7 +108,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetReverseIterator getReverseIter,
                         @Cached PythonObjectFactory factory) {
-            HashingStorage storage = self.getWrappedDict().getDictStorage();
+            HashingStorage storage = self.getWrappedStorage();
             return factory.createDictValueIterator(getReverseIter.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }

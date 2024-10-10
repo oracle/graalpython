@@ -68,6 +68,7 @@ public abstract class StringLiterals {
     public static final TruffleString T_QUESTIONMARK = tsLiteral("?");
     public static final TruffleString T_COMMA = tsLiteral(",");
     public static final TruffleString T_COLON = tsLiteral(":");
+    public static final TruffleString T_COLON_SPACE = tsLiteral(": ");
     public static final TruffleString T_COMMA_SPACE = tsLiteral(", ");
     public static final TruffleString T_LBRACE = tsLiteral("{");
     public static final TruffleString T_RBRACE = tsLiteral("}");
@@ -84,6 +85,7 @@ public abstract class StringLiterals {
     public static final TruffleString T_ELLIPSIS = tsLiteral("...");
     public static final TruffleString T_ELLIPSIS_IN_PARENS = tsLiteral("(...)");
     public static final TruffleString T_ELLIPSIS_IN_BRACKETS = tsLiteral("[...]");
+    public static final TruffleString T_ELLIPSIS_IN_BRACES = tsLiteral("{...}");
     public static final TruffleString T_DATE = tsLiteral("date");
     public static final TruffleString T_DATETIME = tsLiteral("datetime");
     public static final TruffleString T_TIME = tsLiteral("time");
@@ -126,6 +128,7 @@ public abstract class StringLiterals {
     public static final String J_JAVA = "java";
     public static final TruffleString T_JAVA = tsLiteral(J_JAVA);
     public static final TruffleString T_VALUE_UNKNOWN = tsLiteral("<unknown>");
+    public static final TruffleString T_NO_MESSAGE = tsLiteral("<no message>");
     public static final String J_PY_EXTENSION = ".py";
     public static final TruffleString T_PY_EXTENSION = tsLiteral(J_PY_EXTENSION);
     public static final TruffleString T_VERSION = tsLiteral("version");

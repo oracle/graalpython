@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -130,7 +130,7 @@ public class KeywordsStorage extends HashingStorage {
         }
 
         @Specialization(guards = "isBuiltinString.execute(inliningTarget, key)", limit = "1")
-        static Object pstring(@SuppressWarnings("unused") Node inliningTarget, KeywordsStorage self, PString key, @SuppressWarnings("unused") long hash,
+        static Object pstring(Node inliningTarget, KeywordsStorage self, PString key, @SuppressWarnings("unused") long hash,
                         @SuppressWarnings("unused") @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Shared("tsEqual") @Cached(inline = false) TruffleString.EqualNode equalNode) {
@@ -138,7 +138,7 @@ public class KeywordsStorage extends HashingStorage {
         }
 
         @Specialization(guards = "!isBuiltinString.execute(inliningTarget, key)", limit = "1")
-        static Object notString(Frame frame, @SuppressWarnings("unused") Node inliningTarget, KeywordsStorage self, Object key, long hashIn,
+        static Object notString(Frame frame, Node inliningTarget, KeywordsStorage self, Object key, long hashIn,
                         @SuppressWarnings("unused") @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Cached PyObjectHashNode hashNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {

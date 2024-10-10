@@ -27,15 +27,12 @@
 package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
@@ -49,7 +46,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
@@ -59,20 +55,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_BRACKETS;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_BRACKETS;
-import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACKET;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.math.BigInteger;
@@ -92,24 +80,21 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
-import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
-import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
-import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitOrNode;
@@ -119,10 +104,10 @@ import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -152,18 +137,20 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.StopIterationException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
+/*
+ * NOTE: We are not using IndirectCallContext here in this file (except for CallNode)
+ * because it seems unlikely that these interop messages would call back to Python
+ * and that we would also need precise frame info for that case.
+ * Adding it shouldn't hurt peak, but might be a non-trivial overhead in interpreter.
+ */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
 public final class ForeignObjectBuiltins extends PythonBuiltins {
     public static TpSlots SLOTS = ForeignObjectBuiltinsSlotsGen.SLOTS;
@@ -190,11 +177,13 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     return lib.asLong(receiver) != 0;
                 }
                 if (lib.fitsInBigInteger(receiver)) {
-                    return !isBigIntegerZero(lib.asBigInteger(receiver));
+                    return lib.asBigInteger(receiver).signum() != 0;
                 }
                 if (lib.fitsInDouble(receiver)) {
                     return lib.asDouble(receiver) != 0.0;
                 }
+                // TODO: can remove but only when nb_bool is no longer defined except in a trait for
+                // numbers
                 if (lib.hasArrayElements(receiver)) {
                     return lib.getArraySize(receiver) != 0;
                 }
@@ -209,69 +198,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
                 gil.acquire();
-            }
-        }
-
-        @TruffleBoundary
-        static boolean isBigIntegerZero(BigInteger number) {
-            return number.compareTo(BigInteger.ZERO) == 0;
-        }
-    }
-
-    static Object[] unpackForeignArray(Object left, InteropLibrary lib, PForeignToPTypeNode convert) {
-        try {
-            long sizeObj = lib.getArraySize(left);
-            if (sizeObj < Integer.MAX_VALUE) {
-                int size = (int) sizeObj;
-                Object[] data = new Object[size];
-
-                // read data
-                for (int i = 0; i < size; i++) {
-                    data[i] = convert.executeConvert(lib.readArrayElement(left, i));
-                }
-
-                return data;
-            }
-        } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("object does not unpack to array as it claims to");
-        }
-        return null;
-    }
-
-    @Slot(SlotKind.sq_length)
-    @Slot(SlotKind.mp_length)
-    @GenerateUncached
-    @GenerateNodeFactory
-    abstract static class LenNode extends LenBuiltinNode {
-        @Specialization
-        static int len(Object self,
-                        @Bind("this") Node inliningTarget,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            gil.release(true);
-            long result = 0;
-            boolean hasResult = false;
-            try {
-                if (lib.hasArrayElements(self)) {
-                    result = lib.getArraySize(self);
-                    hasResult = true;
-                } else if (lib.isIterator(self) || lib.hasIterator(self)) {
-                    return 0; // a value signifying it has a length, but it's unknown
-                } else if (lib.hasHashEntries(self)) {
-                    result = lib.getHashSize(self);
-                    hasResult = true;
-                }
-            } catch (UnsupportedMessageException e) {
-                // fall through
-            } finally {
-                gil.acquire();
-            }
-            if (hasResult) {
-                return PyNumberAsSizeNode.doLongExact(inliningTarget, result, OverflowError, raiseNode);
-            } else {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___LEN__);
             }
         }
     }
@@ -410,10 +336,10 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     abstract static class NormalizeForeignForBinopNode extends Node {
-        public abstract Object execute(Node inliningTarget, Object value, boolean doArray);
+        public abstract Object execute(Node inliningTarget, Object value);
 
         @Specialization(guards = {"lib.isBoolean(obj)"})
-        Object doBool(Object obj, @SuppressWarnings("unused") boolean doArray,
+        Object doBool(Object obj,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached(inline = false) GilNode gil) {
             gil.release(true);
@@ -427,7 +353,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "lib.fitsInLong(obj)")
-        Object doLong(Object obj, @SuppressWarnings("unused") boolean doArray,
+        Object doLong(Object obj,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached(inline = false) GilNode gil) {
             assert !lib.isBoolean(obj);
@@ -442,10 +368,10 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!lib.fitsInLong(obj)", "lib.fitsInBigInteger(obj)"})
-        Object doBigInt(Object obj, @SuppressWarnings("unused") boolean doArray,
+        Object doBigInt(Object obj,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached(inline = false) GilNode gil,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
+                        @Cached(inline = false) PythonObjectFactory factory) {
             assert !lib.isBoolean(obj);
             gil.release(true);
             try {
@@ -458,7 +384,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!lib.fitsInLong(obj)", "!lib.fitsInBigInteger(obj)", "lib.fitsInDouble(obj)"})
-        Object doDouble(Object obj, @SuppressWarnings("unused") boolean doArray,
+        Object doDouble(Object obj,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached(inline = false) GilNode gil) {
             assert !lib.isBoolean(obj);
@@ -473,7 +399,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!lib.fitsInLong(obj)", "!lib.fitsInBigInteger(obj)", "!lib.fitsInDouble(obj)", "lib.isString(obj)"})
-        Object doString(Object obj, @SuppressWarnings("unused") boolean doArray,
+        Object doString(Object obj,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Shared @Cached(inline = false) GilNode gil) {
@@ -488,24 +414,9 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"doArray", "!lib.isBoolean(obj)", "!lib.fitsInLong(obj)", "!lib.fitsInBigInteger(obj)", //
-                        "!lib.fitsInDouble(obj)", "!lib.isString(obj)", "lib.hasArrayElements(obj)"})
-        Object doArray(Object obj, @SuppressWarnings("unused") boolean doArray,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached(inline = false) GilNode gil,
-                        @Cached(inline = false) PForeignToPTypeNode convert,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            gil.release(true);
-            try {
-                return factory.createList(unpackForeignArray(obj, lib, convert));
-            } finally {
-                gil.acquire();
-            }
-        }
-
         @Fallback
         @SuppressWarnings("unused")
-        public static Object doGeneric(Object left, boolean doArray) {
+        public static Object doGeneric(Object left) {
             return null;
         }
     }
@@ -513,12 +424,10 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     abstract static class ForeignBinarySlotNode extends Node {
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right,
-                        boolean leftDoArray, boolean rightDoArray, BinaryOpNode binaryOpNode);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right, BinaryOpNode binaryOpNode);
 
         @Specialization
-        static Object doIt(VirtualFrame frame, Node inliningTarget, Object left, Object right,
-                        boolean leftDoArray, boolean rightDoArray, BinaryOpNode op,
+        static Object doIt(VirtualFrame frame, Node inliningTarget, Object left, Object right, BinaryOpNode op,
                         @Cached IsForeignObjectNode isForeignLeft,
                         @Cached IsForeignObjectNode isForeignRight,
                         @Cached NormalizeForeignForBinopNode normalizeLeft,
@@ -529,8 +438,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
 
-            Object newLeft = normalizeLeft.execute(inliningTarget, left, leftDoArray);
-            Object newRight = normalizeRight.execute(inliningTarget, right, rightDoArray);
+            Object newLeft = normalizeLeft.execute(inliningTarget, left);
+            Object newRight = normalizeRight.execute(inliningTarget, right);
             assert newLeft == null || !IsForeignObjectNode.executeUncached(newLeft) : newLeft;
             assert newRight == null || !IsForeignObjectNode.executeUncached(newRight) : newRight;
             if (newLeft == null || newRight == null) {
@@ -548,7 +457,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
                         @Cached(inline = false) PyNumberAddNode addNode) {
-            return binarySlotNode.execute(frame, inliningTarget, left, right, true, true, addNode);
+            return binarySlotNode.execute(frame, inliningTarget, left, right, addNode);
         }
     }
 
@@ -560,7 +469,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
                         @Cached(inline = false) PyNumberMultiplyNode mulNode) {
-            return binarySlotNode.execute(frame, inliningTarget, left, right, true, true, mulNode);
+            return binarySlotNode.execute(frame, inliningTarget, left, right, mulNode);
         }
     }
 
@@ -799,63 +708,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class ContainsNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static Object contains(VirtualFrame frame, Object self, Object arg,
-                        // accesses both self and iterator
-                        @CachedLibrary(limit = "3") InteropLibrary library,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached StringBuiltins.ContainsNode containsNode,
-                        @Cached PForeignToPTypeNode convertNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            try {
-                if (library.isString(self)) {
-                    TruffleString selfStr = switchEncodingNode.execute(library.asTruffleString(self), TS_ENCODING);
-                    return containsNode.execute(frame, selfStr, arg);
-                }
-                if (library.hasArrayElements(self)) {
-                    for (int i = 0; i < library.getArraySize(self); i++) {
-                        if (library.isArrayElementReadable(self, i)) {
-                            Object element = convertNode.executeConvert(library.readArrayElement(self, i));
-                            if (eqNode.compare(frame, inliningTarget, arg, element)) {
-                                return true;
-                            }
-                        }
-                    }
-                    return false;
-                }
-                Object iterator = null;
-                if (library.isIterator(self)) {
-                    iterator = self;
-                } else if (library.hasHashEntries(self)) {
-                    iterator = library.getHashKeysIterator(self);
-                } else if (library.hasIterator(self)) {
-                    iterator = library.getIterator(self);
-                }
-                if (iterator != null) {
-                    try {
-                        while (library.hasIteratorNextElement(iterator)) {
-                            Object next = convertNode.executeConvert(library.getIteratorNextElement(iterator));
-                            if (eqNode.compare(frame, inliningTarget, arg, next)) {
-                                return true;
-                            }
-                        }
-                    } catch (StopIterationException e) {
-                        // fallthrough
-                    }
-                    return false;
-                }
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
-            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-    }
-
     @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
@@ -870,21 +722,10 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Cached GilNode gil) {
             gil.release(true);
             try {
-                if (lib.isIterator(object)) {
-                    return convertNode.executeConvert(object);
-                } else if (lib.hasIterator(object)) {
+                if (lib.hasIterator(object)) {
                     return convertNode.executeConvert(lib.getIterator(object));
-                } else if (lib.hasArrayElements(object)) {
-                    long size = lib.getArraySize(object);
-                    if (size < Integer.MAX_VALUE) {
-                        return factory.createForeignArrayIterator(object);
-                    }
-                    throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
                 } else if (lib.isString(object)) {
                     return factory.createStringIterator(switchEncodingNode.execute(lib.asTruffleString(object), TS_ENCODING));
-                } else if (lib.hasHashEntries(object)) {
-                    // just like dict.__iter__, we take the keys by default
-                    return convertNode.executeConvert(lib.getHashKeysIterator(object));
                 }
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -895,42 +736,9 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
-
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        static Object doForeignArray(Object iterator,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile notIterator,
-                        @Cached PRaiseNode raiseNode,
-                        @CachedLibrary("iterator") InteropLibrary lib,
-                        @Cached PForeignToPTypeNode convertNode,
-                        @Cached GilNode gil) {
-            if (notIterator.profile(inliningTarget, lib.isIterator(iterator))) {
-                gil.release(true);
-                try {
-                    return convertNode.executeConvert(lib.getIteratorNextElement(iterator));
-                } catch (StopIterationException e) {
-                    throw raiseNode.raiseStopIteration();
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere("iterator claimed to be iterator but wasn't");
-                } finally {
-                    gil.acquire();
-                }
-            } else {
-                throw raiseNode.raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___NEXT__);
-            }
-        }
-    }
-
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class NewNode extends PythonBuiltinNode {
-        /**
-         * A foreign function call specializes on the length of the passed arguments. Any
-         * optimization based on the callee has to happen on the other side.a
-         */
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
         static Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
@@ -967,10 +775,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         public abstract Object execute(VirtualFrame frame, Object callee, Object[] arguments, PKeyword[] keywords);
 
-        /**
-         * A foreign function call specializes on the length of the passed arguments. Any
-         * optimization based on the callee has to happen on the other side.
-         */
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
         static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
@@ -1013,14 +817,15 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
+    // TODO: PySequenceCheckNode special foreign handling can be removed once this is no longer
+    // defined
     @Slot(value = SlotKind.sq_item, isComplex = true)
     @GenerateNodeFactory
     abstract static class ForeignSqItemNode extends SqItemBuiltinNode {
-        @Specialization(limit = "3")
-        static Object doit(VirtualFrame frame, Object object, int key,
-                        @CachedLibrary("object") InteropLibrary interop,
+        @Specialization
+        static Object doit(VirtualFrame frame, Object object, int index,
                         @Cached AccessForeignItemNodes.GetForeignItemNode getForeignItemNode) {
-            return getForeignItemNode.readForeignIndex(object, key, interop);
+            return getForeignItemNode.execute(frame, object, index);
         }
     }
 
@@ -1167,30 +972,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class SetitemNode extends PythonTernaryBuiltinNode {
-        @Child private AccessForeignItemNodes.SetForeignItemNode setForeignItemNode = AccessForeignItemNodes.SetForeignItemNode.create();
-
-        @Specialization
-        Object doit(VirtualFrame frame, Object object, Object key, Object value) {
-            setForeignItemNode.execute(frame, object, key, value);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = J___DELITEM__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class DelitemNode extends PythonBinaryBuiltinNode {
-        @Child private AccessForeignItemNodes.RemoveForeignItemNode delForeignItemNode = AccessForeignItemNodes.RemoveForeignItemNode.create();
-
-        @Specialization
-        PNone doit(VirtualFrame frame, Object object, Object key) {
-            delForeignItemNode.execute(frame, object, key);
-            return PNone.NONE;
-        }
-    }
-
     @Builtin(name = J___DIR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DirNode extends PythonUnaryBuiltinNode {
@@ -1275,16 +1056,29 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization
         Object str(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(parameters = "T___REPR__") LookupAttributeInMRONode lookupAttributeInMRONode,
+                        @Cached(parameters = "Repr") LookupAndCallUnaryNode reprNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
-                        @Cached StrForeignArrayNode strForeignArrayNode,
+                        @Cached ObjectNodes.DefaultObjectReprNode defaultReprNode,
                         @Cached InlinedBranchProfile isNull,
                         @Cached InlinedBranchProfile isBoolean,
                         @Cached InlinedBranchProfile isString,
                         @Cached InlinedBranchProfile isLong,
                         @Cached InlinedBranchProfile isDouble,
+                        @Cached InlinedBranchProfile isIterator,
                         @Cached InlinedBranchProfile defaultCase) {
+            // Check if __repr__ is defined before foreign, if so call that, like object.__str__
+            // would do
+            var klass = getClassNode.execute(inliningTarget, object);
+            var repr = lookupAttributeInMRONode.execute(klass);
+            var foreignObjectBuiltinsRepr = lookupAttributeInMRONode.execute(PythonBuiltinClassType.ForeignObject);
+            if (repr != foreignObjectBuiltinsRepr) {
+                return reprNode.executeObject(frame, object);
+            }
+
             try {
                 if (lib.isNull(object)) {
                     isNull.enter(inliningTarget);
@@ -1329,8 +1123,9 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         gil.acquire();
                     }
                     return strNode.execute(frame, inliningTarget, value);
-                } else if (lib.hasArrayElements(object)) {
-                    return strForeignArrayNode.execute(frame, object, lib);
+                } else if (lib.isIterator(object)) {
+                    isIterator.enter(inliningTarget);
+                    return defaultReprNode.execute(frame, inliningTarget, object);
                 }
             } catch (UnsupportedMessageException e) {
                 // Fall back to the generic impl
@@ -1352,60 +1147,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 return getSwitchEncodingNode().execute(lib.asTruffleString(lib.toDisplayString(object)), TS_ENCODING);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("toDisplayString result not convertible to String");
-            }
-        }
-    }
-
-    @GenerateInline(false) // Uncommon path
-    abstract static class StrForeignArrayNode extends Node {
-        abstract TruffleString execute(VirtualFrame frame, Object object, InteropLibrary lib) throws UnsupportedMessageException;
-
-        @Specialization
-        static TruffleString str(VirtualFrame frame, Object object, InteropLibrary lib,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GilNode gil,
-                        @Cached PyObjectReprAsTruffleStringNode reprNode,
-                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) throws UnsupportedMessageException {
-            if (!PythonContext.get(inliningTarget).reprEnter(object)) {
-                return T_ELLIPSIS_IN_BRACKETS;
-            }
-            try {
-                long length;
-                gil.release(true);
-                try {
-                    length = lib.getArraySize(object);
-                } finally {
-                    gil.acquire();
-                }
-                if (length == 0) {
-                    return T_EMPTY_BRACKETS;
-                }
-                TruffleStringBuilder buf = TruffleStringBuilder.create(TS_ENCODING);
-                appendStringNode.execute(buf, T_LBRACKET);
-                boolean initial = true;
-                for (int index = 0; index < length; index++) {
-                    if (initial) {
-                        initial = false;
-                    } else {
-                        appendStringNode.execute(buf, T_COMMA_SPACE);
-                    }
-                    Object value;
-                    gil.release(true);
-                    try {
-                        value = lib.readArrayElement(object, index);
-                    } catch (InvalidArrayIndexException e) {
-                        // Concurrent modification?
-                        break;
-                    } finally {
-                        gil.acquire();
-                    }
-                    appendStringNode.execute(buf, reprNode.execute(frame, inliningTarget, value));
-                }
-                appendStringNode.execute(buf, T_RBRACKET);
-                return toStringNode.execute(buf);
-            } finally {
-                PythonContext.get(inliningTarget).reprLeave(object);
             }
         }
     }

@@ -189,6 +189,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -419,6 +420,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class BindNew extends PNodeWithContext {
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object descriptor, Object type);
 

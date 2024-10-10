@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -122,10 +123,11 @@ public abstract class PyCallableCheckNode extends PNodeWithContext {
     @Fallback
     static boolean doObject(Node inliningTarget, Object o,
                     @Cached GetClassNode getClassNode,
+                    @Cached IsForeignObjectNode isForeignObjectNode,
                     @Cached LazyInteropLibrary lazyInteropLib,
                     @Cached(parameters = "Call", inline = false) LookupCallableSlotInMRONode lookupCall) {
         Object type = getClassNode.execute(inliningTarget, o);
-        if (type == PythonBuiltinClassType.ForeignObject) {
+        if (isForeignObjectNode.execute(inliningTarget, o)) {
             InteropLibrary lib = lazyInteropLib.get(inliningTarget);
             return lib.isExecutable(o) || lib.isInstantiable(o);
         }

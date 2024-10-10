@@ -26,10 +26,6 @@ byteArray = myBigInt.toByteArray()
 assert len(byteArray) == 1 and byteArray[0] == 42
 ```
 
-<aside markdown="1">
-For plain Python users, the `java` module is only available when running on the JVM distribution.
-</aside>
-
 To import packages from the `java` namespace, you can also use the conventional Python import syntax:
 ```python
 import java.util.ArrayList
@@ -46,7 +42,7 @@ In addition to the `type` built-in method, the `java` module exposes the followi
 
 Built-in                 | Specification
 ---                      | ---
-`instanceof(obj, class)` | returns `True` if `obj` is an instance of `class` (`class` must be a foreign object class)
+`instanceof(obj, class)` | returns `True` if `obj` is an instance of `class` (`class` must be a foreign object class)
 `is_function(obj)`       | returns `True` if `obj` is a Java host language function wrapped using interop
 `is_object(obj)`         | returns `True` if `obj` if the argument is Java host language object wrapped using interop
 `is_symbol(obj)`         | returns `True` if `obj` if the argument is a Java host symbol, representing the constructor and static members of a Java class, as obtained by `java.type`
@@ -62,6 +58,43 @@ assert java.instanceof(my_list, ArrayList)
 ```
 
 See [Polyglot Programming](https://github.com/oracle/graal/blob/master/docs/reference-manual/polyglot-programming.md) and [Embed Languages](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md) for more information about interoperability with other programming languages.
+
+## Interacting with foreign objects from Python scripts
+
+Foreign objects are given a Python class corresponding to their interop traits:
+
+```python
+from java.util import ArrayList, HashMap
+type(ArrayList()).mro() # => [<class 'polyglot.ForeignList'>, <class 'list'>, <class 'foreign'>, <class 'object'>]
+type(HashMap()).mro() # => [<class 'polyglot.ForeignDict'>, <class 'dict'>, <class 'foreign'>, <class 'object'>]
+```
+
+This means all Python methods of these types are available on the corresponding foreign objects, which behave as close as possible as if they were Python objects:
+
+```python
+from java.util import ArrayList, HashMap
+l = ArrayList()
+l.append(1) # l: [1]
+l.extend([2, 3]) # l: [1, 2, 3]
+l.add(4) # l: [1, 2, 3, 4] # we can still call Java methods, this is calling ArrayList#add
+l[1:3] # => [2, 3]
+l.pop(1) # => 2; l: [1, 3, 4]
+l.insert(1, 2) # l: [1, 2, 3, 4]
+l == [1, 2, 3, 4] # True
+
+h = HashMap()
+h[1] = 2 # h: {1: 2}
+h.setdefault(3, 4) # h: {1: 2, 3: 4}
+h |= {3: 6} # {1: 2, 3: 6}
+h == {1: 2, 3: 6} # True
+```
+
+Specifically:
+* Foreign lists inherit from Python `list`
+* Foreign dictionaries inherit from `dict`
+* Foreign iterators inherit from `iterator`
+* Foreign exceptions inherit from `BaseException`
+* Foreign none/null inherit from `NoneType`
 
 ## Interacting with other dynamic languages from Python scripts
 

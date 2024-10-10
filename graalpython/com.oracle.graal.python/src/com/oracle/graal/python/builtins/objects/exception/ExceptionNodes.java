@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COLON_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NO_MESSAGE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.IllegalFormatException;
@@ -55,10 +57,13 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -68,9 +73,13 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public final class ExceptionNodes {
     private static Object nullToNone(Object obj) {
@@ -349,7 +358,7 @@ public final class ExceptionNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    public abstract static class GetArgsNode extends Node {
+    public abstract static class GetArgsNode extends PNodeWithContext {
         public abstract PTuple execute(Node inliningTarget, Object exception);
 
         public static PTuple executeUncached(Object e) {
@@ -398,10 +407,49 @@ public final class ExceptionNodes {
         }
 
         @Specialization
-        @SuppressWarnings("unused")
-        static PTuple doInterop(Node inliningTarget, AbstractTruffleException exception,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createEmptyTuple();
+        static PTuple doInterop(AbstractTruffleException exception,
+                        @Shared @Cached(inline = false) PythonObjectFactory factory,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
+                        @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
+            assert IsForeignObjectNode.executeUncached(exception);
+            try {
+                TruffleString message;
+                if (interop.hasExceptionMessage(exception)) {
+                    Object messageObject = interop.getExceptionMessage(exception);
+                    message = switchEncodingNode.execute(interop.asTruffleString(messageObject), TS_ENCODING);
+                } else {
+                    message = T_NO_MESSAGE;
+                }
+
+                if (interop.hasMetaObject(exception)) {
+                    return factory.createTuple(new Object[]{concat(getMetaObjectName(exception), message)});
+                } else {
+                    return factory.createTuple(new Object[]{message});
+                }
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @TruffleBoundary
+        public static TruffleString getMetaObjectName(Object self) {
+            InteropLibrary interop = InteropLibrary.getUncached();
+            try {
+                Object metaObject = interop.getMetaObject(self);
+                Object className = interop.getMetaQualifiedName(metaObject);
+                return interop.asTruffleString(className);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @TruffleBoundary
+        private static TruffleString concat(TruffleString a, TruffleString b) {
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            sb.appendStringUncached(a);
+            sb.appendStringUncached(T_COLON_SPACE);
+            sb.appendStringUncached(b);
+            return sb.toStringUncached();
         }
     }
 

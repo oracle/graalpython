@@ -499,7 +499,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                             @Cached HashingStorageIteratorKeyHash itKeyHash,
                             @Cached HashingStorageGetItemWithHash getItem) {
                 Object key = itKey.execute(inliningTarget, storage, it);
-                Object value = getItem.execute(frame, inliningTarget, state.dictStorage, key, itKeyHash.execute(inliningTarget, storage, it));
+                Object value = getItem.execute(frame, inliningTarget, state.dictStorage, key, itKeyHash.execute(frame, inliningTarget, storage, it));
                 setAttr.execute(frame, inliningTarget, state.exception, key, value);
                 return state;
             }

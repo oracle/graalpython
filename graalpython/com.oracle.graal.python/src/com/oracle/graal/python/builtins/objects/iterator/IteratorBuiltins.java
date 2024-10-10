@@ -26,7 +26,9 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ITER;
+import static com.oracle.graal.python.nodes.ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
@@ -64,32 +66,43 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.StopIterationException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
+/** NOTE: self can either be a PBuiltinIterator or a foreign iterator (isIterator()). */
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PArrayIterator,
                 PythonBuiltinClassType.PDictItemIterator, PythonBuiltinClassType.PDictReverseItemIterator,
                 PythonBuiltinClassType.PDictKeyIterator, PythonBuiltinClassType.PDictReverseKeyIterator,
@@ -111,7 +124,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static Object exhausted(VirtualFrame frame, PBuiltinIterator self,
+        static Object exhausted(VirtualFrame frame, Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached NextHelperNode nextHelperNode) {
             return nextHelperNode.execute(frame, inliningTarget, self, true);
@@ -120,14 +133,22 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
-    public abstract static class NextHelperNode extends Node {
+    public abstract static class NextHelperNode extends PNodeWithContext {
 
         public static final Object STOP_MARKER = new Object();
 
-        public abstract Object execute(VirtualFrame frame, Node inliningTarget, PBuiltinIterator iterator, boolean throwStopIteration);
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object iterator, boolean throwStopIteration);
 
         private static Object stopIteration(Node inliningTarget, PBuiltinIterator self, boolean throwStopIteration, PRaiseNode.Lazy raiseNode) {
             self.setExhausted();
+            if (throwStopIteration) {
+                throw raiseNode.get(inliningTarget).raiseStopIteration();
+            } else {
+                return STOP_MARKER;
+            }
+        }
+
+        private static Object stopIterationForeign(Node inliningTarget, boolean throwStopIteration, PRaiseNode.Lazy raiseNode) {
             if (throwStopIteration) {
                 throw raiseNode.get(inliningTarget).raiseStopIteration();
             } else {
@@ -277,6 +298,29 @@ public final class IteratorBuiltins extends PythonBuiltins {
             }
         }
 
+        @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, self)", "interop.isIterator(self)"}, limit = "1")
+        static Object foreign(Node inliningTarget, Object self, boolean throwStopIteration,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
+                        @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) PForeignToPTypeNode toPythonNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            final Object element;
+
+            gil.release(true);
+            try {
+                element = interop.getIteratorNextElement(self);
+            } catch (StopIterationException e) {
+                return stopIterationForeign(inliningTarget, throwStopIteration, raiseNode);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere("iterator claimed to be iterator but wasn't");
+            } finally {
+                gil.acquire();
+            }
+
+            return toPythonNode.executeConvert(element);
+        }
+
         @GenerateInline
         @GenerateCached(false)
         abstract static class PHashingStorageIteratorNextValue extends Node {
@@ -416,144 +460,166 @@ public final class IteratorBuiltins extends PythonBuiltins {
             return len < 0 ? 0 : len;
         }
 
-        @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
-        @GenerateNodeFactory
-        public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-
-            @Specialization
-            Object reduce(VirtualFrame frame, PArrayIterator self,
-                            @Bind("this") Node inliningTarget,
-                            @Shared @Cached InlinedConditionProfile exhaustedProfile,
-                            @Shared @Cached PyObjectGetAttr getAttrNode,
-                            @Shared @Cached PythonObjectFactory factory) {
-                PythonContext context = PythonContext.get(this);
-                if (!exhaustedProfile.profile(inliningTarget, self.isExhausted())) {
-                    return reduceInternal(frame, inliningTarget, self.array, self.getIndex(), context, getAttrNode, factory);
-                } else {
-                    return reduceInternal(frame, inliningTarget, factory.createEmptyTuple(), context, getAttrNode, factory);
-                }
+        @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, self)", "interop.isIterator(self)"}, limit = "1")
+        static int foreign(Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
+                        @Cached GilNode gil) {
+            gil.release(true);
+            try {
+                return interop.hasIteratorNextElement(self) ? 1 : 0;
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere("iterator claimed to be iterator but wasn't");
+            } finally {
+                gil.acquire();
             }
+        }
+    }
 
-            @Specialization
-            Object reduce(VirtualFrame frame, PHashingStorageIterator self,
-                            @Bind("this") Node inliningTarget,
-                            @Cached SequenceStorageNodes.CreateStorageFromIteratorNode storageNode,
-                            // unused profile to avoid mixing shared and non-shared inlined nodes
-                            @SuppressWarnings("unused") @Shared @Cached InlinedConditionProfile exhaustedProfile,
-                            @Shared @Cached PyObjectGetAttr getAttrNode,
-                            @Shared @Cached PythonObjectFactory factory) {
-                int index = self.index;
-                boolean isExhausted = self.isExhausted();
-                int state = self.getIterator().getState();
-                PList list = factory.createList(storageNode.execute(frame, self));
-                self.getIterator().setState(state);
-                self.setExhausted(isExhausted);
-                self.index = index;
-                return reduceInternal(frame, inliningTarget, list, PythonContext.get(this), getAttrNode, factory);
-            }
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
 
-            @Specialization
-            Object reduce(VirtualFrame frame, PIntegerSequenceIterator self,
-                            @Bind("this") Node inliningTarget,
-                            @Shared @Cached PyObjectGetAttr getAttrNode,
-                            @Shared @Cached PythonObjectFactory factory) {
-                PythonContext context = PythonContext.get(this);
-                if (self.isExhausted()) {
-                    return reduceInternal(frame, inliningTarget, factory.createList(), null, context, getAttrNode, factory);
-                }
-                return reduceInternal(frame, inliningTarget, self.getObject(), self.getIndex(), context, getAttrNode, factory);
-            }
-
-            @Specialization
-            Object reduce(VirtualFrame frame, PPrimitiveIterator self,
-                            @Bind("this") Node inliningTarget,
-                            @Shared @Cached PyObjectGetAttr getAttrNode,
-                            @Shared @Cached PythonObjectFactory factory) {
-                PythonContext context = PythonContext.get(this);
-                if (self.isExhausted()) {
-                    return reduceInternal(frame, inliningTarget, factory.createList(), null, context, getAttrNode, factory);
-                }
-                return reduceInternal(frame, inliningTarget, self.getObject(), self.getIndex(), context, getAttrNode, factory);
-            }
-
-            @Specialization
-            Object reduce(VirtualFrame frame, PStringIterator self,
-                            @Bind("this") Node inliningTarget,
-                            @Shared @Cached PyObjectGetAttr getAttrNode,
-                            @Shared @Cached PythonObjectFactory factory) {
-                PythonContext context = PythonContext.get(this);
-                if (self.isExhausted()) {
-                    return reduceInternal(frame, inliningTarget, T_EMPTY_STRING, null, context, getAttrNode, factory);
-                }
-                return reduceInternal(frame, inliningTarget, self.value, self.getIndex(), context, getAttrNode, factory);
-            }
-
-            @Specialization
-            Object reduce(VirtualFrame frame, PIntRangeIterator self,
-                            @Bind("this") Node inliningTarget,
-                            @Shared @Cached PyObjectGetAttr getAttrNode,
-                            @Shared @Cached PythonObjectFactory factory) {
-                int start = self.getStart();
-                int stop = self.getStop();
-                int step = self.getStep();
-                int len = self.getLen();
-                return reduceInternal(frame, inliningTarget, factory.createIntRange(start, stop, step, len), self.getIndex(), PythonContext.get(this), getAttrNode, factory);
-            }
-
-            @Specialization
-            Object reduce(VirtualFrame frame, PBigRangeIterator self,
-                            @Bind("this") Node inliningTarget,
-                            @Shared @Cached PyObjectGetAttr getAttrNode,
-                            @Shared @Cached PythonObjectFactory factory) {
-                PInt start = self.getStart();
-                PInt stop = self.getStop();
-                PInt step = self.getStep();
-                PInt len = self.getLen();
-                return reduceInternal(frame, inliningTarget, factory.createBigRange(start, stop, step, len), self.getLongIndex(factory), PythonContext.get(this), getAttrNode, factory);
-            }
-
-            @Specialization(guards = "self.isPSequence()")
-            Object reduce(VirtualFrame frame, PSequenceIterator self,
-                            @Bind("this") Node inliningTarget,
-                            @Shared @Cached PyObjectGetAttr getAttrNode,
-                            @Shared @Cached PythonObjectFactory factory) {
-                PythonContext context = PythonContext.get(this);
-                if (self.isExhausted()) {
-                    return reduceInternal(frame, inliningTarget, factory.createTuple(new Object[0]), null, context, getAttrNode, factory);
-                }
-                return reduceInternal(frame, inliningTarget, self.getPSequence(), self.getIndex(), context, getAttrNode, factory);
-            }
-
-            @Specialization(guards = "!self.isPSequence()")
-            Object reduceNonSeq(@SuppressWarnings({"unused"}) VirtualFrame frame, PSequenceIterator self,
-                            @Bind("this") Node inliningTarget,
-                            @Shared @Cached PyObjectGetAttr getAttrNode,
-                            @Shared @Cached PythonObjectFactory factory) {
-                PythonContext context = PythonContext.get(this);
-                if (!self.isExhausted()) {
-                    return reduceInternal(frame, inliningTarget, self.getObject(), self.getIndex(), context, getAttrNode, factory);
-                } else {
-                    return reduceInternal(frame, inliningTarget, factory.createTuple(new Object[0]), null, context, getAttrNode, factory);
-                }
-            }
-
-            private static PTuple reduceInternal(VirtualFrame frame, Node inliningTarget, Object arg, PythonContext context, PyObjectGetAttr getAttrNode, PythonObjectFactory factory) {
-                return reduceInternal(frame, inliningTarget, arg, null, context, getAttrNode, factory);
-            }
-
-            private static PTuple reduceInternal(VirtualFrame frame, Node inliningTarget, Object arg, Object state, PythonContext context, PyObjectGetAttr getAttrNode, PythonObjectFactory factory) {
-                PythonModule builtins = context.getBuiltins();
-                Object iter = getAttrNode.execute(frame, inliningTarget, builtins, T_ITER);
-                PTuple args = factory.createTuple(new Object[]{arg});
-                // callable, args, state (optional)
-                if (state != null) {
-                    return factory.createTuple(new Object[]{iter, args, state});
-                } else {
-                    return factory.createTuple(new Object[]{iter, args});
-                }
+        @Specialization
+        Object reduce(VirtualFrame frame, PArrayIterator self,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile exhaustedProfile,
+                        @Shared @Cached PyObjectGetAttr getAttrNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PythonContext context = PythonContext.get(this);
+            if (!exhaustedProfile.profile(inliningTarget, self.isExhausted())) {
+                return reduceInternal(frame, inliningTarget, self.array, self.getIndex(), context, getAttrNode, factory);
+            } else {
+                return reduceInternal(frame, inliningTarget, factory.createEmptyTuple(), context, getAttrNode, factory);
             }
         }
 
+        @Specialization
+        Object reduce(VirtualFrame frame, PHashingStorageIterator self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached SequenceStorageNodes.CreateStorageFromIteratorNode storageNode,
+                        // unused profile to avoid mixing shared and non-shared inlined nodes
+                        @SuppressWarnings("unused") @Shared @Cached InlinedConditionProfile exhaustedProfile,
+                        @Shared @Cached PyObjectGetAttr getAttrNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            int index = self.index;
+            boolean isExhausted = self.isExhausted();
+            int state = self.getIterator().getState();
+            PList list = factory.createList(storageNode.execute(frame, self));
+            self.getIterator().setState(state);
+            self.setExhausted(isExhausted);
+            self.index = index;
+            return reduceInternal(frame, inliningTarget, list, PythonContext.get(this), getAttrNode, factory);
+        }
+
+        @Specialization
+        Object reduce(VirtualFrame frame, PIntegerSequenceIterator self,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyObjectGetAttr getAttrNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PythonContext context = PythonContext.get(this);
+            if (self.isExhausted()) {
+                return reduceInternal(frame, inliningTarget, factory.createList(), null, context, getAttrNode, factory);
+            }
+            return reduceInternal(frame, inliningTarget, self.getObject(), self.getIndex(), context, getAttrNode, factory);
+        }
+
+        @Specialization
+        Object reduce(VirtualFrame frame, PPrimitiveIterator self,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyObjectGetAttr getAttrNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PythonContext context = PythonContext.get(this);
+            if (self.isExhausted()) {
+                return reduceInternal(frame, inliningTarget, factory.createList(), null, context, getAttrNode, factory);
+            }
+            return reduceInternal(frame, inliningTarget, self.getObject(), self.getIndex(), context, getAttrNode, factory);
+        }
+
+        @Specialization
+        Object reduce(VirtualFrame frame, PStringIterator self,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyObjectGetAttr getAttrNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PythonContext context = PythonContext.get(this);
+            if (self.isExhausted()) {
+                return reduceInternal(frame, inliningTarget, T_EMPTY_STRING, null, context, getAttrNode, factory);
+            }
+            return reduceInternal(frame, inliningTarget, self.value, self.getIndex(), context, getAttrNode, factory);
+        }
+
+        @Specialization
+        Object reduce(VirtualFrame frame, PIntRangeIterator self,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyObjectGetAttr getAttrNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            int start = self.getStart();
+            int stop = self.getStop();
+            int step = self.getStep();
+            int len = self.getLen();
+            return reduceInternal(frame, inliningTarget, factory.createIntRange(start, stop, step, len), self.getIndex(), PythonContext.get(this), getAttrNode, factory);
+        }
+
+        @Specialization
+        Object reduce(VirtualFrame frame, PBigRangeIterator self,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyObjectGetAttr getAttrNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PInt start = self.getStart();
+            PInt stop = self.getStop();
+            PInt step = self.getStep();
+            PInt len = self.getLen();
+            return reduceInternal(frame, inliningTarget, factory.createBigRange(start, stop, step, len), self.getLongIndex(factory), PythonContext.get(this), getAttrNode, factory);
+        }
+
+        @Specialization(guards = "self.isPSequence()")
+        Object reduce(VirtualFrame frame, PSequenceIterator self,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyObjectGetAttr getAttrNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PythonContext context = PythonContext.get(this);
+            if (self.isExhausted()) {
+                return reduceInternal(frame, inliningTarget, factory.createTuple(new Object[0]), null, context, getAttrNode, factory);
+            }
+            return reduceInternal(frame, inliningTarget, self.getPSequence(), self.getIndex(), context, getAttrNode, factory);
+        }
+
+        @Specialization(guards = "!self.isPSequence()")
+        Object reduceNonSeq(@SuppressWarnings({"unused"}) VirtualFrame frame, PSequenceIterator self,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyObjectGetAttr getAttrNode,
+                        @Shared @Cached PythonObjectFactory factory) {
+            PythonContext context = PythonContext.get(this);
+            if (!self.isExhausted()) {
+                return reduceInternal(frame, inliningTarget, self.getObject(), self.getIndex(), context, getAttrNode, factory);
+            } else {
+                return reduceInternal(frame, inliningTarget, factory.createTuple(new Object[0]), null, context, getAttrNode, factory);
+            }
+        }
+
+        @Fallback
+        static int other(Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            throw raiseNode.get(inliningTarget).raise(TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "iterator", self);
+        }
+
+        private static PTuple reduceInternal(VirtualFrame frame, Node inliningTarget, Object arg, PythonContext context, PyObjectGetAttr getAttrNode, PythonObjectFactory factory) {
+            return reduceInternal(frame, inliningTarget, arg, null, context, getAttrNode, factory);
+        }
+
+        private static PTuple reduceInternal(VirtualFrame frame, Node inliningTarget, Object arg, Object state, PythonContext context, PyObjectGetAttr getAttrNode, PythonObjectFactory factory) {
+            PythonModule builtins = context.getBuiltins();
+            Object iter = getAttrNode.execute(frame, inliningTarget, builtins, T_ITER);
+            PTuple args = factory.createTuple(new Object[]{arg});
+            // callable, args, state (optional)
+            if (state != null) {
+                return factory.createTuple(new Object[]{iter, args, state});
+            } else {
+                return factory.createTuple(new Object[]{iter, args});
+            }
+        }
     }
 
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
@@ -561,7 +627,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public static Object reduce(PBigRangeIterator self, Object index,
+        static Object setstate(PBigRangeIterator self, Object index,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaBigIntegerNode castToJavaBigIntegerNode) {
             BigInteger idx = castToJavaBigIntegerNode.execute(inliningTarget, index);
@@ -573,7 +639,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPBigRangeIterator(self)")
-        public static Object reduce(VirtualFrame frame, PBuiltinIterator self, Object index,
+        static Object setstate(VirtualFrame frame, PBuiltinIterator self, Object index,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             int idx = asSizeNode.executeExact(frame, inliningTarget, index);
@@ -582,6 +648,13 @@ public final class IteratorBuiltins extends PythonBuiltins {
             }
             self.index = idx;
             return PNone.NONE;
+        }
+
+        @Fallback
+        static Object other(Object self, Object index,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            throw raiseNode.get(inliningTarget).raise(TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "iterator", self);
         }
 
         protected static boolean isPBigRangeIterator(Object obj) {

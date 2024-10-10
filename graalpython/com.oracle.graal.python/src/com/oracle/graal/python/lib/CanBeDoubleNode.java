@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -106,12 +107,13 @@ public abstract class CanBeDoubleNode extends PNodeWithContext {
 
     @Fallback
     static boolean doGeneric(Node inliningTarget, Object object,
+                    @Cached IsForeignObjectNode isForeignObjectNode,
                     @Cached LazyInteropLibrary lazyInteropLibrary,
                     @Cached(parameters = "Float", inline = false) LookupCallableSlotInMRONode lookupFloat,
                     @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex,
                     @Cached GetClassNode getClassNode) {
         Object type = getClassNode.execute(inliningTarget, object);
-        if (type == PythonBuiltinClassType.ForeignObject) {
+        if (isForeignObjectNode.execute(inliningTarget, object)) {
             InteropLibrary interopLibrary = lazyInteropLibrary.get(inliningTarget);
             return interopLibrary.fitsInDouble(object) || interopLibrary.fitsInLong(object) || interopLibrary.isBoolean(object);
         }

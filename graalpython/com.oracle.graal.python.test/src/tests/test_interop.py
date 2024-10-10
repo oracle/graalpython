@@ -45,7 +45,6 @@ import sys
 
 if sys.implementation.name == "graalpy":
     import polyglot
-    from __graalpython__ import is_native
 
     try:
         polyglot.eval(language="ruby", string="1")
@@ -54,20 +53,10 @@ if sys.implementation.name == "graalpy":
         test_polyglot_languages = False
     else:
         test_polyglot_languages = True
+else:
+    test_polyglot_languages = False
 
-    def test_import():
-        def some_function():
-            return "hello, polyglot world!"
-        polyglot.export_value(some_function)
-        imported_fun0 = polyglot.import_value("some_function")
-        assert imported_fun0 is some_function
-        assert imported_fun0() == "hello, polyglot world!"
-
-        polyglot.export_value("same_function", some_function)
-        imported_fun1 = polyglot.import_value("same_function")
-        assert imported_fun1 is some_function
-        assert imported_fun1() == "hello, polyglot world!"
-
+if sys.implementation.name == "graalpy":
     class GetterOnly():
         def __get__(self, instance, owner):
             pass
@@ -115,12 +104,27 @@ if sys.implementation.name == "graalpy":
     class PyString(str):
         pass
 
-    def test_read():
+@skipUnless(sys.implementation.name == "graalpy" and not __graalpython__.is_native, "interop")
+class InteropTests(unittest.TestCase):
+    def test_import(self):
+        def some_function():
+            return "hello, polyglot world!"
+        polyglot.export_value(some_function)
+        imported_fun0 = polyglot.import_value("some_function")
+        assert imported_fun0 is some_function
+        assert imported_fun0() == "hello, polyglot world!"
+
+        polyglot.export_value("same_function", some_function)
+        imported_fun1 = polyglot.import_value("same_function")
+        assert imported_fun1 is some_function
+        assert imported_fun1() == "hello, polyglot world!"
+
+    def test_read(self):
         o = CustomObject()
         assert polyglot.__read__(o, "field") == o.field
         assert polyglot.__read__(o, 10) == o[10]
 
-    def test_write():
+    def test_write(self):
         o = CustomMutable()
         o2 = CustomObject()
 
@@ -143,7 +147,7 @@ if sys.implementation.name == "graalpy":
         else:
             assert False
 
-    def test_remove():
+    def test_remove(self):
         o = CustomMutable()
         o.direct_field = 111
 
@@ -155,22 +159,22 @@ if sys.implementation.name == "graalpy":
         assert "direct_field" in list(o.keys())
 
 
-    def test_execute():
+    def test_execute(self):
         assert polyglot.__execute__(abs, -10) == 10
         o = CustomMutable()
         assert polyglot.__execute__(o.__getattribute__, "field") == o.field
 
-    def test_invoke():
+    def test_invoke(self):
         o = CustomMutable()
         assert polyglot.__invoke__(o, "__getattribute__", "field") == o.field
 
-    def test_new():
+    def test_new(self):
         assert isinstance(polyglot.__new__(CustomMutable), CustomMutable)
 
-    def test_is_null():
+    def test_is_null(self):
         assert polyglot.__is_null__(None)
 
-    def test_has_size():
+    def test_has_size(self):
         import array
 
         assert polyglot.__has_size__((0,))
@@ -184,7 +188,7 @@ if sys.implementation.name == "graalpy":
 
         assert not polyglot.__has_size__(object())
 
-    def test_get_size():
+    def test_get_size(self):
         called = False
 
         class LenObject():
@@ -203,21 +207,21 @@ if sys.implementation.name == "graalpy":
         assert polyglot.__get_size__(LenObject()) == 1
         assert called
 
-    def test_has_keys():
+    def test_has_keys(self):
         assert not polyglot.__has_keys__(True)
         assert polyglot.__has_keys__(None)
         assert polyglot.__has_keys__(NotImplemented)
         assert not polyglot.__has_keys__(False)
         assert polyglot.__has_keys__(object())
 
-    def test_keys():
+    def test_keys(self):
         o = CustomObject()
         inherited_keys = len(polyglot.__keys__(o))
         o.my_field = 1
         assert len(polyglot.__keys__(o)) == 1 + inherited_keys
         assert "my_field" in polyglot.__keys__(o)
 
-    def test_key_info():
+    def test_key_info(self):
         o = CustomObject()
         o.my_field = 1
         o.test_exec = lambda: False
@@ -252,8 +256,7 @@ if sys.implementation.name == "graalpy":
         assert not polyglot.__key_info__(builtinObj, "__len__", "removable")
         assert not polyglot.__key_info__(builtinObj, "__len__", "insertable")
 
-    @skipIf(is_native, "not supported in native mode")
-    def test_java_classpath():
+    def test_java_classpath(self):
         import java
         try:
             java.add_to_classpath(1)
@@ -265,25 +268,19 @@ if sys.implementation.name == "graalpy":
         except TypeError as e:
             assert "classpath argument 2 must be string, not int" in str(e)
 
-    @skipIf(is_native, "not supported in native mode")
-    def test_host_lookup():
+    def test_host_lookup(self):
         import java
-        try:
-            strClass = java.type("java.lang.String")
-            assert strClass.valueOf(True) == "true"
-        except NotImplementedError as e:
-            assert "host lookup is not allowed" in str(e)
+        strClass = java.type("java.lang.String")
+        assert strClass.valueOf(True) == "true"
 
         try:
             java.type("this.type.does.not.exist")
-        except NotImplementedError as e:
-            assert "host lookup is not allowed" in str(e)
         except KeyError as e:
             assert True
         else:
             assert False, "requesting a non-existing host symbol should raise KeyError"
 
-    def test_internal_languages_dont_eval():
+    def test_internal_languages_dont_eval(self):
         try:
             polyglot.eval(language="nfi", string="default")
         except ValueError as e:
@@ -291,37 +288,31 @@ if sys.implementation.name == "graalpy":
 
         assert polyglot.eval(language="python", string="21 * 2") == 42
 
-    def test_module_eval_returns_last_expr():
+    def test_module_eval_returns_last_expr(self):
         assert polyglot.eval(language="python", string="x = 2; x") == 2
 
-    def test_module_eval_returns_module():
+    def test_module_eval_returns_module(self):
         mod = polyglot.eval(language="python", string="x = 2")
         assert mod.x == 2
         assert type(mod) == type(sys)
 
-    @skipIf(is_native, "not supported in native mode")
-    def test_non_index_array_access():
+    def test_non_index_array_access(self):
         import java
         try:
             al = java.type("java.util.ArrayList")()
             assert al.size() == len(al) == 0
         except IndexError:
             assert False, "using __getitem__ to access keys of an array-like foreign object should work"
-        except NotImplementedError as e:
-            assert "host lookup is not allowed" in str(e)
 
-    @skipIf(is_native, "not supported in native mode")
-    def test_direct_call_of_truffle_object_methods():
+    def test_direct_call_of_truffle_object_methods(self):
         import java
         try:
             al = java.type("java.util.ArrayList")()
             assert al.__len__() == al.size() == len(al)
         except IndexError:
             assert False, "calling the python equivalents for well-known functions directly should work"
-        except NotImplementedError as e:
-            assert "host lookup is not allowed" in str(e)
 
-    def test_array_element_info():
+    def test_array_element_info(self):
         immutableObj = (1,2,3,4)
         assert polyglot.__element_info__(immutableObj, 0, "exists")
         assert polyglot.__element_info__(immutableObj, 0, "readable")
@@ -340,30 +331,25 @@ if sys.implementation.name == "graalpy":
         assert polyglot.__element_info__(mutableObj, 0, "modifiable")
         assert polyglot.__element_info__(mutableObj, 4, "insertable")
 
-    @skipIf(is_native, "not supported in native mode")
-    def test_java_imports():
+    def test_java_imports(self):
         import java
-        try:
-            al = java.type("java.util.ArrayList")()
-        except NotImplementedError as e:
-            assert "host lookup is not allowed" in str(e)
-        else:
-            import java.util.ArrayList
-            assert repr(java.util.ArrayList()) == "[]"
+        al = java.type("java.util.ArrayList")()
+        import java.util.ArrayList
+        assert repr(java.util.ArrayList()) == "[]"
 
-            from java.util import ArrayList
-            assert repr(ArrayList()) == "[]"
+        from java.util import ArrayList
+        assert repr(ArrayList()) == "[]"
 
-            if __graalpython__.jython_emulation_enabled:
-                assert java.util.ArrayList == ArrayList
+        assert java.util.ArrayList == ArrayList
 
-                import sun
-                assert type(sun.misc) is type(java)
+        if __graalpython__.jython_emulation_enabled:
+            import sun
+            assert type(sun.misc) is type(java)
 
-                import sun.misc.Signal
-                assert sun.misc.Signal is not None
+            import sun.misc.Signal
+            assert sun.misc.Signal is not None
 
-    def test_java_import_from_jar():
+    def test_java_import_from_jar(self):
         if __graalpython__.jython_emulation_enabled:
             import tempfile
             import zipfile
@@ -416,98 +402,115 @@ if sys.implementation.name == "graalpy":
             finally:
                 os.unlink(tempname)
 
+    def test_java_class(self):
+        from java.lang import Integer, NumberFormatException
+        self.assertEqual(['ForeignInstantiableType', 'foreign', 'object'], [t.__name__ for t in type(Integer).mro()])
+        self.assertEqual(['ForeignInstantiableType', 'foreign', 'object'], [t.__name__ for t in type(NumberFormatException).mro()])
 
-    def test_java_exceptions():
-        if __graalpython__.jython_emulation_enabled:
-            from java.lang import Integer, NumberFormatException
-            try:
-                Integer.parseInt("99", 8)
-            except NumberFormatException as e:
-                assert True
-            else:
-                assert False
+    def test_java_exceptions(self):
+        # TODO: more tests
 
-    def test_java_exceptions_reraise():
-        if __graalpython__.jython_emulation_enabled:
-            from java.lang import Integer, NumberFormatException
-            try:
-                try:
-                    Integer.parseInt("99", 8)
-                except NumberFormatException:
-                    raise
-            except NumberFormatException:
-                pass
-            else:
-                assert False
-
-    def test_java_exceptions_reraise_explicit():
-        if __graalpython__.jython_emulation_enabled:
-            from java.lang import Integer, NumberFormatException
-            try:
-                try:
-                    Integer.parseInt("99", 8)
-                except NumberFormatException as e:
-                    raise e
-            except NumberFormatException:
-                pass
-            else:
-                assert False
-
-    def test_java_exception_state():
-        if __graalpython__.jython_emulation_enabled:
-            from java.lang import Integer, NumberFormatException
-            try:
-                Integer.parseInt("99", 8)
-            except NumberFormatException as e:
-                assert sys.exc_info() == (type(e), e, None)
-            else:
-                assert False
-
-    @skipIf(is_native, "not supported in native mode")
-    def test_foreign_object_does_not_leak_Javas_toString():
+        from java.lang import Integer, NumberFormatException
         try:
-            from java.util import ArrayList
-        except NotImplementedError as e:
-            assert "host lookup is not allowed" in str(e)
+            Integer.parseInt("99", 8)
+        except NumberFormatException as e:
+
+            assert isinstance(e, BaseException)
+            assert BaseException in type(e).mro()
+            self.assertEqual(['ForeignException', 'BaseException', 'foreign', 'object'], [t.__name__ for t in type(e).mro()])
+            self.assertEqual('java.lang.NumberFormatException: For input string: \"99\" under radix 8', str(e))
+            self.assertEqual("ForeignException('java.lang.NumberFormatException: For input string: \"99\" under radix 8')", repr(e))
+            assert True
         else:
-            try:
-                ArrayList(12, "12")
-            except TypeError as e:
-                assert "@" not in str(e) # the @ from Java's default toString
+            assert False
 
-            try:
-                ArrayList(12, foo="12") # keywords are not supported
-            except TypeError as e:
-                assert "@" not in str(e) # the @ from Java's default toString
+    # TODO: this currently shows no stacktrace at all, which is quite bad to find out the issue
+    # it doesn't even show the Python line on which the error ocurred in this file
+    # def test_java_exceptions_stacktrace(self):
+    #     from java.lang import Integer
+    #     Integer.parseInt("99", 8)
 
+    def test_java_exceptions_reraise(self):
+        from java.lang import Integer, NumberFormatException
+        try:
             try:
-                ArrayList.bar
-            except AttributeError as e:
-                assert "@" not in str(e) # the @ from Java's default toString
+                Integer.parseInt("99", 8)
+            except NumberFormatException:
+                raise
+        except NumberFormatException:
+            pass
+        else:
+            assert False
 
+    def test_java_exceptions_reraise_explicit(self):
+        from java.lang import Integer, NumberFormatException
+        try:
             try:
-                del ArrayList.bar
-            except AttributeError as e:
-                assert "@" not in str(e) # the @ from Java's default toString
+                Integer.parseInt("99", 8)
+            except NumberFormatException as e:
+                raise e
+        except NumberFormatException:
+            pass
+        else:
+            assert False
 
-            try:
-                del ArrayList.bar
-            except AttributeError as e:
-                assert "@" not in str(e) # the @ from Java's default toString
+    def test_java_exception_state(self):
+        from java.lang import Integer, NumberFormatException
+        try:
+            Integer.parseInt("99", 8)
+        except NumberFormatException as e:
+            assert sys.exc_info() == (type(e), e, None)
+        else:
+            assert False
 
-    def test_java_import_star():
+    def test_foreign_object_does_not_leak_Javas_toString(self):
+        from java.util import ArrayList
+        try:
+            ArrayList(12, "12")
+        except TypeError as e:
+            assert "@" not in str(e) # the @ from Java's default toString
+
+        try:
+            ArrayList(12, foo="12") # keywords are not supported
+        except TypeError as e:
+            assert "@" not in str(e) # the @ from Java's default toString
+
+        try:
+            ArrayList.bar
+        except AttributeError as e:
+            assert "@" not in str(e) # the @ from Java's default toString
+
+        try:
+            del ArrayList.bar
+        except AttributeError as e:
+            assert "@" not in str(e) # the @ from Java's default toString
+
+        try:
+            del ArrayList.bar
+        except AttributeError as e:
+            assert "@" not in str(e) # the @ from Java's default toString
+
+    def test_java_import_star(self):
         if __graalpython__.jython_emulation_enabled:
             d = {}
             exec("from java.util.logging.Logger import *", globals=d, locals=d)
             assert "getGlobal" in d
             assert d["getGlobal"]().getName() == d["GLOBAL_LOGGER_NAME"]
 
-    @skipIf(is_native, "not supported in native mode")
-    def test_java_null_is_none():
+    def test_java_null_is_none(self):
         import java.lang.Integer as Integer
-        x = Integer.getInteger("something_what_does_not_exists")
-        y = Integer.getInteger("something_what_does_not_exists2")
+        x = Integer.getInteger("something_that_does_not_exists")
+        y = Integer.getInteger("something_that_does_not_exists2")
         z = None
+
+        assert isinstance(x, type(None))
+        assert type(x) == polyglot.ForeignNone, type(x)
+        assert type(None) in type(x).mro()
+        self.assertEqual(['ForeignNone', 'NoneType', 'foreign', 'object'], [t.__name__ for t in type(x).mro()])
+        assert repr(x) == 'None'
+        assert str(x) == 'None'
+
+        assert bool(x) == False
 
         assert x == None
         assert (x != None) == False
@@ -524,22 +527,19 @@ if sys.implementation.name == "graalpy":
         assert x is z
         assert (x is not z) == False
 
-    def test_isinstance01():
-        if __graalpython__.jython_emulation_enabled:
-            import java.lang.Integer as Integer
-            i = Integer(1)
-            assert isinstance(i, Integer)
+    def test_isinstance01(self):
+        import java.lang.Integer as Integer
+        i = Integer(1)
+        assert isinstance(i, Integer)
 
-    def test_isinstance02():
-        if __graalpython__.jython_emulation_enabled:
-            import java.util.Map as Map
-            import java.util.HashMap as HashMap
-            h = HashMap()
-            assert isinstance(h, HashMap)
-            assert isinstance(h, Map)
+    def test_isinstance02(self):
+        import java.util.Map as Map
+        import java.util.HashMap as HashMap
+        h = HashMap()
+        assert isinstance(h, HashMap)
+        assert isinstance(h, Map)
 
-    @skipIf(is_native, "not supported in native mode")
-    def test_is_type():
+    def test_is_type(self):
         import java
         from java.util.logging import Handler
         from java.util import Set
@@ -556,8 +556,7 @@ if sys.implementation.name == "graalpy":
         assert not java.is_type(Level.ALL)
         assert not java.is_type("ahoj")
 
-    @skipIf(is_native, "not supported in native mode")
-    def test_extend_java_class_01():
+    def test_extend_java_class_01(self):
         from java.util.logging import Handler
         from java.util.logging import LogRecord
         from java.util.logging import Level
@@ -604,8 +603,7 @@ if sys.implementation.name == "graalpy":
         assert h2.this.counter == 1
         assert h.this.counter == 3
 
-    @skipIf(is_native, "not supported in native mode")
-    def test_extend_java_class_02():
+    def test_extend_java_class_02(self):
         from java.math import BigDecimal
         try:
             class MyDecimal(BigDecimal):
@@ -615,8 +613,7 @@ if sys.implementation.name == "graalpy":
         else:
             assert False
 
-    @skipIf(is_native, "not supported in native mode")
-    def test_extend_java_class_03():
+    def test_extend_java_class_03(self):
         #test of java constructor
         from java.util.logging import LogRecord
         from java.util.logging import Level
@@ -635,19 +632,34 @@ if sys.implementation.name == "graalpy":
         my_lr2 = MyLogRecord(Level.FINEST, message)
         assert my_lr2.getLevel() == Level.WARNING
 
-    def test_foreign_slice_setting():
+    def test_java_array(self):
         import java
         il = java.type("int[]")(20)
+
+        assert isinstance(il, list)
+        assert list in type(il).mro()
+        self.assertEqual(['ForeignList', 'list', 'foreign', 'object'], [t.__name__ for t in type(il).mro()])
+        assert repr(il) == repr([0] * 20)
+        assert str(il) == str([0] * 20)
+
+        assert il[0] == 0
+
+        il[0] = 12
+        assert il[0] == 12
+
+        il[0:10] = [10] * 10
+        assert list(il) == [10] * 10 + [0] * 10, "not equal"
+
+        il = java.type("int[]")(3)
+        il[0:3] = [1,2,3]
+
         try:
             il[0:2] = 1
         except TypeError:
             assert True
         else:
-            assert False, "should throw a type error"
-        il[0] = 12
-        assert il[0] == 12
-        il[0:10] = [10] * 10
-        assert list(il) == [10] * 10 + [0] * 10, "not equal"
+            assert False, "should throw TypeError: 'int' object is not iterable"
+
         try:
             il[0] = 1.2
         except TypeError:
@@ -655,8 +667,372 @@ if sys.implementation.name == "graalpy":
         else:
             assert False, "should throw a type error again"
 
-    @skipIf(is_native, "not supported in native mode")
-    def test_foreign_repl():
+        try:
+            il.clear()
+        except IndexError as e:
+            assert "is not removable" in str(e)
+        else:
+            assert False, "should have thrown"
+
+        try:
+            il.insert(1, 42)
+        except IndexError as e:
+            assert str(e) == "invalid index 3", str(e)
+        else:
+            assert False, "should have thrown"
+
+        assert il == [1, 2, 3] # unchanged
+
+    def test_java_list(self):
+        from java.util import ArrayList
+
+        al = ArrayList()
+
+        def l(*elements):
+            mylist = ArrayList()
+            mylist.extend(elements)
+            return mylist
+
+        assert isinstance(al, list)
+        assert list in type(al).mro()
+        self.assertEqual(['ForeignList', 'list', 'foreign', 'object'], [t.__name__ for t in type(al).mro()])
+        assert repr(l(1,2)) == repr([1,2])
+        assert str(l(1,2)) == str([1,2])
+
+        assert bool(l()) == False
+        assert bool(l(1)) == True
+
+        al.append(42)
+        assert al[0] == 42
+        assert len(al) == 1
+        al[0] = 43
+        assert al[0] == 43
+
+        al.extend([44, 45])
+        assert len(al) == 3
+
+        al += [46, 47]
+        assert len(al) == 5
+
+        al[0:3] = [1,2,3]
+        assert len(al) == 5, al
+        assert al[0:3] == [1,2,3]
+
+        al2 = ArrayList()
+        al2[0:3] = [1,2,3]
+        assert al2 == [1,2,3], al2
+
+        al.add(-1) # ArrayList#add()
+        assert len(al) == 6
+
+        copy = al[:]
+        assert type(copy) == list
+        assert copy == [1,2,3,46,47,-1], copy
+
+        # Ensure al.clear() is list.clear and not ArrayList#clear
+        self.assertEqual(list.clear.__get__(al), al.clear)
+        al.clear()
+        assert len(al) == 0
+        assert al == []
+        assert not al
+
+        al += [1, 2, 3]
+        assert al == [1, 2, 3], al
+
+        add1 = al + [4, 5]
+        assert add1 == [1, 2, 3, 4, 5], add1
+        assert type(add1) is list, type(add1)
+
+        add2 = [-1, 0] + al
+        assert add2 == [-1, 0, 1, 2, 3], add2
+        assert type(add2) is list
+
+        # al is unchanged:
+        assert al == [1, 2, 3], al
+
+        al.reverse()
+        assert al[-1] == 1
+
+        # Test list.__eq__ in both directions
+        assert al == [3, 2, 1], al
+        assert [3, 2, 1] == al
+        assert al != [1]
+        assert (al != [3, 2, 1]) == False
+
+        assert l(1) < l(2)
+        assert [1] < l(2)
+        assert l(1) < [2]
+
+        assert (l(1) < l(1)) == False
+        assert ([1] < l(1)) == False
+        assert (l(1) < [1]) == False
+
+        assert l(1) <= l(1)
+        assert (l(1) <= l(0)) == False
+        assert l(1) >= l(1)
+        assert (l(0) >= l(1)) == False
+        assert l(2) > l(1)
+        assert (l(1) > l(1)) == False
+
+        assert l(1,2,1).count(1) == 2
+
+        al = l(1,2,3,4)
+        del al[3]
+        assert al == [1,2,3]
+        del al[0]
+        assert al == [2,3]
+        al = l(1,2,3,4)
+        del al[1:3]
+        assert al == [1,4]
+
+        al.__init__()
+        assert al == []
+        al.__init__([1, 2])
+        assert al == [1, 2], al
+        al.__init__((i for i in [3,4]))
+        assert al == [3, 4]
+        al.__init__("ab")
+        assert al == ["a", "b"]
+
+        al.__init__([1, 2])
+        copy = al.copy()
+        assert copy == [1, 2]
+        assert type(copy) == list, type(copy)
+
+        al = l(1,2,3)
+        al.insert(1, 7)
+        assert al == [1,7,2,3]
+        al.insert(-1, 8)
+        assert al == [1,7,2,8,3], al
+
+        # Ensure al.remove() is list.remove and not ArrayList#remove
+        self.assertEqual(list.remove.__get__(al), al.remove)
+        # Use values which would throw if ArrayList#remove is used
+        al.remove(8)
+        al.remove(7)
+        assert al == [1,2,3]
+
+        assert al.pop() == 3
+        assert al == [1,2]
+        assert al.pop(0) == 1
+        assert al == [2]
+
+        al = l(1,2,3)
+        assert 2 in al
+        assert (42 in al) == False
+
+        assert al.index(3) == 2
+        self.assertRaises(ValueError, lambda: al.index(42))
+        assert al.index(2, 0, 2) == 1
+        self.assertRaises(ValueError, lambda: al.index(2, 0, 1))
+
+        al = l(4,1,3,2)
+        al.sort() # to avoid conflict with ArrayList#sort
+        assert al == [1,2,3,4]
+
+        assert l(1,2) * 0 == []
+        assert l(1,2) * 3 == [1,2,1,2,1,2]
+        assert 3 * l(1,2) == [1,2,1,2,1,2]
+        al = l(1,2)
+        al *= 3
+        assert al == [1,2,1,2,1,2]
+
+        al = l(1,2,3)
+        r = list(reversed(al))
+        assert r == [3,2,1], r
+        assert [e for e in reversed(al)] == [3,2,1]
+        assert [e for e in al] == [1,2,3]
+
+    def test_java_map(self):
+        from java.util import HashMap
+        h = HashMap()
+        h[1] = 2
+
+        assert isinstance(h, dict)
+        assert dict in type(h).mro()
+        self.assertEqual(['ForeignDict', 'dict', 'foreign', 'object'], [t.__name__ for t in type(h).mro()])
+        assert repr(h) == repr({1: 2})
+        assert str(h) == str({1: 2}), str(h)
+        assert h
+
+        assert h[1] == 2
+        with self.assertRaisesRegex(KeyError, '42'):
+            h[42]
+
+        assert len(h) == 1
+
+        self.assertEqual([1], [k for k in h])
+
+        del h[1]
+        assert not h
+        assert len(h) == 0
+
+        h[1] = 2
+        assert h.pop(1) == 2
+        assert h.pop(42, 43) == 43
+
+        h[1] = 2
+        assert h.setdefault(3, 4) == 4
+        assert h.setdefault(1, 42) == 2
+        self.assertEqual('{1: 2, 3: 4}', repr(h))
+
+        h.clear()
+        assert not h
+        assert len(h) == 0
+        self.assertEqual('{}', repr(h))
+
+        h[1] = 2
+        assert 1 in h
+        assert 2 not in h
+
+        assert h == {1: 2}
+        assert {1: 2} == h
+        assert not (h == {})
+        assert not ({} == h)
+
+        assert h != {}
+        assert {} != h
+        assert not (h != {1: 2})
+        assert not ({1: 2} != h)
+
+        self.assertRaises(TypeError, lambda: h < {})
+        self.assertRaises(TypeError, lambda: {} < h)
+        self.assertRaises(TypeError, lambda: h <= {})
+        self.assertRaises(TypeError, lambda: {} <= h)
+        self.assertRaises(TypeError, lambda: h >= {})
+        self.assertRaises(TypeError, lambda: {} >= h)
+        self.assertRaises(TypeError, lambda: h > {})
+        self.assertRaises(TypeError, lambda: {} > h)
+
+        assert (h | {3: 4}) == {1: 2, 3: 4}
+        assert type(h | {3: 4}) == dict
+        assert ({-1: 0} | h) == {-1: 0, 1: 2}
+
+        h |= {3: 4}
+        assert h == {1: 2, 3: 4}
+        h |= {1: 42, 3: 5}
+        assert h == {1: 42, 3: 5}
+
+        with self.assertRaisesRegex(TypeError, 'foreign object cannot be iterated in reverse'):
+            reversed(h)
+
+        copy = h.copy()
+        assert copy is not h
+        assert copy == h
+        assert h == copy
+
+        assert h.get(1) == 42
+        assert h.get(1, "missing") == 42
+        assert h.get(14, "missing") == "missing"
+        assert h.get(14) == None
+
+        h.clear()
+        h |= {1: 2, 3: 4}
+
+        self.assertEqual([1, 3], list(h.keys()))
+        self.assertEqual([2, 4], list(h.values()))
+        self.assertEqual([(1, 2), (3, 4)], list(h.items()))
+
+        with self.assertRaisesRegex(TypeError, 'foreign object cannot be iterated in reverse'):
+            h.popitem()
+
+        h.clear()
+        h.update({ 5: 6, 7: 8 })
+        assert h == { 5: 6, 7: 8 }
+        h.update({ 5: 66 })
+        assert h == { 5: 66, 7: 8 }
+        h.update(h)
+        assert h == { 5: 66, 7: 8 }
+        d = {}
+        d.update(h)
+        assert d == { 5: 66, 7: 8 }, d
+
+        h.clear()
+        h.__init__({1: 2, 3: 4})
+        assert h == {1: 2, 3: 4}
+        h.__init__({3: 42, 5: 6})
+        assert h == {1: 2, 3: 42, 5: 6}
+
+        d = {}
+        d.__init__(a=1, b=2)
+        assert d == {'a': 1, 'b': 2}
+
+        h.clear()
+        h.__init__(a=1, b=2)
+        assert h == {'a': 1, 'b': 2}
+
+        with self.assertRaisesRegex(TypeError, 'invalid instantiation of foreign object'):
+            type(h).fromkeys(['a', 'b'], 42)
+
+    def test_java_iterator(self):
+        from java.util import ArrayList, LinkedHashSet
+
+        s = LinkedHashSet() # not hasArrayElements() and not hasHashEntries()
+        s.add(1)
+        s.add(2)
+        itr1 = s.iterator()
+        itr2 = iter(s)
+
+        l = ArrayList()
+        l.extend([1, 2])
+        itr3 = l.iterator() # call Java iterator(), iter(l) would call list.__iter__() and return a Python iterator
+
+        for itr in [itr1, itr2, itr3]:
+            iterator_type = type(iter([]))
+            assert isinstance(itr, iterator_type)
+            assert iterator_type in type(itr).mro()
+            self.assertEqual(['ForeignIterator', 'iterator', 'foreign', 'object'], [t.__name__ for t in type(itr).mro()])
+            assert '<polyglot.ForeignIterator object at 0x' in repr(itr), repr(itr)
+            assert '<polyglot.ForeignIterator object at 0x' in str(itr), str(itr)
+            assert bool(itr) == True
+
+            assert iter(itr) is itr
+
+            assert itr.__length_hint__() == 1
+            assert next(itr) == 1
+            assert next(itr) == 2
+            self.assertRaises(StopIteration, lambda: next(itr))
+            self.assertRaises(StopIteration, lambda: next(itr))
+            assert itr.__length_hint__() == 0
+
+            with self.assertRaisesRegex(TypeError, "descriptor requires a 'iterator' object but received a 'ForeignIterator'"):
+                itr.__reduce__()
+
+            with self.assertRaisesRegex(TypeError, "descriptor requires a 'iterator' object but received a 'ForeignIterator'"):
+                itr.__setstate__(0)
+
+    def test_java_iterable(self):
+        from java.util import LinkedHashSet
+        s = LinkedHashSet() # not hasArrayElements() and not hasHashEntries()
+        s.add(1)
+        s.add(2)
+        assert 2 in s
+        assert 2 in s
+        assert 3 not in s
+
+    def test_java_map_as_keywords(self):
+        from java.util import HashMap, LinkedHashMap
+
+        def foo(a, b):
+            return [a, b]
+
+        h = HashMap()
+        h.__init__({'a': 1, 'b': 2})
+        assert list(h.keys()) == ['a', 'b']
+        assert foo(**h) == [1, 2]
+
+        # LinkedHashMap to preserve insertion ordering for these 2 examples
+        h = LinkedHashMap()
+        h.__init__({'a': 1, 'b': 2})
+        assert list(h.keys()) == ['a', 'b']
+        assert foo(**h) == [1, 2]
+
+        h = LinkedHashMap()
+        h.__init__({'b': 2, 'a': 1})
+        assert list(h.keys()) == ['b', 'a']
+        assert foo(**h) == [1, 2]
+
+    def test_foreign_repl(self):
         from java.util.logging import LogRecord
         from java.util.logging import Level
 
@@ -669,13 +1045,13 @@ if sys.implementation.name == "graalpy":
         assert repr(Integer).startswith('<JavaClass[java.lang.Integer] at')
         assert repr(i) == '22'
 
-    def test_jython_star_import():
+    def test_jython_star_import(self):
         if __graalpython__.jython_emulation_enabled:
             g = {}
             exec('from java.lang.Byte import *', g)
             assert type(g['MAX_VALUE']) is int
 
-    def test_jython_accessors():
+    def test_jython_accessors(self):
         if __graalpython__.jython_emulation_enabled:
             from java.util.logging import LogRecord
             from java.util.logging import Level
@@ -686,7 +1062,7 @@ if sys.implementation.name == "graalpy":
             assert lr.message == "new message"
 
     @skipUnless(test_polyglot_languages, "tests other language access")
-    def test_doctest():
+    def test_doctest(self):
         import doctest
 
         class Example(doctest.Example):

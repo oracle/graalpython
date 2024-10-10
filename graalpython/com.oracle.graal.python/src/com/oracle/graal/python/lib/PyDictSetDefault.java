@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,7 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -68,18 +68,21 @@ public abstract class PyDictSetDefault extends PNodeWithContext {
     }
 
     @Specialization
-    public static Object doIt(VirtualFrame frame, Node inliningTarget, PDict dict, Object key, Object defaultValue,
+    public static Object doIt(VirtualFrame frame, Node inliningTarget, Object dict, Object key, Object defaultValue,
+                    @Cached DictNodes.GetDictStorageNode getStorageNode,
+                    @Cached DictNodes.UpdateDictStorageNode updateStorageNode,
                     @Cached PyObjectHashNode hashNode,
                     @Cached HashingStorageGetItemWithHash getItem,
                     @Cached HashingStorageSetItemWithHash setItem,
                     @Cached InlinedConditionProfile hasValue) {
+        var storage = getStorageNode.execute(inliningTarget, dict);
         long keyHash = hashNode.execute(frame, inliningTarget, key);
-        Object value = getItem.execute(frame, inliningTarget, dict.getDictStorage(), key, keyHash);
+        Object value = getItem.execute(frame, inliningTarget, storage, key, keyHash);
         if (hasValue.profile(inliningTarget, value != null)) {
             return value;
         }
-        HashingStorage newStorage = setItem.execute(frame, inliningTarget, dict.getDictStorage(), key, keyHash, defaultValue);
-        dict.setDictStorage(newStorage);
+        HashingStorage newStorage = setItem.execute(frame, inliningTarget, storage, key, keyHash, defaultValue);
+        updateStorageNode.execute(inliningTarget, dict, storage, newStorage);
         return defaultValue;
     }
 }

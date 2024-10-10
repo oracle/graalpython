@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.lib.GetNextNode;
@@ -85,18 +86,20 @@ public abstract class HashingCollectionNodes {
     @GenerateCached
     @ImportStatic(PGuards.class)
     public abstract static class SetItemNode extends PNodeWithContext {
-        public abstract void execute(Frame frame, Node inliningTarget, PHashingCollection c, Object key, Object value);
+        public abstract void execute(Frame frame, Node inliningTarget, Object c, Object key, Object value);
 
-        public final void executeCached(Frame frame, PHashingCollection c, Object key, Object value) {
+        public final void executeCached(Frame frame, Object c, Object key, Object value) {
             execute(frame, this, c, key, value);
         }
 
         @Specialization
-        static void doSetItem(Frame frame, Node inliningTarget, PHashingCollection c, Object key, Object value,
+        static void doSetItem(Frame frame, Node inliningTarget, Object c, Object key, Object value,
+                        @Cached DictNodes.GetDictStorageNode getStorageNode,
+                        @Cached DictNodes.UpdateDictStorageNode updateStorageNode,
                         @Cached HashingStorageSetItem setItem) {
-            HashingStorage storage = c.getDictStorage();
-            storage = setItem.execute(frame, inliningTarget, storage, key, value);
-            c.setDictStorage(storage);
+            var storage = getStorageNode.execute(inliningTarget, c);
+            var newStorage = setItem.execute(frame, inliningTarget, storage, key, value);
+            updateStorageNode.execute(inliningTarget, c, storage, newStorage);
         }
 
         @NeverDefault
@@ -171,19 +174,19 @@ public abstract class HashingCollectionNodes {
         @Specialization(guards = "isNoValue(value)")
         static HashingStorage doPDictKeyViewNoValue(Node inliningTarget, PDictView.PDictKeysView other, Object value,
                         @Shared("copyNode") @Cached HashingStorageCopy copyNode) {
-            return doHashingCollectionNoValue(inliningTarget, other.getWrappedDict(), value, copyNode);
+            return copyNode.execute(inliningTarget, other.getWrappedStorage());
         }
 
         @Specialization(guards = "!isNoValue(value)")
         static HashingStorage doHashingCollection(VirtualFrame frame, PHashingCollection other, Object value,
                         @Shared @Cached(inline = false) GetClonedHashingCollectionNode hashingCollectionNode) {
-            return hashingCollectionNode.execute(frame, other, value);
+            return hashingCollectionNode.execute(frame, other.getDictStorage(), value);
         }
 
         @Specialization(guards = "!isNoValue(value)")
         static HashingStorage doPDictView(VirtualFrame frame, PDictView.PDictKeysView other, Object value,
                         @Shared @Cached(inline = false) GetClonedHashingCollectionNode hashingCollectionNode) {
-            return hashingCollectionNode.execute(frame, other.getWrappedDict(), value);
+            return hashingCollectionNode.execute(frame, other.getWrappedStorage(), value);
         }
 
         @Specialization(guards = "isString(strObj)")
@@ -237,15 +240,15 @@ public abstract class HashingCollectionNodes {
 
         @GenerateInline(false) // Intentionally lazy
         abstract static class GetClonedHashingCollectionNode extends Node {
-            abstract HashingStorage execute(VirtualFrame frame, PHashingCollection other, Object value);
+            abstract HashingStorage execute(VirtualFrame frame, HashingStorage other, Object value);
 
             @Specialization
-            static HashingStorage doHashingCollection(VirtualFrame frame, PHashingCollection other, Object value,
+            static HashingStorage doHashingCollection(VirtualFrame frame, HashingStorage other, Object value,
                             @Bind("this") Node inliningTarget,
                             @Cached SetValueHashingStorageNode setValue,
                             @Cached HashingStorageCopy copyNode) {
                 assert !PGuards.isNoValue(value);
-                HashingStorage storage = copyNode.execute(inliningTarget, other.getDictStorage());
+                HashingStorage storage = copyNode.execute(inliningTarget, other);
                 storage = setValue.execute(frame, inliningTarget, storage, value);
                 return storage;
             }
@@ -255,6 +258,8 @@ public abstract class HashingCollectionNodes {
     /**
      * Returns {@link HashingStorage} with the same keys as the given iterator. There is no
      * guarantee about the values!
+     *
+     * @see DictNodes.GetDictStorageNode
      */
     @GenerateInline(inlineByDefault = true)
     public abstract static class GetSetStorageNode extends PNodeWithContext {
@@ -272,7 +277,7 @@ public abstract class HashingCollectionNodes {
 
         @Specialization
         static HashingStorage doPDictView(PDictView.PDictKeysView other) {
-            return other.getWrappedDict().getDictStorage();
+            return other.getWrappedStorage();
         }
 
         @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)"})

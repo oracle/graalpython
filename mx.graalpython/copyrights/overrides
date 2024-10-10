@@ -623,7 +623,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/generator/GeneratorBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/generator/PGenerator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/ints/PInt.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/ForeignIteratorBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/IteratorBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PArrayIterator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/iterator/PBaseSetIterator.java,zippy.copyright

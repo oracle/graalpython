@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,32 +40,27 @@
  */
 package com.oracle.graal.python.nodes.exception;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 18
-public abstract class ValidExceptionNode extends Node {
+public abstract class ValidExceptionNode extends PNodeWithContext {
     public abstract boolean execute(Frame frame, Object type);
-
-    @Idempotent
-    protected boolean emulateJython() {
-        return PythonLanguage.get(this).getEngineOption(PythonOptions.EmulateJython);
-    }
 
     protected static boolean isPythonExceptionType(PythonBuiltinClassType type) {
         PythonBuiltinClassType base = type;
@@ -100,19 +95,20 @@ public abstract class ValidExceptionNode extends Node {
         return isSubtype.execute(frame, type, PythonBuiltinClassType.PBaseException);
     }
 
-    protected boolean isHostObject(Object object) {
-        return PythonContext.get(this).getEnv().isHostObject(object);
-    }
-
-    @Specialization(guards = {"emulateJython()", "isHostObject(type)"})
-    @SuppressWarnings("unused")
-    boolean isJavaException(@SuppressWarnings("unused") VirtualFrame frame, Object type) {
-        Object hostType = PythonContext.get(this).getEnv().asHostObject(type);
-        return hostType instanceof Class && Throwable.class.isAssignableFrom((Class<?>) hostType);
+    @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, type)", limit = "1")
+    static boolean isForeign(Object type,
+                    @Bind("this") Node inliningTarget,
+                    @Cached IsForeignObjectNode isForeignObjectNode,
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
+        /*
+         * There is no way to tell if a meta object is some kind of foreign exception class, so we
+         * allow any foreign meta object
+         */
+        return interop.isMetaObject(type);
     }
 
     @Fallback
-    static boolean isAnException(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object type) {
+    static boolean isAnException(@SuppressWarnings("unused") Object type) {
         return false;
     }
 }

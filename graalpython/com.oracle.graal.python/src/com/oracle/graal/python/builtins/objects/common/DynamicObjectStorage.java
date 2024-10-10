@@ -125,6 +125,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         return DynamicObjectStorage.keyArray(self.store.getShape());
     }
 
+    @TruffleBoundary
     protected static Object[] keyArray(Shape shape) {
         return shape.getKeyList().toArray();
     }

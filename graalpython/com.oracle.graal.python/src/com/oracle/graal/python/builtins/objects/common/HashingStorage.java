@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -104,7 +104,7 @@ public abstract class HashingStorage {
 
         @Specialization(guards = {"isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, lookupIter)"})
         static HashingStorage doPDict(PDict dict, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode.GetPythonObjectClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Shared @Cached HashingStorageCopy copyNode) {
@@ -113,7 +113,7 @@ public abstract class HashingStorage {
 
         @Specialization(guards = {"!isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, lookupIter)"})
         static HashingStorage doPDictKwargs(VirtualFrame frame, PDict dict, PKeyword[] kwargs,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
+                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode.GetPythonObjectClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Shared @Cached HashingStorageCopy copyNode,
@@ -183,12 +183,11 @@ public abstract class HashingStorage {
         return storage;
     }
 
-    public static HashingStorage addKeyValuesToStorage(VirtualFrame frame, PDict self, Object other, Object keyAttr,
+    public static HashingStorage addKeyValuesToStorage(VirtualFrame frame, HashingStorage storage, Object other, Object keyAttr,
                     Node inliningTarget,
                     ObjectToArrayPairNode toArrayPair,
                     HashingStorageSetItem setItem) {
         ArrayBuilder<KeyValue> elements = toArrayPair.execute(frame, other, keyAttr);
-        HashingStorage storage = self.getDictStorage();
         return addKeyValuesToStorage(frame, elements, storage, inliningTarget, setItem);
     }
 

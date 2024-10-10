@@ -101,7 +101,7 @@ public class PDict extends PHashingCollection {
     }
 
     public void update(PDict other) {
-        HashingStorageAddAllToOther.executeUncached(other.getDictStorage(), this);
+        setDictStorage(HashingStorageAddAllToOther.executeUncached(other.getDictStorage(), storage));
     }
 
     @Override
@@ -220,8 +220,8 @@ public class PDict extends PHashingCollection {
         boolean mustRelease = gil.acquire();
         try {
             Object pKey = convertNode.executeConvert(key);
-            Object found = delItem.executePop(null, inliningTarget, self.getDictStorage(), pKey, self);
-            if (found == null) {
+            boolean found = delItem.execute(null, inliningTarget, self.getDictStorage(), pKey, self);
+            if (!found) {
                 throw UnknownKeyException.create(key);
             }
         } finally {

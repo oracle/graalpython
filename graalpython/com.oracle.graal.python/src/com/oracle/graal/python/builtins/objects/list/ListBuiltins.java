@@ -70,7 +70,10 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.lib.PyListCheckNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.ClearListStorageNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.GetClassForNewListNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.GetListStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
@@ -85,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
@@ -109,13 +111,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -125,6 +125,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -140,6 +141,12 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
+/**
+ * NOTE: self can either be a PList or a foreign list (hasArrayElements()).
+ * {@link GetListStorageNode} should be used instead of
+ * {@link com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode} to
+ * get a proper error and not allow other sequences, just PList or foreign list.
+ */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PList)
 public final class ListBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = ListBuiltinsSlotsGen.SLOTS;
@@ -160,13 +167,14 @@ public final class ListBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public TruffleString repr(VirtualFrame frame, PList self,
+        public TruffleString repr(VirtualFrame frame, Object self,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.GetItemNode getItem,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            SequenceStorage storage = self.getSequenceStorage();
+            SequenceStorage storage = getStorageNode.execute(inliningTarget, self);
             int length = storage.length();
             if (length == 0) {
                 return T_EMPTY_BRACKETS;
@@ -199,15 +207,15 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListInitNode extends PythonBinaryBuiltinNode {
 
-        public abstract PNone execute(VirtualFrame frame, PList list, Object source);
-
         @Specialization
         static PNone initTruffleString(PList list, TruffleString value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ClearListStorageNode clearStorageNode,
                         @Shared("cpIt") @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Shared("cpItNext") @Cached TruffleStringIterator.NextNode nextNode,
                         @Shared("fromCp") @Cached TruffleString.FromCodePointNode fromCodePointNode,
                         @Shared("appendNode") @Cached AppendNode appendNode) {
-            clearStorage(list);
+            clearStorageNode.execute(inliningTarget, list);
             TruffleStringIterator iterator = createCodePointIteratorNode.execute(value, TS_ENCODING);
             while (iterator.hasNext()) {
                 // TODO: GR-37219: use SubstringNode with lazy=true?
@@ -221,22 +229,27 @@ public final class ListBuiltins extends PythonBuiltins {
         static PNone initPString(PList list, PString value,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castStr,
+                        @Shared @Cached ClearListStorageNode clearStorageNode,
                         @Shared("cpIt") @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Shared("cpItNext") @Cached TruffleStringIterator.NextNode nextNode,
                         @Shared("fromCp") @Cached TruffleString.FromCodePointNode fromCodePointNode,
                         @Shared("appendNode") @Cached AppendNode appendNode) {
-            return initTruffleString(list, castStr.execute(inliningTarget, value), createCodePointIteratorNode, nextNode, fromCodePointNode, appendNode);
+            return initTruffleString(list, castStr.execute(inliningTarget, value), inliningTarget, clearStorageNode, createCodePointIteratorNode, nextNode, fromCodePointNode, appendNode);
         }
 
         @Specialization(guards = "isNoValue(none)")
-        static PNone init(PList list, @SuppressWarnings("unused") PNone none) {
-            clearStorage(list);
+        static PNone init(Object list, PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ClearListStorageNode clearStorageNode) {
+            clearStorageNode.execute(inliningTarget, list);
             return PNone.NONE;
         }
 
         @Specialization
-        static PNone listRange(PList list, PIntRange range) {
-            clearStorage(list);
+        static PNone listRange(PList list, PIntRange range,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ClearListStorageNode clearStorageNode) {
+            clearStorageNode.execute(inliningTarget, list);
             int start = range.getIntStart();
             int step = range.getIntStep();
             int len = range.getIntLength();
@@ -253,20 +266,26 @@ public final class ListBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
         static PNone listIterable(VirtualFrame frame, PList list, Object iterable,
                         @Bind("this") Node inliningTarget,
+                        // exclusive for truffle-interpreted-performance
+                        @Exclusive @Cached ClearListStorageNode clearStorageNode,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached CreateStorageFromIteratorNode storageNode) {
-            clearStorage(list);
+            clearStorageNode.execute(inliningTarget, list);
             int len = lenNode.execute(frame, inliningTarget, iterable);
             Object iterObj = getIter.execute(frame, inliningTarget, iterable);
             list.setSequenceStorage(storageNode.execute(frame, iterObj, len));
             return PNone.NONE;
         }
 
-        private static void clearStorage(PList list) {
-            if (EmptySequenceStorage.INSTANCE != list.getSequenceStorage()) {
-                list.setSequenceStorage(EmptySequenceStorage.INSTANCE);
-            }
+        @Specialization(guards = {"!isList(list)", "!isNoValue(iterable)"})
+        static PNone foreignListIterable(VirtualFrame frame, Object list, Object iterable,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached ClearListStorageNode clearStorageNode,
+                        @Cached ListExtendNode extendNode) {
+            clearStorageNode.execute(inliningTarget, list);
+            extendNode.execute(frame, list, iterable);
+            return PNone.NONE;
         }
     }
 
@@ -276,27 +295,27 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, PList self, Object key,
+        static Object doGeneric(VirtualFrame frame, Object list, Object key,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode) {
-            deleteNode.execute(frame, self.getSequenceStorage(), key);
+            var sequenceStorage = getStorageNode.execute(inliningTarget, list);
+            deleteNode.execute(frame, sequenceStorage, key);
             return PNone.NONE;
         }
 
-        @Fallback
-        static Object doGeneric(Object self, @SuppressWarnings("unused") Object objectIdx,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__delitem__", "list", self);
-        }
     }
 
     @Slot(value = SlotKind.sq_item, isComplex = true)
     @GenerateNodeFactory
     public abstract static class ListSqItemNode extends SqItemBuiltinNode {
         @Specialization
-        static Object doIt(PList self, int index,
+        static Object doIt(Object self, int index,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
                         @Cached SequenceStorageSqItemNode sqItemNode) {
-            return sqItemNode.execute(inliningTarget, self.getSequenceStorage(), index, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+            var sequenceStorage = getStorageNode.execute(inliningTarget, self);
+            return sqItemNode.execute(inliningTarget, sequenceStorage, index, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
         }
     }
 
@@ -304,8 +323,9 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetItemNode extends MpSubscriptBuiltinNode {
         @Specialization
-        static Object doIt(VirtualFrame frame, PList self, Object idx,
+        static Object doIt(VirtualFrame frame, Object self, Object idx,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
                         @Cached InlinedConditionProfile validProfile,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PRaiseNode.Lazy raiseNode,
@@ -313,7 +333,8 @@ public final class ListBuiltins extends PythonBuiltins {
             if (!validProfile.profile(inliningTarget, SequenceStorageMpSubscriptNode.isValidIndex(inliningTarget, idx, indexCheckNode))) {
                 raiseNonIntIndex(inliningTarget, raiseNode, idx);
             }
-            return subscriptNode.execute(frame, inliningTarget, self.getSequenceStorage(), idx,
+            var sequenceStorage = getStorageNode.execute(inliningTarget, self);
+            return subscriptNode.execute(frame, inliningTarget, sequenceStorage, idx,
                             ErrorMessages.LIST_INDEX_OUT_OF_RANGE, PythonObjectFactory::createList);
         }
 
@@ -328,22 +349,28 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        static Object doInt(PList self, int index, Object value,
+        static Object doInt(Object self, int index, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile generalizedProfile,
+                        @Shared @Cached GetListStorageNode getStorageNode,
+                        @Shared @Cached ListNodes.UpdateListStorageNode updateStorageNode,
                         @Shared("setItem") @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode) {
-            updateStorage(inliningTarget, self, setItemNode.execute(self.getSequenceStorage(), index, value), generalizedProfile);
+            var sequenceStorage = getStorageNode.execute(inliningTarget, self);
+            var newStorage = setItemNode.execute(sequenceStorage, index, value);
+            updateStorageNode.execute(inliningTarget, self, sequenceStorage, newStorage);
             return PNone.NONE;
         }
 
         @InliningCutoff
         @Specialization(guards = "isIndexOrSlice(this, indexCheckNode, key)")
-        static Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
+        static Object doGeneric(VirtualFrame frame, Object self, Object key, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile generalizedProfile,
+                        @Shared @Cached GetListStorageNode getStorageNode,
+                        @Shared @Cached ListNodes.UpdateListStorageNode updateStorageNode,
                         @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Shared("setItem") @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode) {
-            updateStorage(inliningTarget, primary, setItemNode.execute(frame, primary.getSequenceStorage(), key, value), generalizedProfile);
+            var sequenceStorage = getStorageNode.execute(inliningTarget, self);
+            var newStorage = setItemNode.execute(frame, sequenceStorage, key, value);
+            updateStorageNode.execute(inliningTarget, self, sequenceStorage, newStorage);
             return PNone.NONE;
         }
 
@@ -354,12 +381,6 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
-        }
-
-        private static void updateStorage(Node inliningTarget, PList primary, SequenceStorage newStorage, InlinedConditionProfile generalizedProfile) {
-            if (generalizedProfile.profile(inliningTarget, primary.getSequenceStorage() != newStorage)) {
-                primary.setSequenceStorage(newStorage);
-            }
         }
 
         @NeverDefault
@@ -374,7 +395,7 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class ListAppendNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public PNone appendObjectGeneric(PList list, Object arg,
+        public PNone appendObjectGeneric(Object list, Object arg,
                         @Cached ListNodes.AppendNode appendNode) {
             appendNode.execute(list, arg);
             return PNone.NONE;
@@ -386,22 +407,20 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListExtendNode extends PythonBinaryBuiltinNode {
 
-        public abstract PNone execute(VirtualFrame frame, PList list, Object source);
+        public abstract PNone execute(VirtualFrame frame, Object list, Object source);
 
         @Specialization
-        public static PNone extendSequence(VirtualFrame frame, PList list, Object iterable,
+        public static PNone extendSequence(VirtualFrame frame, Object list, Object iterable,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
+                        @Cached ListNodes.UpdateListStorageNode updateStorageNode,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
+            var sequenceStorage = getStorageNode.execute(inliningTarget, list);
             int len = lenNode.execute(frame, inliningTarget, iterable);
-            updateSequenceStorage(list, extendNode.execute(frame, list.getSequenceStorage(), iterable, len));
+            var newStorage = extendNode.execute(frame, sequenceStorage, iterable, len);
+            updateStorageNode.execute(inliningTarget, list, sequenceStorage, newStorage);
             return PNone.NONE;
-        }
-
-        private static void updateSequenceStorage(PList list, SequenceStorage s) {
-            if (list.getSequenceStorage() != s) {
-                list.setSequenceStorage(s);
-            }
         }
 
         @NeverDefault
@@ -421,12 +440,15 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class ListCopyNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static PList copySequence(PList self,
+        static PList copySequence(Object list,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.CopyNode copy,
-                        @Cached GetClassNode getClassNode,
+                        @Cached GetClassForNewListNode getClassForNewListNode,
                         @Cached PythonObjectFactory factory) {
-            return factory.createList(getClassNode.execute(inliningTarget, self), copy.execute(inliningTarget, self.getSequenceStorage()));
+            var sequenceStorage = getStorageNode.execute(inliningTarget, list);
+            Object newClass = getClassForNewListNode.execute(inliningTarget, list);
+            return factory.createList(newClass, copy.execute(inliningTarget, sequenceStorage));
         }
 
     }
@@ -467,12 +489,15 @@ public final class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "isNotSpecialCase(list, value)")
-        static PNone insert(PList list, int index, Object value,
+        @Specialization(guards = "!isSpecialCase(list, value)")
+        static PNone insert(Object list, int index, Object value,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
+                        @Cached ListNodes.UpdateListStorageNode updateStorageNode,
                         @Cached SequenceStorageNodes.InsertItemNode insertItem) {
-            SequenceStorage store = list.getSequenceStorage();
-            list.setSequenceStorage(insertItem.execute(inliningTarget, store, normalizeIndex(index, store.length()), value));
+            SequenceStorage store = getStorageNode.execute(inliningTarget, list);
+            SequenceStorage newStorage = insertItem.execute(inliningTarget, store, normalizeIndex(index, store.length()), value);
+            updateStorageNode.execute(inliningTarget, list, store, newStorage);
             return PNone.NONE;
         }
 
@@ -528,8 +553,9 @@ public final class ListBuiltins extends PythonBuiltins {
             return idx;
         }
 
-        protected static boolean isNotSpecialCase(PList list, Object value) {
-            return !((PGuards.isIntStorage(list) && value instanceof Integer) || (PGuards.isLongStorage(list) && PGuards.isInteger(value)) ||
+        protected static boolean isSpecialCase(Object listObject, Object value) {
+            return listObject instanceof PList list && ((PGuards.isIntStorage(list) && value instanceof Integer) ||
+                            (PGuards.isLongStorage(list) && PGuards.isInteger(value)) ||
                             (PGuards.isDoubleStorage(list) && value instanceof Double));
         }
 
@@ -545,13 +571,14 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class ListRemoveNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static PNone remove(VirtualFrame frame, PList list, Object value,
+        static PNone remove(VirtualFrame frame, Object list, Object value,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            SequenceStorage listStore = list.getSequenceStorage();
+            SequenceStorage listStore = getStorageNode.execute(inliningTarget, list);
             int len = listStore.length();
             for (int i = 0; i < len; i++) {
                 Object object = getItemNode.execute(listStore, i);
@@ -570,20 +597,24 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class ListPopNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static Object popLast(VirtualFrame frame, PList list, @SuppressWarnings("unused") PNone none,
+        static Object popLast(VirtualFrame frame, Object list, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetListStorageNode getStorageNode,
                         @Shared @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode,
                         @Shared @Cached SequenceStorageNodes.GetItemNode getItemNode) {
-            SequenceStorage store = list.getSequenceStorage();
+            SequenceStorage store = getStorageNode.execute(inliningTarget, list);
             Object ret = getItemNode.execute(store, -1);
             deleteNode.execute(frame, store, -1);
             return ret;
         }
 
         @Specialization(guards = {"!isNoValue(idx)", "!isPSlice(idx)"})
-        static Object doIndex(VirtualFrame frame, PList list, Object idx,
+        static Object doIndex(VirtualFrame frame, Object list, Object idx,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetListStorageNode getStorageNode,
                         @Shared @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode,
                         @Shared @Cached SequenceStorageNodes.GetItemNode getItemNode) {
-            SequenceStorage store = list.getSequenceStorage();
+            SequenceStorage store = getStorageNode.execute(inliningTarget, list);
             Object ret = getItemNode.execute(frame, store, idx);
             deleteNode.execute(frame, store, idx);
             return ret;
@@ -627,7 +658,7 @@ public final class ListBuiltins extends PythonBuiltins {
             return (int) Math.min(resultIndex, Integer.MAX_VALUE);
         }
 
-        @TruffleBoundary(transferToInterpreterOnException = false)
+        @TruffleBoundary
         private static int correctIndex(SequenceStorage s, PInt index) {
             BigInteger value = index.getValue();
             if (value.compareTo(BigInteger.ZERO) < 0) {
@@ -650,84 +681,91 @@ public final class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int index(VirtualFrame frame, PList self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+        static int index(VirtualFrame frame, Object self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetListStorageNode getStorageNode,
                         @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            SequenceStorage s = self.getSequenceStorage();
+            SequenceStorage s = getStorageNode.execute(inliningTarget, self);
             return findIndex(frame, inliningTarget, itemIndexNode, s, value, 0, s.length(), raiseNode);
         }
 
         @Specialization
-        static int index(VirtualFrame frame, PList self, Object value, long start, @SuppressWarnings("unused") PNone end,
+        static int index(VirtualFrame frame, Object self, Object value, long start, @SuppressWarnings("unused") PNone end,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetListStorageNode getStorageNode,
                         @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            SequenceStorage s = self.getSequenceStorage();
+            SequenceStorage s = getStorageNode.execute(inliningTarget, self);
             return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), s.length(), raiseNode);
         }
 
         @Specialization
-        static int index(VirtualFrame frame, PList self, Object value, long start, long end,
+        static int index(VirtualFrame frame, Object self, Object value, long start, long end,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetListStorageNode getStorageNode,
                         @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            SequenceStorage s = self.getSequenceStorage();
+            SequenceStorage s = getStorageNode.execute(inliningTarget, self);
             return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), correctIndex(s, end), raiseNode);
         }
 
         @Specialization
-        static int indexPI(VirtualFrame frame, PList self, Object value, PInt start, @SuppressWarnings("unused") PNone end,
+        static int indexPI(VirtualFrame frame, Object self, Object value, PInt start, @SuppressWarnings("unused") PNone end,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetListStorageNode getStorageNode,
                         @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            SequenceStorage s = self.getSequenceStorage();
+            SequenceStorage s = getStorageNode.execute(inliningTarget, self);
             return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), s.length(), raiseNode);
         }
 
         @Specialization
-        static int indexPIPI(VirtualFrame frame, PList self, Object value, PInt start, PInt end,
+        static int indexPIPI(VirtualFrame frame, Object self, Object value, PInt start, PInt end,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetListStorageNode getStorageNode,
                         @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            SequenceStorage s = self.getSequenceStorage();
+            SequenceStorage s = getStorageNode.execute(inliningTarget, self);
             return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), correctIndex(s, end), raiseNode);
         }
 
         @Specialization
-        static int indexLPI(VirtualFrame frame, PList self, Object value, long start, PInt end,
+        static int indexLPI(VirtualFrame frame, Object self, Object value, long start, PInt end,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetListStorageNode getStorageNode,
                         @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            SequenceStorage s = self.getSequenceStorage();
+            SequenceStorage s = getStorageNode.execute(inliningTarget, self);
             return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), correctIndex(s, end), raiseNode);
         }
 
         @Specialization
-        static int indexPIL(VirtualFrame frame, PList self, Object value, PInt start, Long end,
+        static int indexPIL(VirtualFrame frame, Object self, Object value, PInt start, Long end,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetListStorageNode getStorageNode,
                         @Shared @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            SequenceStorage s = self.getSequenceStorage();
+            SequenceStorage s = getStorageNode.execute(inliningTarget, self);
             return findIndex(frame, inliningTarget, itemIndexNode, s, value, correctIndex(s, start), correctIndex(s, end), raiseNode);
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        static int indexDO(PTuple self, Object value, double start, Object end,
+        static int indexDO(Object self, Object value, double start, Object end,
                         @Shared("raise") @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ERROR_TYPE_MESSAGE);
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        static int indexOD(PTuple self, Object value, Object start, double end,
+        static int indexOD(Object self, Object value, Object start, double end,
                         @Shared("raise") @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ERROR_TYPE_MESSAGE);
         }
 
         @Specialization(guards = "!isNumber(start)")
-        static int indexO(VirtualFrame frame, PTuple self, Object value, Object start, PNone end,
+        static int indexO(VirtualFrame frame, Object self, Object value, Object start, PNone end,
                         @Shared @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode startNode,
                         @Shared @Cached("createIndexNode()") ListIndexNode indexNode) {
             Object startValue = startNode.execute(frame, start);
@@ -735,7 +773,7 @@ public final class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNumber(end)"})
-        static int indexLO(VirtualFrame frame, PTuple self, Object value, long start, Object end,
+        static int indexLO(VirtualFrame frame, Object self, Object value, long start, Object end,
                         @Shared @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode endNode,
                         @Shared @Cached("createIndexNode()") ListIndexNode indexNode) {
             Object endValue = endNode.execute(frame, end);
@@ -743,7 +781,7 @@ public final class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNumber(start) || !isNumber(end)"})
-        static int indexOO(VirtualFrame frame, PTuple self, Object value, Object start, Object end,
+        static int indexOO(VirtualFrame frame, Object self, Object value, Object start, Object end,
                         @Shared @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode startNode,
                         @Shared @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode endNode,
                         @Shared @Cached("createIndexNode()") ListIndexNode indexNode) {
@@ -764,12 +802,13 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class ListCountNode extends PythonBuiltinNode {
 
         @Specialization
-        long count(VirtualFrame frame, PList self, Object value,
+        long count(VirtualFrame frame, Object list, Object value,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             long count = 0;
-            SequenceStorage s = self.getSequenceStorage();
+            SequenceStorage s = getStorageNode.execute(inliningTarget, list);
             for (int i = 0; i < s.length(); i++) {
                 Object seqItem = getItemNode.execute(s, i);
                 if (eqNode.compare(frame, inliningTarget, seqItem, value)) {
@@ -787,10 +826,13 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class ListClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static PNone clear(PList list) {
-            list.setSequenceStorage(EmptySequenceStorage.INSTANCE);
+        static PNone clear(Object list,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ClearListStorageNode clearSequenceNode) {
+            clearSequenceNode.execute(inliningTarget, list);
             return PNone.NONE;
         }
+
     }
 
     // list.reverse()
@@ -799,10 +841,12 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class ListReverseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static PNone reverse(PList list,
+        static PNone reverse(Object list,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.ReverseNode reverseNode) {
-            reverseNode.execute(inliningTarget, list.getSequenceStorage());
+            var sequenceStorage = getStorageNode.execute(inliningTarget, list);
+            reverseNode.execute(inliningTarget, sequenceStorage);
             return PNone.NONE;
         }
 
@@ -813,16 +857,16 @@ public final class ListBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "reverse", conversion = ArgumentClinic.ClinicConversion.IntToBoolean, defaultValue = "false")
     @GenerateNodeFactory
     public abstract static class ListSortNode extends PythonClinicBuiltinNode {
-        public final Object execute(VirtualFrame frame, PList list) {
+        public final Object execute(VirtualFrame frame, Object list) {
             return execute(frame, list, PNone.NO_VALUE, false);
         }
 
-        public abstract Object execute(VirtualFrame frame, PList list, Object keyfunc, boolean reverse);
+        public abstract Object execute(VirtualFrame frame, Object list, Object keyfunc, boolean reverse);
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, PList list, Object keyfunc, boolean reverse,
+        static Object doPList(VirtualFrame frame, PList list, Object keyfunc, boolean reverse,
                         @Bind("this") Node inliningTarget,
-                        @Cached SortSequenceStorageNode sortSequenceStorageNode,
+                        @Shared @Cached SortSequenceStorageNode sortSequenceStorageNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             SequenceStorage storage = list.getSequenceStorage();
             // Make the list temporarily empty to prevent concurrent modification
@@ -830,11 +874,21 @@ public final class ListBuiltins extends PythonBuiltins {
             try {
                 sortSequenceStorageNode.execute(frame, storage, keyfunc, reverse);
                 if (list.getSequenceStorage() != EmptySequenceStorage.INSTANCE) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.LIST_MODIFIED_DURING_SOFT);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.LIST_MODIFIED_DURING_SORT);
                 }
             } finally {
                 list.setSequenceStorage(storage);
             }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isList(list)")
+        static Object doForeign(VirtualFrame frame, Object list, Object keyfunc, boolean reverse,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
+                        @Shared @Cached SortSequenceStorageNode sortSequenceStorageNode) {
+            SequenceStorage storage = getStorageNode.execute(inliningTarget, list);
+            sortSequenceStorageNode.execute(frame, storage, keyfunc, reverse);
             return PNone.NONE;
         }
 
@@ -856,8 +910,10 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends LenBuiltinNode {
 
         @Specialization
-        int doGeneric(PList list) {
-            return list.getSequenceStorage().length();
+        int doGeneric(Object list,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode) {
+            return getStorageNode.execute(inliningTarget, list).length();
         }
     }
 
@@ -865,19 +921,23 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ConcatNode extends SqConcatBuiltinNode {
         @Specialization
-        static PList doPList(PList left, PList other,
+        static PList doPList(Object left, Object right,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
+                        @Cached PyListCheckNode isListNode,
+                        @Cached GetListStorageNode getStorageNode,
+                        @Cached GetClassForNewListNode getClassForNewListNode,
                         @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode,
-                        @Cached PythonObjectFactory factory) {
-            SequenceStorage newStore = concatNode.execute(left.getSequenceStorage(), other.getSequenceStorage());
-            return factory.createList(getClassNode.execute(inliningTarget, left), newStore);
-        }
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (!isListNode.execute(inliningTarget, right)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "list", right, "list");
+            }
 
-        @Specialization(guards = "!isList(right)")
-        static Object doGeneric(@SuppressWarnings("unused") Object left, Object right,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "list", right, "list");
+            var leftStorage = getStorageNode.execute(inliningTarget, left);
+            var rightStorage = getStorageNode.execute(inliningTarget, right);
+            SequenceStorage newStore = concatNode.execute(leftStorage, rightStorage);
+            Object newClass = getClassForNewListNode.execute(inliningTarget, left);
+            return factory.createList(newClass, newStore);
         }
 
         @NeverDefault
@@ -890,19 +950,17 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PList extendSequence(VirtualFrame frame, PList list, Object iterable,
+        Object extendSequence(VirtualFrame frame, Object list, Object iterable,
                         @Bind("this") Node inliningTarget,
+                        @Cached GetListStorageNode getStorageNode,
+                        @Cached ListNodes.UpdateListStorageNode updateStorageNode,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
+            var sequenceStorage = getStorageNode.execute(inliningTarget, list);
             int len = lenNode.execute(frame, inliningTarget, iterable);
-            updateSequenceStorage(list, extendNode.execute(frame, list.getSequenceStorage(), iterable, len));
+            var newStorage = extendNode.execute(frame, sequenceStorage, iterable, len);
+            updateStorageNode.execute(inliningTarget, list, sequenceStorage, newStorage);
             return list;
-        }
-
-        private static void updateSequenceStorage(PList list, SequenceStorage s) {
-            if (list.getSequenceStorage() != s) {
-                list.setSequenceStorage(s);
-            }
         }
 
         @NeverDefault
@@ -915,13 +973,20 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MulNode extends SqRepeatBuiltinNode {
         @Specialization
-        static PList doPListInt(VirtualFrame frame, PList left, int right,
+        static Object doPListInt(VirtualFrame frame, Object left, int right,
                         @Bind("this") Node inliningTarget,
+                        @Cached PyListCheckNode isListNode,
+                        @Cached GetListStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.RepeatNode repeatNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
+            if (!isListNode.execute(inliningTarget, left)) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+
+            var sequenceStorage = getStorageNode.execute(inliningTarget, left);
             try {
-                SequenceStorage repeated = repeatNode.execute(frame, left.getSequenceStorage(), right);
+                SequenceStorage repeated = repeatNode.execute(frame, sequenceStorage, right);
                 return factory.createList(repeated);
             } catch (ArithmeticException | OutOfMemoryError e) {
                 throw raiseNode.get(inliningTarget).raise(MemoryError);
@@ -933,16 +998,14 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IMulNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doGeneric(VirtualFrame frame, PList list, Object right,
+        static Object doGeneric(VirtualFrame frame, Object list, Object right,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile updatedProfile,
+                        @Cached GetListStorageNode getStorageNode,
+                        @Cached ListNodes.UpdateListStorageNode updateStorageNode,
                         @Cached SequenceStorageNodes.RepeatNode repeatNode) {
-
-            SequenceStorage store = list.getSequenceStorage();
+            SequenceStorage store = getStorageNode.execute(inliningTarget, list);
             SequenceStorage updated = repeatNode.execute(frame, store, right);
-            if (updatedProfile.profile(inliningTarget, store != updated)) {
-                list.setSequenceStorage(updated);
-            }
+            updateStorageNode.execute(inliningTarget, list, store, updated);
             return list;
         }
 
@@ -961,8 +1024,8 @@ public final class ListBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isObjectStorage(left, right)")
         boolean doPList(VirtualFrame frame, PList left, PList right,
-                        @Shared @Cached("createEq()") SequenceStorageNodes.CmpNode neNode) {
-            return neNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
+                        @Shared @Cached("createEq()") SequenceStorageNodes.CmpNode cmpNode) {
+            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
 
         /**
@@ -971,10 +1034,10 @@ public final class ListBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = "isObjectStorage(left, right)")
         boolean doPListObjectStorage(VirtualFrame frame, PList left, PList right,
-                        @Shared @Cached("createEq()") SequenceStorageNodes.CmpNode neNode) {
+                        @Shared @Cached("createEq()") SequenceStorageNodes.CmpNode cmpNode) {
             final SequenceStorage leftStorage = left.getSequenceStorage();
             final SequenceStorage rightStorage = right.getSequenceStorage();
-            final boolean result = neNode.execute(frame, leftStorage, rightStorage);
+            final boolean result = cmpNode.execute(frame, leftStorage, rightStorage);
             /*
              * This will check if the underlying storage has been modified and if so, we do the
              * check again.
@@ -985,13 +1048,22 @@ public final class ListBuiltins extends PythonBuiltins {
             /*
              * To avoid possible infinite recursion case, we call the default specialization.
              */
-            return doPList(frame, left, right, neNode);
+            return doPList(frame, left, right, cmpNode);
         }
 
         @Fallback
-        @SuppressWarnings("unused")
-        Object doOther(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        static Object doOther(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyListCheckNode isListNode,
+                        @Shared @Cached("createEq()") SequenceStorageNodes.CmpNode cmpNode,
+                        @Cached GetListStorageNode getStorageNode) {
+            if (isListNode.execute(inliningTarget, right)) {
+                var leftStorage = getStorageNode.execute(inliningTarget, left);
+                var rightStorage = getStorageNode.execute(inliningTarget, right);
+                return cmpNode.execute(frame, leftStorage, rightStorage);
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
         }
     }
 
@@ -1001,14 +1073,23 @@ public final class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doPList(VirtualFrame frame, PList left, PList right,
-                        @Cached("createEq()") SequenceStorageNodes.CmpNode eqNode) {
-            return !eqNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
+                        @Shared @Cached("createNe()") SequenceStorageNodes.CmpNode cmpNode) {
+            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
 
         @Fallback
-        @SuppressWarnings("unused")
-        PNotImplemented doOther(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        static Object doOther(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyListCheckNode isListNode,
+                        @Shared @Cached("createNe()") SequenceStorageNodes.CmpNode cmpNode,
+                        @Cached GetListStorageNode getStorageNode) {
+            if (isListNode.execute(inliningTarget, right)) {
+                var leftStorage = getStorageNode.execute(inliningTarget, left);
+                var rightStorage = getStorageNode.execute(inliningTarget, right);
+                return cmpNode.execute(frame, leftStorage, rightStorage);
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
         }
     }
 
@@ -1018,16 +1099,24 @@ public final class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doPList(VirtualFrame frame, PList left, PList right,
-                        @Cached("createGe()") SequenceStorageNodes.CmpNode neNode) {
-            return neNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
+                        @Shared @Cached("createGe()") SequenceStorageNodes.CmpNode cmpNode) {
+            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
 
         @Fallback
-        @SuppressWarnings("unused")
-        PNotImplemented doOther(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        static Object doOther(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyListCheckNode isListNode,
+                        @Shared @Cached("createGe()") SequenceStorageNodes.CmpNode cmpNode,
+                        @Cached GetListStorageNode getStorageNode) {
+            if (isListNode.execute(inliningTarget, right)) {
+                var leftStorage = getStorageNode.execute(inliningTarget, left);
+                var rightStorage = getStorageNode.execute(inliningTarget, right);
+                return cmpNode.execute(frame, leftStorage, rightStorage);
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
         }
-
     }
 
     @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
@@ -1036,16 +1125,24 @@ public final class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doPList(VirtualFrame frame, PList left, PList right,
-                        @Cached("createLe()") SequenceStorageNodes.CmpNode neNode) {
-            return neNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
+                        @Shared @Cached("createLe()") SequenceStorageNodes.CmpNode cmpNode) {
+            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
 
         @Fallback
-        @SuppressWarnings("unused")
-        PNotImplemented doOther(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        static Object doOther(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyListCheckNode isListNode,
+                        @Shared @Cached("createLe()") SequenceStorageNodes.CmpNode cmpNode,
+                        @Cached GetListStorageNode getStorageNode) {
+            if (isListNode.execute(inliningTarget, right)) {
+                var leftStorage = getStorageNode.execute(inliningTarget, left);
+                var rightStorage = getStorageNode.execute(inliningTarget, right);
+                return cmpNode.execute(frame, leftStorage, rightStorage);
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
         }
-
     }
 
     @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
@@ -1054,13 +1151,23 @@ public final class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doPList(VirtualFrame frame, PList left, PList right,
-                        @Cached("createGt()") SequenceStorageNodes.CmpNode neNode) {
-            return neNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
+                        @Shared @Cached("createGt()") SequenceStorageNodes.CmpNode cmpNode) {
+            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
 
         @Fallback
-        PNotImplemented doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        static Object doOther(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyListCheckNode isListNode,
+                        @Shared @Cached("createGt()") SequenceStorageNodes.CmpNode cmpNode,
+                        @Cached GetListStorageNode getStorageNode) {
+            if (isListNode.execute(inliningTarget, right)) {
+                var leftStorage = getStorageNode.execute(inliningTarget, left);
+                var rightStorage = getStorageNode.execute(inliningTarget, right);
+                return cmpNode.execute(frame, leftStorage, rightStorage);
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
         }
     }
 
@@ -1069,13 +1176,23 @@ public final class ListBuiltins extends PythonBuiltins {
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doPList(VirtualFrame frame, PList left, PList right,
-                        @Cached("createLt()") SequenceStorageNodes.CmpNode neNode) {
-            return neNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
+                        @Shared @Cached("createLt()") SequenceStorageNodes.CmpNode cmpNode) {
+            return cmpNode.execute(frame, left.getSequenceStorage(), right.getSequenceStorage());
         }
 
         @Fallback
-        PNotImplemented contains(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        static Object doOther(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyListCheckNode isListNode,
+                        @Shared @Cached("createLt()") SequenceStorageNodes.CmpNode cmpNode,
+                        @Cached GetListStorageNode getStorageNode) {
+            if (isListNode.execute(inliningTarget, right)) {
+                var leftStorage = getStorageNode.execute(inliningTarget, left);
+                var rightStorage = getStorageNode.execute(inliningTarget, right);
+                return cmpNode.execute(frame, leftStorage, rightStorage);
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
         }
     }
 
@@ -1083,9 +1200,9 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean contains(VirtualFrame frame, PSequence self, Object other,
+        boolean contains(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
+                        @Cached GetListStorageNode getStorage,
                         @Cached SequenceStorageNodes.ContainsNode containsNode) {
             return containsNode.execute(frame, inliningTarget, getStorage.execute(inliningTarget, self), other);
         }
@@ -1117,15 +1234,10 @@ public final class ListBuiltins extends PythonBuiltins {
             return factory.createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
-        @Specialization(guards = {"!isIntStorage(primary)", "!isLongStorage(primary)", "!isDoubleStorage(primary)"})
-        static PSequenceIterator doPList(PList primary,
+        @Fallback
+        static PSequenceIterator doOther(Object primary,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createSequenceIterator(primary);
-        }
-
-        @Fallback
-        static Object doGeneric(@SuppressWarnings("unused") Object self) {
-            return PNone.NONE;
         }
     }
 
@@ -1133,11 +1245,11 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReverseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object reverse(PList self,
+        static Object reverse(Object self,
                         @Bind("this") Node inliningTarget,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached GetListStorageNode getStorage,
                         @Cached PythonObjectFactory factory) {
-            int len = getSequenceStorageNode.execute(inliningTarget, self).length();
+            int len = getStorage.execute(inliningTarget, self).length();
             return factory.createSequenceReverseIterator(PythonBuiltinClassType.PReverseIterator, self, len);
         }
     }

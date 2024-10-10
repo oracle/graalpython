@@ -959,8 +959,8 @@ public abstract class ObjectNodes {
             }
 
             if (isDeleteProfile.profile(inliningTarget, value == PNone.NO_VALUE)) {
-                Object found = delHashingStorageItem.executePop(frame, inliningTarget, dict.getDictStorage(), key, dict);
-                if (found == null) {
+                boolean found = delHashingStorageItem.execute(frame, inliningTarget, dict.getDictStorage(), key, dict);
+                if (!found) {
                     raiseAttributeError(object, key, raiseAttributeErrorNode, type);
                 }
             } else {

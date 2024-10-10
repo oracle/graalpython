@@ -150,7 +150,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         static int len(PDictView self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen len) {
-            return len.execute(inliningTarget, self.getWrappedDict().getDictStorage());
+            return len.execute(inliningTarget, self.getWrappedStorage());
         }
     }
 
@@ -163,7 +163,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared("len") @Cached HashingStorageLen lenNode,
                         @Shared("getit") @Cached HashingStorageGetIterator getIterator,
                         @Shared @Cached PythonObjectFactory factory) {
-            HashingStorage storage = self.getWrappedDict().getDictStorage();
+            HashingStorage storage = self.getWrappedStorage();
             return factory.createDictKeyIterator(getIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
 
@@ -173,7 +173,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared("len") @Cached HashingStorageLen lenNode,
                         @Shared("getit") @Cached HashingStorageGetIterator getIterator,
                         @Shared @Cached PythonObjectFactory factory) {
-            HashingStorage storage = self.getWrappedDict().getDictStorage();
+            HashingStorage storage = self.getWrappedStorage();
             return factory.createDictItemIterator(getIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
@@ -187,7 +187,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared @Cached HashingStorageLen lenNode,
                         @Shared @Cached HashingStorageGetReverseIterator getReverseIterator,
                         @Shared @Cached PythonObjectFactory factory) {
-            HashingStorage storage = self.getWrappedDict().getDictStorage();
+            HashingStorage storage = self.getWrappedStorage();
             return factory.createDictKeyIterator(getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
 
@@ -197,7 +197,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared @Cached HashingStorageLen lenNode,
                         @Shared @Cached HashingStorageGetReverseIterator getReverseIterator,
                         @Shared @Cached PythonObjectFactory factory) {
-            HashingStorage storage = self.getWrappedDict().getDictStorage();
+            HashingStorage storage = self.getWrappedStorage();
             return factory.createDictItemIterator(getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
@@ -206,7 +206,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "len.execute(inliningTarget, self.getWrappedDict().getDictStorage()) == 0", limit = "1")
+        @Specialization(guards = "len.execute(inliningTarget, self.getWrappedStorage()) == 0", limit = "1")
         static boolean containsEmpty(PDictView self, Object key,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen len) {
@@ -217,7 +217,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         static boolean contains(VirtualFrame frame, PDictKeysView self, Object key,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached HashingStorageGetItem getItem) {
-            return getItem.hasKey(frame, inliningTarget, self.getWrappedDict().getDictStorage(), key);
+            return getItem.hasKey(frame, inliningTarget, self.getWrappedStorage(), key);
         }
 
         @Specialization
@@ -231,7 +231,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
             if (tupleLenProfile.profile(inliningTarget, tupleStorage.length() != 2)) {
                 return false;
             }
-            HashingStorage dictStorage = self.getWrappedDict().getDictStorage();
+            HashingStorage dictStorage = self.getWrappedStorage();
             Object value = getItem.execute(frame, inliningTarget, dictStorage, getTupleItemNode.execute(tupleStorage, 0));
             if (value != null) {
                 return eqNode.compare(frame, inliningTarget, value, getTupleItemNode.execute(tupleStorage, 1));
@@ -260,7 +260,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         static boolean disjointSame(PDictView self, @SuppressWarnings("unused") PDictView other,
                         @Bind("this") Node inliningTarget,
                         @Cached @Shared HashingStorageLen len) {
-            return len.execute(inliningTarget, self.getWrappedDict().getDictStorage()) == 0;
+            return len.execute(inliningTarget, self.getWrappedStorage()) == 0;
         }
 
         @Specialization(guards = {"self != other"})
@@ -285,7 +285,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         private static boolean disjointImpl(VirtualFrame frame, Node inliningTarget, PDictView self, Object other, HashingStorageLen len, InlinedConditionProfile sizeProfile,
                         PyObjectSizeNode sizeNode, ContainedInNode contained) {
-            if (sizeProfile.profile(inliningTarget, len.execute(inliningTarget, self.getWrappedDict().getDictStorage()) <= sizeNode.execute(frame, inliningTarget, other))) {
+            if (sizeProfile.profile(inliningTarget, len.execute(inliningTarget, self.getWrappedStorage()) <= sizeNode.execute(frame, inliningTarget, other))) {
                 return !contained.execute(frame, self, other);
             } else {
                 return !contained.execute(frame, other, self);
@@ -388,7 +388,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared @Cached HashingStorageLen selfLenNode,
                         @Shared @Cached HashingStorageLen otherLenNode,
                         @Shared @Cached(inline = false) ContainedInNode allContained) {
-            int lenSelf = selfLenNode.execute(inliningTarget, self.getWrappedDict().getDictStorage());
+            int lenSelf = selfLenNode.execute(inliningTarget, self.getWrappedStorage());
             int lenOther = otherLenNode.execute(inliningTarget, other.getDictStorage());
             return op.cmpResultToBool(lenSelf - lenOther) && (reverse(op) ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
         }
@@ -398,8 +398,8 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared @Cached HashingStorageLen selfLenNode,
                         @Shared @Cached HashingStorageLen otherLenNode,
                         @Shared @Cached(inline = false) ContainedInNode allContained) {
-            int lenSelf = selfLenNode.execute(inliningTarget, self.getWrappedDict().getDictStorage());
-            int lenOther = otherLenNode.execute(inliningTarget, other.getWrappedDict().getDictStorage());
+            int lenSelf = selfLenNode.execute(inliningTarget, self.getWrappedStorage());
+            int lenOther = otherLenNode.execute(inliningTarget, other.getWrappedStorage());
             return op.cmpResultToBool(lenSelf - lenOther) && (reverse(op) ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
         }
 
@@ -449,7 +449,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("diff") @Cached HashingStorageDiff diffNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            HashingStorage storage = diffNode.execute(frame, inliningTarget, self.getWrappedDict().getDictStorage(), other.getDictStorage());
+            HashingStorage storage = diffNode.execute(frame, inliningTarget, self.getWrappedStorage(), other.getDictStorage());
             return factory.createSet(storage);
         }
 
@@ -458,7 +458,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("diff") @Cached HashingStorageDiff diffNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            HashingStorage storage = diffNode.execute(frame, inliningTarget, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage());
+            HashingStorage storage = diffNode.execute(frame, inliningTarget, self.getWrappedStorage(), other.getWrappedStorage());
             return factory.createSet(storage);
         }
 
@@ -468,7 +468,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
                         @Shared("diff") @Cached HashingStorageDiff diffNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            HashingStorage left = self.getWrappedDict().getDictStorage();
+            HashingStorage left = self.getWrappedStorage();
             HashingStorage right = constructSetNode.executeWith(frame, other).getDictStorage();
             HashingStorage storage = diffNode.execute(frame, inliningTarget, left, right);
             return factory.createSet(storage);
@@ -508,7 +508,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("intersect") @Cached HashingStorageIntersect intersectNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            HashingStorage left = self.getWrappedDict().getDictStorage();
+            HashingStorage left = self.getWrappedStorage();
             HashingStorage right = other.getDictStorage();
             HashingStorage intersectedStorage = intersectNode.execute(frame, inliningTarget, left, right);
             return factory.createSet(intersectedStorage);
@@ -519,8 +519,8 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("intersect") @Cached HashingStorageIntersect intersectNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            HashingStorage left = self.getWrappedDict().getDictStorage();
-            HashingStorage right = other.getWrappedDict().getDictStorage();
+            HashingStorage left = self.getWrappedStorage();
+            HashingStorage right = other.getWrappedStorage();
             HashingStorage intersectedStorage = intersectNode.execute(frame, inliningTarget, left, right);
             return factory.createSet(intersectedStorage);
         }
@@ -531,7 +531,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
                         @Shared("intersect") @Cached HashingStorageIntersect intersectNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            HashingStorage left = self.getWrappedDict().getDictStorage();
+            HashingStorage left = self.getWrappedStorage();
             HashingStorage right = constructSetNode.executeWith(frame, other).getDictStorage();
             HashingStorage intersectedStorage = intersectNode.execute(frame, inliningTarget, left, right);
             return factory.createSet(intersectedStorage);
@@ -592,7 +592,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared("copy") @Cached HashingStorageCopy copyNode,
                         @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared @Cached PythonObjectFactory factory) {
-            return factory.createSet(union(inliningTarget, copyNode, addAllToOther, self.getWrappedDict().getDictStorage(), other.getDictStorage()));
+            return factory.createSet(union(inliningTarget, copyNode, addAllToOther, self.getWrappedStorage(), other.getDictStorage()));
         }
 
         @Specialization
@@ -601,7 +601,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared("copy") @Cached HashingStorageCopy copyNode,
                         @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared @Cached PythonObjectFactory factory) {
-            return factory.createSet(union(inliningTarget, copyNode, addAllToOther, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
+            return factory.createSet(union(inliningTarget, copyNode, addAllToOther, self.getWrappedStorage(), other.getWrappedStorage()));
         }
 
         @Specialization
@@ -611,7 +611,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared("copy") @Cached HashingStorageCopy copyNode,
                         @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared @Cached PythonObjectFactory factory) {
-            return factory.createSet(union(inliningTarget, copyNode, addAllToOther, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
+            return factory.createSet(union(inliningTarget, copyNode, addAllToOther, self.getWrappedStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
 
         @Specialization
@@ -664,7 +664,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("xorNode") @Cached HashingStorageXor xorNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            return factory.createSet(xor(frame, inliningTarget, xorNode, self.getWrappedDict().getDictStorage(), other.getDictStorage()));
+            return factory.createSet(xor(frame, inliningTarget, xorNode, self.getWrappedStorage(), other.getDictStorage()));
         }
 
         @Specialization
@@ -672,7 +672,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("xorNode") @Cached HashingStorageXor xorNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            return factory.createSet(xor(frame, inliningTarget, xorNode, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
+            return factory.createSet(xor(frame, inliningTarget, xorNode, self.getWrappedStorage(), other.getWrappedStorage()));
         }
 
         @Specialization
@@ -681,7 +681,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Shared("constructSet") @Cached SetNodes.ConstructSetNode constructSetNode,
                         @Shared("xorNode") @Cached HashingStorageXor xorNode,
                         @Shared @Cached PythonObjectFactory factory) {
-            return factory.createSet(xor(frame, inliningTarget, xorNode, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
+            return factory.createSet(xor(frame, inliningTarget, xorNode, self.getWrappedStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
 
         @Specialization

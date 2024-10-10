@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CreateStorageFromIteratorNodeFactory.CreateStorageFromIteratorNodeCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DeleteNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ExtendNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetElementTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemDynamicNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemScalarNodeGen;
@@ -120,6 +119,7 @@ import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ForeignSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -318,7 +318,7 @@ public abstract class SequenceStorageNodes {
     @ImportStatic(PythonOptions.class)
     abstract static class SequenceStorageBaseNode extends PNodeWithContext {
 
-        protected static final int MAX_SEQUENCE_STORAGES = 9;
+        // Number of subclasses of ArrayBasedSequenceStorage
         protected static final int MAX_BASIC_STORAGES = 7;
 
         protected static boolean isNative(SequenceStorage store) {
@@ -330,7 +330,7 @@ public abstract class SequenceStorageNodes {
         }
 
         protected static boolean isBoolean(StorageType et) {
-            return et == SequenceStorage.StorageType.Boolean;
+            return et == StorageType.Boolean;
         }
 
         protected static boolean isByte(StorageType et) {
@@ -349,7 +349,7 @@ public abstract class SequenceStorageNodes {
             return et == StorageType.Long;
         }
 
-        protected static boolean isDouble(SequenceStorage.StorageType et) {
+        protected static boolean isDouble(StorageType et) {
             return et == StorageType.Double;
         }
 
@@ -544,17 +544,12 @@ public abstract class SequenceStorageNodes {
     @GenerateInline(inlineByDefault = true)
     @GenerateCached
     @ImportStatic(SequenceStorageBaseNode.class)
-    public abstract static class GetItemScalarNode extends Node {
+    public abstract static class GetItemScalarNode extends PNodeWithContext {
 
         public abstract Object execute(Node inliningTarget, SequenceStorage s, int idx);
 
         public final Object executeCached(SequenceStorage s, int idx) {
             return execute(null, s, idx);
-        }
-
-        @NeverDefault
-        public static GetItemScalarNode create() {
-            return GetItemScalarNodeGen.create();
         }
 
         public static Object executeUncached(SequenceStorage s, int idx) {
@@ -631,6 +626,17 @@ public abstract class SequenceStorageNodes {
                         @Cached(inline = false) GetNativeItemScalarNode getItem) {
             return getItem.execute(storage, idx);
         }
+
+        @Specialization
+        protected static Object doForeign(Node inliningTarget, ForeignSequenceStorage storage, int idx,
+                        @Cached ForeignSequenceStorage.ReadNode readNode) {
+            return readNode.execute(inliningTarget, storage, idx);
+        }
+
+        @NeverDefault
+        public static GetItemScalarNode create() {
+            return GetItemScalarNodeGen.create();
+        }
     }
 
     @GenerateUncached
@@ -654,9 +660,9 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
-    @ImportStatic({SequenceStorage.StorageType.class, SequenceStorageBaseNode.class})
+    @ImportStatic({StorageType.class, SequenceStorageBaseNode.class})
     @SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
-    public abstract static class GetItemSliceNode extends Node {
+    public abstract static class GetItemSliceNode extends PNodeWithContext {
 
         public abstract SequenceStorage execute(SequenceStorage s, int start, int stop, int step, int length);
 
@@ -810,6 +816,17 @@ public abstract class SequenceStorageNodes {
             Object[] newArray = new Object[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = toJavaNode.execute(readNode.readArrayElement(storage.getPtr(), i));
+            }
+            return new ObjectSequenceStorage(newArray);
+        }
+
+        @Specialization
+        protected static SequenceStorage doForeign(ForeignSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ForeignSequenceStorage.ReadNode readNode) {
+            Object[] newArray = new Object[length];
+            for (int i = start, j = 0; j < length; i += step, j++) {
+                newArray[j] = readNode.execute(inliningTarget, storage, i);
             }
             return new ObjectSequenceStorage(newArray);
         }
@@ -1191,10 +1208,10 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
-    @GenerateInline(value = true)
+    @GenerateInline
     @GenerateCached(false)
     @ImportStatic({SequenceStorageBaseNode.class, PGuards.class})
-    public abstract static class AbstractSetItemScalarNode extends Node {
+    public abstract static class AbstractSetItemScalarNode extends PNodeWithContext {
 
         public abstract void execute(Node inliningTarget, SequenceStorage s, int idx, Object value);
 
@@ -1279,6 +1296,12 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static void doObject(@SuppressWarnings("unused") Node inliningTarget, ObjectSequenceStorage storage, int idx, Object value) {
             storage.setObjectItemNormalized(idx, value);
+        }
+
+        @Specialization
+        protected static void doForeign(Node inliningTarget, ForeignSequenceStorage storage, int idx, Object value,
+                        @Cached ForeignSequenceStorage.WriteNode writeNode) {
+            writeNode.execute(inliningTarget, storage, idx, value);
         }
 
         @Fallback
@@ -1525,7 +1548,7 @@ public abstract class SequenceStorageNodes {
     @GenerateInline
     @GenerateCached(false)
     @ImportStatic(SequenceStorageBaseNode.class)
-    public abstract static class ReverseNode extends Node {
+    public abstract static class ReverseNode extends PNodeWithContext {
 
         public abstract void execute(Node inliningTarget, SequenceStorage storage);
 
@@ -1590,6 +1613,25 @@ public abstract class SequenceStorageNodes {
         static void doNative(NativeSequenceStorage storage,
                         @Cached(inline = false) ReverseNativeNode reverseNativeNode) {
             reverseNativeNode.execute(storage);
+        }
+
+        @Specialization
+        @InliningCutoff
+        static void doForeign(Node inliningTarget, ForeignSequenceStorage storage,
+                        @Cached ForeignSequenceStorage.ReadNoConversionNode readNode,
+                        @Cached ForeignSequenceStorage.WriteNode writeNode) {
+            int length = storage.length();
+            if (length > 0) {
+                int head = 0;
+                int tail = length - 1;
+                int middle = (length - 1) / 2;
+
+                for (; head <= middle; head++, tail--) {
+                    Object temp = readNode.execute(inliningTarget, storage, head);
+                    writeNode.execute(inliningTarget, storage, head, readNode.execute(inliningTarget, storage, tail));
+                    writeNode.execute(inliningTarget, storage, tail, temp);
+                }
+            }
         }
 
         @GenerateUncached
@@ -2142,7 +2184,7 @@ public abstract class SequenceStorageNodes {
     }
 
     @SuppressWarnings("truffle-inlining")       // footprint reduction 68 -> 49
-    abstract static class ConcatBaseNode extends SequenceStorageBaseNode {
+    public abstract static class ConcatBaseNode extends SequenceStorageBaseNode {
 
         public abstract SequenceStorage execute(SequenceStorage dest, SequenceStorage left, SequenceStorage right);
 
@@ -2235,12 +2277,12 @@ public abstract class SequenceStorageNodes {
         static SequenceStorage doGenericInplace(@SuppressWarnings("unused") SequenceStorage dest, SequenceStorage left, SequenceStorage right,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached GetItemScalarNode getItemRightNode,
-                        @Exclusive @Cached InitializeItemScalarNode initalizeItemNode,
+                        @Exclusive @Cached InitializeItemScalarNode initializeItemNode,
                         @Exclusive @Cached SetLenNode setLenNode) {
             int len1 = left.length();
             int len2 = right.length();
             for (int i = 0; i < len2; i++) {
-                initalizeItemNode.execute(inliningTarget, left, i + len1, getItemRightNode.execute(inliningTarget, right, i));
+                initializeItemNode.execute(inliningTarget, left, i + len1, getItemRightNode.execute(inliningTarget, right, i));
             }
             setLenNode.execute(inliningTarget, left, len1 + len2);
             return left;
@@ -2251,15 +2293,15 @@ public abstract class SequenceStorageNodes {
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached GetItemScalarNode getItemLeftNode,
                         @Exclusive @Cached GetItemScalarNode getItemRightNode,
-                        @Exclusive @Cached InitializeItemScalarNode initalizeItemNode,
+                        @Exclusive @Cached InitializeItemScalarNode initializeItemNode,
                         @Exclusive @Cached SetLenNode setLenNode) {
             int len1 = left.length();
             int len2 = right.length();
             for (int i = 0; i < len1; i++) {
-                initalizeItemNode.execute(inliningTarget, dest, i, getItemLeftNode.execute(inliningTarget, left, i));
+                initializeItemNode.execute(inliningTarget, dest, i, getItemLeftNode.execute(inliningTarget, left, i));
             }
             for (int i = 0; i < len2; i++) {
-                initalizeItemNode.execute(inliningTarget, dest, i + len1, getItemRightNode.execute(inliningTarget, right, i));
+                initializeItemNode.execute(inliningTarget, dest, i + len1, getItemRightNode.execute(inliningTarget, right, i));
             }
             setLenNode.execute(inliningTarget, dest, len1 + len2);
             return dest;
@@ -3086,7 +3128,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = "isInt(type)")
-        static IntSequenceStorage doInt(@SuppressWarnings("unused") SequenceStorage.StorageType type, int cap) {
+        static IntSequenceStorage doInt(@SuppressWarnings("unused") StorageType type, int cap) {
             return new IntSequenceStorage(cap);
         }
 
@@ -3096,7 +3138,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = "isDouble(type)")
-        static DoubleSequenceStorage doDouble(@SuppressWarnings("unused") SequenceStorage.StorageType type, int cap) {
+        static DoubleSequenceStorage doDouble(@SuppressWarnings("unused") StorageType type, int cap) {
             return new DoubleSequenceStorage(cap);
         }
 
@@ -3165,6 +3207,11 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static void doMro(MroSequenceStorage storage, int cap) {
             throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        @Specialization
+        static void doForeign(ForeignSequenceStorage storage, int cap) {
+            // nothing we can do
         }
 
         @GenerateInline(false)
@@ -3302,7 +3349,7 @@ public abstract class SequenceStorageNodes {
         static SequenceStorage doNativeBytes(NativeByteSequenceStorage s,
                         @Shared @Cached(inline = false) GetNativeItemScalarNode getItem) {
             byte[] bytes = new byte[s.length()];
-            for (int i = 0; i < s.length(); i++) {
+            for (int i = 0; i < bytes.length; i++) {
                 bytes[i] = (byte) (int) getItem.execute(s, i);
             }
             return new ByteSequenceStorage(bytes);
@@ -3312,8 +3359,18 @@ public abstract class SequenceStorageNodes {
         static SequenceStorage doNativeObjects(NativeObjectSequenceStorage s,
                         @Shared @Cached(inline = false) GetNativeItemScalarNode getItem) {
             Object[] objects = new Object[s.length()];
-            for (int i = 0; i < s.length(); i++) {
+            for (int i = 0; i < objects.length; i++) {
                 objects[i] = getItem.execute(s, i);
+            }
+            return new ObjectSequenceStorage(objects);
+        }
+
+        @Specialization
+        static SequenceStorage doForeign(Node inliningTarget, ForeignSequenceStorage s,
+                        @Cached ForeignSequenceStorage.ReadNode readNode) {
+            Object[] objects = new Object[s.length()];
+            for (int i = 0; i < objects.length; i++) {
+                objects[i] = readNode.execute(inliningTarget, s, i);
             }
             return new ObjectSequenceStorage(objects);
         }
@@ -3386,7 +3443,7 @@ public abstract class SequenceStorageNodes {
     @GenerateInline
     @GenerateCached(false)
     @ImportStatic(SequenceStorageBaseNode.class)
-    public abstract static class SetLenNode extends Node {
+    public abstract static class SetLenNode extends PNodeWithContext {
 
         public abstract void execute(Node inliningTarget, SequenceStorage s, int len);
 
@@ -3409,6 +3466,18 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static void doNativePrimitive(NativePrimitiveSequenceStorage s, int len) {
             s.setNewLength(len);
+        }
+
+        @Specialization
+        static void doForeign(Node inliningTarget, ForeignSequenceStorage s, int len,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
+                        @Cached InlinedBranchProfile errorProfile,
+                        @Cached ForeignSequenceStorage.RemoveNode removeNode) {
+            int size;
+            while ((size = s.getArraySize(inliningTarget, interop, errorProfile)) > len) {
+                removeNode.execute(inliningTarget, s, size - 1);
+            }
+            s.setNewLength(size);
         }
     }
 
@@ -3519,13 +3588,13 @@ public abstract class SequenceStorageNodes {
 
         public abstract void execute(Node node, SequenceStorage s, int idx);
 
-        @Specialization(guards = "isLastItem(s, idx)")
+        @Specialization(guards = {"isLastItem(s, idx)", "!isForeignSequenceStorage(s)"})
         static void doLastItem(Node inliningTarget, SequenceStorage s, @SuppressWarnings("unused") int idx,
                         @Exclusive @Cached SetLenNode setLenNode) {
             setLenNode.execute(inliningTarget, s, s.length() - 1);
         }
 
-        @Specialization
+        @Specialization(guards = "!isForeignSequenceStorage(s)")
         static void doGeneric(Node inliningTarget, SequenceStorage s, int idx,
                         @Cached GetItemScalarNode getItemNode,
                         @Cached SetItemScalarNode setItemNode,
@@ -3536,6 +3605,12 @@ public abstract class SequenceStorageNodes {
                 setItemNode.execute(inliningTarget, s, i, getItemNode.execute(inliningTarget, s, i + 1));
             }
             setLenNode.execute(inliningTarget, s, len - 1);
+        }
+
+        @Specialization
+        static void doForeign(Node inliningTarget, ForeignSequenceStorage s, int idx,
+                        @Cached ForeignSequenceStorage.RemoveNode removeNode) {
+            removeNode.execute(inliningTarget, s, idx);
         }
 
         protected static boolean isLastItem(SequenceStorage s, int idx) {
@@ -3652,21 +3727,52 @@ public abstract class SequenceStorageNodes {
     @ImportStatic(SequenceStorageBaseNode.class)
     public abstract static class GetElementType extends Node {
 
-        public abstract SequenceStorage.StorageType execute(Node inliningTarget, SequenceStorage s);
+        public abstract StorageType execute(Node inliningTarget, SequenceStorage s);
 
-        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = {"s.getClass() == cachedClass"})
-        static StorageType doCached(SequenceStorage s,
-                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
-            return cachedClass.cast(s).getElementType();
+        @Specialization
+        static StorageType type(EmptySequenceStorage s) {
+            return StorageType.Empty;
         }
 
-        @Specialization(replaces = "doCached")
-        static SequenceStorage.StorageType doUncached(SequenceStorage s) {
-            return s.getElementType();
+        @Specialization
+        static StorageType type(BoolSequenceStorage s) {
+            return StorageType.Boolean;
         }
 
-        public static GetElementType getUncached() {
-            return GetElementTypeNodeGen.getUncached();
+        @Specialization
+        static StorageType type(ByteSequenceStorage s) {
+            return StorageType.Byte;
+        }
+
+        @Specialization
+        static StorageType type(NativeByteSequenceStorage s) {
+            return StorageType.Byte;
+        }
+
+        @Specialization
+        static StorageType type(IntSequenceStorage s) {
+            return StorageType.Int;
+        }
+
+        @Specialization
+        static StorageType type(NativeIntSequenceStorage s) {
+            return StorageType.Int;
+        }
+
+        @Specialization
+        static StorageType type(LongSequenceStorage s) {
+            return StorageType.Long;
+        }
+
+        @Specialization
+        static StorageType type(DoubleSequenceStorage s) {
+            return StorageType.Double;
+        }
+
+        @Fallback
+        static StorageType type(SequenceStorage s) {
+            assert s.getElementType() == StorageType.Generic : s + ": " + s.getElementType();
+            return StorageType.Generic;
         }
     }
 
@@ -3974,6 +4080,21 @@ public abstract class SequenceStorageNodes {
             storage.setNewLength(newLength);
             return storage;
         }
+
+        @Specialization
+        protected static SequenceStorage doForeign(Node inliningTarget, ForeignSequenceStorage storage, int index, Object value,
+                        @Cached ForeignSequenceStorage.ReadNode getItem,
+                        @Cached ForeignSequenceStorage.WriteNode setItem) {
+            int newLength = storage.length() + 1;
+            // NOTE: important to try to append first so in case that fails the foreign array is
+            // unmodified
+            for (int i = storage.length(); i > index; i--) {
+                setItem.execute(inliningTarget, storage, i, getItem.execute(inliningTarget, storage, i - 1));
+            }
+            setItem.execute(inliningTarget, storage, index, value);
+            storage.setNewLength(newLength);
+            return storage;
+        }
     }
 
     public abstract static class CreateStorageFromIteratorNode extends Node {
@@ -4161,7 +4282,7 @@ public abstract class SequenceStorageNodes {
          * This version is specific to builtin iterators and looks for STOP_MARKER instead of
          * StopIteration.
          */
-        protected static SequenceStorage createStorageFromBuiltin(VirtualFrame frame, PBuiltinIterator iterator, int len, SequenceStorage.StorageType type, NextHelperNode nextNode,
+        protected static SequenceStorage createStorageFromBuiltin(VirtualFrame frame, PBuiltinIterator iterator, int len, StorageType type, NextHelperNode nextNode,
                         IsBuiltinObjectProfile errorProfile, Node inliningTarget, InlinedCountingConditionProfile growArrayProfile, InlinedLoopConditionProfile loopProfile) {
             final int size = len > 0 ? len : START_SIZE;
             if (type == Uninitialized || type == Empty) {
@@ -4316,7 +4437,7 @@ public abstract class SequenceStorageNodes {
         @SuppressWarnings("truffle-static-method")
         public abstract static class CreateStorageFromIteratorNodeCached extends CreateStorageFromIteratorNode {
 
-            @CompilationFinal private SequenceStorage.StorageType expectedElementType = Uninitialized;
+            @CompilationFinal private StorageType expectedElementType = Uninitialized;
 
             private static final int MAX_PREALLOCATE_SIZE = 32;
             @CompilationFinal int startSizeProfiled = START_SIZE;

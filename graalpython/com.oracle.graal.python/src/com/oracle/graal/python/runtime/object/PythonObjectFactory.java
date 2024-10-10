@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.ForeignHashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -135,7 +136,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBigRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
@@ -939,12 +939,24 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDictKeysView(PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictKeysView.getInstanceShape(getLanguage()), dict));
     }
 
+    public final PDictView createDictKeysView(Object dict, ForeignHashingStorage foreignHashingStorage) {
+        return trace(new PDictKeysView(PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictKeysView.getInstanceShape(getLanguage()), dict, foreignHashingStorage));
+    }
+
     public final PDictView createDictValuesView(PHashingCollection dict) {
         return trace(new PDictValuesView(PythonBuiltinClassType.PDictValuesView, PythonBuiltinClassType.PDictValuesView.getInstanceShape(getLanguage()), dict));
     }
 
+    public final PDictView createDictValuesView(Object dict, ForeignHashingStorage foreignHashingStorage) {
+        return trace(new PDictValuesView(PythonBuiltinClassType.PDictValuesView, PythonBuiltinClassType.PDictValuesView.getInstanceShape(getLanguage()), dict, foreignHashingStorage));
+    }
+
     public final PDictView createDictItemsView(PHashingCollection dict) {
         return trace(new PDictItemsView(PythonBuiltinClassType.PDictItemsView, PythonBuiltinClassType.PDictItemsView.getInstanceShape(getLanguage()), dict));
+    }
+
+    public final PDictView createDictItemsView(Object dict, ForeignHashingStorage foreignHashingStorage) {
+        return trace(new PDictItemsView(PythonBuiltinClassType.PDictItemsView, PythonBuiltinClassType.PDictItemsView.getInstanceShape(getLanguage()), dict, foreignHashingStorage));
     }
 
     /*
@@ -1188,10 +1200,6 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PZip createZip(Object cls, Object[] iterables, boolean strict) {
         return trace(new PZip(cls, getShape(cls), iterables, strict));
-    }
-
-    public final PForeignArrayIterator createForeignArrayIterator(Object iterable) {
-        return trace(new PForeignArrayIterator(PythonBuiltinClassType.PForeignArrayIterator, PythonBuiltinClassType.PForeignArrayIterator.getInstanceShape(getLanguage()), iterable));
     }
 
     public final PCode createCode(RootCallTarget ct) {

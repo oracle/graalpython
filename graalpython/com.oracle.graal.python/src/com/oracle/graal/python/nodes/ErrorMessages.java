@@ -103,6 +103,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ATTR_S_OF_S_IS_NOT_READABLE = tsLiteral("attribute %s of %s objects is not readable");
     public static final TruffleString ATTR_S_OF_S_IS_NOT_WRITABLE = tsLiteral("attribute %s of %s is not writable");
     public static final TruffleString ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE = tsLiteral("attribute %s of %s object is not writable");
+    public static final TruffleString ATTR_S_OF_S_OBJ_IS_NOT_READABLE = tsLiteral("attribute %s of %s object is not readable");
     public static final TruffleString ATTR_S_OF_S_OBJ_IS_NOT_INSERTABLE = tsLiteral("attribute %s of %s object is not insertable");
     public static final TruffleString ATTR_S_OF_S_OBJ_IS_NOT_REMOVABLE = tsLiteral("attribute %s of %s object is not removable");
     public static final TruffleString ITEM_S_OF_S_OBJ_IS_NOT_READABLE = tsLiteral("item %s of %s object is not readable");
@@ -330,6 +331,7 @@ public abstract class ErrorMessages {
     public static final TruffleString FLOAT_ARG_REQUIRED = tsLiteral("float argument required, not %p");
     public static final TruffleString FOREIGN_OBJ_HAS_NO_ATTR_S = tsLiteral("foreign object has no attribute '%s'");
     public static final TruffleString FOREIGN_OBJ_ISNT_ITERABLE = tsLiteral("foreign object is not iterable");
+    public static final TruffleString FOREIGN_OBJ_ISNT_REVERSE_ITERABLE = tsLiteral("foreign object cannot be iterated in reverse");
     public static final TruffleString FORMAT_REQUIRES_MAPPING = tsLiteral("format requires a mapping");
     public static final TruffleString FORMAT_STR_CONTAINS_POS_FIELDS = tsLiteral("Format string contains positional fields");
     public static final TruffleString FORMATED_S_TOO_LONG = tsLiteral("formatted %s is too long (precision too large?)");
@@ -892,7 +894,7 @@ public abstract class ErrorMessages {
     public static final TruffleString MESSAGE_LENGTH_ARGUMENT = tsLiteral("length argument must be non-negative");
     public static final TruffleString MESSAGE_CONVERT_NEGATIVE = tsLiteral("can't convert negative int to unsigned");
     public static final TruffleString NOT_IN_LIST_MESSAGE = tsLiteral("list.index(x): x not in list");
-    public static final TruffleString LIST_MODIFIED_DURING_SOFT = tsLiteral("list modified during sort");
+    public static final TruffleString LIST_MODIFIED_DURING_SORT = tsLiteral("list modified during sort");
     public static final TruffleString RESIZING_NOT_AVAILABLE = tsLiteral("mmap: resizing not available--no mremap()");
     public static final TruffleString FLUSH_VALUES_OUT_OF_RANGE = tsLiteral("flush values out of range");
     public static final TruffleString AF_INET_VALUES_MUST_BE_PAIR = tsLiteral("AF_INET address must be a pair (host, port)");

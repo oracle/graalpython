@@ -73,8 +73,8 @@ import com.oracle.truffle.api.strings.TruffleString;
  *
  * The basic algorithm is hash table with open addressing for collision resolution. For that we need
  * to have a fixed order of indexes to probe if collision happens. Simple implementations use linear
- * serach (+/-1) from the bucket where the collision happened. We use the same more advanced scheme
- * as PyPy/CPython. It relies on the fact that recurrence
+ * search (+/-1) from the bucket where the collision happened. We use the same more advanced scheme
+ * as PyPy/CPython. It relies on the fact that the recurrence
  *
  * <code>
  * j = ((5*j) + 1) mod N^2
@@ -85,8 +85,8 @@ import com.oracle.truffle.api.strings.TruffleString;
  * scheme also dependent on the higher bits of the hash, we use this formula (also like CPython):
  *
  * <code>
- * pertrub >>= PERTURB_SHIFT
- * j = ((5*j) + pertrub + 1) mod N^2
+ * perturb >>= PERTURB_SHIFT
+ * j = ((5*j) + perturb + 1) mod N^2
  * </code>
  *
  * Which is not guaranteed to generate numbers from 0 to (N^2)-1 in general, but when the perturb
