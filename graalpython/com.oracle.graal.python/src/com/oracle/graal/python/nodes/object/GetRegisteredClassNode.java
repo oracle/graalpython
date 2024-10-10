@@ -92,25 +92,27 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
         return getForeignObjectClassNode.execute(foreignObject);
     }
 
-    // Always return ForeignObject for meta objects (classes), because custom behavior should only
-    // be added to instances.
+    // Always delegate to GetForeignObjectClassNode for meta objects (classes), because custom
+    // behavior should only be added to instances.
     @Specialization(guards = "objectLibrary.isMetaObject(foreignObject) || !objectLibrary.hasMetaObject(foreignObject)")
     static Object getClassLookup(Object foreignObject,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") @Exclusive InteropLibrary objectLibrary,
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") @Exclusive InteropLibrary objectLibrary,
                     @Shared @Cached GetForeignObjectClassNode getForeignObjectClassNode) {
         return getForeignObjectClassNode.execute(foreignObject);
     }
 
+    // Note: libraries except objectLibrary must not use @CachedLibrary("receiver") style as that
+    // would cause getMetaObject() to get called before the hasMetaObject guard, which can then
+    // cause a UnsupportedMessageException
     @Specialization(guards = {"isSingleContext()",
                     "!objectLibrary.isMetaObject(foreignObject)",
                     "objectLibrary.hasMetaObject(foreignObject)",
-                    "metaObjectLibrary.isIdentical(metaObject, cachedMetaObject, cachedMetaObjectLibrary)"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "getContext().interopTypeRegistryCacheValidAssumption.getAssumption()")
-    static Object getCachedClassLookup(@SuppressWarnings("unused") Object foreignObject,
-                    @SuppressWarnings("unused") @CachedLibrary("foreignObject") InteropLibrary objectLibrary,
-                    @SuppressWarnings("unused") @Bind("getMetaObject(objectLibrary, foreignObject)") Object metaObject,
-                    @SuppressWarnings("unused") @CachedLibrary("metaObject") InteropLibrary metaObjectLibrary,
-                    @SuppressWarnings("unused") @Cached("metaObject") Object cachedMetaObject,
-                    @SuppressWarnings("unused") @CachedLibrary("cachedMetaObject") InteropLibrary cachedMetaObjectLibrary,
+                    "metaObjectLibrary.isIdentical(metaObject, cachedMetaObject, metaObjectLibrary)"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "getContext().interopTypeRegistryCacheValidAssumption.getAssumption()")
+    static Object getCachedClassLookup(Object foreignObject,
+                    @CachedLibrary("foreignObject") InteropLibrary objectLibrary,
+                    @Bind("getMetaObject(objectLibrary, foreignObject)") Object metaObject,
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") @Exclusive InteropLibrary metaObjectLibrary,
+                    @Cached("metaObject") Object cachedMetaObject,
                     @Cached(value = "lookupUncached($node, foreignObject, cachedMetaObject)") Object pythonClass) {
         return pythonClass;
     }
