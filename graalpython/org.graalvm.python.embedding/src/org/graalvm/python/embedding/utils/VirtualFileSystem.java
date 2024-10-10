@@ -834,7 +834,16 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
                 @Override
                 public Iterator<Path> iterator() {
-                    return dirEntry.entries.stream().map(e -> Path.of(e.getPlatformPath())).iterator();
+                    return dirEntry.entries.stream().filter(e -> {
+                        boolean accept = false;
+                        try {
+                            accept = filter.accept(Path.of(e.platformPath));
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                            return false;
+                        }
+                        return accept;
+                    }).map(e -> Path.of(e.getPlatformPath())).iterator();
                 }
             };
         } else {
