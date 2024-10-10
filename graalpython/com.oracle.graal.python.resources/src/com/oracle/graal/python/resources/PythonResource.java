@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,6 +69,7 @@ public final class PythonResource implements InternalResource {
     private static final int VERSION_BASE = '!';
 
     static {
+        // See static ctor of PythonLanguage
         try (InputStream is = PythonResource.class.getResourceAsStream("/graalpy_versions")) {
             PYTHON_MAJOR = is.read() - VERSION_BASE;
             PYTHON_MINOR = is.read() - VERSION_BASE;

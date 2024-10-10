@@ -222,6 +222,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 RELEASE_LEVEL_STRING = tsLiteral("final");
         }
 
+        // The resource file is built by mx from "graalpy-versions" project using mx substitutions.
+        // The actual values of the versions are computed by mx helper functions py_version_short,
+        // graal_version_short, and dev_tag defined in mx_graalpython.py
         try (InputStream is = PythonLanguage.class.getResourceAsStream("/graalpy_versions")) {
             int ch;
             if (MAJOR != (ch = is.read() - VERSION_BASE)) {

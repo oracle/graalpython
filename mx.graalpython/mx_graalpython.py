@@ -1833,7 +1833,10 @@ def graal_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
         return GRAAL_VERSION_MAJ_MIN.replace(".", "")
     elif variant == 'binary':
-        return "".join([chr(int(p) + ord(VERSION_BASE)) for p in GRAAL_VERSION.split(".")])
+        # PythonLanguage and PythonResource consume this data, and they assume 3 components
+        # (although the 3rd is not used), so we cap the list size to 3 although the version
+        # may have even more components
+        return "".join([chr(int(p) + ord(VERSION_BASE)) for p in GRAAL_VERSION.split(".")[:3]])
     else:
         return GRAAL_VERSION_MAJ_MIN
 
