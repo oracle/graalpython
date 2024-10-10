@@ -186,11 +186,9 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1315,70 +1313,30 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {UNSIGNED_INT, UINTPTR_T, SIZE_T}, call = Direct)
-    @ImportStatic(CApiGuards.class)
-    abstract static class PyTraceMalloc_Track extends CApiTernaryBuiltinNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTraceMalloc_Track.class);
+    @CApiBuiltin(ret = Void, args = {UNSIGNED_INT, UINTPTR_T, SIZE_T}, call = Ignored)
+    abstract static class PyTruffleTraceMalloc_Track extends CApiTernaryBuiltinNode {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleTraceMalloc_Track.class);
 
-        @Specialization(guards = {"isSingleContext()", "domain == cachedDomain"}, limit = "3")
-        static int doCachedDomainIdx(@SuppressWarnings("unused") int domain, long ptrVal, long size,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Shared @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
-                        @Cached("lookupDomain(inliningTarget, domain)") int cachedDomainIdx) {
-
+        @Specialization
+        @TruffleBoundary
+        static Object doCachedDomainIdx(int domain, long ptrVal, long size) {
             // this will also be called if the allocation failed
             if (ptrVal != 0) {
-                CApiContext cApiContext = getCApiContext(inliningTarget);
-                cApiContext.getTraceMallocDomain(cachedDomainIdx).track(ptrVal, size);
-                cApiContext.increaseMemoryPressure(null, inliningTarget, getThreadStateNode, indirectCallData, size);
-                if (LOGGER.isLoggable(Level.FINE)) {
-                    LOGGER.fine(PythonUtils.formatJString("Tracking memory (size: %d): %s", size, CApiContext.asHex(ptrVal)));
-                }
+                LOGGER.fine(() -> PythonUtils.formatJString("Tracking memory (domain: %d, size: %d): %s", domain, size, CApiContext.asHex(ptrVal)));
             }
-            return 0;
-        }
-
-        @Specialization(replaces = "doCachedDomainIdx")
-        static int doGeneric(int domain, long ptrVal, long size,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Shared @Cached GetThreadStateNode getThreadStateNode) {
-            return doCachedDomainIdx(domain, ptrVal, size, inliningTarget, indirectCallData, getThreadStateNode, domain, lookupDomain(inliningTarget, domain));
-        }
-
-        static int lookupDomain(Node inliningTarget, int domain) {
-            return getCApiContext(inliningTarget).findOrCreateTraceMallocDomain(domain);
+            return PNone.NO_VALUE;
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {UNSIGNED_INT, UINTPTR_T}, call = Direct)
-    @ImportStatic(CApiGuards.class)
-    abstract static class PyTraceMalloc_Untrack extends CApiBinaryBuiltinNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTraceMalloc_Untrack.class);
+    @CApiBuiltin(ret = Void, args = {UNSIGNED_INT, UINTPTR_T}, call = Ignored)
+    abstract static class PyTruffleTraceMalloc_Untrack extends CApiBinaryBuiltinNode {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleTraceMalloc_Untrack.class);
 
-        @Specialization(guards = {"isSingleContext()", "domain == cachedDomain"}, limit = "3")
-        int doCachedDomainIdx(@SuppressWarnings("unused") int domain, long ptrVal,
-                        @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
-                        @Cached("lookupDomain(domain)") int cachedDomainIdx) {
-
-            CApiContext cApiContext = getCApiContext();
-            long trackedMemorySize = cApiContext.getTraceMallocDomain(cachedDomainIdx).untrack(ptrVal);
-            cApiContext.reduceMemoryPressure(trackedMemorySize);
-            if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(PythonUtils.formatJString("Untracking memory (size: %d): %s", trackedMemorySize, CApiContext.asHex(ptrVal)));
-            }
-            return 0;
-        }
-
-        @Specialization(replaces = "doCachedDomainIdx")
-        int doGeneric(int domain, long ptrVal) {
-            return doCachedDomainIdx(domain, ptrVal, domain, lookupDomain(domain));
-        }
-
-        int lookupDomain(int domain) {
-            return getCApiContext().findOrCreateTraceMallocDomain(domain);
+        @Specialization
+        @TruffleBoundary
+        Object doCachedDomainIdx(int domain, long ptrVal) {
+            LOGGER.fine(() -> PythonUtils.formatJString("Untracking memory (domain: %d): %s", domain, CApiContext.asHex(ptrVal)));
+            return PNone.NO_VALUE;
         }
     }
 

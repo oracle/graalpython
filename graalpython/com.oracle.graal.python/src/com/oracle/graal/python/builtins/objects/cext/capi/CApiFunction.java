@@ -464,6 +464,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyThread_tss_get", ret = Pointer, args = {PY_TSS_T_PTR}, call = CImpl)
     @CApiBuiltin(name = "PyThread_tss_is_created", ret = Int, args = {PY_TSS_T_PTR}, call = CImpl)
     @CApiBuiltin(name = "PyThread_tss_set", ret = Int, args = {PY_TSS_T_PTR, Pointer}, call = CImpl)
+    @CApiBuiltin(name = "PyTraceMalloc_Track", ret = Int, args = {UNSIGNED_INT, UINTPTR_T, SIZE_T}, call = CImpl)
+    @CApiBuiltin(name = "PyTraceMalloc_Untrack", ret = Int, args = {UNSIGNED_INT, UINTPTR_T}, call = CImpl)
     @CApiBuiltin(name = "PyTuple_Pack", ret = PyObject, args = {Py_ssize_t, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyTuple_GetItem", ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyTuple_SetItem", ret = Int, args = {PyObject, Py_ssize_t, PyObjectTransfer}, call = CImpl)
