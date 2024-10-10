@@ -656,6 +656,12 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     @Deprecated
     public Path parsePath(URI uri) {
         if (uri.getScheme().equals("file")) {
+            Path ret = Paths.get(uri);
+            if (!pathIsInVfs(ret)) {
+                if (delegate != null) {
+                    return delegate.parsePath(uri);
+                }
+            }
             return Paths.get(uri);
         } else {
             throw new UnsupportedOperationException("Not supported yet.");
@@ -665,51 +671,73 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     @Override
     @Deprecated
     public Path parsePath(String path) {
-        return Paths.get(path);
+        Path p = Paths.get(path);
+        if (!pathIsInVfs(p)) {
+            if (delegate != null) {
+                return delegate.parsePath(path);
+            }
+        }
+        return p;
     }
 
     @Override
     @Deprecated
     public void checkAccess(Path path, Set<? extends AccessMode> modes, LinkOption... linkOptions) throws IOException {
-        if (pathIsInVfs(path)) {
+        if (!pathIsInVfs(path)) {
+            if (delegate != null) {
+                delegate.checkAccess(path, modes, linkOptions);
+                return;
+            } else {
+                throw new SecurityException("filesystem without host IO: " + path);
+            }
+        } else {
             if (modes.contains(AccessMode.WRITE)) {
                 throw new SecurityException("read-only filesystem");
             }
             if (getEntry(path) == null) {
                 throw new NoSuchFileException("no such file or directory");
             }
-        } else if (delegate != null) {
-            delegate.checkAccess(path, modes, linkOptions);
-        } else {
-            throw new SecurityException("read-only filesystem");
         }
     }
 
     @Override
     @Deprecated
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
-        if (delegate == null || pathIsInVfs(dir)) {
-            throw new SecurityException("read-only filesystem");
+        if (!pathIsInVfs(dir)) {
+            if (delegate != null) {
+                delegate.createDirectory(dir, attrs);
+            } else {
+                throw new SecurityException("filesystem without host IO: " + dir);
+            }
         } else {
-            delegate.createDirectory(dir, attrs);
+            throw new SecurityException("read-only filesystem");
         }
     }
 
     @Override
     @Deprecated
     public void delete(Path path) throws IOException {
-        if (delegate == null || pathIsInVfs(path)) {
-            throw new SecurityException("read-only filesystem");
+        if (!pathIsInVfs(path)) {
+            if (delegate != null) {
+                delegate.delete(path);
+                return;
+            } else {
+                throw new SecurityException("filesystem without host IO: " + path);
+            }
         } else {
-            delegate.delete(path);
+            throw new SecurityException("read-only filesystem");
         }
     }
 
     @Override
     @Deprecated
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
-        if (delegate != null && !pathIsInVfs(path)) {
-            return delegate.newByteChannel(path, options, attrs);
+        if (!pathIsInVfs(path)) {
+            if (delegate != null) {
+                return delegate.newByteChannel(path, options, attrs);
+            } else {
+                throw new SecurityException("filesystem without host IO: " + path);
+            }
         }
 
         if (options.isEmpty() || (options.size() == 1 && options.contains(StandardOpenOption.READ))) {
@@ -787,8 +815,12 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     @Override
     @Deprecated
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
-        if (delegate != null && !pathIsInVfs(dir)) {
-            return delegate.newDirectoryStream(dir, filter);
+        if (!pathIsInVfs(dir)) {
+            if (delegate != null) {
+                return delegate.newDirectoryStream(dir, filter);
+            } else {
+                throw new SecurityException("filesystem without host IO: " + dir);
+            }
         }
         BaseEntry entry = getEntry(dir);
         if (entry instanceof FileEntry) {
@@ -813,11 +845,17 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     @Override
     @Deprecated
     public Path toAbsolutePath(Path path) {
-        Path result;
-        if (shouldExtract(path)) {
+        boolean pathIsInVFS = pathIsInVfs(path);
+        if (!pathIsInVFS) {
+            if (delegate != null) {
+                return delegate.toAbsolutePath(path);
+            } else {
+                throw new SecurityException("filesystem without host IO: " + path);
+            }
+        }
+        Path result = path;
+        if (pathIsInVFS && shouldExtract(path)) {
             result = getExtractedPath(path);
-        } else {
-            result = path;
         }
         return toAbsolutePathInternal(result);
     }
@@ -825,11 +863,17 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     @Override
     @Deprecated
     public Path toRealPath(Path path, LinkOption... linkOptions) throws IOException {
-        Path result;
-        if (shouldExtract(path)) {
+        boolean pathIsInVFS = pathIsInVfs(path);
+        if (!pathIsInVFS) {
+            if (delegate != null) {
+                return delegate.toRealPath(path);
+            } else {
+                throw new SecurityException("filesystem without host IO: " + path);
+            }
+        }
+        Path result = path;
+        if (pathIsInVFS && shouldExtract(path)) {
             result = getExtractedPath(path);
-        } else {
-            result = path;
         }
         return result.normalize();
     }
@@ -837,8 +881,12 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     @Override
     @Deprecated
     public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
-        if (delegate != null && !pathIsInVfs(path)) {
-            return delegate.readAttributes(path, attributes, options);
+        if (!pathIsInVfs(path)) {
+            if (delegate != null) {
+                return delegate.readAttributes(path, attributes, options);
+            } else {
+                throw new SecurityException("filesystem without host IO: " + path);
+            }
         }
         BaseEntry entry = getEntry(path);
         if (entry == null) {
