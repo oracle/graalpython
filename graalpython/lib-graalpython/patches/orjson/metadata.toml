@@ -1,9 +1,0 @@
-[[rules]]
-version = '== 3.9.7'
-patch = 'orjson-3.9.7.patch'
-license = 'Apache-2.0 OR MIT'
-
-[[rules]]
-version = '== 3.10.5'
-patch = 'orjson-3.10.5.patch'
-license = 'Apache-2.0 OR MIT'

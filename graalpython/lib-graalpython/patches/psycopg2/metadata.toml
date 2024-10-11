@@ -1,3 +1,0 @@
-[[rules]]
-patch = "psycopg2.patch"
-license = "LGPL-3.0-or-later WITH openssl-exception"

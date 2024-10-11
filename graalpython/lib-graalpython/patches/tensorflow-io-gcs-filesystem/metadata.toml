@@ -1,8 +1,0 @@
-[[rules]]
-version = '== 0.34.0'
-patch = 'tensorflow-io-gcs-filesystem-0.34.0.patch'
-license = 'Apache-2.0'
-
-[[add-sources]]
-version = '0.34.0'
-url = 'https://github.com/tensorflow/io/archive/refs/tags/v0.34.0.tar.gz'

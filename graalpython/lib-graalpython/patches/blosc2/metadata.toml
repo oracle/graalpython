@@ -1,3 +1,0 @@
-[[rules]]
-patch = 'blosc2.patch'
-license = 'Apache-2.0'

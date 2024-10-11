@@ -1,6 +1,0 @@
-[[rules]]
-# Merged upstream
-version = '< 23.2'
-install-priority = 0
-patch = 'packaging.patch'
-license = 'Apache-2.0 OR BSD-2-Clause'

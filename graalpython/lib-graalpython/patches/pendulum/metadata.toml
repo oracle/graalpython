@@ -1,5 +1,0 @@
-[[rules]]
-version = '== 3.0.0'
-patch = 'pendulum-3.0.0.patch'
-license = 'MIT'
-

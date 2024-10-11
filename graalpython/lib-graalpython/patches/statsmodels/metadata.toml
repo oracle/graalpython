@@ -1,3 +1,0 @@
-[[rules]]
-# Pin older versions for now, the new ones require numpy-2rc1 and cython 3
-version = '<= 0.14.1'

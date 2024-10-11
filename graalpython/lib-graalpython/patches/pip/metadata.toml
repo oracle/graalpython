@@ -1,5 +1,0 @@
-[[rules]]
-version = '== 23.2.1'
-patch = 'pip-23.2.1.patch'
-license = 'MIT'
-subdir = 'src'
