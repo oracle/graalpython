@@ -1032,6 +1032,46 @@ class InteropTests(unittest.TestCase):
         assert list(h.keys()) == ['b', 'a']
         assert foo(**h) == [1, 2]
 
+    def test_foreign_number_list(self):
+        from java.util import ArrayList
+        # Like c(42) in R
+        n = __graalpython__.foreign_number_list(42)
+
+        assert isinstance(n, list)
+        assert list in type(n).mro()
+        self.assertEqual(['ForeignNumberList', 'ForeignNumberType', 'list', 'foreign', 'object'], [t.__name__ for t in type(n).mro()])
+        assert repr(n) == '42', repr(n)
+        assert str(n) == '42', str(n)
+        assert n
+
+        a = __graalpython__.foreign_number_list(2)
+        b = __graalpython__.foreign_number_list(3)
+        assert a + b == 5
+        assert a - b == -1
+        assert a * b == 6
+        assert a / b == (2 / 3)
+        assert a // b == 0
+
+        l = ArrayList()
+        l.extend([1, 2, 3])
+
+        with self.assertRaisesRegex(TypeError, "'<' not supported between instances of 'ForeignList' and 'int'"):
+            assert l < 4
+
+        assert l < n
+
+        # does not work because > resolves to ForeignNumberType.__gt__ which doesn't handle foreign list on LHS
+        with self.assertRaisesRegex(TypeError, "'>' not supported between instances of 'int' and 'ForeignList'"):
+            assert n > l
+
+        l[0] = 100
+        assert not l < n
+        with self.assertRaisesRegex(TypeError, "'>' not supported between instances of 'int' and 'ForeignList'"):
+            assert not n > l
+        assert l > n
+        with self.assertRaisesRegex(TypeError, "'<' not supported between instances of 'int' and 'ForeignList'"):
+            assert n < l
+
     def test_foreign_repl(self):
         from java.util.logging import LogRecord
         from java.util.logging import Level

@@ -78,6 +78,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -274,6 +278,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("get_handle_table_id"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("is_strong_handle_table_ref"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("clear_interop_type_registry"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("foreign_number_list"), PNone.NO_VALUE);
         }
         if (PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS || !context.getOption(PythonOptions.RunViaLauncher)) {
             mod.setAttribute(tsLiteral("list_files"), PNone.NO_VALUE);
@@ -1140,6 +1145,50 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object currentRSS() {
             return getContext().getCApiContext().getCurrentRSS();
+        }
+    }
+
+    @Builtin(name = "foreign_number_list", maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ForeignNumberListNode extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        Object foreignNumberList(Object number) {
+            return new ForeignNumberList(number);
+        }
+
+        @ExportLibrary(value = InteropLibrary.class, delegateTo = "number")
+        static final class ForeignNumberList implements TruffleObject {
+            final Object number;
+
+            ForeignNumberList(Object number) {
+                this.number = number;
+            }
+
+            @ExportMessage
+            boolean hasArrayElements() {
+                return true;
+            }
+
+            @ExportMessage
+            boolean isArrayElementReadable(long index) {
+                return index == 0;
+            }
+
+            @TruffleBoundary
+            @ExportMessage
+            Object readArrayElement(long index) throws InvalidArrayIndexException {
+                if (!isArrayElementReadable(index)) {
+                    throw InvalidArrayIndexException.create(index);
+                }
+                return number;
+            }
+
+            @ExportMessage
+            long getArraySize() {
+                return 1;
+            }
         }
     }
 }

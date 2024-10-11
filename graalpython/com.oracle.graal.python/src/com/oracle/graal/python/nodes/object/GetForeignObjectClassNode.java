@@ -79,6 +79,10 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         // TODO dir(foreign) should list both foreign object members and attributes from class
         // First in MRO
         // The type field is only set for cases which are already implemented.
+        BOOLEAN("Boolean", PythonBuiltinClassType.ForeignNumber),
+        NUMBER("Number", PythonBuiltinClassType.ForeignNumber), // int, float, complex // must be
+                                                                // before Array for e.g. R::c(1) +
+                                                                // R::c(2)
         HASH("Dict", PythonBuiltinClassType.PDict), // must be before Array
         ARRAY("List", PythonBuiltinClassType.PList), // must be before Iterable
         EXCEPTION("Exception", PythonBuiltinClassType.PBaseException),
@@ -88,7 +92,6 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         ITERABLE("Iterable"),
         META_OBJECT("Type"), // PythonBuiltinClassType.PythonClass ?
         NULL("None", PythonBuiltinClassType.PNone),
-        NUMBER("Number"), // int, float, complex
         POINTER("Pointer"),
         STRING("String"); // PythonBuiltinClassType.PString
         // Last in MRO
@@ -134,13 +137,15 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
     }
 
     protected static int getTraits(Object object, InteropLibrary interop) {
-        return (interop.hasHashEntries(object) ? Trait.HASH.bit : 0) +
-                        (interop.hasArrayElements(object) ? Trait.ARRAY.bit : 0) +
+        // Alphabetic order here as it does not matter
+        return (interop.hasArrayElements(object) ? Trait.ARRAY.bit : 0) +
+                        (interop.isBoolean(object) ? Trait.BOOLEAN.bit : 0) +
                         (interop.isException(object) ? Trait.EXCEPTION.bit : 0) +
                         (interop.isExecutable(object) ? Trait.EXECUTABLE.bit : 0) +
+                        (interop.hasHashEntries(object) ? Trait.HASH.bit : 0) +
                         (interop.isInstantiable(object) ? Trait.INSTANTIABLE.bit : 0) +
-                        (interop.isIterator(object) ? Trait.ITERATOR.bit : 0) +
                         (interop.hasIterator(object) ? Trait.ITERABLE.bit : 0) +
+                        (interop.isIterator(object) ? Trait.ITERATOR.bit : 0) +
                         (interop.isMetaObject(object) ? Trait.META_OBJECT.bit : 0) +
                         (interop.isNull(object) ? Trait.NULL.bit : 0) +
                         (interop.isNumber(object) ? Trait.NUMBER.bit : 0) +
@@ -167,7 +172,6 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         }
 
         var traitsList = new ArrayList<PythonAbstractClass>();
-        traitsList.add(base);
 
         var nameBuilder = new StringBuilder("Foreign");
         for (Trait trait : Trait.VALUES) {
@@ -188,8 +192,9 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
                 }
             }
         }
-        // reversed() to have the right MRO, and have e.g. list before Iterable before ForeignObject
-        PythonAbstractClass[] bases = traitsList.reversed().toArray(PythonAbstractClass.EMPTY_ARRAY);
+        traitsList.add(base);
+
+        PythonAbstractClass[] bases = traitsList.toArray(PythonAbstractClass.EMPTY_ARRAY);
 
         TruffleString name = PythonUtils.toTruffleStringUncached(nameBuilder.toString());
 
