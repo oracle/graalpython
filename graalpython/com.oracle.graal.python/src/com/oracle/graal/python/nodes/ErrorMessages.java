@@ -595,8 +595,8 @@ public abstract class ErrorMessages {
     public static final TruffleString PATTERNS_MAY_ONLY_MATCH_LITERALS_AND_ATTRIBUTE_LOOKUPS = tsLiteral("patterns may only match literals and attribute lookups");
     public static final TruffleString POLYGLOT_ACCESS_NOT_ALLOWED = tsLiteral("polyglot access is not allowed");
     public static final TruffleString POLYGLOT_ACCESS_NOT_ALLOWED_FOR_LANGUAGE_S = tsLiteral("polyglot access is not allowed for language '%s'");
-    public static final TruffleString POLYGLOT_EVAL_MUST_PASS_STRING_OR_PATH = tsLiteral("polyglot.eval() must pass either 'path' or 'string' keyword argument");
-    public static final TruffleString POLYGLOT_EVAL_MUST_PASS_LANG = tsLiteral("polyglot.eval() must pass 'language' keyword argument");
+    public static final TruffleString POLYGLOT_EVAL_MUST_PASS_LANG_AND_STRING_OR_PATH = tsLiteral(
+                    "polyglot.eval() must pass 'language' keyword argument, and either 'string' or 'path' keyword argument");
     public static final TruffleString POP_FROM_EMPTY_SET = tsLiteral("pop from an emtpy set");
     public static final TruffleString POP_INDEX_OUT_OF_RANGE = tsLiteral("pop index out of range");
     public static final TruffleString POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS = tsLiteral("position %d from error handler out of bounds");
