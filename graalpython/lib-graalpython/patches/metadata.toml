@@ -1,0 +1,792 @@
+[[asv.rules]]
+version = '== 0.5.1'
+patch = 'asv-0.5.1.patch'
+license = 'BSD-3-Clause'
+
+[[autopep8.rules]]
+patch = 'autopep8.patch'
+license = 'MIT'
+
+[[bcrypt.rules]]
+# With pyo3 changes upstreamed, this patch is not needed in recent versions
+# This old version is still used in ray's tests
+install-priority = 0
+version = '== 4.0.1'
+patch = 'bcrypt-4.0.1.patch'
+license = 'Apache-2.0'
+
+[[blosc2.rules]]
+patch = 'blosc2.patch'
+license = 'Apache-2.0'
+
+[[catboost.rules]]
+version = '== 1.2.2'
+patch = 'catboost-1.2.2.patch'
+license = 'Apache-2.0'
+
+[[category-encoders.rules]]
+patch = 'category-encoders.patch'
+license = 'BSD-3-Clause'
+
+[[cffi.rules]]
+version = '== 1.15.1'
+patch = 'cffi-1.15.1.patch'
+license = 'MIT'
+
+[[cffi.rules]]
+version = '== 1.16.0'
+patch = 'cffi-1.16.0.patch'
+license = 'MIT'
+
+[[cloudpickle.rules]]
+version = '== 2.2.1'
+patch = 'cloudpickle-2.2.1.patch'
+license = 'BSD-3-Clause'
+
+[[cppy.rules]]
+version = '==1.2.1'
+
+[[cramjam.rules]]
+version = '== 2.7.0'
+patch = 'cramjam-2.7.0.patch'
+license = 'MIT'
+
+# None of the patches are needed since 43.0, the pyo3 patches have been upstreamed
+
+[[cryptography.rules]]
+install-priority = 0
+version = '== 3.4.7'
+patch = 'cryptography-3.4.7.patch'
+license = 'Apache-2.0 OR BSD-3-Clause'
+
+[[cryptography.rules]]
+install-priority = 0
+version = '== 38.0.0'
+patch = 'cryptography-38.0.0.patch'
+license = 'Apache-2.0 OR BSD-3-Clause'
+
+[[cryptography.rules]]
+install-priority = 0
+version = '>= 38.0.1, < 39.0.0'
+patch = 'cryptography-38.0.1.patch'
+license = 'Apache-2.0 OR BSD-3-Clause'
+
+[[cryptography.rules]]
+install-priority = 0
+version = '>= 39.0.0, < 39.0.2'
+patch = 'cryptography-39.0.0.patch'
+license = 'Apache-2.0 OR BSD-3-Clause'
+
+[[cryptography.rules]]
+install-priority = 0
+version = '>= 39.0.2, < 41.0.0'
+patch = 'cryptography-39.0.2.patch'
+license = 'Apache-2.0 OR BSD-3-Clause'
+
+[[cryptography.rules]]
+install-priority = 0
+version = '>= 41.0.0, < 42.0.0'
+patch = 'cryptography-41.0.0.patch'
+license = 'Apache-2.0 OR BSD-3-Clause'
+
+[[cryptography.rules]]
+install-priority = 0
+version = '>= 42.0.0, < 42.0.5'
+patch = 'cryptography-42.0.0.patch'
+license = 'Apache-2.0 OR BSD-3-Clause'
+
+[[cryptography.rules]]
+install-priority = 0
+version = '== 42.0.5'
+patch = 'cryptography-42.0.5.patch'
+license = 'Apache-2.0 OR BSD-3-Clause'
+
+[[Cython.rules]]
+version = '>= 3.0.10, < 3.0.12'
+patch = 'Cython-3.0.10.patch'
+license = 'Apache-2.0'
+
+[[Cython.rules]]
+version = '== 0.29.37'
+patch = 'Cython-0.29.37.patch'
+license = 'Apache-2.0'
+
+[[Cython.rules]]
+version = '== 0.29.32'
+patch = 'Cython-0.29.32.patch'
+license = 'Apache-2.0'
+
+[[flake8.rules]]
+version = '== 6.0.0'
+patch = 'flake8-6.0.0.patch'
+license = 'MIT'
+subdir = 'src'
+
+[[greenlet.rules]]
+version = '>= 3.1.1'
+patch = 'greenlet-3.1.1.patch'
+license = 'MIT'
+
+[[greenlet.rules]]
+version = '>= 3.0.0, < 3.1.1'
+patch = 'greenlet-3.0.0.patch'
+license = 'MIT'
+
+[[grpcio.rules]]
+# Force re-cythonize
+version = '== 1.56.2'
+patch = 'grpcio-1.56.2.patch'
+license = 'Apache-2.0'
+
+[[grpcio.rules]]
+# Force re-cythonize + other fixes
+version = '== 1.60.0'
+patch = 'grpcio-1.60.0.patch'
+license = 'Apache-2.0'
+
+[[h2o.rules]]
+patch = 'h2o.patch'
+license = 'Apache-2.0'
+
+[[h5py.rules]]
+version = '== 2.10.0'
+patch = 'h5py-2.10.0.patch'
+license = 'BSD-3-Clause'
+
+[[h5py.rules]]
+version = '== 3.10.0'
+patch = 'h5py-3.10.0.patch'
+license = 'BSD-3-Clause'
+
+[[hmmlearn.rules]]
+# Need to specify pybind11 build dependency, otherwise setuptools will install it unpatched
+patch = 'hmmlearn.patch'
+license = 'BSD-3-Clause'
+
+[[hypothesis.rules]]
+install-priority = 1
+version = '>= 6.69.0'
+
+[[hypothesis.rules]]
+install-priority = 0
+version = '< 6.69.0'
+patch = 'hypothesis-6.patch'
+license = 'MPL-2.0'
+
+[[jaxlib.rules]]
+version = '== 0.4.13'
+patch = 'jaxlib-0.4.13.patch'
+license = 'Apache-2.0'
+
+[[jaxlib.add-sources]]
+version = '0.4.13'
+url = 'https://github.com/google/jax/archive/refs/tags/jaxlib-v0.4.13.tar.gz'
+
+[[jiter.rules]]
+# Upstreamed, should not be needed in the next release
+version = '<= 0.5.0'
+install-priority = 0
+patch = 'jiter.patch'
+license = 'MIT'
+
+[[joblib.rules]]
+version = '==1.4.0'
+patch = 'joblib-1.4.0.patch'
+license = 'BSD-3-Clause'
+
+[[joblib.rules]]
+version = '<=1.3.2'
+patch = 'joblib-1.3.2.patch'
+license = 'BSD-3-Clause'
+
+[[jupyter_server.rules]]
+patch = 'jupyter_server.patch'
+license = 'BSD-3-Clause'
+
+[[lazy-object-proxy.rules]]
+# Disable optional C ext. Upstreamable
+patch = 'lazy-object-proxy.patch'
+license = 'BSD-2-Clause'
+dist-type = 'sdist'
+
+[[libcst.rules]]
+version = '== 1.0.1'
+patch = 'libcst-1.0.1.patch'
+license = 'MIT'
+
+[[lightfm.rules]]
+version = '== 1.15'
+patch = 'lightfm-1.15.patch'
+license = 'MIT'
+
+[[llvmlite.rules]]
+# llvmlite only supports up to LLVM 14. That's quite old and installing it in the system typically results leads
+# to dependency hell because rust requires newer LLVM. We add downloading and building LLVM 14 to the setup script.
+patch = 'llvmlite.patch'
+license = 'BSD-2-Clause'
+
+[[lxml.rules]]
+version = '== 5.3.0'
+patch = 'lxml-5.3.0.patch'
+license = 'BSD-3-Clause'
+
+[[lxml.rules]]
+version = '== 4.9.1'
+patch = 'lxml-4.9.1.patch'
+license = 'BSD-3-Clause'
+
+# Patch already upstreamed, keeping it around for older versions
+[[MarkupSafe.rules]]
+version = "< 2.1.0"
+patch = "MarkupSafe.patch"
+license = "BSD-3-Clause"
+install-priority = 0  # Don't make pip install prefer this version
+dist-type = "sdist"
+
+[[matplotlib.rules]]
+version = '== 3.5.3'
+patch = 'matplotlib-3.5.3.patch'
+license = 'PSF-2.0'
+
+[[matplotlib.rules]]
+version = '== 3.6.3'
+patch = 'matplotlib-3.6.3.patch'
+license = 'PSF-2.0'
+
+[[matplotlib.rules]]
+# pin 3.7.0
+install-priority = 10
+version = '== 3.7.0'
+patch = 'matplotlib-3.7.0.patch'
+license = 'PSF-2.0'
+
+[[meson.rules]]
+version = '== 1.2.2'
+
+[[meson-python.rules]]
+# Upstreamed
+version = '<= 0.16.0'
+install-priority = 0
+patch = 'meson-python.patch'
+license = 'MIT'
+
+[[ml_dtypes.rules]]
+# 0.4.0 requires numpy==2.0rc1
+version = "< 0.4.0"
+
+[[mlx.rules]]
+patch = 'mlx.patch'
+license = 'MIT'
+
+[[mlx.add-sources]]
+version = '0.16.3'
+url = 'https://github.com/ml-explore/mlx/archive/refs/tags/v0.16.3.tar.gz'
+
+[[mlx.add-sources]]
+version = '0.16.2'
+url = 'https://github.com/ml-explore/mlx/archive/refs/tags/v0.16.2.tar.gz'
+
+[[mlx.add-sources]]
+version = '0.16.1'
+url = 'https://github.com/ml-explore/mlx/archive/refs/tags/v0.16.1.tar.gz'
+
+[[msgpack.rules]]
+version = '== 1.0.8'
+patch = 'msgpack-1.0.8.patch'
+license = 'Apache-2.0'
+
+[[nanobind.rules]]
+patch = 'nanobind.patch'
+license = 'BSD-3-Clause'
+
+[[numba.rules]]
+# Not upstreamable, we disable the JIT
+version = '== 0.59.1'
+patch = 'numba-0.59.1.patch'
+license = 'BSD-2-Clause'
+
+[[numpy.rules]]
+version = '>= 2.0.0rc1, < 2.1'
+patch = 'numpy-2.0.0.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+ignore-rule-on-llvm = true
+
+[[numpy.rules]]
+version = '== 1.26.4'
+patch = 'numpy-1.26.4.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+ignore-rule-on-llvm = true
+
+[[numpy.rules]]
+version = '== 1.24.3'
+patch = 'numpy-1.24.3.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+ignore-rule-on-llvm = true
+
+[[numpy.rules]]
+version = '== 1.23.5'
+patch = 'numpy-1.23.5.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[numpy.rules]]
+# 1.23.2 is currently used by oldest-supported-numpy
+version = '>= 1.23.2, < 1.23.5'
+patch = 'numpy-1.23.2.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[onnxruntime.rules]]
+version = '== 1.17.1'
+patch = 'onnxruntime-1.17.1.patch'
+license = 'MIT'
+dist-type = 'sdist'
+
+[[onnxruntime.add-sources]]
+version = '1.17.1'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.17.1.tar.gz'
+
+[[orjson.rules]]
+version = '== 3.9.7'
+patch = 'orjson-3.9.7.patch'
+license = 'Apache-2.0 OR MIT'
+
+[[orjson.rules]]
+version = '== 3.10.5'
+patch = 'orjson-3.10.5.patch'
+license = 'Apache-2.0 OR MIT'
+
+[[overrides.rules]]
+version = '== 7.4.0'
+# Important: This patch esentially breaks the package, it's not upstreamable. The package relies on bytecode parsing
+# to do some otherwise impossible syntax shortcuts. Since it's esentially a type-checker, we just disable the overrides
+# checking altogether
+patch = 'overrides-7.4.0.patch'
+license = 'Apache-2.0'
+
+[[packaging.rules]]
+# Merged upstream
+version = '< 23.2'
+install-priority = 0
+patch = 'packaging.patch'
+license = 'Apache-2.0 OR BSD-2-Clause'
+
+[[pandas.rules]]
+version = '== 2.2.2'
+patch = 'pandas-2.2.2.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[pandas.rules]]
+version = '== 2.0.3'
+patch = 'pandas-2.0.3.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[pandas.rules]]
+version = '== 1.5.2'
+patch = 'pandas-1.5.2.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[pendulum.rules]]
+version = '== 3.0.0'
+patch = 'pendulum-3.0.0.patch'
+license = 'MIT'
+
+
+[[pip.rules]]
+version = '== 23.2.1'
+patch = 'pip-23.2.1.patch'
+license = 'MIT'
+subdir = 'src'
+
+[[prompt_toolkit.rules]]
+# Avoid PyOS_getsig calls. Not upstreamable
+patch = 'prompt_toolkit.patch'
+license = 'BSD-3-Clause'
+
+[[protobuf.rules]]
+version = '== 3.21.9'
+patch = 'protobuf-3.21.9.patch'
+license = 'BSD-3-Clause'
+
+[[psycopg2.rules]]
+patch = "psycopg2.patch"
+license = "LGPL-3.0-or-later WITH openssl-exception"
+
+[[psycopg2-binary.rules]]
+patch = "psycopg2-binary.patch"
+license = "LGPL-3.0-or-later WITH openssl-exception"
+
+[[py4j.rules]]
+patch = 'py4j.patch'
+license = 'BSD-3-Clause'
+subdir = 'src'
+
+[[pyarrow.rules]]
+version = '== 15.0.0'
+patch = 'pyarrow-15.0.0.patch'
+license = 'Apache-2.0'
+
+[[pyarrow.rules]]
+version = '== 12.0.0'
+patch = 'pyarrow-12.0.0.patch'
+license = 'Apache-2.0'
+
+[[pybind11.rules]]
+# Upstreamed
+install-priority = 0
+# Note: This patch is also inlined in torch
+version = '>= 2.11.0, <= 2.13.6'
+patch = 'pybind11-2.11.patch'
+license = 'BSD-3-Clause'
+
+[[pybind11.rules]]
+install-priority = 0
+# Note: This patch file is also used directly outside of pip during onnxruntime build
+# Note: This patch file is also used directly outside of pip during tensorflow build
+# Note: This patch is also inlined in torch
+version = '>= 2.10.1, < 2.11.0'
+patch = 'pybind11-2.10.1.patch'
+license = 'BSD-3-Clause'
+
+[[pydantic.rules]]
+# Pin to match our pinned pydantic-core
+version = '== 2.4.2'
+
+[[pydantic-core.rules]]
+version = '== 2.10.1'
+patch = 'pydantic-core-2.10.1.patch'
+license = 'MIT'
+
+
+[[PyDriller.rules]]
+patch = 'PyDriller.patch'
+license = 'Apache-2.0'
+
+[[pygame.rules]]
+version = '== 2.*'
+patch = 'pygame-2.patch'
+license = 'LGPL-2.0-or-later'
+
+[[pymongo.rules]]
+patch = 'pymongo.patch'
+license = 'Apache-2.0'
+
+[[pyOpenSSL.rules]]
+# Pin this version to avoid pulling newer cryptography than we have patch for
+version = "== 23.2.0"
+
+[[pyparsing.rules]]
+version = '== 3.0.8'
+
+[[pyperf.rules]]
+version = '== 2.3.0'
+patch = 'pyperf-2.3.0.patch'
+license = 'MIT'
+
+[[pyperf.rules]]
+version = '== 2.3.1'
+patch = 'pyperf-2.3.1.patch'
+license = 'MIT'
+
+[[pyperf.rules]]
+version = '== 2.5.0'
+
+[[pyperformance.rules]]
+version = '== 1.0.5'
+patch = 'pyperformance-1.0.5.patch'
+license = 'MIT'
+
+[[pyspark.rules]]
+version = '== 3.4.1'
+dist-type = 'sdist'
+patch = 'pyspark-3.4.1.patch'
+license = 'Apache-2.0'
+
+[[pythran.rules]]
+version = '== 0.12.0'
+patch = 'pythran-0.12.0.patch'
+license = 'BSD-3-Clause'
+
+[[pythran.rules]]
+install-priority = 10
+version = '== 0.13.*'
+patch = 'pythran-0.13.patch'
+license = 'BSD-3-Clause'
+
+[[pyzmq.rules]]
+# 26+ needs Cython 3
+version = '< 26'
+# The patch just makes it re-cythonize to pick up our cython changes
+patch = 'pyzmq.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[rapidfuzz.rules]]
+patch = 'rapidfuzz.patch'
+license = 'MIT'
+
+[[ray.rules]]
+version = '== 2.3.0'
+patch = 'ray-2.3.0.patch'
+license = 'Apache-2.0'
+
+[[ray.add-sources]]
+version = '2.3.0'
+url = 'https://github.com/ray-project/ray/releases/download/ray-2.3.0/ray-2.3.0.tar.gz'
+
+[[ray.rules]]
+version = '== 2.9.1'
+patch = 'ray-2.9.1.patch'
+license = 'Apache-2.0'
+
+[[ray.add-sources]]
+version = '2.9.1'
+url = 'https://github.com/ray-project/ray/archive/refs/tags/ray-2.9.1.tar.gz'
+
+[[readme-renderer.rules]]
+# Newer version depends nh3 which is built with maturin, which is currently broken
+version = '< 42'
+
+[[rpds_py.rules]]
+# Patch not needed anymore in recent version since pyo3 changes have been upstreamed
+install-priority = 0
+version = '== 0.10.3'
+patch = 'rpds_py-0.10.3.patch'
+license = 'MIT'
+
+[[safetensors.rules]]
+# Recent versions should use pyo3 with upstream support for graalpy
+install-priority = 0
+version = '== 0.3.3'
+patch = 'safetensors-0.3.3.patch'
+license = 'Apache-2.0'
+
+[[scikit-learn.rules]]
+version = '== 1.2.2'
+patch = 'scikit-learn-1.2.2.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[scikit-learn.rules]]
+version = '== 1.1.3'
+patch = 'scikit-learn-1.1.3.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[scipy.rules]]
+version = '== 1.10.1'
+patch = 'scipy-1.10.1.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[setproctitle.rules]]
+version = '>= 1.2.2'
+patch = 'setproctitle-1.2.2.patch'
+license = 'BSD-3-Clause'
+
+[[statsmodels.rules]]
+# Pin older versions for now, the new ones require numpy-2rc1 and cython 3
+version = '<= 0.14.1'
+
+[[tensorflow.rules]]
+version = '== 2.15.0'
+patch = 'tensorflow-2.15.0.patch'
+license = 'Apache-2.0'
+
+[[tensorflow.add-sources]]
+version = '2.15.0'
+url = 'https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.15.0.tar.gz'
+
+[[tensorflow.rules]]
+version = '== 2.14.0'
+patch = 'tensorflow-2.14.0.patch'
+license = 'Apache-2.0'
+
+[[tensorflow.add-sources]]
+version = '2.14.0'
+url = 'https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.14.0.tar.gz'
+
+[[tensorflow-io.rules]]
+version = '== 0.34.0'
+patch = 'tensorflow-io-0.34.0.patch'
+license = 'Apache-2.0'
+
+[[tensorflow-io.add-sources]]
+version = '0.34.0'
+url = 'https://github.com/tensorflow/io/archive/refs/tags/v0.34.0.tar.gz'
+
+[[tensorflow-io-gcs-filesystem.rules]]
+version = '== 0.34.0'
+patch = 'tensorflow-io-gcs-filesystem-0.34.0.patch'
+license = 'Apache-2.0'
+
+[[tensorflow-io-gcs-filesystem.add-sources]]
+version = '0.34.0'
+url = 'https://github.com/tensorflow/io/archive/refs/tags/v0.34.0.tar.gz'
+
+[[tiktoken.rules]]
+version = '== 0.7.0'
+patch = 'tiktoken-0.7.0.patch'
+license = 'MIT'
+
+[[tokenizers.rules]]
+version = '>= 0.19'
+patch = 'tokenizers-0.19-plus.patch'
+license = 'Apache-2.0'
+
+[[tokenizers.rules]]
+version = '== 0.13.3'
+patch = 'tokenizers-0.13.3.patch'
+license = 'Apache-2.0'
+
+[[tokenizers.rules]]
+version = '== 0.15.0'
+patch = 'tokenizers-0.15.0.patch'
+license = 'Apache-2.0'
+
+[[torch.rules]]
+version = '== 1.13.1'
+patch = 'torch-1.13.1.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[torch.rules]]
+version = '== 2.2.1'
+patch = 'torch-2.2.1.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[torch.rules]]
+version = '== 2.4.1'
+patch = 'torch-2.4.1.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[torch.add-sources]]
+version = '1.13.1'
+url = 'https://github.com/pytorch/pytorch/releases/download/v1.13.1/pytorch-v1.13.1.tar.gz'
+
+[[torch.add-sources]]
+version = '2.2.1'
+url = 'https://github.com/pytorch/pytorch/releases/download/v2.2.1/pytorch-v2.2.1.tar.gz'
+
+[[torch.add-sources]]
+version = '2.4.1'
+url = 'https://github.com/pytorch/pytorch/releases/download/v2.4.1/pytorch-v2.4.1.tar.gz'
+
+[[torchvision.rules]]
+version = '== 0.19.1'
+patch = 'torchvision-1.19.1.patch'
+license = 'BSD-3-Clause'
+
+[[torchvision.add-sources]]
+version = '0.19.1'
+url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.19.1.tar.gz'
+
+[[torchvision.rules]]
+version = '== 0.17.1'
+patch = 'torchvision-1.17.1.patch'
+license = 'BSD-3-Clause'
+
+[[torchvision.add-sources]]
+version = '0.17.1'
+url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.17.1.tar.gz'
+
+[[tox.rules]]
+version = '== 3.*'
+
+[[transformers.rules]]
+# transformers tends to depend on a specific version of tokenizers. Pin it to avoid pulling unpatched tokenizers
+version = '== 4.33.3'
+
+[[typing_extensions.rules]]
+patch = 'typing_extensions.patch'
+license = 'PSF-2.0'
+subdir = 'src'
+
+[[urllib3.rules]]
+# urllib3 has a check that requires that the ssl implementation's name starts with "OpenSSL", we need to patch it out
+patch = 'urllib3-2.patch'
+license = 'MIT'
+subdir = 'src'
+# Older versions worked fine before the check was added. Newer versions turned it into a warning
+version = '>= 2, < 2.0.3'
+install-priority = 0
+
+[[uvloop.rules]]
+patch = 'uvloop.patch'
+license = 'MIT'
+
+[[watchfiles.rules]]
+version = '== 0.21.0'
+patch = 'watchfiles-0.21.0.patch'
+license = 'MIT'
+
+[[wheel.rules]]
+# Always pin a specific version. Our virtualenv seeder pins setuptools and pip to the bundled
+# ones, so it makes sense to always pin wheel too to avoid it getting out of sync with setuptools.
+version = '== 0.43.0'
+# Add a workaround for building wheels with files larger than 2GB
+patch = 'wheel-0.43.patch'
+license = 'MIT'
+subdir = 'src'
+
+# Catch all rule for newer versions
+[[wheel.rules]]
+version = '>= 0.43.0'
+patch = 'wheel-0.43.patch'
+license = 'MIT'
+subdir = 'src'
+install-priority = 0
+
+[[wheel.rules]]
+version = '== 0.41.2'
+patch = 'wheel-0.41.2.patch'
+license = 'MIT'
+subdir = 'src'
+
+[[wheel.rules]]
+version = '>= 0.40, < 0.41.2'
+patch = 'wheel-0.40.patch'
+license = 'MIT'
+subdir = 'src'
+install-priority = 0
+
+[[wheel.rules]]
+version = '== 0.38.*'
+patch = 'wheel-0.38.patch'
+license = 'MIT'
+subdir = 'src'
+install-priority = 0
+
+[[wheel.rules]]
+version = '>= 0.36, < 0.38'
+patch = 'wheel-0.37.patch'
+license = 'MIT'
+subdir = 'src'
+install-priority = 0
+
+[[wheel.rules]]
+version = '== 0.35.*'
+patch = 'wheel-0.35.patch'
+license = 'MIT'
+subdir = 'src'
+install-priority = 0
+
+[[wheel.rules]]
+version = '< 0.35'
+patch = 'wheel-pre-0.35.patch'
+license = 'MIT'
+subdir = 'src'
+install-priority = 0
+
+[[zstandard.rules]]
+patch = 'zstandard.patch'
+license = 'BSD-3-Clause'
+

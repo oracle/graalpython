@@ -1,4 +1,0 @@
-[[rules]]
-version = '== 1.0.5'
-patch = 'pyperformance-1.0.5.patch'
-license = 'MIT'
