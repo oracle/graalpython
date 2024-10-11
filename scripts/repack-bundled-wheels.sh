@@ -68,12 +68,13 @@ patch_wheel() {
     mkdir "$tmpdir"
     git show "python-import:$wheel" > tmp.whl || missing_python_import
     cd "$tmpdir"
-    unzip ../tmp.whl
+    unzip -q ../tmp.whl
     rm ../tmp.whl
-    patch -p1 < "../$patch"
+    patch --quiet -p1 < "../$patch"
     touch "$(echo $name-*.dist-info)/GRAALPY_MARKER"
     rm "../$wheel"
-    zip -r "../$wheel" .
+    zip -qr "../$wheel" .
+    cd ..
     rm -rf "$tmpdir"
 }
 
