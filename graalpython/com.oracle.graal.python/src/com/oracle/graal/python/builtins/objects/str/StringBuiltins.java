@@ -75,6 +75,7 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.truffle.api.dsl.Fallback;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 import org.graalvm.shadowed.com.ibm.icu.text.CaseMap;
@@ -94,7 +95,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -201,6 +201,11 @@ import com.oracle.truffle.api.strings.TruffleString.LastIndexOfStringNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
+/**
+ * NOTE: self can either be a TruffleString, PString, PythonNativeObject string or a foreign string
+ * (isString()). Use {@link CastToTruffleStringCheckedNode} or {@link CastToTruffleStringNode} to
+ * convert to TruffleString.
+ */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
 public final class StringBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = StringBuiltinsSlotsGen.SLOTS;
@@ -551,79 +556,26 @@ public final class StringBuiltins extends PythonBuiltins {
             return concatNode.execute(self, other, TS_ENCODING, false);
         }
 
-        @Specialization
-        static TruffleString doSS(PString self, TruffleString other,
+        @Fallback
+        static TruffleString doSS(Object self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared @Cached TruffleString.ConcatNode concatNode) {
-            return doIt(castToStringNode.execute(inliningTarget, self), other, concatNode);
-        }
-
-        @Specialization
-        static TruffleString doSS(TruffleString self, PString other,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared @Cached TruffleString.ConcatNode concatNode) {
-            return doIt(self, castToStringNode.execute(inliningTarget, other), concatNode);
-        }
-
-        @Specialization
-        static TruffleString doSS(PString self, PString other,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared @Cached TruffleString.ConcatNode concatNode) {
-            return doIt(castToStringNode.execute(inliningTarget, self), castToStringNode.execute(inliningTarget, other), concatNode);
-        }
-
-        @Specialization(guards = "isString(self)")
-        static Object doSNative(VirtualFrame frame, Object self, PythonAbstractNativeObject other,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached CastToTruffleStringNode cast,
-                        @Shared @Cached ConcatNode recurse,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached CastToTruffleStringNode castToStringLeftNode,
+                        @Cached CastToTruffleStringNode castToStringRightNode,
+                        @Shared @Cached TruffleString.ConcatNode concatNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            TruffleString left;
+            TruffleString right;
             try {
-                return recurse.execute(frame, self, cast.execute(inliningTarget, other));
-            } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "str", other, "str");
-            }
-        }
-
-        @Specialization(guards = "isString(other)")
-        static Object doNativeS(VirtualFrame frame, PythonAbstractNativeObject self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached CastToTruffleStringNode cast,
-                        @Shared @Cached ConcatNode recurse,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            try {
-                return recurse.execute(frame, cast.execute(inliningTarget, self), other);
-            } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "str", other, "str");
-            }
-        }
-
-        @Specialization
-        static Object doNative(VirtualFrame frame, PythonAbstractNativeObject self, PythonAbstractNativeObject other,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached CastToTruffleStringNode cast,
-                        @Shared @Cached ConcatNode recurse,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            try {
-                return recurse.execute(frame, cast.execute(inliningTarget, self), cast.execute(inliningTarget, other));
+                left = castToStringLeftNode.execute(inliningTarget, self);
             } catch (CannotCastException e) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___ADD__, "str", self);
             }
-        }
-
-        @Specialization(guards = {"isString(self)", "!isString(other)", "!isNativeObject(other)"})
-        static Object doSO(@SuppressWarnings("unused") Object self, Object other,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "str", other, "str");
-        }
-
-        @Specialization(guards = {"!isString(self)", "!isNativeObject(self)", "!isNativeObject(other)"})
-        static Object doNoString(Object self, @SuppressWarnings("unused") Object other,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___ADD__, "str", self);
+            try {
+                right = castToStringRightNode.execute(inliningTarget, other);
+            } catch (CannotCastException e) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "str", other, "str");
+            }
+            return doIt(left, right, concatNode);
         }
     }
 

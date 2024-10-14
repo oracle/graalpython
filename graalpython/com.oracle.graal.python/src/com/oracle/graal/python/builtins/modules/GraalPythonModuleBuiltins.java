@@ -1203,12 +1203,74 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             return new ForeignWrapper(object);
         }
 
+        @SuppressWarnings("unused")
         @ExportLibrary(value = InteropLibrary.class, delegateTo = "object")
         static final class ForeignWrapper implements TruffleObject {
             final Object object;
 
             ForeignWrapper(Object object) {
                 this.object = object;
+            }
+
+            /*
+             * Hide members as we want to treat the object solely by using its interop traits &
+             * trait-specific messages and not unintentionally read or invoke one of its members
+             * (methods or fields).
+             */
+
+            @ExportMessage
+            boolean hasMembers() {
+                return false;
+            }
+
+            @ExportMessage
+            boolean isMemberReadable(String member) {
+                return false;
+            }
+
+            @ExportMessage
+            boolean isMemberModifiable(String member) {
+                return false;
+            }
+
+            @ExportMessage
+            boolean isMemberInsertable(String member) {
+                return false;
+            }
+
+            @ExportMessage
+            boolean isMemberRemovable(String member) {
+                return false;
+            }
+
+            @ExportMessage
+            boolean isMemberInvocable(String member) {
+                return false;
+            }
+
+            @ExportMessage
+            Object getMembers(boolean includeInternal) throws UnsupportedMessageException {
+                throw UnsupportedMessageException.create();
+            }
+
+            @ExportMessage
+            Object readMember(String member) throws UnsupportedMessageException {
+                throw UnsupportedMessageException.create();
+            }
+
+            @ExportMessage
+            void writeMember(String member, Object value) throws UnsupportedMessageException {
+                throw UnsupportedMessageException.create();
+            }
+
+            @ExportMessage
+            void removeMember(String member) throws UnsupportedMessageException {
+                throw UnsupportedMessageException.create();
+            }
+
+            @ExportMessage
+            Object invokeMember(String member, Object[] arguments) throws UnsupportedMessageException {
+                throw UnsupportedMessageException.create();
             }
         }
     }

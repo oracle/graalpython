@@ -500,34 +500,34 @@ public class PythonProvider implements LanguageProvider {
             List<? extends Value> parameters = snippetRun.getParameters();
             assert parameters.size() == 2;
 
-            Value par0 = parameters.get(0);
-            Value par1 = parameters.get(1);
+            Value self = parameters.get(0);
+            Value index = parameters.get(1);
 
             long len = -1;
 
-            if (par0.hasArrayElements()) {
-                len = par0.getArraySize();
-            } else if (par0.isString()) {
-                len = par0.asString().length();
+            if (self.isString()) {
+                len = self.asString().length();
+            } else if (self.hasArrayElements()) {
+                len = self.getArraySize();
             }
             if (len >= 0) {
                 int idx;
-                if (par1.isBoolean()) {
-                    idx = par1.asBoolean() ? 1 : 0;
-                } else if (par1.isNumber() && par1.fitsInInt()) {
-                    idx = par1.asInt();
+                if (index.isBoolean()) {
+                    idx = index.asBoolean() ? 1 : 0;
+                } else if (index.isNumber() && index.fitsInInt()) {
+                    idx = index.asInt();
                 } else {
-                    assert snippetRun.getException() != null;
+                    assert snippetRun.getException() != null : snippetRun.getResult();
                     return;
                 }
-                if ((idx >= 0 && len > idx) || (idx < 0 && idx + len >= 0 && len > idx + len)) {
-                    assert snippetRun.getException() == null : snippetRun.getException().toString();
+                if ((idx >= 0 && idx < len) || (idx < 0 && idx + len >= 0 && idx + len < len)) {
+                    assert snippetRun.getException() == null : snippetRun.getException();
                 } else {
-                    assert snippetRun.getException() != null;
+                    assert snippetRun.getException() != null : snippetRun.getResult();
                 }
-            } else if (par0.hasHashEntries()) {
-                if (par1.getMetaObject() != null) {
-                    String metaName = par1.getMetaObject().getMetaQualifiedName();
+            } else if (self.hasHashEntries()) {
+                if (index.getMetaObject() != null) {
+                    String metaName = index.getMetaObject().getMetaQualifiedName();
                     for (String s : UNHASHABLE_TYPES) {
                         if (metaName.equals(s)) {
                             // those don't work, but that's expected
@@ -536,11 +536,11 @@ public class PythonProvider implements LanguageProvider {
                         }
                     }
                 }
-                Value v = par0.getHashValueOrDefault(par1, PythonProvider.class.getName());
+                Value v = self.getHashValueOrDefault(index, PythonProvider.class.getName());
                 if (v.isString() && v.asString().equals(PythonProvider.class.getName())) {
-                    assert snippetRun.getException() != null;
+                    assert snippetRun.getException() != null : snippetRun.getResult();
                 } else {
-                    assert snippetRun.getException() == null : snippetRun.getException().toString();
+                    assert snippetRun.getException() == null : snippetRun.getException();
                 }
             } else {
                 // argument type error, rethrow

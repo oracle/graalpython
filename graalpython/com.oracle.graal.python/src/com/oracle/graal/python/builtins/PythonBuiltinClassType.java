@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DICTVAL
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DICT_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FLOAT_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FOREIGNNUMBER_M_FLAGS;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FOREIGNOBJECT_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FROZENSET_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.GENERATOR_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.GENERIC_ALIAS_M_FLAGS;
@@ -299,7 +298,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PickleBuffer("PickleBuffer", "_pickle"),
 
     // Foreign
-    ForeignObject(J_FOREIGN, Flags.PRIVATE_BASE_WDICT, FOREIGNOBJECT_M_FLAGS, ForeignObjectBuiltins.SLOTS),
+    ForeignObject(J_FOREIGN, Flags.PRIVATE_BASE_WDICT, ForeignObjectBuiltins.SLOTS),
     ForeignNumber("ForeignNumberType", Flags.PRIVATE_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
 
     // bz2

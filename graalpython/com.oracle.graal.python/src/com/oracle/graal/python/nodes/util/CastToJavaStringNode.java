@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,17 +44,19 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode.ReadNativeStringNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -63,7 +65,6 @@ import com.oracle.truffle.api.strings.TruffleString;
  * because the object is not a Python string, the node will throw a {@link CannotCastException}.
  */
 @GenerateUncached
-@ImportStatic(PGuards.class)
 @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
 public abstract class CastToJavaStringNode extends PNodeWithContext {
 
@@ -104,8 +105,17 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"!isString(x)", "!isNativeObject(x)"})
-    static String doUnsupported(@SuppressWarnings("unused") Object x) {
-        throw CannotCastException.INSTANCE;
+    static String other(Object x,
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
+        if (interop.isString(x)) {
+            try {
+                return interop.asString(x);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        } else {
+            throw CannotCastException.INSTANCE;
+        }
     }
 
     public static CastToJavaStringNode getUncached() {

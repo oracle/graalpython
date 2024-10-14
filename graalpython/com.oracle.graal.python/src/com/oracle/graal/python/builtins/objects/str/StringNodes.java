@@ -202,6 +202,16 @@ public abstract class StringNodes {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
 
+        @Specialization
+        @InliningCutoff
+        static int other(Object x,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringCheckedNode cast,
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+            TruffleString tstring = cast.cast(inliningTarget, x, ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "str", x);
+            return doString(tstring, codePointLengthNode);
+        }
+
         @TruffleBoundary
         private static int intValue(Number result) {
             return result.intValue();
@@ -244,7 +254,7 @@ public abstract class StringNodes {
             return execute(inliningTarget, object, errMsgFormat, errMsgArgs);
         }
 
-        public abstract TruffleString execute(Node inliningTarget, Object object, TruffleString errMsgFormat, Object[] errMsgArgs);
+        abstract TruffleString execute(Node inliningTarget, Object object, TruffleString errMsgFormat, Object[] errMsgArgs);
 
         @Specialization
         static TruffleString doTruffleString(TruffleString self, @SuppressWarnings("unused") TruffleString errMsgFormat, @SuppressWarnings("unused") Object[] errMsgArgs) {

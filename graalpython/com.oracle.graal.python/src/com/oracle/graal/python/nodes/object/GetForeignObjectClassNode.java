@@ -80,9 +80,9 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         // First in MRO
         // The type field is only set for cases which are already implemented.
         BOOLEAN("Boolean", PythonBuiltinClassType.ForeignNumber),
-        NUMBER("Number", PythonBuiltinClassType.ForeignNumber), // int, float, complex // must be
-                                                                // before Array for e.g. R::c(1) +
-                                                                // R::c(2)
+        // int, float, complex // must be before Array for e.g. R::c(1) + R::c(2)
+        NUMBER("Number", PythonBuiltinClassType.ForeignNumber),
+        STRING("String", PythonBuiltinClassType.PString),
         HASH("Dict", PythonBuiltinClassType.PDict), // must be before Array
         ARRAY("List", PythonBuiltinClassType.PList), // must be before Iterable
         EXCEPTION("Exception", PythonBuiltinClassType.PBaseException),
@@ -92,8 +92,7 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         ITERABLE("Iterable"),
         META_OBJECT("Type"), // PythonBuiltinClassType.PythonClass ?
         NULL("None", PythonBuiltinClassType.PNone),
-        POINTER("Pointer"),
-        STRING("String"); // PythonBuiltinClassType.PString
+        POINTER("Pointer");
         // Last in MRO
 
         public static final Trait[] VALUES = Trait.values();

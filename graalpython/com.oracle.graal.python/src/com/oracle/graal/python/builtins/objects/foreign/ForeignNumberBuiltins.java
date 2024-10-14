@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins.NormalizeForeignForBinopNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -153,6 +152,78 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class NormalizeForeignForBinopNode extends Node {
+        public abstract Object execute(Node inliningTarget, Object value);
+
+        @Specialization(guards = "lib.isBoolean(obj)")
+        Object doBool(Object obj,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached(inline = false) GilNode gil) {
+            gil.release(true);
+            try {
+                return lib.asBoolean(obj);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @Specialization(guards = "lib.fitsInLong(obj)")
+        Object doLong(Object obj,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached(inline = false) GilNode gil) {
+            assert !lib.isBoolean(obj);
+            gil.release(true);
+            try {
+                return lib.asLong(obj);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @Specialization(guards = {"!lib.fitsInLong(obj)", "lib.fitsInBigInteger(obj)"})
+        Object doBigInt(Object obj,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) PythonObjectFactory factory) {
+            assert !lib.isBoolean(obj);
+            gil.release(true);
+            try {
+                return factory.createInt(lib.asBigInteger(obj));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @Specialization(guards = {"!lib.fitsInLong(obj)", "!lib.fitsInBigInteger(obj)", "lib.fitsInDouble(obj)"})
+        Object doDouble(Object obj,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached(inline = false) GilNode gil) {
+            assert !lib.isBoolean(obj);
+            gil.release(true);
+            try {
+                return lib.asDouble(obj);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public static Object doGeneric(Object left) {
+            return null;
         }
     }
 
@@ -463,24 +534,6 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         Object doComparison(VirtualFrame frame, @SuppressWarnings("unused") Object left, Object right,
                         @SuppressWarnings("unused") @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
             return comparisonNode.executeObject(frame, PNone.NONE, right);
-        }
-
-        @Specialization(guards = "lib.isString(left)")
-        Object doComparisonString(VirtualFrame frame, @SuppressWarnings("unused") Object left, Object right,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached GilNode gil,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            TruffleString leftString;
-            gil.release(true);
-            try {
-                leftString = switchEncodingNode.execute(lib.asTruffleString(left), TS_ENCODING);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to string for comparison as it claims to");
-            } finally {
-                gil.acquire();
-            }
-            return comparisonNode.executeObject(frame, leftString, right);
         }
 
         @SuppressWarnings("unused")
