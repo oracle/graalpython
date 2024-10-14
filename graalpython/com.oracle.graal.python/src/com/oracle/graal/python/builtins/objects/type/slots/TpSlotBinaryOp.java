@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.Bin
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.TpSlotBinaryFuncBuiltin;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -300,7 +299,7 @@ public class TpSlotBinaryOp {
         @SuppressWarnings("unused")
         @Specialization(replaces = "callCachedBuiltin")
         @InliningCutoff
-        static Object callGenericComplexBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotBinaryFuncBuiltin<?> slot,
+        static Object callGenericComplexBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotBinaryOpBuiltin<?> slot,
                         Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, BinaryOpSlot op,
                         @Cached(inline = false) CallContext callContext,
                         @Cached InlinedConditionProfile isNullFrameProfile,
