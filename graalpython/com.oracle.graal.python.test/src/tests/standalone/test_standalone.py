@@ -337,8 +337,8 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase):
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
 
             replace_in_file(build_file,
-                "implementation(\"org.graalvm.python:python-community:24.1.1\")",
-                "// implementation(\"org.graalvm.python:python-community:24.1.1\")")
+                "implementation(\"org.graalvm.python:python-community:24.1.2\")",
+                "// implementation(\"org.graalvm.python:python-community:24.1.2\")")
 
             cmd = gradle_cmd + ["graalPyResources"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
