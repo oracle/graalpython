@@ -151,6 +151,7 @@ public class VirtualFileSystemTest {
             assertEquals(VFS_MOUNT_POINT + File.separator + "SomeFile", fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile")).toString());
             // check to be extracted file
             checkExtractedFile(fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "extractme")), new String[]{"text1", "text2"});
+            assertEquals(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme", fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme")).toString());
         }
 
         // from real FS
@@ -173,6 +174,7 @@ public class VirtualFileSystemTest {
             // check to be extracted file
             checkExtractedFile(fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "extractme")), new String[]{"text1", "text2"});
             checkExtractedFile(fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1/extractme")), null);
+            assertEquals(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme", fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme")).toString());
         }
 
         // from real FS
@@ -213,6 +215,9 @@ public class VirtualFileSystemTest {
             p = parsePath.apply(fs, VFS_MOUNT_POINT + File.separator + "dir1/extractme");
             assertFalse(Files.exists(p));
             assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "dir1/extractme"), p);
+            p = parsePath.apply(fs, VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme");
+            assertFalse(Files.exists(p));
+            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme"), p);
         }
 
         // from real FS
@@ -257,6 +262,13 @@ public class VirtualFileSystemTest {
                             NoSuchFileException.class,
                             () -> {
                                 fs.checkAccess(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exits"), Set.of(AccessMode.READ));
+                                return null;
+                            },
+                            "should not be able to access a file which does not exist in VFS");
+            checkException(
+                            NoSuchFileException.class,
+                            () -> {
+                                fs.checkAccess(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exits/extractme"), Set.of(AccessMode.READ));
                                 return null;
                             },
                             "should not be able to access a file which does not exist in VFS");

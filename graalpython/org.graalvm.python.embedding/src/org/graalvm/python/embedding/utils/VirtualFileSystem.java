@@ -595,7 +595,8 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
              */
             BaseEntry entry = getEntry(path);
             if (entry == null) {
-                severe("no entry for '%s'", path);
+                warn("no entry for '%s'", path);
+                return null;
             }
             Path relPath = mountPoint.relativize(Paths.get(entry.getPlatformPath()));
 
@@ -968,6 +969,10 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         Path result = path;
         if (pathIsInVFS && shouldExtract(path)) {
             result = getExtractedPath(path);
+            if (result == null) {
+                finer("VFS.toAbsolutePath could not extract '%s'", path);
+                result = path;
+            }
         }
         Path ret = toAbsolutePathInternal(result);
         finer("VFS.toAbsolutePath '%s' -> '%s'", path, ret);
@@ -992,6 +997,10 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         Path result = path;
         if (pathIsInVFS && shouldExtract(path)) {
             result = getExtractedPath(path);
+            if (result == null) {
+                finer("VFS.toRealPath could not extract '%s'", path);
+                result = path;
+            }
         }
         Path ret = result.normalize();
         finer("VFS.toRealPath '%s' -> '%s'", path, ret);
@@ -1048,12 +1057,6 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         }
     }
 
-    private static void info(String msgFormat, Object... args) {
-        if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.log(Level.INFO, String.format(msgFormat, args));
-        }
-    }
-
     private static void fine(String msgFormat, Object... args) {
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.log(Level.FINE, String.format(msgFormat, args));
@@ -1072,9 +1075,4 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         }
     }
 
-    private static void severe(String msgFormat, Object... args) {
-        if (LOGGER.isLoggable(Level.SEVERE)) {
-            LOGGER.log(Level.SEVERE, String.format(msgFormat, args));
-        }
-    }
 }
