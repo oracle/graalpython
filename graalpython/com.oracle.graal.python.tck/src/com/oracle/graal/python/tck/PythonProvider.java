@@ -235,6 +235,7 @@ public class PythonProvider implements LanguageProvider {
         addExpressionSnippet(context, snippets, "+", "lambda x, y: x + y", union(STRING, array(ANY)), AddVerifier.INSTANCE, numeric, union(STRING, array(ANY)));
         addExpressionSnippet(context, snippets, "+", "lambda x, y: x + y", union(STRING, array(ANY)), AddVerifier.INSTANCE, union(STRING, array(ANY)), numeric);
         addExpressionSnippet(context, snippets, "+", "lambda x, y: x + y", union(STRING, array(ANY)), AddVerifier.INSTANCE, union(STRING, array(ANY)), union(STRING, array(ANY)));
+
         addExpressionSnippet(context, snippets, "*", "lambda x, y: x * y", NUMBER, new NonPrimitiveNumberParameterThrows(MulVerifier.INSTANCE), numeric, numeric);
         addExpressionSnippet(context, snippets, "*", "lambda x, y: x * y", union(STRING, array(ANY)), MulVerifier.INSTANCE, numeric, union(STRING, array(ANY)));
         addExpressionSnippet(context, snippets, "*", "lambda x, y: x * y", union(STRING, array(ANY)), MulVerifier.INSTANCE, union(STRING, array(ANY)), numeric);

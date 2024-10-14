@@ -1069,6 +1069,14 @@ class InteropTests(unittest.TestCase):
         assert l > n
         assert n < l
 
+    def test_foreign_string(self):
+        s = __graalpython__.foreign_wrapper("ab")
+
+        self.assertEqual(['ForeignString', 'foreign', 'object'], [t.__name__ for t in type(s).mro()])
+
+        assert s * 3 == "ababab"
+        assert 3 * s == "ababab"
+
     def test_foreign_repl(self):
         from java.util.logging import LogRecord
         from java.util.logging import Level

@@ -279,6 +279,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("is_strong_handle_table_ref"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("clear_interop_type_registry"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("foreign_number_list"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("foreign_wrapper"), PNone.NO_VALUE);
         }
         if (PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS || !context.getOption(PythonOptions.RunViaLauncher)) {
             mod.setAttribute(tsLiteral("list_files"), PNone.NO_VALUE);
@@ -1188,6 +1189,26 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             @ExportMessage
             long getArraySize() {
                 return 1;
+            }
+        }
+    }
+
+    @Builtin(name = "foreign_wrapper", maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ForeignWrapperNode extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        Object foreignWrapper(Object object) {
+            return new ForeignWrapper(object);
+        }
+
+        @ExportLibrary(value = InteropLibrary.class, delegateTo = "object")
+        static final class ForeignWrapper implements TruffleObject {
+            final Object object;
+
+            ForeignWrapper(Object object) {
+                this.object = object;
             }
         }
     }
