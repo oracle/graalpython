@@ -2570,6 +2570,7 @@ def python_coverage(args):
         else:
             variants = [
                 {"args": []},
+                {"args": SANDBOXED_OPTIONS},
                 {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
                 {"hpy": True},
             ]

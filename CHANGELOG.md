@@ -12,6 +12,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 ** Foreign lists now inherit from Python `list`, foreign dictionaries from `dict`, foreign iterators from `iterator`, foreign exceptions from `BaseException` and foreign none/null from `NoneType`.
 ** This means all Python methods of these types are available on the corresponding foreign objects, which behave as close as possible as if they were Python objects.
 ** See [the documentation](https://github.com/oracle/graalpython/blob/master/docs/user/Interoperability.md#interacting-with-foreign-objects-from-python-scripts) for more information.
+* Remove support for running with Sulong managed both in embeddings as well as through the `graalpy-managed` launcher.
 
 ## Version 24.1.0
 * GraalPy is now considered stable for pure Python workloads. While many workloads involving native extension modules work, we continue to consider them experimental. You can use the command-line option `--python.WarnExperimentalFeatures` to enable warnings for such modules at runtime. In Java embeddings the warnings are enabled by default and you can suppress them by setting the context option 'python.WarnExperimentalFeatures' to 'false'.
