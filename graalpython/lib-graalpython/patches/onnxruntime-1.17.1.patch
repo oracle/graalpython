@@ -66,7 +66,7 @@ index 0000000..33fc235
 +            subprocess.check_call([sys.executable, '-m', 'autopatch_capi', '.'])
 +            pybind11_dir = build_dir / '_deps/pybind11_project-src'
 +            patches_dir = Path(__graalpython__.core_home) / 'patches'
-+            with open(patches_dir / 'pybind11' / 'pybind11-2.10.1.patch') as f:
++            with open(patches_dir / 'pybind11-2.10.1.patch') as f:
 +                subprocess.check_call(['patch', '-p2', '-f'], stdin=f, cwd=pybind11_dir)
 +            with open(marker, 'w') as f:
 +                pass

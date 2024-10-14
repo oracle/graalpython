@@ -111,6 +111,8 @@ license = 'Apache-2.0'
 
 [[Cython.rules]]
 version = '== 0.29.32'
+# Also referenced outside of pip in ray patches
+# Also referenced outside of pip in tensorflow patches
 patch = 'Cython-0.29.32.patch'
 license = 'Apache-2.0'
 
@@ -406,6 +408,7 @@ license = 'BSD-3-Clause'
 
 [[protobuf.rules]]
 version = '== 3.21.9'
+# Also referenced outside of pip from tensorflow patches
 patch = 'protobuf-3.21.9.patch'
 license = 'BSD-3-Clause'
 

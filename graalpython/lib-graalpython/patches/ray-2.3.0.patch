@@ -21,7 +21,7 @@ index 63f67a9..e870de8 100644
          sha256 = "37c466fea398da9785bc37fe16f1455d2645d21a72e402103991d9e2fa1c6ff3",
 +        patch_cmds = [
 +            'graalpy -m autopatch_capi .',
-+            '''patch -p1 < "$(graalpy -c 'print(__graalpython__.core_home)')/patches/Cython/Cython-0.29.32.patch"''',
++            '''patch -p1 < "$(graalpy -c 'print(__graalpython__.core_home)')/patches/Cython-0.29.32.patch"''',
 +        ],
      )
  
