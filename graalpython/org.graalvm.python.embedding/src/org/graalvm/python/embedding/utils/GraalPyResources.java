@@ -345,14 +345,6 @@ public class GraalPyResources {
                         option("python.PosixModuleBackend", "java").
                         // equivalent to the Python -B flag
                         option("python.DontWriteBytecodeFlag", "true").
-                        // equivalent to the Python -v flag
-                        option("python.VerboseFlag", System.getenv("PYTHONVERBOSE") != null ? "true" : "false").
-                        // log level
-                        option("log.python.level", System.getenv("PYTHONVERBOSE") != null ? "FINE" : "SEVERE").
-                        // equivalent to setting the PYTHONWARNINGS environment variable
-                        option("python.WarnOptions", System.getenv("PYTHONWARNINGS") == null ? "" : System.getenv("PYTHONWARNINGS")).
-                        // print Python exceptions directly
-                        option("python.AlwaysRunExcepthook", "true").
                         // Force to automatically import site.py module, to make Python packages
                         // available
                         option("python.ForceImportSite", "true").
