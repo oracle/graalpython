@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins.NormalizeForeignForBinopNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
@@ -73,11 +74,11 @@ import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitOrNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitXorNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -381,10 +382,10 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     }
 
     public abstract static class ForeignBinaryComparisonNode extends PythonBinaryBuiltinNode {
-        @Child private BinaryComparisonNode comparisonNode;
+        @Child private LookupAndCallBinaryNode comparisonNode;
 
-        protected ForeignBinaryComparisonNode(BinaryComparisonNode op) {
-            this.comparisonNode = op;
+        protected ForeignBinaryComparisonNode(SpecialMethodSlot slot, SpecialMethodSlot rslot) {
+            comparisonNode = LookupAndCallBinaryNode.create(slot, rslot, true, true);
         }
 
         @Specialization(guards = {"lib.isBoolean(left)"})
@@ -493,7 +494,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LtNode extends ForeignBinaryComparisonNode {
         protected LtNode() {
-            super(BinaryComparisonNode.LtNode.create());
+            super(SpecialMethodSlot.Lt, SpecialMethodSlot.Gt);
         }
     }
 
@@ -501,7 +502,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LeNode extends ForeignBinaryComparisonNode {
         protected LeNode() {
-            super(BinaryComparisonNode.LeNode.create());
+            super(SpecialMethodSlot.Le, SpecialMethodSlot.Ge);
         }
     }
 
@@ -509,7 +510,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GtNode extends ForeignBinaryComparisonNode {
         protected GtNode() {
-            super(BinaryComparisonNode.GtNode.create());
+            super(SpecialMethodSlot.Gt, SpecialMethodSlot.Lt);
         }
     }
 
@@ -517,7 +518,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GeNode extends ForeignBinaryComparisonNode {
         protected GeNode() {
-            super(BinaryComparisonNode.GeNode.create());
+            super(SpecialMethodSlot.Ge, SpecialMethodSlot.Le);
         }
     }
 
@@ -525,7 +526,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends ForeignBinaryComparisonNode {
         protected EqNode() {
-            super(BinaryComparisonNode.EqNode.create());
+            super(SpecialMethodSlot.Eq, SpecialMethodSlot.Eq);
         }
     }
 

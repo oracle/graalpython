@@ -1057,20 +1057,17 @@ class InteropTests(unittest.TestCase):
 
         with self.assertRaisesRegex(TypeError, "'<' not supported between instances of 'ForeignList' and 'int'"):
             assert l < 4
+        with self.assertRaisesRegex(TypeError, "'<' not supported between instances of 'int' and 'ForeignList'"):
+            assert 4 < l
 
         assert l < n
-
-        # does not work because > resolves to ForeignNumberType.__gt__ which doesn't handle foreign list on LHS
-        with self.assertRaisesRegex(TypeError, "'>' not supported between instances of 'int' and 'ForeignList'"):
-            assert n > l
+        assert n > l
 
         l[0] = 100
         assert not l < n
-        with self.assertRaisesRegex(TypeError, "'>' not supported between instances of 'int' and 'ForeignList'"):
-            assert not n > l
+        assert not n > l
         assert l > n
-        with self.assertRaisesRegex(TypeError, "'<' not supported between instances of 'int' and 'ForeignList'"):
-            assert n < l
+        assert n < l
 
     def test_foreign_repl(self):
         from java.util.logging import LogRecord
