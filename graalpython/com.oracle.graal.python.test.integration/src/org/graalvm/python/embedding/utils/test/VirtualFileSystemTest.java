@@ -73,8 +73,12 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.io.FileSystem;
@@ -109,6 +113,14 @@ public class VirtualFileSystemTest {
                     windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                     extractFilter(p -> p.getFileName().toString().equals("extractme")).//
                     resourceLoadingClass(VirtualFileSystemTest.class).build();
+
+    public VirtualFileSystemTest() {
+        Logger logger = Logger.getLogger(VirtualFileSystem.class.getName());
+        for (Handler handler : logger.getHandlers()) {
+            handler.setLevel(Level.FINE);
+        }
+        logger.setLevel(Level.FINE);
+    }
 
     @Test
     public void defaultValues() throws Exception {
@@ -322,7 +334,7 @@ public class VirtualFileSystemTest {
         assertFalse(Files.exists(realFSPath));
     }
 
-    private void checkDelete(FileSystem fs, String path) {
+    private static void checkDelete(FileSystem fs, String path) {
         checkException(SecurityException.class, () -> {
             fs.delete(Path.of(path));
             return null;
@@ -373,7 +385,7 @@ public class VirtualFileSystemTest {
         }
     }
 
-    private void checkCanOnlyRead(FileSystem fs, Path path, StandardOpenOption... options) {
+    private static void checkCanOnlyRead(FileSystem fs, Path path, StandardOpenOption... options) {
         checkException(SecurityException.class, () -> fs.newByteChannel(path, Set.of(options)), "should only be able to read from VFS");
     }
 
@@ -766,7 +778,7 @@ public class VirtualFileSystemTest {
             builder = builderFunction.apply(builder);
         }
         VirtualFileSystem fs = builder.build();
-        Context context = GraalPyResources.contextBuilder(fs).build();
+        Context context = addTestOptions(GraalPyResources.contextBuilder(fs)).build();
         if (builderFunction == null) {
             cachedContext = context;
         }
@@ -775,10 +787,10 @@ public class VirtualFileSystemTest {
 
     @Test
     public void vfsBuilderTest() {
-        Context context = GraalPyResources.contextBuilder().allowAllAccess(true).allowHostAccess(HostAccess.ALL).build();
+        Context context = addTestOptions(GraalPyResources.contextBuilder()).allowAllAccess(true).allowHostAccess(HostAccess.ALL).build();
         context.eval(PYTHON, "import java; java.type('java.lang.String')");
 
-        context = GraalPyResources.contextBuilder().allowAllAccess(false).allowHostAccess(HostAccess.NONE).build();
+        context = addTestOptions(GraalPyResources.contextBuilder()).allowAllAccess(false).allowHostAccess(HostAccess.NONE).build();
         context.eval(PYTHON, """
                         import java
                         try:
@@ -793,13 +805,13 @@ public class VirtualFileSystemTest {
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build();
-        context = GraalPyResources.contextBuilder(fs).build();
+        context = addTestOptions(GraalPyResources.contextBuilder(fs)).build();
         context.eval(PYTHON, patchMountPoint("from os import listdir; listdir('/test_mount_point')"));
 
         context = GraalPyResources.createContext();
         context.eval(PYTHON, "from os import listdir; listdir('.')");
 
-        context = GraalPyResources.contextBuilder().allowIO(IOAccess.NONE).build();
+        context = addTestOptions(GraalPyResources.contextBuilder()).allowIO(IOAccess.NONE).build();
         boolean gotPE = false;
         try {
             context.eval(PYTHON, "from os import listdir; listdir('.')");
@@ -835,9 +847,13 @@ public class VirtualFileSystemTest {
         checkExtractedFile(resourcesDir.resolve(Path.of("file1")), new String[]{"text1", "text2"});
 
         // create context with extracted resource dir and check if we can see the extracted file
-        try (Context context = GraalPyResources.contextBuilder(resourcesDir).build()) {
+        try (Context context = addTestOptions(GraalPyResources.contextBuilder(resourcesDir)).build()) {
             context.eval("python", "import os; assert os.path.exists('" + resourcesDir.resolve("file1").toString().replace("\\", "\\\\") + "')");
         }
+    }
+
+    private static Builder addTestOptions(Builder builder) {
+        return builder.option("engine.WarnInterpreterOnly", "false");
     }
 
 }
