@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ZIPIMPORT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
@@ -45,6 +46,8 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -373,6 +376,7 @@ import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMapScope;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
@@ -914,6 +918,7 @@ public abstract class Python3Core {
     private void initializeImportlib() {
         PythonModule bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB, false);
         PythonModule bootstrapExternal;
+        boolean useFrozenModules = bootstrap != null;
 
         PyObjectCallMethodObjArgs callNode = PyObjectCallMethodObjArgs.getUncached();
         WriteAttributeToPythonObjectNode writeNode = WriteAttributeToPythonObjectNode.getUncached();
@@ -923,8 +928,7 @@ public abstract class Python3Core {
         // first, a workaround since postInitialize hasn't run yet for the _weakref module aliases
         writeNode.execute(lookupBuiltinModule(T__WEAKREF), T_REF, lookupType(PythonBuiltinClassType.PReferenceType));
 
-        if (bootstrap == null) {
-            // true when the frozen module is not available
+        if (!useFrozenModules) {
             bootstrapExternal = createModule(T_IMPORTLIB_BOOTSTRAP_EXTERNAL);
             bootstrap = createModule(T_IMPORTLIB_BOOTSTRAP);
             loadFile(toTruffleStringUncached("importlib/_bootstrap_external"), getContext().getStdlibHome(), bootstrapExternal);
@@ -964,11 +968,25 @@ public abstract class Python3Core {
                 LOGGER.log(Level.FINE, () -> "initializing zipimport failed");
             } else {
                 LOGGER.log(Level.FINE, () -> "# installing zipimport hook");
+                // when frozen modules are not used, we need to load from file directly
                 PythonModule zipimport = null;
                 try {
-                    zipimport = AbstractImportNode.importModule(toTruffleStringUncached("zipimport"));
-                } catch (PException e) {
-                    LOGGER.log(Level.FINE, () -> "# can't import zipimport");
+                    if (useFrozenModules) {
+                        zipimport = AbstractImportNode.importModule(T_ZIPIMPORT);
+                    } else {
+                        // load zipimport from file, and since postInitialize hasn't run yet we
+                        // cannot use the normal import machinery without frozen modules at this
+                        // point
+                        zipimport = createModule(T_ZIPIMPORT);
+                        loadFile(T_ZIPIMPORT, getContext().getStdlibHome(), zipimport);
+                        setItem.execute(null, null, sysModules, T_ZIPIMPORT, zipimport);
+                    }
+                } catch (RuntimeException e) {
+                    LOGGER.log(Level.FINE, () -> {
+                        StringWriter tb = new StringWriter();
+                        ExceptionUtils.printPythonLikeStackTrace(new PrintWriter(tb), e);
+                        return tb.toString() + System.lineSeparator() + "# can't import zipimport";
+                    });
                 }
                 if (zipimport != null) {
                     writeNode.execute(zipimport, T___BUILTINS__, getBuiltins());

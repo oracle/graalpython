@@ -302,6 +302,8 @@ public abstract class BuiltinNames {
 
     public static final TruffleString T___IMPORT__ = tsLiteral("__import__");
 
+    public static final TruffleString T_ZIPIMPORT = tsLiteral("zipimport");
+
     public static final String J_COMPLEX = "complex";
 
     public static final String J_HASATTR = "hasattr";
