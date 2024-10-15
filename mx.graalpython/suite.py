@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "7.27.0",
+    "mxversion": "7.33.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "64d3e5d973f1d1b9c05f2408a7896efbad7d0157",
+                "version": "3ee833a230e5af859f1289fbe5161a9abf422ec7",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "64d3e5d973f1d1b9c05f2408a7896efbad7d0157",
+                "version": "3ee833a230e5af859f1289fbe5161a9abf422ec7",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "64d3e5d973f1d1b9c05f2408a7896efbad7d0157",
+                "version": "3ee833a230e5af859f1289fbe5161a9abf422ec7",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "64d3e5d973f1d1b9c05f2408a7896efbad7d0157",
+                "version": "3ee833a230e5af859f1289fbe5161a9abf422ec7",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},

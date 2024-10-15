@@ -893,10 +893,9 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     svm_component = '_SVM'
     if enterprise:
         env_file = 'ee-python'
-        try:
-            vm_suite_path = os.path.join(mx.suite('graal-enterprise').dir, '..', 'vm-enterprise')
-        except:
-            vm_suite_path = os.path.join(SUITE.dir, '..', 'graal-enterprise', 'vm-enterprise')
+        enterprise_suite = mx.suite('graal-enterprise', fatalIfMissing=False)
+        enterprise_suite_dir = enterprise_suite.dir if enterprise_suite else os.path.join(SUITE.dir, '..', 'graal-enterprise', 'graal-enterprise')
+        vm_suite_path = os.path.join(enterprise_suite_dir, '..', 'vm-enterprise')
         svm_component = '_SVM_SVMEE'
     if dev:
         if standalone_type == 'jvm':
@@ -2570,6 +2569,7 @@ def python_coverage(args):
         else:
             variants = [
                 {"args": []},
+                {"args": SANDBOXED_OPTIONS},
                 {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
                 {"hpy": True},
             ]
