@@ -439,17 +439,12 @@ if sys.implementation.name == "graalpy":
             finally:
                 thread.join()
 
-        def test_patches_repo_version_resolution_exact(self):
+        def test_patches_repo_version_resolution(self):
             patch_dir_parent = self.patch_dir
-            self.patch_dir = patch_dir_parent / '1.3.2'
+            graalpy_version = '1.3.2'
+            self.patch_dir = patch_dir_parent / graalpy_version
             self.patch_dir.mkdir()
-            self.check_installing_with_patch_repo(str(patch_dir_parent / '<version>'), graalpy_version='1.3.2')
-
-        def test_patches_repo_version_resolution_major(self):
-            patch_dir_parent = self.patch_dir
-            self.patch_dir = patch_dir_parent / '1.3'
-            self.patch_dir.mkdir()
-            self.check_installing_with_patch_repo(str(patch_dir_parent / '<version>'), graalpy_version='1.3.2')
+            self.check_installing_with_patch_repo(str(patch_dir_parent / '<version>'), graalpy_version=graalpy_version)
 
         def test_patches_repo_version_resolution_dev(self):
             patch_dir_parent = self.patch_dir
