@@ -48,6 +48,7 @@ import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -170,7 +171,6 @@ public abstract class CApiTransitions {
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
         public final ConcurrentHashMap<Long, Long> nativeWeakRef = new ConcurrentHashMap<>();
         public final WeakHashMap<Object, WeakReference<Object>> managedNativeLookup = new WeakHashMap<>();
-        public final HashMap<Long, Object[]> replicatedNativeRefs = new HashMap<>(2);
 
         private final HashMap<Long, PythonObjectReference> nativeStubLookupShadowTable;
         public PythonObjectReference[] nativeStubLookup;
@@ -205,8 +205,19 @@ public abstract class CApiTransitions {
 
     public abstract static class IdReference<T> extends WeakReference<T> {
 
+        private boolean collected = false;
+
         public IdReference(HandleContext handleContext, T referent) {
             super(referent, handleContext.referenceQueue);
+        }
+
+        public boolean isCollected() {
+            return collected;
+        }
+
+        public IdReference<T> setCollected() {
+            this.collected = true;
+            return this;
         }
     }
 
@@ -407,26 +418,11 @@ public abstract class CApiTransitions {
     }
 
     @TruffleBoundary
-    public static void ensurePollRefQueueCleanup() {
-        PythonUtils.forceFullGC();
-        PythonContext context = PythonContext.get(null);
-        HandleContext handleContext = context.nativeContext;
-        int len = handleContext.nativeStubLookup.length;
-        int idx = 0;
-        while (idx < len) {
-            if (handleContext.nativeStubLookup[idx] == null || handleContext.nativeStubLookup[idx].get() != null) {
-                idx++;
-            } else {
-                pollReferenceQueue();
-            }
-        }
-    }
-
-    @TruffleBoundary
     @SuppressWarnings("try")
-    public static void pollReferenceQueue() {
+    public static int pollReferenceQueue() {
         PythonContext context = PythonContext.get(null);
         HandleContext handleContext = context.nativeContext;
+        int manuallyCollected = 0;
         if (!handleContext.referenceQueuePollActive) {
             try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
                 ReferenceQueue<Object> queue = handleContext.referenceQueue;
@@ -452,8 +448,23 @@ public abstract class CApiTransitions {
                     }
                 }
                 try {
+                    LinkedList<IdReference<?>> manualCleanupQueue = new LinkedList<>();
+                    for (IdReference<?> ref : handleContext.nativeLookup.values()) {
+                        if (ref != null && ref.refersTo(null)) {
+                            manualCleanupQueue.add(ref);
+                        }
+                    }
+                    manuallyCollected = manualCleanupQueue.size();
                     while (true) {
-                        Object entry = queue.poll();
+                        Object entry;
+                        if (!manualCleanupQueue.isEmpty()) {
+                            entry = manualCleanupQueue.pop().setCollected();
+                        } else {
+                            entry = queue.poll();
+                            if (entry instanceof IdReference<?> ref && ref.isCollected()) {
+                                continue;
+                            }
+                        }
                         if (entry == null) {
                             if (count > 0) {
                                 assert handleContext.referenceQueuePollActive;
@@ -461,7 +472,7 @@ public abstract class CApiTransitions {
                                 handleContext.referenceQueuePollActive = false;
                                 LOGGER.fine("collected " + count + " references from native reference queue in " + ((System.nanoTime() - start) / 1000000) + "ms");
                             }
-                            return;
+                            return manuallyCollected;
                         }
                         if (count == 0) {
                             assert !handleContext.referenceQueuePollActive;
@@ -509,7 +520,7 @@ public abstract class CApiTransitions {
                             } else {
                                 assert nativeLookupGet(handleContext, reference.pointer) != null : Long.toHexString(reference.pointer);
                                 nativeLookupRemove(handleContext, reference.pointer);
-                                if (reference.freeAtCollection) {
+                                if (reference.isFreeAtCollection()) {
                                     freeNativeStruct(reference);
                                 }
                             }
@@ -535,6 +546,7 @@ public abstract class CApiTransitions {
                 }
             }
         }
+        return manuallyCollected;
     }
 
     /**
@@ -609,7 +621,7 @@ public abstract class CApiTransitions {
                  * native memory and some of them were allocated in heap, and (b) struct wrappers,
                  * which may be freed manually in a separate step.
                  */
-                if (reference.freeAtCollection) {
+                if (reference.isFreeAtCollection()) {
                     freeNativeStruct(reference);
                 }
             }
@@ -642,7 +654,7 @@ public abstract class CApiTransitions {
 
     private static void freeNativeStruct(PythonObjectReference ref) {
         assert ref.handleTableIndex == -1;
-        assert ref.freeAtCollection;
+        assert ref.isFreeAtCollection();
         assert !ref.gc;
         LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref.toString()));
         FreeNode.executeUncached(ref.pointer);
@@ -1505,12 +1517,17 @@ public abstract class CApiTransitions {
                 int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
                 PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer, idx);
                 if (reference == null) {
-                    int collecting = readI32Node.read(pythonContext.getCApiContext().getGCState(), CFields.GCState__collecting);
-                    if (collecting == 1) {
-                        return PNone.NO_VALUE;
+                    /*
+                     * Here we are encountering a weakref object that has died in the managed side,
+                     * e.g. PReferenceType, but we kept alive in the native side, see
+                     * pollReferenceQueue(). Though, if this happens to an object that shouldn't
+                     * have died in the managed side, the native side should catch it with a null
+                     * pointer check.
+                     */
+                    if (LOGGER.isLoggable(Level.FINE)) {
+                        LOGGER.fine(() -> "managed weak reference has been collected: " + Long.toHexString(pointer));
                     }
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw CompilerDirectives.shouldNotReachHere("reference was freed: " + Long.toHexString(pointer));
+                    return PNone.NO_VALUE;
                 }
                 wrapper = reference.get();
                 if (wrapper == null) {

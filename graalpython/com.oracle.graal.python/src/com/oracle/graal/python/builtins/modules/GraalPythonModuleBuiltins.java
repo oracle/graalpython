@@ -78,8 +78,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.nodes.util.ToNativePrimitiveStorageNode;
-import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
 import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -148,6 +146,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.nodes.util.ToNativePrimitiveStorageNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
@@ -156,6 +155,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -1129,6 +1129,17 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             getContext().interopTypeRegistry.clear();
             PolyglotModuleBuiltins.clearInteropTypeRegistryCache(getContext());
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "get_current_rss", maxNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class GetCurrentRSS extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        Object currentRSS() {
+            return getContext().getCApiContext().getCurrentRSS();
         }
     }
 }

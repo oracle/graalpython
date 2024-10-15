@@ -52,6 +52,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.VarHandle;
+import java.lang.ref.WeakReference;
 import java.nio.file.LinkOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,6 +63,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
 
 import org.graalvm.collections.Pair;
 import org.graalvm.nativeimage.ImageInfo;
@@ -114,6 +116,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
+import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.graal.python.util.WeakIdentityHashMap;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -254,6 +257,9 @@ public final class CApiContext extends CExtContext {
      */
     private final List<Object> loadedExtensions = new LinkedList<>();
 
+    public final BackgroundGCTask gcTask;
+    private Thread backgroundGCTaskThread;
+
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
     }
@@ -311,6 +317,8 @@ public final class CApiContext extends CExtContext {
             assert CApiGuards.isSmallInteger(value);
             primitiveNativeWrapperCache[i] = PrimitiveNativeWrapper.createInt(value);
         }
+
+        this.gcTask = new BackgroundGCTask(context);
     }
 
     @TruffleBoundary
@@ -595,6 +603,150 @@ public final class CApiContext extends CExtContext {
         // TODO(fa): implement untracking of container objects
     }
 
+    private static final class BackgroundGCTask implements Runnable {
+
+        private BackgroundGCTask(PythonContext context) {
+            this.ctx = new WeakReference<>(context);
+        }
+
+        Object nativeSymbol = null;
+        InteropLibrary callNative = null;
+
+        long currentRSS = -1;
+        long previousRSS = -1;
+        int previousWeakrefCount = -1;
+
+        final WeakReference<PythonContext> ctx;
+
+        // RSS monitor interval in ms
+        static final int RSS_INTERVAL = Integer.getInteger("python.RSSInterval", 1000);
+        /**
+         * RSS percentage increase between System.gc() calls. Low percentage will trigger
+         * System.gc() more often which can cause unnecessary overhead.
+         * 
+         * <ul>
+         * why 30%? it's purely based on the {@code huggingface} example.
+         * <li>less than 30%: max RSS ~22GB (>200 second per iteration)</li>
+         * <li>30%: max RSS ~24GB (~150 second per iteration)</li>
+         * <li>larger than 30%: max RSS ~38GB (~140 second per iteration)</li>
+         * </ul>
+         * 
+         * <pre>
+         */
+        static final double GC_RSS_THRESHOLD = Integer.getInteger("python.RSSThreshold", 30) / 100.0;
+
+        Long getCurrentRSS() {
+            if (nativeSymbol == null) {
+                nativeSymbol = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_GET_CURRENT_RSS);
+                callNative = InteropLibrary.getUncached(nativeSymbol);
+            }
+            Long rss = 0L;
+            try {
+                rss = (Long) callNative.execute(nativeSymbol);
+            } catch (Exception ignored) {
+            }
+            return rss;
+        }
+
+        @Override
+        public void run() {
+            try {
+                while (true) {
+                    Thread.sleep(RSS_INTERVAL);
+                    perform();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        private void perform() {
+            PythonContext context = ctx.get();
+            if (context == null) {
+                return;
+            }
+
+            long rss = currentRSS = getCurrentRSS();
+            if (rss == 0) {
+                LOGGER.finer("We are unable to get resident set size (RSS) from the system. " +
+                                "We will skip the java collection routine.");
+                Thread.currentThread().interrupt();
+                return;
+            }
+
+            // reset RSS baseline
+            if (rss < this.previousRSS || this.previousRSS == -1) {
+                this.previousRSS = rss;
+                return;
+            }
+
+            // skip GC if no new native weakrefs have been created.
+            int currentWeakrefCount = context.nativeContext.nativeLookup.size();
+            if (currentWeakrefCount < this.previousWeakrefCount || this.previousWeakrefCount == -1) {
+                this.previousWeakrefCount = currentWeakrefCount;
+                return;
+            }
+
+            double ratio = ((rss - this.previousRSS) / (double) this.previousRSS);
+            if (ratio >= GC_RSS_THRESHOLD) {
+                this.previousWeakrefCount = currentWeakrefCount;
+
+                long start = System.nanoTime();
+                PythonUtils.forceFullGC();
+                long gcTime = (System.nanoTime() - start) / 1000000;
+
+                if (LOGGER.isLoggable(Level.FINER)) {
+                    LOGGER.finer(PythonUtils.formatJString("Background GC Task -- GC [%d ms] RSS [%d MB]->[%d MB](%.1f%%)",
+                                    gcTime, previousRSS, rss, ratio * 100));
+                }
+                /*
+                 * cap the previous RSS increase to GC_RSS_THRESHOLD. If the ratio is much larger
+                 * than GC_RSS_THRESHOLD, then we should do GC more frequently. Though, if we get a
+                 * lower RSS in subsequent runs, the lower RSS will be set as previous RSS (see
+                 * above).
+                 *
+                 * Note: Resident Set Size (RSS) in the system isn't always an accurate indication
+                 * of used memory but rather a combination of anonymous memory (RssAnon), file
+                 * mappings (RssFile) and shmem memory (RssShmem). GC can only reduce RssAnon while
+                 * RssFile is managed by the operating system which doesn't go down easily.
+                 */
+                this.previousRSS += (long) (this.previousRSS * GC_RSS_THRESHOLD);
+            }
+        }
+    }
+
+    @TruffleBoundary
+    public long getCurrentRSS() {
+        if (backgroundGCTaskThread != null && backgroundGCTaskThread.isAlive()) {
+            long rss = gcTask.currentRSS;
+            if (rss == -1) {
+                try {
+                    // in case it just started
+                    Thread.sleep(BackgroundGCTask.RSS_INTERVAL);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                rss = gcTask.currentRSS;
+            }
+            return rss;
+        }
+        return 0L;
+    }
+
+    @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH") // context.get() is never null here
+    void runBackgroundGCTask(PythonContext context) {
+        CompilerAsserts.neverPartOfCompilation();
+        if (ImageInfo.inImageBuildtimeCode() || context.getOption(PythonOptions.NoAsyncActions)) {
+            return;
+        }
+        if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+            backgroundGCTaskThread = context.getEnv().newTruffleThreadBuilder(gcTask).context(context.getEnv().getContext()).build();
+            backgroundGCTaskThread.setDaemon(true);
+            backgroundGCTaskThread.setName("python-gc-task");
+            backgroundGCTaskThread.start();
+        }
+    }
+
     /**
      * This represents whether the current process has already loaded an instance of the native CAPI
      * extensions - this can only be loaded once per process.
@@ -691,6 +843,7 @@ public final class CApiContext extends CExtContext {
                     Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
                     try {
                         cApiContext.addNativeFinalizer(env, finalizingPointer);
+                        cApiContext.runBackgroundGCTask(context);
                     } catch (RuntimeException e) {
                         // This can happen when other languages restrict multithreading
                         LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
@@ -771,6 +924,15 @@ public final class CApiContext extends CExtContext {
     public void finalizeCApi() {
         CompilerAsserts.neverPartOfCompilation();
         HandleContext handleContext = getContext().nativeContext;
+        if (backgroundGCTaskThread != null && backgroundGCTaskThread.isAlive()) {
+            try {
+                backgroundGCTaskThread.interrupt();
+                backgroundGCTaskThread.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
         /*
          * Disable reference queue polling because during finalization, we will free any known
          * allocated resources (e.g. native object stubs). Calling
