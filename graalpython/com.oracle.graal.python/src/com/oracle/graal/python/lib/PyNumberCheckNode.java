@@ -45,8 +45,6 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -105,17 +103,12 @@ public abstract class PyNumberCheckNode extends PNodeWithContext {
 
     @Fallback
     static boolean doOthers(Node inliningTarget, Object object,
-                    @Cached IsForeignObjectNode isForeignObjectNode,
-                    @Cached LazyInteropLibrary interopLibrary,
                     @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex,
                     @Cached(parameters = "Float", inline = false) LookupCallableSlotInMRONode lookupFloat,
                     @Cached(parameters = "Int", inline = false) LookupCallableSlotInMRONode lookupInt,
                     @Cached PyComplexCheckNode checkComplex) {
         Object type = getClassNode.execute(inliningTarget, object);
-        if (isForeignObjectNode.execute(inliningTarget, object)) {
-            return interopLibrary.get(inliningTarget).isNumber(object);
-        }
         return lookupIndex.execute(type) != PNone.NO_VALUE || lookupInt.execute(type) != PNone.NO_VALUE || lookupFloat.execute(type) != PNone.NO_VALUE || checkComplex.execute(inliningTarget, object);
     }
 }

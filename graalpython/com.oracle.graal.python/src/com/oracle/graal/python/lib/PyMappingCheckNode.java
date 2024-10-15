@@ -44,8 +44,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -86,13 +84,8 @@ public abstract class PyMappingCheckNode extends PNodeWithContext {
     @Specialization
     static boolean doGeneric(Node inliningTarget, Object object,
                     @Cached GetClassNode getClassNode,
-                    @Cached GetCachedTpSlotsNode getSlotsNode,
-                    @Cached IsForeignObjectNode isForeignObjectNode,
-                    @Cached LazyInteropLibrary lazyLib) {
+                    @Cached GetCachedTpSlotsNode getSlotsNode) {
         Object type = getClassNode.execute(inliningTarget, object);
-        if (isForeignObjectNode.execute(inliningTarget, object)) {
-            return lazyLib.get(inliningTarget).hasHashEntries(object);
-        }
         return getSlotsNode.execute(inliningTarget, type).mp_subscript() != null;
     }
 }
