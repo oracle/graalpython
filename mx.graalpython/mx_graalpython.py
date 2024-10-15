@@ -1959,12 +1959,27 @@ def graal_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
         return GRAAL_VERSION_MAJ_MIN.replace(".", "")
     elif variant == 'binary':
-        # PythonLanguage and PythonResource consume this data, and they assume 3 components
-        # (although the 3rd is not used), so we cap the list size to 3 although the version
-        # may have even more components
+        # PythonLanguage and PythonResource consume this data, and they assume 3 components, so we cap the list size
+        # to 3 although the version may have even more components
         return "".join([chr(int(p) + ord(VERSION_BASE)) for p in GRAAL_VERSION.split(".")[:3]])
     else:
         return GRAAL_VERSION_MAJ_MIN
+
+
+def release_level(variant=None):
+    # CPython has alpha, beta, candidate and final. We distinguish just two at the moment
+    level = 'alpha'
+    if SUITE.suiteDict['release']:
+        level = 'final'
+    if variant == 'binary':
+        level_num = {
+            'alpha': 0xA,
+            'beta': 0xB,
+            'candidate': 0xC,
+            'final': 0xF,
+        }[level]
+        return chr(level_num + ord(VERSION_BASE))
+    return level
 
 
 def graalpy_ext(llvm_mode, **kwargs):
@@ -2016,6 +2031,7 @@ mx_subst.path_substitutions.register_with_arg('src_dir', _get_src_dir)
 mx_subst.path_substitutions.register_with_arg('output_root', _get_output_root)
 mx_subst.path_substitutions.register_with_arg('py_ver', py_version_short)
 mx_subst.path_substitutions.register_with_arg('graal_ver', graal_version_short)
+mx_subst.path_substitutions.register_with_arg('release_level', release_level)
 mx_subst.results_substitutions.register_with_arg('dev_tag', dev_tag)
 
 mx_subst.path_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
