@@ -79,8 +79,14 @@ public final class PythonCextWeakrefBuiltins {
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
     abstract static class PyWeakref_GetObject extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object call(PReferenceType self) {
-            return self.getPyObject();
+        static Object call(Object reference) {
+            if (reference instanceof PReferenceType ref) {
+                return ref.getPyObject();
+            }
+            /*
+             * This weak reference has died in the managed side due to its referent being collected.
+             */
+            return PNone.NONE;
         }
     }
 }

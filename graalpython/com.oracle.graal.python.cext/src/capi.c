@@ -566,6 +566,44 @@ PyAPI_FUNC(void) PyTruffle_ObjectArrayRelease(PyObject** array, int32_t size) {
     }
 }
 
+#if defined(__APPLE__) && defined(__MACH__)
+#include <mach/mach.h>
+#elif defined(_WIN32)
+#include <windows.h>
+#include "psapi.h"
+#endif
+
+PyAPI_FUNC(size_t) PyTruffle_GetCurrentRSS() {
+    size_t rss = 0;
+#if defined(__APPLE__) && defined(__MACH__)
+    // MacOS
+    struct mach_task_basic_info info;
+    mach_msg_type_number_t infoCount = MACH_TASK_BASIC_INFO_COUNT;
+    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, (task_info_t) &info, &infoCount) == KERN_SUCCESS) {
+        rss = (size_t)info.resident_size;
+    }
+
+#elif defined(__linux__) || defined(__gnu_linux__)
+    // Linux
+    FILE* fp = NULL;
+    if ((fp = fopen( "/proc/self/statm", "r" )) != NULL) {
+        if (fscanf(fp, "%*s%ld", (long) &rss)) {
+            rss *= (uint64_t) sysconf( _SC_PAGESIZE);
+        }
+        fclose(fp);
+    }
+
+#elif defined(_WIN32)
+    // Windows
+    PROCESS_MEMORY_COUNTERS pmc;
+    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
+        rss = pmc.WorkingSetSize;
+    }
+#endif
+    return rss / (1024 * 1024 /* bytes -> megabytes*/);
+}
+
+
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + offset))[0]
 
 PyAPI_FUNC(int) ReadShortMember(void* object, Py_ssize_t offset) {

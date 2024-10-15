@@ -278,6 +278,12 @@ public final class PythonContext extends Python3Core {
         private boolean enabled = true;
         private int debug;
 
+        private int[] thresholds = {
+                        700, // { .threshold = 700, },
+                        10, // { .threshold = 10, },
+                        10, // { .threshold = 10, },
+        };
+
         public boolean isEnabled() {
             return enabled;
         }
@@ -292,6 +298,10 @@ public final class PythonContext extends Python3Core {
 
         public void setDebug(int debug) {
             this.debug = debug;
+        }
+
+        public int[] getThresholds() {
+            return thresholds;
         }
     }
 

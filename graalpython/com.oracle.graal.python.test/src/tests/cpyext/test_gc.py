@@ -896,3 +896,7 @@ class TestGCRefCycles:
         ####################################### GC #######################################
         self._trigger_gc()
         ##################################################################################
+
+@skipIf(not (GRAALPY) or RUNS_ON_LLVM, "Internal GraalPy RSS function")
+def test_current_rss_monitor():
+    assert __graalpython__.get_current_rss() > 0

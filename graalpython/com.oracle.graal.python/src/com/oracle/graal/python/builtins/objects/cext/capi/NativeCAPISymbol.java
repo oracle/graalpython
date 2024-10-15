@@ -139,6 +139,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_DEALLOC("_Py_Dealloc", Void, Pointer),
     FUN_BULK_DEALLOC("PyTruffle_bulk_DEALLOC", Py_ssize_t, Pointer, INT64_T),
     FUN_SHUTDOWN_BULK_DEALLOC("PyTruffle_shutdown_bulk_DEALLOC", Py_ssize_t, Pointer, INT64_T),
+    FUN_GET_CURRENT_RSS("PyTruffle_GetCurrentRSS", SIZE_T),
     FUN_TRUFFLE_ADD_SUBOFFSET("truffle_add_suboffset", Pointer, Pointer, Py_ssize_t, Py_ssize_t),
     FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT("PyTruffle_MemoryViewFromObject", PyObjectTransfer, PyObject, Int),
     FUN_PY_TRUFFLE_RELEASE_BUFFER("PyTruffle_ReleaseBuffer", ArgDescriptor.Void, Pointer),

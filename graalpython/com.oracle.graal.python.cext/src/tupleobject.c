@@ -1418,5 +1418,9 @@ PyTruffleTuple_GetItems(PyObject *op)
  */
 PyObject*
 _PyTuple_GET_ITEM(PyObject* a, Py_ssize_t b) {
-    return PyTruffleTuple_GetItems(a)[b];
+    PyObject **ob_item = PyTruffleTuple_GetItems(a);
+    if (ob_item) {
+        return ob_item[b];
+    }
+    return NULL; // an exception has happend during transtion
 }
