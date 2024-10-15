@@ -127,10 +127,10 @@ index a8cd133..20dd1e6 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..375f66e
+index 0000000..5b35102
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,351 @@
+@@ -0,0 +1,330 @@
 +import abc
 +import logging
 +import os
@@ -172,10 +172,6 @@ index 0000000..375f66e
 +
 +
 +class RepositoryException(Exception):
-+    pass
-+
-+
-+class RepositoryNotFoundException(RepositoryException):
 +    pass
 +
 +
@@ -251,8 +247,6 @@ index 0000000..375f66e
 +        try:
 +            with open(patches_path / METADATA_FILENAME) as f:
 +                metadata_content = f.read()
-+        except FileNotFoundError:
-+            raise RepositoryNotFoundException(f"'{METADATA_FILENAME}' doesn't exist")
 +        except OSError as e:
 +            raise RepositoryException(f"'{METADATA_FILENAME}' cannot be read: {e}")
 +        return cls(patches_path, cls.metadata_from_string(metadata_content))
@@ -278,12 +272,8 @@ index 0000000..375f66e
 +        try:
 +            url = url_for_file(patches_url, METADATA_FILENAME)
 +            response = cls.get_session().get(url)
-+            if response.status_code == 404:
-+                raise RepositoryNotFoundException(f"'{METADATA_FILENAME} not found at url: {url}")
 +            response.raise_for_status()
 +            metadata_content = response.content.decode('utf-8')
-+        except RepositoryNotFoundException:
-+            raise
 +        except Exception as e:
 +            raise RepositoryException(f"'{METADATA_FILENAME} cannot be retrieved': {e}")
 +        return cls(patches_url, cls.metadata_from_string(metadata_content))
@@ -321,29 +311,18 @@ index 0000000..375f66e
 +
 +
 +def create_patch_repository(patches_url):
-+    if patches_url:
-+        if VERSION_PARAMETER in patches_url:
-+            if not GRAALPY_VERSION.endswith('-dev'):
-+                try_version = GRAALPY_VERSION
-+                while '.' in try_version:
-+                    url = patches_url.replace(VERSION_PARAMETER, try_version)
-+                    try:
-+                        return repository_from_url_or_path(url)
-+                    except RepositoryNotFoundException:
-+                        logger.debug("No patch repository found for version %s at %s", try_version, url)
-+                    except RepositoryException as e:
-+                        logger.warning("Failed to load GraalPy patch repository from %s: %s", url, e)
-+                        logger.warning("Falling back to internal GraalPy patch repository")
-+                        break
-+                    try_version = try_version.rsplit('.', 1)[0]
-+            else:
-+                logger.debug("Skipping versioned GraalPy patch repository on snapshot build")
++    if patches_url and VERSION_PARAMETER in patches_url:
++        if not GRAALPY_VERSION.endswith('-dev'):
++            patches_url = patches_url.replace(VERSION_PARAMETER, GRAALPY_VERSION)
 +        else:
-+            try:
-+                return repository_from_url_or_path(patches_url)
-+            except RepositoryException as e:
-+                logger.warning("Failed to load GraalPy patch repository from %s: %s", patches_url, e)
-+                logger.warning("Falling back to internal GraalPy patch repository")
++            logger.debug("Skipping versioned GraalPy patch repository on snapshot build")
++            patches_url = None
++    if patches_url:
++        try:
++            return repository_from_url_or_path(patches_url)
++        except RepositoryException as e:
++            logger.warning("Failed to load GraalPy patch repository from %s: %s", patches_url, e)
++            logger.warning("Falling back to internal GraalPy patch repository")
 +    try:
 +        return LocalPatchRepository.from_path(DEFAULT_PATCHES_PATH)
 +    except RepositoryException as e:
