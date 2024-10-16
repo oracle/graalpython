@@ -109,7 +109,7 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         } else {
             value = objectRepr(frame, data);
         }
-        if (value == null) {
+        if (value == PNone.NONE) {
             return false;
         }
         fileWriteString(frame, file, castToString(value));
@@ -142,7 +142,7 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         try {
             return strAsObjectNode.execute(frame, inliningTarget, value);
         } catch (PException pe) {
-            return null;
+            return PNone.NONE;
         }
     }
 
