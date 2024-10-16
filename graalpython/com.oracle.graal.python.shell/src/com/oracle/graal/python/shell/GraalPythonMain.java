@@ -1213,7 +1213,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             if (e.isExit()) {
                                 // usually from quit
                                 throw new ExitException(e.getExitStatus());
-                            } else if (e.isInternalError() || e.isHostException()) {
+                            } else if (e.isInternalError()) {
                                 /*
                                  * The stacktrace should have been printed above by
                                  * TopLevelExceptionHandler. We continue the repl even though the
@@ -1221,7 +1221,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                                  */
                                 System.err.println("An internal error occurred, continue at your own risk");
                                 lastStatus = 1;
-                            } else if (e.isGuestException()) {
+                            } else {
                                 // drop through to continue REPL and remember last eval was an error
                                 lastStatus = 1;
                             }

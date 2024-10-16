@@ -139,7 +139,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -171,7 +170,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -236,6 +234,7 @@ import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Bind;
@@ -1515,15 +1514,14 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         protected void printException(MaterializedFrame frame, PythonModule sys, Object out, Object excValue) {
             Object value = excValue;
             final Object type = getObjectClass(value);
-            if (!PGuards.isPBaseException(value)) {
+            if (!PyExceptionInstanceCheckNode.executeUncached(value)) {
                 fileWriteString(frame, out, "TypeError: print_exception(): Exception expected for value, ");
                 fileWriteString(frame, out, getTypeName(type));
                 fileWriteString(frame, out, " found\n");
                 return;
             }
 
-            final PBaseException exc = (PBaseException) value;
-            final Object tb = getExceptionTraceback(exc);
+            final Object tb = getExceptionTraceback(value);
             if (tb instanceof PTraceback) {
                 printTraceBack(frame, sys, out, tb);
             }
