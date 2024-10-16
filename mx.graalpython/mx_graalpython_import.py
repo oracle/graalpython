@@ -141,8 +141,9 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/modules/_testcapi.c": CopyFrom("Modules/_testcapimodule.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.h": CopyFrom("Modules/_ctypes/_ctypes_test.h"),
     "graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.c": CopyFrom("Modules/_ctypes/_ctypes_test.c"),
-    "graalpython/com.oracle.graal.python.cext/modules/clinic/memoryobject.c.h": CopyFrom(
-        "Objects/clinic/memoryobject.c.h"),
+    "graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h": CopyFrom("Modules/clinic/_struct.c.h"),
+    "graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c": CopyFrom("Modules/_struct.c"),
+    "graalpython/com.oracle.graal.python.cext/modules/clinic/memoryobject.c.h": CopyFrom("Objects/clinic/memoryobject.c.h"),
     "graalpython/com.oracle.graal.python.cext/modules": CopyFromWithOverrides("Modules"),
 
     "graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c": CopyFrom("Modules/getbuildinfo.c"),
@@ -165,6 +166,7 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/src/thread.c": CopyFrom("Python/thread.c"),
     "graalpython/com.oracle.graal.python.cext/src/_warnings.c": CopyFrom("Python/_warnings.c"),
     "graalpython/com.oracle.graal.python.cext/src/typeslots.inc": CopyFrom("Objects/typeslots.inc"),
+    "graalpython/com.oracle.graal.python.cext/src/fileutils.c": CopyFrom("Python/fileutils.c"),
 
     "graalpython/com.oracle.graal.python.cext/src": CopyFromWithOverrides("Objects"),
 
