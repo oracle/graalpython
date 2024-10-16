@@ -48,7 +48,7 @@ SOFTWARE.
     <artifactId>org.graalvm.python.gradle.plugin</artifactId>
     <packaging>jar</packaging>
     <!-- This version is always overridden when deploying using mx -->
-    <version>24.1.1</version>
+    <version>24.1.2</version>
     <url>http://www.graalvm.org/</url>
     <name>graalpy-gradle-plugin</name>
     <description>Handles python related resources in a gradle GraalPy - Java application.</description>
@@ -57,7 +57,7 @@ SOFTWARE.
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <graalpy.version>24.1.1</graalpy.version>
+        <graalpy.version>24.1.2</graalpy.version>
         <gradle.version>6.1.1</gradle.version>
         <slf4j.version>2.0.13</slf4j.version>
     </properties>

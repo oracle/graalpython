@@ -1,6 +1,6 @@
 plugins {
     application
-    id("org.graalvm.python") version "24.1.1"
+    id("org.graalvm.python") version "24.1.2"
     id("org.graalvm.buildtools.native") version "0.10.2"
 }
 
@@ -18,5 +18,5 @@ r.enableAssertions = true
 r.outputs.upToDateWhen {false}
 
 dependencies {
-    implementation("org.graalvm.python:python-community:24.1.1")
+    implementation("org.graalvm.python:python-community:24.1.2")
 }
