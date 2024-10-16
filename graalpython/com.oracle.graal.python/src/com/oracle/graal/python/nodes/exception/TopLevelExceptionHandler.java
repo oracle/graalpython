@@ -75,6 +75,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -142,10 +143,9 @@ public final class TopLevelExceptionHandler extends RootNode {
                 assert pythonContext.getThreadState(lang).getCurrentException() == null;
                 try {
                     return run(frame);
-                } catch (PException e) {
+                } catch (AbstractTruffleException e) {
                     assert !PArguments.isPythonFrame(frame);
-                    Object pythonException = e.getEscapedException();
-                    if (pythonException instanceof PBaseException managedException && getContext().isChildContext() && isSystemExit(managedException)) {
+                    if (e instanceof PException pe && pe.getEscapedException() instanceof PBaseException managedException && getContext().isChildContext() && isSystemExit(managedException)) {
                         return handleChildContextExit(managedException);
                     }
                     throw handlePythonException(e);
@@ -171,8 +171,8 @@ public final class TopLevelExceptionHandler extends RootNode {
     }
 
     @TruffleBoundary
-    private PException handlePythonException(PException pException) {
-        Object pythonException = pException.getEscapedException();
+    private AbstractTruffleException handlePythonException(AbstractTruffleException e) {
+        Object pythonException = e instanceof PException pe ? pe.getEscapedException() : e;
         if (pythonException instanceof PBaseException managedException && isSystemExit(managedException)) {
             handleSystemExit(managedException);
         }
@@ -186,8 +186,8 @@ public final class TopLevelExceptionHandler extends RootNode {
             sys.setAttribute(BuiltinNames.T_LAST_TRACEBACK, tb);
 
             ExceptionUtils.printExceptionTraceback(getContext(), pythonException);
-            if (PythonOptions.isPExceptionWithJavaStacktrace(getPythonLanguage())) {
-                ExceptionUtils.printJavaStackTrace(pException);
+            if (PythonOptions.isPExceptionWithJavaStacktrace(getPythonLanguage()) && e instanceof PException pe) {
+                ExceptionUtils.printJavaStackTrace(pe);
             }
             if (!getSourceSection().getSource().isInteractive()) {
                 if (getContext().isChildContext()) {
@@ -197,10 +197,10 @@ public final class TopLevelExceptionHandler extends RootNode {
             }
         }
         // Before we leave Python, format the message since outside the context
-        if (pythonException instanceof PBaseException managedException) {
-            pException.setMessage(managedException.getFormattedMessage());
+        if (e instanceof PException pe && pythonException instanceof PBaseException managedException) {
+            pe.setMessage(managedException.getFormattedMessage());
         }
-        throw pException;
+        throw e;
     }
 
     private static boolean isSystemExit(PBaseException pythonException) {
