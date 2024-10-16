@@ -43,7 +43,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -57,9 +56,7 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
-import org.graalvm.polyglot.PolyglotException.StackFrame;
 import org.graalvm.polyglot.Source;
-import org.graalvm.polyglot.SourceSection;
 import org.graalvm.polyglot.Value;
 import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
@@ -820,9 +817,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     evalNonInteractive(context, consoleHandler);
                     rc = 0;
                 } catch (PolyglotException e) {
-                    if (!e.isExit()) {
-                        printPythonLikeStackTrace(e);
-                    } else {
+                    if (e.isExit()) {
                         rc = e.getExitStatus();
                     }
                 } catch (NoSuchFileException e) {
@@ -1005,41 +1000,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             reason = "No such file or directory";
         }
         System.err.println(GraalPythonMain.class.getCanonicalName() + ": can't open file '" + e.getFile() + "': " + reason);
-    }
-
-    private static void printPythonLikeStackTrace(PolyglotException e) {
-        // If we're running through the launcher and an exception escapes to here,
-        // we didn't go through the Python code to print it. That may be because
-        // it's an exception from another language. In this case, we still would
-        // like to print it like a Python exception.
-        ArrayList<String> stack = new ArrayList<>();
-        for (StackFrame frame : e.getPolyglotStackTrace()) {
-            if (frame.isGuestFrame()) {
-                StringBuilder sb = new StringBuilder();
-                SourceSection sourceSection = frame.getSourceLocation();
-                String rootName = frame.getRootName();
-                if (sourceSection != null) {
-                    sb.append("  ");
-                    String path = sourceSection.getSource().getPath();
-                    if (path != null) {
-                        sb.append("File ");
-                    }
-                    sb.append('"');
-                    sb.append(sourceSection.getSource().getName());
-                    sb.append("\", line ");
-                    sb.append(sourceSection.getStartLine());
-                    sb.append(", in ");
-                    sb.append(rootName);
-                    stack.add(sb.toString());
-                }
-            }
-        }
-        System.err.println("Traceback (most recent call last):");
-        ListIterator<String> listIterator = stack.listIterator(stack.size());
-        while (listIterator.hasPrevious()) {
-            System.err.println(listIterator.previous());
-        }
-        System.err.println(e.getMessage());
     }
 
     private void evalNonInteractive(Context context, ConsoleHandler consoleHandler) throws IOException {
@@ -1253,15 +1213,13 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             if (e.isExit()) {
                                 // usually from quit
                                 throw new ExitException(e.getExitStatus());
-                            } else if (e.isHostException()) {
-                                // we continue the repl even though the system may be broken
-                                lastStatus = 1;
-                                System.out.println(e.getMessage());
-                            } else if (e.isInternalError()) {
-                                System.err.println("An internal error occurred:");
-                                printPythonLikeStackTrace(e);
-
-                                // we continue the repl even though the system may be broken
+                            } else if (e.isInternalError() || e.isHostException()) {
+                                /*
+                                 * The stacktrace should have been printed above by
+                                 * TopLevelExceptionHandler. We continue the repl even though the
+                                 * system may be broken
+                                 */
+                                System.err.println("An internal error occurred, continue at your own risk");
                                 lastStatus = 1;
                             } else if (e.isGuestException()) {
                                 // drop through to continue REPL and remember last eval was an error
