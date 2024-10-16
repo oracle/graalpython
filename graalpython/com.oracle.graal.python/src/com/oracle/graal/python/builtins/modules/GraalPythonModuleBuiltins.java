@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -143,10 +144,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ToNativePrimitiveStorageNode;
+import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
@@ -341,7 +344,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     TruffleFile file = context.getPublicTruffleFileRelaxed(inputFilePath);
                     builder = Source.newBuilder(PythonLanguage.ID, file);
                 }
-                source = builder.mimeType(PythonLanguage.MIME_TYPE).build();
+                source = builder.mimeType(PythonLanguage.getCompileMimeType(0, 0)).build();
                 // TODO we should handle non-IO errors better
             } catch (IOException e) {
                 ErrorAndMessagePair error = OSErrorEnum.fromException(e, TruffleString.EqualNode.getUncached());
@@ -355,8 +358,21 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 // The exit value is hardcoded in CPython too
                 throw new PythonExitException(this, 2);
             }
+            PythonLanguage language = context.getLanguage();
             CallTarget callTarget = context.getEnv().parsePublic(source);
-            callTarget.call(PythonUtils.EMPTY_OBJECT_ARRAY);
+            Object[] arguments = PArguments.create();
+            PythonModule mainModule = context.getMainModule();
+            PDict mainDict = GetOrCreateDictNode.executeUncached(mainModule);
+            PArguments.setGlobals(arguments, mainModule);
+            PArguments.setSpecialArgument(arguments, mainDict);
+            PArguments.setException(arguments, PException.NO_EXCEPTION);
+            context.initializeMainModule(inputFilePath);
+            Object state = ExecutionContext.IndirectCalleeContext.enterIndirect(language, context, arguments);
+            try {
+                callTarget.call(arguments);
+            } finally {
+                ExecutionContext.IndirectCalleeContext.exit(language, context, state);
+            }
         }
 
         // Equivalent of CPython's pymain_run_module
