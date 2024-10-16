@@ -1,8 +1,0 @@
-[[rules]]
-version = '== 0.4.13'
-patch = 'jaxlib-0.4.13.patch'
-license = 'Apache-2.0'
-
-[[add-sources]]
-version = '0.4.13'
-url = 'https://github.com/google/jax/archive/refs/tags/jaxlib-v0.4.13.tar.gz'

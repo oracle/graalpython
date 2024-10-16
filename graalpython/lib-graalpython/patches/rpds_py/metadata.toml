@@ -1,6 +1,0 @@
-[[rules]]
-# Patch not needed anymore in recent version since pyo3 changes have been upstreamed
-install-priority = 0
-version = '== 0.10.3'
-patch = 'rpds_py-0.10.3.patch'
-license = 'MIT'

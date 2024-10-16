@@ -1,0 +1,1242 @@
+diff --git a/WORKSPACE b/WORKSPACE
+index 6a85ffeb..bbaa063c 100644
+--- a/WORKSPACE
++++ b/WORKSPACE
+@@ -17,6 +17,10 @@ http_archive(
+     sha256 = "9d04041ac92a0985e344235f5d946f71ac543f1b1565f2cdbc9a2aaee8adf55b",
+     strip_prefix = "rules_python-0.26.0",
+     url = "https://github.com/bazelbuild/rules_python/releases/download/0.26.0/rules_python-0.26.0.tar.gz",
++    patch_args = ["-p1"],
++    patches = [
++        "//:rules_python-0.26.0.patch",
++    ]
+ )
+ 
+ load("@rules_python//python:repositories.bzl", "py_repositories")
+@@ -31,7 +35,7 @@ load(
+ 
+ python_repository(name = "python_version_repo")
+ 
+-load("@python_version_repo//:py_version.bzl", "HERMETIC_PYTHON_VERSION")
++load("@python_version_repo//:py_version.bzl", "HERMETIC_PYTHON_VERSION", "USE_CUSTOM_INTERPRETER", "CACHED_WHEELS_PATH")
+ 
+ python_register_toolchains(
+     name = "python",
+@@ -63,6 +67,10 @@ pip_parse(
+     annotations = NUMPY_ANNOTATIONS,
+     python_interpreter_target = interpreter,
+     requirements = "//:requirements_lock_" + HERMETIC_PYTHON_VERSION.replace(".", "_") + ".txt",
++    environment = {
++        "USE_CUSTOM_INTERPRETER": USE_CUSTOM_INTERPRETER,
++        "CACHED_WHEELS_PATH": CACHED_WHEELS_PATH,
++    },
+ )
+ 
+ load("@pypi//:requirements.bzl", "install_deps")
+diff --git a/graalpy_build.py b/graalpy_build.py
+new file mode 100644
+index 00000000..976381c2
+--- /dev/null
++++ b/graalpy_build.py
+@@ -0,0 +1,279 @@
++
++import subprocess
++import os
++import sys
++import site
++import shutil
++import json
++
++if sys.prefix == sys.base_prefix:
++    raise SystemError('Running in virtualenv is required!')
++
++TF_ROOT = os.path.dirname(__file__)
++INTERPRETER_HOME = sys.base_prefix
++WHL_DIR_PATH = os.path.join(TF_ROOT, "bazel-wheel-out")
++TRACK_DIR = os.path.join(TF_ROOT, "track_test")
++CACHED_WHEELS_PATH = os.path.join(TF_ROOT, "bazel-cached-wheels")
++
++REQUIREMENTS_REPLACEMENTS = {
++    "urllib3": "urllib3==1.26.18",
++    "grpcio": "grpcio==1.56.2",
++    "charset-normalizer": "charset-normalizer==3.1.0",
++}
++
++PIP = [
++    sys.executable, "-m", "pip", #"-vvv",
++]
++
++BAZEL_BIN = [
++    "bazel"
++]
++
++BAZEL_CLEAN = [
++    "clean",
++    "--expunge",
++    "--async",
++]
++
++
++BUILD_PIP_PACKAGE = os.path.join(TF_ROOT, 
++                                    "bazel-bin", 
++                                    "tensorflow", 
++                                    "tools", 
++                                    "pip_package", 
++                                    "build_pip_package")
++
++
++def graalpy_autopatch():
++    try:
++        import autopatch_capi
++        autopatch_capi.auto_patch_tree(TF_ROOT)
++    except:
++        pass
++
++
++def tf_configure():
++    # generate configuration for bazel build
++    import configure
++    old_argv = sys.argv
++    sys.argv = ['configure.py', '--workspace', os.path.abspath(os.path.dirname(__file__))]
++    def get_input(question):
++        if question.startswith('Do you wish to build'):
++            return 'N'
++        if question.startswith('Do you want to use Clang'):
++            return 'N'     
++        return ''
++
++    configure.get_input = get_input
++    configure.main()
++    sys.argv = old_argv
++
++def rename_existing_whl(whl_path):
++    if os.path.isdir(whl_path):
++        for file_path in os.listdir(whl_path):
++            f = os.path.join(whl_path, file_path)
++            if os.path.isfile(f) and f.endswith('.whl'):
++                os.rename(f, f + '.old')
++
++def run(cmd, env=None, cwd=None):
++    print('Running:')
++    print('\t%s' % ' '.join(cmd))
++    return subprocess.check_call(cmd, stdout=sys.stdout, env=env, cwd=cwd)
++
++def add_isolated_sites(env, lib_dirs):
++    from pip._internal.build_env import _Prefix
++    temp_dir = os.path.dirname(env['PYTHONPATH'])
++    libs = []
++    for name in ("normal", "overlay"):
++        libs.extend(_Prefix(os.path.join(temp_dir, name)).lib_dirs)
++    lib_dirs.extend(libs)
++    for path in libs:
++        site.addsitedir(path)
++
++def add_pythonpath(lib_dirs):
++    env = dict(os.environ)
++    PYTHONPATH = env.get('PYTHONPATH', '')
++    if PYTHONPATH:
++        PYTHONPATH += os.pathsep
++    PYTHONPATH += os.pathsep.join(lib_dirs)
++    env['PYTHONPATH'] = PYTHONPATH
++    return env
++
++def find_tf_whl(whl_path):
++    whl = None
++    for f in os.listdir(whl_path):
++        if os.path.isfile(os.path.join(whl_path, f)) and f.endswith('.whl'):
++            if whl:
++                raise ValueError('There are more than one *.whl in {}:\n\t{}\n\t{}'.format(whl_path, whl, f))
++            whl = f
++    return whl
++
++def populate_cached_wheels(skip_if_exist=False):
++    if os.path.exists(CACHED_WHEELS_PATH):
++        if skip_if_exist:
++            return
++
++        shutil.rmtree(CACHED_WHEELS_PATH)
++    os.mkdir(CACHED_WHEELS_PATH)
++    with open(os.path.join(CACHED_WHEELS_PATH, 'replacements.json'), 'w') as fp:
++        fp.write(json.dumps(REQUIREMENTS_REPLACEMENTS, sort_keys=True, indent=4))
++    
++    whl_tmp_path = os.path.join(CACHED_WHEELS_PATH, 'tmp')
++    os.mkdir(whl_tmp_path)
++    cached_wheels = {}
++    with open(os.path.join((os.path.dirname(__file__)), 'requirements_graalpy.txt'), 'r') as fp:
++        reqirements = fp.readlines()
++        for r in reqirements:
++            if not r:
++                continue
++            r = r.strip()
++            run(PIP + ["install", r])
++            if '==' in r:
++                run(PIP + ["wheel", "--no-deps", r], cwd=whl_tmp_path)
++                whl_name = find_tf_whl(whl_tmp_path)
++                whl_path = os.path.join(CACHED_WHEELS_PATH, whl_name)
++                os.rename(os.path.join(whl_tmp_path, whl_name), whl_path)
++                cached_wheels[r] = whl_path
++
++    with open(os.path.join(CACHED_WHEELS_PATH, 'cached_wheels.json'), 'w') as fp:
++        fp.write(json.dumps(cached_wheels, sort_keys=True, indent=4))
++
++
++def main():
++    import argparse
++    parser = argparse.ArgumentParser()
++    parser.add_argument("-j", "--jobs", type=int, default=-1, help="max number of jobs")
++    parser.add_argument("-m", "--max-memory", type=int, default=-1, help="max memory in GiB")
++    parser.add_argument("-g", action="store_true", help="build with debug symbols")
++    parser.add_argument("--no-autopatch", action="store_true", help="skip GraalPy autopatch")
++    parser.add_argument("--no-config", action="store_true", help="skip tensorflow configure command")
++    parser.add_argument("--no-pipreq", action="store_true", help="skip requirements caching")
++    parser.add_argument("--no-clean", action="store_true", help="skip clean previous tensorflow build")
++    parser.add_argument("--no-build", action="store_true", help="skip tensorflow build")
++    parser.add_argument("--no-whl", action="store_true", help="skip generating tensorflow wheel")
++    parser.add_argument("--no-install", action="store_true", help="skip installing tensorflow")
++    parser.add_argument("--no-all", action="store_true", help="skip everything related to the build process")
++    parser.add_argument("--test", action="store_true", help="run tensorflow unittest")
++    parser.add_argument("--combine-testlogs", action="store_true", help="combine tensorflow unittest logs")
++    parser.add_argument("--sites", type=str, default='', help="path of additional site packages to include")
++    parser.add_argument("--whl-path", type=str, default=WHL_DIR_PATH, help="path of the generated wheel")
++    args = parser.parse_args()
++
++    print(TF_ROOT)
++
++    num_jobs = int(os.environ.get('CORE_COUNT', args.jobs))
++    max_mem = int(os.environ.get('MAX_MEMORY_GB', args.max_memory))
++    lib_dirs = [site.getsitepackages()[0]]
++
++    BAZEL_SYSTEM_LIMIT = []
++
++    if max_mem != -1:
++        BAZEL_SYSTEM_LIMIT += ["--local_ram_resources=%d" % (max_mem * 1024)]
++
++    if num_jobs != -1:
++        BAZEL_SYSTEM_LIMIT += ["--jobs=%d" % (num_jobs)]
++
++    if args.sites:
++        lib_dirs.extend(args.sites.split(os.pathsep))
++
++    BAZEL_EXTRA_OPT = [
++        "--config=opt",
++        # "--output_user_root=/path/to"
++    ]
++
++    BAZEL_ADD_ENV = [
++        "--repo_env=TF_PYTHON_VERSION=%s" % '3.11',
++    ]
++
++    if args.g:
++        BAZEL_EXTRA_OPT = [
++            "--per_file_copt='+tensorflow/python/.*\.cc@-g'",
++            "--per_file_copt='+external/com_google_protobuf/.*\.cc@-g'",
++        ]
++    
++
++    if sys.implementation.name != 'graalpy':
++        if args.test:
++            BAZEL_TEST = [
++                "test",
++            ] + BAZEL_SYSTEM_LIMIT + [
++            ] + BAZEL_ADD_ENV + [
++                "-k",
++                "//tensorflow/python/..."
++            ]
++            run(BAZEL_BIN + BAZEL_TEST)
++        return
++
++    if os.environ.get('PYTHONNOUSERSITE', '0') == '1':
++        add_isolated_sites(os.environ, lib_dirs)
++
++    # Site-packages are mostly needed for `rules_python`'s builtin packages
++    VENV_SITE_PACKAGES = os.pathsep.join(lib_dirs)
++
++    BAZEL_ADD_ENV += [
++        "--repo_env=VENV_SITE_PACKAGES=%s" % VENV_SITE_PACKAGES,
++        "--repo_env=INTERPRETER_HOME=%s" % INTERPRETER_HOME,
++        "--repo_env=CACHED_WHEELS_PATH=%s" % CACHED_WHEELS_PATH,
++    ]
++    if not args.no_all:
++        if not args.no_autopatch:
++            graalpy_autopatch()
++
++        if not args.no_config:
++            tf_configure()
++
++        populate_cached_wheels(skip_if_exist=args.no_pipreq)
++        args.no_pipreq = True # avoid doing it twice for test
++
++        if not args.no_clean:
++            try:
++                run(BAZEL_BIN + BAZEL_CLEAN)
++            except:
++                print("cleaning Failed..")
++
++        if not args.no_build:
++            BAZEL_BUILD = [
++                "build",
++            ] + BAZEL_SYSTEM_LIMIT + [
++            ] + BAZEL_EXTRA_OPT + [
++            ] + BAZEL_ADD_ENV + [
++                "//tensorflow/tools/pip_package:build_pip_package"
++            ]
++            run(BAZEL_BIN + BAZEL_BUILD)
++
++        if not args.no_whl:
++            rename_existing_whl(args.whl_path)
++            run([BUILD_PIP_PACKAGE, args.whl_path], env=add_pythonpath(lib_dirs))
++            print('Wheel:\n\t' + find_tf_whl(args.whl_path))
++
++        if not args.no_install:
++            run(PIP + ["install", "--force-reinstall", os.path.join(args.whl_path, find_tf_whl(args.whl_path))])
++
++    if args.test:
++        populate_cached_wheels(skip_if_exist=args.no_pipreq)
++        if not os.path.exists(TRACK_DIR):
++            os.mkdir(TRACK_DIR)
++        BAZEL_TEST = [
++            "test",
++            ] + BAZEL_SYSTEM_LIMIT + [
++            ] + BAZEL_EXTRA_OPT + [
++            ] + BAZEL_ADD_ENV + [
++            # "--test_sharding_strategy=disabled",
++            # "--test_output=errors", "--verbose_failures=true", "--keep_going",
++            "--test_env=TRACK_DIR=%s" % TRACK_DIR,
++            "--flaky_test_attempts=3",
++            "-k",
++            "//tensorflow/python/..."
++        ]
++        run(BAZEL_BIN + BAZEL_TEST)
++
++    if args.combine_testlogs:
++        COMBINED_TESTLOGS = './combined-testlogs.xml'
++        SQUASH_TESTLOGS_SCRIPT = 'tensorflow/tools/tf_sig_build_dockerfiles/devel.usertools/squash_testlogs.py'
++        run(PIP + ["install", "lxml==4.9.1", "junitparser==2.2.0"])
++        run(["python3", SQUASH_TESTLOGS_SCRIPT, "bazel-out/k8-opt/testlogs", COMBINED_TESTLOGS])
++        print('combined testlogs can be found here: %s' % COMBINED_TESTLOGS)
++
++
++if __name__ == '__main__':
++  main()
+diff --git a/graalpy_patch.py b/graalpy_patch.py
+new file mode 100644
+index 00000000..b8336892
+--- /dev/null
++++ b/graalpy_patch.py
+@@ -0,0 +1,108 @@
++try:
++    import __graalpython__
++except:
++    # not running GraalPy.. exit
++    exit(0)
++
++
++import sys
++import os
++from collections import namedtuple
++
++if sys.prefix == sys.base_prefix:
++    raise SystemError('Running in virtualenv is required!')
++
++PATCHES_BASE_DIR = os.path.join(__graalpython__.core_home, "patches")
++
++Patch = namedtuple('Patch', ['path', 'patch_level'], defaults=[1])
++
++patch_dict = {
++    "runtime-7d879c8b161085a4374ea481b93a52adb19c0529": None,
++    "llvm-project-dc275fd03254d67d29cc70a5a0569acf24d2280d": None,
++    "benchmark-f7547e29ccaed7b64ef4f7495ecfff1c9f6f3d03": None,
++    "grpc-b54a5b338637f92bfcf4b0bc05e0f57a5fd8fadd": None,
++    "upb-9effcbcb27f0a665f9f345030188c0b291e32482": None,
++    "protobuf-3.21.9": Patch(os.path.join(PATCHES_BASE_DIR, 'protobuf-3.21.9.patch')),
++    "googleapis-6b3fdcea8bc5398be4e7e9930c693f0ea09316a0": None,
++    "rules_android-0.1.1": None,
++    "flatbuffers-23.1.21": None,
++    "typing_extensions-4.2.0/src": None,
++    "wrapt-1.14.1/src/wrapt": None,
++    "six-1.16.0": None,
++    "abseil-py-1.0.0": None,
++    "tblib-1.7.0": None,
++    "pthreadpool-b8374f80e42010941bda6c85b0e3f1a1bd77a1e0": None,
++    "gast-0.4.0": None,
++    "termcolor-1.1.0": None,
++    "astunparse-1.6.3/lib": None,
++    "FXdiv-63058eff77e11aa15bf531df5dd34395ec3017c8": None,
++    "dill-0.3.6": None,
++    "farmhash-0d859a811870d10f53a594927d0d0b97573ad06d": None,
++    "pasta-0.2.0": None,
++    "giflib-5.2.1": None,
++    "double-conversion-3.2.0": None,
++    "OouraFFT-1.0": None,
++    "kissfft-131.1.0": None,
++    "FP16-4dfe081cf6bcd15db339cf2680b9281b8451eeb3": None,
++    "ARM_NEON_2_x86_SSE-a15b489e1222b2087007546b4912e21293ea86ff": None,
++    "highwayhash-c13d28517a4db259d738ea4886b1f00352a3cc33": None,
++    "zlib-1.2.13": None,
++    "libjpeg-turbo-2.1.4": None,
++    "dlpack-9351cf542ab478499294864ff3acfdab5c8c5f3d": None,
++    "curl-8.0.1": None,
++    "sobol_data-835a7d7b1ee3bc83e575e302a985c66ec4b65249": None,
++    "snappy-984b191f0fefdeb17050b42a90b7625999c13b8d": None,
++    "re2-a276a8c738735a0fe45a6ee590fe2df69bcf4502": None,
++    "ruy-3286a34cc8de6149ac6844107dfdffac91531e72": None,
++    "nsync-1.25.0": None,
++    "opt_einsum-2.3.2": None,
++    "libpng-1.6.39": None,
++    "abseil-cpp-b971ac5250ea8de900eae9f95e06548d14cd95fe": None,
++    "gemmlowp-e844ffd17118c1e17d94e1ba4354c075a4577b88": None,
++    "eigen-b0f877f8e01e90a5b0f3a79d46ea234899f8b499": None,
++    "google-cloud-cpp-1.17.1": None,
++    "nasm-2.14.02": None,
++    "cpuinfo-3dc310302210c1891ffcfb12ae67b11a3ad3a150": None,
++    "boringssl-c00d7ca810e93780bd0c8ee4eea28f4f2ea4bcdc": None,
++    "stablehlo-43d81c6883ade82052920bd367c61f9e52f09954": None,
++    "XNNPACK-b9d4073a6913891ce9cbd8965c8d506075d2a45a": None,
++    "icu-release-69-1": None,
++    "pybind11_protobuf-80f3440cd8fee124e077e2e47a8a17b78b451363": None,
++    "pybind11_abseil-2c4932ed6f6204f1656e245838f4f5eae69d2e29": None,
++    "pybind11-2.10.4": Patch(os.path.join(PATCHES_BASE_DIR, 'pybind11-2.10.1.patch'), 2),
++    "jsoncpp-1.9.5": None,
++    "cython-0.29.32": Patch(os.path.join(PATCHES_BASE_DIR, 'Cython-0.29.32.patch')),
++    "sqlite-amalgamation-3400100": None,
++    "pybind11_bazel-72cbbf1fbc830e487e3012862b7b720001b70672": None,
++    "oneDNN-2.7.3": None,
++}
++
++def apply_patch(strip_prefix, location, patch):
++    import subprocess
++    try:
++        subprocess.run(["patch", "-f", "-d", location, f"-p{patch.patch_level}", "-i", patch.path], check=True)
++    except FileNotFoundError:
++        print(
++            "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
++    except subprocess.CalledProcessError:
++        print(f"Applying GraalPy patch failed for {strip_prefix}. The package may still work.")
++
++def find_patch(location, strip_prefix):
++    patch = patch_dict.get(strip_prefix)
++    if patch:
++        print(f"Patching package {strip_prefix}\n\tusing {patch}")
++        apply_patch(strip_prefix, location, patch)
++
++def autopatch(location):
++    import autopatch_capi
++    autopatch_capi.auto_patch_tree(location)
++
++# There are couple of parts that have been taken from the pip installer patch
++def main():
++    target_dir = sys.argv[1]
++    target_strip_prefix = sys.argv[2]
++    find_patch(target_dir, target_strip_prefix)
++    autopatch(target_dir)
++
++if __name__ == '__main__':
++  main()
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 00000000..2fda834f
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,9 @@
++[build-system]
++# These requirements are needed to cached wheels during bazel build.
++requires = [
++    "setuptools==67.6.1",
++    "packaging==23.1",
++    "wheel==0.38.4",
++]
++build-backend = "tf_build_backend"
++backend-path = ["."]
+diff --git a/requirements_graalpy.txt b/requirements_graalpy.txt
+new file mode 100644
+index 00000000..6a433dbc
+--- /dev/null
++++ b/requirements_graalpy.txt
+@@ -0,0 +1,46 @@
++setuptools==67.6.1
++packaging==23.1
++wheel==0.38.4
++numpy==1.23.5
++tensorboard==2.15.0
++keras==2.15.0
++h5py==3.10.0
++installer
++pip_install
++patchelf
++portpicker==1.5.2
++tensorflow-estimator==2.15.0
++requests==2.31.0
++psutil==5.9.6
++charset-normalizer==3.1.0
++google-auth-oauthlib==1.1.0
++protobuf==4.23.4
++certifi==2023.7.22
++urllib3==1.26.18
++grpcio==1.56.2
++werkzeug==3.0.0
++markdown==3.5
++idna==3.4
++google-auth==2.23.3
++tensorboard-data-server==0.7.1
++absl-py==2.0.0
++requests-oauthlib==1.3.1
++rsa==4.9
++pyasn1-modules==0.3.0
++six==1.16.0
++cachetools==5.3.1
++markupsafe==2.1.3
++oauthlib==3.2.2
++pyasn1==0.5.0
++astunparse==1.6.3
++flatbuffers
++gast==0.4.0
++google-pasta
++libclang
++termcolor==2.3.0
++wrapt==1.14.1
++typing-extensions==4.2.0
++ml_dtypes==0.2.0
++opt-einsum==3.3.0
++dill==0.3.6
++tblib==1.7.0
+diff --git a/rules_python-0.26.0.patch b/rules_python-0.26.0.patch
+new file mode 100644
+index 00000000..ce0485bd
+--- /dev/null
++++ b/rules_python-0.26.0.patch
+@@ -0,0 +1,166 @@
++diff --git a/python/pip.bzl b/python/pip.bzl
++index fb842cc..572fa39 100644
++--- a/python/pip.bzl
+++++ b/python/pip.bzl
++@@ -147,7 +147,12 @@ def pip_parse(requirements = None, requirements_lock = None, name = "pip_parsed_
++             containing each requirement will be of the form `<name>_<requirement-name>`.
++         **kwargs (dict): Additional arguments to the [`pip_repository`](./pip_repository.md) repository rule.
++     """
++-    pip_install_dependencies()
+++
+++    # In GraalPy, we need to install patched versions of the pip
+++    # dependences, so we will avoid pip_install_dependencies.
+++    ENV = kwargs.get('environment')
+++    if ENV and ENV.get('USE_CUSTOM_INTERPRETER') != '1':
+++        pip_install_dependencies()
++ 
++     # Temporary compatibility shim.
++     # pip_install was previously document to use requirements while pip_parse was using requirements_lock.
++diff --git a/python/pip_install/pip_repository.bzl b/python/pip_install/pip_repository.bzl
++index ea8b9eb..ac5f7e7 100644
++--- a/python/pip_install/pip_repository.bzl
+++++ b/python/pip_install/pip_repository.bzl
++@@ -44,6 +44,17 @@ def _construct_pypath(rctx):
++     """
++ 
++     separator = ":" if not "windows" in rctx.os.name.lower() else ";"
+++    VENV_SITE_PACKAGES = rctx.os.environ.get('VENV_SITE_PACKAGES')
+++    if VENV_SITE_PACKAGES:
+++        # In GraalPy, we will be using installed patched packages in the venv.
+++        rules_python_wheel_installer = [str(rctx.path(Label("//:BUILD.bazel")).dirname)]
+++        pypath = separator.join(rules_python_wheel_installer + [
+++            str(rctx.path(entry))
+++            for entry in VENV_SITE_PACKAGES.split(separator)
+++        ])
+++        return pypath
+++
+++    print("[GraalPy] VENV_SITE_PACKAGES not picked up!")
++     pypath = separator.join([
++         str(rctx.path(entry).dirname)
++         for entry in rctx.attr._python_path_entries
++@@ -472,7 +483,7 @@ python_interpreter. An example value: "@python3_x86_64-unknown-linux-gnu//:pytho
++ """,
++     ),
++     "quiet": attr.bool(
++-        default = True,
+++        default = False,
++         doc = "If True, suppress printing stdout and stderr output to the terminal.",
++     ),
++     "repo_prefix": attr.string(
++@@ -482,7 +493,7 @@ Prefix for the generated packages will be of the form `@<prefix><sanitized-packa
++     ),
++     # 600 is documented as default here: https://docs.bazel.build/versions/master/skylark/lib/repository_ctx.html#execute
++     "timeout": attr.int(
++-        default = 600,
+++        default = 6000,
++         doc = "Timeout (in seconds) on the rule's execution duration.",
++     ),
++     "_py_srcs": attr.label_list(
++diff --git a/python/pip_install/tools/wheel_installer/wheel_installer.py b/python/pip_install/tools/wheel_installer/wheel_installer.py
++index c6c2961..20ce0d3 100644
++--- a/python/pip_install/tools/wheel_installer/wheel_installer.py
+++++ b/python/pip_install/tools/wheel_installer/wheel_installer.py
++@@ -121,6 +121,13 @@ def _extract_wheel(
++ 
++     whl = wheel.Wheel(wheel_file)
++     whl.unzip(installation_dir)
+++    try:
+++        from pip._internal.utils.graalpy import apply_graalpy_patches
+++        apply_graalpy_patches(wheel_file, installation_dir / 'site-packages')
+++    except:
+++        # We don't seem to be using GraalPy.. ignore
+++        print('[GraalPy] patch was not applied')
+++        pass
++ 
++     if not enable_implicit_namespace_pkgs:
++         _setup_namespace_pkg_compatibility(installation_dir)
++@@ -163,6 +170,9 @@ def main() -> None:
++         + deserialized_args["extra_pip_args"]
++     )
++ 
+++    if deserialized_args["environment"].get('USE_CUSTOM_INTERPRETER', '0') == '1':
+++        return custom_interpreter_pip(args, deserialized_args)
+++
++     requirement_file = NamedTemporaryFile(mode="wb", delete=False)
++     try:
++         requirement_file.write(args.requirement.encode("utf-8"))
++@@ -195,6 +205,58 @@ def main() -> None:
++         enable_implicit_namespace_pkgs=args.enable_implicit_namespace_pkgs,
++     )
++ 
+++def get_cached_wheel(package_spec, deserialized_args):
+++    whl_path = deserialized_args["environment"].get('CACHED_WHEELS_PATH', '.')
+++    if whl_path == '.' or not os.path.exists(whl_path):
+++        return None
+++    
+++    import json
+++    with open(os.path.join(whl_path, 'replacements.json'), 'r') as fp:
+++        replacements = json.load(fp)
+++    pkg = package_spec.split('==')[0]
+++    if pkg in replacements:
+++        print('[GraalPy] replacing %s requirement with patched %s' % (package_spec, replacements[pkg]))
+++
+++    pkg = replacements.get(pkg, package_spec)
+++
+++    with open(os.path.join(whl_path, 'cached_wheels.json'), 'r') as fp:
+++        cached_wheels = json.load(fp)
+++    whl_path = cached_wheels.get(pkg)
+++    if whl_path:
+++        print('[GraalPy] using cached wheel: %s' % (whl_path))
+++        return whl_path
+++    return None
+++
+++def get_wheel(package, deserialized_args):
+++    print('[GraalPy] no cached wheel for: %s' % (package))
+++    pip_args = (
+++        [sys.executable, "-m", "pip"]
+++        # + (["--isolated"] if args.isolated else [])
+++        + ["wheel"]
+++        + ["--no-deps"]
+++        + deserialized_args["extra_pip_args"]
+++        + [package]
+++    )
+++    env = os.environ.copy()
+++    env.update(deserialized_args["environment"])
+++    subprocess.run(pip_args, check=True, env=env)
+++    return next(iter(glob.glob("*.whl")))
+++
+++def custom_interpreter_pip(args, deserialized_args):
+++    package = args.requirement.split()[0]
+++    print('[GraalPy] installing %s...' % package)
+++    whl = get_cached_wheel(package, deserialized_args)
+++    if not whl:
+++        whl = get_wheel(package, deserialized_args)
+++    name, extras_for_pkg = _parse_requirement_for_extra(args.requirement)
+++    extras = {name: extras_for_pkg} if extras_for_pkg and name else dict()
+++
+++    _extract_wheel(
+++        wheel_file=whl,
+++        extras=extras,
+++        enable_implicit_namespace_pkgs=args.enable_implicit_namespace_pkgs,
+++    )
+++
++ 
++ if __name__ == "__main__":
++     main()
++diff --git a/python/repositories.bzl b/python/repositories.bzl
++index 050ba14..413a330 100644
++--- a/python/repositories.bzl
+++++ b/python/repositories.bzl
++@@ -179,6 +179,16 @@ def _python_repository_impl(rctx):
++             auth = auth,
++         )
++ 
+++        INTERPRETER_HOME = rctx.os.environ.get('INTERPRETER_HOME')
+++        if INTERPRETER_HOME:
+++            SYMLINK = ['ln', '-s']
+++            rctx.delete(rctx.path('bin'))
+++            rctx.execute(SYMLINK + [INTERPRETER_HOME + '/bin', rctx.path('bin')])
+++            rctx.delete(rctx.path('lib'))
+++            rctx.execute(SYMLINK + [INTERPRETER_HOME + '/lib', rctx.path('lib')])
+++            rctx.delete(rctx.path('include'))
+++            rctx.execute(SYMLINK + [INTERPRETER_HOME + '/include', rctx.path('include')])
+++
++     patches = rctx.attr.patches
++     if patches:
++         for patch in patches:
+diff --git a/tensorflow/dtensor/python/tests/test_backend_util.py b/tensorflow/dtensor/python/tests/test_backend_util.py
+index 02fc82a7..58b902b4 100644
+--- a/tensorflow/dtensor/python/tests/test_backend_util.py
++++ b/tensorflow/dtensor/python/tests/test_backend_util.py
+@@ -71,7 +71,7 @@ def slice_host_devices_for_multiworker(num_clients, client_id, ports):
+ 
+ 
+ def get_mp_context():
+-  return multiprocessing.get_context('forkserver')
++  return multiprocessing.get_context('spawn')
+ 
+ 
+ def handle_test_main(main, *args, **kwargs):
+diff --git a/tensorflow/python/autograph/impl/api_test.py b/tensorflow/python/autograph/impl/api_test.py
+index 1332240d..bf8b4a09 100644
+--- a/tensorflow/python/autograph/impl/api_test.py
++++ b/tensorflow/python/autograph/impl/api_test.py
+@@ -57,6 +57,9 @@ global_n = 2
+ 
+ DEFAULT_RECURSIVE = converter.ConversionOptions(recursive=True)
+ 
++if sys.implementation.name == 'graalpy':
++  # GraalPy we don't have control over the jvm's gc
++  gc.get_objects = lambda: []
+ 
+ class TestResource:
+ 
+diff --git a/tensorflow/python/client/tf_session_wrapper.cc b/tensorflow/python/client/tf_session_wrapper.cc
+index 6bbe4d67..99eb7e23 100644
+--- a/tensorflow/python/client/tf_session_wrapper.cc
++++ b/tensorflow/python/client/tf_session_wrapper.cc
+@@ -814,7 +814,7 @@ void PyOperation::add_control_inputs(py::iterable inputs) {
+ }
+ 
+ void PyGraph::Dismantle() {
+-  for (auto& op : op_list) {
++  for (auto op : op_list) {
+     AsPyTfObject<PyOperation>(op.ptr())->Dismantle();
+   }
+   op_list = py::list();
+@@ -872,7 +872,7 @@ PYBIND11_MODULE(_pywrap_tf_session, m) {
+   c_graph.attr("get_operations") = method(c_graph, [](py::handle handle) {
+     auto ops = AsPyTfObject<PyGraph>(handle)->operations();
+     py::list copy;
+-    for (auto& op : ops) {
++    for (auto op : ops) {
+       copy.append(op);
+     }
+     return copy;
+diff --git a/tensorflow/python/data/kernel_tests/memory_cleanup_test.py b/tensorflow/python/data/kernel_tests/memory_cleanup_test.py
+index afd5e18e..4ec8b9a6 100644
+--- a/tensorflow/python/data/kernel_tests/memory_cleanup_test.py
++++ b/tensorflow/python/data/kernel_tests/memory_cleanup_test.py
+@@ -36,6 +36,10 @@ try:
+ except ImportError:
+   memory_profiler = None
+ 
++import sys
++if sys.implementation.name == 'graalpy':
++  # GraalPy we don't have control over the jvm's gc
++  gc.get_objects = lambda: []
+ 
+ class MemoryCleanupTest(test_base.DatasetTestBase, parameterized.TestCase):
+ 
+diff --git a/tensorflow/python/distribute/multi_process_lib.py b/tensorflow/python/distribute/multi_process_lib.py
+index fa1e44fb..e4bfb857 100644
+--- a/tensorflow/python/distribute/multi_process_lib.py
++++ b/tensorflow/python/distribute/multi_process_lib.py
+@@ -31,6 +31,9 @@ def is_oss():
+ 
+ 
+ def _is_enabled():
++  if sys.implementation.name == 'graalpy':
++    logging.info("GraalPy doesn't support forking a jvm/svm process")
++    return False
+   # Note that flags may not be parsed at this point and simply importing the
+   # flags module causes a variety of unusual errors.
+   tpu_args = [arg for arg in sys.argv if arg.startswith('--tpu')]
+diff --git a/tensorflow/python/eager/memory_tests/memory_test_util.py b/tensorflow/python/eager/memory_tests/memory_test_util.py
+index 7d584661..cf5370a5 100644
+--- a/tensorflow/python/eager/memory_tests/memory_test_util.py
++++ b/tensorflow/python/eager/memory_tests/memory_test_util.py
+@@ -26,6 +26,10 @@ try:
+ except ImportError:
+   memory_profiler = None
+ 
++import sys
++if sys.implementation.name == 'graalpy':
++  # GraalPy we don't have control over the jvm's gc
++  gc.get_objects = lambda: []
+ 
+ def _instance_count_by_class():
+   counter = collections.Counter()
+diff --git a/tensorflow/python/eager/pywrap_tfe_src.cc b/tensorflow/python/eager/pywrap_tfe_src.cc
+index ac7e05d1..af9516f9 100644
+--- a/tensorflow/python/eager/pywrap_tfe_src.cc
++++ b/tensorflow/python/eager/pywrap_tfe_src.cc
+@@ -471,9 +471,10 @@ bool SetOpAttrList(TFE_Context* ctx, TFE_Op* op, const char* key,
+     // dims across all the input lists.
+     int total_dims = 0;
+     for (int i = 0; i < num_values; ++i) {
+-      tensorflow::Safe_PyObjectPtr py_value(PySequence_ITEM(py_list, i));
+-      if (py_value.get() != Py_None) {
+-        if (!PySequence_Check(py_value.get())) {
++      tensorflow::Safe_PyObjectPtr _py_value(PySequence_ITEM(py_list, i));
++      PyObject* py_value = _py_value.get();
++      if (py_value != Py_None) {
++        if (!PySequence_Check(py_value)) {
+           TF_SetStatus(
+               status, TF_INVALID_ARGUMENT,
+               absl::StrCat("Expecting None or sequence value for element", i,
+@@ -482,7 +483,7 @@ bool SetOpAttrList(TFE_Context* ctx, TFE_Op* op, const char* key,
+                   .c_str());
+           return false;
+         }
+-        const auto size = TensorShapeNumDims(py_value.get());
++        const auto size = TensorShapeNumDims(py_value);
+         if (size >= 0) {
+           total_dims += size;
+         }
+@@ -4124,7 +4125,7 @@ PyObject* GetPyEagerContext() {
+     PyErr_SetString(PyExc_RuntimeError, "Python eager context is not set");
+     return nullptr;
+   }
+-  PyObject* py_context = PyWeakref_GET_OBJECT(global_py_eager_context);
++  PyObject* py_context = PyWeakref_GetObject(global_py_eager_context);
+   if (py_context == Py_None) {
+     PyErr_SetString(PyExc_RuntimeError,
+                     "Python eager context has been destroyed");
+diff --git a/tensorflow/python/framework/dtypes.py b/tensorflow/python/framework/dtypes.py
+index c4ae5fd5..9755e068 100644
+--- a/tensorflow/python/framework/dtypes.py
++++ b/tensorflow/python/framework/dtypes.py
+@@ -68,7 +68,7 @@ class DType(
+ 
+   See `tf.dtypes` for a complete list of `DType`'s defined.
+   """
+-  __slots__ = ["_handle_data"]
++  # __slots__ = ["_handle_data"]
+ 
+   def __init__(self, type_enum, handle_data=None):
+     super().__init__(type_enum)
+diff --git a/tensorflow/python/framework/error_interpolation.py b/tensorflow/python/framework/error_interpolation.py
+index 76c727a5..b6f74197 100644
+--- a/tensorflow/python/framework/error_interpolation.py
++++ b/tensorflow/python/framework/error_interpolation.py
+@@ -23,6 +23,7 @@ import os
+ import re
+ import site
+ import traceback
++import sys
+ 
+ from tensorflow.python.util import tf_stack
+ 
+@@ -354,7 +355,7 @@ def _compute_field_dict(op):
+   device_summary = _compute_device_assignment_summary_from_op(op)
+   combined_summary = "\n".join([colocation_summary, device_summary])
+ 
+-  if op.traceback is None:
++  if op.traceback is None or sys.implementation.name == 'graalpy':
+     # Some ops synthesized on as part of function or control flow definition
+     # do not have tracebacks.
+     filename = "<unknown>"
+diff --git a/tensorflow/python/framework/errors_test.py b/tensorflow/python/framework/errors_test.py
+index c2124cb7..14ec9132 100644
+--- a/tensorflow/python/framework/errors_test.py
++++ b/tensorflow/python/framework/errors_test.py
+@@ -27,6 +27,10 @@ from tensorflow.python.lib.io import _pywrap_file_io
+ from tensorflow.python.platform import test
+ from tensorflow.python.util import compat
+ 
++import sys
++if sys.implementation.name == 'graalpy':
++  # GraalPy we don't have control over the jvm's gc
++  gc.get_objects = lambda: []
+ 
+ class ErrorsTest(test.TestCase):
+ 
+diff --git a/tensorflow/python/framework/python_api_dispatcher_wrapper.cc b/tensorflow/python/framework/python_api_dispatcher_wrapper.cc
+index d3f68857..071fadb1 100644
+--- a/tensorflow/python/framework/python_api_dispatcher_wrapper.cc
++++ b/tensorflow/python/framework/python_api_dispatcher_wrapper.cc
+@@ -117,7 +117,7 @@ PYBIND11_MODULE(_pywrap_python_api_dispatcher, m) {
+   m.def("MakeInstanceChecker", [](py::args py_classes) {
+     std::vector<PyObject*> py_classes_vector;
+     py_classes_vector.reserve(py_classes.size());
+-    for (auto& cls : py_classes) {
++    for (auto cls : py_classes) {
+       if (!PyType_Check(cls.ptr())) {
+         throw py::type_error("`*py_classes` must be a tuple of types.");
+       }
+diff --git a/tensorflow/python/framework/python_memory_checker.py b/tensorflow/python/framework/python_memory_checker.py
+index aa0d2023..3f5f773a 100644
+--- a/tensorflow/python/framework/python_memory_checker.py
++++ b/tensorflow/python/framework/python_memory_checker.py
+@@ -25,6 +25,10 @@ from tensorflow.python.framework import _python_memory_checker_helper
+ from tensorflow.python.platform import tf_logging as logging
+ from tensorflow.python.profiler import trace
+ 
++import sys
++if sys.implementation.name == 'graalpy':
++  # GraalPy we don't have control over the jvm's gc
++  gc.get_objects = lambda: []
+ 
+ def _get_typename(obj):
+   """Return human readable pretty type name string."""
+diff --git a/tensorflow/python/framework/test_util.py b/tensorflow/python/framework/test_util.py
+index 74099bd6..8d1ac4c8 100644
+--- a/tensorflow/python/framework/test_util.py
++++ b/tensorflow/python/framework/test_util.py
+@@ -98,6 +98,10 @@ from tensorflow.python.util.compat import collections_abc
+ from tensorflow.python.util.protobuf import compare
+ from tensorflow.python.util.tf_export import tf_export
+ 
++import sys
++if sys.implementation.name == 'graalpy':
++  # GraalPy we don't have control over the jvm's gc
++  gc.get_objects = lambda: []
+ 
+ # If the below import is made available through the BUILD rule, then this
+ # function is overridden and will instead return True and cause Tensorflow
+@@ -810,6 +814,10 @@ def assert_no_new_tensors(f):
+   def decorator(self, **kwargs):
+     """Finds existing Tensors, runs the test, checks for new Tensors."""
+ 
++    if sys.implementation.name == 'graalpy':
++      # GraalPy we don't have control over the jvm's gc
++      gc.get_objects = lambda: []
++
+     def _is_tensorflow_object(obj):
+       try:
+         return isinstance(obj,
+diff --git a/tensorflow/python/tools/api/generator/create_python_api.py b/tensorflow/python/tools/api/generator/create_python_api.py
+index c856e8a6..589f7166 100644
+--- a/tensorflow/python/tools/api/generator/create_python_api.py
++++ b/tensorflow/python/tools/api/generator/create_python_api.py
+@@ -144,7 +144,7 @@ class _ModuleInitCodeBuilder(object):
+     """
+     # modules_with_exports.py is only used during API generation and
+     # won't be available when actually importing tensorflow.
+-    if source_module_name.endswith('python.modules_with_exports'):
++    if symbol and source_module_name.endswith('python.modules_with_exports'):
+       source_module_name = symbol.__module__
+     import_str = self.format_import(source_module_name, source_name, dest_name)
+ 
+diff --git a/tensorflow/python/util/module_wrapper.py b/tensorflow/python/util/module_wrapper.py
+index 0611cc43..6e7fd0d0 100644
+--- a/tensorflow/python/util/module_wrapper.py
++++ b/tensorflow/python/util/module_wrapper.py
+@@ -18,12 +18,63 @@ import importlib
+ 
+ from tensorflow.python.eager import monitoring
+ from tensorflow.python.platform import tf_logging as logging
+-from tensorflow.python.util import fast_module_type
++# from tensorflow.python.util import fast_module_type
+ from tensorflow.python.util import tf_decorator
+ from tensorflow.python.util import tf_inspect
+ from tensorflow.tools.compatibility import all_renames_v2
+ 
+-FastModuleType = fast_module_type.get_fast_module_type_class()
++import types
++class FastModuleType(types.ModuleType):
++
++  def __init__(self, name: str, doc: str | None = ...) -> None:
++    super().__init__(name, doc)
++    self.__dict__['attr_map'] = dict()
++    self.__dict__['cb_getattribute'] = None
++    self.__dict__['cb_getattr'] = None
++
++  def __getattr__(self, name: str):
++    if name in self.__dict__['attr_map']:
++      return self.__dict__['attr_map'][name]
++    
++    try:
++      if self.__dict__['cb_getattribute']:
++        return self.__dict__['cb_getattribute'](self, name)
++      else:
++        return types.ModuleType.__getattribute__(self, name)
++    except AttributeError:
++      if self.__dict__['cb_getattr']:
++        return self.__dict__['cb_getattr'](self, name)
++      raise
++
++  def __setattr__(self, __name: str, __value) -> None:
++    self.__dict__['attr_map'][__name] = __value
++    object.__setattr__(self, __name, __value)
++
++  def _fastdict_insert(self, name, value):
++    self.__dict__['attr_map'][name] = value
++
++  def _fastdict_get(self, name: str):
++    if name not in self.__dict__['attr_map']:
++      raise KeyError("module has no attribute '%s" % name)
++    
++    return self.__dict__['attr_map'][name]
++
++  def _fastdict_key_in(self, name: str):
++    return name in self.__dict__['attr_map']
++
++  def set_getattribute_callback(self, func):
++    if not callable(func):
++      raise TypeError("input args must be callable")
++
++    self.__dict__['cb_getattribute'] = func
++
++  def set_getattr_callback(self, func):
++    if not callable(func):
++      raise TypeError("input args must be callable")
++    
++    self.__dict__['cb_getattr'] = func
++
++# FastModuleType = fast_module_type.get_fast_module_type_class()
+ _PER_MODULE_WARNING_LIMIT = 1
+ compat_v1_usage_gauge = monitoring.BoolGauge('/tensorflow/api/compat/v1',
+                                              'compat.v1 usage')
+diff --git a/tensorflow/python/util/tf_stack_test.py b/tensorflow/python/util/tf_stack_test.py
+index 8b607acb..d6085750 100644
+--- a/tensorflow/python/util/tf_stack_test.py
++++ b/tensorflow/python/util/tf_stack_test.py
+@@ -17,6 +17,7 @@
+ from tensorflow.python.platform import test
+ from tensorflow.python.util import tf_stack
+ 
++import sys
+ 
+ class TFStackTest(test.TestCase):
+ 
+@@ -40,6 +41,8 @@ class TFStackTest(test.TestCase):
+     self.assertEqual(hash(tuple(frame1)), hash(tuple(frame2)))
+ 
+   def testLastUserFrame(self):
++    if sys.implementation.name == 'graalpy':
++      return
+     trace = tf_stack.extract_stack()
+     frame = trace.last_user_frame()
+     self.assertRegex(repr(frame), 'testLastUserFrame')
+diff --git a/tensorflow/tools/git/gen_git_source.py b/tensorflow/tools/git/gen_git_source.py
+index 2a93649f..3ac09a7f 100644
+--- a/tensorflow/tools/git/gen_git_source.py
++++ b/tensorflow/tools/git/gen_git_source.py
+@@ -220,7 +220,8 @@ def write_version_info(filename, git_version):
+ 
+ #endif  // TENSORFLOW_CORE_UTIL_VERSION_INFO_H_
+ """ % git_version.decode("utf-8")
+-  open(filename, "w").write(contents)
++  with open(filename, "w") as fp:
++    fp.write(contents)
+ 
+ 
+ def generate(arglist, git_tag_override=None):
+diff --git a/tensorflow/tools/pip_package/setup.py b/tensorflow/tools/pip_package/setup.py
+index b4167313..55f3b12b 100644
+--- a/tensorflow/tools/pip_package/setup.py
++++ b/tensorflow/tools/pip_package/setup.py
+@@ -102,7 +102,7 @@ REQUIRED_PACKAGES = [
+     'termcolor >= 1.1.0',
+     'typing_extensions >= 3.6.6',
+     'wrapt >= 1.11.0, < 1.15',
+-    'tensorflow-io-gcs-filesystem >= 0.23.1',
++    # 'tensorflow-io-gcs-filesystem >= 0.23.1',
+     # grpcio does not build correctly on big-endian machines due to lack of
+     # BoringSSL support.
+     # See https://github.com/tensorflow/tensorflow/issues/17882.
+diff --git a/tensorflow/tools/tf_sig_build_dockerfiles/devel.usertools/squash_testlogs.py b/tensorflow/tools/tf_sig_build_dockerfiles/devel.usertools/squash_testlogs.py
+index 49c6c2d5..a6f4647d 100755
+--- a/tensorflow/tools/tf_sig_build_dockerfiles/devel.usertools/squash_testlogs.py
++++ b/tensorflow/tools/tf_sig_build_dockerfiles/devel.usertools/squash_testlogs.py
+@@ -37,7 +37,7 @@ from junitparser import JUnitXml
+ result = JUnitXml()
+ try:
+   files = subprocess.check_output(
+-      ["grep", "-rlE", '(failures|errors)="[1-9]', sys.argv[1]])
++      ["grep", "-rlE", '(failures|errors)="[0-9]', sys.argv[1]])
+ except subprocess.CalledProcessError as e:
+   print("No failures found to log!")
+   exit(0)
+@@ -46,7 +46,9 @@ except subprocess.CalledProcessError as e:
+ seen = collections.Counter()
+ runfiles_matcher = re.compile(r"(/.*\.runfiles/)")
+ 
+-
++total_tests = 0
++total_errors = 0
++total_skipped = 0
+ for f in files.strip().splitlines():
+   # Just ignore any failures, they're probably not important
+   try:
+@@ -82,11 +84,18 @@ for f in files.strip().splitlines():
+         testsuite._elem.remove(p.getparent())
+       seen[key] += 1
+     # Remove this testsuite if it doesn't have anything in it any more
++    total_tests += int(testsuite._elem.get("tests", "0"))
++    total_errors += int(testsuite._elem.get("failures", "0")) + int(testsuite._elem.get("errors", "0"))
++    total_skipped += int(testsuite._elem.get("skipped", "0"))
+     if len(testsuite) == 0:  # pylint: disable=g-explicit-length-test
+       r._elem.remove(testsuite._elem)
+   if len(r) > 0:  # pylint: disable=g-explicit-length-test
+     result += r
+ 
++print('*'*100)
++print('Total: %d/%d (skipped: %d)' % (total_tests, total_errors, total_skipped))
++print('*'*100)
++
+ # Insert the number of failures for each test to help identify flakes
+ # need to clarify for shard
+ for p in result._elem.xpath(".//error | .//failure"):
+diff --git a/tensorflow/tools/toolchains/python/python_repo.bzl b/tensorflow/tools/toolchains/python/python_repo.bzl
+index 61a45964..cee0013b 100644
+--- a/tensorflow/tools/toolchains/python/python_repo.bzl
++++ b/tensorflow/tools/toolchains/python/python_repo.bzl
+@@ -20,10 +20,18 @@ def _python_repository_impl(repository_ctx):
+     if version not in VERSIONS:
+         print(WARNING)  # buildifier: disable=print
+         version = DEFAULT_VERSION
++    INTERPRETER_HOME = repository_ctx.os.environ.get("INTERPRETER_HOME")
++    CACHED_WHEELS_PATH = repository_ctx.os.environ.get("CACHED_WHEELS_PATH")
++    use_custom_interpreter = "1" if INTERPRETER_HOME else "0"
++    cached_wheel_path = CACHED_WHEELS_PATH if CACHED_WHEELS_PATH else "."
+     repository_ctx.file(
+         "py_version.bzl",
+-        "HERMETIC_PYTHON_VERSION = \"%s\"" %
+-        version,
++        """HERMETIC_PYTHON_VERSION = \"{version}\"
++USE_CUSTOM_INTERPRETER = \"{use_custom_interpreter}\"
++CACHED_WHEELS_PATH = \"{cached_wheel_path}\"
++""".format(version = version,
++            use_custom_interpreter = use_custom_interpreter,
++            cached_wheel_path=cached_wheel_path),
+     )
+ 
+ python_repository = repository_rule(
+diff --git a/tensorflow/workspace2.bzl b/tensorflow/workspace2.bzl
+index 8601192e..e7f5a033 100644
+--- a/tensorflow/workspace2.bzl
++++ b/tensorflow/workspace2.bzl
+@@ -610,10 +610,10 @@ def _tf_repositories():
+     tf_http_archive(
+         name = "cython",
+         build_file = "//third_party:cython.BUILD",
+-        sha256 = "08dbdb6aa003f03e65879de8f899f87c8c718cd874a31ae9c29f8726da2f5ab0",
+-        strip_prefix = "cython-3.0.0a11",
++        sha256 = "3f53fbe1398666e77fd4ce388f939309a11efd273d16f20f58f0df7b03d6b4cc",
++        strip_prefix = "cython-0.29.32",
+         system_build_file = "//third_party/systemlibs:cython.BUILD",
+-        urls = tf_mirror_urls("https://github.com/cython/cython/archive/3.0.0a11.tar.gz"),
++        urls = tf_mirror_urls("https://github.com/cython/cython/archive/0.29.32.tar.gz"),
+     )
+ 
+     # LINT.IfChange
+diff --git a/tf_build_backend.py b/tf_build_backend.py
+new file mode 100644
+index 00000000..18f44a2f
+--- /dev/null
++++ b/tf_build_backend.py
+@@ -0,0 +1,67 @@
++import os
++import re
++import sys
++import tarfile
++import subprocess
++import tempfile
++import shutil
++from pathlib import Path
++import site
++import venv
++
++SUB_VENV_PATH = Path(os.path.dirname(__file__)) / ('bazel-venv-' + sys.implementation.name)
++SUB_VENV_BIN = SUB_VENV_PATH / 'bin'
++SUB_VENV_PYTHON = SUB_VENV_BIN / 'python3'
++
++def setup_venv():
++    # During the installation process `pip` isn't available to use,
++    # So, we create a new environment to have access for fresh `pip` during bazel build.
++    if not os.path.isdir(SUB_VENV_PATH):
++        venv.create(SUB_VENV_PATH, with_pip=True)
++    print('Using virtual env in:\n\t' + str(SUB_VENV_PATH))
++    env = dict(os.environ)
++    env['PATH'] = os.pathsep.join([str(SUB_VENV_BIN), *os.environ.get("PATH", "").split(os.pathsep)])
++    env['VIRTUAL_ENV'] = str(SUB_VENV_PATH)
++    del_keys = [
++        'PIP_BUILD_TRACKER',
++        'PEP517_BUILD_BACKEND',
++        'PEP517_BACKEND_PATH',
++        'PYTHONPATH',
++        'PYTHONNOUSERSITE',
++    ]
++    for k in del_keys:
++        if k in env:
++            del env[k]
++
++    assert os.path.isdir(str(SUB_VENV_BIN))
++    return env
++
++def build_sdist(sdist_directory, config_settings=None):
++    nv = 'tensorflow-2.15.0'
++    archive_path = Path(sdist_directory) / f'{nv}.tar.gz'
++
++    def tarfilter(info):
++        if re.match(r'\./(?:.git|bazel-|venv|[^-/]+-venv)', info.name):
++            return None
++        info.name = f'./{nv}/{info.name}'
++        return info
++
++    with tarfile.open(archive_path, 'w:gz') as tar:
++        tar.add('.', filter=tarfilter)
++    return archive_path.name
++
++
++def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
++    with tempfile.TemporaryDirectory() as d:
++        subprocess.run([
++            str(SUB_VENV_PYTHON), 
++            'graalpy_build.py', 
++            '--no-install',
++            '--sites', os.pathsep.join(site.getsitepackages()),
++            '--whl-path', d,
++        ], env=setup_venv(), check=True)
++        wheels = list(Path(d).glob('*.whl'))
++        assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
++        wheel = wheels[0]
++        shutil.copyfile(wheel, Path(wheel_directory) / wheel.name)
++        return str(wheel.name)
+diff --git a/third_party/protobuf/protobuf.patch b/third_party/protobuf/protobuf.patch
+index 9d928ba1..3685acae 100644
+--- a/third_party/protobuf/protobuf.patch
++++ b/third_party/protobuf/protobuf.patch
+@@ -39,7 +39,7 @@ index 162531226..e93ec4809 100644
+ +}
+ +#endif
+ +
+-+#if PY_VERSION_HEX < 0x030B00A7 && !defined(PYPY_VERSION)
+++#if PY_VERSION_HEX < 0x030B00A7 && !defined(PYPY_VERSION) && !defined(GRAALVM_PYTHON)
+ +static PyObject* PyFrame_GetLocals(PyFrameObject *frame)
+ +{
+ +    if (PyFrame_FastToLocalsWithError(frame) < 0) {
+diff --git a/third_party/repo.bzl b/third_party/repo.bzl
+index 226f8799..6d7b830e 100644
+--- a/third_party/repo.bzl
++++ b/third_party/repo.bzl
+@@ -23,8 +23,8 @@ def tf_mirror_urls(url):
+     if not url.startswith("https://"):
+         return [url]
+     return [
+-        "https://storage.googleapis.com/mirror.tensorflow.org/%s" % url[8:],
+         url,
++        "https://storage.googleapis.com/mirror.tensorflow.org/%s" % url[8:],
+     ]
+ 
+ def _get_env_var(ctx, name):
+@@ -82,6 +82,10 @@ def _tf_http_archive_impl(ctx):
+                 if patch_file:
+                     ctx.patch(patch_file, strip = 1)
+ 
++        graalpy_patch = str(ctx.path(Label("@//:WORKSPACE")).dirname) + '/graalpy_patch.py'
++        ctx.execute(['python3', graalpy_patch, str(ctx.path('')), ctx.attr.strip_prefix], quiet=False)
++
++
+     for dst, src in link_dict.items():
+         ctx.delete(dst)
+         ctx.symlink(src, dst)
+@@ -117,7 +121,7 @@ def tf_http_archive(name, sha256, urls, **kwargs):
+     if len(urls) < 2:
+         fail("tf_http_archive(urls) must have redundant URLs.")
+ 
+-    if not any([mirror in urls[0] for mirror in (
++    if False and not any([mirror in urls[0] for mirror in (
+         "mirror.tensorflow.org",
+         "mirror.bazel.build",
+         "storage.googleapis.com",

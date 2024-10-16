@@ -1,3 +1,0 @@
-[[rules]]
-patch = 'jupyter_server.patch'
-license = 'BSD-3-Clause'

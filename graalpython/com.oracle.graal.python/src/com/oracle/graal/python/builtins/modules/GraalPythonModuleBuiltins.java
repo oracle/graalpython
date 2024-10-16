@@ -40,7 +40,12 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.PythonLanguage.GRAALVM_MAJOR;
+import static com.oracle.graal.python.PythonLanguage.GRAALVM_MICRO;
+import static com.oracle.graal.python.PythonLanguage.GRAALVM_MINOR;
 import static com.oracle.graal.python.PythonLanguage.J_GRAALPYTHON_ID;
+import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL;
+import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL_FINAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
@@ -78,7 +83,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
-import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1034,11 +1038,18 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "get_graalvm_version", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GetGraalVmVersion extends PythonBuiltinNode {
-        @TruffleBoundary
+        private static final TruffleString VERSION_STRING;
+        static {
+            String version = String.format("%d.%d.%d", GRAALVM_MAJOR, GRAALVM_MINOR, GRAALVM_MICRO);
+            if (RELEASE_LEVEL != RELEASE_LEVEL_FINAL) {
+                version += "-dev";
+            }
+            VERSION_STRING = TruffleString.fromJavaStringUncached(version, TS_ENCODING);
+        }
+
         @Specialization
         TruffleString get() {
-            Version current = Version.getCurrent();
-            return TruffleString.fromJavaStringUncached(current.toString(), TS_ENCODING);
+            return VERSION_STRING;
         }
     }
 

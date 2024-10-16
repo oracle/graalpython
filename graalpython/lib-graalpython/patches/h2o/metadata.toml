@@ -1,3 +1,0 @@
-[[rules]]
-patch = 'h2o.patch'
-license = 'Apache-2.0'

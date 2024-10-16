@@ -1,9 +1,0 @@
-[[rules]]
-version = '>= 3.1.1'
-patch = 'greenlet-3.1.1.patch'
-license = 'MIT'
-
-[[rules]]
-version = '>= 3.0.0, < 3.1.1'
-patch = 'greenlet-3.0.0.patch'
-license = 'MIT'

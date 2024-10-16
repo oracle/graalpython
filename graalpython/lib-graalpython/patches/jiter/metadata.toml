@@ -1,6 +1,0 @@
-[[rules]]
-# Upstreamed, should not be needed in the next release
-version = '<= 0.5.0'
-install-priority = 0
-patch = 'jiter.patch'
-license = 'MIT'
