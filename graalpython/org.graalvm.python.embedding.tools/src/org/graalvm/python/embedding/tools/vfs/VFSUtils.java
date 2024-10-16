@@ -48,7 +48,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
@@ -392,9 +391,15 @@ public final class VFSUtils {
         }
     }
 
-    public static void createVenv(Path venvDirectory, List<String> packages, Path laucherPath, LauncherClassPath launcherClassPath, String graalPyVersion, SubprocessLog subprocessLog, Log log)
+    public static void createVenv(Path venvDirectory, List<String> packages, Path launcher, LauncherClassPath launcherClassPath, String graalPyVersion, SubprocessLog subprocessLog, Log log)
                     throws IOException {
-        generateLaunchers(laucherPath, launcherClassPath, subprocessLog, log);
+        Path launcherPath = launcher;
+        String externalLauncher = System.getProperty("graalpy.vfs.venvLauncher");
+        if (externalLauncher == null || externalLauncher.trim().isEmpty()) {
+            generateLaunchers(launcherPath, launcherClassPath, subprocessLog, log);
+        } else {
+            launcherPath = Path.of(externalLauncher);
+        }
 
         if (packages != null) {
             trim(packages);
@@ -424,7 +429,7 @@ public final class VFSUtils {
 
         if (!Files.exists(venvDirectory)) {
             log.info(String.format("Creating GraalPy %s venv", graalPyVersion));
-            runLauncher(laucherPath.toString(), subprocessLog, "-m", "venv", venvDirectory.toString(), "--without-pip");
+            runLauncher(launcherPath.toString(), subprocessLog, "-m", "venv", venvDirectory.toString(), "--without-pip");
             runVenvBin(venvDirectory, "graalpy", subprocessLog, "-I", "-m", "ensurepip");
         }
 
