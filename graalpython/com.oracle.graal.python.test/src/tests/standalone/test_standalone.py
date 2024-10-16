@@ -38,7 +38,6 @@
 # SOFTWARE.
 
 import os
-import subprocess
 import tempfile
 import unittest
 import urllib.parse
@@ -217,7 +216,7 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase):
 
     @unittest.skipUnless(is_gradle_enabled, "ENABLE_GRADLE_STANDALONE_UNITTESTS is not true")
     def test_gradle_generated_app(self):
-        with tempfile.TemporaryDirectory() as tmpdir:        
+        with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "generated_app_gradle" + self.target_dir_name_sufix())
             self.generate_app(target_dir)
             build_file = os.path.join(target_dir, self.build_file_name)
@@ -231,7 +230,7 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase):
             util.check_ouput("BUILD SUCCESS", out)
 
             cmd = gradlew_cmd + ["nativeCompile"]
-            # gradle needs jdk <= 22, but it looks like the 'gradle nativeCompile' cmd does not complain if higher, 
+            # gradle needs jdk <= 22, but it looks like the 'gradle nativeCompile' cmd does not complain if higher,
             # which is fine, because we need to build the native binary with a graalvm build
             # and the one we have set in JAVA_HOME is at least jdk24
             # => run without gradle = True
@@ -267,6 +266,22 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase):
             #GR-51132 - NoClassDefFoundError when running polyglot app in java mode
             util.check_ouput("java.lang.NoClassDefFoundError", out, False)
 
+            # move app to another folder
+            # this will break launcher symlinks, but should be able to recover from that
+            target_dir2 = os.path.join(str(tmpdir), "generated_app_gradle.2" + self.target_dir_name_sufix())
+            os.rename(target_dir, target_dir2)
+            # adding new dep triggers launcher without venv regen
+            self.copy_build_files(target_dir2)
+            build_file2 = os.path.join(target_dir2, self.build_file_name)
+            append(build_file2, self.packages_termcolor_ujson())
+
+            gradlew_cmd2 = util.get_gradle_wrapper(target_dir2, self.env)
+            cmd = gradlew_cmd2 + ["build", "run"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir2, gradle = True)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("Deleting GraalPy venv due to broken launcher symlinks", out)
+            util.check_ouput("hello java", out)
+
     @unittest.skipUnless(is_gradle_enabled, "ENABLE_GRADLE_STANDALONE_UNITTESTS is not true")
     def test_gradle_generated_app_external_resources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -300,7 +315,7 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase):
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("BUILD SUCCESS", out)
 
-            # gradle needs jdk <= 22, but it looks like the 'gradle nativeCompile' cmd does not complain if higher, 
+            # gradle needs jdk <= 22, but it looks like the 'gradle nativeCompile' cmd does not complain if higher,
             # which is fine, because we need to build the native binary with a graalvm build
             # and the one we have set in JAVA_HOME is at least jdk24
             # => run without gradle = True
@@ -703,6 +718,19 @@ class PolyglotAppTest(PolyglotAppTestBase):
 
             #GR-51132 - NoClassDefFoundError when running polyglot app in java mode
             util.check_ouput("java.lang.NoClassDefFoundError", out, False)
+
+            # move app to another folder
+            # this will break launcher symlinks, but should be able to recover from that
+            target_dir2 = os.path.join(str(tmpdir), target_name + ".2")
+            os.rename(target_dir, target_dir2)
+            mvnw_cmd2 = util.get_mvn_wrapper(target_dir2, self.env)
+            # adding new dep triggers launcher without venv regen
+            util.replace_in_file(os.path.join(target_dir2, "pom.xml"), "<packages>", "<packages>\n<package>ujson</package>")
+            cmd = mvnw_cmd2 + ["package", "exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir2)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("Deleting GraalPy venv due to changed launcher path", out)
+            util.check_ouput("hello java", out)
 
     @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
     def test_generated_app_external_resources(self):
