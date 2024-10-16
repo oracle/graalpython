@@ -146,12 +146,12 @@ public class VirtualFileSystemTest {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             // check regular resource dir
-            assertEquals(VFS_MOUNT_POINT + File.separator + "dir1", fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")).toString());
+            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")));
             // check regular resource file
-            assertEquals(VFS_MOUNT_POINT + File.separator + "SomeFile", fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile")).toString());
+            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile"), fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile")));
             // check to be extracted file
             checkExtractedFile(fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "extractme")), new String[]{"text1", "text2"});
-            assertEquals(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme", fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme")).toString());
+            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme"), fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme")));
         }
 
         // from real FS
@@ -168,13 +168,13 @@ public class VirtualFileSystemTest {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             // check regular resource dir
-            assertEquals(VFS_MOUNT_POINT + File.separator + "dir1", fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")).toString());
+            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")));
             // check regular resource file
-            assertEquals(VFS_MOUNT_POINT + File.separator + "SomeFile", fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile")).toString());
+            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile"), fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile")));
             // check to be extracted file
             checkExtractedFile(fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "extractme")), new String[]{"text1", "text2"});
             checkExtractedFile(fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1/extractme")), null);
-            assertEquals(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme", fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme")).toString());
+            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme"), fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme")));
         }
 
         // from real FS
@@ -364,8 +364,7 @@ public class VirtualFileSystemTest {
                     ByteBuffer buffer = ByteBuffer.allocate(1024);
                     bch.read(buffer);
                     String s = new String(buffer.array());
-
-                    String[] ss = s.split("\n");
+                    String[] ss = s.split(System.lineSeparator());
                     assertTrue(ss.length >= 2);
                     assertEquals("text1", ss[0]);
                     assertEquals("text2", ss[1]);
@@ -391,7 +390,7 @@ public class VirtualFileSystemTest {
             ByteBuffer buffer = ByteBuffer.allocate(4);
             bch.read(buffer);
             String s = new String(buffer.array());
-            String[] ss = s.split("\n");
+            String[] ss = s.split(System.lineSeparator());
             assertTrue(ss.length >= 1);
             assertEquals("text", ss[0]);
         }
@@ -413,8 +412,8 @@ public class VirtualFileSystemTest {
                 s.add(p.toString());
             }
             assertEquals(2, s.size());
-            assertTrue(s.contains(VFS_MOUNT_POINT + File.separator + "dir1/extractme"));
-            assertTrue(s.contains(VFS_MOUNT_POINT + File.separator + "dir1/file2"));
+            assertTrue(s.contains(VFS_MOUNT_POINT + File.separator + "dir1" + File.separator + "extractme"));
+            assertTrue(s.contains(VFS_MOUNT_POINT + File.separator + "dir1" + File.separator + "file2"));
 
             ds = fs.newDirectoryStream(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), (p) -> false);
             assertFalse(ds.iterator().hasNext());
@@ -730,8 +729,8 @@ public class VirtualFileSystemTest {
                         with open("/test_mount_point/file1", "r") as f:
                             l = f.readlines()
                             assert len(l) == 2, 'expect 2 lines, got ' + len(l)
-                            assert l[0] == "text1\\n", 'expected "text1", got ' + l[0]
-                            assert l[1] == "text2\\n", 'expected "text2", got ' + l[1]
+                            assert l[0].startswith("text1"), f'expected "text1", got "{l[0]}"'
+                            assert l[1].startswith("text2"), f'expected "text2", got "{l[1]}"'
 
                         with open("/test_mount_point/dir1/file2", "r") as f:
                             l = f.readlines()
