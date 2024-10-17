@@ -188,19 +188,21 @@ public class VirtualFileSystemTest {
 
     @Test
     public void parseStringPath() throws Exception {
-        parseStringPath(VirtualFileSystemTest::parseStringPath);
+        parsePath(VirtualFileSystemTest::parseStringPath);
     }
 
     @Test
     public void parseURIPath() throws Exception {
-        parseStringPath(VirtualFileSystemTest::parseURIPath);
+        parsePath(VirtualFileSystemTest::parseURIPath);
 
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             checkException(UnsupportedOperationException.class, () -> fs.parsePath(URI.create("http://testvfs.org")), "only file uri is supported");
+            checkException(UnsupportedOperationException.class, () -> fs.parsePath(URI.create("http:/" + VFS_MOUNT_POINT + File.separator + "dir1")), "only file uri is supported");
+            checkException(UnsupportedOperationException.class, () -> fs.parsePath(URI.create("http://" + VFS_MOUNT_POINT + File.separator + "dir1")), "only file uri is supported");
         }
     }
 
-    public void parseStringPath(BiFunction<FileSystem, String, Path> parsePath) throws Exception {
+    public void parsePath(BiFunction<FileSystem, String, Path> parsePath) throws Exception {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             // check regular resource dir

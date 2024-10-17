@@ -694,7 +694,9 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     @Deprecated
     public Path parsePath(URI uri) {
         if (uri.getScheme().equals("file")) {
-            Path ret = Paths.get(uri);
+            // rather do not use Paths.get(URI) as it looks up the file system provider
+            // by scheme and can use a non default file system provider
+            Path ret = Paths.get(uri.getPath());
             if (!pathIsInVfs(ret)) {
                 if (delegate != null) {
                     ret = delegate.parsePath(uri);
@@ -705,14 +707,17 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             finest("VFS.parsePath '%s' -> '%s'", uri, ret);
             return ret;
         } else {
-            finer("VFS.parsePath: Not supported yet '%s'", uri);
-            throw new UnsupportedOperationException("Not supported yet.");
+            String msg = "Unsupported URI scheme '%s'";
+            finer(msg, uri.getScheme());
+            throw new UnsupportedOperationException(String.format(msg, uri.getScheme()));
         }
     }
 
     @Override
     @Deprecated
     public Path parsePath(String path) {
+        // It's safe to use the Paths.get(String)
+        // as it always uses the default file system.
         Path p = Paths.get(path);
         if (!pathIsInVfs(p)) {
             if (delegate != null) {
