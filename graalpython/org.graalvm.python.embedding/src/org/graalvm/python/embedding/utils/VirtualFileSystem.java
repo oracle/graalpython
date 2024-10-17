@@ -740,7 +740,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                     delegate.checkAccess(path, modes, linkOptions);
                     passed = true;
                 } finally {
-                    finest("VFS.checkAccess delegated '%s' %s", path, passed ? "OK" : "KO");
+                    finest("VFS.checkAccess delegated '%s' %s and ", path, passed ? "passed" : "did not pass");
                 }
             } else {
                 String msg = String.format("filesystem without host IO: '%s'", path);
@@ -771,7 +771,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                 try {
                     delegate.createDirectory(dir, attrs);
                 } finally {
-                    finest("VFS.createDirectory delegated '%s' %s", dir, passed ? "OK" : "KO");
+                    finest("VFS.createDirectory delegated '%s' %s", dir, passed ? "passed" : "did not pass");
                 }
             } else {
                 String msg = String.format("filesystem without host IO: '%s'", dir);
@@ -794,7 +794,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                 try {
                     delegate.delete(path);
                 } finally {
-                    finest("VFS.delete delegated '%s' %s", path, passed ? "OK" : "KO");
+                    finest("VFS.delete delegated '%s' %s", path, passed ? "passed" : "did not pass");
                 }
             } else {
                 String msg = String.format("filesystem without host IO: '%s'", path);
@@ -817,7 +817,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                 try {
                     return delegate.newByteChannel(path, options, attrs);
                 } finally {
-                    finest("VFS.newByteChannel delegated '%s' %s", path, passed ? "OK" : "KO");
+                    finest("VFS.newByteChannel delegated '%s' %s", path, passed ? "passed" : "did not pass");
                 }
             } else {
                 String msg = String.format("filesystem without host IO: '%s'", path);
@@ -916,7 +916,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                 try {
                     return delegate.newDirectoryStream(dir, filter);
                 } finally {
-                    finest("VFS.newDirectoryStream delegated '%s' %s", dir, passed ? "OK" : "KO");
+                    finest("VFS.newDirectoryStream delegated '%s' %s", dir, passed ? "passed" : "did not pass");
                 }
             } else {
                 String msg = String.format("filesystem without host IO: '%s'", dir);
