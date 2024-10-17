@@ -65,6 +65,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -98,7 +99,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         @Specialization
         static void doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Exclusive @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
                         @Shared @Cached WriteAttributeToObjectNode write,
                         @Shared @Cached TruffleString.EqualNode equalNode,
                         @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,
@@ -107,13 +108,14 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
             updateStgDictIfNecessary(frame, object, key, value, equalNode, updateStgDict, factory);
         }
 
+        // @Exclusive to address warning
         @Specialization
         @InliningCutoff
         static void doGenericKey(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castKeyNode,
                         @Cached PRaiseNode.Lazy raiseNode,
-                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Exclusive @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
                         @Shared @Cached WriteAttributeToObjectNode write,
                         @Shared @Cached TruffleString.EqualNode equalNode,
                         @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,

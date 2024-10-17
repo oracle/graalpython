@@ -79,9 +79,7 @@ import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
-import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CastBuiltinStringToTruffleStringNode;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -98,9 +96,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
@@ -172,8 +167,6 @@ public abstract class IteratorNodes {
         @Fallback
         @InliningCutoff
         static int length(VirtualFrame frame, Node inliningTarget, Object iterable,
-                        @Cached IsForeignObjectNode isForeignObjectNode,
-                        @Cached(inline = false) GetLengthForeign getLengthForeign,
                         @Cached GetClassNode getClassNode,
                         @Cached GetCachedTpSlotsNode getSlotsNode,
                         @Cached PyIndexCheckNode indexCheckNode,
@@ -185,12 +178,6 @@ public abstract class IteratorNodes {
                         @Cached InlinedConditionProfile hasLenProfile,
                         @Cached InlinedConditionProfile hasLengthHintProfile,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            if (isForeignObjectNode.execute(inliningTarget, iterable)) {
-                int foreignLen = getLengthForeign.execute(iterable);
-                if (foreignLen != -1) {
-                    return foreignLen;
-                }
-            }
             Object clazz = getClassNode.execute(inliningTarget, iterable);
             TpSlots slots = getSlotsNode.execute(inliningTarget, clazz);
             if (hasLenProfile.profile(inliningTarget, slots.combined_sq_mp_length() != null)) {
@@ -223,35 +210,6 @@ public abstract class IteratorNodes {
                     } else {
                         throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, T___LENGTH_HINT__, len);
                     }
-                }
-            }
-            return -1;
-        }
-    }
-
-    /**
-     * Handles the special case of foreign Strings. If the input is not a string, returns -1.
-     */
-    @GenerateInline(false) // Intentionally lazy initialized
-    public abstract static class GetLengthForeign extends PNodeWithContext {
-        public abstract int execute(Object foreign);
-
-        @Specialization
-        static int doIt(Object foreign,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile isString,
-                        @CachedLibrary(limit = "3") InteropLibrary iLib,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached GilNode gil) {
-            if (isString.profile(inliningTarget, iLib.isString(foreign))) {
-                gil.release(true);
-                try {
-                    return codePointLengthNode.execute(switchEncodingNode.execute(iLib.asTruffleString(foreign), TS_ENCODING), TS_ENCODING);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                } finally {
-                    gil.acquire();
                 }
             }
             return -1;

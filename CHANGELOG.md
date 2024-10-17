@@ -9,9 +9,9 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * When calling a method on a foreign object in Python code, Python methods are now prioritized over foreign members.
 * Added `polyglot.register_interop_type` and `@polyglot.interop_type` to define custom Python methods for a given foreign class/type. See [the documentation](https://github.com/oracle/graalpython/blob/master/docs/user/Interoperability.md#the-interoperability-extension-api) for more information.
 * Foreign objects are now given a Python class corresponding to their interop traits.
-** Foreign lists now inherit from Python `list`, foreign dictionaries from `dict`, foreign iterators from `iterator`, foreign exceptions from `BaseException` and foreign none/null from `NoneType`.
-** This means all Python methods of these types are available on the corresponding foreign objects, which behave as close as possible as if they were Python objects.
-** See [the documentation](https://github.com/oracle/graalpython/blob/master/docs/user/Interoperability.md#interacting-with-foreign-objects-from-python-scripts) for more information.
+  * Foreign lists now inherit from Python `list`, foreign dictionaries from `dict`, foreign strings from `str`, foreign iterators from `iterator`, foreign exceptions from `BaseException`, foreign numbers from `ForeignNumberType` and foreign none/null from `NoneType`.
+  * This means all Python methods of these types are available on the corresponding foreign objects, which behave as close as possible as if they were Python objects.
+  * See [the documentation](https://github.com/oracle/graalpython/blob/master/docs/user/Interoperability.md#interacting-with-foreign-objects-from-python-scripts) for more information.
 * Remove support for running with Sulong managed both in embeddings as well as through the `graalpy-managed` launcher.
 
 ## Version 24.1.0
@@ -40,9 +40,9 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * `multiprocessing` module now uses the `spawn` method (creates new processes) by default. The formerly default method that uses threads and multiple Truffle contexts can be selected using `multiprocessing.set_start_method('graalpy')`.
 * `polyglot` module: add API to redefine Truffle interop messages for external / user defined types. For more details see [The Truffle Interoperability Extension API](docs/user/Interoperability.md).
 * Adding integration with jBang (https://www.jbang.dev/)
-** running example via `jbang hello@oracle/graalpython` or `jbang hello@oracle/graalpython "print(1*4)"`
-** creating new script via: `jbang init --template=graalpy@oracle/graalpython myscript.java`
-** creating new script with local maven repo for testing: `jbang init --template=graalpy_local_repo@oracle/graalpython -Dpath_to_local_repo=/absolute/path/to/local/maven/repository myscript.java'
+  * running example via `jbang hello@oracle/graalpython` or `jbang hello@oracle/graalpython "print(1*4)"`
+  * creating new script via: `jbang init --template=graalpy@oracle/graalpython myscript.java`
+  * creating new script with local maven repo for testing: `jbang init --template=graalpy_local_repo@oracle/graalpython -Dpath_to_local_repo=/absolute/path/to/local/maven/repository myscript.java'
 
 ## Version 23.1.0
 * GraalPy distributions (previously known as GraalPy Enterprise) are now available under the [GFTC license](https://www.oracle.com/downloads/licenses/graal-free-license.html). The community builds published on Github have been renamed to `graalpy-community-<version>-<os>-<arch>.tar.gz`.

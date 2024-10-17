@@ -209,12 +209,12 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object eval(Object pathObj, Object stringObj, Object languageObj) {
             if (languageObj instanceof PNone) {
-                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.POLYGLOT_EVAL_MUST_PASS_LANG);
+                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.POLYGLOT_EVAL_MUST_PASS_LANG_AND_STRING_OR_PATH);
             }
             boolean hasString = !(stringObj instanceof PNone);
             boolean hasPath = !(pathObj instanceof PNone);
             if (!hasString && !hasPath || hasString && hasPath) {
-                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.POLYGLOT_EVAL_MUST_PASS_STRING_OR_PATH);
+                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.POLYGLOT_EVAL_MUST_PASS_LANG_AND_STRING_OR_PATH);
             }
             String languageName = toJavaString(languageObj, "language");
             String string = hasString ? toJavaString(stringObj, "string") : null;

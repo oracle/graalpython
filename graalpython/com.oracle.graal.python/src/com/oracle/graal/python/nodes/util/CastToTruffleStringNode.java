@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAS
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyASCIIObject__state;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyASCIIObject__state_ready_shift;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyUnicodeObject__data;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.isBitSet;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -67,6 +68,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -175,8 +177,21 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"!isString(x)", "!isNativeObject(x)"})
-    static TruffleString doUnsupported(@SuppressWarnings("unused") Object x) {
-        throw CannotCastException.INSTANCE;
+    @InliningCutoff
+    static TruffleString other(Object x,
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
+                    @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
+        if (interop.isString(x)) {
+            TruffleString truffleString;
+            try {
+                truffleString = interop.asTruffleString(x);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+            return switchEncodingNode.execute(truffleString, TS_ENCODING);
+        } else {
+            throw CannotCastException.INSTANCE;
+        }
     }
 
     @NeverDefault

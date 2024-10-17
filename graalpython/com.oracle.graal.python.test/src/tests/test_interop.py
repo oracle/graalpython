@@ -1032,6 +1032,156 @@ class InteropTests(unittest.TestCase):
         assert list(h.keys()) == ['b', 'a']
         assert foo(**h) == [1, 2]
 
+    def test_java_string(self):
+        from java.lang import String, Character
+
+        def wrap(string):
+            return __graalpython__.foreign_wrapper(String(string))
+        # we have to wrap otherwise the string is passed as a j.l.String to Python
+        s = wrap("ab")
+        empty = wrap("")
+
+        assert isinstance(s, str)
+        assert str in type(s).mro()
+        self.assertEqual(['ForeignString', 'str', 'foreign', 'object'], [t.__name__ for t in type(s).mro()])
+        assert repr(s) == repr("ab")
+        assert str(s) == str("ab"), str(s)
+        assert bool(s) == True
+        assert s
+
+        assert bool(empty) == False
+        assert not empty
+
+        c = Character.valueOf(ord("A"))
+        self.assertEqual(['ForeignString', 'str', 'foreign', 'object'], [t.__name__ for t in type(c).mro()])
+        assert repr(c) == repr("A")
+        assert str(c) == str("A"), str(s)
+        assert c
+
+        assert type(str(s)) is str
+
+        # Ensure java.lang.String members are not visible through foreign_wrapper()
+        with self.assertRaisesRegex(AttributeError, "foreign object has no attribute 'toLowerCase'"):
+            s.toLowerCase()
+
+        assert s + "cd" == "abcd"
+        assert "cd" + s == "cdab"
+        assert s + s == "abab"
+
+        assert "a" in s
+        assert "z" not in s
+
+        assert s == "ab"
+        assert s != "cd"
+
+        assert wrap("B") > wrap("A")
+        assert wrap("A") < "B"
+        assert "B" > wrap("A")
+
+        assert s[0] == "a"
+        assert s[1] == "b"
+        assert s[-2] == "a"
+        assert s[-1] == "b"
+
+        assert s[0:2] == "ab"
+        assert wrap("abcd")[1:3] == "bc"
+
+        assert type(hash(s)) == int
+
+        assert s * 3 == "ababab"
+        assert 3 * s == "ababab"
+
+        assert wrap("%03d") % 42 == "042"
+
+        assert [e for e in s] == ['a', 'b']
+
+        assert len(s) == 2
+
+        assert s.capitalize() == "Ab"
+        assert wrap("AbC").casefold() == "abc"
+        assert s.center(4) == " ab "
+        assert s.count(wrap("a")) == 1
+        assert s.encode() == b'ab'
+        assert wrap("é").encode(wrap('ISO-8859-1')) == b'\xe9'
+        assert s.endswith(wrap("b"))
+        assert wrap("\t").expandtabs(tabsize=2) == "  "
+        assert s.find(wrap("b")) == 1
+        assert wrap(">{}<").format(s) == ">ab<"
+        assert wrap("{x}").format_map({wrap("x"): wrap("42")}) == "42"
+        assert s.index(wrap("b")) == 1
+        assert s.isalnum()
+        assert s.isalpha()
+        assert s.isascii()
+        assert not s.isdecimal()
+        assert not s.isdigit()
+        assert s.isidentifier()
+        assert s.islower()
+        assert not s.isnumeric()
+        assert s.isprintable()
+        assert not s.isspace()
+        assert not s.istitle()
+        assert not s.isupper()
+        assert wrap(",").join([s, "cd"]) == "ab,cd"
+        assert s.ljust(3) == "ab "
+        assert wrap("AB").lower() == "ab"
+        assert wrap("  a ").lstrip() == "a "
+        assert wrap("ab,cd,ef").partition(wrap(",")) == ("ab", ",", "cd,ef")
+        assert s.removeprefix(wrap("a")) == "b"
+        assert s.removesuffix(wrap("b")) == "a"
+        assert wrap("aba").replace(wrap("a"), wrap("z")) == "zbz"
+        assert s.rfind(wrap("a")) == 0
+        assert s.rindex(wrap("a")) == 0
+        assert s.rjust(3) == " ab"
+        assert wrap("ab,cd,ef").rpartition(wrap(",")) == ("ab,cd", ",", "ef")
+        assert wrap("ab,cd,ef").rsplit(wrap(","), 1) == ["ab,cd", "ef"]
+        assert wrap(" a  ").rstrip() == " a"
+        assert wrap("ab,cd,ef").split(wrap(","), 1) == ["ab", "cd,ef"]
+        assert wrap("ab\ncd").splitlines() == ["ab", "cd"]
+        assert s.startswith("a")
+        assert wrap("  a  ").strip() == "a"
+        assert wrap("Ab").swapcase() == "aB"
+        assert wrap("a title").title() == "A Title"
+        assert s.translate({ ord("a"): wrap("ZZ") }) == "ZZb"
+        assert s.upper() == "AB"
+        assert s.zfill(5) == "000ab"
+
+    def test_foreign_number_list(self):
+        from java.util import ArrayList
+        # Like c(42) in R
+        n = __graalpython__.foreign_number_list(42)
+
+        assert isinstance(n, list)
+        assert list in type(n).mro()
+        self.assertEqual(['ForeignNumberList', 'ForeignNumberType', 'list', 'foreign', 'object'], [t.__name__ for t in type(n).mro()])
+        assert repr(n) == '42', repr(n)
+        assert str(n) == '42', str(n)
+        assert n
+
+        a = __graalpython__.foreign_number_list(2)
+        b = __graalpython__.foreign_number_list(3)
+        assert a + b == 5
+        assert a - b == -1
+        assert a * b == 6
+        assert a / b == (2 / 3)
+        assert a // b == 0
+
+        l = ArrayList()
+        l.extend([1, 2, 3])
+
+        with self.assertRaisesRegex(TypeError, "'<' not supported between instances of 'ForeignList' and 'int'"):
+            assert l < 4
+        with self.assertRaisesRegex(TypeError, "'<' not supported between instances of 'int' and 'ForeignList'"):
+            assert 4 < l
+
+        assert l < n
+        assert n > l
+
+        l[0] = 100
+        assert not l < n
+        assert not n > l
+        assert l > n
+        assert n < l
+
     def test_foreign_repl(self):
         from java.util.logging import LogRecord
         from java.util.logging import Level

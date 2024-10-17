@@ -43,7 +43,7 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DICTKEY
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DICTVALUESVIEW_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.DICT_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FLOAT_M_FLAGS;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FOREIGNOBJECT_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FOREIGNNUMBER_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.FROZENSET_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.GENERATOR_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.GENERIC_ALIAS_M_FLAGS;
@@ -135,6 +135,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
@@ -185,7 +186,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ExportLibrary(ReflectionLibrary.class)
 public enum PythonBuiltinClassType implements TruffleObject {
 
-    ForeignObject(J_FOREIGN, Flags.PRIVATE_BASE_WDICT, FOREIGNOBJECT_M_FLAGS, ForeignObjectBuiltins.SLOTS),
     Boolean("bool", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT, BOOLEAN_M_FLAGS),
     PArray("array", "array", ARRAY_M_FLAGS, ArrayBuiltins.SLOTS),
     PArrayIterator("arrayiterator", Flags.PRIVATE_DERIVED_WODICT),
@@ -296,6 +296,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     UnpicklerMemoProxy("UnpicklerMemoProxy", "_pickle"),
     Unpickler("Unpickler", "_pickle"),
     PickleBuffer("PickleBuffer", "_pickle"),
+
+    // Foreign
+    ForeignObject(J_FOREIGN, Flags.PRIVATE_BASE_WDICT, ForeignObjectBuiltins.SLOTS),
+    ForeignNumber("ForeignNumberType", Flags.PRIVATE_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
 
     // bz2
     BZ2Compressor("BZ2Compressor", "_bz2"),

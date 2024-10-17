@@ -496,7 +496,7 @@ public class JavaInteropTest {
             foo.execute(ProxyObject.fromMap(m));
         }
 
-        public class JavaObject {
+        public static class JavaObject {
             public byte byteValue = 1;
             public short shortValue = 2;
             public int intValue = 3;
@@ -563,7 +563,7 @@ public class JavaInteropTest {
                             "5.0 <class 'float'>\n" +
                             "6.0 <class 'float'>\n" +
                             "True <class 'bool'>\n" +
-                            "c <class 'str'>\n", out.toString("UTF-8"));
+                            "c <class 'polyglot.ForeignString'>\n", out.toString("UTF-8"));
         }
 
         @Test
@@ -590,7 +590,7 @@ public class JavaInteropTest {
                             "5.0 <class 'float'>\n" +
                             "6.0 <class 'float'>\n" +
                             "True <class 'bool'>\n" +
-                            "c <class 'str'>\n", out.toString("UTF-8"));
+                            "c <class 'polyglot.ForeignString'>\n", out.toString("UTF-8"));
         }
 
         @Test

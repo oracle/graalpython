@@ -92,9 +92,15 @@ h == {1: 2, 3: 6} # True
 Specifically:
 * Foreign lists inherit from Python `list`
 * Foreign dictionaries inherit from `dict`
+* Foreign strings inherit from `str`
 * Foreign iterators inherit from `iterator`
 * Foreign exceptions inherit from `BaseException`
+* Foreign numbers inherit from `ForeignNumberType` (since `InteropLibrary` has no way to differentiate integers and floats, but see below)
 * Foreign none/null inherit from `NoneType`
+* Other foreign objects inherit from `foreign`
+
+Note that Java primitives `byte`, `short`, `int`, `long` and `BigInteger` values are considered Python `int` objects,
+and Java primitives `float`, `double` values are considered Python `float` objects.
 
 ## Interacting with other dynamic languages from Python scripts
 

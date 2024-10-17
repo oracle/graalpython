@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,8 +64,7 @@ public abstract class PForeignToPTypeNode extends Node {
     protected static boolean isOtherClass(Class<?> clazz) {
         // ATTENTION: this is basically a fallback guard, review it when adding a new specialization
         return !(clazz == Byte.class || clazz == Short.class || clazz == Float.class ||
-                        clazz == Character.class || clazz == PException.class ||
-                        clazz == String.class || clazz == TruffleString.class);
+                        clazz == String.class || clazz == TruffleString.class || clazz == PException.class);
     }
 
     @Specialization(guards = {"isOtherClass(cachedClass)", "value.getClass() == cachedClass"}, limit = "1")
@@ -94,18 +93,14 @@ public abstract class PForeignToPTypeNode extends Node {
         return value;
     }
 
-    @Specialization
-    protected static TruffleString fromChar(char value,
-                    @Cached TruffleString.FromCodePointNode fromCodePointNode) {
-        return fromCodePointNode.execute(value, TS_ENCODING, true);
-    }
-
+    // Needed for TruffleStringMigrationHelpers.isJavaString to hold
     @Specialization
     protected static TruffleString fromString(String value,
                     @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         return fromJavaStringNode.execute(value, TS_ENCODING);
     }
 
+    // Needed to only have TruffleStrings with TS_ENCODING within GraalPy
     @Specialization
     protected static TruffleString fromTruffleString(TruffleString value,
                     @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {

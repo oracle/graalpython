@@ -207,8 +207,7 @@ public abstract class MethodsFlags {
     public static final long SIMPLECDATA_M_FLAGS = NB_BOOL;
     public static final long UNIONTYPE_M_FLAGS = SQ_REPEAT | TYPE_M_FLAGS;
 
-    public static final long FOREIGNOBJECT_M_FLAGS = NB_BOOL | NB_MULTIPLY |
-                    NB_SUBTRACT | NB_DIVMOD | NB_FLOOR_DIVIDE | NB_TRUE_DIVIDE | NB_AND | NB_XOR | NB_OR | NB_INDEX |
-                    MP_SUBSCRIPT;
+    public static final long FOREIGNNUMBER_M_FLAGS = NB_BOOL | NB_MULTIPLY |
+                    NB_SUBTRACT | NB_DIVMOD | NB_FLOOR_DIVIDE | NB_TRUE_DIVIDE | NB_AND | NB_XOR | NB_OR | NB_INDEX;
 
 }

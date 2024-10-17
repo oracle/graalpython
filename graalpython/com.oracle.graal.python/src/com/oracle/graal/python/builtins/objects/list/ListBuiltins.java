@@ -225,11 +225,12 @@ public final class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        // @Exclusive to address warning
         @Specialization
         static PNone initPString(PList list, PString value,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castStr,
-                        @Shared @Cached ClearListStorageNode clearStorageNode,
+                        @Exclusive @Cached ClearListStorageNode clearStorageNode,
                         @Shared("cpIt") @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Shared("cpItNext") @Cached TruffleStringIterator.NextNode nextNode,
                         @Shared("fromCp") @Cached TruffleString.FromCodePointNode fromCodePointNode,

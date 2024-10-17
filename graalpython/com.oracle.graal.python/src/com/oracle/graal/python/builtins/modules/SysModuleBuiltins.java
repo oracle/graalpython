@@ -1570,7 +1570,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 // only print colon if the str() of the object is not the empty string
                 v = objectStr(frame, value);
                 TruffleString s = tryCastToString(v);
-                if (v == null) {
+                if (v == PNone.NONE) {
                     fileWriteString(frame, out, ": <exception str() failed>");
                 } else if (!PGuards.isString(v) || (s != null && !s.isEmpty())) {
                     fileWriteString(frame, out, ": ");
