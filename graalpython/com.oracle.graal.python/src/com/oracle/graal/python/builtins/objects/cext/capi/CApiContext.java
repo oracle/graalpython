@@ -562,7 +562,7 @@ public final class CApiContext extends CExtContext {
      * instance of {@link CApiContext}, it will load the cache stored from the static field
      * {@link CApiContext#nativeSymbolCacheSingleContext}. Otherwise, it will load the cache from
      * the instance field {@link CApiContext#nativeSymbolCache}.
-     * 
+     *
      * @param caller The requesting node (may be {@code null}). Used for the fast-path lookup of the
      *            {@link CApiContext} instance (if necessary).
      * @return The C API symbol cache.
@@ -637,14 +637,14 @@ public final class CApiContext extends CExtContext {
         /**
          * RSS percentage increase between System.gc() calls. Low percentage will trigger
          * System.gc() more often which can cause unnecessary overhead.
-         * 
+         *
          * <ul>
          * Based on the {@code huggingface} example:
          * <li>less than 30%: max RSS ~22GB (>200 second per iteration)</li>
          * <li>30%: max RSS ~24GB (~150 second per iteration)</li>
          * <li>larger than 30%: max RSS ~38GB (~140 second per iteration)</li>
          * </ul>
-         * 
+         *
          * <pre>
          */
         final double gcRSSThreshold;
@@ -823,25 +823,11 @@ public final class CApiContext extends CExtContext {
                 SourceBuilder capiSrcBuilder;
                 final boolean useNative = PythonOptions.NativeModules.getValue(env.getOptions());
                 if (useNative) {
-                    boolean canUseNative = nativeCAPILoaded.compareAndSet(false, true);
-                    if (!canUseNative) {
-                        String actualReason = "initialize native extensions support";
-                        if (reason != null) {
-                            actualReason = reason;
-                        } else if (name != null && path != null) {
-                            actualReason = String.format("load a native module '%s' from path '%s'", name.toJavaStringUncached(), path.toJavaStringUncached());
-                        }
-                        throw new ApiInitException(TruffleString.fromJavaStringUncached(
-                                        String.format("Option python.NativeModules is set to 'true' and a second GraalPy context attempted to %s. " +
-                                                        "GraalPy currently only supports loading and using native extensions from one context when python.NativeModules is enabled. " +
-                                                        "To resolve this issue, ensure that native extensions are used only in one GraalPy context per process or" +
-                                                        "set python.NativeModules to 'false' to run native extensions in LLVM mode, which is recommended only " +
-                                                        "for extensions included in the Python standard library. Running a 3rd party extension in LLVM mode requires " +
-                                                        "a custom build of the extension and is generally discouraged due to compatibility reasons.", actualReason),
-                                        PythonUtils.TS_ENCODING));
+                    if (!nativeCAPILoaded.compareAndSet(false, true) && warnedSecondContexWithNativeCAPI.compareAndSet(false, true)) {
+                        LOGGER.warning("GraalPy option 'NativeModules' is set to true " +
+                                        "and more than one context is used with native extensions. " +
+                                        "Isolation depends on the native extensions.");
                     }
-                }
-                if (useNative) {
                     context.ensureNFILanguage(node, "NativeModules", "true");
                     capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + capiFile.getPath() + "\"", "<libpython>");
                 } else {
