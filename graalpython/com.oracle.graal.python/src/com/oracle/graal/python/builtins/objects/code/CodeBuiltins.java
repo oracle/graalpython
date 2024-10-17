@@ -50,12 +50,14 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.SourceMap;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -64,9 +66,13 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
+import com.oracle.truffle.api.bytecode.Instruction;
+import com.oracle.truffle.api.bytecode.SourceInformationTree;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -76,6 +82,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCode)
@@ -300,26 +307,107 @@ public final class CodeBuiltins extends PythonBuiltins {
             PTuple tuple;
             CodeUnit co = self.getCodeUnit();
             if (co != null) {
-                SourceMap map = co.getSourceMap();
-                List<PTuple> lines = new ArrayList<>();
-                if (map != null && map.startLineMap.length > 0) {
-                    IteratorData data = new IteratorData();
-                    data.line = map.startLineMap[0];
-                    co.iterateBytecode((int bci, OpCodes op, int oparg, byte[] followingArgs) -> {
-                        int nextStart = bci + op.length();
-                        if (map.startLineMap[bci] != data.line || nextStart == co.code.length) {
-                            lines.add(factory.createTuple(new int[]{data.start, nextStart, data.line}));
-                            data.line = map.startLineMap[bci];
-                            data.start = nextStart;
-                        }
-                    });
+                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                    PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
+                    List<PTuple> lines = computeLinesForBytecodeDSLInterpreter(rootNode, factory);
+                    tuple = factory.createTuple(lines.toArray());
+                } else {
+                    BytecodeCodeUnit bytecodeCo = (BytecodeCodeUnit) co;
+                    SourceMap map = bytecodeCo.getSourceMap();
+                    List<PTuple> lines = new ArrayList<>();
+                    if (map != null && map.startLineMap.length > 0) {
+                        IteratorData data = new IteratorData();
+                        data.line = map.startLineMap[0];
+                        bytecodeCo.iterateBytecode((int bci, OpCodes op, int oparg, byte[] followingArgs) -> {
+                            int nextStart = bci + op.length();
+                            if (map.startLineMap[bci] != data.line || nextStart == bytecodeCo.code.length) {
+                                lines.add(factory.createTuple(new int[]{data.start, nextStart, data.line}));
+                                data.line = map.startLineMap[bci];
+                                data.start = nextStart;
+                            }
+                        });
+                    }
+                    tuple = factory.createTuple(lines.toArray());
                 }
-                tuple = factory.createTuple(lines.toArray());
             } else {
                 tuple = factory.createEmptyTuple();
             }
             return PyObjectGetIter.executeUncached(tuple);
         }
+
+        private static List<PTuple> computeLinesForBytecodeDSLInterpreter(PBytecodeDSLRootNode root, PythonObjectFactory factory) {
+            BytecodeNode bytecodeNode = root.getBytecodeNode();
+            List<int[]> triples = new ArrayList<>();
+            SourceInformationTree sourceInformationTree = bytecodeNode.getSourceInformationTree();
+            assert sourceInformationTree.getSourceSection() != null;
+            traverseSourceInformationTree(sourceInformationTree, triples);
+            return convertTripleBcisToInstructionIndices(bytecodeNode, factory, triples);
+        }
+
+        /**
+         * This function traverses the source information tree recursively to compute a list of
+         * consecutive bytecode ranges with their corresponding line numbers.
+         * <p>
+         * Each node in the tree covers a bytecode range. Each child covers some sub-range. The
+         * bytecodes covered by a particular node are the bytecodes within its range that are *not*
+         * covered by the node's children.
+         * <p>
+         * For example, consider a node covering [0, 20] with children covering [4, 9] and [15, 18].
+         * The node itself covers the ranges [0, 4], [9, 15], and [18, 20]. These ranges are
+         * assigned the line number of the node.
+         */
+        private static void traverseSourceInformationTree(SourceInformationTree tree, List<int[]> triples) {
+            int startIndex = tree.getStartBytecodeIndex();
+            int startLine = tree.getSourceSection().getStartLine();
+            for (SourceInformationTree child : tree.getChildren()) {
+                if (startIndex < child.getStartBytecodeIndex()) {
+                    // range before child.start is uncovered
+                    triples.add(new int[]{startIndex, child.getStartBytecodeIndex(), startLine});
+                }
+                // recursively handle [child.start, child.end]
+                traverseSourceInformationTree(child, triples);
+                startIndex = child.getEndBytecodeIndex();
+            }
+
+            if (startIndex < tree.getEndBytecodeIndex()) {
+                // range after last_child.end is uncovered
+                triples.add(new int[]{startIndex, tree.getEndBytecodeIndex(), startLine});
+            }
+        }
+
+        /**
+         * The bci ranges in the triples are not stable and can change when the bytecode is
+         * instrumented. We create new triples with stable instruction indices by walking the
+         * instructions.
+         */
+        private static List<PTuple> convertTripleBcisToInstructionIndices(BytecodeNode bytecodeNode, PythonObjectFactory factory, List<int[]> triples) {
+            List<PTuple> result = new ArrayList<>(triples.size());
+            int tripleIndex = 0;
+            int[] triple = triples.get(0);
+            assert triple[0] == 0 : "the first bytecode range should start from 0";
+
+            int startInstructionIndex = 0;
+            int instructionIndex = 0;
+            for (Instruction instruction : bytecodeNode.getInstructions()) {
+                if (instruction.getBytecodeIndex() == triple[1] /* end bci */) {
+                    result.add(factory.createTuple(new int[]{startInstructionIndex, instructionIndex, triple[2]}));
+                    startInstructionIndex = instructionIndex;
+                    triple = triples.get(++tripleIndex);
+                    assert triple[0] == instruction.getBytecodeIndex() : "bytecode ranges should be consecutive";
+                }
+
+                if (!instruction.isInstrumentation()) {
+                    // Emulate CPython's fixed 2-word instructions.
+                    instructionIndex += 2;
+                }
+            }
+
+            result.add(factory.createTuple(new int[]{startInstructionIndex, instructionIndex, triple[2]}));
+            assert tripleIndex == triples.size() : "every bytecode range should have been converted to an instruction range";
+
+            return result;
+        }
+
     }
 
     @Builtin(name = "co_positions", minNumOfPositionalArgs = 1)
@@ -333,13 +421,34 @@ public final class CodeBuiltins extends PythonBuiltins {
             PTuple tuple;
             CodeUnit co = self.getCodeUnit();
             if (co != null) {
-                SourceMap map = co.getSourceMap();
                 List<PTuple> lines = new ArrayList<>();
-                if (map != null && map.startLineMap.length > 0) {
-                    byte[] bytecode = co.code;
-                    for (int i = 0; i < bytecode.length;) {
-                        lines.add(factory.createTuple(new int[]{map.startLineMap[i], map.endLineMap[i], map.startColumnMap[i], map.endColumnMap[i]}));
-                        i += OpCodes.fromOpCode(bytecode[i]).length();
+                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                    PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
+                    for (Instruction instruction : rootNode.getBytecodeNode().getInstructions()) {
+                        if (instruction.isInstrumentation()) {
+                            // Skip instrumented instructions. The co_positions array should agree
+                            // with the logical instruction index.
+                            continue;
+                        }
+                        SourceSection section = rootNode.getSourceSectionForLocation(instruction.getLocation());
+                        lines.add(factory.createTuple(new int[]{
+                                        section.getStartLine(),
+                                        section.getEndLine(),
+                                        // 1-based inclusive to 0-based inclusive
+                                        section.getStartColumn() - 1,
+                                        // 1-based inclusive to 0-based exclusive (-1 + 1 = 0)
+                                        section.getEndColumn()
+                        }));
+                    }
+                } else {
+                    BytecodeCodeUnit bytecodeCo = (BytecodeCodeUnit) co;
+                    SourceMap map = bytecodeCo.getSourceMap();
+                    if (map != null && map.startLineMap.length > 0) {
+                        byte[] bytecode = bytecodeCo.code;
+                        for (int i = 0; i < bytecode.length;) {
+                            lines.add(factory.createTuple(new int[]{map.startLineMap[i], map.endLineMap[i], map.startColumnMap[i], map.endColumnMap[i]}));
+                            i += OpCodes.fromOpCode(bytecode[i]).length();
+                        }
                     }
                 }
                 tuple = factory.createTuple(lines.toArray());

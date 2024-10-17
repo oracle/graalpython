@@ -154,8 +154,8 @@ public class LazyTraceback {
         if (frame != null) {
             // only include frames of non-builtin python functions
             Object info = frame.getFrameDescriptor().getInfo();
-            if (info instanceof FrameInfo) {
-                return ((FrameInfo) info).getRootNode().frameIsVisibleToPython();
+            if (info instanceof FrameInfo frameInfo) {
+                return frameInfo.includeInTraceback();
             }
         }
         return false;

@@ -50,12 +50,16 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.bytecode.BytecodeLocation;
+import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -187,14 +191,25 @@ public final class GeneratorBuiltins extends PythonBuiltins {
             if (self.isFinished()) {
                 return PNone.NONE;
             } else {
-                MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
-                Node location = ((FrameInfo) generatorFrame.getFrameDescriptor().getInfo()).getRootNode();
-                PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory);
-                FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-                int bci = self.getBci();
-                frame.setBci(bci);
-                frame.setLine(info.getRootNode().bciToLine(bci));
-                return frame;
+                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                    ContinuationResult continuation = self.getContinuation();
+                    BytecodeLocation location = continuation.getBytecodeLocation();
+                    MaterializedFrame generatorFrame = continuation.getFrame();
+                    BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                    PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location.getBytecodeNode(), generatorFrame, PFrame.Reference.EMPTY, factory);
+                    int bci = location.getBytecodeIndex();
+                    frame.setBci(bci);
+                    frame.setLine(info.getRootNode().bciToLine(bci, location.getBytecodeNode()));
+                    return frame;
+                } else {
+                    MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
+                    BytecodeFrameInfo info = (BytecodeFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                    PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(info.getRootNode(), generatorFrame, PFrame.Reference.EMPTY, factory);
+                    int bci = self.getBci();
+                    frame.setBci(bci);
+                    frame.setLine(info.getRootNode().bciToLine(bci));
+                    return frame;
+                }
             }
         }
     }
