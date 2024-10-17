@@ -119,7 +119,7 @@ class TestJBangIntegration(unittest.TestCase):
             self.fail("'org.graalvm.maven.downloader.repository' is not defined")
 
     def clearCache(self):
-        command = [JBANG_CMD, "cache", "clear"]
+        command = [JBANG_CMD, "cache", "--verbose", "clear"]
         out, result = run_cmd(command)
 
     def getCatalogFile(self):
@@ -163,19 +163,13 @@ class TestJBangIntegration(unittest.TestCase):
 
     def registerCatalog(self, catalog_file):
         # we need to be sure that the current dir is not dir, where is the catalog defined
-        
-        # find if the catalog is not registered
-        command = [JBANG_CMD, "catalog", "list"]
+        command = [JBANG_CMD, "catalog", "remove", "--verbose", CATALOG_ALIAS]
         out, result = run_cmd(command, cwd=WORK_DIR)
-        if result == 0:
-            if CATALOG_ALIAS not in out:
-                # registering our catalog
-                command = [JBANG_CMD, "catalog", "add", "--name", CATALOG_ALIAS, catalog_file]
-                out, result = run_cmd(command, cwd=WORK_DIR)
-                if result != 0:
-                    self.fail(f"Problem during registering catalog: {out}")
-        else:
-            self.fail(f"Problem during registering catalog: {out}")        
+
+        command = [JBANG_CMD, "catalog", "add", "--verbose", "--name", CATALOG_ALIAS, catalog_file]
+        out, result = run_cmd(command, cwd=WORK_DIR)
+        if result != 0:
+            self.fail(f"Problem during registering catalog: {out}")
 
     def prepare_hello_example(self, work_dir):
         hello_java_file = os.path.join(work_dir, "hello.java")
