@@ -104,6 +104,7 @@ import java.util.logging.Level;
 
 import org.graalvm.collections.Pair;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins.DebugNode;
@@ -1360,7 +1361,7 @@ public final class PythonCextBuiltins {
 
         @NonIdempotent
         static boolean traceMem(PythonContext context) {
-            return context.getOption(PythonOptions.TraceNativeMemory);
+            return context.getLanguage().getEngineOption(PythonOptions.TraceNativeMemory);
         }
 
         @NonIdempotent
@@ -1428,7 +1429,7 @@ public final class PythonCextBuiltins {
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode,
                         @Cached GcNativePtrToPythonNode gcNativePtrToPythonNode) {
-            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+            assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
 
             boolean loggable = GC_LOGGER.isLoggable(LEVEL);
             long lPointer = coerceNativePointerToLongNode.execute(inliningTarget, pointer);
@@ -1541,7 +1542,7 @@ public final class PythonCextBuiltins {
                         @Cached UpdateStrongRefNode updateRefNode) {
             // guaranteed by the guard
             assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
-            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+            assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
 
             /*
              * The list's head is a dummy node that can not be a tagged pointer because it is not an
@@ -1612,7 +1613,7 @@ public final class PythonCextBuiltins {
                         @Cached GcNativePtrToPythonNode gcNativePtrToPythonNode) {
             // guaranteed by the guard
             assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
-            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+            assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
 
             long lPointer = coerceToLongNode.execute(inliningTarget, pointer);
             // this upcall doesn't make sense for managed objects
@@ -1632,7 +1633,7 @@ public final class PythonCextBuiltins {
     abstract static class PyTruffle_EnableReferneceQueuePolling extends CApiNullaryBuiltinNode {
         @Specialization
         static Object doGeneric(@Bind("this") Node inliningTarget) {
-            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+            assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
             HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
             CApiTransitions.enableReferenceQueuePolling(handleContext);
             return PNone.NO_VALUE;
@@ -1643,7 +1644,7 @@ public final class PythonCextBuiltins {
     abstract static class PyTruffle_DisableReferneceQueuePolling extends CApiNullaryBuiltinNode {
         @Specialization
         static int doGeneric(@Bind("this") Node inliningTarget) {
-            assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
+            assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
             HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
             return PInt.intValue(CApiTransitions.disableReferenceQueuePolling(handleContext));
         }
@@ -1658,6 +1659,12 @@ public final class PythonCextBuiltins {
     private static final int DEBUG_CAPI = 0x40;
     private static final int PYTHON_GC = 0x80;
 
+    /*
+     * These should be kept so they can be shared across multiple contexts in the same engine, if
+     * they are stored in a static field on the native side. We have to ensure that this is
+     * generally fine. In practice, this means that options should either be marked
+     * with @EngineOption so they are sure to be the same, or that options differing is benign.
+     */
     @CApiBuiltin(ret = Int, call = Ignored)
     abstract static class PyTruffle_Native_Options extends CApiNullaryBuiltinNode {
 
@@ -1665,8 +1672,7 @@ public final class PythonCextBuiltins {
         @TruffleBoundary
         int getNativeOptions() {
             int options = 0;
-            PythonContext context = PythonContext.get(null);
-            if (context.getOption(PythonOptions.TraceNativeMemory)) {
+            if (PythonLanguage.get(null).getEngineOption(PythonOptions.TraceNativeMemory)) {
                 options |= TRACE_MEM;
             }
             if (LOGGER.isLoggable(Level.INFO)) {
@@ -1687,7 +1693,7 @@ public final class PythonCextBuiltins {
             if (PythonContext.DEBUG_CAPI) {
                 options |= DEBUG_CAPI;
             }
-            if (context.getOption(PythonOptions.PythonGC)) {
+            if (PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC)) {
                 options |= PYTHON_GC;
             }
             return options;

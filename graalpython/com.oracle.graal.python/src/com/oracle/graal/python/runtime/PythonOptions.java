@@ -348,7 +348,7 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Whether C extension modules should be loaded as native code (as opposed to LLVM bitcode execution).") //
     public static final OptionKey<Boolean> NativeModules = new OptionKey<>(true);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Whether the Python GC should be enabled (default) or not.") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Whether the Python GC should be enabled (default) or not.") //
     public static final OptionKey<Boolean> PythonGC = new OptionKey<>(true);
 
     @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "Whether the background GC task should be enabled (default) or not.") //
@@ -366,7 +366,7 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.USER, usageSyntax = "true|false", help = "Emulate some Jython features that can cause performance degradation", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Enable tracing of native memory (ATTENTION: this will have significant impact on CExt execution performance).") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Enable tracing of native memory (ATTENTION: this will have significant impact on CExt execution performance).") //
     public static final OptionKey<Boolean> TraceNativeMemory = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "If native memory tracing is enabled, also capture stack.") //
