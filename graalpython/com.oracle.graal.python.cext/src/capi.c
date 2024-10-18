@@ -958,6 +958,24 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures,
 
     _PyGC_InitState(gc);
 
+    /*
+     * Why is initializing all these global fields with pointers to different
+     * contexts ok? Each native stub is allocated using the AllocateNode and
+     * filled by each context. The long value of the stub pointer is then given
+     * an index via nativeStubLookupReserve, and the index is stored both in
+     * the stub for fast access from native as well as in the
+     * PythonObjectReference which wraps the stub on the managed side. The
+     * table is per context. Given that C API initialisation is deterministic
+     * and we initialise only with quasi-immortal objects, those indices are
+     * never repurposed for other objects. So, while later contexts override
+     * the pointers for those global objects with pointers to their own stubs,
+     * the index stored in those stubs are the same across all contexts, and
+     * thus mapping to context-specific objects works as intended. It is a bit
+     * dodgy that the ob_refcnt fields of those objects are going to show
+     * whacky, behaviour. Maybe we should just assert that everything stored
+     * during initialisation of the GraalPy C API has IMMORTAL_REFCNT. We also
+     * should add assertions that all stub indices actually match.
+     */
     initialize_builtins(builtin_closures);
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
     Py_Truffle_Options = GraalPyTruffle_Native_Options();
