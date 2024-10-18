@@ -68,16 +68,16 @@ public class MultiContextTest extends PythonTests {
         // This tests if we can execute the same native extension library in multiple contexts if
         // that library is subinterpreter safe.
         Engine engine = Engine.newBuilder().build();
-        ExecutorService s = Executors.newCachedThreadPool();
+        ExecutorService s = Executors.newFixedThreadPool(40);
         for (int i = 0; i < 100; i++) {
             s.execute(() -> {
                 try (Context context = newContext(engine)) {
                     context.eval("python", """
                                     import _cpython_sre, time
                                     assert _cpython_sre.ascii_tolower(88) == 120
-                                    time.sleep(0.1)
+                                    time.sleep(1)
                                     assert _cpython_sre.ascii_tolower(89) == 121
-                                    time.sleep(0.1)
+                                    time.sleep(1)
                                     assert _cpython_sre.ascii_tolower(90) == 122
                                     """);
                 }
