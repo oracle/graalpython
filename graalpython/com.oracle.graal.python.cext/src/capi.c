@@ -280,11 +280,16 @@ PyObject* _Py_EllipsisObjectReference;
 PyObject* _Py_NoneStructReference;
 PyObject* _Py_NotImplementedStructReference;
 
+/*
+ * While only a single context executes, this holds the thread-local reference
+ * to the PythonThreadState on the managed side. When additional contexts start
+ * using the C API, it remains NULL at all times.
+ */
 THREAD_LOCAL PyThreadState *tstate_current = NULL;
 
 static void initialize_globals() {
     // store the thread state into a thread local variable
-    tstate_current = GraalPyTruffleThreadState_Get(&tstate_current);
+    GraalPyTruffleThreadState_Get(&tstate_current);
     _Py_NoneStructReference = GraalPyTruffle_None();
     _Py_NotImplementedStructReference = GraalPyTruffle_NotImplemented();
     _Py_EllipsisObjectReference = GraalPyTruffle_Ellipsis();

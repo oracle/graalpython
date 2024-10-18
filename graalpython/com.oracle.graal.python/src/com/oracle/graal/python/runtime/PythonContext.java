@@ -177,6 +177,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.graal.python.util.SuppressFBWarnings;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -186,6 +187,7 @@ import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleContext;
 import com.oracle.truffle.api.TruffleContext.Builder;
 import com.oracle.truffle.api.TruffleFile;
@@ -354,6 +356,19 @@ public final class PythonContext extends Python3Core {
          * for this thread.
          */
         Object nativeThreadLocalVarPointer;
+
+        /**
+         * We hold on to all nativeThreadLocalVarPointers we ever saw weakly as long as only a
+         * single context use the C API. We set all of them to NULL and clear this list before more
+         * contexts start using the C API.
+         */
+        static final Map<Object, Void> nativeThreadLocalVarPointers = Collections.synchronizedMap(new WeakHashMap<>());
+
+        /**
+         * An assumption to use on the fast path to decide if we need to store thread local
+         * pointers.
+         */
+        public static final Assumption storesThreadLocalVarPointers = Truffle.getRuntime().createAssumption("Only a single thread uses native extensions");
 
         /* The global tracing function, set by sys.settrace and returned by sys.gettrace. */
         Object traceFun;
@@ -560,6 +575,7 @@ public final class PythonContext extends Python3Core {
              * LLVM.
              */
             if (nativeThreadLocalVarPointer != null && canRunGuestCode) {
+                nativeThreadLocalVarPointers.remove(nativeThreadLocalVarPointer);
                 CStructAccess.WritePointerNode.writeUncached(nativeThreadLocalVarPointer, 0, context.getNativeNull());
                 nativeThreadLocalVarPointer = null;
             }
@@ -634,7 +650,18 @@ public final class PythonContext extends Python3Core {
             // either unset or same
             assert nativeThreadLocalVarPointer == null || nativeThreadLocalVarPointer == ptr ||
                             InteropLibrary.getUncached().isIdentical(nativeThreadLocalVarPointer, ptr, InteropLibrary.getUncached());
+            assert storesThreadLocalVarPointers.isValid();
+            nativeThreadLocalVarPointers.put(ptr, null);
             this.nativeThreadLocalVarPointer = ptr;
+        }
+
+        public static void clearNativeThreadLocalVarPointers(PythonContext context) {
+            for (var ptr : nativeThreadLocalVarPointers.keySet()) {
+                if (ptr != null) {
+                    CStructAccess.WritePointerNode.writeUncached(ptr, 0, context.getNativeNull());
+                }
+            }
+            nativeThreadLocalVarPointers.clear();
         }
     }
 

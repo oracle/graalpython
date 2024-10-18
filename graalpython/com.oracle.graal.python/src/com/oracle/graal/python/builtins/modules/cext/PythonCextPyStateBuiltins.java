@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -122,12 +123,18 @@ public final class PythonCextPyStateBuiltins {
 
         @Specialization(limit = "1")
         Object get(Object tstateCurrentPtr,
+                        @Cached CStructAccess.WritePointerNode writePtrNode,
                         @CachedLibrary("tstateCurrentPtr") InteropLibrary lib) {
-            PythonThreadState pythonThreadState = getContext().getThreadState(getLanguage());
-            if (!lib.isNull(tstateCurrentPtr)) {
-                pythonThreadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
+            PythonContext context = getContext();
+            PythonThreadState pythonThreadState = context.getThreadState(getLanguage());
+            Object result = PThreadState.getOrCreateNativeThreadState(pythonThreadState);
+            if (PythonThreadState.storesThreadLocalVarPointers.isValid()) {
+                if (!lib.isNull(tstateCurrentPtr)) {
+                    pythonThreadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
+                    writePtrNode.writeArrayElement(tstateCurrentPtr, 0, result);
+                }
             }
-            return PThreadState.getOrCreateNativeThreadState(pythonThreadState);
+            return result;
         }
     }
 

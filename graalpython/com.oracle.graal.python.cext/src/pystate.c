@@ -48,8 +48,7 @@ static inline PyThreadState *
 _get_thread_state() {
     PyThreadState *ts = tstate_current;
     if (UNLIKELY(ts == NULL)) {
-         ts = GraalPyTruffleThreadState_Get(&tstate_current);
-         tstate_current = ts;
+        ts = GraalPyTruffleThreadState_Get(&tstate_current);
     }
     return ts;
 }
