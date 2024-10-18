@@ -917,6 +917,12 @@ void initialize_hashes();
 void _PyFloat_InitState(PyInterpreterState* state);
 
 Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
+
+/*
+ * Even when using multiple contexts, this is only set during VM shutdown, so
+ * on the native side can only be used to guard things that do not work during
+ * VM shutdown, not to guard things that do not work during context shutdown!
+ */
 Py_LOCAL_SYMBOL int32_t graalpy_finalizing;
 
 PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures, GCState *gc) {

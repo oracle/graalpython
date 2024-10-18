@@ -911,6 +911,10 @@ public final class CApiContext extends CExtContext {
      * know that it's not safe to do upcalls and that native wrappers might have been deallocated.
      * We need to do it in a VM shutdown hook to make sure C atexit won't crash even if our context
      * finalization didn't run.
+     *
+     * TAKE HEED! Even when using multiple contexts, this is only set during VM shutdown, so on the
+     * native side can only be used to guard things that do not work during VM shutdown, not to
+     * guard things that do not work during context shutdown!
      */
     private void addNativeFinalizer(PythonContext context, Object finalizingPointerObj) {
         final Unsafe unsafe = context.getUnsafe();
