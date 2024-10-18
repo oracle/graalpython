@@ -916,6 +916,25 @@ void initialize_hashes();
 // defined in 'floatobject.c'
 void _PyFloat_InitState(PyInterpreterState* state);
 
+/*
+ * This is used to allow Truffle to enter/leave the context on native threads
+ * that were not created by NFI/Truffle/Java and thus not previously attached
+ * to the context. See e.g. PyGILState_Ensure. This is used by some C
+ * extensions to allow calling Python APIs from natively created threads. This
+ * poses a problem for multi-context usage, since we cannot know which context
+ * should be entered. CPython has the same problem (see
+ * https://docs.python.org/3/c-api/init.html#bugs-and-caveats), in particular
+ * the following quote:
+ *
+ *   Furthermore, extensions (such as ctypes) using these APIs to allow calling
+ *   of Python code from non-Python created threads will probably be broken
+ *   when using sub-interpreters.
+ *
+ *  We behave in a similar (likely broken) way as CPython for now: when using
+ *  multiple contexts, natively created threads that use the PyGIL_* APIs to
+ *  allow calling into Python will attach to the first interpreter that
+ *  initialized the C API (and thus set the TRUFFLE_CONTEXT pointer) only.
+ */
 Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
 
 /*

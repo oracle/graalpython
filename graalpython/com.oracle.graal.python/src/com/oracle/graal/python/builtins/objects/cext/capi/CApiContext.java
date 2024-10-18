@@ -822,8 +822,10 @@ public final class CApiContext extends CExtContext {
             try {
                 SourceBuilder capiSrcBuilder;
                 final boolean useNative = PythonOptions.NativeModules.getValue(env.getOptions());
+                boolean firstNativeContext = true;
                 if (useNative) {
-                    if (!nativeCAPILoaded.compareAndSet(false, true) && warnedSecondContexWithNativeCAPI.compareAndSet(false, true)) {
+                    firstNativeContext = nativeCAPILoaded.compareAndSet(false, true);
+                    if (!firstNativeContext && warnedSecondContexWithNativeCAPI.compareAndSet(false, true)) {
                         LOGGER.warning("GraalPy option 'NativeModules' is set to true " +
                                         "and more than one context is used with native extensions. " +
                                         "Isolation depends on the native extensions.");
@@ -852,9 +854,17 @@ public final class CApiContext extends CExtContext {
                      */
                     Object gcState = cApiContext.createGCState();
                     if (useNative) {
-                        Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
-                        initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                        U.execute(initFunction, builtinArrayWrapper, gcState);
+                        if (firstNativeContext) {
+                            // Only the first native context sets the env. See comment for the
+                            // TRUFFLE_CONTEXT global in capi.c
+                            Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
+                            initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
+                            U.execute(initFunction, builtinArrayWrapper, gcState);
+                        } else {
+                            Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(POINTER,POINTER,POINTER):VOID", "exec").build()).call();
+                            initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
+                            U.execute(initFunction, 0L, builtinArrayWrapper, gcState);
+                        }
                     } else {
                         assert U.isExecutable(initFunction);
                         U.execute(initFunction, NativePointer.createNull(), builtinArrayWrapper, gcState);
