@@ -635,6 +635,11 @@ public final class CApiContext extends CExtContext {
          */
         static final double GC_RSS_THRESHOLD = Integer.getInteger("python.RSSThreshold", 30) / 100.0;
 
+        /**
+         * RSS minimum memory (in megabytes) start calling System.gc(). Default is 4GB.
+         */
+        static final double GC_RSS_MINIMUM = Integer.getInteger("python.RSSMinimumMB", 4096);
+
         Long getCurrentRSS() {
             if (nativeSymbol == null) {
                 nativeSymbol = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_GET_CURRENT_RSS);
@@ -677,6 +682,10 @@ public final class CApiContext extends CExtContext {
             // reset RSS baseline
             if (rss < this.previousRSS || this.previousRSS == -1) {
                 this.previousRSS = rss;
+                return;
+            }
+
+            if (rss < GC_RSS_MINIMUM) {
                 return;
             }
 
