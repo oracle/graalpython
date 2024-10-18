@@ -65,6 +65,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectWrapper;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PY_ERROR_HANDLER;
@@ -104,8 +105,11 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonStringNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
@@ -851,6 +855,26 @@ public final class PythonCextUnicodeBuiltins {
         static Object split(Object string, Object sep, Object maxsplit,
                         @Cached StringBuiltins.SplitNode splitNode) {
             return splitNode.execute(null, string, sep, maxsplit);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObjectWrapper}, call = Ignored)
+    abstract static class PyTrufflePyIdentifier_Cache extends CApiUnaryBuiltinNode {
+        @Specialization
+        static int doCache(PythonNativeWrapper str,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ToPythonStringNode toStrNode) {
+            return getCApiContext(inliningTarget).cachePyIdentifier((TruffleString) toStrNode.execute(str), str);
+        }
+    }
+
+    @CApiBuiltin(ret = Pointer, args = {Int}, call = Ignored)
+    abstract static class PyTrufflePyIdentifier_Get extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object doGet(int index,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PythonToNativeNode toNativeNode) {
+            return getCApiContext(inliningTarget).getPyIdentifier(index, toNativeNode);
         }
     }
 

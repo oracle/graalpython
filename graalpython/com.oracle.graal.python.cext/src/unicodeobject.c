@@ -2101,17 +2101,21 @@ PyObject *
 _PyUnicode_FromId(_Py_Identifier *id)
 {
     // GraalPy change: different implementation
-    if (!id->object) {
-        id->object = PyUnicode_DecodeUTF8Stateful(id->string,
-                                                        strlen(id->string),
-                                                        "strict",
-                                                        NULL);
-        if (!id->object) {
+    PyObject *u;
+    if (id->index < 0) {
+        u = PyUnicode_DecodeUTF8Stateful(id->string,
+                                                   strlen(id->string),
+                                                   "strict",
+                                                   NULL);
+        if (!u) {
             return NULL;
         }
-        PyUnicode_InternInPlace(&id->object);
+        PyUnicode_InternInPlace(&u);
+        id->index = GraalPyTrufflePyIdentifier_Cache(u);
+    } else {
+        u = GraalPyTrufflePyIdentifier_Get(id->index);
     }
-    return id->object;
+    return u;
 }
 
 

@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
@@ -186,6 +187,13 @@ public final class CApiContext extends CExtContext {
      * is actually a native mirror of {@link #primitiveNativeWrapperCache}.
      */
     private Object nativeSmallIntsArray;
+
+    /**
+     * Py_Identifier cache. We cache the bytes in a static list across all interpreters,
+     * and the actual pointers in a per-context list.
+     */
+    private static List<TruffleString> identifierTruffleStringList = new ArrayList<>();
+    private Object[] identifierObjectsList = new Object[0];
 
     /**
      * Pointer to the native {@code GCState GC state}. This corresponds to CPython's
@@ -1366,5 +1374,35 @@ public final class CApiContext extends CExtContext {
 
     public static boolean isPointerObject(Object object) {
         return object.getClass() == NativePointer.class || object.getClass().getSimpleName().contains("NFIPointer") || object.getClass().getSimpleName().contains("LLVMPointer");
+    }
+
+    @TruffleBoundary
+    public int cachePyIdentifier(TruffleString str, Object nativeStr) {
+        synchronized (identifierObjectsList) {
+            int index = identifierTruffleStringList.size();
+            identifierTruffleStringList.add(str);
+            if (identifierObjectsList.length <= index) {
+                identifierObjectsList = PythonUtils.arrayCopyOf(identifierObjectsList, index + 1);
+            }
+            if (identifierObjectsList[index] == null) {
+                identifierObjectsList[index] = nativeStr;
+            }
+            return index;
+        }
+    }
+
+    public Object getPyIdentifier(int index, PythonToNativeNode toNativeNode) {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, identifierObjectsList.length <= index)) {
+            synchronized (identifierObjectsList) {
+                VarHandle.loadLoadFence();
+                if (identifierObjectsList.length <= index) {
+                    identifierObjectsList = PythonUtils.arrayCopyOf(identifierObjectsList, index + 1);
+                }
+            }
+        }
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, identifierObjectsList[index] == null)) {
+            identifierObjectsList[index] = toNativeNode.execute(identifierTruffleStringList.get(index));
+        }
+        return identifierObjectsList[index];
     }
 }
