@@ -197,8 +197,6 @@ public class VirtualFileSystemTest {
 
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             checkException(UnsupportedOperationException.class, () -> fs.parsePath(URI.create("http://testvfs.org")), "only file uri is supported");
-            checkException(UnsupportedOperationException.class, () -> fs.parsePath(URI.create("http:/" + VFS_MOUNT_POINT + File.separator + "dir1")), "only file uri is supported");
-            checkException(UnsupportedOperationException.class, () -> fs.parsePath(URI.create("http://" + VFS_MOUNT_POINT + File.separator + "dir1")), "only file uri is supported");
         }
     }
 

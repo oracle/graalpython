@@ -65,6 +65,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
+import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -690,22 +691,31 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         }
     }
 
+    private FileSystemProvider defaultFileSystemProvider;
+
+    private FileSystemProvider getDefaultFileSystem() {
+        if (defaultFileSystemProvider == null) {
+            for (FileSystemProvider provider : FileSystemProvider.installedProviders()) {
+                if ("file".equals(provider.getScheme())) {
+                    defaultFileSystemProvider = provider;
+                }
+            }
+        }
+        return defaultFileSystemProvider;
+    }
+
+    Path getPath(URI uri) {
+        return getDefaultFileSystem().getPath(uri);
+    }
+
     @Override
     @Deprecated
     public Path parsePath(URI uri) {
+        // similar as in c.o.t.polyglot.FileSystems.DeniedIOFileSystem
         if (uri.getScheme().equals("file")) {
-            // rather do not use Paths.get(URI) as it looks up the file system provider
-            // by scheme and can use a non default file system provider
-            Path ret = Paths.get(uri.getPath());
-            if (!pathIsInVfs(ret)) {
-                if (delegate != null) {
-                    ret = delegate.parsePath(uri);
-                    finest("VFS.parsePath delegated '%s' -> '%s'", uri, ret);
-                    return ret;
-                }
-            }
-            finest("VFS.parsePath '%s' -> '%s'", uri, ret);
-            return ret;
+            Path path = getDefaultFileSystem().getPath(uri);
+            finest("VFS.parsePath '%s' -> '%s'", uri, path);
+            return path;
         } else {
             String msg = "Unsupported URI scheme '%s'";
             finer(msg, uri.getScheme());
@@ -716,16 +726,8 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     @Override
     @Deprecated
     public Path parsePath(String path) {
-        // It's safe to use the Paths.get(String)
-        // as it always uses the default file system.
+        // same as in c.o.t.polyglot.FileSystems.DeniedIOFileSystem
         Path p = Paths.get(path);
-        if (!pathIsInVfs(p)) {
-            if (delegate != null) {
-                Path ret = delegate.parsePath(path);
-                finest("VFS.parsePath delegated '%s' -> '%s'", path, ret);
-                return ret;
-            }
-        }
         finer("VFS.parsePath '%s' -> '%s'", path, p);
         return p;
     }
