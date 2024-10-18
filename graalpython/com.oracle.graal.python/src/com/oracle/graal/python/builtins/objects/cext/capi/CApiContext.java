@@ -864,45 +864,47 @@ public final class CApiContext extends CExtContext {
                      */
                     Object gcState = cApiContext.createGCState();
                     if (useNative) {
-                        if (firstNativeContext) {
-                            // Only the first native context sets the env. See comment for the
-                            // TRUFFLE_CONTEXT global in capi.c
-                            Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
-                            initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                            U.execute(initFunction, builtinArrayWrapper, gcState);
-                        } else {
-                            // We clear thread-local tstates of the previous context right now. If
-                            // we are (one of the) first additional contexts to reach this place,
-                            // we need to ask the other contexts to reach a safepoint so we can
-                            // invalidate any code that would store PyThreadState references on the
-                            // native side. Afterwards we can clear those that have already been
-                            // set.
-                            if (PythonThreadState.storesThreadLocalVarPointers.isValid()) {
-                                var future = env.submitThreadLocal(null, new ThreadLocalAction(true, true) {
-                                    @Override
-                                    protected void perform(Access access) {
-                                        PythonThreadState.storesThreadLocalVarPointers.invalidate();
-                                    }
-                                });
-                                TruffleSafepoint.setBlockedThreadInterruptible(node, (f) -> {
-                                    try {
-                                        f.get();
-                                    } catch (ExecutionException e) {
-                                        throw CompilerDirectives.shouldNotReachHere(e);
-                                    }
-                                }, future);
+                        synchronized (CApiContext.class) {
+                            if (firstNativeContext) {
+                                // Only the first native context sets the env. See comment for the
+                                // TRUFFLE_CONTEXT global in capi.c
+                                Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
+                                initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
+                                U.execute(initFunction, builtinArrayWrapper, gcState);
+                            } else {
+                                // We clear thread-local tstates of the previous context right now. If
+                                // we are (one of the) first additional contexts to reach this place,
+                                // we need to ask the other contexts to reach a safepoint so we can
+                                // invalidate any code that would store PyThreadState references on the
+                                // native side. Afterwards we can clear those that have already been
+                                // set.
                                 if (PythonThreadState.storesThreadLocalVarPointers.isValid()) {
-                                    // we cannot safely continue!
-                                    throw new ApiInitException(ErrorMessages.NATIVE_ACCESS_NOT_INITIALIZED_FOR_MULTI_CONTEXT);
+                                    var future = env.submitThreadLocal(null, new ThreadLocalAction(true, true) {
+                                        @Override
+                                        protected void perform(Access access) {
+                                            PythonThreadState.storesThreadLocalVarPointers.invalidate();
+                                        }
+                                    });
+                                    TruffleSafepoint.setBlockedThreadInterruptible(node, (f) -> {
+                                        try {
+                                            f.get();
+                                        } catch (ExecutionException e) {
+                                            throw CompilerDirectives.shouldNotReachHere(e);
+                                        }
+                                    }, future);
+                                    if (PythonThreadState.storesThreadLocalVarPointers.isValid()) {
+                                        // we cannot safely continue!
+                                        throw new ApiInitException(ErrorMessages.NATIVE_ACCESS_NOT_INITIALIZED_FOR_MULTI_CONTEXT);
+                                    }
+                                    PythonThreadState.clearNativeThreadLocalVarPointers(context);
                                 }
-                                PythonThreadState.clearNativeThreadLocalVarPointers(context);
-                            }
 
-                            // Now we initialise, but without passing a new TruffleEnv, the first
-                            // thread's env is kept on the native side
-                            Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(POINTER,POINTER,POINTER):VOID", "exec").build()).call();
-                            initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                            U.execute(initFunction, 0L, builtinArrayWrapper, gcState);
+                                // Now we initialise, but without passing a new TruffleEnv, the first
+                                // thread's env is kept on the native side
+                                Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(POINTER,POINTER,POINTER):VOID", "exec").build()).call();
+                                initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
+                                U.execute(initFunction, 0L, builtinArrayWrapper, gcState);
+                            }
                         }
                     } else {
                         assert U.isExecutable(initFunction);
