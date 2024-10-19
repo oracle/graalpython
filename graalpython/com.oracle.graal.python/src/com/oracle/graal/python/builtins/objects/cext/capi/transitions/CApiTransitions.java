@@ -48,7 +48,6 @@ import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -205,20 +204,10 @@ public abstract class CApiTransitions {
 
     public abstract static class IdReference<T> extends WeakReference<T> {
 
-        private boolean collected = false;
-
         public IdReference(HandleContext handleContext, T referent) {
             super(referent, handleContext.referenceQueue);
         }
 
-        public boolean isCollected() {
-            return collected;
-        }
-
-        public IdReference<T> setCollected() {
-            this.collected = true;
-            return this;
-        }
     }
 
     /**
@@ -448,23 +437,8 @@ public abstract class CApiTransitions {
                     }
                 }
                 try {
-                    LinkedList<IdReference<?>> manualCleanupQueue = new LinkedList<>();
-                    for (IdReference<?> ref : handleContext.nativeLookup.values()) {
-                        if (ref != null && ref.refersTo(null)) {
-                            manualCleanupQueue.add(ref);
-                        }
-                    }
-                    manuallyCollected = manualCleanupQueue.size();
                     while (true) {
-                        Object entry;
-                        if (!manualCleanupQueue.isEmpty()) {
-                            entry = manualCleanupQueue.pop().setCollected();
-                        } else {
-                            entry = queue.poll();
-                            if (entry instanceof IdReference<?> ref && ref.isCollected()) {
-                                continue;
-                            }
-                        }
+                        Object entry = queue.poll();
                         if (entry == null) {
                             if (count > 0) {
                                 assert handleContext.referenceQueuePollActive;
