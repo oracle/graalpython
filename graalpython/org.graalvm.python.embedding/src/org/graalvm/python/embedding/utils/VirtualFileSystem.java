@@ -65,6 +65,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
+import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -73,10 +74,27 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 import org.graalvm.polyglot.io.FileSystem;
 
 public final class VirtualFileSystem implements FileSystem, AutoCloseable {
+
+    private static final Logger LOGGER = Logger.getLogger(VirtualFileSystem.class.getName());
+    static {
+        ConsoleHandler consoleHandler = new ConsoleHandler();
+        consoleHandler.setFormatter(new SimpleFormatter() {
+            @Override
+            public synchronized String format(LogRecord lr) {
+                return String.format("%s: %s %n", lr.getLevel().getName(), lr.getMessage());
+            }
+        });
+        LOGGER.addHandler(consoleHandler);
+    }
 
     /*
      * Root of the virtual filesystem in the resources.
@@ -357,6 +375,10 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         if (mp.endsWith(PLATFORM_SEPARATOR) || !mountPoint.isAbsolute()) {
             throw new IllegalArgumentException("GRAALPY_VFS_MOUNT_POINT must be set to an absolute path without a trailing separator");
         }
+
+        fine("VirtualFilesystem %s, allowHostIO: %s, resourceLoadingClass: %s, caseInsensitive: %s, extractOnStartup: %s%s",
+                        mountPoint, allowHostIO.toString(), this.resourceLoadingClass.getName(), caseInsensitive, extractOnStartup, extractFilter != null ? "" : ", extractFilter: null");
+
         this.extractFilter = extractFilter;
         if (extractFilter != null) {
             try {
@@ -455,10 +477,12 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         vfsEntries = new HashMap<>();
         try (InputStream stream = this.resourceLoadingClass.getResourceAsStream(FILES_LIST_PATH)) {
             if (stream == null) {
+                warn("VFS.initEntries: could not read resource %s", FILES_LIST_PATH);
                 return;
             }
             BufferedReader br = new BufferedReader(new InputStreamReader(stream));
             String line;
+            finest("VFS entries:");
             while ((line = br.readLine()) != null) {
                 String platformPath = resourcePathToPlatformPath(line);
                 int i = 0;
@@ -481,6 +505,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                 if (!platformPath.endsWith(PLATFORM_SEPARATOR)) {
                     FileEntry fileEntry = new FileEntry(platformPath);
                     vfsEntries.put(toCaseComparable(platformPath), fileEntry);
+                    finest("  %s", fileEntry.getResourcePath());
                     parent.entries.add(fileEntry);
                     if (extractOnStartup) {
                         Path p = Paths.get(fileEntry.getPlatformPath());
@@ -496,6 +521,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     byte[] readResource(String path) throws IOException {
         try (InputStream stream = this.resourceLoadingClass.getResourceAsStream(path)) {
             if (stream == null) {
+                warn("VFS.initEntries: could not read resource %s", path);
                 return null;
             }
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -520,6 +546,9 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     private BaseEntry getEntry(Path inputPath) throws IOException {
         if (vfsEntries == null) {
             initEntries();
+            if (vfsEntries == null || vfsEntries.isEmpty()) {
+                warn("VFS.getEntry: no entries after init");
+            }
         }
         Path path = toAbsolutePathInternal(inputPath).normalize();
         return vfsEntries.get(toCaseComparable(path.toString()));
@@ -543,7 +572,9 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
      * Uses {@link #extractFilter} to determine if the given platform path should be extracted.
      */
     private boolean shouldExtract(Path path) {
-        return extractFilter != null && extractFilter.test(path);
+        boolean ret = extractFilter != null && extractFilter.test(path);
+        finest("VFS.shouldExtract '%s' %s", path, ret);
+        return ret;
     }
 
     /**
@@ -564,6 +595,10 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
              * able to handle relative paths and we need it to compute the extract path.
              */
             BaseEntry entry = getEntry(path);
+            if (entry == null) {
+                warn("no entry for '%s'", path);
+                return null;
+            }
             Path relPath = mountPoint.relativize(Paths.get(entry.getPlatformPath()));
 
             // create target path
@@ -580,6 +615,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
                     // write data extracted file
                     Files.write(xPath, fileEntry.getData());
+                    finest("extracted '%s' -> '%s'", path, xPath);
 
                     if (extractLibsDir) {
                         Path pkgDir = getPythonPackageDir(path);
@@ -629,8 +665,10 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     }
 
     void extractResources(Path resourcesDirectory) throws IOException {
+        fine("VFS.extractResources '%s'", resourcesDirectory);
         InputStream stream = this.resourceLoadingClass.getResourceAsStream(FILES_LIST_PATH);
         if (stream == null) {
+            warn("VFS.initEntries: could not read resource %s", FILES_LIST_PATH);
             return;
         }
         BufferedReader br = new BufferedReader(new InputStreamReader(stream));
@@ -647,77 +685,158 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                 if (parent != null) {
                     Files.createDirectories(parent);
                 }
+                finest("VFS.extractResources '%s' -> '%s'", resourcePath, destFile);
                 Files.write(destFile, readResource(resourcePath));
             }
         }
     }
 
+    private FileSystemProvider defaultFileSystemProvider;
+
+    private FileSystemProvider getDefaultFileSystem() {
+        if (defaultFileSystemProvider == null) {
+            for (FileSystemProvider provider : FileSystemProvider.installedProviders()) {
+                if ("file".equals(provider.getScheme())) {
+                    defaultFileSystemProvider = provider;
+                }
+            }
+        }
+        return defaultFileSystemProvider;
+    }
+
+    Path getPath(URI uri) {
+        return getDefaultFileSystem().getPath(uri);
+    }
+
     @Override
     @Deprecated
     public Path parsePath(URI uri) {
+        // similar as in c.o.t.polyglot.FileSystems.DeniedIOFileSystem
         if (uri.getScheme().equals("file")) {
-            return Paths.get(uri);
+            Path path = getDefaultFileSystem().getPath(uri);
+            finest("VFS.parsePath '%s' -> '%s'", uri, path);
+            return path;
         } else {
-            throw new UnsupportedOperationException("Not supported yet.");
+            String msg = "Unsupported URI scheme '%s'";
+            finer(msg, uri.getScheme());
+            throw new UnsupportedOperationException(String.format(msg, uri.getScheme()));
         }
     }
 
     @Override
     @Deprecated
     public Path parsePath(String path) {
-        return Paths.get(path);
+        // same as in c.o.t.polyglot.FileSystems.DeniedIOFileSystem
+        Path p = Paths.get(path);
+        finer("VFS.parsePath '%s' -> '%s'", path, p);
+        return p;
     }
 
     @Override
     @Deprecated
     public void checkAccess(Path path, Set<? extends AccessMode> modes, LinkOption... linkOptions) throws IOException {
-        if (pathIsInVfs(path)) {
+        if (!pathIsInVfs(path)) {
+            if (delegate != null) {
+                boolean passed = false;
+                try {
+                    delegate.checkAccess(path, modes, linkOptions);
+                    passed = true;
+                } finally {
+                    finest("VFS.checkAccess delegated '%s' %s and ", path, passed ? "passed" : "did not pass");
+                }
+            } else {
+                String msg = String.format("filesystem without host IO: '%s'", path);
+                finest("VFS.checkAccess %s", msg);
+                throw new SecurityException(msg);
+            }
+        } else {
             if (modes.contains(AccessMode.WRITE)) {
-                throw new SecurityException("read-only filesystem");
+                String msg = String.format("read-only filesystem: '%s'", path);
+                finer("VFS.checkAccess %s", msg);
+                throw new SecurityException(msg);
             }
             if (getEntry(path) == null) {
-                throw new NoSuchFileException("no such file or directory");
+                String msg = String.format("no such file or directory: '%s'", path);
+                finer("VFS.checkAccess %s", msg);
+                throw new NoSuchFileException(msg);
             }
-        } else if (delegate != null) {
-            delegate.checkAccess(path, modes, linkOptions);
-        } else {
-            throw new SecurityException("read-only filesystem");
+            finer("VFS.checkAccess %s OK", path);
         }
     }
 
     @Override
     @Deprecated
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
-        if (delegate == null || pathIsInVfs(dir)) {
-            throw new SecurityException("read-only filesystem");
+        if (!pathIsInVfs(dir)) {
+            if (delegate != null) {
+                boolean passed = false;
+                try {
+                    delegate.createDirectory(dir, attrs);
+                } finally {
+                    finest("VFS.createDirectory delegated '%s' %s", dir, passed ? "passed" : "did not pass");
+                }
+            } else {
+                String msg = String.format("filesystem without host IO: '%s'", dir);
+                finest("VFS.createDirectory %s", msg);
+                throw new SecurityException("filesystem without host IO: " + dir);
+            }
         } else {
-            delegate.createDirectory(dir, attrs);
+            String msg = String.format("read-only filesystem: '%s'", dir);
+            finer("VFS.createDirectory %s", msg);
+            throw new SecurityException(msg);
         }
     }
 
     @Override
     @Deprecated
     public void delete(Path path) throws IOException {
-        if (delegate == null || pathIsInVfs(path)) {
-            throw new SecurityException("read-only filesystem");
+        if (!pathIsInVfs(path)) {
+            if (delegate != null) {
+                boolean passed = false;
+                try {
+                    delegate.delete(path);
+                } finally {
+                    finest("VFS.delete delegated '%s' %s", path, passed ? "passed" : "did not pass");
+                }
+            } else {
+                String msg = String.format("filesystem without host IO: '%s'", path);
+                finest("VFS.delete %s", msg);
+                throw new SecurityException(msg);
+            }
         } else {
-            delegate.delete(path);
+            String msg = String.format("read-only filesystem: '%s'", path);
+            finer("VFS.delete %s", msg);
+            throw new SecurityException(msg);
         }
     }
 
     @Override
     @Deprecated
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
-        if (delegate != null && !pathIsInVfs(path)) {
-            return delegate.newByteChannel(path, options, attrs);
+        if (!pathIsInVfs(path)) {
+            if (delegate != null) {
+                boolean passed = false;
+                try {
+                    return delegate.newByteChannel(path, options, attrs);
+                } finally {
+                    finest("VFS.newByteChannel delegated '%s' %s", path, passed ? "passed" : "did not pass");
+                }
+            } else {
+                String msg = String.format("filesystem without host IO: '%s'", path);
+                finest("VFS.newByteChannel %s", msg);
+                throw new SecurityException(msg);
+            }
         }
 
         if (options.isEmpty() || (options.size() == 1 && options.contains(StandardOpenOption.READ))) {
             BaseEntry entry = getEntry(path);
             if (entry == null) {
-                throw new FileNotFoundException("No such file or directory");
+                String msg = String.format("No such file or directory: '%s'", path);
+                finer("VFS.newByteChannel '%s'", path);
+                throw new FileNotFoundException(msg);
             }
             if (!(entry instanceof FileEntry fileEntry)) {
+                finer("VFS.newByteChannel Is a directory '%s'", path);
                 // this constructor is used since we rely on the error message to convert to the
                 // appropriate python error
                 throw new FileSystemException(path.toString(), null, "Is a directory");
@@ -746,7 +865,9 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
                 @Override
                 public int write(ByteBuffer src) throws IOException {
-                    throw new IOException("read-only");
+                    String msg = String.format("read-only filesystem: '%s'", path);
+                    finer("VFS.newByteChannel '%s'", msg);
+                    throw new IOException(msg);
                 }
 
                 @Override
@@ -767,7 +888,9 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
                 @Override
                 public SeekableByteChannel truncate(long size) throws IOException {
-                    throw new IOException("read-only");
+                    String msg = String.format("read-only filesystem: '%s'", path);
+                    finer("VFS.newByteChannel '%s'", msg);
+                    throw new IOException(msg);
                 }
 
                 @Override
@@ -780,18 +903,32 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
                 }
             };
         } else {
-            throw new SecurityException("read-only filesystem");
+            String msg = String.format("read-only filesystem: '%s'", path);
+            finer("VFS.newByteChannel '%s'", msg);
+            throw new SecurityException(msg);
         }
     }
 
     @Override
     @Deprecated
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
-        if (delegate != null && !pathIsInVfs(dir)) {
-            return delegate.newDirectoryStream(dir, filter);
+        if (!pathIsInVfs(dir)) {
+            if (delegate != null) {
+                boolean passed = false;
+                try {
+                    return delegate.newDirectoryStream(dir, filter);
+                } finally {
+                    finest("VFS.newDirectoryStream delegated '%s' %s", dir, passed ? "passed" : "did not pass");
+                }
+            } else {
+                String msg = String.format("filesystem without host IO: '%s'", dir);
+                finest("VFS.newDirectoryStream %s", msg);
+                throw new SecurityException(msg);
+            }
         }
         BaseEntry entry = getEntry(dir);
         if (entry instanceof FileEntry) {
+            finer("VFS.newDirectoryStream not a directory %s", dir);
             throw new NotDirectoryException(dir.toString());
         } else if (entry instanceof DirEntry dirEntry) {
             return new DirectoryStream<>() {
@@ -802,7 +939,18 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
                 @Override
                 public Iterator<Path> iterator() {
-                    return dirEntry.entries.stream().map(e -> Path.of(e.getPlatformPath())).iterator();
+                    finest("VFS.newDirectoryStream %s entries:", dir);
+                    return dirEntry.entries.stream().filter(e -> {
+                        boolean accept = false;
+                        try {
+                            accept = filter.accept(Path.of(e.platformPath));
+                            finest("VFS.newDirectoryStream entry %s accept: %s", e.platformPath, accept);
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                            return false;
+                        }
+                        return accept;
+                    }).map(e -> Path.of(e.getPlatformPath())).iterator();
                 }
             };
         } else {
@@ -813,39 +961,82 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     @Override
     @Deprecated
     public Path toAbsolutePath(Path path) {
-        Path result;
-        if (shouldExtract(path)) {
-            result = getExtractedPath(path);
-        } else {
-            result = path;
+        boolean pathIsInVFS = pathIsInVfs(path);
+        if (!pathIsInVFS) {
+            if (delegate != null) {
+                Path ret = delegate.toAbsolutePath(path);
+                finest("VFS.toAbsolutePath delegated '%s' -> '%s'", path, ret);
+                return ret;
+            } else {
+                String msg = String.format("filesystem without host IO: '%s'", path);
+                finest("VFS.toAbsolutePath %s", msg);
+                throw new SecurityException(msg);
+            }
         }
-        return toAbsolutePathInternal(result);
+        Path result = path;
+        if (pathIsInVFS && shouldExtract(path)) {
+            result = getExtractedPath(path);
+            if (result == null) {
+                finer("VFS.toAbsolutePath could not extract '%s'", path);
+                result = path;
+            }
+        }
+        Path ret = toAbsolutePathInternal(result);
+        finer("VFS.toAbsolutePath '%s' -> '%s'", path, ret);
+        return ret;
     }
 
     @Override
     @Deprecated
     public Path toRealPath(Path path, LinkOption... linkOptions) throws IOException {
-        Path result;
-        if (shouldExtract(path)) {
-            result = getExtractedPath(path);
-        } else {
-            result = path;
+        boolean pathIsInVFS = pathIsInVfs(path);
+        if (!pathIsInVFS) {
+            if (delegate != null) {
+                Path ret = delegate.toRealPath(path);
+                finest("VFS.toRealPath delegated '%s' -> '%s'", path, ret);
+                return ret;
+            } else {
+                String msg = String.format("filesystem without host IO: '%s'", path);
+                finest("VFS.toRealPath %s", msg);
+                throw new SecurityException(msg);
+            }
         }
-        return result.normalize();
+        Path result = path;
+        if (pathIsInVFS && shouldExtract(path)) {
+            result = getExtractedPath(path);
+            if (result == null) {
+                finer("VFS.toRealPath could not extract '%s'", path);
+                result = path;
+            }
+        }
+        Path ret = result.normalize();
+        finer("VFS.toRealPath '%s' -> '%s'", path, ret);
+        return ret;
     }
 
     @Override
     @Deprecated
     public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
-        if (delegate != null && !pathIsInVfs(path)) {
-            return delegate.readAttributes(path, attributes, options);
+        if (!pathIsInVfs(path)) {
+            if (delegate != null) {
+                Map<String, Object> ret = delegate.readAttributes(path, attributes, options);
+                finest("VFS.readAttributes delegated '%s' -> '%s'", path, ret);
+                return ret;
+            } else {
+                String msg = String.format("filesystem without host IO: '%s'", path);
+                finest("VFS.readAttributes %s", msg);
+                throw new SecurityException(msg);
+            }
         }
         BaseEntry entry = getEntry(path);
         if (entry == null) {
-            throw new NoSuchFileException("no such file or directory");
+            String msg = String.format("no such file or directory: '%s'", path);
+            finer("VFS.readAttributes %s", msg);
+            throw new NoSuchFileException(msg);
         }
         HashMap<String, Object> attrs = new HashMap<>();
         if (attributes.startsWith("unix:") || attributes.startsWith("posix:")) {
+            finer("VFS.readAttributes unsupported attributes '%s' %s", path, attributes);
             throw new UnsupportedOperationException();
         }
 
@@ -863,6 +1054,32 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         attrs.put("uid", 0);
         attrs.put("gid", 0);
         attrs.put("ctime", FileTime.fromMillis(0));
+        finer("VFS.readAttributes '%s' %s", path, attrs);
         return attrs;
     }
+
+    private static void warn(String msgFormat, Object... args) {
+        if (LOGGER.isLoggable(Level.WARNING)) {
+            LOGGER.log(Level.WARNING, String.format(msgFormat, args));
+        }
+    }
+
+    private static void fine(String msgFormat, Object... args) {
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, String.format(msgFormat, args));
+        }
+    }
+
+    private static void finer(String msgFormat, Object... args) {
+        if (LOGGER.isLoggable(Level.FINER)) {
+            LOGGER.log(Level.FINER, String.format(msgFormat, args));
+        }
+    }
+
+    private static void finest(String msgFormat, Object... args) {
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            LOGGER.log(Level.FINEST, String.format(msgFormat, args));
+        }
+    }
+
 }

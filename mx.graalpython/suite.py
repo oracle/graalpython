@@ -322,6 +322,9 @@ suite = {
             "dependencies": [
                 "sdk:POLYGLOT",
             ],
+            "requires": [
+                "java.logging",
+            ],
             "jacoco": "include",
             "javaCompliance": "17+",
             "checkstyle": "com.oracle.graal.python",
@@ -499,6 +502,7 @@ suite = {
                 "java.management",
                 "jdk.management",
                 "jdk.unsupported",
+                "java.logging",
             ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
