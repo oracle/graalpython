@@ -60,7 +60,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
@@ -83,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
@@ -126,7 +124,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -187,13 +184,6 @@ public final class CApiContext extends CExtContext {
      * is actually a native mirror of {@link #primitiveNativeWrapperCache}.
      */
     private Object nativeSmallIntsArray;
-
-    /**
-     * Py_Identifier cache. We cache the bytes in a static list across all interpreters,
-     * and the actual pointers in a per-context list.
-     */
-    private static List<TruffleString> identifierTruffleStringList = new ArrayList<>();
-    private Object[] identifierObjectsList = new Object[0];
 
     /**
      * Pointer to the native {@code GCState GC state}. This corresponds to CPython's
@@ -864,50 +854,9 @@ public final class CApiContext extends CExtContext {
                      */
                     Object gcState = cApiContext.createGCState();
                     if (useNative) {
-                        if (firstNativeContext) {
-                            synchronized (CApiContext.class) {
-                                // Only the first native context sets the env. See comment for the
-                                // TRUFFLE_CONTEXT global in capi.c
-                                Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
-                                initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                                U.execute(initFunction, builtinArrayWrapper, gcState);
-                            }
-                        } else {
-                            // We clear thread-local tstates of the previous context right now. If
-                            // we are (one of the) first additional contexts to reach this place,
-                            // we need to ask the other contexts to reach a safepoint so we can
-                            // invalidate any code that would store PyThreadState references on the
-                            // native side. Afterwards we can clear those that have already been
-                            // set.
-                            if (PythonThreadState.storesThreadLocalVarPointers.isValid()) {
-                                var future = env.submitThreadLocal(null, new ThreadLocalAction(true, true) {
-                                    @Override
-                                    protected void perform(Access access) {
-                                        PythonThreadState.storesThreadLocalVarPointers.invalidate();
-                                    }
-                                });
-                                TruffleSafepoint.setBlockedThreadInterruptible(node, (f) -> {
-                                    try {
-                                        f.get();
-                                    } catch (ExecutionException e) {
-                                        throw CompilerDirectives.shouldNotReachHere(e);
-                                    }
-                                }, future);
-                                if (PythonThreadState.storesThreadLocalVarPointers.isValid()) {
-                                    // we cannot safely continue!
-                                    throw new ApiInitException(ErrorMessages.NATIVE_ACCESS_NOT_INITIALIZED_FOR_MULTI_CONTEXT);
-                                }
-                                PythonThreadState.clearNativeThreadLocalVarPointers(context);
-                            }
-
-                            synchronized (CApiContext.class) {
-                                // Now we initialise, but without passing a new TruffleEnv, the first
-                                // thread's env is kept on the native side
-                                Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(POINTER,POINTER,POINTER):VOID", "exec").build()).call();
-                                initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                                U.execute(initFunction, 0L, builtinArrayWrapper, gcState);
-                            }
-                        }
+                        Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
+                        initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
+                        U.execute(initFunction, builtinArrayWrapper, gcState);
                     } else {
                         assert U.isExecutable(initFunction);
                         U.execute(initFunction, NativePointer.createNull(), builtinArrayWrapper, gcState);
@@ -915,11 +864,8 @@ public final class CApiContext extends CExtContext {
                 }
 
                 assert PythonCApiAssertions.assertBuiltins(capiLibrary);
-
-                synchronized (CApiContext.class) {
-                    cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
-                    context.runCApiHooks();
-                }
+                cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
+                context.runCApiHooks();
 
                 if (useNative) {
                     /*
@@ -967,10 +913,6 @@ public final class CApiContext extends CExtContext {
      * know that it's not safe to do upcalls and that native wrappers might have been deallocated.
      * We need to do it in a VM shutdown hook to make sure C atexit won't crash even if our context
      * finalization didn't run.
-     *
-     * TAKE HEED! Even when using multiple contexts, this is only set during VM shutdown, so on the
-     * native side can only be used to guard things that do not work during VM shutdown, not to
-     * guard things that do not work during context shutdown!
      */
     private void addNativeFinalizer(PythonContext context, Object finalizingPointerObj) {
         final Unsafe unsafe = context.getUnsafe();
@@ -1381,35 +1323,5 @@ public final class CApiContext extends CExtContext {
 
     public static boolean isPointerObject(Object object) {
         return object.getClass() == NativePointer.class || object.getClass().getSimpleName().contains("NFIPointer") || object.getClass().getSimpleName().contains("LLVMPointer");
-    }
-
-    @TruffleBoundary
-    public synchronized int cachePyIdentifier(TruffleString str, Object nativeStr) {
-        synchronized (identifierObjectsList) {
-            int index = identifierTruffleStringList.size();
-            identifierTruffleStringList.add(str);
-            if (identifierObjectsList.length <= index) {
-                identifierObjectsList = PythonUtils.arrayCopyOf(identifierObjectsList, index + 1);
-            }
-            if (identifierObjectsList[index] == null) {
-                identifierObjectsList[index] = nativeStr;
-            }
-            return index;
-        }
-    }
-
-    public Object getPyIdentifier(int index, PythonToNativeNode toNativeNode) {
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, identifierObjectsList.length <= index)) {
-            synchronized (identifierObjectsList) {
-                VarHandle.loadLoadFence();
-                if (identifierObjectsList.length <= index) {
-                    identifierObjectsList = PythonUtils.arrayCopyOf(identifierObjectsList, index + 1);
-                }
-            }
-        }
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, identifierObjectsList[index] == null)) {
-            identifierObjectsList[index] = toNativeNode.execute(identifierTruffleStringList.get(index));
-        }
-        return identifierObjectsList[index];
     }
 }
