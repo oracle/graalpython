@@ -391,13 +391,21 @@ public final class VFSUtils {
         }
     }
 
-    public static void createVenv(Path venvDirectory, List<String> packages, Path laucherPath, LauncherClassPath launcherClassPath, String graalPyVersion, SubprocessLog subprocessLog, Log log)
+    public static void createVenv(Path venvDirectory, List<String> packages, Path launcher, LauncherClassPath launcherClassPath, String graalPyVersion, SubprocessLog subprocessLog, Log log)
                     throws IOException {
-        generateLaunchers(laucherPath, launcherClassPath, subprocessLog, log);
+        Path launcherPath = launcher;
+        String externalLauncher = System.getProperty("graalpy.vfs.venvLauncher");
+        if (externalLauncher == null || externalLauncher.trim().isEmpty()) {
+            generateLaunchers(launcherPath, launcherClassPath, subprocessLog, log);
+        } else {
+            launcherPath = Path.of(externalLauncher);
+        }
 
         if (packages != null) {
             trim(packages);
         }
+
+        checkLauncher(venvDirectory, launcherPath, log);
 
         var tag = venvDirectory.resolve("contents");
         List<String> installedPackages = new ArrayList<>();
@@ -417,12 +425,11 @@ public final class VFSUtils {
                     installedPackages.add(lines.get(i));
                 }
             }
-        } else {
-            log.info(String.format("Creating GraalPy %s venv", graalPyVersion));
         }
 
         if (!Files.exists(venvDirectory)) {
-            runLauncher(laucherPath.toString(), subprocessLog, "-m", "venv", venvDirectory.toString(), "--without-pip");
+            log.info(String.format("Creating GraalPy %s venv", graalPyVersion));
+            runLauncher(launcherPath.toString(), subprocessLog, "-m", "venv", venvDirectory.toString(), "--without-pip");
             runVenvBin(venvDirectory, "graalpy", subprocessLog, "-I", "-m", "ensurepip");
         }
 
@@ -436,6 +443,38 @@ public final class VFSUtils {
             Files.write(tag, packages, StandardOpenOption.APPEND);
         } catch (IOException e) {
             throw new IOException(String.format("failed to write tag file %s", tag), e);
+        }
+    }
+
+    private static void checkLauncher(Path venvDirectory, Path launcherPath, Log log) throws IOException {
+        if (!Files.exists(launcherPath)) {
+            throw new IOException(String.format("Launcher file does not exist '%s'", launcherPath));
+        }
+        Path cfg = venvDirectory.resolve("pyvenv.cfg");
+        if (Files.exists(cfg)) {
+            try {
+                List<String> lines = Files.readAllLines(cfg);
+                for (String line : lines) {
+                    int idx = line.indexOf("=");
+                    if (idx > -1) {
+                        String l = line.substring(0, idx).trim();
+                        String r = line.substring(idx + 1).trim();
+                        if (l.trim().equals("executable")) {
+                            Path cfgLauncherPath = Path.of(r);
+                            if (!Files.exists(cfgLauncherPath) || !Files.isSameFile(launcherPath, cfgLauncherPath)) {
+                                log.info(String.format("Deleting GraalPy venv due to changed launcher path"));
+                                delete(venvDirectory);
+                            }
+                            break;
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new IOException(String.format("failed to read config file %s", cfg), e);
+            }
+        } else {
+            log.info(String.format("missing venv config file: '%s'", cfg));
         }
     }
 
