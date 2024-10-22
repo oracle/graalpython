@@ -111,6 +111,7 @@ graalpython/com.oracle.graal.python.cext/include/cpython/listobject.h,python.cop
 graalpython/com.oracle.graal.python.cext/include/cpython/longintrepr.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/longobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/methodobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/cpython/memoryobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/modsupport.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/object.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/objimpl.h,python.copyright
