@@ -44,7 +44,7 @@ import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleScriptException;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
@@ -56,7 +56,7 @@ import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
 
 public abstract class VFSFilesListTask extends DefaultTask {
 
-    @InputDirectory
+    @InputFiles
     public abstract Property<File> getResourcesDir();
 
     @TaskAction
