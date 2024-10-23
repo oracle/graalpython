@@ -166,6 +166,7 @@ graalpython/com.oracle.graal.python.cext/include/internal/pycore_pystate.h,pytho
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_runtime.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_strhex.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_tuple.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/internal/pycore_typeobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_ucnhash.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_unicodeobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_warnings.h,python.copyright
