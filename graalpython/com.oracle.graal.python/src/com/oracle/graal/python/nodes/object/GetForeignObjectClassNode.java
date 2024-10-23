@@ -167,6 +167,7 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
     private PythonManagedClass resolvePolyglotForeignClass(int traits) {
         PythonBuiltinClass base = getContext().lookupType(PythonBuiltinClassType.ForeignObject);
         if (traits == 0) {
+            getContext().polyglotForeignClasses[traits] = base;
             return base;
         }
 
