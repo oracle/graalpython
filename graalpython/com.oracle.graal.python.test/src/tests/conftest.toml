@@ -1,2 +1,3 @@
 [tests]
-graalpytest_mode = true
+rootdir = '..'
+run_top_level_functions = true

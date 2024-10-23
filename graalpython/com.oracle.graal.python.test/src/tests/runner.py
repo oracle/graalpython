@@ -494,6 +494,7 @@ def filter_tree(test_file: Path, test_suite: unittest.TestSuite, specifiers: lis
 class Config:
     rootdir: Path = Path('.').resolve()
     tags_dir: Path | None = None
+    run_top_level_functions: bool = False
 
 
 @lru_cache
@@ -509,7 +510,8 @@ def config_for_dir(path: Path) -> Config | None:
             tags_dir = None
             if config_tags_dir := config_dict.get('tags_dir'):
                 tags_dir = (path / config_tags_dir).resolve()
-            return Config(rootdir=rootdir, tags_dir=tags_dir)
+            run_top_level_functions = config_dict.get('run_top_level_functions', False)
+            return Config(rootdir=rootdir, tags_dir=tags_dir, run_top_level_functions=run_top_level_functions)
 
 
 def config_for_file(test_file: Path) -> Config:
@@ -561,7 +563,7 @@ class TestSuite:
 def collect_module(test_file: Path, specifiers: list[TestSpecifier], use_tags=False) -> TestSuite | None:
     config = config_for_file(test_file)
     with rootdir_from_config(config) as rootdir:
-        loader = unittest.defaultTestLoader
+        loader = TopLevelFunctionLoader() if config.run_top_level_functions else unittest.defaultTestLoader
         tags = None
         if use_tags and config.tags_dir:
             tags = read_tags(test_file, config)
@@ -583,6 +585,15 @@ def read_tags(test_file: Path, config: Config) -> list[TestId]:
                 tags.append(TestId(test_file, test))
         return tags
     return tags
+
+
+class TopLevelFunctionLoader(unittest.loader.TestLoader):
+    def loadTestsFromModule(self, module, *, pattern=None):
+        test_suite = super().loadTestsFromModule(module, pattern=pattern)
+        for name, obj in vars(module).items():
+            if name.startswith('test_') and callable(obj):
+                test_suite.addTest(unittest.FunctionTestCase(obj))
+        return test_suite
 
 
 def in_process():
