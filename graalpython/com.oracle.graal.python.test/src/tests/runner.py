@@ -47,13 +47,29 @@ import subprocess
 import sys
 import tempfile
 import threading
+import tomllib
 import traceback
 import unittest
+import unittest.loader
 from abc import abstractmethod
 from collections import defaultdict
+from contextlib import contextmanager
 from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
 
 sys.path.insert(0, os.getcwd())
+
+DIR = Path(__file__).parent
+
+if sys.implementation.version < (3, 12):
+    # XXX Temporary hack: python 3.12 will have a toml parser in standard library, for now we load vendored one from pip
+    [pip_wheel] = (DIR.parent.parent.parent / 'lib-python' / '3' / 'ensurepip' / '_bundled').glob('pip*.whl')
+    sys.path.append(pip_wheel)
+
+    sys.path.pop()
+else:
+    pass
 
 
 class TestStatus(enum.StrEnum):
@@ -64,73 +80,65 @@ class TestStatus(enum.StrEnum):
     EXPECTED_FAILURE = "expected failure"
     UNEXPECTED_SUCCESS = "unexpected success"
     NOT_EXECUTED = "not executed"
+    UNTAGGED = "untagged"
 
 
+SUCCESSFUL_STATES = TestStatus.SUCCESS, TestStatus.SKIPPED, TestStatus.EXPECTED_FAILURE
 FAILED_STATES = TestStatus.FAILURE, TestStatus.ERROR, TestStatus.UNEXPECTED_SUCCESS
+EXECUTED_STATES = *SUCCESSFUL_STATES, *FAILED_STATES
 
 
-class TestSpecifier:
-    def __init__(self, *components):
-        assert components
-        self.components = components
+@dataclass(repr=False)
+class TestId:
+    test_file: Path
+    test_name: str
 
     def __repr__(self):
-        return '::'.join(self.components)
-
-    def __hash__(self):
-        return hash(self.components)
-
-    def __eq__(self, other):
-        if isinstance(other, TestSpecifier):
-            return self.components == other.components
-        return NotImplemented
+        return f'{self.test_file}::{self.test_name}'
 
     @classmethod
     def from_str(cls, s: str):
-        return cls(*s.split('::'))
+        test_file, _, test_id = s.partition('::')
+        if test_id is None:
+            raise ValueError(f"Invalid test ID {s}")
+        return cls(Path(test_file), test_id)
 
     @classmethod
-    def from_test(cls, test_file: str, test):
-        if isinstance(test, unittest.TestCase):
-            name = test._testMethodName if type(test).id is unittest.TestCase.id else test.id()
-            return cls(test_file, type(test).__qualname__, name)
-        return cls(test_file, type(test).__qualname__)
+    def from_test_case(cls, test_file: Path, test: unittest.TestCase):
+        return cls(test_file, test.id())
 
-    def matches(self, other: 'TestSpecifier'):
-        for c1, c2 in zip(self.components, other.components):
-            if c1 != c2:
-                return False
-        return True
+
+@dataclass(repr=False)
+class TestSpecifier:
+    test_file: Path
+    test_name: str | None
+
+    def __repr__(self):
+        if self.test_name is None:
+            return str(self.test_file)
+        return f'{self.test_file}::{self.test_name}'
+
+    @classmethod
+    def from_str(cls, s: str):
+        test_file, _, test_id = s.partition('::')
+        return cls(Path(test_file), test_id or None)
+
+    def match(self, test_id: TestId):
+        return self.test_file == test_id.test_file and (self.test_name is None or self.test_name == test_id.test_name)
 
 
 @dataclass
 class TestResult:
-    test_id: TestSpecifier
+    test_id: TestId
     status: TestStatus
     param: str | None = None
     output: str = ''
 
 
-def test_id(test_file, test):
-    name = test._testMethodName if type(test).id is unittest.TestCase.id else test.id()
-    return f"{test_file}::{type(test).__qualname__}::{name}"
-
-
-def test_matches_specifier(test: str, specifier: list[str]):
-    split = test.split('::')
-    for match in specifier:
-        for a, b in zip(split, match.split('::')):
-            if a != b:
-                break
-        return True
-    return False
-
-
-def group_tests_by_file(tests: list[str]):
-    by_file: dict[str, list | None] = defaultdict(list)
-    for test in tests:
-        specifier = TestSpecifier.from_str(test)
-        by_file[specifier.components[0]].append(specifier)
+def group_specifiers_by_file(specifiers: list[TestSpecifier]) -> dict[Path, list[TestSpecifier]]:
+    by_file = defaultdict(list)
+    for specifier in specifiers:
+        by_file[specifier.test_file].append(specifier)
     return by_file
 
 
@@ -150,12 +158,12 @@ def out_tell():
 
 
 class AbstractResult(unittest.TestResult):
-    def __init__(self, test_file):
+    def __init__(self, test_suite: 'TestSuite'):
         super().__init__()
-        self.test_file = test_file
+        self.test_suite = test_suite
 
     def test_id(self, test):
-        return TestSpecifier.from_test(self.test_file, test)
+        return TestId.from_test_case(self.test_suite.test_file, test)
 
     @abstractmethod
     def report_result(self, result: TestResult):
@@ -189,8 +197,8 @@ class AbstractResult(unittest.TestResult):
 
 
 class DirectResult(AbstractResult):
-    def __init__(self, test_file, test_runner: 'TestRunner'):
-        super().__init__(test_file)
+    def __init__(self, test_suite: 'TestSuite', test_runner: 'TestRunner'):
+        super().__init__(test_suite)
         self.runner = test_runner
 
     def report_result(self, result: TestResult):
@@ -223,36 +231,24 @@ class AbstractRemoteResult(AbstractResult):
 
 
 class PipeResult(AbstractRemoteResult):
-    def __init__(self, test_file, conn):
-        super().__init__(test_file)
+    def __init__(self, test_suite: 'TestSuite', conn):
+        super().__init__(test_suite)
         self.conn = conn
 
     def emit(self, **data):
         self.conn.send(data)
 
 
-# Copied from unittest
-def _convert_name(name):
-    # on Linux / Mac OS X 'foo.PY' is not importable, but on
-    # Windows it is. Simpler to do a case insensitive match
-    # a better check would be to check that the name is a
-    # valid Python module name.
-    if os.path.isfile(name) and name.lower().endswith('.py'):
-        if os.path.isabs(name):
-            rel_path = os.path.relpath(name, os.getcwd())
-            if os.path.isabs(rel_path) or rel_path.startswith(os.pardir):
-                return name
-            name = rel_path
-        # on Windows both '\' and '/' are used as path
-        # separators. Better to replace both than rely on os.path.sep
-        return os.path.normpath(name)[:-3].replace('\\', '.').replace('/', '.')
-    return name
+def test_path_to_module(path: Path):
+    return str(path).removesuffix('.py').replace(os.sep, '.')
 
 
 class TestRunner:
-    def __init__(self):
+    def __init__(self, args):
+        self.args = args
         self.events = []
         self.results = []
+        self.skipped_files = []
 
     def report_result(self, result: TestResult):
         self.results.append(result)
@@ -297,14 +293,19 @@ class TestRunner:
             if counts[status]:
                 items.append(f"{name}={counts[status]}")
 
+        add_item(TestStatus.SUCCESS, "passed")
         add_item(TestStatus.FAILURE, "failures")
         add_item(TestStatus.ERROR, "errors")
         add_item(TestStatus.SKIPPED, "skipped")
         add_item(TestStatus.EXPECTED_FAILURE, "expected failures")
         add_item(TestStatus.UNEXPECTED_SUCCESS, "unexpected successes")
-        add_item(TestStatus.NOT_EXECUTED, "not executed")
+        if not self.skipped_files:
+            add_item(TestStatus.UNTAGGED, "not tagged")
+            add_item(TestStatus.NOT_EXECUTED, "not executed")
 
-        print(f"Ran {sum(counts.values())} tests")  # TODO timing
+        total = sum(count for status, count in counts.items() if status in EXECUTED_STATES)
+
+        print(f"Ran {total} tests")  # TODO timing
         print()
         summary = ", ".join(items)
         overall_status = 'FAILED' if self.tests_failed() else 'OK'
@@ -313,58 +314,74 @@ class TestRunner:
         else:
             print(overall_status)
 
-    def run_tests(self, tests: list[str]):
-        collected = collect(tests)
-        for test_file, test_suite, found_tests in collected:
-            test_suite(DirectResult(test_file, self))
+        if self.args.failfast and counts.get(TestStatus.NOT_EXECUTED):
+            print("\nWARNING: Did not execute all tests because 'failfast' mode is on")
+
+    def collect(self, all_specifiers: list[TestSpecifier]) -> list['TestSuite']:
+        to_run = []
+        for test_file, specifiers in group_specifiers_by_file(all_specifiers).items():
+            if not test_file.exists():
+                sys.exit(f"File does not exist: {test_file}")
+            collected = collect_module(test_file, specifiers, use_tags=(not self.args.all))
+            if collected:
+                to_run.append(collected)
+            else:
+                self.skipped_files.append(test_file)
+        return to_run
+
+    def run_tests(self, tests: list[TestSpecifier]):
+        for test_suite in self.collect(tests):
+            result = DirectResult(test_suite, self)
+            result.failfast = self.args.failfast
+            test_suite.run(result)
+            test_suite.add_unexecuted(self.results)
         self.display_summary()
 
 
 class ParallelTestRunner(TestRunner):
-    def __init__(self, num_processes: int):
-        super().__init__()
-        self.num_processes = num_processes
+    def __init__(self, args):
+        super().__init__(args)
         self.lock = threading.Lock()
-        self.kill_event = threading.Event()
+        self.stop_event = threading.Event()
 
     def report_result(self, result: TestResult):
+        if self.args.failfast and result.status in FAILED_STATES:
+            self.stop_event.set()
         with self.lock:
             super().report_result(result)
 
-    def shutdown(self):
-        self.kill_event.set()
-
-    def should_shutdown(self):
-        return self.kill_event.is_set()
-
-    def run_tests(self, tests: list[str]):
-        collected = collect(tests)
-        futures = []
-        num_processes = min(self.num_processes, len(collected))
-        with concurrent.futures.ThreadPoolExecutor(num_processes) as executor:
-            for test_file, test_suite, found_tests in collected:
-                futures.append(executor.submit(self.run_in_subprocess_and_watch, found_tests))
-            concurrent.futures.wait(futures)
+    def run_tests(self, tests: list[TestSpecifier]):
+        collected = self.collect(tests)
+        if collected:
+            num_processes = min(self.args.num_processes, len(collected))
+            with concurrent.futures.ThreadPoolExecutor(num_processes) as executor:
+                concurrent.futures.wait([
+                    executor.submit(self.run_in_subprocess_and_watch, test_suite)
+                    for test_suite in collected
+                ])
 
         self.display_summary()
 
-    def run_in_subprocess_and_watch(self, specifiers: list[TestSpecifier]):
+    def run_in_subprocess_and_watch(self, test_suite: 'TestSuite'):
         conn, child_conn = multiprocessing.Pipe()
         with tempfile.NamedTemporaryFile(prefix='graalpy-test-out-', mode='w+') as out_file:
             env = os.environ.copy()
             env['IN_PROCESS'] = '1'
-            remaining_specifiers = specifiers
-            while remaining_specifiers:
+            remaining_tests = test_suite.collected_tests
+            while remaining_tests and not self.stop_event.is_set():
+                cmd = [sys.executable, '-u', __file__, '--pipe-fd', str(child_conn.fileno())]
+                if self.args.failfast:
+                    cmd.append('--failfast')
+                cmd += [str(s) for s in remaining_tests]
                 process = subprocess.Popen(
-                    [sys.executable, '-u', __file__, '--pipe-fd', str(child_conn.fileno())],
+                    cmd,
                     stdout=out_file,
                     stderr=out_file,
                     env=env,
                     pass_fds=[child_conn.fileno()],
                 )
-                conn.send([str(s) for s in remaining_specifiers])
 
-                last_started: TestSpecifier | None = None
+                last_started: TestId | None = None
                 out_start = -1
 
                 def process_event(event):
@@ -377,28 +394,19 @@ class ParallelTestRunner(TestRunner):
                         case 'testResult':
                             last_started = None
                             out_end = event['out_pos']
-                            output = ''
+                            test_output = ''
                             if out_start != out_end:
                                 out_file.seek(out_start)
-                                output = out_file.read(out_end - out_start)
+                                test_output = out_file.read(out_end - out_start)
                             result = TestResult(
                                 test_id=event['test'],
                                 status=event['status'],
                                 param=event.get('param'),
-                                output=output,
+                                output=test_output,
                             )
                             self.report_result(result)
 
                 while process.poll() is None:
-                    if self.should_shutdown():
-                        try:
-                            process.terminate()
-                            try:
-                                process.wait(2)
-                            except subprocess.TimeoutExpired:
-                                process.kill()
-                        except OSError:
-                            break
                     if conn.poll(0.1):
                         process_event(conn.recv())
                 process.wait()
@@ -421,61 +429,163 @@ class ParallelTestRunner(TestRunner):
                         param=message,
                         output=output,
                     ))
-                    remaining_specifiers = remaining_specifiers[remaining_specifiers.index(last_started) + 1:]
+                    remaining_tests = remaining_tests[remaining_tests.index(last_started) + 1:]
                     continue
+                test_suite.add_unexecuted(self.results)
+                out_file.seek(0)
+                print(out_file.read())
                 break
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', '--num-processes', type=int)
-    parser.add_argument('tests', nargs='+')
+    parser.add_argument('-f', '--failfast', action='store_true')
+    parser.add_argument('--all', action='store_true')
+    parser.add_argument('tests', nargs='+', type=TestSpecifier.from_str)
 
     args = parser.parse_args()
 
-    runner = TestRunner() if args.num_processes is None else ParallelTestRunner(args.num_processes)
+    runner = TestRunner(args) if args.num_processes is None else ParallelTestRunner(args)
     runner.run_tests(args.tests)
     if runner.tests_failed():
         sys.exit(1)
 
 
-def filter_tree(test_file, test_suite, specifiers):
+def filter_tree(test_file: Path, test_suite: unittest.TestSuite, specifiers: list[TestSpecifier],
+                tags: list[TestId] | None):
     keep_tests = []
-    found_specifiers = []
+    untagged_tests = []
+    collected_tests = []
     for test in test_suite:
+        # When test loading fails, unittest just creates an instance of _FailedTest
+        if exception := getattr(test, '_exception', None):
+            raise exception
         if hasattr(test, '__iter__'):
-            sub_specifiers = filter_tree(test_file, test, specifiers)
-            if sub_specifiers:
+            sub_collected, sub_untagged = filter_tree(test_file, test, specifiers, tags)
+            if sub_collected:
                 keep_tests.append(test)
-                found_specifiers += sub_specifiers
+                collected_tests += sub_collected
+            untagged_tests += sub_untagged
         else:
-            specifier = TestSpecifier.from_test(test_file, test)
-            if any(s.matches(specifier) for s in specifiers):
-                keep_tests.append(test)
-                found_specifiers.append(specifier)
+            specifier = TestId.from_test_case(test_file, test)
+            if any(s.match(specifier) for s in specifiers):
+                if tags is None or specifier in tags:
+                    keep_tests.append(test)
+                    collected_tests.append(specifier)
+                elif tags is not None:
+                    untagged_tests.append(specifier)
     test_suite._tests = keep_tests
-    return found_specifiers
+    return collected_tests, untagged_tests
 
 
-def collect(tests: list[str]) -> list[tuple[str, unittest.TestSuite, list[TestSpecifier]]]:
-    to_run = []
-    for test_file, specifiers in group_tests_by_file(tests).items():
+@dataclass
+class Config:
+    rootdir: Path = Path('.')
+    tags_dir: Path | None = None
+
+
+@lru_cache
+def config_for_dir(path: Path) -> Config | None:
+    config_path = path / 'conftest.toml'
+    if config_path.exists():
+        with open(config_path, 'rb') as f:
+            config_dict = tomllib.load(f)['tests']
+            rootdir = path
+            if config_rootdir := config_dict.get('rootdir'):
+                rootdir /= config_rootdir
+            rootdir = rootdir.resolve()
+            tags_dir = None
+            if config_tags_dir := config_dict.get('tags_dir'):
+                tags_dir = (path / config_tags_dir).resolve()
+            return Config(rootdir=rootdir, tags_dir=tags_dir)
+
+
+def config_for_file(test_file: Path) -> Config:
+    path = test_file.parent
+    while path.is_dir():
+        if config := config_for_dir(path):
+            return config
+        if path.parent == path:
+            break
+        path = path.parent
+    return Config()
+
+
+@contextmanager
+def rootdir_from_config(config: Config):
+    saved_path = sys.path[:]
+    sys.path.insert(0, str(config.rootdir))
+    try:
+        yield config.rootdir
+    finally:
+        sys.path[:] = saved_path
+
+
+@dataclass
+class TestSuite:
+    config: Config
+    test_file: Path
+    test_suite: unittest.TestSuite
+    collected_tests: list[TestId]
+    untagged_tests: list[TestId]
+
+    def run(self, result):
+        with rootdir_from_config(self.config):
+            self.test_suite.run(result)
+
+    def add_unexecuted(self, results: list[TestResult]):
+        executed = [r.test_id for r in results]
+        results += [
+            TestResult(status=TestStatus.NOT_EXECUTED, test_id=test)
+            for test in self.collected_tests
+            if test not in executed
+        ]
+        results += [
+            TestResult(status=TestStatus.UNTAGGED, test_id=test)
+            for test in self.untagged_tests
+        ]
+
+
+def collect_module(test_file: Path, specifiers: list[TestSpecifier], use_tags=False) -> TestSuite | None:
+    config = config_for_file(test_file)
+    with rootdir_from_config(config) as rootdir:
         loader = unittest.defaultTestLoader
-        test_suite = loader.loadTestsFromName(_convert_name(test_file))
-        found_tests = filter_tree(test_file, test_suite, specifiers)
-        if found_tests:
-            to_run.append((test_file, test_suite, found_tests))
-    return to_run
+        tags = None
+        if use_tags and config.tags_dir:
+            tags = read_tags(test_file, config)
+            if not tags:
+                return None
+        test_suite = loader.loadTestsFromName(test_path_to_module(test_file.resolve().relative_to(rootdir)))
+        collected_tests, untagged_tests = filter_tree(test_file, test_suite, specifiers, tags)
+        if collected_tests:
+            return TestSuite(config, test_file, test_suite, collected_tests, untagged_tests)
+
+
+def read_tags(test_file: Path, config: Config) -> list[TestId]:
+    tag_file = config.tags_dir / (test_file.name.removesuffix('.py') + '.txt')
+    tags = []
+    if tag_file.exists():
+        with open(tag_file) as f:
+            for line in f:
+                test = line.strip().replace('*graalpython.lib-python.3.', '').replace('*', '')
+                tags.append(TestId(test_file, test))
+        return tags
+    return tags
 
 
 def in_process():
-    assert sys.argv[1] == '--pipe-fd'
-    fd = int(sys.argv[2])
-    conn = multiprocessing.connection.Connection(fd)
-    tests = conn.recv()
-    collected = collect(tests)
-    for test_file, test_suite, found_tests in collected:
-        test_suite(PipeResult(test_file, conn))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--pipe-fd', type=int, required=True)
+    parser.add_argument('--failfast', action='store_true')
+    parser.add_argument('tests', nargs='*', type=TestSpecifier.from_str)
+    args = parser.parse_args()
+    conn = multiprocessing.connection.Connection(args.pipe_fd)
+    for test_file, specifiers in group_specifiers_by_file(args.tests).items():
+        test_suite = collect_module(test_file, specifiers)
+        result = PipeResult(test_suite, conn)
+        result.failfast = args.failfast
+        test_suite.run(result)
 
 
 if __name__ == '__main__':

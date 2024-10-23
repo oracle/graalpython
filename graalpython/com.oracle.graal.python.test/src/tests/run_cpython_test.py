@@ -249,7 +249,7 @@ class TestingManager:
                     fail_type = 'UNEXPECTED SUCCESS'
             if fail_type:
                 print("======================================================================")
-                print(f"{fail_type}: {result.test_id}")
+                print(f"{fail_type}: {result.test_name}")
                 print("----------------------------------------------------------------------")
                 if result.param:
                     print(result.param.rstrip('\n'))
