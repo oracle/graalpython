@@ -70,15 +70,17 @@ def run_cmd(cmd, env=ENV, cwd=None):
 
 class TestJBangIntegration(unittest.TestCase):
 
-    def setUpClass(self):
+    @classmethod
+    def setUpClass(cls):
         if not is_enabled:
             return
-        self.ensureProxy()
-        self.ensureLocalMavenRepo()
-        self.clearCache()
-        self.catalog_file = self.getCatalogFile()
+        cls.ensureProxy()
+        cls.ensureLocalMavenRepo()
+        cls.clearCache()
+        cls.catalog_file = cls.getCatalogFile()
 
-    def tearDownClass(self):
+    @classmethod
+    def tearDownClass(cls):
         if not is_enabled:
             return
         try:
@@ -95,7 +97,8 @@ class TestJBangIntegration(unittest.TestCase):
         except Exception as e:
             print(f"The test run correctly but problem during removing workdir: {e}")
 
-    def ensureProxy(self):
+    @staticmethod
+    def ensureProxy():
         java_tools = os.environ.get('JAVA_TOOL_OPTIONS')
         if java_tools is None:
             java_tools = ""
@@ -112,15 +115,18 @@ class TestJBangIntegration(unittest.TestCase):
         if len(java_tools) > 0:
             os.environ['JAVA_TOOL_OPTIONS'] = java_tools
 
-    def ensureLocalMavenRepo(self):
+    @staticmethod
+    def ensureLocalMavenRepo():
         if MAVEN_REPO_LOCAL_URL is None:
-            self.fail("'org.graalvm.maven.downloader.repository' is not defined")
+            raise RuntimeError("'org.graalvm.maven.downloader.repository' is not defined")
 
-    def clearCache(self):
+    @staticmethod
+    def clearCache():
         command = [JBANG_CMD, "cache", "--verbose", "clear"]
-        out, result = run_cmd(command)
+        run_cmd(command)
 
-    def getCatalogFile(self):
+    @staticmethod
+    def getCatalogFile():
         catalog_dir = os.path.dirname(os.path.abspath(__file__))
         for _ in range(5):
             catalog_dir = os.path.dirname(catalog_dir)

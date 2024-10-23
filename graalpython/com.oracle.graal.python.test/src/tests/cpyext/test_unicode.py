@@ -40,11 +40,10 @@ import codecs
 import locale
 import re
 import sys
+import unittest
 
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON, CPyExtFunctionOutVars, \
     is_native_object
-
-__dir__ = __file__.rpartition("/")[0]
 
 
 def _reference_fromobject(args):
@@ -1133,7 +1132,7 @@ class TestPyUnicode(CPyExtTestCase):
     )
 
 
-class TestUnicodeObject(object):
+class TestUnicodeObject(unittest.TestCase):
     def test_intern(self):
         TestIntern = CPyExtType(
             "TestIntern",
@@ -1168,7 +1167,7 @@ class TestUnicodeObject(object):
         assert tester.check_is_same_str_ptr(s2)
 
 
-class TestNativeUnicodeSubclass:
+class TestNativeUnicodeSubclass(unittest.TestCase):
     def test_builtins(self):
         s = UnicodeSubclass("asdf")
         assert is_native_object(s)

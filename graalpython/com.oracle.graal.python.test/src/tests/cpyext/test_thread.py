@@ -37,10 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import threading
+import unittest
 
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType
-
-__dir__ = __file__.rpartition("/")[0]
 
 
 class TestPyThread(CPyExtTestCase):
@@ -82,7 +81,7 @@ class TestPyThread(CPyExtTestCase):
     )
 
 
-class TestNativeThread:
+class TestNativeThread(unittest.TestCase):
     def test_register_new_thread(self):
         TestThread = CPyExtType(
             name="TestThread",

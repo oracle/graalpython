@@ -38,11 +38,12 @@
 # SOFTWARE.
 
 import sys
+import unittest
 
 GRAALPYTHON = sys.implementation.name == "graalpy"
 
 
-class TestSRE:
+class TestSRE(unittest.TestCase):
 
     def test_sre_import(self):
         if GRAALPYTHON:

@@ -38,9 +38,8 @@
 # SOFTWARE.
 
 import platform
-import unittest
-
 import sys
+import unittest
 
 # The platform.system() == 'Java' is to make it possible to run with Jython
 if (platform.system() == 'Java' or sys.implementation.name == "graalpy") and \
@@ -50,7 +49,7 @@ if (platform.system() == 'Java' or sys.implementation.name == "graalpy") and \
     import jarray
 
 
-    class AbstractJArrayTest:
+    class AbstractJArrayTest(unittest.TestCase):
         type = None
         default_value = None
         instance = None

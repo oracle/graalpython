@@ -29,28 +29,31 @@ EGG_PATH = os.path.join(DIR_PATH, EGG_FILE_NAME)
 EGG_ABS_PATH = os.path.abspath(EGG_PATH);
 GR15813_PATH = os.path.join(DIR_PATH, GR15813_FILE_NAME)
 
-class ZipImportBaseTestCase(unittest.TestCase):
+class ZipImportBaseTestCase:
 
-    def setUpClass(self):
+    @classmethod
+    def setUpClass(cls):
         zipimport._zip_directory_cache.clear()
-        self.path = sys.path[:]
-        self.meta_path = sys.meta_path[:]
-        self.path_hooks = sys.path_hooks[:]
+        cls.path = sys.path[:]
+        cls.meta_path = sys.meta_path[:]
+        cls.path_hooks = sys.path_hooks[:]
         sys.path_importer_cache.clear()
-        self.modules_before = import_helper.modules_setup()
+        cls.modules_before = import_helper.modules_setup()
 
-    def tearDownClass(self):
-        sys.path[:] = self.path
-        sys.meta_path[:] = self.meta_path
-        sys.path_hooks[:] = self.path_hooks
+    @classmethod
+    def tearDownClass(cls):
+        sys.path[:] = cls.path
+        sys.meta_path[:] = cls.meta_path
+        sys.path_hooks[:] = cls.path_hooks
         sys.path_importer_cache.clear()
-        import_helper.modules_cleanup(*self.modules_before)
+        import_helper.modules_cleanup(*cls.modules_before)
 
-class BasicZipImportTests(ZipImportBaseTestCase):
+class BasicZipImportTests(ZipImportBaseTestCase, unittest.TestCase):
 
-    def setUpClass(self):
-        ZipImportBaseTestCase.setUpClass(self)
-        self.z = zipimport.zipimporter(ZIP_PATH)
+    @classmethod
+    def setUpClass(cls):
+        ZipImportBaseTestCase.setUpClass()
+        cls.z = zipimport.zipimporter(ZIP_PATH)
 
     def test_zipimporter_attribute(self):
         self.assertTrue(self.z.prefix == "")
@@ -122,13 +125,15 @@ class BasicZipImportTests(ZipImportBaseTestCase):
         self.assertTrue(self.z.load_module("cesta/moduleA").__loader__ is self.z)
         self.assertRaises(ZipImportError, self.z.load_module, "packageA.moduleC")
 
-class ZipImportWithPrefixTests(ZipImportBaseTestCase):
+class ZipImportWithPrefixTests(ZipImportBaseTestCase, unittest.TestCase):
 
-    def setUpClass(self):
-        ZipImportBaseTestCase.setUpClass(self)
-        self.z = zipimport.zipimporter(ZIP_PATH + "/cesta")
+    @classmethod
+    def setUpClass(cls):
+        ZipImportBaseTestCase.setUpClass()
+        cls.z = zipimport.zipimporter(ZIP_PATH + "/cesta")
 
-    def tearDownClass(self):
+    @classmethod
+    def tearDownClass(cls):
         zipimport._zip_directory_cache.clear()
 
     def test_zipimporter_with_prefix_attribute(self):
@@ -147,10 +152,11 @@ class ZipImportWithPrefixTests(ZipImportBaseTestCase):
         self.assertTrue(None is self.z.find_module("packageA.moduleC"))
         self.assertTrue(self.z is self.z.find_module("moduleA"))
 
-class ImportTests(ZipImportBaseTestCase):
+class ImportTests(ZipImportBaseTestCase, unittest.TestCase):
 
-    def setUpClass(self):
-        ZipImportBaseTestCase.setUpClass(self)
+    @classmethod
+    def setUpClass(cls):
+        ZipImportBaseTestCase.setUpClass()
         sys.path.insert(0, ZIP_PATH)
 
     def test_module_import(self):
@@ -159,11 +165,12 @@ class ImportTests(ZipImportBaseTestCase):
         p = importlib.import_module("packageA.moduleC")
         self.assertTrue (p.get_file() == ZIP_ABS_PATH + "/packageA/moduleC.py")
 
-class BasicEggImportTests(ZipImportBaseTestCase):
+class BasicEggImportTests(ZipImportBaseTestCase, unittest.TestCase):
 
-    def setUpClass(self):
-        ZipImportBaseTestCase.setUpClass(self)
-        self.z = zipimport.zipimporter(EGG_PATH)
+    @classmethod
+    def setUpClass(cls):
+        ZipImportBaseTestCase.setUpClass()
+        cls.z = zipimport.zipimporter(EGG_PATH)
 
     def test_zipimporter_egg(self):
         self.assertTrue(self.z.prefix == "")
@@ -182,12 +189,13 @@ class BasicEggImportTests(ZipImportBaseTestCase):
         self.assertTrue(type(data) is bytes)
         self.assertEqual(bytes(b'Pokus\n'), data)
 
-class GR15813ImportTests(ZipImportBaseTestCase):
+class GR15813ImportTests(ZipImportBaseTestCase, unittest.TestCase):
 
     # don't edit the zip file !!!
-    def setUpClass(self):
-        ZipImportBaseTestCase.setUpClass(self)
-        self.z = zipimport.zipimporter(GR15813_PATH)
+    @classmethod
+    def setUpClass(cls):
+        ZipImportBaseTestCase.setUpClass()
+        cls.z = zipimport.zipimporter(GR15813_PATH)
 
     def test_zipimporter_gr_18813(self):
         self.assertTrue(self.z.prefix == "")

@@ -41,7 +41,6 @@ import sys
 
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
 
-__dir__ = __file__.rpartition("/")[0]
 
 ModuleType = type(sys)
 

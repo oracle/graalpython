@@ -36,6 +36,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import unittest
+
 
 # The basis for this file before inclusion and extension here is
 # Copyright (c) 2017, The PyPy Project
@@ -70,7 +72,7 @@ def raises(exc, func, *args):
         assert False
 
 
-class ExecTests:
+class ExecTests(unittest.TestCase):
     def test_string(self):
         g = {}
         l = {}

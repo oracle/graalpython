@@ -40,7 +40,6 @@ import struct
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare
 
-__dir__ = __file__.rpartition("/")[0]
 
 int_bits = struct.calcsize('i') * 8
 max_int = 2 ** (int_bits - 1) - 1

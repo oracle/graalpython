@@ -149,7 +149,7 @@ class Fixture:
         has_self = False
         if co.co_argcount > start:
             arg_names = co.co_varnames[start:co.co_argcount]
-            has_self = arg_names and arg_names[0] == "self"
+            has_self = arg_names and arg_names[0] in ("self", "cls")
             if has_self:
                 arg_names = arg_names[1:]
             fixture_args = get_fixture_values(test_class_instance, arg_names)
@@ -405,7 +405,7 @@ class TestCase(object):
         fixture_args = []
         if co.co_argcount > 0:
             arg_names = co.co_varnames[:co.co_argcount]
-            if arg_names and arg_names[0] == "self":
+            if arg_names and arg_names[0] in ("self", "cls"):
                 arg_names = arg_names[1:]
             fixture_args = get_fixture_values(self, arg_names)
 

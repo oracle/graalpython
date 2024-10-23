@@ -41,8 +41,6 @@ import sys
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtType, assert_raises, CPyExtHeapType
 
-__dir__ = __file__.rpartition("/")[0]
-
 
 class DummyClass():
     def foo(self):

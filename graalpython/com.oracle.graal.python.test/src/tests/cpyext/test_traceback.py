@@ -38,11 +38,12 @@
 # SOFTWARE.
 
 import sys
+import unittest
 
 from tests.cpyext import CPyExtType
 
 
-class TestTraceback:
+class TestTraceback(unittest.TestCase):
     def test_PyTraceBack_Here(self):
         Tester = CPyExtType(
             "TracebackTester1",

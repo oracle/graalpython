@@ -36,13 +36,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import unittest
 
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare
 
-__dir__ = __file__.rpartition("/")[0]
 
-
-class TestPyStructSequenceTypes(object):
+class TestPyStructSequenceTypes(unittest.TestCase):
     def test_properties(self):
         TestPyStructSequence = CPyExtType("TestPyStructSequence",
                                           """

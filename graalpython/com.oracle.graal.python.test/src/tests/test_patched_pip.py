@@ -83,19 +83,21 @@ if sys.implementation.name == "graalpy":
         installed from source or binary distribution.
         """
 
-        def setUpClass(self):
-            self.venv_dir = Path(tempfile.mkdtemp()).resolve()
-            subprocess.check_output([sys.executable, "-m", "venv", str(self.venv_dir)])
-            self.venv_python = str(self.venv_dir / 'bin' / 'python')
-            subprocess.check_output([self.venv_python, '-m', 'pip', 'install', 'wheel'])
-            self.venv_template_dir = f'{self.venv_dir}.template'
-            self.venv_dir.rename(self.venv_template_dir)
-            self.build_dir = Path(tempfile.mkdtemp()).resolve()
-            self.package_cache = {}
+        @classmethod
+        def setUpClass(cls):
+            cls.venv_dir = Path(tempfile.mkdtemp()).resolve()
+            subprocess.check_output([sys.executable, "-m", "venv", str(cls.venv_dir)])
+            cls.venv_python = str(cls.venv_dir / 'bin' / 'python')
+            subprocess.check_output([cls.venv_python, '-m', 'pip', 'install', 'wheel'])
+            cls.venv_template_dir = f'{cls.venv_dir}.template'
+            cls.venv_dir.rename(cls.venv_template_dir)
+            cls.build_dir = Path(tempfile.mkdtemp()).resolve()
+            cls.package_cache = {}
 
-        def tearDownClass(self):
-            shutil.rmtree(self.venv_template_dir, ignore_errors=True)
-            shutil.rmtree(self.build_dir, ignore_errors=True)
+        @classmethod
+        def tearDownClass(cls):
+            shutil.rmtree(cls.venv_template_dir, ignore_errors=True)
+            shutil.rmtree(cls.build_dir, ignore_errors=True)
 
         def setUp(self):
             shutil.copytree(self.venv_template_dir, self.venv_dir, symlinks=True)

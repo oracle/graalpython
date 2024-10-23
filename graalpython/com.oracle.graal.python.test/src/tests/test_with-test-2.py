@@ -23,8 +23,10 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # Gulfem & Qunaibit 03/02/2014
 # With Statement (As name as Tuple)
+import unittest
 
-class GrammarTest(object):
+
+class GrammarTest(unittest.TestCase):
     def test_with_statement(self):
         class manager(object):
             def __enter__(self):

@@ -677,8 +677,7 @@ class ExceptionTests(unittest.TestCase):
         assert getattr(Obj1(), 'does_not_exist', sentinel) is sentinel
 
 
-# There is no simple way to restrict memory for CPython process
-@unittest.skipUnless(GRAALPYTHON)
+@unittest.skipUnless(GRAALPYTHON, "There is no simple way to restrict memory for CPython process")
 def test_memory_error():
     import subprocess
     file = os.path.join(os.path.dirname(__file__), 'memoryerror.py')

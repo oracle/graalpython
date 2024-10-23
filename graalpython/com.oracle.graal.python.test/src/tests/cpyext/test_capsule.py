@@ -42,8 +42,6 @@ import time
 
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType
 
-__dir__ = __file__.rpartition("/")[0]
-
 
 class TestPyCapsule(CPyExtTestCase):
     test_PyCapsule_CheckExact = CPyExtFunction(

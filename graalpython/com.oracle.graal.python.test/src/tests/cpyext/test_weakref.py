@@ -37,12 +37,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
+import unittest
 import weakref
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, GRAALPYTHON, unhandled_error_compare, assert_raises
-
-__dir__ = __file__.rpartition("/")[0]
+from . import CPyExtType, assert_raises
 
 TestWeakRefHelper = CPyExtType(
     'TestWeakRefHelper',
@@ -63,7 +61,7 @@ TestWeakRefHelper = CPyExtType(
 )
 helper = TestWeakRefHelper()
 
-class TestWeakRef(object):
+class TestWeakRef(unittest.TestCase):
     
     def test_simple(self):
         class Foo:
