@@ -265,7 +265,7 @@ extern int _Py_CheckSlotResult(
 
 // Test if a type supports weak references
 static inline int _PyType_SUPPORTS_WEAKREFS(PyTypeObject *type) {
-    return (type->tp_weaklistoffset > 0);
+    return (type->tp_weaklistoffset != 0);
 }
 
 extern PyObject* _PyType_AllocNoTrack(PyTypeObject *type, Py_ssize_t nitems);
@@ -316,12 +316,12 @@ PyAPI_FUNC(PyObject *) _PyObject_LookupSpecial(PyObject *, PyObject *);
  * match.
  *
  * Third party code unintentionally rely on problematic fpcasts. The call
- * trampoline mitigates common occurences of bad fpcasts on Emscripten.
+ * trampoline mitigates common occurrences of bad fpcasts on Emscripten.
  */
 #if defined(__EMSCRIPTEN__) && defined(PY_CALL_TRAMPOLINE)
 #define _PyCFunction_TrampolineCall(meth, self, args) \
     _PyCFunctionWithKeywords_TrampolineCall( \
-        (*(PyCFunctionWithKeywords)(void(*)(void))meth), self, args, NULL)
+        (*(PyCFunctionWithKeywords)(void(*)(void))(meth)), (self), (args), NULL)
 extern PyObject* _PyCFunctionWithKeywords_TrampolineCall(
     PyCFunctionWithKeywords meth, PyObject *, PyObject *, PyObject *);
 #else

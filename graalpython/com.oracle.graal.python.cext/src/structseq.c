@@ -128,6 +128,9 @@ structseq_dealloc(PyStructSequence *obj)
     PyObject_GC_UnTrack(obj);
 
     PyTypeObject *tp = Py_TYPE(obj);
+    // gh-122527: We can't use REAL_SIZE_TP() or any macros that access the
+    // type's dictionary here, because the dictionary may have already been
+    // cleared by the garbage collector.
     size = REAL_SIZE(obj);
     for (i = 0; i < size; ++i) {
         // GraalPy change: avoid direct struct access
@@ -224,8 +227,7 @@ structseq_new_impl(PyTypeObject *type, PyObject *arg, PyObject *dict)
     }
     for (i = 0; i < len; ++i) {
         PyObject *v = PySequence_Fast_GET_ITEM(arg, i);
-        Py_INCREF(v);
-        res->ob_item[i] = v;
+        res->ob_item[i] = Py_NewRef(v);
     }
     Py_DECREF(arg);
     for (; i < max_len; ++i) {
@@ -243,8 +245,7 @@ structseq_new_impl(PyTypeObject *type, PyObject *arg, PyObject *dict)
                 ob = Py_None;
             }
         }
-        Py_INCREF(ob);
-        res->ob_item[i] = ob;
+        res->ob_item[i] = Py_NewRef(ob);
     }
 
     _PyObject_GC_TRACK(res);

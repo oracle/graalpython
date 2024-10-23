@@ -23,14 +23,7 @@ bool_repr(PyObject *self)
 
 PyObject *PyBool_FromLong(long ok)
 {
-    PyObject *result;
-
-    if (ok)
-        result = Py_True;
-    else
-        result = Py_False;
-    Py_INCREF(result);
-    return result;
+    return ok ? Py_True : Py_False;
 }
 
 #if 0 // GraalPy change

@@ -2083,8 +2083,7 @@ long_divrem(PyLongObject *a, PyLongObject *b,
             return -1;
         }
         PyObject *zero = _PyLong_GetZero();
-        Py_INCREF(zero);
-        *pdiv = (PyLongObject*)zero;
+        *pdiv = (PyLongObject*)Py_NewRef(zero);
         return 0;
     }
     if (size_b == 1) {
@@ -2886,7 +2885,7 @@ k_mul(PyLongObject *a, PyLongObject *b)
     /* If a is small compared to b, splitting on b gives a degenerate
      * case with ah==0, and Karatsuba may be (even much) less efficient
      * than "grade school" then.  However, we can still win, by viewing
-     * b as a string of "big digits", each of width a->ob_size.  That
+     * b as a string of "big digits", each of the same width as a. That
      * leads to a sequence of balanced calls to k_mul.
      */
     if (2 * asize <= bsize)
@@ -2898,10 +2897,8 @@ k_mul(PyLongObject *a, PyLongObject *b)
     assert(Py_SIZE(ah) > 0);            /* the split isn't degenerate */
 
     if (a == b) {
-        bh = ah;
-        bl = al;
-        Py_INCREF(bh);
-        Py_INCREF(bl);
+        bh = (PyLongObject*)Py_NewRef(ah);
+        bl = (PyLongObject*)Py_NewRef(al);
     }
     else if (kmul_split(b, shift, &bh, &bl) < 0) goto fail;
 
@@ -2973,8 +2970,7 @@ k_mul(PyLongObject *a, PyLongObject *b)
     ah = al = NULL;
 
     if (a == b) {
-        t2 = t1;
-        Py_INCREF(t2);
+        t2 = (PyLongObject*)Py_NewRef(t1);
     }
     else if ((t2 = x_add(bh, bl)) == NULL) {
         Py_DECREF(t1);
@@ -3054,9 +3050,9 @@ ah*bh and al*bl too.
 
 /* b has at least twice the digits of a, and a is big enough that Karatsuba
  * would pay off *if* the inputs had balanced sizes.  View b as a sequence
- * of slices, each with a->ob_size digits, and multiply the slices by a,
- * one at a time.  This gives k_mul balanced inputs to work with, and is
- * also cache-friendly (we compute one double-width slice of the result
+ * of slices, each with the same number of digits as a, and multiply the
+ * slices by a, one at a time.  This gives k_mul balanced inputs to work with,
+ * and is also cache-friendly (we compute one double-width slice of the result
  * at a time, then move on, never backtracking except for the helpful
  * single-width slice overlap between successive partial sums).
  */
@@ -3294,8 +3290,7 @@ l_mod(PyLongObject *v, PyLongObject *w, PyLongObject **pmod)
         (Py_SIZE(mod) > 0 && Py_SIZE(w) < 0)) {
         PyLongObject *temp;
         temp = (PyLongObject *) long_add(mod, w);
-        Py_DECREF(mod);
-        mod = temp;
+        Py_SETREF(mod, temp);
         if (mod == NULL)
             return -1;
     }
@@ -3535,8 +3530,7 @@ long_true_divide(PyObject *v, PyObject *w)
     else {
         PyLongObject *div, *rem;
         div = x_divrem(x, b, &rem);
-        Py_DECREF(x);
-        x = div;
+        Py_SETREF(x, div);
         if (x == NULL)
             goto error;
         if (Py_SIZE(rem))
@@ -3666,8 +3660,7 @@ long_invmod(PyLongObject *a, PyLongObject *n)
         if (l_divmod(a, n, &q, &r) == -1) {
             goto Error;
         }
-        Py_DECREF(a);
-        a = n;
+        Py_SETREF(a, n);
         n = r;
         t = (PyLongObject *)long_mul(q, c);
         Py_DECREF(q);
@@ -3679,8 +3672,7 @@ long_invmod(PyLongObject *a, PyLongObject *n)
         if (s == NULL) {
             goto Error;
         }
-        Py_DECREF(b);
-        b = c;
+        Py_SETREF(b, c);
         c = s;
     }
     /* references now owned: a, b, c, n */
@@ -3725,7 +3717,7 @@ long_pow(PyObject *v, PyObject *w, PyObject *x)
     /* k-ary values.  If the exponent is large enough, table is
      * precomputed so that table[i] == a**(2*i+1) % c for i in
      * range(EXP_TABLE_LEN).
-     * Note: this is uninitialzed stack trash: don't pay to set it to known
+     * Note: this is uninitialized stack trash: don't pay to set it to known
      * values unless it's needed. Instead ensure that num_table_entries is
      * set to the number of entries actually filled whenever a branch to the
      * Error or Done labels is possible.
@@ -3735,11 +3727,10 @@ long_pow(PyObject *v, PyObject *w, PyObject *x)
 
     /* a, b, c = v, w, x */
     CHECK_BINOP(v, w);
-    a = (PyLongObject*)v; Py_INCREF(a);
-    b = (PyLongObject*)w; Py_INCREF(b);
+    a = (PyLongObject*)Py_NewRef(v);
+    b = (PyLongObject*)Py_NewRef(w);
     if (PyLong_Check(x)) {
-        c = (PyLongObject *)x;
-        Py_INCREF(x);
+        c = (PyLongObject *)Py_NewRef(x);
     }
     else if (x == Py_None)
         c = NULL;
@@ -3776,8 +3767,7 @@ long_pow(PyObject *v, PyObject *w, PyObject *x)
             temp = (PyLongObject *)_PyLong_Copy(c);
             if (temp == NULL)
                 goto Error;
-            Py_DECREF(c);
-            c = temp;
+            Py_SETREF(c, temp);
             temp = NULL;
             _PyLong_Negate(&c);
             if (c == NULL)
@@ -3797,8 +3787,7 @@ long_pow(PyObject *v, PyObject *w, PyObject *x)
             temp = (PyLongObject *)_PyLong_Copy(b);
             if (temp == NULL)
                 goto Error;
-            Py_DECREF(b);
-            b = temp;
+            Py_SETREF(b, temp);
             temp = NULL;
             _PyLong_Negate(&b);
             if (b == NULL)
@@ -3807,8 +3796,7 @@ long_pow(PyObject *v, PyObject *w, PyObject *x)
             temp = long_invmod(a, c);
             if (temp == NULL)
                 goto Error;
-            Py_DECREF(a);
-            a = temp;
+            Py_SETREF(a, temp);
             temp = NULL;
         }
 
@@ -3824,8 +3812,7 @@ long_pow(PyObject *v, PyObject *w, PyObject *x)
         if (Py_SIZE(a) < 0 || Py_SIZE(a) > Py_SIZE(c)) {
             if (l_mod(a, c, &temp) < 0)
                 goto Error;
-            Py_DECREF(a);
-            a = temp;
+            Py_SETREF(a, temp);
             temp = NULL;
         }
     }
@@ -3892,9 +3879,7 @@ long_pow(PyObject *v, PyObject *w, PyObject *x)
          * because we're primarily trying to cut overhead for small powers.
          */
         assert(bi);  /* else there is no significant bit */
-        Py_INCREF(a);
-        Py_DECREF(z);
-        z = a;
+        Py_SETREF(z, (PyLongObject*)Py_NewRef(a));
         for (bit = 2; ; bit <<= 1) {
             if (bit > bi) { /* found the first bit */
                 assert((bi & bit) == 0);
@@ -3921,8 +3906,7 @@ long_pow(PyObject *v, PyObject *w, PyObject *x)
         /* Left-to-right k-ary sliding window exponentiation
          * (Handbook of Applied Cryptography (HAC) Algorithm 14.85)
          */
-        Py_INCREF(a);
-        table[0] = a;
+        table[0] = (PyLongObject*)Py_NewRef(a);
         num_table_entries = 1;
         MULT(a, a, a2);
         /* table[i] == a**(2*i + 1) % c */
@@ -3981,8 +3965,7 @@ long_pow(PyObject *v, PyObject *w, PyObject *x)
         temp = (PyLongObject *)long_sub(z, c);
         if (temp == NULL)
             goto Error;
-        Py_DECREF(z);
-        z = temp;
+        Py_SETREF(z, temp);
         temp = NULL;
     }
     goto Done;
@@ -4459,11 +4442,12 @@ long_or(PyObject *a, PyObject *b)
 static PyObject *
 long_long(PyObject *v)
 {
-    if (PyLong_CheckExact(v))
-        Py_INCREF(v);
-    else
-        v = _PyLong_Copy((PyLongObject *)v);
-    return v;
+    if (PyLong_CheckExact(v)) {
+        return Py_NewRef(v);
+    }
+    else {
+        return _PyLong_Copy((PyLongObject *)v);
+    }
 }
 
 PyObject *
@@ -4808,11 +4792,13 @@ int.__format__
 
     format_spec: unicode
     /
+
+Convert to a string according to format_spec.
 [clinic start generated code]*/
 
 static PyObject *
 int___format___impl(PyObject *self, PyObject *format_spec)
-/*[clinic end generated code: output=b4929dee9ae18689 input=e31944a9b3e428b7]*/
+/*[clinic end generated code: output=b4929dee9ae18689 input=d5e1254a47e8d1dc]*/
 {
     _PyUnicodeWriter writer;
     int ret;
@@ -4892,8 +4878,7 @@ _PyLong_DivmodNear(PyObject *a, PyObject *b)
             temp = long_sub(quo, (PyLongObject *)one);
         else
             temp = long_add(quo, (PyLongObject *)one);
-        Py_DECREF(quo);
-        quo = (PyLongObject *)temp;
+        Py_SETREF(quo, (PyLongObject *)temp);
         if (quo == NULL)
             goto error;
         /* and remainder */
@@ -4901,8 +4886,7 @@ _PyLong_DivmodNear(PyObject *a, PyObject *b)
             temp = long_add(rem, (PyLongObject *)b);
         else
             temp = long_sub(rem, (PyLongObject *)b);
-        Py_DECREF(rem);
-        rem = (PyLongObject *)temp;
+        Py_SETREF(rem, (PyLongObject *)temp);
         if (rem == NULL)
             goto error;
     }
@@ -4968,8 +4952,7 @@ int___round___impl(PyObject *self, PyObject *o_ndigits)
 
     /* result = self - divmod_near(self, 10 ** -ndigits)[1] */
     temp = long_neg((PyLongObject*)ndigits);
-    Py_DECREF(ndigits);
-    ndigits = temp;
+    Py_SETREF(ndigits, temp);
     if (ndigits == NULL)
         return NULL;
 
@@ -4981,21 +4964,18 @@ int___round___impl(PyObject *self, PyObject *o_ndigits)
 
     temp = long_pow(result, ndigits, Py_None);
     Py_DECREF(ndigits);
-    Py_DECREF(result);
-    result = temp;
+    Py_SETREF(result, temp);
     if (result == NULL)
         return NULL;
 
     temp = _PyLong_DivmodNear(self, result);
-    Py_DECREF(result);
-    result = temp;
+    Py_SETREF(result, temp);
     if (result == NULL)
         return NULL;
 
     temp = long_sub((PyLongObject *)self,
                     (PyLongObject *)PyTuple_GET_ITEM(result, 1));
-    Py_DECREF(result);
-    result = temp;
+    Py_SETREF(result, temp);
 
     return result;
 }
@@ -5063,8 +5043,7 @@ int_bit_length_impl(PyObject *self)
     Py_DECREF(x);
     if (y == NULL)
         goto error;
-    Py_DECREF(result);
-    result = y;
+    Py_SETREF(result, y);
 
     x = (PyLongObject *)PyLong_FromLong((long)msd_bits);
     if (x == NULL)
@@ -5073,8 +5052,7 @@ int_bit_length_impl(PyObject *self)
     Py_DECREF(x);
     if (y == NULL)
         goto error;
-    Py_DECREF(result);
-    result = y;
+    Py_SETREF(result, y);
 
     return (PyObject *)result;
 
@@ -5140,8 +5118,7 @@ int_bit_count_impl(PyObject *self)
         if (y == NULL) {
             goto error;
         }
-        Py_DECREF(result);
-        result = y;
+        Py_SETREF(result, y);
     }
 
     return result;
@@ -5154,10 +5131,9 @@ int_bit_count_impl(PyObject *self)
 /*[clinic input]
 int.as_integer_ratio
 
-Return integer ratio.
+Return a pair of integers, whose ratio is equal to the original int.
 
-Return a pair of integers, whose ratio is exactly equal to the original int
-and with a positive denominator.
+The ratio is in lowest terms and has a positive denominator.
 
 >>> (10).as_integer_ratio()
 (10, 1)
@@ -5169,7 +5145,7 @@ and with a positive denominator.
 
 static PyObject *
 int_as_integer_ratio_impl(PyObject *self)
-/*[clinic end generated code: output=e60803ae1cc8621a input=55ce3058e15de393]*/
+/*[clinic end generated code: output=e60803ae1cc8621a input=384ff1766634bec2]*/
 {
     PyObject *ratio_tuple;
     PyObject *numerator = long_long(self);
@@ -5353,7 +5329,7 @@ PyDoc_STRVAR(long_doc,
 int(x, base=10) -> integer\n\
 \n\
 Convert a number or string to an integer, or return 0 if no arguments\n\
-are given.  If x is a number, return x.__int__().  For floating point\n\
+are given.  If x is a number, return x.__int__().  For floating-point\n\
 numbers, this truncates towards zero.\n\
 \n\
 If x is not a number or if base is given, then x must be a string,\n\

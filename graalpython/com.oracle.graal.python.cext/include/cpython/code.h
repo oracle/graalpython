@@ -8,9 +8,28 @@
 #ifndef Py_LIMITED_API
 #ifndef Py_CODE_H
 #define Py_CODE_H
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Count of all local monitoring events */
+#define  _PY_MONITORING_LOCAL_EVENTS 10
+/* Count of all "real" monitoring events (not derived from other events) */
+#define _PY_MONITORING_UNGROUPED_EVENTS 15
+/* Count of all  monitoring events */
+#define _PY_MONITORING_EVENTS 17
+
+/* Tables of which tools are active for each monitored event. */
+/* For 3.12 ABI compatibility this is over sized */
+typedef struct _Py_LocalMonitors {
+    /* Only _PY_MONITORING_LOCAL_EVENTS of these are used */
+    uint8_t tools[_PY_MONITORING_UNGROUPED_EVENTS];
+} _Py_LocalMonitors;
+
+typedef struct _Py_GlobalMonitors {
+    uint8_t tools[_PY_MONITORING_UNGROUPED_EVENTS];
+} _Py_GlobalMonitors;
 
 /* Each instruction in a code object is a fixed-width value,
  * currently 2 bytes: 1-byte opcode + 1-byte oparg.  The EXTENDED_ARG
@@ -140,13 +159,14 @@ struct PyCodeObject _PyCode_DEF(1);
 */
 #define PY_PARSER_REQUIRES_FUTURE_KEYWORD
 
-#define CO_MAXBLOCKS 20 /* Max static block nesting within a function */
+#define CO_MAXBLOCKS 21 /* Max static block nesting within a function */
 
 PyAPI_DATA(PyTypeObject) PyCode_Type;
 
-#define PyCode_Check(op) Py_IS_TYPE(op, &PyCode_Type)
+#define PyCode_Check(op) Py_IS_TYPE((op), &PyCode_Type)
 #define PyCode_GetNumFree(op) ((op)->co_nfreevars)
 #define _PyCode_CODE(CO) ((_Py_CODEUNIT *)(CO)->co_code_adaptive)
+
 #define _PyCode_NBYTES(CO) (Py_SIZE(CO) * (Py_ssize_t)sizeof(_Py_CODEUNIT))
 
 /* Public interface */

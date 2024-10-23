@@ -964,8 +964,7 @@ pyexpat_xmlparser_ExternalEntityParserCreate_impl(xmlparseobject *self,
     new_parser->itself = XML_ExternalEntityParserCreate(self->itself, context,
                                                         encoding);
     new_parser->handlers = 0;
-    new_parser->intern = self->intern;
-    Py_XINCREF(new_parser->intern);
+    new_parser->intern = Py_XNewRef(self->intern);
 
     if (self->buffer != NULL) {
         new_parser->buffer = PyMem_Malloc(new_parser->buffer_size);
@@ -996,8 +995,7 @@ pyexpat_xmlparser_ExternalEntityParserCreate_impl(xmlparseobject *self,
     for (i = 0; handler_info[i].name != NULL; i++) {
         PyObject *handler = self->handlers[i];
         if (handler != NULL) {
-            Py_INCREF(handler);
-            new_parser->handlers[i] = handler;
+            new_parser->handlers[i] = Py_NewRef(handler);
             handler_info[i].setter(new_parser->itself,
                                    handler_info[i].handler);
         }
@@ -1237,8 +1235,7 @@ xmlparse_handler_getter(xmlparseobject *self, struct HandlerInfo *hi)
     PyObject *result = self->handlers[handlernum];
     if (result == NULL)
         result = Py_None;
-    Py_INCREF(result);
-    return result;
+    return Py_NewRef(result);
 }
 
 static int

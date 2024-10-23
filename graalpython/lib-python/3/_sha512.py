@@ -270,7 +270,7 @@ class sha512(object, metaclass=Immutable):
     digest_size = digestsize = SHA_DIGESTSIZE
     block_size = SHA_BLOCKSIZE
 
-    def __init__(self, s=None, *, usedforsecurity=True):
+    def __init__(self, s=None, usedforsecurity=True):
         self.name = 'sha512'
         self._sha = sha_init()
         if s:
@@ -293,7 +293,7 @@ class sha512(object, metaclass=Immutable):
 class sha384(sha512):
     digest_size = digestsize = 48
 
-    def __init__(self, s=None, *, usedforsecurity=True):
+    def __init__(self, s=None, usedforsecurity=True):
         self.name = 'sha384'
         self._sha = sha384_init()
         if s:

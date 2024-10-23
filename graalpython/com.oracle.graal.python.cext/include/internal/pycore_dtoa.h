@@ -3,6 +3,8 @@
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
+#ifndef Py_INTERNAL_DTOA_H
+#define Py_INTERNAL_DTOA_H
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,3 +33,4 @@ PyAPI_FUNC(double) _Py_dg_infinity(int sign);
 #ifdef __cplusplus
 }
 #endif
+#endif /* !Py_INTERNAL_DTOA_H */

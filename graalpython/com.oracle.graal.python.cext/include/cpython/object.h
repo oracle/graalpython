@@ -499,8 +499,8 @@ PyAPI_FUNC(int) _PyTrash_cond(PyObject *op, destructor dealloc);
     } while (0);
 
 #define Py_TRASHCAN_BEGIN(op, dealloc) \
-    Py_TRASHCAN_BEGIN_CONDITION(op, \
-        _PyTrash_cond(_PyObject_CAST(op), (destructor)dealloc))
+    Py_TRASHCAN_BEGIN_CONDITION((op), \
+        _PyTrash_cond(_PyObject_CAST(op), (destructor)(dealloc)))
 
 /* The following two macros, Py_TRASHCAN_SAFE_BEGIN and
  * Py_TRASHCAN_SAFE_END, are deprecated since version 3.11 and

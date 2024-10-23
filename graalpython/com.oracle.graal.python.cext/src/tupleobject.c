@@ -75,8 +75,7 @@ tuple_alloc(Py_ssize_t size)
 static inline PyObject *
 tuple_get_empty(void)
 {
-    Py_INCREF(&_Py_SINGLETON(tuple_empty));
-    return (PyObject *)&_Py_SINGLETON(tuple_empty);
+    return Py_NewRef(&_Py_SINGLETON(tuple_empty));
 }
 
 PyObject *
@@ -197,8 +196,7 @@ PyTuple_Pack(Py_ssize_t n, ...)
     }
     for (int i = 0; i < n; i++) {
         PyObject *o = va_arg(vargs, PyObject *);
-        Py_XINCREF(o);
-        PyTuple_SetItem(result, i, o);
+        PyTuple_SetItem(result, i, Py_NewRef(o));
     }
  end:
     va_end(vargs);
@@ -317,7 +315,7 @@ error:
 
 /* Hash for tuples. This is a slightly simplified version of the xxHash
    non-cryptographic hash:
-   - we do not use any parallellism, there is only 1 accumulator.
+   - we do not use any parallelism, there is only 1 accumulator.
    - we drop the final mixing since this is just a permutation of the
      output space: it does not help against collisions.
    - at the end, we mangle the length with a single constant.
@@ -394,8 +392,7 @@ tupleitem(PyTupleObject *a, Py_ssize_t i)
         PyErr_SetString(PyExc_IndexError, "tuple index out of range");
         return NULL;
     }
-    Py_INCREF(a->ob_item[i]);
-    return a->ob_item[i];
+    return Py_NewRef(a->ob_item[i]);
 }
 
 PyObject *
@@ -412,8 +409,7 @@ _PyTuple_FromArray(PyObject *const *src, Py_ssize_t n)
     PyObject **dst = tuple->ob_item;
     for (Py_ssize_t i = 0; i < n; i++) {
         PyObject *item = src[i];
-        Py_INCREF(item);
-        dst[i] = item;
+        dst[i] = Py_NewRef(item);
     }
     _PyObject_GC_TRACK(tuple);
     return (PyObject *)tuple;
@@ -452,8 +448,7 @@ tupleslice(PyTupleObject *a, Py_ssize_t ilow,
     if (ihigh < ilow)
         ihigh = ilow;
     if (ilow == 0 && ihigh == Py_SIZE(a) && PyTuple_CheckExact(a)) {
-        Py_INCREF(a);
-        return (PyObject *)a;
+        return Py_NewRef(a);
     }
     return _PyTuple_FromArray(a->ob_item + ilow, ihigh - ilow);
 }
@@ -476,8 +471,7 @@ tupleconcat(PyTupleObject *a, PyObject *bb)
     PyObject **src, **dest;
     PyTupleObject *np;
     if (Py_SIZE(a) == 0 && PyTuple_CheckExact(bb)) {
-        Py_INCREF(bb);
-        return bb;
+        return Py_NewRef(bb);
     }
     if (!PyTuple_Check(bb)) {
         PyErr_Format(PyExc_TypeError,
@@ -488,8 +482,7 @@ tupleconcat(PyTupleObject *a, PyObject *bb)
     PyTupleObject *b = (PyTupleObject *)bb;
 
     if (Py_SIZE(b) == 0 && PyTuple_CheckExact(a)) {
-        Py_INCREF(a);
-        return (PyObject *)a;
+        return Py_NewRef(a);
     }
     assert((size_t)Py_SIZE(a) + (size_t)Py_SIZE(b) < PY_SSIZE_T_MAX);
     size = Py_SIZE(a) + Py_SIZE(b);
@@ -505,15 +498,13 @@ tupleconcat(PyTupleObject *a, PyObject *bb)
     dest = np->ob_item;
     for (i = 0; i < Py_SIZE(a); i++) {
         PyObject *v = src[i];
-        Py_INCREF(v);
-        dest[i] = v;
+        dest[i] = Py_NewRef(v);
     }
     src = b->ob_item;
     dest = np->ob_item + Py_SIZE(a);
     for (i = 0; i < Py_SIZE(b); i++) {
         PyObject *v = src[i];
-        Py_INCREF(v);
-        dest[i] = v;
+        dest[i] = Py_NewRef(v);
     }
     _PyObject_GC_TRACK(np);
     return (PyObject *)np;
@@ -528,8 +519,7 @@ tuplerepeat(PyTupleObject *a, Py_ssize_t n)
         if (PyTuple_CheckExact(a)) {
             /* Since tuples are immutable, we can return a shared
                copy in this case */
-            Py_INCREF(a);
-            return (PyObject *)a;
+            return Py_NewRef(a);
         }
     }
     if (Py_SIZE(a) == 0 || n <= 0) {
@@ -808,7 +798,7 @@ tuple_subtype_new(PyTypeObject *type, PyObject *iterable)
     for (i = 0; i < n; i++) {
         item = PyTuple_GET_ITEM(tmp, i);
         Py_INCREF(item);
-        ((PyTupleObject*) newobj)->ob_item[i] = item; // PyTuple_SETITEM
+        ((PyTupleObject*) newobj)->ob_item[i] = Py_NewRef(item); // PyTuple_SETITEM
     }
     Py_DECREF(tmp);
     return (PyObject*) newobj;
@@ -855,8 +845,7 @@ tuplesubscript(PyTupleObject* self, PyObject* item)
         else if (start == 0 && step == 1 &&
                  slicelength == PyTuple_GET_SIZE(self) &&
                  PyTuple_CheckExact(self)) {
-            Py_INCREF(self);
-            return (PyObject *)self;
+            return Py_NewRef(self);
         }
         else {
             PyTupleObject* result = tuple_alloc(slicelength);
@@ -866,8 +855,7 @@ tuplesubscript(PyTupleObject* self, PyObject* item)
             dest = result->ob_item;
             for (cur = start, i = 0; i < slicelength;
                  cur += step, i++) {
-                it = src[cur];
-                Py_INCREF(it);
+                it = Py_NewRef(src[cur]);
                 dest[i] = it;
             }
 
@@ -1004,10 +992,6 @@ _PyTuple_Resize(PyObject **pv, Py_ssize_t newsize)
         return *pv == NULL ? -1 : 0;
     }
 
-    /* XXX UNREF/NEWREF interface should be more symmetrical */
-#ifdef Py_REF_DEBUG
-    _Py_RefTotal--;
-#endif
     if (_PyObject_GC_IS_TRACKED(v)) {
         _PyObject_GC_UNTRACK(v);
     }
@@ -1105,8 +1089,7 @@ tupleiter_next(tupleiterobject *it)
     if (it->it_index < PyTuple_GET_SIZE(seq)) {
         item = PyTuple_GET_ITEM(seq, it->it_index);
         ++it->it_index;
-        Py_INCREF(item);
-        return item;
+        return Py_NewRef(item);
     }
 
     it->it_seq = NULL;
@@ -1212,8 +1195,7 @@ tuple_iter(PyObject *seq)
     if (it == NULL)
         return NULL;
     it->it_index = 0;
-    Py_INCREF(seq);
-    it->it_seq = (PyTupleObject *)seq;
+    it->it_seq = (PyTupleObject *)Py_NewRef(seq);
     _PyObject_GC_TRACK(it);
     return (PyObject *)it;
 }

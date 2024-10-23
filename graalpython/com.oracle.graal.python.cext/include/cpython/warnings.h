@@ -22,4 +22,4 @@ PyAPI_FUNC(int) PyErr_WarnExplicitFormat(
     const char *format, ...);
 
 // DEPRECATED: Use PyErr_WarnEx() instead.
-#define PyErr_Warn(category, msg) PyErr_WarnEx(category, msg, 1)
+#define PyErr_Warn(category, msg) PyErr_WarnEx((category), (msg), 1)

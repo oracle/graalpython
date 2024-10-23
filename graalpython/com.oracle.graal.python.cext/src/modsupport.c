@@ -368,8 +368,7 @@ do_mkvalue(const char **p_format, va_list *p_va, int flags)
             else
                 n = -1;
             if (u == NULL) {
-                v = Py_None;
-                Py_INCREF(v);
+                v = Py_NewRef(Py_None);
             }
             else {
                 if (n < 0)
@@ -419,8 +418,7 @@ do_mkvalue(const char **p_format, va_list *p_va, int flags)
             else
                 n = -1;
             if (str == NULL) {
-                v = Py_None;
-                Py_INCREF(v);
+                v = Py_NewRef(Py_None);
             }
             else {
                 if (n < 0) {
@@ -455,8 +453,7 @@ do_mkvalue(const char **p_format, va_list *p_va, int flags)
             else
                 n = -1;
             if (str == NULL) {
-                v = Py_None;
-                Py_INCREF(v);
+                v = Py_NewRef(Py_None);
             }
             else {
                 if (n < 0) {

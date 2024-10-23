@@ -258,7 +258,7 @@ class sha256(object, metaclass=Immutable):
     digest_size = digestsize = SHA_DIGESTSIZE
     block_size = SHA_BLOCKSIZE
 
-    def __init__(self, s=None, *, usedforsecurity=True):
+    def __init__(self, s=None, usedforsecurity=True):
         self.name = 'sha256'
         self._sha = sha_init()
         if s:
@@ -281,7 +281,7 @@ class sha256(object, metaclass=Immutable):
 class sha224(sha256):
     digest_size = digestsize = 28
 
-    def __init__(self, s=None, *, usedforsecurity=True):
+    def __init__(self, s=None, usedforsecurity=True):
         self.name = 'sha224'
         self._sha = sha224_init()
         if s:

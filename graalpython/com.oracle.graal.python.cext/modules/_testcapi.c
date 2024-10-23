@@ -354,8 +354,7 @@ dict_getitem_knownhash(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    Py_XINCREF(result);
-    return result;
+    return Py_XNewRef(result);
 }
 
 /* Issue #4701: Check that PyObject_Hash implicitly calls
@@ -4055,8 +4054,7 @@ static PyMethodDef ml = {
 static PyObject *
 _test_incref(PyObject *ob)
 {
-    Py_INCREF(ob);
-    return ob;
+    return Py_NewRef(ob);
 }
 
 static PyObject *
@@ -4112,7 +4110,9 @@ test_structseq_newtype_doesnt_leak(PyObject *Py_UNUSED(self),
     descr.n_in_sequence = 1;
 
     PyTypeObject* structseq_type = PyStructSequence_NewType(&descr);
-    assert(structseq_type != NULL);
+    if (structseq_type == NULL) {
+        return NULL;
+    }
     assert(PyType_Check(structseq_type));
     assert(PyType_FastSubclass(structseq_type, Py_TPFLAGS_TUPLE_SUBCLASS));
     Py_DECREF(structseq_type);
@@ -4889,7 +4889,7 @@ return_result_with_error(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 }
 
-static PyObject*
+static PyObject *
 getitem_with_error(PyObject *self, PyObject *args)
 {
     PyObject *map, *key;
@@ -5731,8 +5731,7 @@ _null_to_none(PyObject* obj)
     if (obj == NULL) {
         Py_RETURN_NONE;
     }
-    Py_INCREF(obj);
-    return obj;
+    return Py_NewRef(obj);
 }
 
 static PyObject*
@@ -5796,7 +5795,6 @@ meth_fastcall_keywords(PyObject* self, PyObject* const* args,
     return Py_BuildValue("NNN", _null_to_none(self), pyargs, pykwargs);
 }
 
-
 static PyObject*
 pynumber_tobase(PyObject *module, PyObject *args)
 {
@@ -5808,7 +5806,6 @@ pynumber_tobase(PyObject *module, PyObject *args)
     }
     return PyNumber_ToBase(obj, base);
 }
-
 
 static PyObject*
 test_set_type_size(PyObject *self, PyObject *Py_UNUSED(ignored))
@@ -6491,8 +6488,7 @@ function_get_code(PyObject *self, PyObject *func)
 {
     PyObject *code = PyFunction_GetCode(func);
     if (code != NULL) {
-        Py_INCREF(code);
-        return code;
+        return Py_NewRef(code);
     } else {
         return NULL;
     }
@@ -6503,8 +6499,7 @@ function_get_globals(PyObject *self, PyObject *func)
 {
     PyObject *globals = PyFunction_GetGlobals(func);
     if (globals != NULL) {
-        Py_INCREF(globals);
-        return globals;
+        return Py_NewRef(globals);
     } else {
         return NULL;
     }
@@ -6515,8 +6510,7 @@ function_get_module(PyObject *self, PyObject *func)
 {
     PyObject *module = PyFunction_GetModule(func);
     if (module != NULL) {
-        Py_INCREF(module);
-        return module;
+        return Py_NewRef(module);
     } else {
         return NULL;
     }
@@ -7162,8 +7156,7 @@ awaitObject_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         return NULL;
     }
 
-    Py_INCREF(v);
-    ao->ao_iterator = v;
+    ao->ao_iterator = Py_NewRef(v);
 
     return (PyObject *)ao;
 }
@@ -7180,8 +7173,7 @@ awaitObject_dealloc(awaitObject *ao)
 static PyObject *
 awaitObject_await(awaitObject *ao)
 {
-    Py_INCREF(ao->ao_iterator);
-    return ao->ao_iterator;
+    return Py_NewRef(ao->ao_iterator);
 }
 
 static PyAsyncMethods awaitType_as_async = {
@@ -7359,7 +7351,6 @@ static PyTypeObject MyList_Type = {
     MyList_new,                                 /* tp_new */
 };
 
-
 /* Test PEP 560 */
 
 typedef struct {
@@ -7402,8 +7393,7 @@ generic_alias_new(PyObject *item)
     if (o == NULL) {
         return NULL;
     }
-    Py_INCREF(item);
-    o->item = item;
+    o->item = Py_NewRef(item);
     return (PyObject*) o;
 }
 

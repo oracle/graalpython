@@ -256,7 +256,7 @@ _PyType_InitCache(PyInterpreterState *interp)
         entry->version = 0;
         // Set to None so _PyType_Lookup() can use Py_SETREF(),
         // rather than using slower Py_XSETREF().
-        entry->name = Py_NewRef(Py_None);
+        entry->name = Py_None;
         entry->value = NULL;
     }
 }
@@ -459,8 +459,7 @@ type_name(PyTypeObject *type, void *context)
     if (type->tp_flags & Py_TPFLAGS_HEAPTYPE) {
         PyHeapTypeObject* et = (PyHeapTypeObject*)type;
 
-        Py_INCREF(et->ht_name);
-        return et->ht_name;
+        return Py_NewRef(et->ht_name);
     }
     else {
         return PyUnicode_FromString(_PyType_Name(type));
@@ -472,8 +471,7 @@ type_qualname(PyTypeObject *type, void *context)
 {
     if (type->tp_flags & Py_TPFLAGS_HEAPTYPE) {
         PyHeapTypeObject* et = (PyHeapTypeObject*)type;
-        Py_INCREF(et->ht_qualname);
-        return et->ht_qualname;
+        return Py_NewRef(et->ht_qualname);
     }
     else {
         return PyUnicode_FromString(_PyType_Name(type));
@@ -506,8 +504,7 @@ type_set_name(PyTypeObject *type, PyObject *value, void *context)
     }
 
     type->tp_name = tp_name;
-    Py_INCREF(value);
-    Py_SETREF(((PyHeapTypeObject*)type)->ht_name, value);
+    Py_SETREF(((PyHeapTypeObject*)type)->ht_name, Py_NewRef(value));
 
     return 0;
 }
@@ -527,8 +524,7 @@ type_set_qualname(PyTypeObject *type, PyObject *value, void *context)
     }
 
     et = (PyHeapTypeObject*)type;
-    Py_INCREF(value);
-    Py_SETREF(et->ht_qualname, value);
+    Py_SETREF(et->ht_qualname, Py_NewRef(value));
     return 0;
 }
 
@@ -556,8 +552,7 @@ type_module(PyTypeObject *type, void *context)
                 PyUnicode_InternInPlace(&mod);
         }
         else {
-            mod = &_Py_ID(builtins);
-            Py_INCREF(mod);
+            mod = Py_NewRef(&_Py_ID(builtins));
         }
     }
     return mod;
@@ -589,8 +584,7 @@ type_abstractmethods(PyTypeObject *type, void *context)
         }
         return NULL;
     }
-    Py_INCREF(mod);
-    return mod;
+    return Py_NewRef(mod);
 }
 
 static int
@@ -1023,8 +1017,7 @@ type_repr(PyTypeObject *type)
     if (mod == NULL)
         PyErr_Clear();
     else if (!PyUnicode_Check(mod)) {
-        Py_DECREF(mod);
-        mod = NULL;
+        Py_SETREF(mod, NULL);
     }
     name = type_qualname(type, NULL);
     if (name == NULL) {
@@ -1064,8 +1057,7 @@ type_call(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
         if (nargs == 1 && (kwds == NULL || !PyDict_GET_SIZE(kwds))) {
             obj = (PyObject *) Py_TYPE(PyTuple_GET_ITEM(args, 0));
-            Py_INCREF(obj);
-            return obj;
+            return Py_NewRef(obj);
         }
 
         /* SF bug 475327 -- if that didn't trigger, we need 3
@@ -1099,8 +1091,7 @@ type_call(PyTypeObject *type, PyObject *args, PyObject *kwds)
         int res = type->tp_init(obj, args, kwds);
         if (res < 0) {
             assert(_PyErr_Occurred(tstate));
-            Py_DECREF(obj);
-            obj = NULL;
+            Py_SETREF(obj, NULL);
         }
         else {
             assert(!_PyErr_Occurred(tstate));
@@ -1114,8 +1105,13 @@ PyObject *
 _PyType_AllocNoTrack(PyTypeObject *type, Py_ssize_t nitems)
 {
     PyObject *obj;
+    /* The +1 on nitems is needed for most types but not all. We could save a
+     * bit of space by allocating one less item in certain cases, depending on
+     * the type. However, given the extra complexity (e.g. an additional type
+     * flag to indicate when that is safe) it does not seem worth the memory
+     * savings. An example type that doesn't need the +1 is a subclass of
+     * tuple. See GH-100659 and GH-81381. */
     const size_t size = _PyObject_VAR_SIZE(type, nitems+1);
-    /* note that we need to add one, for the sentinel */
 
     const size_t presize = _PyType_PreHeaderSize(type);
     char *alloc = PyObject_Malloc(size + presize);
@@ -2017,8 +2013,7 @@ mro_implementation(PyTypeObject *type)
         return NULL;
     }
 
-    Py_INCREF(type);
-    PyList_SET_ITEM(result, 0, (PyObject *)type);
+    PyList_SET_ITEM(result, 0, Py_NewRef(type));
     if (pmerge(result, to_merge, n + 1) < 0) {
         Py_CLEAR(result);
     }
@@ -2403,8 +2398,7 @@ subtype_setdict(PyObject *obj, PyObject *value, void *context)
                      "not a '%.200s'", Py_TYPE(value)->tp_name);
         return -1;
     }
-    Py_XINCREF(value);
-    Py_XSETREF(*dictptr, value);
+    Py_XSETREF(*dictptr, Py_XNewRef(value));
     return 0;
 }
 
@@ -4662,8 +4656,7 @@ object_repr(PyObject *self)
     if (mod == NULL)
         PyErr_Clear();
     else if (!PyUnicode_Check(mod)) {
-        Py_DECREF(mod);
-        mod = NULL;
+        Py_SETREF(mod, NULL);
     }
     name = type_qualname(type, NULL);
     if (name == NULL) {
@@ -4702,16 +4695,14 @@ object_richcompare(PyObject *self, PyObject *other, int op)
         /* Return NotImplemented instead of False, so if two
            objects are compared, both get a chance at the
            comparison.  See issue #1393. */
-        res = (self == other) ? Py_True : Py_NotImplemented;
-        Py_INCREF(res);
+        res = Py_NewRef((self == other) ? Py_True : Py_NotImplemented);
         break;
 
     case Py_NE:
         /* By default, __ne__() delegates to __eq__() and inverts the result,
            unless the latter returns NotImplemented. */
         if (Py_TYPE(self)->tp_richcompare == NULL) {
-            res = Py_NotImplemented;
-            Py_INCREF(res);
+            res = Py_NewRef(Py_NotImplemented);
             break;
         }
         res = (*Py_TYPE(self)->tp_richcompare)(self, other, Py_EQ);
@@ -4722,17 +4713,15 @@ object_richcompare(PyObject *self, PyObject *other, int op)
                 res = NULL;
             else {
                 if (ok)
-                    res = Py_False;
+                    res = Py_NewRef(Py_False);
                 else
-                    res = Py_True;
-                Py_INCREF(res);
+                    res = Py_NewRef(Py_True);
             }
         }
         break;
 
     default:
-        res = Py_NotImplemented;
-        Py_INCREF(res);
+        res = Py_NewRef(Py_NotImplemented);
         break;
     }
 
@@ -4742,8 +4731,7 @@ object_richcompare(PyObject *self, PyObject *other, int op)
 static PyObject *
 object_get_class(PyObject *self, void *closure)
 {
-    Py_INCREF(Py_TYPE(self));
-    return (PyObject *)(Py_TYPE(self));
+    return Py_NewRef(Py_TYPE(self));
 }
 
 static int
@@ -4996,8 +4984,7 @@ _PyType_GetSlotNames(PyTypeObject *cls)
                          cls->tp_name, Py_TYPE(slotnames)->tp_name);
             return NULL;
         }
-        Py_INCREF(slotnames);
-        return slotnames;
+        return Py_NewRef(slotnames);
     }
     else {
         if (PyErr_Occurred()) {
@@ -5043,8 +5030,7 @@ object_getstate_default(PyObject *obj, int required)
     }
 
     if (_PyObject_IsInstanceDictEmpty(obj)) {
-        state = Py_None;
-        Py_INCREF(state);
+        state = Py_NewRef(Py_None);
     }
     else {
         state = PyObject_GenericGetDict(obj, NULL);
@@ -5067,7 +5053,7 @@ object_getstate_default(PyObject *obj, int required)
         {
             basicsize += sizeof(PyObject *);
         }
-        if (Py_TYPE(obj)->tp_weaklistoffset) {
+        if (Py_TYPE(obj)->tp_weaklistoffset > 0) {
             basicsize += sizeof(PyObject *);
         }
         if (slotnames != Py_None) {
@@ -5098,8 +5084,7 @@ object_getstate_default(PyObject *obj, int required)
         for (i = 0; i < slotnames_size; i++) {
             PyObject *name, *value;
 
-            name = PyList_GET_ITEM(slotnames, i);
-            Py_INCREF(name);
+            name = Py_NewRef(PyList_GET_ITEM(slotnames, i));
             if (_PyObject_LookupAttr(obj, name, &value) < 0) {
                 Py_DECREF(name);
                 goto error;
@@ -5169,7 +5154,7 @@ object_getstate(PyObject *obj, int required)
         PyCFunction_GET_SELF(getstate) == obj &&
         PyCFunction_GET_FUNCTION(getstate) == object___getstate__)
     {
-        /* If __getstate__ is not overriden pass the required argument. */
+        /* If __getstate__ is not overridden pass the required argument. */
         state = object_getstate_default(obj, required);
     }
     else {
@@ -5231,10 +5216,8 @@ _PyObject_GetNewArguments(PyObject *obj, PyObject **args, PyObject **kwargs)
             Py_DECREF(newargs);
             return -1;
         }
-        *args = PyTuple_GET_ITEM(newargs, 0);
-        Py_INCREF(*args);
-        *kwargs = PyTuple_GET_ITEM(newargs, 1);
-        Py_INCREF(*kwargs);
+        *args = Py_NewRef(PyTuple_GET_ITEM(newargs, 0));
+        *kwargs = Py_NewRef(PyTuple_GET_ITEM(newargs, 1));
         Py_DECREF(newargs);
 
         /* XXX We should perhaps allow None to be passed here. */
@@ -5302,8 +5285,7 @@ _PyObject_GetItemsIter(PyObject *obj, PyObject **listitems,
     }
 
     if (!PyList_Check(obj)) {
-        *listitems = Py_None;
-        Py_INCREF(*listitems);
+        *listitems = Py_NewRef(Py_None);
     }
     else {
         *listitems = PyObject_GetIter(obj);
@@ -5312,8 +5294,7 @@ _PyObject_GetItemsIter(PyObject *obj, PyObject **listitems,
     }
 
     if (!PyDict_Check(obj)) {
-        *dictitems = Py_None;
-        Py_INCREF(*dictitems);
+        *dictitems = Py_NewRef(Py_None);
     }
     else {
         PyObject *items = PyObject_CallMethodNoArgs(obj, &_Py_ID(items));
@@ -5378,12 +5359,10 @@ reduce_newobj(PyObject *obj)
             return NULL;
         }
         cls = (PyObject *) Py_TYPE(obj);
-        Py_INCREF(cls);
-        PyTuple_SET_ITEM(newargs, 0, cls);
+        PyTuple_SET_ITEM(newargs, 0, Py_NewRef(cls));
         for (i = 0; i < n; i++) {
             PyObject *v = PyTuple_GET_ITEM(args, i);
-            Py_INCREF(v);
-            PyTuple_SET_ITEM(newargs, i+1, v);
+            PyTuple_SET_ITEM(newargs, i+1, Py_NewRef(v));
         }
         Py_XDECREF(args);
     }
@@ -5562,11 +5541,13 @@ object.__format__
   /
 
 Default object formatter.
+
+Return str(self) if format_spec is empty. Raise TypeError otherwise.
 [clinic start generated code]*/
 
 static PyObject *
 object___format___impl(PyObject *self, PyObject *format_spec)
-/*[clinic end generated code: output=34897efb543a974b input=7c3b3bc53a6fb7fa]*/
+/*[clinic end generated code: output=34897efb543a974b input=b94d8feb006689ea]*/
 {
     /* Issue 7994: If we're converting to a string, we
        should reject format specifications */
@@ -5631,8 +5612,7 @@ object___dir___impl(PyObject *self)
     else {
         /* Copy __dict__ to avoid mutating it. */
         PyObject *temp = PyDict_Copy(dict);
-        Py_DECREF(dict);
-        dict = temp;
+        Py_SETREF(dict, temp);
     }
 
     if (dict == NULL)
@@ -7641,8 +7621,7 @@ slot_tp_hash(PyObject *self)
     func = lookup_maybe_method(self, &_Py_ID(__hash__), &unbound);
 
     if (func == Py_None) {
-        Py_DECREF(func);
-        func = NULL;
+        Py_SETREF(func, NULL);
     }
 
     if (func == NULL) {
@@ -7879,8 +7858,7 @@ slot_tp_descr_get(PyObject *self, PyObject *obj, PyObject *type)
         /* Avoid further slowdowns */
         if (tp->tp_descr_get == slot_tp_descr_get)
             tp->tp_descr_get = NULL;
-        Py_INCREF(self);
-        return self;
+        return Py_NewRef(self);
     }
     if (obj == NULL)
         obj = Py_None;
@@ -8974,14 +8952,12 @@ supercheck(PyTypeObject *type, PyObject *obj)
 
     /* Check for first bullet above (special case) */
     if (PyType_Check(obj) && PyType_IsSubtype((PyTypeObject *)obj, type)) {
-        Py_INCREF(obj);
-        return (PyTypeObject *)obj;
+        return (PyTypeObject *)Py_NewRef(obj);
     }
 
     /* Normal case */
     if (PyType_IsSubtype(Py_TYPE(obj), type)) {
-        Py_INCREF(Py_TYPE(obj));
-        return Py_TYPE(obj);
+        return (PyTypeObject*)Py_NewRef(Py_TYPE(obj));
     }
     else {
         /* Try the slow way */
@@ -9017,8 +8993,7 @@ super_descr_get(PyObject *self, PyObject *obj, PyObject *type)
 
     if (obj == NULL || obj == Py_None || su->obj != NULL) {
         /* Not binding to an object, or already bound */
-        Py_INCREF(self);
-        return self;
+        return Py_NewRef(self);
     }
     if (!Py_IS_TYPE(su, &PySuper_Type))
         /* If su is an instance of a (strict) subclass of super,
@@ -9036,10 +9011,8 @@ super_descr_get(PyObject *self, PyObject *obj, PyObject *type)
             Py_DECREF(obj_type);
             return NULL;
         }
-        Py_INCREF(su->type);
-        Py_INCREF(obj);
-        newobj->type = su->type;
-        newobj->obj = obj;
+        newobj->type = (PyTypeObject*)Py_NewRef(su->type);
+        newobj->obj = Py_NewRef(obj);
         newobj->obj_type = obj_type;
         return (PyObject *)newobj;
     }
@@ -9163,8 +9136,7 @@ super_init_impl(PyObject *self, PyTypeObject *type, PyObject *obj) {
             return -1;
         Py_INCREF(obj);
     }
-    Py_INCREF(type);
-    Py_XSETREF(su->type, type);
+    Py_XSETREF(su->type, (PyTypeObject*)Py_NewRef(type));
     Py_XSETREF(su->obj, obj);
     Py_XSETREF(su->obj_type, obj_type);
     return 0;

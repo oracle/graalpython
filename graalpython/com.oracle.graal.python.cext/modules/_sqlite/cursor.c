@@ -840,6 +840,7 @@ _pysqlite_query_execute(pysqlite_Cursor* self, int multiple, PyObject* operation
     Py_SETREF(self->description, Py_None);
 
     if (self->statement) {
+        // Reset pending statements on this cursor.
         (void)stmt_reset(self->statement);
     }
 
