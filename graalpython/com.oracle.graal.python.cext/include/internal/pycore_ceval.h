@@ -12,15 +12,8 @@ extern "C" {
 struct pyruntimestate;
 struct _ceval_runtime_state;
 
-/* WASI has limited call stack. Python's recursion limit depends on code
-   layout, optimization, and WASI runtime. Wasmtime can handle about 700-750
-   recursions, sometimes less. 600 is a more conservative limit. */
 #ifndef Py_DEFAULT_RECURSION_LIMIT
-#  ifdef __wasi__
-#    define Py_DEFAULT_RECURSION_LIMIT 600
-#  else
-#    define Py_DEFAULT_RECURSION_LIMIT 1000
-#  endif
+#  define Py_DEFAULT_RECURSION_LIMIT 1000
 #endif
 
 #include "pycore_interp.h"        // PyInterpreterState.eval_frame

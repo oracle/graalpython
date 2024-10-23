@@ -1098,8 +1098,7 @@ _Py_COMP_DIAG_POP
         /* Encode object */
         if (!recode_strings &&
             (PyBytes_Check(arg) || PyByteArray_Check(arg))) {
-            s = arg;
-            Py_INCREF(s);
+            s = Py_NewRef(arg);
             if (PyBytes_Check(arg)) {
                 size = PyBytes_GET_SIZE(s);
                 ptr = PyBytes_AS_STRING(s);
@@ -2542,8 +2541,7 @@ _PyArg_UnpackKeywordsWithVararg(PyObject *const *args, Py_ssize_t nargs,
     /* copy tuple args */
     for (i = 0; i < nargs; i++) {
         if (i >= vararg) {
-            Py_INCREF(args[i]);
-            PyTuple_SET_ITEM(buf[vararg], i - vararg, args[i]);
+            PyTuple_SET_ITEM(buf[vararg], i - vararg, Py_NewRef(args[i]));
             continue;
         }
         else {

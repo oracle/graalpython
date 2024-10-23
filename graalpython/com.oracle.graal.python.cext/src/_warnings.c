@@ -382,8 +382,7 @@ get_filter(PyInterpreterState *interp, PyObject *category,
 
     action = get_default_action(interp);
     if (action != NULL) {
-        Py_INCREF(Py_None);
-        *item = Py_None;
+        *item = Py_NewRef(Py_None);
         return action;
     }
 
@@ -468,8 +467,7 @@ normalize_module(PyObject *filename)
         module = PyUnicode_Substring(filename, 0, len-3);
     }
     else {
-        module = filename;
-        Py_INCREF(module);
+        module = Py_NewRef(filename);
     }
     return module;
 }
@@ -751,8 +749,7 @@ warn_explicit(PyThreadState *tstate, PyObject *category, PyObject *message,
         goto cleanup;
 
  return_none:
-    result = Py_None;
-    Py_INCREF(result);
+    result = Py_NewRef(Py_None);
 
  cleanup:
     Py_XDECREF(item);
@@ -848,8 +845,7 @@ setup_context(Py_ssize_t stack_level, PyObject **filename, int *lineno,
     }
     else {
         globals = f->f_frame->f_globals;
-        *filename = f->f_frame->f_code->co_filename;
-        Py_INCREF(*filename);
+        *filename = Py_NewRef(f->f_frame->f_code->co_filename);
         *lineno = PyFrame_GetLineNumber(f);
         Py_DECREF(f);
     }
@@ -1135,11 +1131,7 @@ PyErr_WarnFormat(PyObject *category, Py_ssize_t stack_level,
     int res;
     va_list vargs;
 
-#ifdef HAVE_STDARG_PROTOTYPES
     va_start(vargs, format);
-#else
-    va_start(vargs);
-#endif
     res = _PyErr_WarnFormatV(NULL, category, stack_level, format, vargs);
     va_end(vargs);
     return res;
@@ -1152,11 +1144,7 @@ _PyErr_WarnFormat(PyObject *source, PyObject *category, Py_ssize_t stack_level,
     int res;
     va_list vargs;
 
-#ifdef HAVE_STDARG_PROTOTYPES
     va_start(vargs, format);
-#else
-    va_start(vargs);
-#endif
     res = _PyErr_WarnFormatV(source, category, stack_level, format, vargs);
     va_end(vargs);
     return res;
@@ -1169,11 +1157,7 @@ PyErr_ResourceWarning(PyObject *source, Py_ssize_t stack_level,
     int res;
     va_list vargs;
 
-#ifdef HAVE_STDARG_PROTOTYPES
     va_start(vargs, format);
-#else
-    va_start(vargs);
-#endif
     res = _PyErr_WarnFormatV(source, PyExc_ResourceWarning,
                              stack_level, format, vargs);
     va_end(vargs);
@@ -1277,11 +1261,7 @@ PyErr_WarnExplicitFormat(PyObject *category,
             goto exit;
     }
 
-#ifdef HAVE_STDARG_PROTOTYPES
     va_start(vargs, format);
-#else
-    va_start(vargs);
-#endif
     message = PyUnicode_FromFormatV(format, vargs);
     if (message != NULL) {
         PyObject *res;

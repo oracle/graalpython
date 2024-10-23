@@ -464,8 +464,7 @@ state_init(SRE_STATE* state, PatternObject* pattern, PyObject* string,
     state->start = (void*) ((char*) ptr + start * state->charsize);
     state->end = (void*) ((char*) ptr + end * state->charsize);
 
-    Py_INCREF(string);
-    state->string = string;
+    state->string = Py_NewRef(string);
     state->pos = start;
     state->endpos = end;
 
@@ -504,8 +503,7 @@ getslice(int isbytes, const void *ptr,
     if (isbytes) {
         if (PyBytes_CheckExact(string) &&
             start == 0 && end == PyBytes_GET_SIZE(string)) {
-            Py_INCREF(string);
-            return string;
+            return Py_NewRef(string);
         }
         return PyBytes_FromStringAndSize(
                 (const char *)ptr + start, end - start);
@@ -1163,8 +1161,7 @@ pattern_subx(_sremodulestate* module_state,
                 goto error;
         } else {
             /* filter is literal string */
-            item = filter;
-            Py_INCREF(item);
+            item = Py_NewRef(filter);
         }
 
         /* add to list */
@@ -1285,8 +1282,7 @@ static PyObject *
 _sre_SRE_Pattern___copy___impl(PatternObject *self)
 /*[clinic end generated code: output=85dedc2db1bd8694 input=a730a59d863bc9f5]*/
 {
-    Py_INCREF(self);
-    return (PyObject *)self;
+    return Py_NewRef(self);
 }
 
 /*[clinic input]
@@ -1301,8 +1297,7 @@ static PyObject *
 _sre_SRE_Pattern___deepcopy__(PatternObject *self, PyObject *memo)
 /*[clinic end generated code: output=2ad25679c1f1204a input=a465b1602f997bed]*/
 {
-    Py_INCREF(self);
-    return (PyObject *)self;
+    return Py_NewRef(self);
 }
 
 static PyObject *
@@ -1471,19 +1466,16 @@ _sre_compile_impl(PyObject *module, PyObject *pattern, int flags,
             PyBuffer_Release(&view);
     }
 
-    Py_INCREF(pattern);
-    self->pattern = pattern;
+    self->pattern = Py_NewRef(pattern);
 
     self->flags = flags;
 
     self->groups = groups;
 
     if (PyDict_GET_SIZE(groupindex) > 0) {
-        Py_INCREF(groupindex);
-        self->groupindex = groupindex;
+        self->groupindex = Py_NewRef(groupindex);
         if (PyTuple_GET_SIZE(indexgroup) > 0) {
-            Py_INCREF(indexgroup);
-            self->indexgroup = indexgroup;
+            self->indexgroup = Py_NewRef(indexgroup);
         }
     }
 
@@ -2034,8 +2026,7 @@ match_getslice_by_index(MatchObject* self, Py_ssize_t index, PyObject* def)
 
     if (self->string == Py_None || self->mark[index] < 0) {
         /* return default value if the string or group is undefined */
-        Py_INCREF(def);
-        return def;
+        return Py_NewRef(def);
     }
 
     ptr = getstring(self->string, &length, &isbytes, &charsize, &view);
@@ -2351,8 +2342,7 @@ match_regs(MatchObject* self)
         PyTuple_SET_ITEM(regs, index, item);
     }
 
-    Py_INCREF(regs);
-    self->regs = regs;
+    self->regs = Py_NewRef(regs);
 
     return regs;
 }
@@ -2366,8 +2356,7 @@ static PyObject *
 _sre_SRE_Match___copy___impl(MatchObject *self)
 /*[clinic end generated code: output=a779c5fc8b5b4eb4 input=3bb4d30b6baddb5b]*/
 {
-    Py_INCREF(self);
-    return (PyObject *)self;
+    return Py_NewRef(self);
 }
 
 /*[clinic input]
@@ -2382,8 +2371,7 @@ static PyObject *
 _sre_SRE_Match___deepcopy__(MatchObject *self, PyObject *memo)
 /*[clinic end generated code: output=ba7cb46d655e4ee2 input=779d12a31c2c325e]*/
 {
-    Py_INCREF(self);
-    return (PyObject *)self;
+    return Py_NewRef(self);
 }
 
 PyDoc_STRVAR(match_doc,
@@ -2412,8 +2400,7 @@ match_lastgroup_get(MatchObject *self, void *Py_UNUSED(ignored))
     {
         PyObject *result = PyTuple_GET_ITEM(self->pattern->indexgroup,
                                             self->lastindex);
-        Py_INCREF(result);
-        return result;
+        return Py_NewRef(result);
     }
     Py_RETURN_NONE;
 }
@@ -2422,8 +2409,7 @@ static PyObject *
 match_regs_get(MatchObject *self, void *Py_UNUSED(ignored))
 {
     if (self->regs) {
-        Py_INCREF(self->regs);
-        return self->regs;
+        return Py_NewRef(self->regs);
     } else
         return match_regs(self);
 }
@@ -2467,11 +2453,9 @@ pattern_new_match(_sremodulestate* module_state,
         if (!match)
             return NULL;
 
-        Py_INCREF(pattern);
-        match->pattern = pattern;
+        match->pattern = (PatternObject*)Py_NewRef(pattern);
 
-        Py_INCREF(state->string);
-        match->string = state->string;
+        match->string = Py_NewRef(state->string);
 
         match->regs = NULL;
         match->groups = pattern->groups+1;
@@ -2691,8 +2675,7 @@ pattern_scanner(_sremodulestate *module_state,
         return NULL;
     }
 
-    Py_INCREF(self);
-    scanner->pattern = (PyObject*) self;
+    scanner->pattern = Py_NewRef(self);
 
     PyObject_GC_Track(scanner);
     return (PyObject*) scanner;

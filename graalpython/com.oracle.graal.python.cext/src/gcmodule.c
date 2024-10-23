@@ -1867,8 +1867,7 @@ gc_is_tracked(PyObject *module, PyObject *obj)
         result = Py_True;
     else
         result = Py_False;
-    Py_INCREF(result);
-    return result;
+    return Py_NewRef(result);
 }
 
 /*[clinic input]

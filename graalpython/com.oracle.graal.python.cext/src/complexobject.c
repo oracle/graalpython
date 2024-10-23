@@ -449,8 +449,7 @@ to_complex(PyObject **pobj, Py_complex *pc)
         pc->real = PyFloat_AsDouble(obj);
         return 0;
     }
-    Py_INCREF(Py_NotImplemented);
-    *pobj = Py_NotImplemented;
+    *pobj = Py_NewRef(Py_NotImplemented);
     return -1;
 }
 
@@ -553,8 +552,7 @@ static PyObject *
 complex_pos(PyComplexObject *v)
 {
     if (PyComplex_CheckExact(v)) {
-        Py_INCREF(v);
-        return (PyObject *)v;
+        return Py_NewRef(v);
     }
     else
         return PyComplex_FromCComplex(v->cval);
@@ -631,8 +629,7 @@ complex_richcompare(PyObject *v, PyObject *w, int op)
     else
          res = Py_False;
 
-    Py_INCREF(res);
-    return res;
+    return Py_NewRef(res);
 
 Unimplemented:
     Py_RETURN_NOTIMPLEMENTED;
@@ -705,8 +702,7 @@ complex___complex___impl(PyComplexObject *self)
 /*[clinic end generated code: output=e6b35ba3d275dc9c input=3589ada9d27db854]*/
 {
     if (PyComplex_CheckExact(self)) {
-        Py_INCREF(self);
-        return (PyObject *)self;
+        return Py_NewRef(self);
     }
     else {
         return PyComplex_FromCComplex(self->cval);
@@ -889,14 +885,17 @@ complex.__new__ as complex_new
     real as r: object(c_default="NULL") = 0
     imag as i: object(c_default="NULL") = 0
 
-Create a complex number from a real part and an optional imaginary part.
+Create a complex number from a string or numbers.
 
-This is equivalent to (real + imag*1j) where imag defaults to 0.
+If a string is given, parse it as a complex number.
+If a single number is given, convert it to a complex number.
+If the 'real' or 'imag' arguments are given, create a complex number
+with the specified real and imaginary components.
 [clinic start generated code]*/
 
 static PyObject *
 complex_new_impl(PyTypeObject *type, PyObject *r, PyObject *i)
-/*[clinic end generated code: output=b6c7dd577b537dc1 input=f4c667f2596d4fd1]*/
+/*[clinic end generated code: output=b6c7dd577b537dc1 input=ff4268dc540958a4]*/
 {
     PyObject *tmp;
     PyNumberMethods *nbr, *nbi = NULL;
@@ -917,8 +916,7 @@ complex_new_impl(PyTypeObject *type, PyObject *r, PyObject *i)
            to exact complexes here.  If either the input or the
            output is a complex subclass, it will be handled below
            as a non-orthogonal vector.  */
-        Py_INCREF(r);
-        return r;
+        return Py_NewRef(r);
     }
     if (PyUnicode_Check(r)) {
         if (i != NULL) {

@@ -820,8 +820,7 @@ update_code_filenames(PyCodeObject *co, PyObject *oldname, PyObject *newname)
     if (PyUnicode_Compare(co->co_filename, oldname))
         return;
 
-    Py_INCREF(newname);
-    Py_XSETREF(co->co_filename, newname);
+    Py_XSETREF(co->co_filename, Py_NewRef(newname));
 
     constants = co->co_consts;
     n = PyTuple_GET_SIZE(constants);
@@ -1418,8 +1417,7 @@ PyImport_ImportFrozenModuleObject(PyObject *name)
         }
     }
     else {
-        Py_INCREF(Py_None);
-        origname = Py_None;
+        origname = Py_NewRef(Py_None);
     }
     err = PyDict_SetItemString(d, "__origname__", origname);
     Py_DECREF(origname);
@@ -1828,8 +1826,7 @@ PyImport_ImportModuleLevelObject(PyObject *name, PyObject *globals,
             _PyErr_SetString(tstate, PyExc_ValueError, "Empty module name");
             goto error;
         }
-        abs_name = name;
-        Py_INCREF(abs_name);
+        abs_name = Py_NewRef(name);
     }
 
     mod = import_get_module(tstate, abs_name);
@@ -1868,8 +1865,7 @@ PyImport_ImportModuleLevelObject(PyObject *name, PyObject *globals,
 
             if (dot == -1) {
                 /* No dot in module name, simple exit */
-                final_mod = mod;
-                Py_INCREF(mod);
+                final_mod = Py_NewRef(mod);
                 goto error;
             }
 
@@ -1904,8 +1900,7 @@ PyImport_ImportModuleLevelObject(PyObject *name, PyObject *globals,
             }
         }
         else {
-            final_mod = mod;
-            Py_INCREF(mod);
+            final_mod = Py_NewRef(mod);
         }
     }
     else {
@@ -1920,8 +1915,7 @@ PyImport_ImportModuleLevelObject(PyObject *name, PyObject *globals,
                         mod, fromlist, interp->import_func, NULL);
         }
         else {
-            final_mod = mod;
-            Py_INCREF(mod);
+            final_mod = Py_NewRef(mod);
         }
     }
 

@@ -328,8 +328,7 @@ _PyErr_NormalizeException(PyThreadState *tstate, PyObject **exc,
        set to NULL.
     */
     if (!value) {
-        value = Py_None;
-        Py_INCREF(value);
+        value = Py_NewRef(Py_None);
     }
 
     /* Normalize the exception so that if the type is a class, the
@@ -357,16 +356,13 @@ _PyErr_NormalizeException(PyThreadState *tstate, PyObject **exc,
             if (fixed_value == NULL) {
                 goto error;
             }
-            Py_DECREF(value);
-            value = fixed_value;
+            Py_SETREF(value, fixed_value);
         }
         /* If the class of the instance doesn't exactly match the
            class of the type, believe the instance.
         */
         else if (inclass != type) {
-            Py_INCREF(inclass);
-            Py_DECREF(type);
-            type = inclass;
+            Py_SETREF(type, Py_NewRef(inclass));
         }
     }
     *exc = type;
@@ -492,13 +488,9 @@ _PyErr_GetExcInfo(PyThreadState *tstate,
 {
     _PyErr_StackItem *exc_info = _PyErr_GetTopmostException(tstate);
 
-    *p_type = get_exc_type(exc_info->exc_value);
-    *p_value = exc_info->exc_value;
-    *p_traceback = get_exc_traceback(exc_info->exc_value);
-
-    Py_XINCREF(*p_type);
-    Py_XINCREF(*p_value);
-    Py_XINCREF(*p_traceback);
+    *p_type = Py_XNewRef(get_exc_type(exc_info->exc_value));
+    *p_value = Py_XNewRef(exc_info->exc_value);
+    *p_traceback = Py_XNewRef(get_exc_traceback(exc_info->exc_value));
 }
 
 PyObject*
@@ -690,11 +682,7 @@ _PyErr_FormatFromCauseTstate(PyThreadState *tstate, PyObject *exception,
                              const char *format, ...)
 {
     va_list vargs;
-#ifdef HAVE_STDARG_PROTOTYPES
     va_start(vargs, format);
-#else
-    va_start(vargs);
-#endif
     _PyErr_FormatVFromCause(tstate, exception, format, vargs);
     va_end(vargs);
     return NULL;
@@ -705,11 +693,7 @@ _PyErr_FormatFromCause(PyObject *exception, const char *format, ...)
 {
     PyThreadState *tstate = _PyThreadState_GET();
     va_list vargs;
-#ifdef HAVE_STDARG_PROTOTYPES
     va_start(vargs, format);
-#else
-    va_start(vargs);
-#endif
     _PyErr_FormatVFromCause(tstate, exception, format, vargs);
     va_end(vargs);
     return NULL;
@@ -1125,11 +1109,7 @@ _PyErr_Format(PyThreadState *tstate, PyObject *exception,
               const char *format, ...)
 {
     va_list vargs;
-#ifdef HAVE_STDARG_PROTOTYPES
     va_start(vargs, format);
-#else
-    va_start(vargs);
-#endif
     _PyErr_FormatV(tstate, exception, format, vargs);
     va_end(vargs);
     return NULL;
@@ -1141,14 +1121,37 @@ PyErr_Format(PyObject *exception, const char *format, ...)
 {
     PyThreadState *tstate = _PyThreadState_GET();
     va_list vargs;
-#ifdef HAVE_STDARG_PROTOTYPES
     va_start(vargs, format);
-#else
-    va_start(vargs);
-#endif
     _PyErr_FormatV(tstate, exception, format, vargs);
     va_end(vargs);
     return NULL;
+}
+
+
+/* Adds a note to the current exception (if any) */
+void
+_PyErr_FormatNote(const char *format, ...)
+{
+    PyObject *exc = PyErr_GetRaisedException();
+    if (exc == NULL) {
+        return;
+    }
+    va_list vargs;
+    va_start(vargs, format);
+    PyObject *note = PyUnicode_FromFormatV(format, vargs);
+    va_end(vargs);
+    if (note == NULL) {
+        goto error;
+    }
+    int res = _PyException_AddNote(exc, note);
+    Py_DECREF(note);
+    if (res < 0) {
+        goto error;
+    }
+    PyErr_SetRaisedException(exc);
+    return;
+error:
+    _PyErr_ChainExceptions1(exc);
 }
 
 
@@ -1189,9 +1192,7 @@ PyErr_NewException(const char *name, PyObject *base, PyObject *dict)
             goto failure;
     }
     if (PyTuple_Check(base)) {
-        bases = base;
-        /* INCREF as we create a new ref in the else branch */
-        Py_INCREF(bases);
+        bases = Py_NewRef(base);
     } else {
         bases = PyTuple_Pack(1, base);
         if (bases == NULL)
@@ -1310,8 +1311,7 @@ make_unraisable_hook_args(PyThreadState *tstate, PyObject *exc_type,
             if (exc_type == NULL) { \
                 exc_type = Py_None; \
             } \
-            Py_INCREF(exc_type); \
-            PyStructSequence_SET_ITEM(args, pos++, exc_type); \
+            PyStructSequence_SET_ITEM(args, pos++, Py_NewRef(exc_type)); \
         } while (0)
 
 

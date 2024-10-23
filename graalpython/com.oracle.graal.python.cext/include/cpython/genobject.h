@@ -37,8 +37,8 @@ typedef struct {
 
 PyAPI_DATA(PyTypeObject) PyGen_Type;
 
-#define PyGen_Check(op) PyObject_TypeCheck(op, &PyGen_Type)
-#define PyGen_CheckExact(op) Py_IS_TYPE(op, &PyGen_Type)
+#define PyGen_Check(op) PyObject_TypeCheck((op), &PyGen_Type)
+#define PyGen_CheckExact(op) Py_IS_TYPE((op), &PyGen_Type)
 
 PyAPI_FUNC(PyObject *) PyGen_New(PyFrameObject *);
 PyAPI_FUNC(PyObject *) PyGen_NewWithQualName(PyFrameObject *,
@@ -57,7 +57,7 @@ typedef struct {
 PyAPI_DATA(PyTypeObject) PyCoro_Type;
 PyAPI_DATA(PyTypeObject) _PyCoroWrapper_Type;
 
-#define PyCoro_CheckExact(op) Py_IS_TYPE(op, &PyCoro_Type)
+#define PyCoro_CheckExact(op) Py_IS_TYPE((op), &PyCoro_Type)
 PyAPI_FUNC(PyObject *) PyCoro_New(PyFrameObject *,
     PyObject *name, PyObject *qualname);
 

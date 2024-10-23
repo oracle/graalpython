@@ -108,8 +108,6 @@ mbuf_release(_PyManagedBufferObject *self)
     if (self->flags&_Py_MANAGED_BUFFER_RELEASED)
         return;
 
-    /* NOTE: at this point self->exports can still be > 0 if this function
-       is called from mbuf_clear() to break up a reference cycle. */
     self->flags |= _Py_MANAGED_BUFFER_RELEASED;
 
     /* PyBuffer_Release() decrements master->obj and sets it to NULL. */
@@ -682,8 +680,7 @@ mbuf_add_view(_PyManagedBufferObject *mbuf, const Py_buffer *src)
     init_suboffsets(dest, src);
     init_flags(mv);
 
-    mv->mbuf = mbuf;
-    Py_INCREF(mbuf);
+    mv->mbuf = (_PyManagedBufferObject*)Py_NewRef(mbuf);
     mbuf->exports++;
 
     return (PyObject *)mv;
@@ -713,8 +710,7 @@ mbuf_add_incomplete_view(_PyManagedBufferObject *mbuf, const Py_buffer *src,
     dest = &mv->view;
     init_shared_values(dest, src);
 
-    mv->mbuf = mbuf;
-    Py_INCREF(mbuf);
+    mv->mbuf = (_PyManagedBufferObject*)Py_NewRef(mbuf);
     mbuf->exports++;
 
     return (PyObject *)mv;
@@ -1513,8 +1509,7 @@ memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags)
     }
 
 
-    view->obj = (PyObject *)self;
-    Py_INCREF(view->obj);
+    view->obj = Py_NewRef(self);
     self->exports++;
 
     return 0;
@@ -2034,10 +2029,9 @@ struct_unpack_single(const char *ptr, struct unpacker *x)
         return NULL;
 
     if (PyTuple_GET_SIZE(v) == 1) {
-        PyObject *tmp = PyTuple_GET_ITEM(v, 0);
-        Py_INCREF(tmp);
+        PyObject *res = Py_NewRef(PyTuple_GET_ITEM(v, 0));
         Py_DECREF(v);
-        return tmp;
+        return res;
     }
 
     return v;
@@ -2483,8 +2477,7 @@ memory_subscript(PyMemoryViewObject *self, PyObject *key)
             return unpack_single(self, view->buf, fmt);
         }
         else if (key == Py_Ellipsis) {
-            Py_INCREF(self);
-            return (PyObject *)self;
+            return Py_NewRef(self);
         }
         else {
             PyErr_SetString(PyExc_TypeError,
@@ -2933,8 +2926,7 @@ result:
     unpacker_free(unpack_v);
     unpacker_free(unpack_w);
 
-    Py_XINCREF(res);
-    return res;
+    return Py_XNewRef(res);
 }
 
 /**************************************************************************/
@@ -3028,8 +3020,7 @@ memory_obj_get(PyMemoryViewObject *self, void *Py_UNUSED(ignored))
     if (view->obj == NULL) {
         Py_RETURN_NONE;
     }
-    Py_INCREF(view->obj);
-    return view->obj;
+    return Py_NewRef(view->obj);
 }
 
 static PyObject *
@@ -3257,8 +3248,7 @@ memory_iter(PyObject *seq)
     it->it_fmt = fmt;
     it->it_length = memory_length(obj);
     it->it_index = 0;
-    Py_INCREF(seq);
-    it->it_seq = obj;
+    it->it_seq = (PyMemoryViewObject*)Py_NewRef(obj);
     _PyObject_GC_TRACK(it);
     return (PyObject *)it;
 }

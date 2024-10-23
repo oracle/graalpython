@@ -78,9 +78,7 @@ _PyRuntimeState_GetThreadState(_PyRuntimeState *runtime)
 
 /* Get the current Python thread state.
 
-   Efficient macro reading directly the 'gilstate.tstate_current' atomic
-   variable. The macro is unsafe: it does not check for error and it can
-   return NULL.
+   This function is unsafe: it does not check for error and it can return NULL.
 
    The caller must hold the GIL.
 
@@ -103,12 +101,12 @@ _Py_EnsureFuncTstateNotNULL(const char *func, PyThreadState *tstate)
 
 // Call Py_FatalError() if tstate is NULL
 #define _Py_EnsureTstateNotNULL(tstate) \
-    _Py_EnsureFuncTstateNotNULL(__func__, tstate)
+    _Py_EnsureFuncTstateNotNULL(__func__, (tstate))
 
 
 /* Get the current interpreter state.
 
-   The macro is unsafe: it does not check for error and it can return NULL.
+   The function is unsafe: it does not check for error and it can return NULL.
 
    The caller must hold the GIL.
 
