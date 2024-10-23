@@ -13,6 +13,7 @@ PyAPI_FUNC(void) _PyInterpreterState_RequireIDRef(PyInterpreterState *, int);
 
 PyAPI_FUNC(PyObject *) _PyInterpreterState_GetMainModule(PyInterpreterState *);
 
+
 /* State unique per thread */
 
 /* Py_tracefunc return -1 when raising an exception, or 0 for success. */
@@ -32,12 +33,6 @@ typedef int (*Py_tracefunc)(PyObject *, PyFrameObject *, int, PyObject *);
 #define PyTrace_C_RETURN 6
 #define PyTrace_OPCODE 7
 
-
-typedef struct {
-    PyCodeObject *code; // The code object for the bounds. May be NULL.
-    PyCodeAddressRange bounds; // Only valid if code != NULL.
-} PyTraceInfo;
-
 // Internal structure: you should not use it directly, but use public functions
 // like PyThreadState_EnterTracing() and PyThreadState_LeaveTracing().
 typedef struct _PyCFrame {
@@ -51,7 +46,6 @@ typedef struct _PyCFrame {
      * discipline and make sure that instances of this struct cannot
      * accessed outside of their lifetime.
      */
-    uint8_t use_tracing;  // 0 or 255 (or'ed into opcode, hence 8-bit type)
     /* Pointer to the currently executing frame (it can be NULL) */
     struct _PyInterpreterFrame *current_frame;
     struct _PyCFrame *previous;
@@ -83,6 +77,11 @@ typedef struct _stack_chunk {
     size_t top;
     PyObject * data[1]; /* Variable sized */
 } _PyStackChunk;
+
+struct _py_trashcan {
+    int delete_nesting;
+    PyObject *delete_later;
+};
 
 struct _ts {
     /* See Python/ceval.c for comments explaining most fields */
@@ -182,8 +181,6 @@ struct _ts {
     /* Unique thread state id. */
     uint64_t id;
 
-    PyTraceInfo trace_info;
-
     _PyStackChunk *datastack_chunk;
     PyObject **datastack_top;
     PyObject **datastack_limit;
@@ -224,6 +221,8 @@ struct _ts {
 // Alias for backward compatibility with Python 3.8
 #define _PyInterpreterState_Get PyInterpreterState_Get
 
+/* An alias for the internal _PyThreadState_New(),
+   kept for stable ABI compatibility. */
 PyAPI_FUNC(PyThreadState *) _PyThreadState_Prealloc(PyInterpreterState *);
 
 /* Similar to PyThreadState_Get(), but don't issue a fatal error
@@ -295,7 +294,10 @@ PyAPI_FUNC(const PyConfig*) _PyInterpreterState_GetConfig(PyInterpreterState *in
    for example.
 
    Python must be preinitialized to call this method.
-   The caller must hold the GIL. */
+   The caller must hold the GIL.
+
+   Once done with the configuration, PyConfig_Clear() must be called to clear
+   it. */
 PyAPI_FUNC(int) _PyInterpreterState_GetConfigCopy(
     struct PyConfig *config);
 
