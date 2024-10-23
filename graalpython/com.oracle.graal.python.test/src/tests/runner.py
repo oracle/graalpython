@@ -204,6 +204,10 @@ class DirectResult(AbstractResult):
     def report_result(self, result: TestResult):
         self.runner.report_result(result)
 
+    def startTest(self, test):
+        super().startTest(test)
+        self.runner.report_start(self.test_id(test))
+
 
 class AbstractRemoteResult(AbstractResult):
     @abstractmethod
@@ -217,14 +221,6 @@ class AbstractRemoteResult(AbstractResult):
         super().startTest(test)
         self.emit(
             event='testStarted',
-            test=self.test_id(test),
-            out_pos=out_tell(),
-        )
-
-    def stopTest(self, test):
-        super().stopTest(test)
-        self.emit(
-            event='testStopped',
             test=self.test_id(test),
             out_pos=out_tell(),
         )
@@ -249,13 +245,25 @@ class TestRunner:
         self.events = []
         self.results = []
         self.skipped_files = []
+        self.incomplete_line = False
+        self.report_incomplete = sys.stdout.isatty()
+
+    def report_start(self, test_id: TestId):
+        if self.report_incomplete:
+            if self.incomplete_line:
+                print('\r\033[K', end='')
+            print(f"{test_id} ... ", end='', flush=True)
+            self.incomplete_line = True
 
     def report_result(self, result: TestResult):
         self.results.append(result)
+        if self.incomplete_line:
+            print('\r', end='')
+            self.incomplete_line = False
         message = f"{result.test_id} ... {result.status}"
         if result.status == TestStatus.SKIPPED and result.param:
             message = f"{message} {result.param!r}"
-        print(message)
+        print(message, flush=True)
 
     def tests_failed(self):
         return any(result.status in FAILED_STATES for result in self.results)
@@ -344,6 +352,10 @@ class ParallelTestRunner(TestRunner):
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
 
+    def report_start(self, test_id: TestId):
+        with self.lock:
+            super().report_start(test_id)
+
     def report_result(self, result: TestResult):
         if self.args.failfast and result.status in FAILED_STATES:
             self.stop_event.set()
@@ -391,6 +403,7 @@ class ParallelTestRunner(TestRunner):
                         case 'testStarted':
                             last_started = event['test']
                             out_start = event['out_pos']
+                            self.report_start(event['test'])
                         case 'testResult':
                             last_started = None
                             out_end = event['out_pos']
@@ -432,8 +445,6 @@ class ParallelTestRunner(TestRunner):
                     remaining_tests = remaining_tests[remaining_tests.index(last_started) + 1:]
                     continue
                 test_suite.add_unexecuted(self.results)
-                out_file.seek(0)
-                print(out_file.read())
                 break
 
 
@@ -481,7 +492,7 @@ def filter_tree(test_file: Path, test_suite: unittest.TestSuite, specifiers: lis
 
 @dataclass
 class Config:
-    rootdir: Path = Path('.')
+    rootdir: Path = Path('.').resolve()
     tags_dir: Path | None = None
 
 

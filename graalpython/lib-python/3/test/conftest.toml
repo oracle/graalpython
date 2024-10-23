@@ -1,0 +1,3 @@
+[tests]
+rootdir = '..'
+tags_dir = '../../../com.oracle.graal.python.test/src/tests/unittest_tags'

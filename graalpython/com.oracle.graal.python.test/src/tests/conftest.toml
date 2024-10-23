@@ -1,0 +1,2 @@
+[tests]
+graalpytest_mode = true
