@@ -607,6 +607,9 @@ public final class CApiContext extends CExtContext {
 
         private BackgroundGCTask(PythonContext context) {
             this.ctx = new WeakReference<>(context);
+            this.rssInterval = context.getOption(PythonOptions.BackgroundGCTaskInterval);
+            this.gcRSSThreshold = context.getOption(PythonOptions.BackgroundGCTaskThreshold) / (double) 100;
+            this.gcRSSMinimum = context.getOption(PythonOptions.BackgroundGCTaskMinimum);
         }
 
         Object nativeSymbol = null;
@@ -619,13 +622,13 @@ public final class CApiContext extends CExtContext {
         final WeakReference<PythonContext> ctx;
 
         // RSS monitor interval in ms
-        static final int RSS_INTERVAL = Integer.getInteger("python.RSSInterval", 1000);
+        final int rssInterval;
         /**
          * RSS percentage increase between System.gc() calls. Low percentage will trigger
          * System.gc() more often which can cause unnecessary overhead.
          * 
          * <ul>
-         * why 30%? it's purely based on the {@code huggingface} example.
+         * Based on the {@code huggingface} example:
          * <li>less than 30%: max RSS ~22GB (>200 second per iteration)</li>
          * <li>30%: max RSS ~24GB (~150 second per iteration)</li>
          * <li>larger than 30%: max RSS ~38GB (~140 second per iteration)</li>
@@ -633,7 +636,12 @@ public final class CApiContext extends CExtContext {
          * 
          * <pre>
          */
-        static final double GC_RSS_THRESHOLD = Integer.getInteger("python.RSSThreshold", 30) / 100.0;
+        final double gcRSSThreshold;
+
+        /**
+         * RSS minimum memory (in megabytes) start calling System.gc(). Default is 4GB.
+         */
+        final double gcRSSMinimum;
 
         Long getCurrentRSS() {
             if (nativeSymbol == null) {
@@ -652,7 +660,7 @@ public final class CApiContext extends CExtContext {
         public void run() {
             try {
                 while (true) {
-                    Thread.sleep(RSS_INTERVAL);
+                    Thread.sleep(rssInterval);
                     perform();
                 }
             } catch (InterruptedException e) {
@@ -680,6 +688,10 @@ public final class CApiContext extends CExtContext {
                 return;
             }
 
+            if (rss < gcRSSMinimum) {
+                return;
+            }
+
             // skip GC if no new native weakrefs have been created.
             int currentWeakrefCount = context.nativeContext.nativeLookup.size();
             if (currentWeakrefCount < this.previousWeakrefCount || this.previousWeakrefCount == -1) {
@@ -688,7 +700,7 @@ public final class CApiContext extends CExtContext {
             }
 
             double ratio = ((rss - this.previousRSS) / (double) this.previousRSS);
-            if (ratio >= GC_RSS_THRESHOLD) {
+            if (ratio >= gcRSSThreshold) {
                 this.previousWeakrefCount = currentWeakrefCount;
 
                 long start = System.nanoTime();
@@ -696,7 +708,7 @@ public final class CApiContext extends CExtContext {
                 long gcTime = (System.nanoTime() - start) / 1000000;
 
                 if (LOGGER.isLoggable(Level.FINER)) {
-                    LOGGER.finer(PythonUtils.formatJString("Background GC Task -- GC [%d ms] RSS [%d MB]->[%d MB](%.1f%%)",
+                    LOGGER.info(PythonUtils.formatJString("Background GC Task -- GC [%d ms] RSS [%d MB]->[%d MB](%.1f%%)",
                                     gcTime, previousRSS, rss, ratio * 100));
                 }
                 /*
@@ -710,7 +722,7 @@ public final class CApiContext extends CExtContext {
                  * mappings (RssFile) and shmem memory (RssShmem). GC can only reduce RssAnon while
                  * RssFile is managed by the operating system which doesn't go down easily.
                  */
-                this.previousRSS += (long) (this.previousRSS * GC_RSS_THRESHOLD);
+                this.previousRSS += (long) (this.previousRSS * gcRSSThreshold);
             }
         }
     }
@@ -722,7 +734,7 @@ public final class CApiContext extends CExtContext {
             if (rss == -1) {
                 try {
                     // in case it just started
-                    Thread.sleep(BackgroundGCTask.RSS_INTERVAL);
+                    Thread.sleep(gcTask.rssInterval);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -736,15 +748,16 @@ public final class CApiContext extends CExtContext {
     @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH") // context.get() is never null here
     void runBackgroundGCTask(PythonContext context) {
         CompilerAsserts.neverPartOfCompilation();
-        if (ImageInfo.inImageBuildtimeCode() || context.getOption(PythonOptions.NoAsyncActions)) {
+        if (ImageInfo.inImageBuildtimeCode() //
+                        || context.getOption(PythonOptions.NoAsyncActions) //
+                        || !PythonOptions.AUTOMATIC_ASYNC_ACTIONS //
+                        || !context.getOption(PythonOptions.BackgroundGCTask)) {
             return;
         }
-        if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
-            backgroundGCTaskThread = context.getEnv().newTruffleThreadBuilder(gcTask).context(context.getEnv().getContext()).build();
-            backgroundGCTaskThread.setDaemon(true);
-            backgroundGCTaskThread.setName("python-gc-task");
-            backgroundGCTaskThread.start();
-        }
+        backgroundGCTaskThread = context.getEnv().newTruffleThreadBuilder(gcTask).context(context.getEnv().getContext()).build();
+        backgroundGCTaskThread.setDaemon(true);
+        backgroundGCTaskThread.setName("python-gc-task");
+        backgroundGCTaskThread.start();
     }
 
     /**
