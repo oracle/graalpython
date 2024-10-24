@@ -135,8 +135,9 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll") || s.endsWith(".ttf");
         };
 
-        private String windowsMountPoint = "X:\\graalpy_vfs";
-        private String unixMountPoint = "/graalpy_vfs";
+        private static final String DEFAULT_WINDOWS_MOUNT_POINT = "X:\\graalpy_vfs";
+        private String DEFAULT_UNIX_MOUNT_POINT = "/graalpy_vfs";
+        private Path mountPoint;
         private Predicate<Path> extractFilter = DEFAULT_EXTRACT_FILTER;
         private HostIO allowHostIO = HostIO.READ_WRITE;
         private boolean caseInsensitive = isWindows();
@@ -172,7 +173,9 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
          * will not be accessible.
          */
         public Builder windowsMountPoint(String s) {
-            windowsMountPoint = s;
+            if (isWindows()) {
+                mountPoint = getMountPointAsPath(s);
+            }
             return this;
         }
 
@@ -185,7 +188,9 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
          * will not be accessible.
          */
         public Builder unixMountPoint(String s) {
-            unixMountPoint = s;
+            if (!isWindows()) {
+                mountPoint = getMountPointAsPath(s);
+            }
             return this;
         }
 
@@ -220,8 +225,25 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         }
 
         public VirtualFileSystem build() {
-            return new VirtualFileSystem(extractFilter, windowsMountPoint, unixMountPoint, allowHostIO, resourceLoadingClass, caseInsensitive);
+            if (mountPoint == null) {
+                mountPoint = isWindows() ? Path.of(DEFAULT_WINDOWS_MOUNT_POINT) : Path.of(DEFAULT_UNIX_MOUNT_POINT);
+            }
+            return new VirtualFileSystem(extractFilter, mountPoint, allowHostIO, resourceLoadingClass, caseInsensitive);
         }
+    }
+
+    private static Path getMountPointAsPath(String mp) {
+        Path mountPoint = Path.of(mp);
+        if (mp.endsWith(PLATFORM_SEPARATOR) || !mountPoint.isAbsolute()) {
+            String msg;
+            if (System.getenv("GRAALPY_VFS_MOUNT_POINT") != null) {
+                msg = String.format("Environment variable GRAALPY_VFS_MOUNT_POINT must be set to an absolute path without a trailing separator: '%s'", mp);
+            } else {
+                msg = String.format("Virtual filesystem mount point must be set to an absolute path without a trailing separator: '%s'", mp);
+            }
+            throw new IllegalArgumentException(msg);
+        }
+        return mountPoint;
     }
 
     public static Builder newBuilder() {
@@ -354,8 +376,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
      * causing that no extraction will happen.
      */
     VirtualFileSystem(Predicate<Path> extractFilter,
-                    String windowsMountPoint,
-                    String unixMountPoint,
+                    Path mountPoint,
                     HostIO allowHostIO,
                     Class<?> resourceLoadingClass,
                     boolean caseInsensitive) {
@@ -367,20 +388,13 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
         this.caseInsensitive = caseInsensitive;
         String mp = System.getenv("GRAALPY_VFS_MOUNT_POINT");
-        if (mp == null) {
-            mp = isWindows() ? windowsMountPoint : unixMountPoint;
+        if (mp != null) {
+            this.mountPoint = getMountPointAsPath(mp);
+        } else {
+            this.mountPoint = mountPoint;
         }
-        this.mountPoint = Path.of(mp);
-        this.mountPointLowerCase = mp.toLowerCase(Locale.ROOT);
-        if (mp.endsWith(PLATFORM_SEPARATOR) || !mountPoint.isAbsolute()) {
-            String msg;
-            if (System.getenv("GRAALPY_VFS_MOUNT_POINT") != null) {
-                msg = String.format("Environment variable GRAALPY_VFS_MOUNT_POINT must be set to an absolute path without a trailing separator: '%s'", mp);
-            } else {
-                msg = String.format("Virtual filesystem mount point must be set to an absolute path without a trailing separator: '%s'", mp);
-            }
-            throw new IllegalArgumentException(msg);
-        }
+
+        this.mountPointLowerCase = mountPoint.toString().toLowerCase(Locale.ROOT);
 
         fine("VirtualFilesystem %s, allowHostIO: %s, resourceLoadingClass: %s, caseInsensitive: %s, extractOnStartup: %s%s",
                         mountPoint, allowHostIO.toString(), this.resourceLoadingClass.getName(), caseInsensitive, extractOnStartup, extractFilter != null ? "" : ", extractFilter: null");
