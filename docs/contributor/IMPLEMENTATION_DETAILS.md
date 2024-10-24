@@ -96,9 +96,9 @@ files to get an idea of how rules are set for patches to be applied.
 
 We always run with a GIL, because C extensions in CPython expect to do so and
 are usually not written to be reentrant. The reason to always have the GIL
-enabled is that when using Python, at least Sulong/LLVM is always available in
-the same context and we cannot know if someone may be using that (or another
-polyglot language or the Java host interop) to start additional threads that
+enabled is that when using Python, another polyglot language or the Java host
+interop can be available in the same context, and we cannot know if someone
+may be using that to start additional threads that
 could call back into Python. This could legitimately happen in C extensions when
 the C extension authors use knowledge of how CPython works to do something
 GIL-less in a C thread that is fine to do on CPython's data structures, but not
@@ -171,7 +171,8 @@ safepoint action mechanism can thus be used to kill threads waiting on the GIL.
 ### High-level
 
 C extensions assume reference counting, but on the managed side we want to leverage
-Java tracing GC. This creates a mismatch. The approach is to combine the two.
+Java tracing GC. This creates a mismatch. The approach is to do both, reference
+counting and tracing GC, at the same time.
 
 On the native side we use reference counting. The native code is responsible for doing
 the counting, i.e., calling the `Py_IncRef` and `Py_DecRef` API functions. Inside those
@@ -193,12 +194,12 @@ There are two kinds of Python objects in GraalPy: managed and native.
 
 Managed objects are allocated in the interpreter. If there is no native code involved,
 we do not do anything special and let the Java GC handle them. When a managed object
-leaks to native extension:
+is passed to a native extension code:
 
 * We wrap it in `PythonObjectNativeWrapper`. This is mostly in order to provide different
 interop protocol: we do not want to expose `toNative` and `asPointer` on Python objects.
 
-* When NFI or Sulong call `toNative`/`asPointer` we:
+* When NFI calls `toNative`/`asPointer` we:
     * Allocate C memory that will represent the object on the native side (including the refcount field)
     * Add a mapping of that memory address to the `PythonObjectNativeWrapper` object to a hash map `CApiTransitions.nativeLookup`.
     * We initialize the refcount field to a constant `MANAGED_REFCNT` (larger number, because some
@@ -216,38 +217,44 @@ as long as there are some native references. We set a field `PythonObjectReferen
 which will keep the `PythonObjectNativeWrapper` alive even when all other managed references die.
 
 * When extension code is done with the object, it will call `Py_DecRef`.
-In the C implementation of `Py_DecRef` we check if a managed object with refcount==MANAGED_REFCNT+1
+In the C implementation of `Py_DecRef` we check if a managed object with `refcount == MANAGED_REFCNT+1`
 wants to decrement its refcount to MANAGED_REFCNT, which means that there are no native references
 to that object anymore. In such case we clear the `PythonObjectReference.strongReference` field,
 and the memory management is then again left solely to the Java tracing GC.
 
 #### Native Objects
 
-Native objects are backed by native memory and may never leak to managed code. If they do not
-leak to managed code, they are reference counted as usual, where `Py_DecRef` call that reaches
-`0` will deallocate the object. If a native object does leak to managed code:
+Native objects allocated using `PyObject_GC_New` in the native code are backed by native memory
+and may never be passed to managed code (as a return value of extension function or as an argument
+to some C API call). If a native object is not made available to managed code, it is just reference
+counted as usual, where `Py_DecRef` call that reaches `0` will deallocate the object. If a native
+object is passed to managed code:
 
 * We increment the refcount of the native object by `MANAGED_REFCNT`
 * We create:
-  * `PythonAbstractNativeObject` Java object to represent it
+  * `PythonAbstractNativeObject` Java object to mirror it on the managed side
   * `NativeObjectReference`, a weak reference to the `PythonAbstractNativeObject`.
-* Save the mapping from the native object address to the `NativeObjectReference`
-object into hash map `CApiTransitions.nativeLookup` (next time this native object leaks to
-the managed code, we only fetch the existing wrapper and don't do any of this).
+* Add mapping: native object address => `NativeObjectReference` into hash map `CApiTransitions.nativeLookup`
+  * Next time we just fetch the existing wrapper and don't do any of this
 * When `NativeObjectReference` is enqueued, we decrement the refcount by `MANAGED_REFCNT`
-and if it falls to `0`, it means that there are no references to the object even from
-native code, we can destroy it. If it does not fall to `0`, we just wait for the native
-code to eventually call `Py_DecRef` that makes it fall to `0`.
+  * If the refcount falls to `0`, it means that there are no references to the object even from
+  native code, and we can destroy it. If it does not fall to `0`, we just wait for the native
+  code to eventually call `Py_DecRef` that makes it fall to `0`.
+
+#### Weak References
+
+TODO
 
 ### Cycle GC
 
 We leverage the CPython's GC module to detect cycles for objects that participate
-in the reference counting scheme (native objects or managed objects that leaked to native).
+in the reference counting scheme (native objects or managed objects that got passed
+to native code).
 See: https://devguide.python.org/internals/garbage-collector/index.html.
 
 There are two issues:
 
-* Objects that are referenced from the managed code have refcount >= `MANAGED_REFCNT` and
+* Objects that are referenced from the managed code have `refcount >= MANAGED_REFCNT` and
 until Java GC runs we do not know if they are garbage or not.
 * We cannot traverse the managed objects: since we don't do refcounting on the managed
 side, we cannot traverse them and decrement refcounts to see if there is a cycle.
@@ -272,13 +279,13 @@ count them into this limit. Let us call this limit *weak to strong limit*.
 After this, if the managed objects are garbage, eventually Java GC will collect them
 together with the whole cycle.
 
-If some of the managed objects are not garbage, and they leak back to native code,
+If some of the managed objects are not garbage, and they passed back to native code,
 the native code can then access and resurrect the whole cycle. W.r.t. the refcounts
 integrity this is fine, because we did not alter the refcounts. The native references
 between the objects are still factored in their refcounts. What may seem like a problem
-is that we pushed the *weak to strong limit* for some objects. Such object may leak to
-native, get `Py_IncRef`'ed making it strong reference again. Since `Py_DecRef` is
+is that we pushed the *weak to strong limit* for some objects. Such an object may be
+passed to native, get `Py_IncRef`'ed making it strong reference again. Since `Py_DecRef` is
 checking the same `MANAGED_REFCNT` limit for all objects, the subsequent `Py_DecRef`
 call for this object will not detect that the reference should be made weak again!
 However, this is OK, it only prolongs the collection: we will make it weak again in
-the next run of the cycle GC.
+the next run of the cycle GC on the native side.
