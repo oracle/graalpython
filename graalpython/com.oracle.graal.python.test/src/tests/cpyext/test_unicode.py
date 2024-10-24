@@ -465,6 +465,7 @@ class TestPyUnicode(CPyExtTestCase):
         _reference_intern,
         gen_intern_args,
         code="""PyObject* wrap_PyUnicode_InternInPlace(PyObject* s) {
+            Py_INCREF(s); // We must own the argument to PyUnicode_InternInPlace
             PyObject *result = s;
             PyUnicode_InternInPlace(&result);
             return result;
