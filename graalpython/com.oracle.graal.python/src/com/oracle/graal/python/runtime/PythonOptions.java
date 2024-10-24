@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.oracle.truffle.api.exception.AbstractTruffleException;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptor;
 import org.graalvm.options.OptionDescriptors;
@@ -64,6 +63,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Option;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Idempotent;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -353,6 +353,18 @@ public final class PythonOptions {
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Whether the Python GC should be enabled (default) or not.") //
     public static final OptionKey<Boolean> PythonGC = new OptionKey<>(true);
+
+    @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "Whether the background GC task should be enabled (default) or not.") //
+    public static final OptionKey<Boolean> BackgroundGCTask = new OptionKey<>(true);
+
+    @Option(category = OptionCategory.INTERNAL, usageSyntax = "<time>", help = "Specifies the interval (ms) for the background GC task to monitor the resident set size (RSS)") //
+    public static final OptionKey<Integer> BackgroundGCTaskInterval = new OptionKey<>(1000);
+
+    @Option(category = OptionCategory.INTERNAL, usageSyntax = "<limit>", help = "The percentage increase in RSS memory between System.gc() calls. Low percentage will trigger System.gc() more often. (default: 30).") //
+    public static final OptionKey<Integer> BackgroundGCTaskThreshold = new OptionKey<>(30);
+
+    @Option(category = OptionCategory.INTERNAL, usageSyntax = "<megabytes>", help = "The minimum RSS memory (in megabytes) to start calling System.gc(). (default: 4 GB).") //
+    public static final OptionKey<Integer> BackgroundGCTaskMinimum = new OptionKey<>(4096);
 
     @EngineOption @Option(category = OptionCategory.USER, usageSyntax = "true|false", help = "Emulate some Jython features that can cause performance degradation", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);
