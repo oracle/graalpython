@@ -307,7 +307,13 @@ public class GraalPyResources {
      * @param resourcesDirectory the root directory with GraalPy specific embedding resources
      */
     public static Context.Builder contextBuilder(Path resourcesDirectory) {
-        String execPath = resourcesDirectory.resolve(VirtualFileSystem.VFS_VENV + "/bin/python").toAbsolutePath().toString();
+        String execPath;
+        if (VirtualFileSystem.isWindows()) {
+            execPath = resourcesDirectory.resolve(VirtualFileSystem.VFS_VENV).resolve("Scripts").resolve("python.exe").toAbsolutePath().toString();
+        } else {
+            execPath = resourcesDirectory.resolve(VirtualFileSystem.VFS_VENV).resolve("bin").resolve("python").toAbsolutePath().toString();
+        }
+
         String homePath = resourcesDirectory.resolve(VirtualFileSystem.VFS_HOME).toAbsolutePath().toString();
         String srcPath = resourcesDirectory.resolve(VirtualFileSystem.VFS_SRC).toAbsolutePath().toString();
         return createContextBuilder().

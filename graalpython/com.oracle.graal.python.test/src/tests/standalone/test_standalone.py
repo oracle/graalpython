@@ -304,7 +304,7 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase):
                 "package org.example;\nimport java.nio.file.Path;")
             util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "org", "example", "GraalPy.java"),
                 "GraalPyResources.createContext()",
-                "GraalPyResources.contextBuilder(Path.of(\"python-resources\")).build()")
+                "GraalPyResources.contextBuilder(Path.of(\"" + (resources_dir if "win32" != sys.platform else resources_dir.replace("\\", "\\\\")) + "\")).build()")
 
             # patch build.gradle
             append(build_file, self.packages_termcolor_resource_dir(resources_dir))
@@ -756,9 +756,11 @@ class PolyglotAppTest(PolyglotAppTestBase):
             util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
                 "package it.pkg;",
                 "package it.pkg;\nimport java.nio.file.Path;")
+            if "win32" == sys.platform:
+                resources_dir.replace("\\", "\\\\")
             util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
                 "GraalPyResources.createContext()",
-                "GraalPyResources.contextBuilder(Path.of(\"python-resources\")).build()")
+                "GraalPyResources.contextBuilder(Path.of(\"" + (resources_dir if "win32" != sys.platform else resources_dir.replace("\\", "\\\\")) + "\")).build()")
 
             # patch pom.xml
             util.replace_in_file(os.path.join(target_dir, "pom.xml"),
