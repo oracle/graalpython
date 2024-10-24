@@ -72,13 +72,29 @@ if sys.implementation.version < (3, 12):
 else:
     pass
 
-if IS_GRAALPY:
-    if os.environ.get('GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS', '').lower() not in ('true', '1'):
-        if not __graalpython__.java_assert():
-            sys.exit(
-                "Java assertions are not enabled, refusing to run. Add --vm.ea to your invocation. Set GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS=true to disable this check")
-    if not hasattr(__graalpython__, 'tdebug'):
-        sys.exit("Needs to be run with --experimental-options --python.EnableDebuggingBuiltins")
+
+class Logger:
+    report_incomplete = sys.stdout.isatty()
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.incomplete_line = None
+
+    def log(self, msg='', incomplete=False):
+        if incomplete and not self.report_incomplete:
+            return
+        with self.lock:
+            end = ('' if incomplete else None)
+            if self.report_incomplete and self.incomplete_line:
+                first_line, newline, rest = msg.partition('\n')
+                pad = len(self.incomplete_line)
+                print(f"\r{first_line:{pad}}{newline}{rest}", end=end, flush=True)
+            else:
+                print(msg, end=end, flush=True)
+            self.incomplete_line = msg if incomplete else None
+
+
+log = Logger().log
 
 
 class TestStatus(enum.StrEnum):
@@ -246,25 +262,16 @@ class TestRunner:
         self.failfast = failfast
         self.events = []
         self.results = []
-        self.incomplete_line = False
-        self.report_incomplete = sys.stdout.isatty()
 
     def report_start(self, test_id: TestId):
-        if self.report_incomplete:
-            if self.incomplete_line:
-                print('\r\033[K', end='')
-            print(f"{test_id} ... ", end='', flush=True)
-            self.incomplete_line = True
+        log(f"{test_id} ... ", incomplete=True)
 
     def report_result(self, result: TestResult):
         self.results.append(result)
-        if self.incomplete_line:
-            print('\r', end='')
-            self.incomplete_line = False
         message = f"{result.test_id} ... {result.status}"
         if result.status == TestStatus.SKIPPED and result.param:
             message = f"{message} {result.param!r}"
-        print(message, flush=True)
+        log(message)
 
     def tests_failed(self):
         return any(result.status in FAILED_STATES for result in self.results)
@@ -274,7 +281,7 @@ class TestRunner:
         for result in self.results:
             counts[result.status] += 1
 
-        print()
+        log()
 
         for result in self.results:
             fail_type = None
@@ -286,15 +293,15 @@ class TestRunner:
                 case TestStatus.UNEXPECTED_SUCCESS:
                     fail_type = 'UNEXPECTED SUCCESS'
             if fail_type:
-                print("======================================================================")
-                print(f"{fail_type}: {result.test_id}")
-                print("----------------------------------------------------------------------")
+                log("======================================================================")
+                log(f"{fail_type}: {result.test_id}")
+                log("----------------------------------------------------------------------")
                 if result.param:
-                    print(result.param.rstrip('\n'))
+                    log(result.param.rstrip('\n'))
                 if result.output:
-                    print("------------------------- captured output ----------------------------")
-                    print(result.output.rstrip('\n'))
-                print()
+                    log("------------------------- captured output ----------------------------")
+                    log(result.output.rstrip('\n'))
+                log()
 
         items = []
 
@@ -313,17 +320,17 @@ class TestRunner:
 
         total = sum(count for status, count in counts.items() if status in EXECUTED_STATES)
 
-        print(f"Ran {total} tests")  # TODO timing
-        print()
+        log(f"Ran {total} tests")  # TODO timing
+        log()
         summary = ", ".join(items)
         overall_status = 'FAILED' if self.tests_failed() else 'OK'
         if summary:
-            print(f"{overall_status} ({summary})")
+            log(f"{overall_status} ({summary})")
         else:
-            print(overall_status)
+            log(overall_status)
 
         if self.failfast and counts.get(TestStatus.NOT_EXECUTED):
-            print("\nWARNING: Did not execute all tests because 'failfast' mode is on")
+            log("\nWARNING: Did not execute all tests because 'failfast' mode is on")
 
     def run_tests(self, tests: list['TestSuite']):
         for test_suite in tests:
@@ -338,29 +345,39 @@ class ParallelTestRunner(TestRunner):
     def __init__(self, failfast, num_processes):
         super().__init__(failfast=failfast)
         self.num_processes = num_processes
-        self.lock = threading.Lock()
         self.stop_event = threading.Event()
-
-    def report_start(self, test_id: TestId):
-        with self.lock:
-            super().report_start(test_id)
+        self.crashes = []
 
     def report_result(self, result: TestResult):
         if self.failfast and result.status in FAILED_STATES:
             self.stop_event.set()
-        with self.lock:
-            super().report_result(result)
+        super().report_result(result)
+
+    def tests_failed(self):
+        return super().tests_failed() or bool(self.crashes)
 
     def run_tests(self, tests: list['TestSuite']):
         if tests:
             num_processes = min(self.num_processes, len(tests))
             with concurrent.futures.ThreadPoolExecutor(num_processes) as executor:
-                concurrent.futures.wait([
+                futures = [
                     executor.submit(self.run_in_subprocess_and_watch, test_suite)
                     for test_suite in tests
-                ])
+                ]
+                try:
+                    concurrent.futures.wait(futures)
+                except KeyboardInterrupt:
+                    self.stop_event.set()
+                    concurrent.futures.wait(futures)
+                    print("Interrupted!")
+                    return
 
         self.display_summary()
+
+        if self.crashes:
+            for crash in self.crashes:
+                log('Internal error, test worker crashed outside of tests:')
+                log(crash)
 
     def run_in_subprocess_and_watch(self, test_suite: 'TestSuite'):
         conn, child_conn = multiprocessing.Pipe()
@@ -389,7 +406,7 @@ class ParallelTestRunner(TestRunner):
                 )
 
                 last_started: TestId | None = None
-                out_start = -1
+                out_start = 0
 
                 def process_event(event):
                     nonlocal last_started, out_start
@@ -413,34 +430,49 @@ class ParallelTestRunner(TestRunner):
                                 output=test_output,
                             )
                             self.report_result(result)
+                            out_start = event['out_pos']
 
                 while process.poll() is None:
                     if conn.poll(0.1):
                         process_event(conn.recv())
-                process.wait()
+                    if self.stop_event.is_set():
+                        sig = signal.SIGINT if sys.platform != 'win32' else signal.CTRL_C_EVENT
+                        process.send_signal(sig)
+                        try:
+                            process.wait(3)
+                        except subprocess.TimeoutExpired:
+                            process.terminate()
+                returncode = process.wait()
+                if self.stop_event.is_set():
+                    test_suite.add_unexecuted(self.results)
+                    return
                 while conn.poll(0.1):
                     process_event(conn.recv())
-                if last_started:
+                if returncode != 0:
                     out_file.seek(out_start)
                     output = out_file.read()
-                    if process.returncode >= 0:
-                        message = f"Test process exitted with code {process.returncode}"
+                    if last_started:
+                        if returncode >= 0:
+                            message = f"Test process exitted with code {returncode}"
+                        else:
+                            try:
+                                signal_name = signal.Signals(-returncode).name
+                            except ValueError:
+                                signal_name = str(-returncode)
+                            message = f"Test process killed by signal {signal_name}"
+                        self.report_result(TestResult(
+                            test_id=last_started,
+                            status=TestStatus.ERROR,
+                            param=message,
+                            output=output,
+                        ))
+                        remaining_tests = remaining_tests[remaining_tests.index(last_started) + 1:]
+                        continue
                     else:
-                        try:
-                            signal_name = signal.Signals(-process.returncode).name
-                        except ValueError:
-                            signal_name = str(-process.returncode)
-                        message = f"Test process killed by signal {signal_name}"
-                    self.report_result(TestResult(
-                        test_id=last_started,
-                        status=TestStatus.ERROR,
-                        param=message,
-                        output=output,
-                    ))
-                    remaining_tests = remaining_tests[remaining_tests.index(last_started) + 1:]
-                    continue
+                        # Crashed outside of tests, don't retry
+                        self.crashes.append(output)
                 test_suite.add_unexecuted(self.results)
-                break
+                return
 
 
 def filter_tree(test_file: Path, test_suite: unittest.TestSuite, specifiers: list[TestSpecifier],
@@ -560,9 +592,13 @@ def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifie
             if not path.exists():
                 sys.exit(f"Test path {path} doesn't exist")
             if path.is_dir():
-                expanded_paths.extend(list(path.glob("**/test_*.py")))
-                expanded_paths.extend(list(path.glob("**/test_*/__init__.py")))
+                if (path / '__init__.py').exists():
+                    expanded_paths.append(path)
+                expanded_paths.extend(list(path.glob("test_*.py")))
+                expanded_paths.extend((p.parent for p in path.glob("test_*/__init__.py")))
             else:
+                if path.name == '__init__.py':
+                    path = path.parent
                 expanded_paths.append(path)
         for path in expanded_paths:
             expanded_specifiers.append(TestSpecifier(path, specifier.test_name))
@@ -572,13 +608,17 @@ def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifie
 def collect_module(test_file: Path, specifiers: list[TestSpecifier], use_tags=False) -> TestSuite | None:
     config = config_for_file(test_file)
     with rootdir_from_config(config) as rootdir:
-        loader = TopLevelFunctionLoader() if config.run_top_level_functions else unittest.defaultTestLoader
+        loader = TopLevelFunctionLoader() if config.run_top_level_functions else unittest.TestLoader()
         tags = None
         if use_tags and config.tags_dir:
             tags = read_tags(test_file, config)
             if not tags:
                 return None
-        test_suite = loader.loadTestsFromName(test_path_to_module(test_file.resolve().relative_to(rootdir)))
+        try:
+            test_suite = loader.loadTestsFromName(test_path_to_module(test_file.resolve().relative_to(rootdir)))
+        except unittest.SkipTest as e:
+            log(f"Test file {test_file} skipped: {e}")
+            return
         collected_tests, untagged_tests = filter_tree(test_file, test_suite, specifiers, tags)
         if collected_tests:
             return TestSuite(config, test_file, test_suite, collected_tests, untagged_tests)
@@ -640,6 +680,14 @@ def main():
 
     args = parser.parse_args()
 
+    if IS_GRAALPY:
+        if os.environ.get('GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS', '').lower() not in ('true', '1'):
+            if not __graalpython__.java_assert():
+                sys.exit(
+                    "Java assertions are not enabled, refusing to run. Add --vm.ea to your invocation. Set GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS=true to disable this check\n")
+    if not hasattr(__graalpython__, 'tdebug'):
+        sys.exit("Needs to be run with --experimental-options --python.EnableDebuggingBuiltins\n")
+
     tests = collect(args.tests, use_tags=(not args.all))
     if args.collect_only:
         for test_suite in tests:
@@ -648,7 +696,7 @@ def main():
         return
 
     if not tests:
-        sys.exit("No tests matched")
+        sys.exit("No tests matched\n")
 
     runner_args = {
         'failfast': args.failfast,
