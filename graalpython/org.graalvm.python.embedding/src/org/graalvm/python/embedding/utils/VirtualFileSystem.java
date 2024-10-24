@@ -373,7 +373,13 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         this.mountPoint = Path.of(mp);
         this.mountPointLowerCase = mp.toLowerCase(Locale.ROOT);
         if (mp.endsWith(PLATFORM_SEPARATOR) || !mountPoint.isAbsolute()) {
-            throw new IllegalArgumentException("GRAALPY_VFS_MOUNT_POINT must be set to an absolute path without a trailing separator");
+            String msg;
+            if (System.getenv("GRAALPY_VFS_MOUNT_POINT") != null) {
+                msg = String.format("Environment variable GRAALPY_VFS_MOUNT_POINT must be set to an absolute path without a trailing separator: '%s'", mp);
+            } else {
+                msg = String.format("Virtual filesystem mount point must be set to an absolute path without a trailing separator: '%s'", mp);
+            }
+            throw new IllegalArgumentException(msg);
         }
 
         fine("VirtualFilesystem %s, allowHostIO: %s, resourceLoadingClass: %s, caseInsensitive: %s, extractOnStartup: %s%s",
