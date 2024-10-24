@@ -81,7 +81,8 @@ PyAPI_DATA(PyTypeObject) _PyAsyncGenAThrow_Type;
 PyAPI_FUNC(PyObject *) PyAsyncGen_New(PyFrameObject *,
     PyObject *name, PyObject *qualname);
 
-#define PyAsyncGen_CheckExact(op) Py_IS_TYPE(op, &PyAsyncGen_Type)
+#define PyAsyncGen_CheckExact(op) Py_IS_TYPE((op), &PyAsyncGen_Type)
+
 
 
 #undef _PyGenObject_HEAD

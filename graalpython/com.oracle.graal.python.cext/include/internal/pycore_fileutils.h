@@ -15,6 +15,11 @@ extern "C" {
 
 #include <locale.h>   /* struct lconv */
 
+
+struct _fileutils_state {
+    int force_ascii;
+};
+
 typedef enum {
     _Py_ERROR_UNKNOWN=0,
     _Py_ERROR_STRICT,

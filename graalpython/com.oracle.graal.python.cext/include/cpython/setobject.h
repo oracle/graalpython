@@ -63,8 +63,17 @@ typedef struct {
     PyObject *weakreflist;      /* List of weak references */
 } PySetObject;
 
-#define PySet_GET_SIZE(so) \
-    (PySet_Size(_PyObject_CAST(so)))
+#define _PySet_CAST(so) \
+    (assert(PyAnySet_Check(so)), _Py_CAST(PySetObject*, so))
+
+static inline Py_ssize_t PySet_GET_SIZE(PyObject *so) {
+#if 0 // GraalPy change
+    return _PySet_CAST(so)->used;
+#else // GraalPy change
+    return PySet_Size(so);
+#endif // GraalPy change
+}
+#define PySet_GET_SIZE(so) PySet_GET_SIZE(_PyObject_CAST(so))
 
 PyAPI_DATA(PyObject *) _PySet_Dummy;
 

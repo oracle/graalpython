@@ -12,9 +12,19 @@ typedef struct {
     double ob_fval;
 } PyFloatObject;
 
-// Macro version of PyFloat_AsDouble() trading safety for speed.
+#define _PyFloat_CAST(op) \
+    (assert(PyFloat_Check(op)), _Py_CAST(PyFloatObject*, op))
+
+// Static inline version of PyFloat_AsDouble() trading safety for speed.
 // It doesn't check if op is a double object.
-#define PyFloat_AS_DOUBLE(op) PyFloat_AsDouble((PyObject*)(op))
+static inline double PyFloat_AS_DOUBLE(PyObject *op) {
+#if 0 // GraalPy change
+    return _PyFloat_CAST(op)->ob_fval;
+#else // GraalPy change
+    return PyFloat_AsDouble(op);
+#endif // GraalPy change
+}
+#define PyFloat_AS_DOUBLE(op) PyFloat_AS_DOUBLE(_PyObject_CAST(op))
 
 
 PyAPI_FUNC(int) PyFloat_Pack2(double x, char *p, int le);
