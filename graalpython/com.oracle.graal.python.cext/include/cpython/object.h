@@ -385,9 +385,9 @@ _PyObject_DebugTypeStats(FILE *out);
 #endif
 
 #define _PyObject_ASSERT_WITH_MSG(obj, expr, msg) \
-    _PyObject_ASSERT_FROM(obj, expr, msg, __FILE__, __LINE__, __func__)
+    _PyObject_ASSERT_FROM((obj), expr, (msg), __FILE__, __LINE__, __func__)
 #define _PyObject_ASSERT(obj, expr) \
-    _PyObject_ASSERT_WITH_MSG(obj, expr, NULL)
+    _PyObject_ASSERT_WITH_MSG((obj), expr, NULL)
 
 #define _PyObject_ASSERT_FAILED_MSG(obj, msg) \
     _PyObject_AssertFailed((obj), NULL, (msg), __FILE__, __LINE__, __func__)
@@ -505,7 +505,7 @@ Py_DEPRECATED(3.11) typedef int UsingDeprecatedTrashcanMacro;
 #define Py_TRASHCAN_SAFE_BEGIN(op) \
     do { \
         UsingDeprecatedTrashcanMacro cond=1; \
-        Py_TRASHCAN_BEGIN_CONDITION(op, cond);
+        Py_TRASHCAN_BEGIN_CONDITION((op), cond);
 #define Py_TRASHCAN_SAFE_END(op) \
         Py_TRASHCAN_END; \
     } while(0);

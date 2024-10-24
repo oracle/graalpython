@@ -97,7 +97,7 @@ PyAPI_FUNC(void) _PyErr_GetExcInfo(PyThreadState *, PyObject **, PyObject **, Py
 
 /* Context manipulation (PEP 3134) */
 
-PyAPI_FUNC(void) _PyErr_ChainExceptions(PyObject *, PyObject *, PyObject *);
+Py_DEPRECATED(3.12) PyAPI_FUNC(void) _PyErr_ChainExceptions(PyObject *, PyObject *, PyObject *);
 
 /* Like PyErr_Format(), but saves current exception as __context__ and
    __cause__.
@@ -177,3 +177,4 @@ PyAPI_FUNC(void) _Py_NO_RETURN _Py_FatalErrorFormat(
     ...);
 
 #define Py_FatalError(message) _Py_FatalErrorFunc(__func__, message)
+#define Py_FatalError(message) _Py_FatalErrorFunc(__func__, (message))

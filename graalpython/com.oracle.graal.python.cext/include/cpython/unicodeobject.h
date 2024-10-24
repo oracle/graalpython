@@ -67,7 +67,7 @@
 
 /* ASCII-only strings created through PyUnicode_New use the PyASCIIObject
    structure. state.ascii and state.compact are set, and the data
-   immediately follow the structure. utf8_length and wstr_length can be found
+   immediately follow the structure. utf8_length can be found
    in the length field; the utf8 pointer is equal to the data pointer. */
 typedef struct {
     /* There are 4 forms of Unicode strings:
@@ -79,8 +79,7 @@ typedef struct {
          * kind = PyUnicode_1BYTE_KIND
          * compact = 1
          * ascii = 1
-         * ready = 1
-         * (length is the length of the utf8 and wstr strings)
+         * (length is the length of the utf8)
          * (data starts just after the structure)
          * (since ASCII is decoded from UTF-8, the utf8 string are the data)
 
@@ -91,55 +90,27 @@ typedef struct {
          * kind = PyUnicode_1BYTE_KIND, PyUnicode_2BYTE_KIND or
            PyUnicode_4BYTE_KIND
          * compact = 1
-         * ready = 1
          * ascii = 0
          * utf8 is not shared with data
          * utf8_length = 0 if utf8 is NULL
-         * wstr is shared with data and wstr_length=length
-           if kind=PyUnicode_2BYTE_KIND and sizeof(wchar_t)=2
-           or if kind=PyUnicode_4BYTE_KIND and sizeof(wchar_t)=4
-         * wstr_length = 0 if wstr is NULL
          * (data starts just after the structure)
 
-       - legacy string, not ready:
-
-         * structure = PyUnicodeObject
-         * test: kind == PyUnicode_WCHAR_KIND
-         * length = 0 (use wstr_length)
-         * hash = -1
-         * kind = PyUnicode_WCHAR_KIND
-         * compact = 0
-         * ascii = 0
-         * ready = 0
-         * interned = SSTATE_NOT_INTERNED
-         * wstr is not NULL
-         * data.any is NULL
-         * utf8 is NULL
-         * utf8_length = 0
-
-       - legacy string, ready:
+       - legacy string:
 
          * structure = PyUnicodeObject structure
-         * test: !PyUnicode_IS_COMPACT(op) && kind != PyUnicode_WCHAR_KIND
+         * test: !PyUnicode_IS_COMPACT(op)
          * kind = PyUnicode_1BYTE_KIND, PyUnicode_2BYTE_KIND or
            PyUnicode_4BYTE_KIND
          * compact = 0
-         * ready = 1
          * data.any is not NULL
          * utf8 is shared and utf8_length = length with data.any if ascii = 1
          * utf8_length = 0 if utf8 is NULL
-         * wstr is shared with data.any and wstr_length = length
-           if kind=PyUnicode_2BYTE_KIND and sizeof(wchar_t)=2
-           or if kind=PyUnicode_4BYTE_KIND and sizeof(wchar_4)=4
-         * wstr_length = 0 if wstr is NULL
 
        Compact strings use only one memory block (structure + characters),
        whereas legacy strings use one block for the structure and one block
        for characters.
 
-       Legacy strings are created by PyUnicode_FromUnicode() and
-       PyUnicode_FromStringAndSize(NULL, size) functions. They become ready
-       when PyUnicode_READY() is called.
+       Legacy strings are created by subclasses of Unicode.
 
        See also _PyUnicode_CheckConsistency().
     */
@@ -147,21 +118,17 @@ typedef struct {
     Py_ssize_t length;          /* Number of code points in the string */
     Py_hash_t hash;             /* Hash value; -1 if not set */
     struct {
-        /*
-           SSTATE_NOT_INTERNED (0)
-           SSTATE_INTERNED_MORTAL (1)
-           SSTATE_INTERNED_IMMORTAL (2)
-
-           If interned != SSTATE_NOT_INTERNED, the two references from the
+        /* If interned is non-zero, the two references from the
            dictionary to this object are *not* counted in ob_refcnt.
-         */
+           The possible values here are:
+               0: Not Interned
+               1: Interned
+               2: Interned and Immortal
+               3: Interned, Immortal, and Static
+           This categorization allows the runtime to determine the right
+           cleanup mechanism at runtime shutdown. */
         unsigned int interned:2;
         /* Character size:
-
-           - PyUnicode_WCHAR_KIND (0):
-
-             * character type = wchar_t (16 or 32 bits, depending on the
-               platform)
 
            - PyUnicode_1BYTE_KIND (1):
 
@@ -217,9 +184,7 @@ typedef struct {
                                  * surrogates count as two code points. */
 } PyCompactUnicodeObject;
 
-/* Strings allocated through PyUnicode_FromUnicode(NULL, len) use the
-   PyUnicodeObject structure. The actual string data is initially in the wstr
-   block, and copied into the data block using _PyUnicode_Ready. */
+/* Object format for Unicode subclasses. */
 typedef struct {
     PyCompactUnicodeObject _base;
     union {
@@ -339,9 +304,7 @@ static inline void* PyUnicode_DATA(PyObject *op) {
     }
     return _PyUnicode_NONCOMPACT_DATA(op);
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_DATA(op) PyUnicode_DATA(_PyObject_CAST(op))
-#endif
+#define PyUnicode_DATA(op) PyUnicode_DATA(_PyObject_CAST(op))
 
 /* Return pointers to the canonical representation cast to unsigned char,
    Py_UCS2, or Py_UCS4 for direct character access.
@@ -352,16 +315,11 @@ static inline void* PyUnicode_DATA(PyObject *op) {
 #define PyUnicode_2BYTE_DATA(op) _Py_STATIC_CAST(Py_UCS2*, PyUnicode_DATA(op))
 #define PyUnicode_4BYTE_DATA(op) _Py_STATIC_CAST(Py_UCS4*, PyUnicode_DATA(op))
 
-/* Returns the length of the unicode string. The caller has to make sure that
-   the string has it's canonical representation set before calling
-   this function.  Call PyUnicode_(FAST_)Ready to ensure that. */
+/* Returns the length of the unicode string. */
 static inline Py_ssize_t PyUnicode_GET_LENGTH(PyObject *op) {
-    assert(PyUnicode_IS_READY(op));
     return _PyASCIIObject_CAST(op)->length;
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_GET_LENGTH(op) PyUnicode_GET_LENGTH(_PyObject_CAST(op))
-#endif
+#define PyUnicode_GET_LENGTH(op) PyUnicode_GET_LENGTH(_PyObject_CAST(op))
 
 /* Write into the canonical representation, this function does not do any sanity
    checks and is intended for usage in loops.  The caller should cache the
@@ -371,6 +329,7 @@ static inline Py_ssize_t PyUnicode_GET_LENGTH(PyObject *op) {
 static inline void PyUnicode_WRITE(int kind, void *data,
                                    Py_ssize_t index, Py_UCS4 value)
 {
+    assert(index >= 0);
     if (kind == PyUnicode_1BYTE_KIND) {
         assert(value <= 0xffU);
         _Py_STATIC_CAST(Py_UCS1*, data)[index] = _Py_STATIC_CAST(Py_UCS1, value);
@@ -385,17 +344,16 @@ static inline void PyUnicode_WRITE(int kind, void *data,
         _Py_STATIC_CAST(Py_UCS4*, data)[index] = value;
     }
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #define PyUnicode_WRITE(kind, data, index, value) \
     PyUnicode_WRITE(_Py_STATIC_CAST(int, kind), _Py_CAST(void*, data), \
                     (index), _Py_STATIC_CAST(Py_UCS4, value))
-#endif
 
 /* Read a code point from the string's canonical representation.  No checks
    or ready calls are performed. */
 static inline Py_UCS4 PyUnicode_READ(int kind,
                                      const void *data, Py_ssize_t index)
 {
+    assert(index >= 0);
     if (kind == PyUnicode_1BYTE_KIND) {
         return _Py_STATIC_CAST(const Py_UCS1*, data)[index];
     }
@@ -405,12 +363,10 @@ static inline Py_UCS4 PyUnicode_READ(int kind,
     assert(kind == PyUnicode_4BYTE_KIND);
     return _Py_STATIC_CAST(const Py_UCS4*, data)[index];
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
 #define PyUnicode_READ(kind, data, index) \
     PyUnicode_READ(_Py_STATIC_CAST(int, kind), \
                    _Py_STATIC_CAST(const void*, data), \
                    (index))
-#endif
 
 /* PyUnicode_READ_CHAR() is less efficient than PyUnicode_READ() because it
    calls PyUnicode_KIND() and might call it twice.  For single reads, use
@@ -442,7 +398,6 @@ static inline Py_UCS4 PyUnicode_MAX_CHAR_VALUE(PyObject *op)
 {
     int kind;
 
-    assert(PyUnicode_IS_READY(op));
     if (PyUnicode_IS_ASCII(op)) {
         return 0x7fU;
     }
@@ -1144,7 +1099,7 @@ PyAPI_FUNC(PyObject*) _PyUnicode_FromId(_Py_Identifier*);
    and where the hash values are equal (i.e. a very probable match) */
 PyAPI_FUNC(int) _PyUnicode_EQ(PyObject *, PyObject *);
 
-/* Equality check. Returns -1 on failure. */
+/* Equality check. */
 PyAPI_FUNC(int) _PyUnicode_Equal(PyObject *, PyObject *);
 
 PyAPI_FUNC(int) _PyUnicode_WideCharString_Converter(PyObject *, void *);
