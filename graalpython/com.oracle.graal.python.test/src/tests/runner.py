@@ -135,13 +135,6 @@ class TestResult:
     output: str = ''
 
 
-def group_specifiers_by_file(specifiers: list[TestSpecifier]) -> dict[Path, list[TestSpecifier]]:
-    by_file = defaultdict(list)
-    for specifier in specifiers:
-        by_file[specifier.test_file].append(specifier)
-    return by_file
-
-
 def format_exception(err):
     _, exc, tb = err
     while tb and '__unittest' in tb.tb_frame.f_globals:
@@ -240,11 +233,10 @@ def test_path_to_module(path: Path):
 
 
 class TestRunner:
-    def __init__(self, args):
-        self.args = args
+    def __init__(self, failfast):
+        self.failfast = failfast
         self.events = []
         self.results = []
-        self.skipped_files = []
         self.incomplete_line = False
         self.report_incomplete = sys.stdout.isatty()
 
@@ -307,9 +299,8 @@ class TestRunner:
         add_item(TestStatus.SKIPPED, "skipped")
         add_item(TestStatus.EXPECTED_FAILURE, "expected failures")
         add_item(TestStatus.UNEXPECTED_SUCCESS, "unexpected successes")
-        if not self.skipped_files:
-            add_item(TestStatus.UNTAGGED, "not tagged")
-            add_item(TestStatus.NOT_EXECUTED, "not executed")
+        add_item(TestStatus.UNTAGGED, "not tagged")
+        add_item(TestStatus.NOT_EXECUTED, "not executed")
 
         total = sum(count for status, count in counts.items() if status in EXECUTED_STATES)
 
@@ -322,33 +313,22 @@ class TestRunner:
         else:
             print(overall_status)
 
-        if self.args.failfast and counts.get(TestStatus.NOT_EXECUTED):
+        if self.failfast and counts.get(TestStatus.NOT_EXECUTED):
             print("\nWARNING: Did not execute all tests because 'failfast' mode is on")
 
-    def collect(self, all_specifiers: list[TestSpecifier]) -> list['TestSuite']:
-        to_run = []
-        for test_file, specifiers in group_specifiers_by_file(all_specifiers).items():
-            if not test_file.exists():
-                sys.exit(f"File does not exist: {test_file}")
-            collected = collect_module(test_file, specifiers, use_tags=(not self.args.all))
-            if collected:
-                to_run.append(collected)
-            else:
-                self.skipped_files.append(test_file)
-        return to_run
-
-    def run_tests(self, tests: list[TestSpecifier]):
-        for test_suite in self.collect(tests):
+    def run_tests(self, tests: list['TestSuite']):
+        for test_suite in tests:
             result = DirectResult(test_suite, self)
-            result.failfast = self.args.failfast
+            result.failfast = self.failfast
             test_suite.run(result)
             test_suite.add_unexecuted(self.results)
         self.display_summary()
 
 
 class ParallelTestRunner(TestRunner):
-    def __init__(self, args):
-        super().__init__(args)
+    def __init__(self, failfast, num_processes):
+        super().__init__(failfast=failfast)
+        self.num_processes = num_processes
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
 
@@ -357,19 +337,18 @@ class ParallelTestRunner(TestRunner):
             super().report_start(test_id)
 
     def report_result(self, result: TestResult):
-        if self.args.failfast and result.status in FAILED_STATES:
+        if self.failfast and result.status in FAILED_STATES:
             self.stop_event.set()
         with self.lock:
             super().report_result(result)
 
-    def run_tests(self, tests: list[TestSpecifier]):
-        collected = self.collect(tests)
-        if collected:
-            num_processes = min(self.args.num_processes, len(collected))
+    def run_tests(self, tests: list['TestSuite']):
+        if tests:
+            num_processes = min(self.num_processes, len(tests))
             with concurrent.futures.ThreadPoolExecutor(num_processes) as executor:
                 concurrent.futures.wait([
                     executor.submit(self.run_in_subprocess_and_watch, test_suite)
-                    for test_suite in collected
+                    for test_suite in tests
                 ])
 
         self.display_summary()
@@ -382,7 +361,7 @@ class ParallelTestRunner(TestRunner):
             remaining_tests = test_suite.collected_tests
             while remaining_tests and not self.stop_event.is_set():
                 cmd = [sys.executable, '-u', __file__, '--pipe-fd', str(child_conn.fileno())]
-                if self.args.failfast:
+                if self.failfast:
                     cmd.append('--failfast')
                 cmd += [str(s) for s in remaining_tests]
                 process = subprocess.Popen(
@@ -446,21 +425,6 @@ class ParallelTestRunner(TestRunner):
                     continue
                 test_suite.add_unexecuted(self.results)
                 break
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--num-processes', type=int)
-    parser.add_argument('-f', '--failfast', action='store_true')
-    parser.add_argument('--all', action='store_true')
-    parser.add_argument('tests', nargs='+', type=TestSpecifier.from_str)
-
-    args = parser.parse_args()
-
-    runner = TestRunner(args) if args.num_processes is None else ParallelTestRunner(args)
-    runner.run_tests(args.tests)
-    if runner.tests_failed():
-        sys.exit(1)
 
 
 def filter_tree(test_file: Path, test_suite: unittest.TestSuite, specifiers: list[TestSpecifier],
@@ -560,6 +524,35 @@ class TestSuite:
         ]
 
 
+def group_specifiers_by_file(specifiers: list[TestSpecifier]) -> dict[Path, list[TestSpecifier]]:
+    by_file = defaultdict(list)
+    for specifier in specifiers:
+        by_file[specifier.test_file].append(specifier)
+    return by_file
+
+
+def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifier]:
+    expanded_specifiers = []
+    for specifier in specifiers:
+        str_path = str(specifier.test_file)
+        if '*' in str_path:
+            paths = list(Path('.').glob(str_path))
+        else:
+            paths = [specifier.test_file]
+        expanded_paths = []
+        for path in paths:
+            if not path.exists():
+                sys.exit(f"Test path {path} doesn't exist")
+            if path.is_dir():
+                expanded_paths.extend(list(path.glob("**/test_*.py")))
+                expanded_paths.extend(list(path.glob("**/test_*/__init__.py")))
+            else:
+                expanded_paths.append(path)
+        for path in expanded_paths:
+            expanded_specifiers.append(TestSpecifier(path, specifier.test_name))
+    return expanded_specifiers
+
+
 def collect_module(test_file: Path, specifiers: list[TestSpecifier], use_tags=False) -> TestSuite | None:
     config = config_for_file(test_file)
     with rootdir_from_config(config) as rootdir:
@@ -573,6 +566,18 @@ def collect_module(test_file: Path, specifiers: list[TestSpecifier], use_tags=Fa
         collected_tests, untagged_tests = filter_tree(test_file, test_suite, specifiers, tags)
         if collected_tests:
             return TestSuite(config, test_file, test_suite, collected_tests, untagged_tests)
+
+
+def collect(all_specifiers: list[TestSpecifier], use_tags=False) -> list[TestSuite]:
+    to_run = []
+    all_specifiers = expand_specifier_paths(all_specifiers)
+    for test_file, specifiers in group_specifiers_by_file(all_specifiers).items():
+        if not test_file.exists():
+            sys.exit(f"File does not exist: {test_file}")
+        collected = collect_module(test_file, specifiers, use_tags=use_tags)
+        if collected:
+            to_run.append(collected)
+    return to_run
 
 
 def read_tags(test_file: Path, config: Config) -> list[TestId]:
@@ -603,11 +608,43 @@ def in_process():
     parser.add_argument('tests', nargs='*', type=TestSpecifier.from_str)
     args = parser.parse_args()
     conn = multiprocessing.connection.Connection(args.pipe_fd)
-    for test_file, specifiers in group_specifiers_by_file(args.tests).items():
-        test_suite = collect_module(test_file, specifiers)
+    for test_suite in collect(args.tests):
         result = PipeResult(test_suite, conn)
         result.failfast = args.failfast
         test_suite.run(result)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n', '--num-processes', type=int)
+    parser.add_argument('-f', '--failfast', action='store_true')
+    parser.add_argument('--all', action='store_true')
+    parser.add_argument('--collect-only', action='store_true')
+    parser.add_argument('tests', nargs='+', type=TestSpecifier.from_str)
+
+    args = parser.parse_args()
+
+    tests = collect(args.tests, use_tags=(not args.all))
+    if args.collect_only:
+        for test_suite in tests:
+            for test in test_suite.collected_tests:
+                print(test)
+        return
+
+    if not tests:
+        sys.exit("No tests matched")
+
+    runner_args = {
+        'failfast': args.failfast,
+    }
+    if args.num_processes:
+        runner = TestRunner(**runner_args)
+    else:
+        runner = ParallelTestRunner(**runner_args, num_processes=args.num_processes)
+
+    runner.run_tests(tests)
+    if runner.tests_failed():
+        sys.exit(1)
 
 
 if __name__ == '__main__':
