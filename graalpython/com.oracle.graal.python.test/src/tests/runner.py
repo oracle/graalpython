@@ -61,6 +61,7 @@ from pathlib import Path
 sys.path.insert(0, os.getcwd())
 
 DIR = Path(__file__).parent
+IS_GRAALPY = sys.implementation.name == 'graalpy'
 
 if sys.implementation.version < (3, 12):
     # XXX Temporary hack: python 3.12 will have a toml parser in standard library, for now we load vendored one from pip
@@ -70,6 +71,14 @@ if sys.implementation.version < (3, 12):
     sys.path.pop()
 else:
     pass
+
+if IS_GRAALPY:
+    if os.environ.get('GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS', '').lower() not in ('true', '1'):
+        if not __graalpython__.java_assert():
+            sys.exit(
+                "Java assertions are not enabled, refusing to run. Add --vm.ea to your invocation. Set GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS=true to disable this check")
+    if not hasattr(__graalpython__, 'tdebug'):
+        sys.exit("Needs to be run with --experimental-options --python.EnableDebuggingBuiltins")
 
 
 class TestStatus(enum.StrEnum):
@@ -355,12 +364,19 @@ class ParallelTestRunner(TestRunner):
 
     def run_in_subprocess_and_watch(self, test_suite: 'TestSuite'):
         conn, child_conn = multiprocessing.Pipe()
-        with tempfile.NamedTemporaryFile(prefix='graalpy-test-out-', mode='w+') as out_file:
+        with tempfile.NamedTemporaryFile(prefix='graalpytest-out-', mode='w+') as out_file:
             env = os.environ.copy()
             env['IN_PROCESS'] = '1'
             remaining_tests = test_suite.collected_tests
             while remaining_tests and not self.stop_event.is_set():
-                cmd = [sys.executable, '-u', __file__, '--pipe-fd', str(child_conn.fileno())]
+                python_args = ['-u']
+                if IS_GRAALPY:
+                    python_args += [
+                        "--vm.ea",
+                        "--experimental-options=true",
+                        "--python.EnableDebuggingBuiltins",
+                    ]
+                cmd = [sys.executable, *python_args, __file__, '--pipe-fd', str(child_conn.fileno())]
                 if self.failfast:
                     cmd.append('--failfast')
                 cmd += [str(s) for s in remaining_tests]
@@ -637,7 +653,7 @@ def main():
     runner_args = {
         'failfast': args.failfast,
     }
-    if args.num_processes:
+    if not args.num_processes:
         runner = TestRunner(**runner_args)
     else:
         runner = ParallelTestRunner(**runner_args, num_processes=args.num_processes)
