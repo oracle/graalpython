@@ -106,7 +106,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ResolveHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
@@ -1189,7 +1189,7 @@ public abstract class CExtNodes {
                         @Cached(inline = false) CApiTransitions.ToPythonWrapperNode toPythonWrapperNode,
                         @Cached InlinedBranchProfile isWrapperProfile,
                         @Cached InlinedBranchProfile isNativeObject,
-                        @Cached UpdateRefNode updateRefNode,
+                        @Cached UpdateStrongRefNode updateRefNode,
                         @Cached(inline = false) CStructAccess.ReadI64Node readRefcount,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeRefcount,
                         @Cached(inline = false) PCallCapiFunction callDealloc) {
@@ -1295,7 +1295,7 @@ public abstract class CExtNodes {
         @Specialization
         static Object resolveLongCached(Node inliningTarget, long pointer,
                         @Exclusive @Cached ResolveHandleNode resolveHandleNode,
-                        @Exclusive @Cached UpdateRefNode updateRefNode) {
+                        @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             Object lookup = CApiTransitions.lookupNative(pointer);
             if (lookup != null) {
                 if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
@@ -1313,7 +1313,7 @@ public abstract class CExtNodes {
         static Object resolveGeneric(Node inliningTarget, Object pointerObject,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Exclusive @Cached ResolveHandleNode resolveHandleNode,
-                        @Exclusive @Cached UpdateRefNode updateRefNode) {
+                        @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             if (lib.isPointer(pointerObject)) {
                 Object lookup;
                 long pointer;
