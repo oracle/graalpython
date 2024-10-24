@@ -38,12 +38,15 @@
 # SOFTWARE.
 
 import os
-import tempfile
-import unittest
 import shutil
 import sys
+import tempfile
 import textwrap
+import unittest
+
 from tests.standalone import util
+from tests.util import skip_deselected_test_functions
+
 
 def append(file, txt):
     with open(file, "a") as f:
@@ -547,4 +550,4 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
             }
             """)
 
-unittest.skip_deselected_test_functions(globals())
+skip_deselected_test_functions(globals())

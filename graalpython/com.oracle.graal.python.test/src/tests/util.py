@@ -36,8 +36,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import os
 import sys
+import unittest
 
 
 def storage_to_native(s):
@@ -58,3 +59,42 @@ def assert_raises(err, fn, *args, err_check=None, **kwargs):
             else:
                 assert err_check(e)
     assert raised
+
+
+# XXX we should split the tests in a better way
+def skip_deselected_test_functions(globals):
+    """
+    If TAGGED_UNITTEST_PARTIAL is set, this skips tests as appropriate.
+    """
+    envvar = os.environ.get("TAGGED_UNITTEST_PARTIAL", "")
+    if "/" not in envvar:
+        return
+    import types
+    batch, total = (int(x) for x in envvar.split("/"))
+    test_functions = []
+    for g in globals.values():
+        if isinstance(g, types.FunctionType) and g.__name__.startswith("test_"):
+            test_functions.append((globals, g))
+        elif isinstance(g, type) and issubclass(g, unittest.TestCase):
+            for f in (getattr(g, n) for n in dir(g)):
+                if isinstance(f, types.FunctionType) and f.__name__.startswith("test_"):
+                    test_functions.append((g, f))
+    for idx, (owner, test_func) in enumerate(test_functions):
+        if idx % total != batch - 1:
+            n = test_func.__name__
+            if isinstance(owner, type):
+                removeAttr(owner, n)
+            else:
+                del owner[n]
+
+
+def removeAttr(cls, attr):
+    if (cls is object):
+        return
+    if hasattr(cls, attr):
+        try:
+            delattr(cls, attr)
+        except AttributeError as e:
+            pass
+    for b in cls.__bases__:
+        removeAttr(b, attr)

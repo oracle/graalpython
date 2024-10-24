@@ -40,12 +40,14 @@
 import json
 import os
 import shutil
-import sys
 import subprocess
+import sys
 import tempfile
-import unittest
 import time
+import unittest
+
 from tests.standalone import util
+from tests.util import skip_deselected_test_functions
 
 is_enabled = 'ENABLE_JBANG_INTEGRATION_UNITTESTS' in os.environ and os.environ['ENABLE_JBANG_INTEGRATION_UNITTESTS'] == "true"
 MAVEN_REPO_LOCAL_URL = os.environ.get('org.graalvm.maven.downloader.repository')
@@ -415,4 +417,4 @@ def hello():
         self.assertTrue("only one //PYTHON_RESOURCES_DIRECTORY comment is allowed" in out, f"Expected text:\nonly one //PYTHON_RESOURCES_DIRECTORY comment is allowed")
 
 
-unittest.skip_deselected_test_functions(globals())
+skip_deselected_test_functions(globals())

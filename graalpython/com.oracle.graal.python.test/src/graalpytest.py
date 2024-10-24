@@ -865,31 +865,6 @@ def removeAttr(cls, attr):
     for b in cls.__bases__:
         removeAttr(b, attr)
 
-def skip_deselected_test_functions(globals):
-    """
-    If TAGGED_UNITTEST_PARTIAL is set, this skips tests as appropriate.
-    """
-    envvar = getenv("TAGGED_UNITTEST_PARTIAL", "")
-    if "/" not in envvar:
-        return
-    import types
-    batch, total = (int(x) for x in envvar.split("/"))
-    test_functions = []
-    for g in globals.values():
-        if isinstance(g, types.FunctionType) and g.__name__.startswith("test_"):
-            test_functions.append((globals, g))
-        elif isinstance(g, type) and issubclass(g, TestCase):
-            for f in (getattr(g, n) for n in dir(g)):
-                if isinstance(f, types.FunctionType) and f.__name__.startswith("test_"):
-                    test_functions.append((g, f))
-    for idx, (owner, test_func) in enumerate(test_functions):
-        if idx % total != batch - 1:
-            n = test_func.__name__
-            if isinstance(owner, type):
-                removeAttr(owner, n)
-            else:
-                del owner[n]
-
 
 if __name__ == "__main__":
     sys.modules["unittest"] = sys.modules["__main__"]

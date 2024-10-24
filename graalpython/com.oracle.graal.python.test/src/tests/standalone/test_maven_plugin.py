@@ -38,11 +38,14 @@
 # SOFTWARE.
 
 import os
-import tempfile
-import unittest
 import shutil
 import sys
+import tempfile
+import unittest
+
 from tests.standalone import util
+from tests.util import skip_deselected_test_functions
+
 
 class MavenPluginTest(util.PolyglotAppTestBase):
 
@@ -355,4 +358,4 @@ class MavenPluginTest(util.PolyglotAppTestBase):
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
 
-unittest.skip_deselected_test_functions(globals())
+skip_deselected_test_functions(globals())

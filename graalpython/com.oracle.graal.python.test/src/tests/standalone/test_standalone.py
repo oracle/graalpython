@@ -40,7 +40,9 @@
 import os
 import tempfile
 import unittest
+
 from tests.standalone import util
+from tests.util import skip_deselected_test_functions
 
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
 
@@ -140,4 +142,4 @@ def test_native_executable_module():
         out, return_code = util.run_cmd(cmd, env)
         util.check_ouput("hello standalone world", out)
 
-unittest.skip_deselected_test_functions(globals())
+skip_deselected_test_functions(globals())
