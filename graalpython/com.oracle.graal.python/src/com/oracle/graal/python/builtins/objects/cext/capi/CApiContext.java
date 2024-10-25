@@ -851,20 +851,20 @@ public final class CApiContext extends CExtContext {
         }
         switch (PythonOS.getPythonOS()) {
             case PLATFORM_WIN32:
+                // TODO: change dll name?
                 if (additionalDependencyPath != null) {
                     // TOOD: Change the dependency from python3.11.dll to whatever name Use
                     // SetDllDirectoryA to load it
                 }
                 break;
             case PLATFORM_LINUX:
-                // TODO: change soname to new name
+                runAndWait("patchelf", "--debug", "--set-soname", target.getName(), target.getPath());
                 if (additionalDependencyPath != null) {
-                    // TODO: Add a DT_NEEDED entry in the dynamic section and the full path to the
-                    // strings section
+                    runAndWait("patchelf", "--debug", "--add-needed", additionalDependencyPath, target.getPath());
                 }
                 break;
             case PLATFORM_DARWIN:
-                // TODO:
+                runAndWait("install_name_tool", "-id", target.getName(), target.getPath());
                 if (additionalDependencyPath != null) {
                     // TODO: Add an LC_LOAD_DYLIB command to load the additional lib
                 }
@@ -873,6 +873,16 @@ public final class CApiContext extends CExtContext {
                 throw CompilerDirectives.shouldNotReachHere("Unsupported OS");
         }
         return target.getPath();
+    }
+
+    private static void runAndWait(String... cmdArgs) throws IOException {
+        var proc = Runtime.getRuntime().exec(cmdArgs);
+        try {
+            proc.waitFor();
+        } catch (InterruptedException e) {
+        }
+        proc.getInputStream().transferTo(System.out);
+        proc.getErrorStream().transferTo(System.err);
     }
 
     @TruffleBoundary
