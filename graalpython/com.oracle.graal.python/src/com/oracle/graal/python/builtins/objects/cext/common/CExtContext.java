@@ -320,8 +320,21 @@ public abstract class CExtContext {
 
         if (cApiContext.useNativeBackend) {
             TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile();
-            getLogger().config(String.format("loading module %s (real path: %s) as native", spec.path, realPath));
-            String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), realPath);
+            String loadPath = realPath.getPath();
+            if (cApiContext.capiFileCopy != null) {
+                try {
+                    loadPath = CApiContext.copyToTempFile(context.getEnv(), realPath, realPath.getParent(), cApiContext.capiFileCopy);
+                } catch (IOException e) {
+                    // It is unlikely that loading from the real path will work at this point, but
+                    // the handling below is still the best that we want
+                }
+            }
+
+            getLogger().config(String.format("loading module %s (real path: %s) as native", spec.path, loadPath));
+            if (context.getOption(PythonOptions.IsolateNativeModules)) {
+            } else {
+            }
+            String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), loadPath);
             if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
                 loadExpr = "with panama " + loadExpr;
             }

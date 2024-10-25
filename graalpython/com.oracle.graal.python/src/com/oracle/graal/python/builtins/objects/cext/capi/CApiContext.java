@@ -53,6 +53,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -69,6 +70,7 @@ import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.cext.PythonCApiAssertions;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
@@ -164,6 +166,15 @@ public final class CApiContext extends CExtContext {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
     public static final TruffleLogger GC_LOGGER = PythonLanguage.getLogger(CApiContext.LOGGER_CAPI_NAME + ".gc");
+
+    /**
+     * Path to this context's local copy of the C API library. This may be null, in which case the
+     * library was loaded with RTLD_GLOBAL (or equivalent) and there's no isolation between
+     * contexts in this operating system process. If non-null, any C extension library is copied
+     * and patched before load to add a DT_NEEDED dynamic dependency on this specific file, so that
+     * libraries are isolated between Python contexts.
+     */
+    public final String capiFileCopy;
 
     /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
     @CompilationFinal(dimensions = 1) private final PythonAbstractObjectNativeWrapper[] singletonNativePtrs;
@@ -264,8 +275,9 @@ public final class CApiContext extends CExtContext {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
     }
 
-    public CApiContext(PythonContext context, Object llvmLibrary, boolean useNativeBackend) {
+    public CApiContext(PythonContext context, Object llvmLibrary, boolean useNativeBackend, String capiFilePath) {
         super(context, llvmLibrary, useNativeBackend);
+        this.capiFileCopy = capiFilePath;
         this.nativeSymbolCache = new Object[NativeCAPISymbol.values().length];
 
         /*
@@ -795,6 +807,74 @@ public final class CApiContext extends CExtContext {
         }
     }
 
+    public static String copyToTempFile(Env env, TruffleFile src, TruffleFile targetDirOrNull, String additionalDependencyPath) throws IOException {
+        TruffleFile targetDir;
+        if (targetDirOrNull == null) {
+            targetDir = env.createTempDirectory(null, "graalpy-capi-temp");
+        } else {
+            targetDir = targetDirOrNull;
+        }
+        String[] nameParts = src.getName().split("\\.");
+        String stem = nameParts[0];
+        String extension = "." + nameParts[nameParts.length - 1];
+        TruffleFile target = env.createTempFile(targetDir, stem, extension).getAbsoluteFile();
+        LOGGER.info(() -> "Copying " + src.getPath() + " to " + target.getPath());
+        if (targetDirOrNull == null) {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    try {
+                        target.delete();
+                    } catch (NoSuchFileException e) {
+                        // ok, this is what we wanted
+                    } catch (IOException e) {
+                        LOGGER.warning("Failed to delete temporary file " + target.getPath());
+                    }
+                    try {
+                        target.getParent().delete();
+                    } catch (IOException e) {
+                        LOGGER.warning("Failed to delete temporary directory " + target.getParent().getPath());
+                    }
+            }));
+        } else {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    try {
+                        target.delete();
+                    } catch (NoSuchFileException e) {
+                        // ok, this is what we wanted
+                    } catch (IOException e) {
+                        LOGGER.warning("Failed to delete temporary file " + target.getPath());
+                    }
+            }));
+        }
+        synchronized (CApiContext.class) {
+            target.delete();
+            src.copy(target);
+        }
+        switch (PythonOS.getPythonOS()) {
+            case PLATFORM_WIN32:
+                if (additionalDependencyPath != null) {
+                    // TOOD: Change the dependency from python3.11.dll to whatever name Use
+                    // SetDllDirectoryA to load it
+                }
+                break;
+            case PLATFORM_LINUX:
+                // TODO: change soname to new name
+                if (additionalDependencyPath != null) {
+                    // TODO: Add a DT_NEEDED entry in the dynamic section and the full path to the
+                    // strings section
+                }
+                break;
+            case PLATFORM_DARWIN:
+                // TODO:
+                if (additionalDependencyPath != null) {
+                    // TODO: Add an LC_LOAD_DYLIB command to load the additional lib
+                }
+                break;
+            default:
+                throw CompilerDirectives.shouldNotReachHere("Unsupported OS");
+        }
+        return target.getPath();
+    }
+
     @TruffleBoundary
     public static Object ensureCApiLLVMLibrary(PythonContext context) throws IOException, ImportException, ApiInitException {
         assert !PythonOptions.NativeModules.getValue(context.getEnv().getOptions());
@@ -820,31 +900,51 @@ public final class CApiContext extends CExtContext {
             String libName = context.getLLVMSupportExt("python");
             TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
             try {
+                final String capiFilePath;
                 SourceBuilder capiSrcBuilder;
-                final boolean useNative = PythonOptions.NativeModules.getValue(env.getOptions());
-                boolean firstNativeContext = true;
-                if (useNative) {
-                    firstNativeContext = nativeCAPILoaded.compareAndSet(false, true);
-                    if (!firstNativeContext && warnedSecondContexWithNativeCAPI.compareAndSet(false, true)) {
-                        LOGGER.warning("GraalPy option 'NativeModules' is set to true " +
-                                        "and more than one context is used with native extensions. " +
-                                        "Isolation depends on the native extensions.");
+                boolean useNative;
+                boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
+                if (PythonOptions.NativeModules.getValue(env.getOptions())) {
+                    if (!isolateNative) {
+                        useNative = nativeCAPILoaded.compareAndSet(false, true);
+                        if (!useNative && warnedSecondContexWithNativeCAPI.compareAndSet(false, true)) {
+                            LOGGER.warning("GraalPy option 'NativeModules' is set to true, " +
+                                            "and 'IsolateNativeModules' is set to false, which " +
+                                            "means only one context in the process can use native modules, " +
+                                            "second and other contexts fallback to NativeModules=false and " +
+                                            "will use LLVM bitcode execution via GraalVM LLVM.");
+                        }
+                    } else {
+                        useNative = true;
                     }
-                    context.ensureNFILanguage(node, "NativeModules", "true");
-                    capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + capiFile.getPath() + "\"", "<libpython>");
                 } else {
+                    useNative = false;
+                }
+                if (useNative) {
+                    context.ensureNFILanguage(node, "NativeModules", "true");
+                    if (!isolateNative) {
+                        capiFilePath = null;
+                        capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + capiFile.getPath() + "\"", "<libpython>");
+                        LOGGER.config(() -> "loading CAPI from " + capiFile + " as native");
+                    } else {
+                        capiFilePath = copyToTempFile(env, capiFile, null, null);
+                        capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_LOCAL) \"" + capiFilePath + "\"", "<libpython>");
+                        LOGGER.config(() -> "loading CAPI copy from " + capiFilePath + " as native");
+                    }
+                } else {
+                    capiFilePath = null;
                     context.ensureLLVMLanguage(node);
                     capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
+                    LOGGER.config(() -> "loading CAPI from " + capiFile + " as bitcode");
                 }
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
                     capiSrcBuilder.internal(true);
                 }
-                LOGGER.config(() -> "loading CAPI from " + capiFile + " as " + (useNative ? "native" : "bitcode"));
                 CallTarget capiLibraryCallTarget = context.getEnv().parseInternal(capiSrcBuilder.build());
 
                 Object capiLibrary = capiLibraryCallTarget.call();
                 Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
-                CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative);
+                CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative, capiFilePath);
                 context.setCApiContext(cApiContext);
                 try (BuiltinArrayWrapper builtinArrayWrapper = new BuiltinArrayWrapper()) {
                     /*
