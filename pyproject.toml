@@ -8,4 +8,4 @@ required-version = '23'
 # Disables the black formatter in this repository
 # If individual suites want to enable the formatter, they can create a
 # pyproject.toml with their own configuration in their suite folder
-force-exclude = '.*'
+force-exclude = '.*graalpy.*|.*scripts/[^w].*py'

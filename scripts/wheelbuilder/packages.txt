@@ -1,0 +1,6 @@
+numpy==1.26.4
+httptools==0.6.1
+kiwisolver==1.4.5
+psutil==5.9.8
+ujson==5.10.0
+xxhash==3.4.1
