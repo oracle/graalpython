@@ -2,14 +2,14 @@ name: build-linux-aarch64-wheels
 'on':
   workflow_dispatch:
     inputs:
-      name:
+      packages:
         type: string
         description: Pkgs to build (comma-separated, empty for all)
         required: false
-      graalpy:
+      graalpy_url:
         type: string
-        description: GraalPy download url prefix (empty for default)
-        required: false
+        description: GraalPy download url
+        required: true
 jobs:
   build_wheels:
     runs-on:
@@ -17,6 +17,8 @@ jobs:
       - Linux
       - ARM64
     container: quay.io/pypa/manylinux_2_28_aarch64
+    env:
+      PACKAGES_TO_BUILD: ${{ inputs.packages }}
     steps:
       - name: Install dependencies
         run: |
@@ -27,10 +29,15 @@ jobs:
           dnf install -y /usr/bin/patch
       - name: Checkout
         uses: actions/checkout@main
-      - 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Build wheels
+        run: python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
       - name: Store wheels
         uses: actions/upload-artifact@main
         with:
           name: wheels
-          path: *.whl
+          path: wheelhouse/*.whl
           if-no-files-found: error
