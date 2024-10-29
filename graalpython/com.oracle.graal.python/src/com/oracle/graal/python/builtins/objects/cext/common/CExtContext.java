@@ -59,7 +59,6 @@ import java.util.logging.Level;
 import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
 import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
 
-import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
