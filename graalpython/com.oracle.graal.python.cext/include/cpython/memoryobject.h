@@ -1,3 +1,8 @@
+/* Copyright (c) 2024, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2024 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 #ifndef Py_CPYTHON_MEMORYOBJECT_H
 #  error "this header file must not be included directly"
 #endif
