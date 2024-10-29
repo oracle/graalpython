@@ -2569,7 +2569,7 @@ def python_coverage(args):
         else:
             variants = [
                 {"args": []},
-                {"args": SANDBOXED_OPTIONS},
+                # {"args": SANDBOXED_OPTIONS}, # Sulong is not reporting coverage with Truffle coverage very well, so we just disable it
                 {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
                 {"hpy": True},
             ]
