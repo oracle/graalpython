@@ -1,0 +1,158 @@
+diff --git a/bazel/ray.bzl b/bazel/ray.bzl
+index b790e63..9f46ae3 100644
+--- a/bazel/ray.bzl
++++ b/bazel/ray.bzl
+@@ -29,6 +29,8 @@ PYX_COPTS = select({
+     "//conditions:default": [
+         # Ignore this warning since CPython and Cython have issue removing deprecated tp_print on MacOS
+         "-Wno-deprecated-declarations",
++        "-Wno-unused-variable",
++        "-Wno-unused-function",
+     ],
+ }) + select({
+     "@bazel_tools//src/conditions:windows": [
+diff --git a/bazel/ray_deps_setup.bzl b/bazel/ray_deps_setup.bzl
+index 63f67a9..e870de8 100644
+--- a/bazel/ray_deps_setup.bzl
++++ b/bazel/ray_deps_setup.bzl
+@@ -190,6 +190,10 @@ def ray_deps_setup():
+         build_file = True,
+         url = "https://github.com/cython/cython/archive/c48361d0a0969206e227ec016f654c9d941c2b69.tar.gz",
+         sha256 = "37c466fea398da9785bc37fe16f1455d2645d21a72e402103991d9e2fa1c6ff3",
++        patch_cmds = [
++            'graalpy -m autopatch_capi .',
++            '''patch -p1 < "$(graalpy -c 'print(__graalpython__.core_home)')/patches/Cython-0.29.32.patch"''',
++        ],
+     )
+ 
+     auto_http_archive(
+diff --git a/dashboard/optional_deps.py b/dashboard/optional_deps.py
+index cd792190df..e97df51df0 100644
+--- a/dashboard/optional_deps.py
++++ b/dashboard/optional_deps.py
+@@ -15,4 +15,4 @@ import aiohttp_cors  # noqa: F401
+ from aiohttp import hdrs  # noqa: F401
+ from aiohttp.typedefs import PathLike  # noqa: F401
+ from aiohttp.web import RouteDef  # noqa: F401
+-import pydantic  # noqa: F401
++# import pydantic  # noqa: F401
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000..de2b7ad
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,4 @@
++[build-system]
++requires = ["setuptools >= 40.6.0", "wheel", "pip", "psutil", "setproctitle", "colorama"]
++build-backend = "ray_build_backend"
++backend-path = ["."]
+diff --git a/python/ray/__init__.py b/python/ray/__init__.py
+index 68a7a61..45f6c77 100644
+--- a/python/ray/__init__.py
++++ b/python/ray/__init__.py
+@@ -104,7 +104,7 @@ del _configure_system
+ 
+ # Replaced with the current commit when building the wheels.
+ __commit__ = "{{RAY_COMMIT_SHA}}"
+-__version__ = "3.0.0.dev0"
++__version__ = "2.3.0"
+ 
+ import ray._raylet  # noqa: E402
+ 
+diff --git a/python/ray/_private/services.py b/python/ray/_private/services.py
+index 14fba2d..4aa5e86 100644
+--- a/python/ray/_private/services.py
++++ b/python/ray/_private/services.py
+@@ -875,7 +875,7 @@ def start_ray_process(
+         stdout=stdout_file,
+         stderr=stderr_file,
+         stdin=subprocess.PIPE if pipe_stdin else None,
+-        preexec_fn=preexec_fn if sys.platform != "win32" else None,
++        #preexec_fn=preexec_fn if sys.platform != "win32" else None,
+         creationflags=CREATE_SUSPENDED if win32_fate_sharing else 0,
+     )
+ 
+diff --git a/python/ray/cloudpickle/cloudpickle.py b/python/ray/cloudpickle/cloudpickle.py
+index 9c67ec6..12fda5a 100644
+--- a/python/ray/cloudpickle/cloudpickle.py
++++ b/python/ray/cloudpickle/cloudpickle.py
+@@ -521,10 +521,8 @@ def _walk_global_ops(code):
+     """
+     Yield referenced name for all global-referencing instructions in *code*.
+     """
+-    for instr in dis.get_instructions(code):
+-        op = instr.opcode
+-        if op in GLOBAL_OPS:
+-            yield instr.argval
++    # GraalPy change: we don't support dis
++    yield from code.co_names
+ 
+ 
+ def _extract_class_dict(cls):
+diff --git a/ray_build_backend.py b/ray_build_backend.py
+new file mode 100644
+index 0000000..a5d44c2
+--- /dev/null
++++ b/ray_build_backend.py
+@@ -0,0 +1,41 @@
++# We need a whole custom build backend just because the setup.py is in a subdir
++import os
++import re
++import sys
++import tarfile
++import subprocess
++import tempfile
++import shutil
++from pathlib import Path
++
++
++def build_sdist(sdist_directory, config_settings=None):
++    nv = 'ray-2.3.0'
++    srcdir = Path(__file__).parent
++    archive_path = Path(sdist_directory) / f'{nv}.tar.gz'
++
++    def tarfilter(info):
++        if re.match(r'\./(?:.git|bazel-|venv|[^-/]+-venv|dist)', info.name):
++            return None
++        info.name = f'./{nv}/{info.name}'
++        return info
++
++    with tarfile.open(archive_path, 'w:gz') as tar:
++        tar.add('.', filter=tarfilter)
++    return archive_path.name
++
++
++def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
++    wheel_directory = Path(wheel_directory).absolute()
++    os.chdir('python')
++    env = os.environ.copy()
++    env['SKIP_THIRDPARTY_INSTALL'] = 'true'
++    try:
++        subprocess.run([sys.executable, 'setup.py', 'bdist_wheel'], env=env, check=True)
++        wheels = list(Path('dist').glob('*.whl'))
++        assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
++        wheel = wheels[0]
++        shutil.copyfile(wheel, wheel_directory / wheel.name)
++        return str(wheel.name)
++    finally:
++        os.chdir('..')
+diff --git a/src/ray/util/logging.cc b/src/ray/util/logging.cc
+index f41aa65..f8e895d 100644
+--- a/src/ray/util/logging.cc
++++ b/src/ray/util/logging.cc
+@@ -374,6 +374,7 @@ bool RayLog::IsFailureSignalHandlerEnabled() {
+ }
+ 
+ void RayLog::InstallFailureSignalHandler(const char *argv0, bool call_previous_handler) {
++    /*
+ #ifdef _WIN32
+   // If process fails to initialize, don't display an error window.
+   SetErrorMode(GetErrorMode() | SEM_FAILCRITICALERRORS);
+@@ -389,6 +390,7 @@ void RayLog::InstallFailureSignalHandler(const char *argv0, bool call_previous_h
+   options.writerfn = WriteFailureMessage;
+   absl::InstallFailureSignalHandler(options);
+   is_failure_signal_handler_installed_ = true;
++  */
+ }
+ 
+ void RayLog::InstallTerminateHandler() { std::set_terminate(TerminateHandler); }

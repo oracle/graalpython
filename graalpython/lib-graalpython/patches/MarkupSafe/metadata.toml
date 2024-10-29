@@ -1,7 +1,0 @@
-# Patch already upstreamed, keeping it around for older versions
-[[rules]]
-version = "< 2.1.0"
-patch = "MarkupSafe.patch"
-license = "BSD-3-Clause"
-install-priority = 0  # Don't make pip install prefer this version
-dist-type = "sdist"

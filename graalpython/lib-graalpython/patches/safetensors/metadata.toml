@@ -1,6 +1,0 @@
-[[rules]]
-# Recent versions should use pyo3 with upstream support for graalpy
-install-priority = 0
-version = '== 0.3.3'
-patch = 'safetensors-0.3.3.patch'
-license = 'Apache-2.0'

@@ -1,5 +1,0 @@
-[[rules]]
-# llvmlite only supports up to LLVM 14. That's quite old and installing it in the system typically results leads
-# to dependency hell because rust requires newer LLVM. We add downloading and building LLVM 14 to the setup script.
-patch = 'llvmlite.patch'
-license = 'BSD-2-Clause'

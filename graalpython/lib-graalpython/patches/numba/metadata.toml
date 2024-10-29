@@ -1,5 +1,0 @@
-[[rules]]
-# Not upstreamable, we disable the JIT
-version = '== 0.59.1'
-patch = 'numba-0.59.1.patch'
-license = 'BSD-2-Clause'

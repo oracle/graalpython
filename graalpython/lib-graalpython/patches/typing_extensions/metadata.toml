@@ -1,4 +1,0 @@
-[[rules]]
-patch = 'typing_extensions.patch'
-license = 'PSF-2.0'
-subdir = 'src'

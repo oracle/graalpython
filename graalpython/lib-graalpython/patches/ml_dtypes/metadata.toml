@@ -1,3 +1,0 @@
-[[rules]]
-# 0.4.0 requires numpy==2.0rc1
-version = "< 0.4.0"

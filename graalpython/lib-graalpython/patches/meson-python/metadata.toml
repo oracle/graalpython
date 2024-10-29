@@ -1,6 +1,0 @@
-[[rules]]
-# Upstreamed
-version = '<= 0.16.0'
-install-priority = 0
-patch = 'meson-python.patch'
-license = 'MIT'
