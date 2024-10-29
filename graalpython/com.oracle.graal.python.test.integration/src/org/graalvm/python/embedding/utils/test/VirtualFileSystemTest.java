@@ -60,6 +60,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessMode;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
@@ -494,15 +495,19 @@ public class VirtualFileSystemTest {
         }
     }
 
+    private static void checkException(Class<?> exType, Callable<Object> c) {
+        checkException(exType, c, null);
+    }
+
     private static void checkException(Class<?> exType, Callable<Object> c, String msg) {
         boolean gotEx = false;
         try {
             c.call();
         } catch (Exception e) {
-            assert e.getClass() == exType;
+            assertEquals(e.getClass(), exType);
             gotEx = true;
         }
-        assertTrue(msg, gotEx);
+        assertTrue(msg != null ? msg : "expected " + exType.getName(), gotEx);
     }
 
     @Test
@@ -860,6 +865,24 @@ public class VirtualFileSystemTest {
         // create context with extracted resource dir and check if we can see the extracted file
         try (Context context = addTestOptions(GraalPyResources.contextBuilder(resourcesDir)).build()) {
             context.eval("python", "import os; assert os.path.exists('" + resourcesDir.resolve("file1").toString().replace("\\", "\\\\") + "')");
+        }
+    }
+
+    @Test
+    public void vfsMountPointTest() {
+        if (IS_WINDOWS) {
+            checkException(IllegalArgumentException.class, () -> VirtualFileSystem.newBuilder().windowsMountPoint("test"));
+            checkException(IllegalArgumentException.class, () -> VirtualFileSystem.newBuilder().windowsMountPoint("test\\"));
+            checkException(IllegalArgumentException.class, () -> VirtualFileSystem.newBuilder().windowsMountPoint("\\test\\"));
+            checkException(IllegalArgumentException.class, () -> VirtualFileSystem.newBuilder().windowsMountPoint("\\test"));
+            checkException(IllegalArgumentException.class, () -> VirtualFileSystem.newBuilder().windowsMountPoint("X:\\test\\"));
+            checkException(InvalidPathException.class, () -> VirtualFileSystem.newBuilder().windowsMountPoint("X:\\test|test"));
+        } else {
+            checkException(IllegalArgumentException.class, () -> VirtualFileSystem.newBuilder().unixMountPoint("test"));
+            checkException(IllegalArgumentException.class, () -> VirtualFileSystem.newBuilder().unixMountPoint("test/"));
+            checkException(IllegalArgumentException.class, () -> VirtualFileSystem.newBuilder().unixMountPoint("/test/"));
+            checkException(IllegalArgumentException.class, () -> VirtualFileSystem.newBuilder().unixMountPoint("X:\\test"));
+            checkException(InvalidPathException.class, () -> VirtualFileSystem.newBuilder().unixMountPoint("/test/\0"));
         }
     }
 
