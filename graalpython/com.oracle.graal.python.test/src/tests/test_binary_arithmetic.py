@@ -321,10 +321,8 @@ def test_pow():
     else:
         assert False
 
-    if sys.version_info.minor >= 8:
-        # for some reason this hangs CPython on the CI even if it's just parsed
-        from pow_tests import test_pow
-        test_pow()
+    from tests.pow_tests import test_pow
+    test_pow()
 
     # Needs to run multiple times to invoke the cached node too
     def call_rpow(x):

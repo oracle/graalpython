@@ -7,10 +7,10 @@ Tests common to list and UserList.UserList
 """
 
 import sys
-import os
 from functools import cmp_to_key
-import seq_tests
-#from test import support
+
+from tests import seq_tests
+
 
 class CommonTest(seq_tests.CommonTest):
 

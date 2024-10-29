@@ -55,19 +55,16 @@ import unittest
 import unittest.loader
 from abc import abstractmethod
 from collections import defaultdict
-from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-
-sys.path.insert(0, os.getcwd())
 
 DIR = Path(__file__).parent
 IS_GRAALPY = sys.implementation.name == 'graalpy'
 
 if sys.implementation.version < (3, 12):
     # XXX Temporary hack: python 3.12 will have a toml parser in standard library, for now we load vendored one from pip
-    [pip_wheel] = (DIR.parent.parent.parent / 'lib-python' / '3' / 'ensurepip' / '_bundled').glob('pip*.whl')
+    [pip_wheel] = (DIR.parent.parent / 'lib-python' / '3' / 'ensurepip' / '_bundled').glob('pip*.whl')
     sys.path.append(pip_wheel)
 
     sys.path.pop()
@@ -573,27 +570,22 @@ def config_for_file(test_file: Path) -> Config:
     return Config()
 
 
-@contextmanager
-def rootdir_from_config(config: Config):
-    saved_path = sys.path[:]
-    sys.path.insert(0, str(config.rootdir))
-    try:
-        yield config.rootdir
-    finally:
-        sys.path[:] = saved_path
-
-
 @dataclass
 class TestSuite:
     config: Config
     test_file: Path
+    pythonpath: list[str]
     test_suite: unittest.TestSuite
     collected_tests: list[TestId]
     untagged_tests: list[TestId]
 
     def run(self, result):
-        with rootdir_from_config(self.config):
+        saved_path = sys.path[:]
+        sys.path[:] = self.pythonpath
+        try:
             self.test_suite.run(result)
+        finally:
+            sys.path[:] = saved_path
 
     def add_unexecuted(self, results: list[TestResult]):
         executed = [r.test_id for r in results]
@@ -628,7 +620,7 @@ def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifie
             if not path.exists():
                 sys.exit(f"Test path {path} doesn't exist")
             if path.is_dir():
-                if (path / '__init__.py').exists():
+                if path.name.startswith('test_') and (path / '__init__.py').exists():
                     expanded_paths.append(path)
                 expanded_paths.extend(list(path.glob("test_*.py")))
                 expanded_paths.extend((p.parent for p in path.glob("test_*/__init__.py")))
@@ -643,7 +635,9 @@ def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifie
 
 def collect_module(test_file: Path, specifiers: list[TestSpecifier], use_tags=False) -> TestSuite | None:
     config = config_for_file(test_file)
-    with rootdir_from_config(config) as rootdir:
+    saved_path = sys.path[:]
+    sys.path.insert(0, str(config.rootdir))
+    try:
         loader = TopLevelFunctionLoader() if config.run_top_level_functions else unittest.TestLoader()
         tags = None
         if use_tags and config.tags_dir:
@@ -651,13 +645,16 @@ def collect_module(test_file: Path, specifiers: list[TestSpecifier], use_tags=Fa
             if not tags:
                 return None
         try:
-            test_suite = loader.loadTestsFromName(test_path_to_module(test_file.resolve().relative_to(rootdir)))
+            test_module = test_path_to_module(test_file.resolve().relative_to(config.rootdir))
+            test_suite = loader.loadTestsFromName(test_module)
         except unittest.SkipTest as e:
             log(f"Test file {test_file} skipped: {e}")
             return
         collected_tests, untagged_tests = filter_tree(test_file, test_suite, specifiers, tags)
         if collected_tests:
-            return TestSuite(config, test_file, test_suite, collected_tests, untagged_tests)
+            return TestSuite(config, test_file, sys.path[:], test_suite, collected_tests, untagged_tests)
+    finally:
+        sys.path[:] = saved_path
 
 
 def collect(all_specifiers: list[TestSpecifier], use_tags=False) -> list[TestSuite]:
