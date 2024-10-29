@@ -59,7 +59,6 @@ import java.util.logging.Level;
 import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
 import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
 
-import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -311,9 +310,6 @@ public abstract class CExtContext {
                 if (!runViaLauncher) {
                     message += " See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions/#embedding-limitations for the limitations. " +
                                     "You can suppress this warning by setting the context option 'python.WarnExperimentalFeatures' to 'false'.";
-                }
-                if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-                    message += " If loading binary wheels fails, please make sure you installed the latest Microsoft Visual C++ Redistributable from https://aka.ms/vs/17/release/vc_redist.x64.exe.";
                 }
                 getLogger().warning(message.formatted(spec.name, spec.path));
             }
