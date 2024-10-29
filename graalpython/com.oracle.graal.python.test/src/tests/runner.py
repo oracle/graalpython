@@ -42,6 +42,7 @@ import enum
 import multiprocessing
 import multiprocessing.connection
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -149,7 +150,15 @@ class TestSpecifier:
         return cls(Path(test_file), test_id or None)
 
     def match(self, test_id: TestId):
-        return self.test_file == test_id.test_file and (self.test_name is None or self.test_name == test_id.test_name)
+        # Globs in path are expanded when processing specifiers
+        if self.test_file != test_id.test_file:
+            return False
+        if self.test_name is None:
+            return True
+        if '*' in self.test_name:
+            pattern = re.escape(self.test_name).replace(r'\*', '.*') + r'($|\..*)'
+            return re.match(pattern, test_id.test_name)
+        return self.test_name == test_id.test_name or test_id.test_name.startswith(self.test_name + '.')
 
 
 @dataclass
@@ -685,8 +694,8 @@ def main():
             if not __graalpython__.java_assert():
                 sys.exit(
                     "Java assertions are not enabled, refusing to run. Add --vm.ea to your invocation. Set GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS=true to disable this check\n")
-    if not hasattr(__graalpython__, 'tdebug'):
-        sys.exit("Needs to be run with --experimental-options --python.EnableDebuggingBuiltins\n")
+        if not hasattr(__graalpython__, 'tdebug'):
+            sys.exit("Needs to be run with --experimental-options --python.EnableDebuggingBuiltins\n")
 
     tests = collect(args.tests, use_tags=(not args.all))
     if args.collect_only:
