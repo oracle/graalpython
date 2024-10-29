@@ -421,6 +421,10 @@ if sys.implementation.name == "graalpy":
         def test_patches_file_url(self):
             self.check_installing_with_patch_repo(urljoin('file:', pathname2url(str(self.patch_dir.absolute()))))
 
+        @unittest.skipIf(
+            __graalpython__.posix_module_backend() == 'java',
+            "Server doesn't work properly under Java posix backend"
+        )
         def test_patches_http_url(self):
             patch_dir = self.patch_dir
 
