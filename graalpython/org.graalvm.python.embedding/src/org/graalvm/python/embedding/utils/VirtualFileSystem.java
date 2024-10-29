@@ -86,11 +86,12 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     private static final Logger LOGGER = Logger.getLogger(VirtualFileSystem.class.getName());
     static {
+        LOGGER.setUseParentHandlers(false);
         ConsoleHandler consoleHandler = new ConsoleHandler();
         consoleHandler.setFormatter(new SimpleFormatter() {
             @Override
             public synchronized String format(LogRecord lr) {
-                return String.format("%s: %s %n", lr.getLevel().getName(), lr.getMessage());
+                return String.format("%s: %s\n", lr.getLevel().getName(), lr.getMessage());
             }
         });
         LOGGER.addHandler(consoleHandler);
@@ -103,7 +104,6 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
 
     static final String VFS_HOME = "home";
     static final String VFS_VENV = "venv";
-    static final String VFS_PROJ = "proj";
     static final String VFS_SRC = "src";
 
     /*
@@ -114,8 +114,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     private static final String FILES_LIST_PATH = VFS_ROOT + "/fileslist.txt";
     private static final String VENV_PREFIX = VFS_ROOT + "/" + VFS_VENV;
     private static final String HOME_PREFIX = VFS_ROOT + "/" + VFS_HOME;
-    // TODO see GR-54915, deprecated and should be removed after 24.2.0
-    private static final String PROJ_PREFIX = VFS_ROOT + "/" + VFS_PROJ;
+    private static final String PROJ_PREFIX = VFS_ROOT + "/proj";
     private static final String SRC_PREFIX = VFS_ROOT + "/" + VFS_SRC;
 
     private boolean extractOnStartup = "true".equals(System.getProperty("graalpy.vfs.extractOnStartup"));
@@ -414,10 +413,6 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         return resourcePathToPlatformPath(HOME_PREFIX);
     }
 
-    String vfsProjPath() {
-        return resourcePathToPlatformPath(PROJ_PREFIX);
-    }
-
     String vfsSrcPath() {
         return resourcePathToPlatformPath(SRC_PREFIX);
     }
@@ -473,6 +468,8 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
         return caseInsensitive ? file.toLowerCase(Locale.ROOT) : file;
     }
 
+    private boolean projWarning = false;
+
     private void initEntries() throws IOException {
         vfsEntries = new HashMap<>();
         try (InputStream stream = this.resourceLoadingClass.getResourceAsStream(FILES_LIST_PATH)) {
@@ -484,6 +481,14 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
             String line;
             finest("VFS entries:");
             while ((line = br.readLine()) != null) {
+
+                if (!projWarning && line.startsWith(PROJ_PREFIX)) {
+                    projWarning = true;
+                    LOGGER.warning("");
+                    LOGGER.warning(String.format("%s source root was deprecated, use %s instead.", PROJ_PREFIX, SRC_PREFIX));
+                    LOGGER.warning("");
+                }
+
                 String platformPath = resourcePathToPlatformPath(line);
                 int i = 0;
                 DirEntry parent = null;

@@ -49,7 +49,6 @@ import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.polyglot.io.IOAccess;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -261,7 +260,7 @@ public class GraalPyResources {
                         option("python.PythonHome", vfs.vfsHomePath()).
                         // Set python path to point to sources stored in
                         // src/main/resources/org.graalvm.python.vfs/src
-                        option("python.PythonPath", vfs.vfsSrcPath() + File.pathSeparator + vfs.vfsProjPath()).
+                        option("python.PythonPath", vfs.vfsSrcPath()).
                         // pass the path to be executed
                         option("python.InputFilePath", vfs.vfsSrcPath());
     }
