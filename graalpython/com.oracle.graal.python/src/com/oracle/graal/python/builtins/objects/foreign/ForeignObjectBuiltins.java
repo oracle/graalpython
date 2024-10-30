@@ -382,6 +382,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
+    // TODO dir(foreign) should list both foreign object members and attributes from class
     @Builtin(name = J___DIR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DirNode extends PythonUnaryBuiltinNode {

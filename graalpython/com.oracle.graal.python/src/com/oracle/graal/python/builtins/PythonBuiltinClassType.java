@@ -83,7 +83,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_REVERSE_KEYITERA
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_REVERSE_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUES;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_FOREIGN;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_LRU_CACHE_WRAPPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ORDERED_DICT;
@@ -298,8 +297,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PickleBuffer("PickleBuffer", "_pickle"),
 
     // Foreign
-    ForeignObject(J_FOREIGN, Flags.PRIVATE_BASE_WDICT, ForeignObjectBuiltins.SLOTS),
-    ForeignNumber("ForeignNumberType", Flags.PRIVATE_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
+    ForeignObject("ForeignObject", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, ForeignObjectBuiltins.SLOTS),
+    // TODO: should ForeignBoolean inherit from ForeignNumber? And/or from bool?
+    ForeignBoolean("ForeignBoolean", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
+    ForeignNumber("ForeignNumber", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
 
     // bz2
     BZ2Compressor("BZ2Compressor", "_bz2"),
@@ -833,6 +834,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PBuiltinMethod.base = PBuiltinFunctionOrMethod;
 
         Boolean.base = PInt;
+
+        ForeignBoolean.base = ForeignObject;
+        ForeignNumber.base = ForeignObject;
 
         PBaseExceptionGroup.base = PBaseException;
         SystemExit.base = PBaseException;

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -77,23 +78,30 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
 
     /** Based on the types and traits of {@link InteropLibrary} */
     public enum Trait {
-        // TODO dir(foreign) should list both foreign object members and attributes from class
-        // First in MRO
+        /*
+         * We need more specific traits before container traits, so that for example in R::c(1) +
+         * R::c(2), the + operator with two foreign list+number uses ForeignNumber.__add__ + and not
+         * list.__add__.
+         */
+
         // The type field is only set for cases which are already implemented.
-        BOOLEAN("Boolean", PythonBuiltinClassType.ForeignNumber),
-        // int, float, complex // must be before Array for e.g. R::c(1) + R::c(2)
-        NUMBER("Number", PythonBuiltinClassType.ForeignNumber),
+
+        // First in MRO
+        BOOLEAN("Boolean", PythonBuiltinClassType.ForeignBoolean),
+        NUMBER("Number", PythonBuiltinClassType.ForeignNumber), // int, float, complex
         STRING("String", PythonBuiltinClassType.PString),
-        HASH("Dict", PythonBuiltinClassType.PDict), // must be before Array
-        ARRAY("List", PythonBuiltinClassType.PList), // must be before Iterable
+        // Hash before Array so that foreign dict+list prefers dict.[]
+        HASH("Dict", PythonBuiltinClassType.PDict),
+        // Array before Iterable so that foreign list+iterable prefers list.__iter__
+        ARRAY("List", PythonBuiltinClassType.PList),
         EXCEPTION("Exception", PythonBuiltinClassType.PBaseException),
         EXECUTABLE("Executable"),
         INSTANTIABLE("Instantiable"),
-        ITERATOR("Iterator", PythonBuiltinClassType.PIterator), // must be before Iterable
+        // Iterator before Iterable so that foreign iterator+iterable prefers iterator.__iter__
+        ITERATOR("Iterator", PythonBuiltinClassType.PIterator),
         ITERABLE("Iterable"),
-        META_OBJECT("Type"), // PythonBuiltinClassType.PythonClass ?
-        NULL("None", PythonBuiltinClassType.PNone),
-        POINTER("Pointer");
+        META_OBJECT("AbstractClass"), // PythonBuiltinClassType.PythonClass ?
+        NULL("None", PythonBuiltinClassType.PNone);
         // Last in MRO
 
         public static final Trait[] VALUES = Trait.values();
@@ -150,7 +158,6 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
                         (interop.isMetaObject(object) ? Trait.META_OBJECT.bit : 0) +
                         (interop.isNull(object) ? Trait.NULL.bit : 0) +
                         (interop.isNumber(object) ? Trait.NUMBER.bit : 0) +
-                        (interop.isPointer(object) ? Trait.POINTER.bit : 0) +
                         (interop.isString(object) ? Trait.STRING.bit : 0);
     }
 
@@ -160,56 +167,96 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
             if (isSingleContext(this)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
             }
-            pythonClass = resolvePolyglotForeignClass(traits);
+            pythonClass = resolvePolyglotForeignClassAndSetInCache(traits);
         }
         return pythonClass;
     }
 
     @TruffleBoundary
+    private PythonManagedClass resolvePolyglotForeignClassAndSetInCache(int traits) {
+        PythonManagedClass pythonClass = resolvePolyglotForeignClass(traits);
+        getContext().polyglotForeignClasses[traits] = pythonClass;
+        return pythonClass;
+    }
+
+    // Special naming rules:
+    // Foreign...Instantiable...AbstractClass -> Foreign......Class
+    // Foreign...List...Iterable -> Foreign...List... (since all Python lists are iterables)
+    @TruffleBoundary
     private PythonManagedClass resolvePolyglotForeignClass(int traits) {
         PythonBuiltinClass base = getContext().lookupType(PythonBuiltinClassType.ForeignObject);
         if (traits == 0) {
-            getContext().polyglotForeignClasses[traits] = base;
             return base;
         }
+
+        // For foreign array+iterable, ignore the iterable trait completely, foreign arrays inherit
+        // from the Python list class and all lists are iterables (they have __iter__)
+        if (Trait.ARRAY.isSet(traits) && Trait.ITERABLE.isSet(traits)) {
+            return classForTraits(traits - Trait.ITERABLE.bit);
+        }
+
+        // If there is a single trait we build a new class using the trait.type
+        boolean singleTrait = Integer.bitCount(traits) == 1;
 
         var traitsList = new ArrayList<PythonAbstractClass>();
 
         var nameBuilder = new StringBuilder("Foreign");
         for (Trait trait : Trait.VALUES) {
             if (trait.isSet(traits)) {
-                if (trait.type != null) {
-                    traitsList.add(getContext().lookupType(trait.type));
+                assert !(trait == Trait.ITERABLE && Trait.ARRAY.isSet(traits));
+
+                if (singleTrait) {
+                    if (trait.type != null) {
+                        traitsList.add(getContext().lookupType(trait.type));
+                    }
+                } else {
+                    traitsList.add(classForTraits(trait.bit));
                 }
 
-                if (trait == Trait.ITERABLE && Trait.ARRAY.isSet(traits)) {
-                    // foreign Array are Iterable by default, so it seems redundant in the name
-                    if (Trait.ITERABLE.isSet(traits)) {
-                        // Iterable already implied by List in the name, skip it
+                if (trait == Trait.INSTANTIABLE && Trait.META_OBJECT.isSet(traits)) {
+                    // Deal with it when we are at trait META_OBJECT
+                } else if (trait == Trait.META_OBJECT) {
+                    if (Trait.INSTANTIABLE.isSet(traits)) {
+                        nameBuilder.append("Class");
                     } else {
-                        nameBuilder.append("NotIterable");
+                        nameBuilder.append("AbstractClass");
                     }
                 } else {
                     nameBuilder.append(trait.name);
                 }
             }
         }
+
+        TruffleString name = PythonUtils.toTruffleStringUncached(nameBuilder.toString());
+
+        // If the single-trait class already inherits from ForeignObject, return it as-is, the name
+        // would clash and no need to create a composed class
+        if (singleTrait && traitsList.size() == 1 && traitsList.get(0) instanceof PythonBuiltinClass pbc && pbc.getType().getBase() == PythonBuiltinClassType.ForeignObject) {
+            assert pbc.getType().getName().equals(name) : name;
+            return pbc;
+        }
+
         traitsList.add(base);
 
         PythonAbstractClass[] bases = traitsList.toArray(PythonAbstractClass.EMPTY_ARRAY);
-
-        TruffleString name = PythonUtils.toTruffleStringUncached(nameBuilder.toString());
 
         PythonModule polyglotModule = getContext().lookupBuiltinModule(T_POLYGLOT);
 
         PythonClass pythonClass = getContext().factory().createPythonClassAndFixupSlots(getLanguage(), PythonBuiltinClassType.PythonClass, name, base, bases);
         pythonClass.setAttribute(T___MODULE__, T_POLYGLOT);
 
+        assert polyglotModule.getAttribute(name) == PNone.NO_VALUE : name;
         polyglotModule.setAttribute(name, pythonClass);
 
-        getContext().polyglotForeignClasses[traits] = pythonClass;
-
         return pythonClass;
+    }
+
+    public void defineSingleTraitClasses() {
+        PythonModule polyglotModule = getContext().lookupBuiltinModule(T_POLYGLOT);
+        for (Trait trait : Trait.VALUES) {
+            PythonManagedClass traitClass = classForTraits(trait.bit);
+            assert polyglotModule.getAttribute(traitClass.getName()) == traitClass : traitClass.getName();
+        }
     }
 
 }

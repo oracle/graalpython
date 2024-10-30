@@ -115,7 +115,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * and that we would also need precise frame info for that case.
  * Adding it shouldn't hurt peak, but might be a non-trivial overhead in interpreter.
  */
-@CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignNumber)
+@CoreFunctions(extendClasses = { PythonBuiltinClassType.ForeignNumber, PythonBuiltinClassType.ForeignBoolean })
 public final class ForeignNumberBuiltins extends PythonBuiltins {
     public static TpSlots SLOTS = ForeignNumberBuiltinsSlotsGen.SLOTS;
 
