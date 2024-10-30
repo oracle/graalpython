@@ -195,6 +195,7 @@ graalpython/com.oracle.graal.python.cext/include/pymath.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pymem.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyport.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pystate.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/pystats.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pystrcmp.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pystrtod.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pythonrun.h,python.copyright
