@@ -52,6 +52,7 @@ import threading
 import time
 import tomllib
 import traceback
+import typing
 import unittest
 import unittest.loader
 from abc import abstractmethod
@@ -178,6 +179,17 @@ def out_tell():
         return os.lseek(1, 0, os.SEEK_CUR)
     except OSError:
         return -1
+
+
+T = typing.TypeVar('T')
+
+
+def partition_list(l: list[T], fn: typing.Callable[[T], bool]):
+    a = []
+    b = []
+    for item in l:
+        (a if fn(item) else b).append(item)
+    return a, b
 
 
 class AbstractResult(unittest.TestResult):
@@ -378,26 +390,25 @@ class ParallelTestRunner(TestRunner):
 
     def run_tests(self, tests: list['TestSuite']):
         if tests:
-            partitions = [suite.collected_tests for suite in tests if suite.config.new_worker_per_file]
-            unpartitioned = [suite for suite in tests if not suite.config.new_worker_per_file]
+            serial_suites, unpartitioned = partition_list(
+                tests,
+                lambda suite: suite.test_file.name.removesuffix('.py') in suite.config.serial_tests,
+            )
+            per_file_suites, unpartitioned = partition_list(
+                unpartitioned,
+                lambda suite: suite.config.new_worker_per_file,
+            )
+            partitions = [suite.collected_tests for suite in per_file_suites]
             per_partition = int(math.ceil(len(unpartitioned) / self.num_processes))
             while unpartitioned:
-                partitions.append([t for suite in unpartitioned[:per_partition] for t in suite.collected_tests])
+                partitions.append([test for suite in unpartitioned[:per_partition] for test in suite.collected_tests])
                 unpartitioned = unpartitioned[per_partition:]
 
             num_processes = min(self.num_processes, len(partitions))
             with concurrent.futures.ThreadPoolExecutor(num_processes) as executor:
-                futures = [
-                    executor.submit(self.run_in_subprocess_and_watch, test_list)
-                    for test_list in partitions
-                ]
-                try:
-                    concurrent.futures.wait(futures)
-                except KeyboardInterrupt:
-                    self.stop_event.set()
-                    concurrent.futures.wait(futures)
-                    print("Interrupted!")
-                    sys.exit(1)
+                self.run_partitions_in_subprocesses(executor, partitions)
+                for serial_suite in serial_suites:
+                    self.run_partitions_in_subprocesses(executor, [serial_suite.collected_tests])
 
         self.display_summary()
 
@@ -405,6 +416,19 @@ class ParallelTestRunner(TestRunner):
             for crash in self.crashes:
                 log('Internal error, test worker crashed outside of tests:')
                 log(crash)
+
+    def run_partitions_in_subprocesses(self, executor, partitions: list[list[TestId]]):
+        futures = [
+            executor.submit(self.run_in_subprocess_and_watch, test_list)
+            for test_list in partitions
+        ]
+        try:
+            concurrent.futures.wait(futures)
+        except KeyboardInterrupt:
+            self.stop_event.set()
+            concurrent.futures.wait(futures)
+            print("Interrupted!")
+            sys.exit(1)
 
     def process_event(self, event, out_file):
         self.events.append(event)
@@ -541,6 +565,7 @@ class Config:
     tags_dir: Path | None = None
     run_top_level_functions: bool = False
     new_worker_per_file: bool = False
+    serial_tests: frozenset[str] = frozenset()
 
 
 @lru_cache
@@ -561,6 +586,7 @@ def config_for_dir(path: Path) -> Config | None:
                 tags_dir=tags_dir,
                 run_top_level_functions=config_dict.get('run_top_level_functions', False),
                 new_worker_per_file=config_dict.get('new_worker_per_file', False),
+                serial_tests=frozenset(config_dict.get('serial_tests', frozenset())),
             )
 
 
@@ -615,8 +641,8 @@ def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifie
             if path.is_dir():
                 if path.name.startswith('test_') and (path / '__init__.py').exists():
                     expanded_paths.append(path)
-                expanded_paths.extend(list(path.glob("test_*.py")))
-                expanded_paths.extend((p.parent for p in path.glob("test_*/__init__.py")))
+                expanded_paths.extend(list(path.rglob("test_*.py")))
+                expanded_paths.extend((p.parent for p in path.rglob("test_*/__init__.py")))
             else:
                 if path.name == '__init__.py':
                     path = path.parent
