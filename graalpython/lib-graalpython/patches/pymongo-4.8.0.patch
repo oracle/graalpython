@@ -1,7 +1,7 @@
-diff --git a/setup.py b/setup.py
+diff --git a/_setup.py b/_setup.py
 index a711e24..84d3aea 100644
---- a/setup.py
-+++ b/setup.py
+--- a/_setup.py
++++ b/_setup.py
 @@ -128,1 +128,1 @@
 -elif sys.platform.startswith("java") or sys.platform == "cli" or "PyPy" in sys.version:
 +elif sys.platform.startswith("java") or sys.platform == "cli" or "PyPy" in sys.version or sys.implementation.name == 'graalpy':
