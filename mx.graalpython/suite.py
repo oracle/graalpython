@@ -1,4 +1,4 @@
-# pylint: disable=anomalous-backslash-in-string
+# pylint: disable=anomalous-backslash-in-string,line-too-long
 suite = {
     # --------------------------------------------------------------------------------------------------------------
     #
