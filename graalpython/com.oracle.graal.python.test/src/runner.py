@@ -39,6 +39,7 @@
 import argparse
 import concurrent.futures
 import enum
+import math
 import multiprocessing
 import multiprocessing.connection
 import os
@@ -103,13 +104,10 @@ class TestStatus(enum.StrEnum):
     SKIPPED = "skipped"
     EXPECTED_FAILURE = "expected failure"
     UNEXPECTED_SUCCESS = "unexpected success"
-    NOT_EXECUTED = "not executed"
-    UNTAGGED = "untagged"
 
 
 SUCCESSFUL_STATES = TestStatus.SUCCESS, TestStatus.SKIPPED, TestStatus.EXPECTED_FAILURE
 FAILED_STATES = TestStatus.FAILURE, TestStatus.ERROR, TestStatus.UNEXPECTED_SUCCESS
-EXECUTED_STATES = *SUCCESSFUL_STATES, *FAILED_STATES
 
 
 @dataclass(repr=False)
@@ -323,10 +321,8 @@ class TestRunner:
         add_item(TestStatus.SKIPPED, "skipped")
         add_item(TestStatus.EXPECTED_FAILURE, "expected failures")
         add_item(TestStatus.UNEXPECTED_SUCCESS, "unexpected successes")
-        add_item(TestStatus.UNTAGGED, "not tagged")
-        add_item(TestStatus.NOT_EXECUTED, "not executed")
 
-        total = sum(count for status, count in counts.items() if status in EXECUTED_STATES)
+        total = sum(counts.values())
 
         log(f"Ran {total} tests")  # TODO timing
         log()
@@ -337,7 +333,7 @@ class TestRunner:
         else:
             log(overall_status)
 
-        if self.failfast and counts.get(TestStatus.NOT_EXECUTED):
+        if self.failfast and self.tests_failed():
             log("\nWARNING: Did not execute all tests because 'failfast' mode is on")
 
     def run_tests(self, tests: list['TestSuite']):
@@ -345,7 +341,6 @@ class TestRunner:
             result = DirectResult(test_suite, self)
             result.failfast = self.failfast
             test_suite.run(result)
-            test_suite.add_unexecuted(self.results)
         self.display_summary()
 
 
@@ -383,11 +378,18 @@ class ParallelTestRunner(TestRunner):
 
     def run_tests(self, tests: list['TestSuite']):
         if tests:
-            num_processes = min(self.num_processes, len(tests))
+            partitions = [suite.collected_tests for suite in tests if suite.config.new_worker_per_file]
+            unpartitioned = [suite for suite in tests if not suite.config.new_worker_per_file]
+            per_partition = int(math.ceil(len(unpartitioned) / self.num_processes))
+            while unpartitioned:
+                partitions.append([t for suite in unpartitioned[:per_partition] for t in suite.collected_tests])
+                unpartitioned = unpartitioned[per_partition:]
+
+            num_processes = min(self.num_processes, len(partitions))
             with concurrent.futures.ThreadPoolExecutor(num_processes) as executor:
                 futures = [
-                    executor.submit(self.run_in_subprocess_and_watch, test_suite)
-                    for test_suite in tests
+                    executor.submit(self.run_in_subprocess_and_watch, test_list)
+                    for test_list in partitions
                 ]
                 try:
                     concurrent.futures.wait(futures)
@@ -429,12 +431,12 @@ class ParallelTestRunner(TestRunner):
                 self.last_out_pos = event['out_pos']
                 self.last_started_timestamp = None
 
-    def run_in_subprocess_and_watch(self, test_suite: 'TestSuite'):
+    def run_in_subprocess_and_watch(self, tests: list[TestId]):
         conn, child_conn = multiprocessing.Pipe()
         with tempfile.NamedTemporaryFile(prefix='graalpytest-out-', mode='w+') as out_file:
             env = os.environ.copy()
             env['IN_PROCESS'] = '1'
-            remaining_tests = test_suite.collected_tests
+            remaining_tests = tests
             while remaining_tests and not self.stop_event.is_set():
                 self.last_out_pos = out_file.tell()
                 python_args = ['-u']
@@ -473,7 +475,6 @@ class ParallelTestRunner(TestRunner):
                         break
                 returncode = process.wait()
                 if self.stop_event.is_set():
-                    test_suite.add_unexecuted(self.results)
                     return
                 while conn.poll(0.1):
                     self.process_event(conn.recv(), out_file)
@@ -504,7 +505,6 @@ class ParallelTestRunner(TestRunner):
                     else:
                         # Crashed outside of tests, don't retry
                         self.crashes.append(output)
-                test_suite.add_unexecuted(self.results)
                 return
 
 
@@ -540,6 +540,7 @@ class Config:
     rootdir: Path = Path('.').resolve()
     tags_dir: Path | None = None
     run_top_level_functions: bool = False
+    new_worker_per_file: bool = False
 
 
 @lru_cache
@@ -555,8 +556,12 @@ def config_for_dir(path: Path) -> Config | None:
             tags_dir = None
             if config_tags_dir := config_dict.get('tags_dir'):
                 tags_dir = (path / config_tags_dir).resolve()
-            run_top_level_functions = config_dict.get('run_top_level_functions', False)
-            return Config(rootdir=rootdir, tags_dir=tags_dir, run_top_level_functions=run_top_level_functions)
+            return Config(
+                rootdir=rootdir,
+                tags_dir=tags_dir,
+                run_top_level_functions=config_dict.get('run_top_level_functions', False),
+                new_worker_per_file=config_dict.get('new_worker_per_file', False),
+            )
 
 
 def config_for_file(test_file: Path) -> Config:
@@ -586,18 +591,6 @@ class TestSuite:
             self.test_suite.run(result)
         finally:
             sys.path[:] = saved_path
-
-    def add_unexecuted(self, results: list[TestResult]):
-        executed = [r.test_id for r in results]
-        results += [
-            TestResult(status=TestStatus.NOT_EXECUTED, test_id=test)
-            for test in self.collected_tests
-            if test not in executed
-        ]
-        results += [
-            TestResult(status=TestStatus.UNTAGGED, test_id=test)
-            for test in self.untagged_tests
-        ]
 
 
 def group_specifiers_by_file(specifiers: list[TestSpecifier]) -> dict[Path, list[TestSpecifier]]:
