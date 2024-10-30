@@ -706,8 +706,7 @@ setup_context(Py_ssize_t stack_level, PyObject **filename, int *lineno,
     if (stack_level <= 0 || is_internal_frame(f)) {
         while (--stack_level > 0 && f != NULL) {
             PyFrameObject *back = PyFrame_GetBack(f);
-            Py_DECREF(f);
-            f = back;
+            Py_SETREF(f, back);
         }
     }
     else {

@@ -42,8 +42,6 @@ PyAPI_FUNC(PyObject *) Py_BuildValue(const char *, ...);
 PyAPI_FUNC(PyObject *) _Py_BuildValue_SizeT(const char *, ...);
 
 
-#define ANY_VARARGS(n) (n == PY_SSIZE_T_MAX)
-
 PyAPI_FUNC(PyObject *) Py_VaBuildValue(const char *, va_list);
 
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x030a0000

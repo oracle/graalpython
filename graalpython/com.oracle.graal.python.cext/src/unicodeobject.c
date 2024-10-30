@@ -709,10 +709,7 @@ static PyObject*
 unicode_result_unchanged(PyObject *unicode)
 {
     if (PyUnicode_CheckExact(unicode)) {
-        if (PyUnicode_READY(unicode) == -1)
-            return NULL;
-        Py_INCREF(unicode);
-        return unicode;
+        return Py_NewRef(unicode);
     }
     else
         /* Subtype -- return genuine unicode string with the same value. */
@@ -730,7 +727,6 @@ backslashreplace(_PyBytesWriter *writer, char *str,
     enum PyUnicode_Kind kind;
     const void *data;
 
-    assert(PyUnicode_IS_READY(unicode));
     kind = PyUnicode_KIND(unicode);
     data = PyUnicode_DATA(unicode);
 
@@ -797,7 +793,6 @@ xmlcharrefreplace(_PyBytesWriter *writer, char *str,
     enum PyUnicode_Kind kind;
     const void *data;
 
-    assert(PyUnicode_IS_READY(unicode));
     kind = PyUnicode_KIND(unicode);
     data = PyUnicode_DATA(unicode);
 
@@ -921,7 +916,7 @@ ensure_unicode(PyObject *obj)
                      Py_TYPE(obj)->tp_name);
         return -1;
     }
-    return PyUnicode_READY(obj);
+    return 0;
 }
 
 /* Compilation of templated routines */

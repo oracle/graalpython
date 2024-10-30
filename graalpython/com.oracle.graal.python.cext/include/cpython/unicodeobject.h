@@ -389,10 +389,8 @@ static inline Py_UCS4 PyUnicode_READ_CHAR(PyObject *unicode, Py_ssize_t index)
     assert(kind == PyUnicode_4BYTE_KIND);
     return PyUnicode_4BYTE_DATA(unicode)[index];
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_READ_CHAR(unicode, index) \
-       PyUnicode_READ_CHAR(_PyObject_CAST(unicode), (index))
-#endif
+#define PyUnicode_READ_CHAR(unicode, index) \
+    PyUnicode_READ_CHAR(_PyObject_CAST(unicode), (index))
 
 /* Return a maximum character value which is suitable for creating another
    string based on op.  This is always an approximation but more efficient
@@ -415,10 +413,8 @@ static inline Py_UCS4 PyUnicode_MAX_CHAR_VALUE(PyObject *op)
     assert(kind == PyUnicode_4BYTE_KIND);
     return 0x10ffffU;
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_MAX_CHAR_VALUE(op) \
-       PyUnicode_MAX_CHAR_VALUE(_PyObject_CAST(op))
-#endif
+#define PyUnicode_MAX_CHAR_VALUE(op) \
+    PyUnicode_MAX_CHAR_VALUE(_PyObject_CAST(op))
 
 /* === Public API ========================================================= */
 
@@ -432,31 +428,12 @@ PyAPI_FUNC(PyObject*) PyUnicode_New(
     Py_UCS4 maxchar             /* maximum code point value in the string */
     );
 
-/* Initializes the canonical string representation from the deprecated
-   wstr/Py_UNICODE representation. This function is used to convert Unicode
-   objects which were created using the old API to the new flexible format
-   introduced with PEP 393.
-
-   Don't call this function directly, use the public PyUnicode_READY() function
-   instead. */
-PyAPI_FUNC(int) _PyUnicode_Ready(
-    PyObject *unicode           /* Unicode object */
-    );
-
-/* PyUnicode_READY() does less work than _PyUnicode_Ready() in the best
-   case.  If the canonical representation is not yet set, it will still call
-   _PyUnicode_Ready().
-   Returns 0 on success and -1 on errors. */
-static inline int PyUnicode_READY(PyObject *op)
+/* For backward compatibility */
+static inline int PyUnicode_READY(PyObject* Py_UNUSED(op))
 {
-    if (PyUnicode_IS_READY(op)) {
-        return 0;
-    }
-    return _PyUnicode_Ready(op);
+    return 0;
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_READY(op) PyUnicode_READY(_PyObject_CAST(op))
-#endif
+#define PyUnicode_READY(op) PyUnicode_READY(_PyObject_CAST(op))
 
 /* Get a copy of a Unicode string. */
 PyAPI_FUNC(PyObject*) _PyUnicode_Copy(
