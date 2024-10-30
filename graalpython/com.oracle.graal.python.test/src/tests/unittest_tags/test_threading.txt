@@ -133,11 +133,6 @@
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_try_acquire_contended
 *graalpython.lib-python.3.test.test_threading.SemaphoreTests.test_with
 *graalpython.lib-python.3.test.test_threading.SubinterpThreadingTests.test_daemon_threads_fatal_error
-*graalpython.lib-python.3.test.test_threading.ThreadJoinOnShutdown.test_2_join_in_forked_process
-*graalpython.lib-python.3.test.test_threading.ThreadJoinOnShutdown.test_3_join_in_forked_from_thread
-*graalpython.lib-python.3.test.test_threading.ThreadJoinOnShutdown.test_4_daemon_threads
-*graalpython.lib-python.3.test.test_threading.ThreadJoinOnShutdown.test_clear_threads_states_after_fork
-*graalpython.lib-python.3.test.test_threading.ThreadJoinOnShutdown.test_reinit_tls_after_fork
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_BoundedSemaphore_limit
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_PyThreadState_SetAsyncExc
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_args_argument

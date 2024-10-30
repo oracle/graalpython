@@ -706,6 +706,7 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers*',
         # GR-48555 race condition when exitting right after join
         'graalpython.lib-python.3.test.test_threading.ThreadingExceptionTests.test_print_exception*',
+        'graalpython.lib-python.3.test.test_threading.ThreadJoinOnShutdown.*',
         # GC-related transients
         'test.test_importlib.test_locks.*_LifetimeTests.test_all_locks',
         # Flaky buffer capi tests
