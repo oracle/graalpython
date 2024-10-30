@@ -1062,9 +1062,21 @@ static PyObject *
 memoryview_release_impl(PyMemoryViewObject *self)
 /*[clinic end generated code: output=d0b7e3ba95b7fcb9 input=bc71d1d51f4a52f0]*/
 {
-    if (_memory_release(self) < 0)
+    if (self->exports == 0) {
+        _memory_release(self);
+        Py_RETURN_NONE;
+    }
+
+    if (self->exports > 0) {
+        PyErr_Format(PyExc_BufferError,
+            "memoryview has %zd exported buffer%s", self->exports,
+            self->exports==1 ? "" : "s");
         return NULL;
-    Py_RETURN_NONE;
+    }
+
+    PyErr_SetString(PyExc_SystemError,
+                    "memoryview: negative export count");
+    return NULL;
 }
 
 static void
@@ -1072,7 +1084,7 @@ memory_dealloc(PyMemoryViewObject *self)
 {
     assert(self->exports == 0);
     _PyObject_GC_UNTRACK(self);
-    (void)_memory_release(self);
+    _memory_release(self);
     Py_CLEAR(self->mbuf);
     if (self->weakreflist != NULL)
         PyObject_ClearWeakRefs((PyObject *) self);
@@ -1089,8 +1101,10 @@ memory_traverse(PyMemoryViewObject *self, visitproc visit, void *arg)
 static int
 memory_clear(PyMemoryViewObject *self)
 {
-    (void)_memory_release(self);
-    Py_CLEAR(self->mbuf);
+    if (self->exports == 0) {
+        _memory_release(self);
+        Py_CLEAR(self->mbuf);
+    }
     return 0;
 }
 
@@ -1098,8 +1112,7 @@ static PyObject *
 memory_enter(PyObject *self, PyObject *args)
 {
     CHECK_RELEASED(self);
-    Py_INCREF(self);
-    return self;
+    return Py_NewRef(self);
 }
 
 static PyObject *
@@ -1131,6 +1144,7 @@ get_native_fmtchar(char *result, const char *fmt)
     case 'n': case 'N': size = sizeof(Py_ssize_t); break;
     case 'f': size = sizeof(float); break;
     case 'd': size = sizeof(double); break;
+    case 'e': size = sizeof(float) / 2; break;
     case '?': size = sizeof(_Bool); break;
     case 'P': size = sizeof(void *); break;
     }
@@ -1174,6 +1188,7 @@ get_native_fmtstr(const char *fmt)
     case 'N': RETURN("N");
     case 'f': RETURN("f");
     case 'd': RETURN("d");
+    case 'e': RETURN("e");
     case '?': RETURN("?");
     case 'P': RETURN("P");
     }
@@ -1692,6 +1707,12 @@ unpack_single(PyMemoryViewObject *self, const char *ptr, const char *fmt)
 
     CHECK_RELEASED_AGAIN(self);
 
+#if PY_LITTLE_ENDIAN
+    int endian = 1;
+#else
+    int endian = 0;
+#endif
+
     switch (fmt[0]) {
 
     /* signed integers and fast path for 'B' */
@@ -1720,6 +1741,7 @@ unpack_single(PyMemoryViewObject *self, const char *ptr, const char *fmt)
     /* floats */
     case 'f': UNPACK_SINGLE(d, ptr, float); goto convert_double;
     case 'd': UNPACK_SINGLE(d, ptr, double); goto convert_double;
+    case 'e': d = PyFloat_Unpack2(ptr, endian); goto convert_double;
 
     /* bytes object */
     case 'c': goto convert_bytes;
@@ -1781,6 +1803,11 @@ pack_single(PyMemoryViewObject *self, char *ptr, PyObject *item, const char *fmt
     double d;
     void *p;
 
+#if PY_LITTLE_ENDIAN
+    int endian = 1;
+#else
+    int endian = 0;
+#endif
     switch (fmt[0]) {
     /* signed integers */
     case 'b': case 'h': case 'i': case 'l':
@@ -1857,7 +1884,7 @@ pack_single(PyMemoryViewObject *self, char *ptr, PyObject *item, const char *fmt
         break;
 
     /* floats */
-    case 'f': case 'd':
+    case 'f': case 'd': case 'e':
         d = PyFloat_AsDouble(item);
         if (d == -1.0 && PyErr_Occurred())
             goto err_occurred;
@@ -1865,8 +1892,13 @@ pack_single(PyMemoryViewObject *self, char *ptr, PyObject *item, const char *fmt
         if (fmt[0] == 'f') {
             PACK_SINGLE(ptr, d, float);
         }
-        else {
+        else if (fmt[0] == 'd') {
             PACK_SINGLE(ptr, d, double);
+        }
+        else {
+            if (PyFloat_Pack2(d, ptr, endian) < 0) {
+                goto err_occurred;
+            }
         }
         break;
 
@@ -1877,7 +1909,7 @@ pack_single(PyMemoryViewObject *self, char *ptr, PyObject *item, const char *fmt
             return -1; /* preserve original error */
         CHECK_RELEASED_INT_AGAIN(self);
         PACK_SINGLE(ptr, ld, _Bool);
-         break;
+        break;
 
     /* bytes object */
     case 'c':
@@ -2747,6 +2779,17 @@ unpack_cmp(const char *p, const char *q, char fmt,
     /* XXX DBL_EPSILON? */
     case 'f': CMP_SINGLE(p, q, float); return equal;
     case 'd': CMP_SINGLE(p, q, double); return equal;
+    case 'e': {
+#if PY_LITTLE_ENDIAN
+        int endian = 1;
+#else
+        int endian = 0;
+#endif
+        /* Note: PyFloat_Unpack2 should never fail */
+        double u = PyFloat_Unpack2(p, endian);
+        double v = PyFloat_Unpack2(q, endian);
+        return (u == v);
+    }
 
     /* bytes object */
     case 'c': return *p == *q;

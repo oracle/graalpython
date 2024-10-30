@@ -33,7 +33,11 @@ static PyObject *extensions = NULL;
 /* This table is defined in config.c: */
 extern struct _inittab _PyImport_Inittab[];
 
+// This is not used after Py_Initialize() is called.
+// (See _PyRuntimeState.imports.inittab.)
 struct _inittab *PyImport_Inittab = _PyImport_Inittab;
+// When we dynamically allocate a larger table for PyImport_ExtendInittab(),
+// we track the pointer here so we can deallocate it during finalization.
 static struct _inittab *inittab_copy = NULL;
 
 /*[clinic input]
