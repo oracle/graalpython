@@ -404,7 +404,7 @@ class ParallelTestRunner(TestRunner):
                 partitions.append([test for suite in unpartitioned[:per_partition] for test in suite.collected_tests])
                 unpartitioned = unpartitioned[per_partition:]
 
-            num_processes = min(self.num_processes, len(partitions))
+            num_processes = max(1, min(self.num_processes, len(partitions)))
             with concurrent.futures.ThreadPoolExecutor(num_processes) as executor:
                 self.run_partitions_in_subprocesses(executor, partitions)
                 for serial_suite in serial_suites:
@@ -569,36 +569,37 @@ class Config:
 
 
 @lru_cache
-def config_for_dir(path: Path) -> Config | None:
-    config_path = path / 'conftest.toml'
-    if config_path.exists():
-        with open(config_path, 'rb') as f:
-            config_dict = tomllib.load(f)['tests']
-            rootdir = path
-            if config_rootdir := config_dict.get('rootdir'):
-                rootdir /= config_rootdir
-            rootdir = rootdir.resolve()
-            tags_dir = None
-            if config_tags_dir := config_dict.get('tags_dir'):
-                tags_dir = (path / config_tags_dir).resolve()
-            return Config(
-                rootdir=rootdir,
-                tags_dir=tags_dir,
-                run_top_level_functions=config_dict.get('run_top_level_functions', False),
-                new_worker_per_file=config_dict.get('new_worker_per_file', False),
-                serial_tests=frozenset(config_dict.get('serial_tests', frozenset())),
-            )
-
-
-def config_for_file(test_file: Path) -> Config:
-    path = test_file.parent
+def config_for_dir(path: Path) -> Config:
     while path.is_dir():
-        if config := config_for_dir(path):
-            return config
+        config_path = path / 'conftest.toml'
+        if config_path.exists():
+            return parse_config(config_path, path)
         if path.parent == path:
             break
         path = path.parent
     return Config()
+
+
+def config_for_file(test_file: Path) -> Config:
+    path = test_file if test_file.is_dir() else test_file.parent
+    return config_for_dir(path)
+
+
+@lru_cache
+def parse_config(config_path, path):
+    with open(config_path, 'rb') as f:
+        config_dict = tomllib.load(f)['tests']
+        rootdir = config_path.parent.parent.resolve()
+        tags_dir = None
+        if config_tags_dir := config_dict.get('tags_dir'):
+            tags_dir = (path / config_tags_dir).resolve()
+        return Config(
+            rootdir=rootdir,
+            tags_dir=tags_dir,
+            run_top_level_functions=config_dict.get('run_top_level_functions', Config.run_top_level_functions),
+            new_worker_per_file=config_dict.get('new_worker_per_file', Config.new_worker_per_file),
+            serial_tests=frozenset(config_dict.get('serial_tests', Config.serial_tests)),
+        )
 
 
 @dataclass
@@ -638,15 +639,20 @@ def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifie
         for path in paths:
             if not path.exists():
                 sys.exit(f"Test path {path} doesn't exist")
+            config = config_for_dir(path)
             if path.is_dir():
-                if path.name.startswith('test_') and (path / '__init__.py').exists():
-                    expanded_paths.append(path)
-                expanded_paths.extend(list(path.rglob("test_*.py")))
-                expanded_paths.extend((p.parent for p in path.rglob("test_*/__init__.py")))
+                if config.tags_dir:
+                    if path.parent.absolute() == config.rootdir.absolute():
+                        expanded_paths += path.glob('test_*.py')
+                        expanded_paths += (p.parent for p in path.glob('test_*/__init__.py'))
+                    else:
+                        if (path / '__init__.py').exists():
+                            expanded_paths.append(path)
+                else:
+                    expanded_paths += path.rglob("test*.py")
             else:
-                if path.name == '__init__.py':
-                    path = path.parent
                 expanded_paths.append(path)
+        expanded_paths.sort()
         for path in expanded_paths:
             expanded_specifiers.append(TestSpecifier(path, specifier.test_name))
     return expanded_specifiers

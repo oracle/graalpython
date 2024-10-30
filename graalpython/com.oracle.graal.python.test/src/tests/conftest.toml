@@ -1,3 +1,2 @@
 [tests]
-rootdir = '..'
 run_top_level_functions = true
