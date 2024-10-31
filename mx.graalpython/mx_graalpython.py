@@ -1167,10 +1167,10 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
 
     args = args or []
     args = [
+        "-I",
         "--vm.ea",
         "--experimental-options=true",
         "--python.EnableDebuggingBuiltins",
-        "--python.CatchAllExceptions=true",
         *args,
     ]
     exclude = exclude or []
@@ -1200,11 +1200,10 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     if use_pytest:
         args += ["-m", "pytest", "-v", "--assert=plain", "--tb=native"]
     else:
-        args += [_graalpytest_driver(), "-v"]
+        args += [_python_test_runner(), "-n", "1", "--subprocess-args", shlex.join(args)]
 
     result = 0
     if is_collecting_coverage():
-        env['ENABLE_THREADED_GRAALPYTEST'] = "false"
         if mx_gate.get_jacoco_agent_args():
             with open(python_binary, "r") as f:
                 assert f.read(9) == "#!/bin/sh"
@@ -1230,7 +1229,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
                 t0 = time.time()
                 if not use_pytest:
                     reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
-                    next_args += ["--report", reportfile]
+                    next_args += ["--mx-report", reportfile]
 
             next_args += testset
             mx.logv(" ".join([python_binary] + next_args))
@@ -1486,8 +1485,6 @@ def graalpython_gate_runner(args, tasks):
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            if not WIN32:
-                mx.run(["env"])
             run_python_unittests(
                 graalpy_standalone_jvm(),
                 exclude=excluded_tests,

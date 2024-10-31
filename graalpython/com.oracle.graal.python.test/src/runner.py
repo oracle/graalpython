@@ -39,11 +39,13 @@
 import argparse
 import concurrent.futures
 import enum
+import json
 import math
 import multiprocessing
 import multiprocessing.connection
 import os
 import re
+import shlex
 import signal
 import subprocess
 import sys
@@ -355,6 +357,25 @@ class TestRunner:
             test_suite.run(result)
         self.display_summary()
 
+    def generate_mx_report(self, path: str):
+        report_data = []
+        for result in self.results:
+            match result.status:
+                case TestStatus.SUCCESS | TestStatus.EXPECTED_FAILURE:
+                    status = 'PASSED'
+                case TestStatus.SKIPPED:
+                    status = 'IGNORED'
+                case _:
+                    status = 'FAILED'
+            report_data.append({
+                'name': str(result.test_id),
+                'status': status,
+                # TODO duration
+                'duration': 0,
+            })
+        with open(path, 'w') as f:
+            json.dump(report_data, f)
+
 
 def interrupt_process(process: subprocess.Popen):
     sig = signal.SIGINT if sys.platform != 'win32' else signal.CTRL_C_EVENT
@@ -370,9 +391,10 @@ def interrupt_process(process: subprocess.Popen):
 
 
 class ParallelTestRunner(TestRunner):
-    def __init__(self, failfast, num_processes):
+    def __init__(self, failfast, num_processes, subprocess_args):
         super().__init__(failfast=failfast)
         self.num_processes = num_processes
+        self.subprocess_args = subprocess_args
         self.stop_event = threading.Event()
         self.crashes = []
         self.last_started_test = None
@@ -463,13 +485,7 @@ class ParallelTestRunner(TestRunner):
             remaining_tests = tests
             while remaining_tests and not self.stop_event.is_set():
                 self.last_out_pos = out_file.tell()
-                python_args = ['-u']
-                if IS_GRAALPY:
-                    python_args += [
-                        "--vm.ea",
-                        "--experimental-options=true",
-                        "--python.EnableDebuggingBuiltins",
-                    ]
+                python_args = ['-u', *self.subprocess_args]
                 cmd = [sys.executable, *python_args, __file__, '--pipe-fd', str(child_conn.fileno())]
                 if self.failfast:
                     cmd.append('--failfast')
@@ -728,18 +744,31 @@ def in_process():
         test_suite.run(result)
 
 
+def get_bool_env(name: str):
+    return os.environ.get(name, '').lower() in ('true', '1')
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', '--num-processes', type=int)
     parser.add_argument('-f', '--failfast', action='store_true')
     parser.add_argument('--all', action='store_true')
     parser.add_argument('--collect-only', action='store_true')
+    parser.add_argument('--mx-report')
+    parser.add_argument('--subprocess-args', type=shlex.split, default=[
+        "--vm.ea",
+        "--experimental-options=true",
+        "--python.EnableDebuggingBuiltins",
+    ] if IS_GRAALPY else [])
     parser.add_argument('tests', nargs='+', type=TestSpecifier.from_str)
 
     args = parser.parse_args()
 
+    if get_bool_env('GRAALPYTEST_FAIL_FAST'):
+        args.failfast = True
+
     if IS_GRAALPY:
-        if os.environ.get('GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS', '').lower() not in ('true', '1'):
+        if get_bool_env('GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS'):
             if not __graalpython__.java_assert():
                 sys.exit(
                     "Java assertions are not enabled, refusing to run. Add --vm.ea to your invocation. Set GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS=true to disable this check\n")
@@ -762,9 +791,15 @@ def main():
     if not args.num_processes:
         runner = TestRunner(**runner_args)
     else:
-        runner = ParallelTestRunner(**runner_args, num_processes=args.num_processes)
+        runner = ParallelTestRunner(
+            **runner_args,
+            num_processes=args.num_processes,
+            subprocess_args=args.subprocess_args,
+        )
 
     runner.run_tests(tests)
+    if args.mx_report:
+        runner.generate_mx_report(args.mx_report)
     if runner.tests_failed():
         sys.exit(1)
 
