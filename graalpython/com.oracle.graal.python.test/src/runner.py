@@ -720,9 +720,20 @@ def collect_module(test_file: Path, specifiers: list[TestSpecifier], use_tags=Fa
         sys.path[:] = saved_path
 
 
-def collect(all_specifiers: list[TestSpecifier], use_tags=False) -> list[TestSuite]:
+def path_for_comparison(p: Path):
+    p = p.resolve()
+    return p.parent / p.name.removesuffix('.py')
+
+
+def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None) -> list[TestSuite]:
     to_run = []
     all_specifiers = expand_specifier_paths(all_specifiers)
+    if ignore:
+        ignore = [path_for_comparison(i) for i in ignore]
+        all_specifiers = [
+            s for s in all_specifiers
+            if not any(path_for_comparison(s.test_file).is_relative_to(i) for i in ignore)
+        ]
     for test_file, specifiers in group_specifiers_by_file(all_specifiers).items():
         if not test_file.exists():
             sys.exit(f"File does not exist: {test_file}")
@@ -780,6 +791,8 @@ def main():
                         help="Interpret test file names relative to tagged test directory")
     parser.add_argument('-n', '--num-processes', type=int,
                         help="Run tests in N subprocess workers. Adds crash recovery, output capture and timeout handling")
+    parser.add_argument('--ignore', type=Path, nargs='*', default=[],
+                        help="Ignore path during collection (multi-allowed)")
     parser.add_argument('-f', '--failfast', action='store_true',
                         help="Exit immediately after the first failure")
     parser.add_argument('--all', action='store_true',
@@ -825,14 +838,16 @@ def main():
         if not hasattr(__graalpython__, 'tdebug'):
             sys.exit("Needs to be run with --experimental-options --python.EnableDebuggingBuiltins\n")
 
-    implicit_root = TAGGED_TEST_ROOT if args.tagged else UNIT_TEST_ROOT
-    implicit_root = implicit_root.relative_to(Path('.').resolve())
+    implicit_root = (TAGGED_TEST_ROOT if args.tagged else UNIT_TEST_ROOT).relative_to(Path('.').resolve())
     for i, test in enumerate(args.tests):
-        if not test.test_file.resolve().is_relative_to(DIR.parent.parent):
-            replacement = implicit_root / test.test_file
-            args.tests[i] = test.with_test_file(replacement)
+        if not test.test_file.is_absolute() and not test.test_file.resolve().is_relative_to(DIR.parent.parent):
+            args.tests[i] = test.with_test_file(implicit_root / test.test_file)
+    for i, ignore in enumerate(args.ignore):
+        ignore_path = Path(ignore)
+        if not ignore_path.is_absolute() and not ignore_path.resolve().is_relative_to(DIR.parent.parent):
+            args.ignore[i] = implicit_root / ignore_path
 
-    tests = collect(args.tests, use_tags=(not args.all))
+    tests = collect(args.tests, use_tags=(not args.all), ignore=args.ignore)
     if args.collect_only:
         for test_suite in tests:
             for test in test_suite.collected_tests:
