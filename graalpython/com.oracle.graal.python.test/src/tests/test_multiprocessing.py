@@ -39,15 +39,22 @@
 import multiprocessing
 
 import sys
+import unittest
 
 
-def test_array_read():
-    # TODO multiprocessing.Array doesn't work on emulated backend
-    if sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java':
-        return
-    # This used to be buggy due to wrong usage of memoryview offsets when two objects were allocated in the same block
-    # Don't remove the unused value on the next line
-    # noinspection PyUnusedLocal
-    num = multiprocessing.Value('d', 0.0)
-    arr = multiprocessing.Array('i', range(10))
-    assert arr[1] == 1
+class MultiprocessingTest(unittest.TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        import multiprocessing.resource_tracker
+        multiprocessing.resource_tracker._resource_tracker._stop()
+
+    @unittest.skipIf(
+        sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java',
+        reason="TODO multiprocessing.Array doesn't work on emulated backend",
+    )
+    def test_array_read(self):
+        # This used to be buggy due to wrong usage of memoryview offsets when two objects were allocated in the same block
+        # Don't remove the unused value on the next line
+        multiprocessing.Value('d', 0.0)
+        arr = multiprocessing.Array('i', range(10))
+        self.assertEqual(arr[1], 1)
