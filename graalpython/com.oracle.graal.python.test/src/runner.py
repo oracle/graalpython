@@ -749,18 +749,32 @@ def get_bool_env(name: str):
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--num-processes', type=int)
-    parser.add_argument('-f', '--failfast', action='store_true')
-    parser.add_argument('--all', action='store_true')
-    parser.add_argument('--collect-only', action='store_true')
-    parser.add_argument('--mx-report')
-    parser.add_argument('--subprocess-args', type=shlex.split, default=[
-        "--vm.ea",
-        "--experimental-options=true",
-        "--python.EnableDebuggingBuiltins",
-    ] if IS_GRAALPY else [])
-    parser.add_argument('tests', nargs='+', type=TestSpecifier.from_str)
+    is_mx_graalpytest = get_bool_env('MX_GRAALPYTEST')
+    parser = argparse.ArgumentParser(prog=('mx graalpytest' if is_mx_graalpytest else None))
+    if is_mx_graalpytest:
+        # mx graalpytest takes this option, but it forwards --help here, so pretend we take it
+        parser.add_argument('--python', help="Run tests with given Python binary")
+    parser.add_argument('-n', '--num-processes', type=int,
+                        help="Run tests in N subprocess workers. Adds crash recovery, output capture and timeout handling")
+    parser.add_argument('-f', '--failfast', action='store_true',
+                        help="Exit immediately after the first failure")
+    parser.add_argument('--all', action='store_true',
+                        help="Run tests that are normally not enabled due to tags")
+    parser.add_argument('--collect-only', action='store_true',
+                        help="Print found tests IDs without running tests")
+    parser.add_argument('--mx-report',
+                        help="Produce a json report file in format expected by mx_gate.make_test_report")
+    parser.add_argument(
+        '--subprocess-args',
+        type=shlex.split,
+        default=[
+            "--vm.ea",
+            "--experimental-options=true",
+            "--python.EnableDebuggingBuiltins",
+        ] if IS_GRAALPY else [],
+        help="Interpreter arguments to pass for subprocess invocation (when using -n)")
+    parser.add_argument('tests', nargs='+', type=TestSpecifier.from_str,
+                        help="List of test specifiers. Accepts wildcards anywhere, recurses into directories")
 
     args = parser.parse_args()
 

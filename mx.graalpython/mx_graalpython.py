@@ -1095,14 +1095,10 @@ def _hpy_test_root():
 
 
 def graalpytest(args):
-    parser = ArgumentParser(prog='mx graalpytest')
-    parser.add_argument('--python', type=str, action='store', default="", help='Run tests with custom Python binary.')
-    parser.add_argument('-v', "--verbose", action="store_true", help='Verbose output.', default=True)
-    parser.add_argument('-k', dest="filter", default='', help='Test pattern.')
-    parser.add_argument('test', nargs="*", default=[], help='Test file to run (specify absolute or relative; e.g. "/path/to/test_file.py" or "cpyext/test_object.py") ')
+    parser = ArgumentParser(prog='mx graalpytest', add_help=False)
+    parser.add_argument('--python')
     args, unknown_args = parser.parse_known_args(args)
 
-    testfiles = _list_graalpython_unittests(args.test)
     cmd_args = []
     # if we got a binary path it's most likely CPython, so don't add graalpython args
     if not args.python:
@@ -1111,14 +1107,8 @@ def graalpytest(args):
         gp_args = ["--vm.ea", "--vm.esa", "--experimental-options=true", "--python.EnableDebuggingBuiltins"]
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         cmd_args += gp_args
-    # we assume that unknown args are polyglot arguments and just prepend them to the test driver
-    cmd_args += unknown_args + [_graalpytest_driver()]
-    if args.verbose:
-        cmd_args += ["-v"]
-    cmd_args += testfiles
-    if args.filter:
-        cmd_args += ["-k", args.filter]
-    env = extend_os_env(PYTHONHASHSEED='0')
+    cmd_args += [_python_test_runner(), *unknown_args]
+    env = extend_os_env(PYTHONHASHSEED='0', MX_GRAALPYTEST='1')
     delete_bad_env_keys(env)
     if args.python:
         return mx.run([args.python] + cmd_args, nonZeroIsFatal=True, env=env)
