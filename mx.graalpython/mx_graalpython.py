@@ -1195,7 +1195,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     if use_pytest:
         args += ["-m", "pytest", "-v", "--assert=plain", "--tb=native"]
     else:
-        args += [_python_test_runner(), "-n", str(parallel), "--subprocess-args", shlex.join(args)]
+        args += [_python_test_runner(), "--durations", "25", "-n", str(parallel), "--subprocess-args", shlex.join(args)]
 
     result = 0
     if is_collecting_coverage():

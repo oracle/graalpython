@@ -166,6 +166,7 @@ class TestResult:
     status: TestStatus
     param: str | None = None
     output: str = ''
+    duration: float = 0.0
 
 
 def format_exception(err):
@@ -277,16 +278,24 @@ def test_path_to_module(path: Path):
 
 
 class TestRunner:
-    def __init__(self, failfast):
+    def __init__(self, *, failfast, report_durations):
         self.failfast = failfast
+        self.report_durations = report_durations
         self.events = []
         self.results = []
+        self.total_duration = 0.0
+        self.last_started_test = None
+        self.last_started_timestamp = None
 
-    @staticmethod
-    def report_start(test_id: TestId):
+    def report_start(self, test_id: TestId):
+        self.last_started_test = test_id
+        self.last_started_timestamp = time.time()
         log(f"{test_id} ... ", incomplete=True)
 
     def report_result(self, result: TestResult):
+        result.duration = time.time() - self.last_started_timestamp
+        self.last_started_timestamp = None
+        self.last_started_test = None
         self.results.append(result)
         message = f"{result.test_id} ... {result.status}"
         if result.status == TestStatus.SKIPPED and result.param:
@@ -302,6 +311,15 @@ class TestRunner:
             counts[result.status] += 1
 
         log()
+
+        if self.results and self.report_durations:
+            slowest_tests = sorted(self.results, key=lambda r: r.duration, reverse=True)
+            if self.report_durations > 0:
+                slowest_tests = slowest_tests[:self.report_durations]
+            log("Slowest test durations:")
+            for result in slowest_tests:
+                log(f"- {result.test_id}: {result.duration:.2f}s")
+            log()
 
         for result in self.results:
             fail_type = None
@@ -338,7 +356,7 @@ class TestRunner:
 
         total = sum(counts.values())
 
-        log(f"Ran {total} tests")  # TODO timing
+        log(f"Ran {total} tests in {self.total_duration:.2f}s")
         log()
         summary = ", ".join(items)
         overall_status = 'FAILED' if self.tests_failed() else 'OK'
@@ -351,10 +369,12 @@ class TestRunner:
             log("\nWARNING: Did not execute all tests because 'failfast' mode is on")
 
     def run_tests(self, tests: list['TestSuite']):
+        start_time = time.time()
         for test_suite in tests:
             result = DirectResult(test_suite, self)
             result.failfast = self.failfast
             test_suite.run(result)
+        self.total_duration = time.time() - start_time
         self.display_summary()
 
     def generate_mx_report(self, path: str):
@@ -370,8 +390,7 @@ class TestRunner:
             report_data.append({
                 'name': str(result.test_id),
                 'status': status,
-                # TODO duration
-                'duration': 0,
+                'duration': result.duration,
             })
         with open(path, 'w') as f:
             json.dump(report_data, f)
@@ -391,15 +410,13 @@ def interrupt_process(process: subprocess.Popen):
 
 
 class ParallelTestRunner(TestRunner):
-    def __init__(self, failfast, num_processes, subprocess_args):
-        super().__init__(failfast=failfast)
+    def __init__(self, *, num_processes, subprocess_args, **kwargs):
+        super().__init__(**kwargs)
         self.num_processes = num_processes
         self.subprocess_args = subprocess_args
         self.stop_event = threading.Event()
         self.crashes = []
-        self.last_started_test = None
         self.last_out_pos = 0
-        self.last_started_timestamp = None
         self.default_test_timeout = 600
 
     def report_result(self, result: TestResult):
@@ -411,6 +428,7 @@ class ParallelTestRunner(TestRunner):
         return super().tests_failed() or bool(self.crashes)
 
     def run_tests(self, tests: list['TestSuite']):
+        start_time = time.time()
         if tests:
             serial_suites, unpartitioned = partition_list(
                 tests,
@@ -432,6 +450,7 @@ class ParallelTestRunner(TestRunner):
                 for serial_suite in serial_suites:
                     self.run_partitions_in_subprocesses(executor, [serial_suite.collected_tests])
 
+        self.total_duration = time.time() - start_time
         self.display_summary()
 
         if self.crashes:
@@ -456,12 +475,9 @@ class ParallelTestRunner(TestRunner):
         self.events.append(event)
         match event['event']:
             case 'testStarted':
-                self.last_started_test = event['test']
                 self.last_out_pos = event['out_pos']
                 self.report_start(event['test'])
-                self.last_started_timestamp = time.time()
             case 'testResult':
-                self.last_started_test = None
                 out_end = event['out_pos']
                 test_output = ''
                 if self.last_out_pos != out_end:
@@ -475,7 +491,6 @@ class ParallelTestRunner(TestRunner):
                 )
                 self.report_result(result)
                 self.last_out_pos = event['out_pos']
-                self.last_started_timestamp = None
 
     def run_in_subprocess_and_watch(self, tests: list[TestId]):
         conn, child_conn = multiprocessing.Pipe()
@@ -539,8 +554,6 @@ class ParallelTestRunner(TestRunner):
                             output=output,
                         ))
                         remaining_tests = remaining_tests[remaining_tests.index(self.last_started_test) + 1:]
-                        self.last_started_timestamp = None
-                        self.last_started_test = None
                         continue
                     else:
                         # Crashed outside of tests, don't retry
@@ -762,6 +775,8 @@ def main():
                         help="Run tests that are normally not enabled due to tags")
     parser.add_argument('--collect-only', action='store_true',
                         help="Print found tests IDs without running tests")
+    parser.add_argument('--durations', type=int, default=0,
+                        help="Show durations of N slowest tests (-1 to show all)")
     parser.add_argument('--mx-report',
                         help="Produce a json report file in format expected by mx_gate.make_test_report")
     parser.add_argument(
@@ -801,6 +816,7 @@ def main():
 
     runner_args = {
         'failfast': args.failfast,
+        'report_durations': args.durations,
     }
     if not args.num_processes:
         runner = TestRunner(**runner_args)
