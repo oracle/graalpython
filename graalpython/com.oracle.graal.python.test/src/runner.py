@@ -63,7 +63,9 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
-DIR = Path(__file__).parent
+DIR = Path(__file__).parent.resolve()
+UNIT_TEST_ROOT = (DIR / 'tests').resolve()
+TAGGED_TEST_ROOT = (DIR.parent.parent / 'lib-python' / '3' / 'test').resolve()
 IS_GRAALPY = sys.implementation.name == 'graalpy'
 
 if sys.implementation.version < (3, 12):
@@ -133,7 +135,7 @@ class TestId:
         return cls(test_file, test.id())
 
 
-@dataclass(repr=False)
+@dataclass
 class TestSpecifier:
     test_file: Path
     test_name: str | None
@@ -142,6 +144,9 @@ class TestSpecifier:
         if self.test_name is None:
             return str(self.test_file)
         return f'{self.test_file}::{self.test_name}'
+
+    def with_test_file(self, test_file: Path):
+        return TestSpecifier(test_file, self.test_name)
 
     @classmethod
     def from_str(cls, s: str):
@@ -667,7 +672,11 @@ def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifie
         expanded_paths = []
         for path in paths:
             if not path.exists():
-                sys.exit(f"Test path {path} doesn't exist")
+                with_suffix = path.parent / f'{path.name}.py'
+                if with_suffix.exists():
+                    path = with_suffix
+                else:
+                    sys.exit(f"Test path {path} doesn't exist")
             config = config_for_dir(path)
             if path.is_dir():
                 if config.tags_dir:
@@ -683,7 +692,7 @@ def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifie
                 expanded_paths.append(path)
         expanded_paths.sort()
         for path in expanded_paths:
-            expanded_specifiers.append(TestSpecifier(path, specifier.test_name))
+            expanded_specifiers.append(specifier.with_test_file(path))
     return expanded_specifiers
 
 
@@ -767,6 +776,8 @@ def main():
     if is_mx_graalpytest:
         # mx graalpytest takes this option, but it forwards --help here, so pretend we take it
         parser.add_argument('--python', help="Run tests with given Python binary")
+    parser.add_argument('-t', '--tagged', action='store_true',
+                        help="Interpret test file names relative to tagged test directory")
     parser.add_argument('-n', '--num-processes', type=int,
                         help="Run tests in N subprocess workers. Adds crash recovery, output capture and timeout handling")
     parser.add_argument('-f', '--failfast', action='store_true',
@@ -789,7 +800,17 @@ def main():
         ] if IS_GRAALPY else [],
         help="Interpreter arguments to pass for subprocess invocation (when using -n)")
     parser.add_argument('tests', nargs='+', type=TestSpecifier.from_str,
-                        help="List of test specifiers. Accepts wildcards anywhere, recurses into directories")
+                        help="""
+                        List of test specifiers. A specifier can be:
+                        - A test file name. It will be looked up in our unittests or, if you pass --tagged, in tagged tests. Example: test_int
+                        - A test file path. Example: graalpython/lib-python/3/test/test_int.py. Note you do not need to pass --tagged to refer to a tagged test by path
+                        - A test directory name or path. Example: cpyext
+                        - A test file name/path with a selector for a specific test. Example: test_int::tests.test_int.ToBytesTests.test_WrongTypes
+                        - A test file name/path with a selector for multiple tests. Example: test_int::tests.test_int.ToBytesTests
+                        - You can use wildcards in tests paths and selectors. Example: 'test_int::test_create*'
+
+                        Tip: the test IDs printed in test results directly work as specifiers here.
+                        """)
 
     args = parser.parse_args()
 
@@ -803,6 +824,13 @@ def main():
                     "Java assertions are not enabled, refusing to run. Add --vm.ea to your invocation. Set GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS=true to disable this check\n")
         if not hasattr(__graalpython__, 'tdebug'):
             sys.exit("Needs to be run with --experimental-options --python.EnableDebuggingBuiltins\n")
+
+    implicit_root = TAGGED_TEST_ROOT if args.tagged else UNIT_TEST_ROOT
+    implicit_root = implicit_root.relative_to(Path('.').resolve())
+    for i, test in enumerate(args.tests):
+        if not test.test_file.resolve().is_relative_to(DIR.parent.parent):
+            replacement = implicit_root / test.test_file
+            args.tests[i] = test.with_test_file(replacement)
 
     tests = collect(args.tests, use_tags=(not args.all))
     if args.collect_only:
