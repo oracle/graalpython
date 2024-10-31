@@ -725,7 +725,7 @@ def path_for_comparison(p: Path):
     return p.parent / p.name.removesuffix('.py')
 
 
-def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None) -> list[TestSuite]:
+def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None, partial=None) -> list[TestSuite]:
     to_run = []
     all_specifiers = expand_specifier_paths(all_specifiers)
     if ignore:
@@ -734,6 +734,9 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None)
             s for s in all_specifiers
             if not any(path_for_comparison(s.test_file).is_relative_to(i) for i in ignore)
         ]
+    if partial:
+        selected, total = partial
+        all_specifiers = all_specifiers[selected::total]
     for test_file, specifiers in group_specifiers_by_file(all_specifiers).items():
         if not test_file.exists():
             sys.exit(f"File does not exist: {test_file}")
@@ -847,7 +850,12 @@ def main():
         if not ignore_path.is_absolute() and not ignore_path.resolve().is_relative_to(DIR.parent.parent):
             args.ignore[i] = implicit_root / ignore_path
 
-    tests = collect(args.tests, use_tags=(not args.all), ignore=args.ignore)
+    partial = None
+    if partial_env := os.environ.get('TAGGED_UNITTEST_PARTIAL'):
+        selected_str, total_str = partial_env.split('/', 1)
+        partial = int(selected_str) - 1, int(total_str)
+
+    tests = collect(args.tests, use_tags=(not args.all), ignore=args.ignore, partial=partial)
     if args.collect_only:
         for test_suite in tests:
             for test in test_suite.collected_tests:
