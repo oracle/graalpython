@@ -794,7 +794,7 @@ def main():
                         help="Interpret test file names relative to tagged test directory")
     parser.add_argument('-n', '--num-processes', type=int,
                         help="Run tests in N subprocess workers. Adds crash recovery, output capture and timeout handling")
-    parser.add_argument('--ignore', type=Path, nargs='*', default=[],
+    parser.add_argument('--ignore', type=Path, action='append', default=[],
                         help="Ignore path during collection (multi-allowed)")
     parser.add_argument('-f', '--failfast', action='store_true',
                         help="Exit immediately after the first failure")
