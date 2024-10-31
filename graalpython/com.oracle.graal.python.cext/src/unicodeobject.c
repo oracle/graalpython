@@ -1682,11 +1682,12 @@ unicode_dealloc(PyObject *unicode)
     default:
         Py_UNREACHABLE();
     }
-#endif // GraalPy change
 
     if (_PyUnicode_HAS_WSTR_MEMORY(unicode)) {
         PyObject_Free(_PyUnicode_WSTR(unicode));
     }
+#endif // GraalPy change
+
     if (_PyUnicode_HAS_UTF8_MEMORY(unicode)) {
         PyObject_Free(_PyUnicode_UTF8(unicode));
     }
@@ -8825,7 +8826,6 @@ unicode_count_impl(PyObject *str,
         PyMem_Free((void *)buf2);
     return -1;
 }
-#endif // GraalPy change
 
 Py_ssize_t
 PyUnicode_Count(PyObject *str,
@@ -8838,6 +8838,8 @@ PyUnicode_Count(PyObject *str,
 
     return unicode_count_impl(str, substr, start, end);
 }
+
+#endif // GraalPy change
 
 Py_ssize_t
 PyUnicode_Find(PyObject *str,

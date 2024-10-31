@@ -5661,7 +5661,6 @@ int
 PyUnstable_Long_IsCompact(const PyLongObject* op) {
     return _PyLong_IsCompact(op);
 }
-#endif // GraalPy change
 
 #undef PyUnstable_Long_CompactValue
 
@@ -5669,3 +5668,5 @@ Py_ssize_t
 PyUnstable_Long_CompactValue(const PyLongObject* op) {
     return _PyLong_CompactValue(op);
 }
+
+#endif // GraalPy change

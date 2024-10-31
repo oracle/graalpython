@@ -5710,7 +5710,6 @@ uint32_t _PyDictKeys_GetVersionForCurrentState(PyInterpreterState *interp,
     dictkeys->dk_version = v;
     return v;
 }
-#endif // GraalPy change
 
 static inline int
 validate_watcher_id(PyInterpreterState *interp, int watcher_id)
@@ -5824,3 +5823,5 @@ _PyDict_SendEvent(int watcher_bits,
         watcher_bits >>= 1;
     }
 }
+
+#endif // GraalPy change

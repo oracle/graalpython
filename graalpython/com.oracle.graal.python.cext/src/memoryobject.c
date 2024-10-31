@@ -1007,8 +1007,6 @@ memoryview_impl(PyTypeObject *type, PyObject *object)
 {
     return PyMemoryView_FromObject(object);
 }
-#endif // GraalPy change
-
 
 /*[clinic input]
 @classmethod
@@ -1027,6 +1025,7 @@ memoryview__from_flags_impl(PyTypeObject *type, PyObject *object, int flags)
     return PyMemoryView_FromObjectAndFlags(object, flags);
 }
 
+#endif // GraalPy change
 
 /****************************************************************************/
 /*                         Previously in abstract.c                         */

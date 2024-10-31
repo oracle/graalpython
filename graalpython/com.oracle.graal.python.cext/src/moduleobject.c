@@ -892,14 +892,14 @@ _Py_module_getattro_impl(PyModuleObject *m, PyObject *name, int suppress)
     }
     return NULL;
 }
-#endif // GraalPy change
-
 
 PyObject*
 _Py_module_getattro(PyModuleObject *m, PyObject *name)
 {
     return _Py_module_getattro_impl(m, name, 0);
 }
+
+#endif // GraalPy change
 
 static int
 module_traverse(PyModuleObject *m, visitproc visit, void *arg)

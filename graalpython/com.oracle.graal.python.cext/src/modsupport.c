@@ -9,8 +9,8 @@
 #include "Python.h"
 #if 0 // GraalPy change
 #include "pycore_abstract.h"   // _PyIndex_Check()
-#include "pycore_object.h"     // _PyType_IsReady()
 #endif // GraalPy change
+#include "pycore_object.h"     // _PyType_IsReady()
 
 #define FLAG_SIZE_T 1
 typedef double va_double;
