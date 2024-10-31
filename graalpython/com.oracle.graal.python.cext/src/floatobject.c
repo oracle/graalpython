@@ -12,7 +12,7 @@
 #include "pycore_object.h"        // _PyObject_Init()
 #include "pycore_pymath.h"        // _PY_SHORT_FLOAT_REPR
 #include "pycore_pystate.h"       // _PyInterpreterState_GET()
-#include "pycore_structseq.h"     // _PyStructSequence_FiniType()
+#include "pycore_structseq.h"     // _PyStructSequence_FiniBuiltin()
 
 #include <ctype.h>
 #include <float.h>
@@ -101,10 +101,18 @@ PyFloat_GetInfo(void)
         return NULL;
     }
 
-#define SetIntFlag(flag) \
-    PyStructSequence_SET_ITEM(floatinfo, pos++, PyLong_FromLong(flag))
-#define SetDblFlag(flag) \
-    PyStructSequence_SET_ITEM(floatinfo, pos++, PyFloat_FromDouble(flag))
+#define SetFlag(CALL) \
+    do {                                                    \
+        PyObject *flag = (CALL);                            \
+        if (flag == NULL) {                                 \
+            Py_CLEAR(floatinfo);                            \
+            return NULL;                                    \
+        }                                                   \
+        PyStructSequence_SET_ITEM(floatinfo, pos++, flag);  \
+    } while (0)
+
+#define SetIntFlag(FLAG) SetFlag(PyLong_FromLong((FLAG)))
+#define SetDblFlag(FLAG) SetFlag(PyFloat_FromDouble((FLAG)))
 
     SetDblFlag(DBL_MAX);
     SetIntFlag(DBL_MAX_EXP);
@@ -119,11 +127,8 @@ PyFloat_GetInfo(void)
     SetIntFlag(FLT_ROUNDS);
 #undef SetIntFlag
 #undef SetDblFlag
+#undef SetFlag
 
-    if (PyErr_Occurred()) {
-        Py_CLEAR(floatinfo);
-        return NULL;
-    }
     return floatinfo;
 }
 
@@ -1738,13 +1743,13 @@ You probably don't want to use this function.
 It exists mainly to be used in Python's test suite.
 
 This function returns whichever of 'unknown', 'IEEE, big-endian' or 'IEEE,
-little-endian' best describes the format of floating point numbers used by the
+little-endian' best describes the format of floating-point numbers used by the
 C type named by typestr.
 [clinic start generated code]*/
 
 static PyObject *
 float___getformat___impl(PyTypeObject *type, const char *typestr)
-/*[clinic end generated code: output=2bfb987228cc9628 input=d5a52600f835ad67]*/
+/*[clinic end generated code: output=2bfb987228cc9628 input=90d5e246409a246e]*/
 {
     float_format_type r;
 
@@ -1980,22 +1985,23 @@ _PyFloat_InitState(PyInterpreterState *interp)
     float_format = detected_float_format;
 }
 
+void
+_PyFloat_InitState(PyInterpreterState *interp)
+{
+    if (!_Py_IsMainInterpreter(interp)) {
+        return;
+    }
+    _init_global_state();
+}
+
 PyStatus
 _PyFloat_InitTypes(PyInterpreterState *interp)
 {
-    if (!_Py_IsMainInterpreter(interp)) {
-        return _PyStatus_OK();
-    }
-
-    if (PyType_Ready(&PyFloat_Type) < 0) {
-        return _PyStatus_ERR("Can't initialize float type");
-    }
-
     /* Init float info */
-    if (FloatInfoType.tp_name == NULL) {
-        if (PyStructSequence_InitType2(&FloatInfoType, &floatinfo_desc) < 0) {
-            return _PyStatus_ERR("can't init float info type");
-        }
+    if (_PyStructSequence_InitBuiltin(interp, &FloatInfoType,
+                                      &floatinfo_desc) < 0)
+    {
+        return _PyStatus_ERR("can't init float info type");
     }
 
     return _PyStatus_OK();
@@ -2030,9 +2036,7 @@ _PyFloat_Fini(PyInterpreterState *interp)
 void
 _PyFloat_FiniType(PyInterpreterState *interp)
 {
-    if (_Py_IsMainInterpreter(interp)) {
-        _PyStructSequence_FiniType(&FloatInfoType);
-    }
+    _PyStructSequence_FiniBuiltin(interp, &FloatInfoType);
 }
 
 /* Print summary info about the state of the optimized allocator */

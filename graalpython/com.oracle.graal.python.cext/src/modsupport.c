@@ -3,15 +3,13 @@
 
 #include "Python.h"
 #include "pycore_abstract.h"   // _PyIndex_Check()
+#include "pycore_object.h"     // _PyType_IsReady()
 
 #define FLAG_SIZE_T 1
 typedef double va_double;
 
 static PyObject *va_build_value(const char *, va_list, int);
 static PyObject **va_build_stack(PyObject **small_stack, Py_ssize_t small_stack_len, const char *, va_list, int, Py_ssize_t*);
-
-/* Package context -- the full module name for package imports */
-const char *_Py_PackageContext = NULL;
 
 
 int
@@ -691,7 +689,7 @@ PyModule_AddStringConstant(PyObject *m, const char *name, const char *value)
 int
 PyModule_AddType(PyObject *module, PyTypeObject *type)
 {
-    if (PyType_Ready(type) < 0) {
+    if (!_PyType_IsReady(type) && PyType_Ready(type) < 0) {
         return -1;
     }
 

@@ -191,6 +191,20 @@ PyTypeObject _PyManagedBuffer_Type = {
         return -1;                                                \
     }
 
+#define CHECK_RESTRICTED(mv) \
+    if (((PyMemoryViewObject *)(mv))->flags & _Py_MEMORYVIEW_RESTRICTED) { \
+        PyErr_SetString(PyExc_ValueError,                                  \
+            "cannot create new view on restricted memoryview");            \
+        return NULL;                                                       \
+    }
+
+#define CHECK_RESTRICTED_INT(mv) \
+    if (((PyMemoryViewObject *)(mv))->flags & _Py_MEMORYVIEW_RESTRICTED) { \
+        PyErr_SetString(PyExc_ValueError,                                  \
+            "cannot create new view on restricted memoryview");            \
+        return -1;                                                       \
+    }
+
 /* See gh-92888. These macros signal that we need to check the memoryview
    again due to possible read after frees. */
 #define CHECK_RELEASED_AGAIN(mv) CHECK_RELEASED(mv)
@@ -248,7 +262,7 @@ PyTypeObject _PyManagedBuffer_Type = {
 /* Assumptions: ndim >= 1. The macro tests for a corner case that should
    perhaps be explicitly forbidden in the PEP. */
 #define HAVE_SUBOFFSETS_IN_LAST_DIM(view) \
-    (view->suboffsets && view->suboffsets[dest->ndim-1] >= 0)
+    (view->suboffsets && view->suboffsets[view->ndim-1] >= 0)
 
 static inline int
 last_dim_is_contiguous(const Py_buffer *dest, const Py_buffer *src)
@@ -775,22 +789,24 @@ PyMemoryView_FromBuffer(const Py_buffer *info)
     return mv;
 }
 
-/* Create a memoryview from an object that implements the buffer protocol.
+/* Create a memoryview from an object that implements the buffer protocol,
+   using the given flags.
    If the object is a memoryview, the new memoryview must be registered
    with the same managed buffer. Otherwise, a new managed buffer is created. */
-PyObject *
-PyMemoryView_FromObject(PyObject *v)
+static PyObject *
+PyMemoryView_FromObjectAndFlags(PyObject *v, int flags)
 {
     _PyManagedBufferObject *mbuf;
 
     if (PyMemoryView_Check(v)) {
         PyMemoryViewObject *mv = (PyMemoryViewObject *)v;
         CHECK_RELEASED(mv);
+        CHECK_RESTRICTED(mv);
         return mbuf_add_view(mv->mbuf, &mv->view);
     }
     else if (PyObject_CheckBuffer(v)) {
         PyObject *ret;
-        mbuf = (_PyManagedBufferObject *)_PyManagedBuffer_FromObject(v);
+        mbuf = (_PyManagedBufferObject *)_PyManagedBuffer_FromObject(v, flags);
         if (mbuf == NULL)
             return NULL;
         ret = mbuf_add_view(mbuf, NULL);
@@ -802,6 +818,38 @@ PyMemoryView_FromObject(PyObject *v)
         "memoryview: a bytes-like object is required, not '%.200s'",
         Py_TYPE(v)->tp_name);
     return NULL;
+}
+
+/* Create a memoryview from an object that implements the buffer protocol,
+   using the given flags.
+   If the object is a memoryview, the new memoryview must be registered
+   with the same managed buffer. Otherwise, a new managed buffer is created. */
+PyObject *
+_PyMemoryView_FromBufferProc(PyObject *v, int flags, getbufferproc bufferproc)
+{
+    _PyManagedBufferObject *mbuf = mbuf_alloc();
+    if (mbuf == NULL)
+        return NULL;
+
+    int res = bufferproc(v, &mbuf->master, flags);
+    if (res < 0) {
+        mbuf->master.obj = NULL;
+        Py_DECREF(mbuf);
+        return NULL;
+    }
+
+    PyObject *ret = mbuf_add_view(mbuf, NULL);
+    Py_DECREF(mbuf);
+    return ret;
+}
+
+/* Create a memoryview from an object that implements the buffer protocol.
+   If the object is a memoryview, the new memoryview must be registered
+   with the same managed buffer. Otherwise, a new managed buffer is created. */
+PyObject *
+PyMemoryView_FromObject(PyObject *v)
+{
+    return PyMemoryView_FromObjectAndFlags(v, PyBUF_FULL_RO);
 }
 
 /* Copy the format string from a base object that might vanish. */
@@ -849,7 +897,7 @@ memory_from_contiguous_copy(const Py_buffer *src, char order)
     if (bytes == NULL)
         return NULL;
 
-    mbuf = (_PyManagedBufferObject *)_PyManagedBuffer_FromObject(bytes);
+    mbuf = (_PyManagedBufferObject *)_PyManagedBuffer_FromObject(bytes, PyBUF_FULL_RO);
     Py_DECREF(bytes);
     if (mbuf == NULL)
         return NULL;
@@ -966,6 +1014,24 @@ memoryview_impl(PyTypeObject *type, PyObject *object)
 }
 
 
+/*[clinic input]
+@classmethod
+memoryview._from_flags
+
+    object: object
+    flags: int
+
+Create a new memoryview object which references the given object.
+[clinic start generated code]*/
+
+static PyObject *
+memoryview__from_flags_impl(PyTypeObject *type, PyObject *object, int flags)
+/*[clinic end generated code: output=bf71f9906c266ee2 input=f5f82fd0e744356b]*/
+{
+    return PyMemoryView_FromObjectAndFlags(object, flags);
+}
+
+
 /****************************************************************************/
 /*                         Previously in abstract.c                         */
 /****************************************************************************/
@@ -1024,32 +1090,19 @@ PyBuffer_ToContiguous(void *buf, const Py_buffer *src, Py_ssize_t len, char orde
 /* Inform the managed buffer that this particular memoryview will not access
    the underlying buffer again. If no other memoryviews are registered with
    the managed buffer, the underlying buffer is released instantly and
-   marked as inaccessible for both the memoryview and the managed buffer.
-
-   This function fails if the memoryview itself has exported buffers. */
-static int
+   marked as inaccessible for both the memoryview and the managed buffer. */
+static void
 _memory_release(PyMemoryViewObject *self)
 {
+    assert(self->exports == 0);
     if (self->flags & _Py_MEMORYVIEW_RELEASED)
-        return 0;
+        return;
 
-    if (self->exports == 0) {
-        self->flags |= _Py_MEMORYVIEW_RELEASED;
-        assert(self->mbuf->exports > 0);
-        if (--self->mbuf->exports == 0)
-            mbuf_release(self->mbuf);
-        return 0;
+    self->flags |= _Py_MEMORYVIEW_RELEASED;
+    assert(self->mbuf->exports > 0);
+    if (--self->mbuf->exports == 0) {
+        mbuf_release(self->mbuf);
     }
-    if (self->exports > 0) {
-        PyErr_Format(PyExc_BufferError,
-            "memoryview has %zd exported buffer%s", self->exports,
-            self->exports==1 ? "" : "s");
-        return -1;
-    }
-
-    PyErr_SetString(PyExc_SystemError,
-                    "_memory_release(): negative export count");
-    return -1;
 }
 
 /*[clinic input]
@@ -1382,6 +1435,7 @@ memoryview_cast_impl(PyMemoryViewObject *self, PyObject *format,
     Py_ssize_t ndim = 1;
 
     CHECK_RELEASED(self);
+    CHECK_RESTRICTED(self);
 
     if (!MV_C_CONTIGUOUS(self->flags)) {
         PyErr_SetString(PyExc_TypeError,
@@ -1437,6 +1491,7 @@ memoryview_toreadonly_impl(PyMemoryViewObject *self)
 /*[clinic end generated code: output=2c7e056f04c99e62 input=dc06d20f19ba236f]*/
 {
     CHECK_RELEASED(self);
+    CHECK_RESTRICTED(self);
     /* Even if self is already readonly, we still need to create a new
      * object for .release() to work correctly.
      */
@@ -1459,6 +1514,7 @@ memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags)
     int baseflags = self->flags;
 
     CHECK_RELEASED_INT(self);
+    CHECK_RESTRICTED_INT(self);
 
     /* start with complete information */
     *view = *base;
@@ -1994,18 +2050,12 @@ unpacker_free(struct unpacker *x)
 static struct unpacker *
 struct_get_unpacker(const char *fmt, Py_ssize_t itemsize)
 {
-    PyObject *structmodule;     /* XXX cache these two */
-    PyObject *Struct = NULL;    /* XXX in globals?     */
+    PyObject *Struct = NULL;    /* XXX cache it in globals? */
     PyObject *structobj = NULL;
     PyObject *format = NULL;
     struct unpacker *x = NULL;
 
-    structmodule = PyImport_ImportModule("struct");
-    if (structmodule == NULL)
-        return NULL;
-
-    Struct = PyObject_GetAttrString(structmodule, "Struct");
-    Py_DECREF(structmodule);
+    Struct = _PyImport_GetModuleAttrString("struct", "Struct");
     if (Struct == NULL)
         return NULL;
 
@@ -2526,6 +2576,7 @@ memory_subscript(PyMemoryViewObject *self, PyObject *key)
         return memory_item(self, index);
     }
     else if (PySlice_Check(key)) {
+        CHECK_RESTRICTED(self);
         PyMemoryViewObject *sliced;
 
         sliced = (PyMemoryViewObject *)mbuf_add_view(self->mbuf, view);
@@ -2660,7 +2711,11 @@ static Py_ssize_t
 memory_length(PyMemoryViewObject *self)
 {
     CHECK_RELEASED_INT(self);
-    return self->view.ndim == 0 ? 1 : self->view.shape[0];
+    if (self->view.ndim == 0) {
+        PyErr_SetString(PyExc_TypeError, "0-dim memory has no length");
+        return -1;
+    }
+    return self->view.shape[0];
 }
 
 /* As mapping */
@@ -3198,6 +3253,7 @@ static PyMethodDef memory_methods[] = {
     MEMORYVIEW_TOLIST_METHODDEF
     MEMORYVIEW_CAST_METHODDEF
     MEMORYVIEW_TOREADONLY_METHODDEF
+    MEMORYVIEW__FROM_FLAGS_METHODDEF
     {"__enter__",   memory_enter, METH_NOARGS, NULL},
     {"__exit__",    memory_exit, METH_VARARGS, NULL},
     {NULL,          NULL}
