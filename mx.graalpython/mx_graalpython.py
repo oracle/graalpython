@@ -1158,7 +1158,8 @@ def _list_graalpython_unittests(paths=None, exclude=None):
 
 
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None,
-                         use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, timeout=None, report=False):
+                         use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, timeout=None,
+                         report=False, parallel=1):
     if lock:
         lock.acquire()
     # ensure that the test distribution is up-to-date
@@ -1167,7 +1168,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
 
     args = args or []
     args = [
-        "-I",
+        "-s",
         "--vm.ea",
         "--experimental-options=true",
         "--python.EnableDebuggingBuiltins",
@@ -1189,18 +1190,22 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         exclude += AOT_ONLY_TESTS
 
     # just to be able to verify, print C ext mode (also works for CPython)
-    mx.run([python_binary,
+    mx.run(
+        [
+            python_binary,
             *args,
             "-c",
-            "import sys; print('C EXT MODE: ' + (__graalpython__.ext_mode if sys.implementation.name == 'graalpy' else 'cpython'))"],
-            nonZeroIsFatal=True, env=env, out=out, err=err)
+            "import sys; print('C EXT MODE: ' + (__graalpython__.ext_mode if sys.implementation.name == 'graalpy' else 'cpython'))",
+        ],
+        nonZeroIsFatal=True, env=env, out=out, err=err,
+    )
 
     # list all 1st-level tests and exclude the SVM-incompatible ones
     testfiles = _list_graalpython_unittests(paths, exclude)
     if use_pytest:
         args += ["-m", "pytest", "-v", "--assert=plain", "--tb=native"]
     else:
-        args += [_python_test_runner(), "-n", "1", "--subprocess-args", shlex.join(args)]
+        args += [_python_test_runner(), "-n", str(parallel), "--subprocess-args", shlex.join(args)]
 
     result = 0
     if is_collecting_coverage():
@@ -1343,28 +1348,21 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
-                         checkIfWithGraalPythonEE=False, report=False):
-    python_path = os.path.join(_dev_pythonhome(), 'lib-python/3')
-    sub_env = dict(
-        ENABLE_THREADED_GRAALPYTEST="true",
-    )
-    sub_env.update(env or os.environ)
-    sub_env.update(
-        PYTHONPATH=python_path,
-        ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
-    )
-    print(f"with PYTHONPATH={python_path}")
+                         checkIfWithGraalPythonEE=False, report=False, parallel=min(os.cpu_count(), 8)):
+    stdlib_path = os.path.join(_dev_pythonhome(), 'lib-python', '3')
+    sub_env = dict(env or os.environ)
+    sub_env['PYTHONPATH'] = stdlib_path
 
     if checkIfWithGraalPythonEE:
         mx.run([python_binary, "-c", "import sys; print(sys.version)"])
     run_python_unittests(
         python_binary,
-        args=["-v"],
-        paths=["test_tagged_unittests.py"],
+        paths=[os.path.join(stdlib_path, 'test')],
         env=sub_env,
         cwd=cwd,
         nonZeroIsFatal=nonZeroIsFatal,
         report=report,
+        parallel=parallel,
     )
 
 
@@ -1495,7 +1493,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
             env = extend_os_env(PYTHONHASHSEED='0')
-            test_args = [get_cpython(), "-I", _python_test_runner(), "-n", "1", "graalpython/com.oracle.graal.python.test/src/tests"]
+            test_args = [get_cpython(), "-s", _python_test_runner(), "-n", "1", "graalpython/com.oracle.graal.python.test/src/tests"]
             mx.run(test_args, nonZeroIsFatal=True, env=env)
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
@@ -2607,15 +2605,14 @@ def python_coverage(args):
                 f"--coverage.OutputFile={outfile}",
             ]
             env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
-            env['ENABLE_THREADED_GRAALPYTEST'] = "false"
             # deselect some tagged unittests that hang with coverage enabled
             env['TAGGED_UNITTEST_SELECTION'] = "~test_multiprocessing_spawn,test_multiprocessing_main_handling,test_multiprocessing_graalpy"
             if kwds.pop("tagged", False):
-                run_tagged_unittests(executable, env=env, nonZeroIsFatal=False)
+                run_tagged_unittests(executable, env=env, nonZeroIsFatal=False, parallel=1)
             elif kwds.pop("hpy", False):
                 run_hpy_unittests(executable, env=env, nonZeroIsFatal=False, timeout=5*60*60) # hpy unittests are really slow under coverage
             else:
-                run_python_unittests(executable, env=env, nonZeroIsFatal=False, timeout=3600, **kwds) # pylint: disable=unexpected-keyword-arg;
+                run_python_unittests(executable, env=env, nonZeroIsFatal=False, timeout=3600, parallel=1, **kwds) # pylint: disable=unexpected-keyword-arg;
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
