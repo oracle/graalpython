@@ -1080,6 +1080,9 @@ def native_image(args):
 def _graalpytest_driver():
     return os.path.join(SUITE.dir, "graalpython", "com.oracle.graal.python.test", "src", "graalpytest.py")
 
+def _python_test_runner():
+    return os.path.join(SUITE.dir, "graalpython", "com.oracle.graal.python.test", "src", "runner.py")
+
 def _graalpytest_root():
     return os.path.join(SUITE.dir, "graalpython", "com.oracle.graal.python.test", "src", "tests")
 
@@ -1495,7 +1498,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
             env = extend_os_env(PYTHONHASHSEED='0')
-            test_args = [get_cpython(), _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests"]
+            test_args = [get_cpython(), "-I", _python_test_runner(), "-n", "1", "graalpython/com.oracle.graal.python.test/src/tests"]
             mx.run(test_args, nonZeroIsFatal=True, env=env)
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
