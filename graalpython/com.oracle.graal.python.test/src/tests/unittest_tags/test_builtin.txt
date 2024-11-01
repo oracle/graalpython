@@ -1,3 +1,4 @@
+DocTestCase.builtins.zip
 test.test_builtin.BuiltinTest.test_abs
 test.test_builtin.BuiltinTest.test_all
 test.test_builtin.BuiltinTest.test_any

@@ -1,3 +1,4 @@
+DocTestCase.test.test_code
 test.test_code.CodeConstsTest.test_interned_string
 test.test_code.CodeConstsTest.test_interned_string_default
 test.test_code.CodeConstsTest.test_interned_string_in_frozenset

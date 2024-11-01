@@ -1,3 +1,4 @@
+DocTestCase.test.test_cmd.samplecmdclass
 test.test_cmd.TestAlternateInput.test_file_with_missing_final_nl
 test.test_cmd.TestAlternateInput.test_input_reset_at_EOF
 test.test_cmd.TestMain.test_main

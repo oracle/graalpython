@@ -1,3 +1,7 @@
+DocTestCase.enum.Enum
+DocTestCase.enum._simple_enum
+DocTestCase.enum._test_simple_enum
+DocTestCase.enum.bin
 test.test_enum.MiscTestCase.test__all__
 test.test_enum.MiscTestCase.test_doc_1
 test.test_enum.MiscTestCase.test_doc_2

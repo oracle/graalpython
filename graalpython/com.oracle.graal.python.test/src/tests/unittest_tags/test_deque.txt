@@ -1,3 +1,4 @@
+DocTestCase.test.test_deque.__test__.libreftest
 test.test_deque.TestBasic.test_add
 test.test_deque.TestBasic.test_basics
 test.test_deque.TestBasic.test_big_queue_popleft

@@ -1,1 +1,2 @@
+DocTestCase.test.test_setcomps.__test__.doctests
 test.test_setcomps.TestMain.test_main

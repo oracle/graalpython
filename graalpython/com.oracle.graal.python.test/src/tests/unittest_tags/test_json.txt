@@ -1,7 +1,9 @@
-test.test_json.__init__.TestCTest.test_cjson
-test.test_json.__init__.TestPyTest.test_pyjson
+DocTestCase.json
+DocTestCase.json.encoder.JSONEncoder.encode
 test.test_json.TestCTest.test_cjson
 test.test_json.TestPyTest.test_pyjson
+test.test_json.__init__.TestCTest.test_cjson
+test.test_json.__init__.TestPyTest.test_pyjson
 test.test_json.test_decode.TestCDecode.test_decimal
 test.test_json.test_decode.TestCDecode.test_decoder_optimizations
 test.test_json.test_decode.TestCDecode.test_deprecated_encode

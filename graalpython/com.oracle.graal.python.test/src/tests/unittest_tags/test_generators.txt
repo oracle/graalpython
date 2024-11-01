@@ -1,3 +1,12 @@
+DocTestCase.test.test_generators.__test__.conjoin
+DocTestCase.test.test_generators.__test__.coroutine
+DocTestCase.test.test_generators.__test__.email
+DocTestCase.test.test_generators.__test__.fun
+DocTestCase.test.test_generators.__test__.pep
+DocTestCase.test.test_generators.__test__.refleaks
+DocTestCase.test.test_generators.__test__.syntax
+DocTestCase.test.test_generators.__test__.tut
+DocTestCase.test.test_generators.__test__.weakref
 test.test_generators.ExceptionTest.test_except_gen_except
 test.test_generators.ExceptionTest.test_except_next
 test.test_generators.ExceptionTest.test_except_throw

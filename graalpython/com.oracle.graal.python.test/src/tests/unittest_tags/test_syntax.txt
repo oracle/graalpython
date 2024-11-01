@@ -1,3 +1,4 @@
+DocTestCase.test.test_syntax
 test.test_syntax.SyntaxTestCase.test_assign_call
 test.test_syntax.SyntaxTestCase.test_assign_del
 test.test_syntax.SyntaxTestCase.test_bad_outdent

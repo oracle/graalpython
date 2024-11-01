@@ -1,3 +1,4 @@
+DocTestCase.test.test_getopt.test_libref_examples
 test.test_getopt.GetoptTests.test_do_longs
 test.test_getopt.GetoptTests.test_do_shorts
 test.test_getopt.GetoptTests.test_getopt

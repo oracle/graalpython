@@ -1,3 +1,4 @@
+DocTestCase.test.test_weakref.__test__.libreftest
 test.test_weakref.FinalizeTestCase.test_arg_errors
 test.test_weakref.FinalizeTestCase.test_finalize
 test.test_weakref.FinalizeTestCase.test_order

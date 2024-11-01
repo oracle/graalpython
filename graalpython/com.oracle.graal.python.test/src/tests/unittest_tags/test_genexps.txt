@@ -1,1 +1,2 @@
+DocTestCase.test.test_genexps.__test__.doctests
 test.test_genexps.TestMain.test_main

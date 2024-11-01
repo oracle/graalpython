@@ -1,3 +1,8 @@
+DocTestCase.test.test_statistics.NumericTestCase.assertApproxEqual
+DocTestCase.test.test_statistics._DoNothing
+DocTestCase.test.test_statistics._calc_errors
+DocTestCase.test.test_statistics._nan_equal
+DocTestCase.test.test_statistics.approx_equal
 test.test_statistics.ApproxEqualExactTest.test_exactly_equal_absolute
 test.test_statistics.ApproxEqualExactTest.test_exactly_equal_absolute_decimals
 test.test_statistics.ApproxEqualExactTest.test_exactly_equal_both

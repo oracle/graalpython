@@ -1,3 +1,4 @@
+DocTestCase._threading_local
 test.test_threading_local.PyThreadingLocalTest.test_arguments
 test.test_threading_local.PyThreadingLocalTest.test_cycle_collection
 test.test_threading_local.PyThreadingLocalTest.test_derived

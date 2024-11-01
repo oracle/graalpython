@@ -1,2 +1,17 @@
+DocTestCase.doctest.DebugRunner
+DocTestCase.doctest.DocTestCase.debug
+DocTestCase.doctest.DocTestRunner
+DocTestCase.doctest._TestClass
+DocTestCase.doctest._TestClass.__init__
+DocTestCase.doctest._TestClass.get
+DocTestCase.doctest._TestClass.square
+DocTestCase.doctest.__test__.blank lines
+DocTestCase.doctest.__test__.bool-int equivalence
+DocTestCase.doctest.__test__.ellipsis
+DocTestCase.doctest.__test__.string
+DocTestCase.doctest.__test__.whitespace normalization
+DocTestCase.doctest._ellipsis_match
+DocTestCase.doctest.script_from_examples
+DocTestCase.doctest.set_unittest_reportflags
 test.test_doctest.TestDocTestFinder.test_empty_namespace_package
 test.test_doctest.TestDocTestFinder.test_issue35753

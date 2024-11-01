@@ -1,3 +1,4 @@
+DocTestCase.http.cookies
 test.test_http_cookies.CookieTests.test_basic
 test.test_http_cookies.CookieTests.test_comment_quoting
 test.test_http_cookies.CookieTests.test_extended_encode

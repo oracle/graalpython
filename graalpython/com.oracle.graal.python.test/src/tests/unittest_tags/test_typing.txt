@@ -1,3 +1,9 @@
+DocTestCase.typing.TypedDict
+DocTestCase.typing._collect_parameters
+DocTestCase.typing._should_unflatten_callable_args
+DocTestCase.typing.get_args
+DocTestCase.typing.get_origin
+DocTestCase.typing.is_typeddict
 test.test_typing.AllTests.test_all
 test.test_typing.AllTests.test_all_exported_names
 test.test_typing.AnnotatedTests.test_annotated_cached_with_types

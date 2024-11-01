@@ -1,3 +1,5 @@
+DocTestCase.distutils.versionpredicate.VersionPredicate
+DocTestCase.distutils.versionpredicate.split_provision
 distutils.tests.test_archive_util.ArchiveUtilTestCase.test_check_archive_formats
 distutils.tests.test_archive_util.ArchiveUtilTestCase.test_compress_deprecated
 distutils.tests.test_archive_util.ArchiveUtilTestCase.test_make_archive

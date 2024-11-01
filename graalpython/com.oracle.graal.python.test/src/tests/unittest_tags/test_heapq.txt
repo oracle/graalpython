@@ -1,3 +1,4 @@
+DocTestCase.merge
 test.test_heapq.TestErrorHandlingC.test_arg_parsing
 test.test_heapq.TestErrorHandlingC.test_cmp_err
 test.test_heapq.TestErrorHandlingC.test_comparison_operator_modifiying_heap
