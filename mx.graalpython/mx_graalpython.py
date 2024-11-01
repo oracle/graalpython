@@ -1096,21 +1096,28 @@ def graalpytest(args):
     parser.add_argument('--python')
     args, unknown_args = parser.parse_known_args(args)
 
+    env = extend_os_env(
+        MX_GRAALPYTEST='1',
+        PYTHONHASHSEED='0',
+    )
+
     cmd_args = []
     # if we got a binary path it's most likely CPython, so don't add graalpython args
+    is_graalpy = False
     if not args.python:
+        is_graalpy = True
         cmd_args += ["--experimental-options=true", "--python.EnableDebuggingBuiltins"]
-    elif 'graalpy' in os.path.basename(args.python):
+    elif 'graalpy' in os.path.basename(args.python) or 'mxbuild' in args.python:
+        is_graalpy = True
         gp_args = ["--vm.ea", "--vm.esa", "--experimental-options=true", "--python.EnableDebuggingBuiltins"]
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         cmd_args += gp_args
     cmd_args += [_python_test_runner(), *unknown_args]
-    env = extend_os_env(
-        MX_GRAALPYTEST='1',
-        PYTHONHASHSEED='0',
-        PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python', '3'),
-    )
     delete_bad_env_keys(env)
+    if is_graalpy:
+        pythonpath = [os.path.join(_dev_pythonhome(), 'lib-python', '3')]
+        pythonpath += [p for p in env.get('PYTHONPATH', '').split(os.pathsep) if p]
+        env['PYTONPATH'] = os.pathsep.join(pythonpath)
     if args.python:
         return mx.run([args.python] + cmd_args, nonZeroIsFatal=True, env=env)
     else:
@@ -1216,7 +1223,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     if paths is not None:
         args += paths
     else:
-        args.append('.')
+        args.append(os.path.relpath(SUITE.dir))
 
     mx.logv(shlex.join([python_binary] + args))
     if lock:
@@ -1338,7 +1345,7 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
     run_python_unittests(
         python_binary,
         runner_args=['--tagged'],
-        paths=['.'],
+        paths=[os.path.relpath(SUITE.dir)],
         env=sub_env,
         cwd=cwd,
         nonZeroIsFatal=nonZeroIsFatal,
