@@ -1,1 +1,2 @@
+DocTestCase.test.test_metaclass.__test__.doctests
 test.test_metaclass.TestMain.test_main
