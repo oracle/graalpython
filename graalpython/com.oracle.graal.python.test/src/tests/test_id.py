@@ -68,14 +68,18 @@ def test_id_is_constant_even_when_object_changes():
     assert id(l) == lid
 
 def test_identity():
-    assert True is True
+    val = True
+    assert val is True
     assert memoryview(b"").readonly is True # compare a PInt bool (from C) to a boolean
 
-    assert 12 is 12
+    val = 12
+    assert val is 12
     assert memoryview(b"123").nbytes == 3 # compare PInt (from C) to an int
     class I(int): pass
-    assert I(12) is not 12
-    assert 12.0 is 12.0
+    val = I(12)
+    assert val is not 12
+    val = 12.0
+    assert val is 12.0
 
     nan = float('nan')
     assert nan is nan
