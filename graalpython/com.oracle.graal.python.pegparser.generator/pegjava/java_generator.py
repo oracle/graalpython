@@ -945,14 +945,14 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(f"private static final int {rulename.upper()}_ID = {i};{comment}")
         self.print()
         # Java needs a constructor
-        self.print("public %s(String source, SourceRange sourceRange, PythonStringFactory stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
+        self.print("public %s(String source, SourceRange sourceRange, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
         with self.indent():
-            self.print("super(source, sourceRange, stringFactory, errorCb, startRule, flags, featureVersion);")
+            self.print("super(source, sourceRange, errorCb, startRule, flags, featureVersion);")
         self.print("}")
         self.print()
-        self.print("public %s(String source, PythonStringFactory stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
+        self.print("public %s(String source, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
         with self.indent():
-            self.print("super(source, null, stringFactory, errorCb, startRule, flags, featureVersion);")
+            self.print("super(source, null, errorCb, startRule, flags, featureVersion);")
         self.print("}")
         # we don't need the C declarations, so straight to the rule functions as in c_generator
         for rulename, rule in list(self.all_rules.items()):

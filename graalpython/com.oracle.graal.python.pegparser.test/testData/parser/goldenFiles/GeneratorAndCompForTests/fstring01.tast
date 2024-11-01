@@ -15,7 +15,7 @@ Module[1:0-1:64]
             Call[1:24-1:64]
                 Target: 
                     Attribute[1:24-1:33] 
-                        Receiver: RAW[1:24-1:28] Value: ", "
+                        Receiver: CODEPOINTS[1:24-1:28] Value: ", "
                         Attr: join
                 Args:
                     GeneratorExp[1:33-1:64]

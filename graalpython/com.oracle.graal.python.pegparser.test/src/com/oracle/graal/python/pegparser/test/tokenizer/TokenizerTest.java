@@ -58,7 +58,6 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import com.oracle.graal.python.pegparser.ErrorCallback;
-import com.oracle.graal.python.pegparser.test.DefaultStringFactoryImpl;
 import com.oracle.graal.python.pegparser.test.TestErrorCallbackImpl;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
@@ -409,7 +408,7 @@ public class TokenizerTest {
 
         if (tokens != null) {
             while (token.type != Token.Kind.ENDMARKER) {
-                assertEquals(tokens[index], tokenizer.toString(token));
+                assertEquals(tokens[index], tokenToString(tokenizer, token));
                 index++;
                 token = tokenizer.next();
             }
@@ -424,7 +423,7 @@ public class TokenizerTest {
                     sb.append(",\n");
                 }
                 sb.append("            \"");
-                sb.append(tokenizer.toString(token));
+                sb.append(tokenToString(tokenizer, token));
                 sb.append("\"");
                 index++;
                 token = tokenizer.next();
@@ -609,7 +608,7 @@ public class TokenizerTest {
                 }
                 sb.append("start:[").append(token.sourceRange.startLine).append(", ").append(token.sourceRange.startColumn).append("] ");
                 sb.append("end:[").append(token.sourceRange.endLine).append(", ").append(token.sourceRange.endColumn).append("] ");
-                sb.append("string:'").append(tokenizer.getTokenString(token)).append("'");
+                sb.append("string:'").append(tokenizer.getTokenCodePoints(token).toJavaString()).append("'");
                 String goldenToken = goldenResult.get(goldenResultIndex);
                 assertEquals("Code: '" + line + "'", goldenToken, sb.toString());
                 goldenResultIndex++;
@@ -633,8 +632,7 @@ public class TokenizerTest {
                 fail("Unexpected call to onError");
             }
         };
-        return Tokenizer.fromString(errorCallback, new DefaultStringFactoryImpl(), code, EnumSet.of(interactive ? Tokenizer.Flag.INTERACTIVE : Tokenizer.Flag.EXEC_INPUT, Tokenizer.Flag.TYPE_COMMENT),
-                        null);
+        return Tokenizer.fromString(errorCallback, code, EnumSet.of(interactive ? Tokenizer.Flag.INTERACTIVE : Tokenizer.Flag.EXEC_INPUT, Tokenizer.Flag.TYPE_COMMENT), null);
     }
 
     private static Tokenizer createTokenizer(String code) {
@@ -643,5 +641,13 @@ public class TokenizerTest {
 
     private static Tokenizer createInteractiveTokenizer(String code) {
         return createTokenizer(code, true);
+    }
+
+    private static String tokenToString(Tokenizer tokenizer, Token token) {
+        return "Token %s [%d, %d] (%d, %d) (%d, %d) '%s'".formatted(token.typeName(),
+                        token.startOffset, token.endOffset,
+                        token.sourceRange.startLine, token.sourceRange.startColumn,
+                        token.sourceRange.endLine, token.sourceRange.endColumn,
+                        tokenizer.getTokenCodePoints(token).toJavaString());
     }
 }

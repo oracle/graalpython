@@ -22,5 +22,5 @@ Module[1:0-2:43]
                                 Name[2:15-2:20] Value: "marks"
                     Op: NotEq
                     RHS: LONG[2:25-2:26] Value: 0
-            Msg: RAW[2:27-2:43] Value: "List is empty."
+            Msg: CODEPOINTS[2:27-2:43] Value: "List is empty."
         ---- End of avg function ----

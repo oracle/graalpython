@@ -52,7 +52,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Supplier;
 
-import com.oracle.graal.python.pegparser.PythonStringFactory.PythonStringBuilder;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
@@ -67,6 +66,7 @@ import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
@@ -116,7 +116,6 @@ public abstract class AbstractParser {
     private final Tokenizer tokenizer;
     final ErrorCallback errorCb;
     protected final NodeFactory factory;
-    final PythonStringFactory stringFactory;
     private final InputType startRule;
 
     private final EnumSet<Flags> flags;
@@ -146,13 +145,12 @@ public abstract class AbstractParser {
 
     protected abstract SSTNode runParser(InputType inputType);
 
-    AbstractParser(String source, SourceRange sourceRange, PythonStringFactory stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
+    AbstractParser(String source, SourceRange sourceRange, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
         this.currentPos = 0;
         this.tokens = new ArrayList<>();
-        this.tokenizer = Tokenizer.fromString(errorCb, stringFactory, source, getTokenizerFlags(startRule, flags), sourceRange);
+        this.tokenizer = Tokenizer.fromString(errorCb, source, getTokenizerFlags(startRule, flags), sourceRange);
         this.factory = new NodeFactory();
         this.errorCb = errorCb;
-        this.stringFactory = stringFactory;
         this.reservedKeywords = getReservedKeywords();
         this.softKeywords = getSoftKeywords();
         this.startRule = startRule;
@@ -301,7 +299,7 @@ public abstract class AbstractParser {
         if (token == null) {
             return null;
         }
-        return tokenizer.getTokenString(token);
+        return tokenizer.getTokenCodePoints(token).toJavaString();
     }
 
     /**
@@ -593,17 +591,15 @@ public abstract class AbstractParser {
      * _PyPegen_decode_fstring_part
      */
     private ExprTy.Constant decodeFStringPart(boolean isRaw, ExprTy.Constant constant, Token token) {
-        assert constant.value.kind == Kind.RAW;
-        int[] codePoints = stringFactory.toCodePoints(constant.value);
-        int len;
-        if (codePoints.length == 2 && codePoints[0] == codePoints[1] && (codePoints[0] == '{' || codePoints[0] == '}')) {
-            len = 1;
+        assert constant.value.kind == Kind.CODEPOINTS;
+        CodePoints cp = constant.value.getCodePoints();
+        CodePoints str;
+        if (cp.getLength() == 2 && cp.get(0) == cp.get(1) && (cp.get(0) == '{' || cp.get(0) == '}')) {
+            str = cp.withLength(1);
         } else {
-            len = codePoints.length;
+            str = StringParser.decodeString(this, isRaw || !cp.contains('\\'), cp, token);
         }
-        boolean isRawUpdated = isRaw || StringParser.indexOf(codePoints, 0, codePoints.length, '\\') < 0;
-        ConstantValue str = StringParser.decodeString(this, codePoints, isRawUpdated, 0, len, token);
-        return factory.createConstant(str, constant.getSourceRange());
+        return factory.createConstant(ConstantValue.ofCodePoints(str), constant.getSourceRange());
     }
 
     /**
@@ -640,8 +636,8 @@ public abstract class AbstractParser {
         ExprTy[] expr = unpackTopLevelJoinedStrs(rawExpressions);
         int nItems = expr.length;
 
-        String quoteStr = tokenizer.getTokenString(a);
-        boolean isRaw = quoteStr.indexOf('r') >= 0 || quoteStr.indexOf('R') >= 0;
+        CodePoints quoteStr = tokenizer.getTokenCodePoints(a);
+        boolean isRaw = quoteStr.contains('r') || quoteStr.contains('R');
 
         ExprTy[] seq = new ExprTy[nItems];
 
@@ -649,7 +645,7 @@ public abstract class AbstractParser {
         for (ExprTy item : expr) {
             if (item instanceof ExprTy.Constant constant) {
                 item = constant = decodeFStringPart(isRaw, constant, b);
-                if (constant.value.kind == Kind.RAW && stringFactory.isEmpty(constant.value)) {
+                if (constant.value.kind == Kind.CODEPOINTS && constant.value.getCodePoints().isEmpty()) {
                     continue;
                 }
             }
@@ -664,26 +660,24 @@ public abstract class AbstractParser {
      * _PyPegen_decoded_constant_from_token
      */
     public ExprTy decodedConstantFromToken(Token tok) {
-        ConstantValue cv = StringParser.decodeString(this, tokenizer.getCodePointsInput(), false, tok.startOffset, tok.endOffset - tok.startOffset, tok);
-        return factory.createConstant(cv, tok.getSourceRange());
+        CodePoints cv = StringParser.decodeString(this, false, tokenizer.getTokenCodePoints(tok), tok);
+        return factory.createConstant(ConstantValue.ofCodePoints(cv), tok.getSourceRange());
     }
 
     /**
      * _PyPegen_constant_from_token
      */
     public SSTNode constantFromToken(Token tok) {
-        return factory.createConstant(stringFactory.fromCodePoints(tokenizer.getCodePointsInput(), tok.startOffset, tok.endOffset - tok.startOffset), tok.sourceRange);
+        return factory.createConstant(ConstantValue.ofCodePoints(tokenizer.getTokenCodePoints(tok)), tok.sourceRange);
     }
 
     /**
      * _PyPegen_constant_from_string
      */
     public ExprTy constantFromString(Token tok) {
-        assert tok.startOffset < tokenizer.getCodePointsInputLength();
-        assert tok.endOffset <= tokenizer.getCodePointsInputLength();
-        int[] codePoints = tokenizer.getCodePointsInput();
-        String kind = codePoints[tok.startOffset] == 'u' ? "u" : null;
-        ConstantValue cv = StringParser.parseString(this, codePoints, tok);
+        CodePoints cp = tokenizer.getTokenCodePoints(tok);
+        String kind = cp.get(0) == 'u' ? "u" : null;
+        ConstantValue cv = StringParser.parseString(this, cp, tok);
         return factory.createConstant(cv, kind, tok.getSourceRange());
     }
 
@@ -709,7 +703,7 @@ public abstract class AbstractParser {
         if (debug != null) {
             int debugEndLine;
             int debugEndColumn;
-            ConstantValue debugMetadata;
+            CodePoints debugMetadata;
             if (conversion != null) {
                 debugEndLine = conversion.result.getSourceRange().startLine;
                 debugEndColumn = conversion.result.getSourceRange().startColumn;
@@ -723,7 +717,7 @@ public abstract class AbstractParser {
                 debugEndColumn = sourceRange.endColumn;
                 debugMetadata = closingBrace.metadata;
             }
-            ExprTy.Constant debugText = factory.createConstant(debugMetadata,
+            ExprTy.Constant debugText = factory.createConstant(ConstantValue.ofCodePoints(debugMetadata),
                             new SourceRange(sourceRange.startLine, sourceRange.startColumn + 1, debugEndLine, debugEndColumn - 1));
             return factory.createJoinedStr(new ExprTy[]{debugText, formattedValue},
                             new SourceRange(sourceRange.startLine, sourceRange.startColumn, debugEndLine, debugEndColumn));
@@ -803,7 +797,7 @@ public abstract class AbstractParser {
              * as in `_PyPegen_joined_str`
              */
             if (fStringFound && elem instanceof ExprTy.Constant constant &&
-                            constant.value.kind == Kind.RAW && stringFactory.isEmpty(constant.value)) {
+                            constant.value.kind == Kind.CODEPOINTS && constant.value.getCodePoints().isEmpty()) {
                 continue;
             }
 
@@ -816,7 +810,6 @@ public abstract class AbstractParser {
         ExprTy[] values = new ExprTy[nElements];
 
         /* build folded list */
-        PythonStringBuilder writer;
         curPos = 0;
         for (int i = 0; i < flattened.length; i++) {
             ExprTy elem = flattened[i];
@@ -835,13 +828,13 @@ public abstract class AbstractParser {
                      */
                     Object kind = elemConst.kind;
 
-                    writer = stringFactory.createBuilder(0);
+                    CodePoints.Builder writer = new CodePoints.Builder(0);
                     ExprTy.Constant lastElemConst = elemConst;
                     int j = i;
                     for (; j < flattened.length; j++) {
                         ExprTy currentElem = flattened[j];
                         if (currentElem instanceof ExprTy.Constant currentElemConst) {
-                            writer.appendConstantValue(currentElemConst.value);
+                            writer.appendCodePoints(currentElemConst.value.getCodePoints());
                             lastElemConst = currentElemConst;
                         } else {
                             break;
@@ -849,11 +842,11 @@ public abstract class AbstractParser {
                     }
                     i = j - 1;
 
-                    elem = elemConst = factory.createConstant(writer.build(), kind, firstElemConst.getSourceRange().withEnd(lastElemConst.getSourceRange()));
+                    elem = elemConst = factory.createConstant(ConstantValue.ofCodePoints(writer.build()), kind, firstElemConst.getSourceRange().withEnd(lastElemConst.getSourceRange()));
                 }
 
                 /* Drop all empty constant strings */
-                if (fStringFound && elemConst.value.kind == Kind.RAW && stringFactory.isEmpty(elemConst.value)) {
+                if (fStringFound && elemConst.value.kind == Kind.CODEPOINTS && elemConst.value.getCodePoints().isEmpty()) {
                     continue;
                 }
             }
@@ -922,7 +915,7 @@ public abstract class AbstractParser {
         // is parsed as an *empty* JoinedStr node, instead of having an empty constant
         // in it.
         ExprTy[] fixedSpec;
-        if (spec.length == 1 && spec[0] instanceof ExprTy.Constant constant && constant.value.kind == Kind.RAW && stringFactory.isEmpty(constant.value)) {
+        if (spec.length == 1 && spec[0] instanceof ExprTy.Constant constant && constant.value.kind == Kind.CODEPOINTS && constant.value.getCodePoints().isEmpty()) {
             fixedSpec = new ExprTy[0];
         } else {
             fixedSpec = spec;
@@ -1574,7 +1567,7 @@ public abstract class AbstractParser {
         return tokens.get(position);
     }
 
-    public record ResultTokenWithMetadata(ExprTy result, ConstantValue metadata) {
+    public record ResultTokenWithMetadata(ExprTy result, CodePoints metadata) {
     }
 
 }

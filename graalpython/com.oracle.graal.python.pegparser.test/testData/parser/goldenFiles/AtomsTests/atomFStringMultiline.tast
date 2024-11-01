@@ -11,7 +11,7 @@ Output:
 Module[1:0-5:16]
     JoinedStr[1:0-5:16]
          Values:
-            RAW[1:4-1:15] Value: "First line."
+            CODEPOINTS[1:4-1:15] Value: "First line."
             FormattedValue[1:15-4:3]
                 Value: 
                     BinOp[2:3-4:2]
@@ -19,4 +19,4 @@ Module[1:0-5:16]
                         LHS: Name[2:3-2:5] Value: "v1"
                         RHS: Name[4:0-4:2] Value: "v2"
                 Conversion: -1
-            RAW[4:3-5:13] Value: "\nAnother line."
+            CODEPOINTS[4:3-5:13] Value: "\nAnother line."

@@ -51,14 +51,14 @@ Module[1:0-12:31]
     Call[11:0-11:31]
         Target: Name[11:0-11:5] Value: "print"
         Args:
-            RAW[11:6-11:15] Value: "free > "
+            CODEPOINTS[11:6-11:15] Value: "free > "
             Attribute[11:17-11:30] 
                 Receiver: Name[11:17-11:18] Value: "c"
                 Attr: co_freevars
     Call[12:0-12:31]
         Target: Name[12:0-12:5] Value: "print"
         Args:
-            RAW[12:6-12:15] Value: "cell > "
+            CODEPOINTS[12:6-12:15] Value: "cell > "
             Attribute[12:17-12:30] 
                 Receiver: Name[12:17-12:18] Value: "c"
                 Attr: co_cellvars

@@ -39,7 +39,7 @@ Module[1:0-7:12]
                                             MatchValue[4:15-4:17]
                                                 Value: LONG[4:15-4:17] Value: 42
                                             MatchValue[4:20-4:25]
-                                                Value: RAW[4:20-4:25] Value: "abc"
+                                                Value: CODEPOINTS[4:20-4:25] Value: "abc"
                                 Name: z
                 Body:
                     Pass[5:8-5:12]

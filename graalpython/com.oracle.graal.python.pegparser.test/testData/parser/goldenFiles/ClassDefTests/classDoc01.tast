@@ -10,11 +10,11 @@ Output:
 Module[1:0-4:24]
     ClassDef[1:0-4:24] Test
         ---- Class body of Test ----
-        RAW[2:4-2:19] Value: "Class doc"
+        CODEPOINTS[2:4-2:19] Value: "Class doc"
         FunctionDef[3:4-4:24]
             Name:method
             ArgumentsTy[1:0-1:0]
             ---- Function body of method ----
-            RAW[4:8-4:24] Value: "Method doc"
+            CODEPOINTS[4:8-4:24] Value: "Method doc"
             ---- End of method function ----
         ---- End of Test class ----

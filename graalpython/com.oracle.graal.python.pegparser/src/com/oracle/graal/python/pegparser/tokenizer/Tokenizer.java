@@ -21,9 +21,6 @@ import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
-import com.oracle.graal.python.pegparser.PythonStringFactory;
-import com.oracle.graal.python.pegparser.PythonStringFactory.PythonStringBuilder;
-import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.tokenizer.Token.Kind;
 
 /**
@@ -95,7 +92,6 @@ public class Tokenizer {
     }
 
     private final ErrorCallback errorCallback;
-    private final PythonStringFactory stringFactory;
 
     // tok_new initialization is taken care of here
     private final boolean execInput;
@@ -169,12 +165,11 @@ public class Tokenizer {
     private final int srcStartLine;
     private final int srcStartColumn;
     private final Supplier<int[]> inputSupplier;
-    private ConstantValue tokenMetadata;
+    private CodePoints tokenMetadata;
     // error_ret
 
-    private Tokenizer(ErrorCallback errorCallback, PythonStringFactory stringFactory, int[] codePointsInput, EnumSet<Flag> flags, SourceRange inputSourceRange, Supplier<int[]> inputSupplier) {
+    private Tokenizer(ErrorCallback errorCallback, int[] codePointsInput, EnumSet<Flag> flags, SourceRange inputSourceRange, Supplier<int[]> inputSupplier) {
         this.errorCallback = errorCallback;
-        this.stringFactory = stringFactory;
         this.codePointsInput = codePointsInput;
         this.codePointsInputLength = codePointsInput.length;
         this.execInput = flags.contains(Flag.EXEC_INPUT);
@@ -199,7 +194,6 @@ public class Tokenizer {
      */
     private Tokenizer(Tokenizer t) {
         errorCallback = t.errorCallback;
-        stringFactory = t.stringFactory;
         execInput = t.execInput;
         codePointsInput = t.codePointsInput;
         codePointsInputLength = t.codePointsInputLength;
@@ -396,13 +390,13 @@ public class Tokenizer {
      * Equivalent of {@code PyTokenizer_FromString} and {@code decode_str}. The encoding of the
      * input is automatically detected using BOM and/or coding spec comment.
      */
-    public static Tokenizer fromBytes(ErrorCallback errorCallback, PythonStringFactory stringFactory, byte[] code, EnumSet<Flag> flags) {
+    public static Tokenizer fromBytes(ErrorCallback errorCallback, byte[] code, EnumSet<Flag> flags) {
         // we do not translate newlines or add a missing final newline. we deal
         // with those in the call to get the next character
         int sourceStart = getSourceStart(code);
         Charset fileEncoding = detectEncoding(sourceStart, code);
         int[] codePointsInput = charsToCodePoints(fileEncoding.decode(ByteBuffer.wrap(code, sourceStart, code.length)).array());
-        return new Tokenizer(errorCallback, stringFactory, codePointsInput, flags, null, null);
+        return new Tokenizer(errorCallback, codePointsInput, flags, null, null);
     }
 
     private static int[] charsToCodePoints(char[] chars) {
@@ -451,15 +445,15 @@ public class Tokenizer {
      * Equivalent of {@code PyTokenizer_FromUTF8}. No charset decoding is performed, BOM or coding
      * spec comment are ignored,
      */
-    public static Tokenizer fromString(ErrorCallback errorCallback, PythonStringFactory stringFactory, String code, EnumSet<Flag> flags, SourceRange inputSourceRange) {
-        return new Tokenizer(errorCallback, stringFactory, charsToCodePoints(code.toCharArray()), flags, inputSourceRange, null);
+    public static Tokenizer fromString(ErrorCallback errorCallback, String code, EnumSet<Flag> flags, SourceRange inputSourceRange) {
+        return new Tokenizer(errorCallback, charsToCodePoints(code.toCharArray()), flags, inputSourceRange, null);
     }
 
     /**
      * Equivalent of {@code _PyTokenizer_FromReadline}.
      */
-    public static Tokenizer fromReadline(ErrorCallback errorCallback, PythonStringFactory stringFactory, EnumSet<Flag> flags, Supplier<int[]> inputSupplier) {
-        return new Tokenizer(errorCallback, stringFactory, new int[0], flags, null, inputSupplier);
+    public static Tokenizer fromReadline(ErrorCallback errorCallback, EnumSet<Flag> flags, Supplier<int[]> inputSupplier) {
+        return new Tokenizer(errorCallback, new int[0], flags, null, inputSupplier);
     }
 
     // PyTokenizer_FromFile
@@ -1050,7 +1044,7 @@ public class Tokenizer {
                             }
                         } else if (tokenString.equals("async")) {
                             Token t = new Tokenizer(this).next();
-                            if (t.type == Token.Kind.NAME && getTokenString(t).equals("def")) {
+                            if (t.type == Token.Kind.NAME && getTokenCodePoints(t).toJavaString().equals("def")) {
                                 insideAsyncDef = true;
                                 indentationOfAsyncDef = currentIndentIndex;
                                 return createToken(Token.Kind.ASYNC);
@@ -1802,10 +1796,8 @@ public class Tokenizer {
     }
 
     private Token createToken(int kind, Object extraData, int pStart, int pEnd) {
-        ConstantValue metadata = tokenMetadata;
-        if (metadata != null) {
-            tokenMetadata = null;
-        }
+        CodePoints metadata = tokenMetadata;
+        tokenMetadata = null;
         if (kind == Token.Kind.ENDMARKER) {
             return new Token(kind, parensNestingLevel, pStart, pEnd, new SourceRange(currentLineNumber, -1, currentLineNumber, -1), extraData, metadata);
         }
@@ -1833,27 +1825,31 @@ public class Tokenizer {
         return new SourceRange(lineno, colOffset, endLineno, endColOffset);
     }
 
-    public String getTokenString(Token tok) {
-        String s;
+    public CodePoints getTokenCodePoints(Token tok) {
         if (tok.startOffset >= codePointsInputLength) {
-            return "";
+            return CodePoints.EMPTY;
         } else if (tok.endOffset >= codePointsInputLength) {
-            s = new String(codePointsInput, tok.startOffset, codePointsInputLength - tok.startOffset);
+            return CodePoints.fromBuffer(codePointsInput, tok.startOffset, codePointsInputLength - tok.startOffset);
         } else {
-            s = new String(codePointsInput, tok.startOffset, tok.endOffset - tok.startOffset);
+            return CodePoints.fromBuffer(codePointsInput, tok.startOffset, tok.endOffset - tok.startOffset);
         }
-        return s;
     }
 
-    public String toString(Token token) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Token ");
-        sb.append(token.typeName());
-        sb.append(" [").append(token.startOffset).append(", ").append(token.endOffset).append("]");
-        sb.append(" (").append(token.sourceRange.startLine).append(", ").append(token.sourceRange.startColumn);
-        sb.append(") (").append(token.sourceRange.endLine).append(", ").append(token.sourceRange.endColumn).append(") '");
-        sb.append(getTokenString(token)).append("'");
-        return sb.toString();
+    public CodePoints getTokenLine(int tokenType) {
+        int lineStart;
+        if (tokenType == Kind.STRING || tokenType == Kind.FSTRING_MIDDLE) {
+            lineStart = multiLineStartIndex;
+        } else {
+            lineStart = lineStartIndex;
+        }
+        int size = codePointsInputLength - lineStart;
+        if (size > 1 && implicitNewline) {
+            size -= 1;
+        }
+        if (size <= 0) {
+            return CodePoints.EMPTY;
+        }
+        return CodePoints.fromBuffer(codePointsInput, lineStart, size);
     }
 
     public SourceRange extendRangeToCurrentPosition(SourceRange rangeStart) {
@@ -1918,16 +1914,12 @@ public class Tokenizer {
         return lineStartIndex;
     }
 
-    public int getMultiLineStartIndex() {
-        return multiLineStartIndex;
-    }
-
     public int getCodePointsInputLength() {
         return codePointsInputLength;
     }
 
-    public int[] getCodePointsInput() {
-        return codePointsInput;
+    public CodePoints getCodePointsInput() {
+        return CodePoints.fromBuffer(codePointsInput, 0, codePointsInputLength);
     }
 
     public boolean isImplicitNewline() {
@@ -2005,7 +1997,7 @@ public class Tokenizer {
             }
         }
         if (hashDetected) {
-            PythonStringBuilder sb = stringFactory.createBuilder(tokMode.debugExprEnd - tokMode.debugExprStart);
+            CodePoints.Builder sb = new CodePoints.Builder(tokMode.debugExprEnd - tokMode.debugExprStart);
             for (int i = tokMode.debugExprStart; i < tokMode.debugExprEnd; ++i) {
                 if (codePointsInput[i] == '#') {
                     while (i < tokMode.debugExprEnd) {
@@ -2021,7 +2013,7 @@ public class Tokenizer {
             }
             tokenMetadata = sb.build();
         } else {
-            tokenMetadata = stringFactory.fromCodePoints(codePointsInput, tokMode.debugExprStart, tokMode.debugExprEnd - tokMode.debugExprStart);
+            tokenMetadata = CodePoints.fromBuffer(codePointsInput, tokMode.debugExprStart, tokMode.debugExprEnd - tokMode.debugExprStart);
         }
     }
 

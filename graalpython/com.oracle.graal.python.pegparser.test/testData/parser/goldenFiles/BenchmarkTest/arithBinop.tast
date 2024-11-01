@@ -117,7 +117,7 @@ Module[1:0-19:16]
         Call[15:4-15:22]
             Target: Name[15:4-15:9] Value: "print"
             Args:
-                RAW[15:10-15:15] Value: "sum"
+                CODEPOINTS[15:10-15:15] Value: "sum"
                 Name[15:17-15:21] Value: "sum_"
         ---- End of measure function ----
     FunctionDef[18:0-19:16]

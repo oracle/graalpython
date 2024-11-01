@@ -12,7 +12,7 @@ Module[1:0-2:33]
     Assign[2:0-2:33]
         LHS: 
             Subscript[2:0-2:25] Context: Store
-                Slice: RAW[2:21-2:24] Value: "j"
+                Slice: CODEPOINTS[2:21-2:24] Value: "j"
                 Value: 
                     Attribute[2:0-2:20] 
                         Receiver: Name[2:0-2:4] Value: "ahoj"

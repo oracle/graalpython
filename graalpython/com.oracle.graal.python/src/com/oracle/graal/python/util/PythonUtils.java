@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
+import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CallTarget;
@@ -112,6 +113,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 import sun.misc.Unsafe;
 
@@ -237,6 +239,22 @@ public final class PythonUtils {
             result[i] = src[i];
         }
         return result;
+    }
+
+    @TruffleBoundary
+    public static TruffleString codePointsToTruffleString(CodePoints cp) {
+        return TruffleString.fromIntArrayUTF32Uncached(cp.getBuffer(), cp.getOffset(), cp.getLength()).switchEncodingUncached(TS_ENCODING);
+    }
+
+    @TruffleBoundary
+    public static CodePoints truffleStringToCodePoints(TruffleString ts) {
+        int[] buf = new int[ts.codePointLengthUncached(TS_ENCODING)];
+        TruffleStringIterator it = ts.createCodePointIteratorUncached(TS_ENCODING);
+        int i = 0;
+        while (it.hasNext()) {
+            buf[i++] = it.nextUncached();
+        }
+        return CodePoints.fromBuffer(buf, 0, i);
     }
 
     // parser.c:_Py_Mangle
@@ -867,8 +885,8 @@ public final class PythonUtils {
                 return factory.createInt(v.getBigInteger());
             case BYTES:
                 return factory.createBytes(v.getBytes());
-            case RAW:
-                return v.getRaw(TruffleString.class);
+            case CODEPOINTS:
+                return codePointsToTruffleString(v.getCodePoints());
             case TUPLE:
             case FROZENSET:
                 // These cases cannot happen:

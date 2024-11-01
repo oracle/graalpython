@@ -104,7 +104,7 @@ public class ParserTestBase {
         if (interactiveTerminal) {
             flags.add(Flags.INTERACTIVE_TERMINAL);
         }
-        Parser parser = new Parser(src, new DefaultStringFactoryImpl(), errorCallback, inputType, flags, FEATURE_VERSION);
+        Parser parser = new Parser(src, errorCallback, inputType, flags, FEATURE_VERSION);
         return (ModTy) parser.parse();
     }
 
@@ -232,7 +232,7 @@ public class ParserTestBase {
                 fail("Unexpected call to reportIncompleteSource");
             }
         };
-        Parser parser = new Parser(source, new DefaultStringFactoryImpl(), errorCb, InputType.FILE, EnumSet.noneOf(Flags.class), FEATURE_VERSION);
+        Parser parser = new Parser(source, errorCb, InputType.FILE, EnumSet.noneOf(Flags.class), FEATURE_VERSION);
         parser.parse();
         assertEquals(Arrays.asList(expectedErrors), errors);
     }

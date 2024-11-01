@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Token.Kind;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.StatusCode;
@@ -88,11 +89,13 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         private static final TruffleString T_EOF = tsLiteral("EOF");
+        private static final CodePoints CP_LF = CodePoints.fromBuffer(new int[]{'\n'}, 0, 1);
+        private static final CodePoints CP_CRLF = CodePoints.fromBuffer(new int[]{'\r', '\n'}, 0, 2);
 
         @Specialization
         static PTuple next(PTokenizerIter self,
                         @Bind("this") Node inliningTarget,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayUTF32Node,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -100,13 +103,13 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raiseStopIteration(T_EOF);
             }
             Token token = self.getNextToken();
-            String tokenStr = self.getTokenString(token);
+            CodePoints tokenCp = self.getTokenCodePoints(token);
             int type = token.type;
             boolean isTrailingToken = false;
             if (type == Kind.ENDMARKER || (type == Kind.DEDENT && self.tokenizer.getDone() == StatusCode.EOF)) {
                 isTrailingToken = true;
             }
-            TruffleString line = self.tokenizer.isExtraTokens() && isTrailingToken ? TS_ENCODING.getEmpty() : self.getLine(token, fromIntArrayUTF32Node);
+            TruffleString line = self.tokenizer.isExtraTokens() && isTrailingToken ? TS_ENCODING.getEmpty() : self.getLine(token, fromIntArrayUTF32Node, switchEncodingNode);
 
             int startLine = token.sourceRange.startLine;
             int endLine = token.sourceRange.endLine;
@@ -129,30 +132,30 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
                     type = Kind.NAME;
                 } else if (type == Kind.NEWLINE) {
                     if (!self.tokenizer.isImplicitNewline()) {
-                        if (!tokenStr.isEmpty() && tokenStr.charAt(0) == '\r') {
-                            tokenStr = "\r\n";
+                        if (!tokenCp.isEmpty() && tokenCp.get(0) == '\r') {
+                            tokenCp = CP_CRLF;
                         } else {
-                            tokenStr = "\n";
+                            tokenCp = CP_LF;
                         }
                     } else {
-                        tokenStr = "";
+                        tokenCp = CodePoints.EMPTY;
                     }
                     endColumn++;
                 } else if (type == Kind.NL) {
                     if (self.tokenizer.isImplicitNewline()) {
-                        tokenStr = "";
+                        tokenCp = CodePoints.EMPTY;
                     }
                 }
             } else if (type == Kind.INDENT || type == Kind.DEDENT) {
                 startColumn = -1;
                 endColumn = -1;
             } else if (type == Kind.NEWLINE) {
-                tokenStr = "";
+                tokenCp = CodePoints.EMPTY;
             }
 
             return factory.createTuple(new Object[]{
                             type,
-                            fromJavaStringNode.execute(tokenStr, TS_ENCODING),
+                            switchEncodingNode.execute(fromIntArrayUTF32Node.execute(tokenCp.getBuffer(), tokenCp.getOffset(), tokenCp.getLength()), TS_ENCODING),
                             factory.createTuple(new Object[]{startLine, startColumn}),
                             factory.createTuple(new Object[]{endLine, endColumn}),
                             line

@@ -731,12 +731,12 @@ public final class Parser extends AbstractParser {
     private static final int _TMP_367_ID = 1610;
     private static final int _TMP_368_ID = 1611;
 
-    public Parser(String source, SourceRange sourceRange, PythonStringFactory stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
-        super(source, sourceRange, stringFactory, errorCb, startRule, flags, featureVersion);
+    public Parser(String source, SourceRange sourceRange, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
+        super(source, sourceRange, errorCb, startRule, flags, featureVersion);
     }
 
-    public Parser(String source, PythonStringFactory stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
-        super(source, null, stringFactory, errorCb, startRule, flags, featureVersion);
+    public Parser(String source, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
+        super(source, null, errorCb, startRule, flags, featureVersion);
     }
 
     // file: statements? $

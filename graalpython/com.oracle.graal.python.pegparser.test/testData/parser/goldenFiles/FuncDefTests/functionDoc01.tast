@@ -12,6 +12,6 @@ Module[2:0-4:16]
         Name:test
         ArgumentsTy[1:0-1:0]
         ---- Function body of test ----
-        RAW[3:4-3:34] Value: "this should be documentation"
-        Return[4:4-4:16] RAW[4:11-4:16] Value: "bla"
+        CODEPOINTS[3:4-3:34] Value: "this should be documentation"
+        Return[4:4-4:16] CODEPOINTS[4:11-4:16] Value: "bla"
         ---- End of test function ----

@@ -14,7 +14,7 @@ Module[2:0-3:22]
                 ArgTy[2:8-2:12] par1
                 ArgTy[2:21-2:25] par2
             Defaults:
-                RAW[2:13-2:19] Value: "ahoj"
+                CODEPOINTS[2:13-2:19] Value: "ahoj"
                 LONG[2:28-2:30] Value: 22
         ---- Function body of foo ----
         Return[3:4-3:22] 

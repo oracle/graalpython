@@ -69,7 +69,7 @@ Module[1:0-23:22]
                                                     Attr: join
                                             Args:
                                                 Name[5:40-5:49] Value: "path_item"
-                                                RAW[5:51-5:61] Value: "EGG-INFO"
+                                                CODEPOINTS[5:51-5:61] Value: "EGG-INFO"
                 Return[8:8-8:14]
         Assign[10:4-10:37]
             LHS: Name[10:4-10:11] Value: "entries" Store

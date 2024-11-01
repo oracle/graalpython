@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.pegparser.tokenizer;
 
-import com.oracle.graal.python.pegparser.sst.ConstantValue;
-
 /**
  * Kept close to CPython's token.c
  */
@@ -196,9 +194,9 @@ public class Token {
     public final Object extraData;
     public final int startOffset;
     public final int endOffset;
-    public final ConstantValue metadata;
+    public final CodePoints metadata;
 
-    public Token(int type, int level, int startOffset, int endOffset, SourceRange sourceRange, Object extraData, ConstantValue metadata) {
+    public Token(int type, int level, int startOffset, int endOffset, SourceRange sourceRange, Object extraData, CodePoints metadata) {
         this.type = type;
         this.level = level;
         this.startOffset = startOffset;

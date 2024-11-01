@@ -335,8 +335,8 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
                 double[] val = value.getComplex();
                 sb.append(String.format("%g%+gj", val[0], val[1]));
                 break;
-            case RAW:
-                appendEscapedString(sb, value.getRaw(String.class));
+            case CODEPOINTS:
+                appendEscapedString(sb, value.getCodePoints().toJavaString());
                 break;
             case ELLIPSIS:
             case NONE:

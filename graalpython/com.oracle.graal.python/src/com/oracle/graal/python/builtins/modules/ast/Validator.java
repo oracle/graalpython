@@ -734,7 +734,7 @@ final class Validator implements SSTreeVisitor<Void> {
                 case DOUBLE:
                 case BYTES:
                 case COMPLEX:
-                case RAW:
+                case CODEPOINTS:
                     return;
             }
             throw raiseValueError(ErrorMessages.UNEXPECTED_CONSTANT_INSIDE_OF_A_LITERAL_PATTERN);
