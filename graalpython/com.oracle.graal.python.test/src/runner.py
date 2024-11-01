@@ -69,15 +69,6 @@ UNIT_TEST_ROOT = (DIR / 'tests').resolve()
 TAGGED_TEST_ROOT = (DIR.parent.parent / 'lib-python' / '3' / 'test').resolve()
 IS_GRAALPY = sys.implementation.name == 'graalpy'
 
-if sys.implementation.version < (3, 12):
-    # XXX Temporary hack: python 3.12 will have a toml parser in standard library, for now we load vendored one from pip
-    [pip_wheel] = (DIR.parent.parent / 'lib-python' / '3' / 'ensurepip' / '_bundled').glob('pip*.whl')
-    sys.path.append(pip_wheel)
-
-    sys.path.pop()
-else:
-    pass
-
 
 class Logger:
     report_incomplete = sys.stdout.isatty()
