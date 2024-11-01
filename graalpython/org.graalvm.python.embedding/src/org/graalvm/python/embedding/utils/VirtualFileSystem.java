@@ -100,7 +100,7 @@ public final class VirtualFileSystem implements FileSystem, AutoCloseable {
     /*
      * Root of the virtual filesystem in the resources.
      */
-    static final String VFS_ROOT = "/org.graalvm.python.vfs";
+    private static final String VFS_ROOT = "/org.graalvm.python.vfs";
 
     static final String VFS_HOME = "home";
     static final String VFS_VENV = "venv";

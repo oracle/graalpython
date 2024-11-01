@@ -82,6 +82,7 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.polyglot.io.IOAccess;
 import org.graalvm.python.embedding.utils.GraalPyResources;
@@ -884,6 +885,62 @@ public class VirtualFileSystemTest {
             checkException(IllegalArgumentException.class, () -> VirtualFileSystem.newBuilder().unixMountPoint("X:\\test"));
             checkException(InvalidPathException.class, () -> VirtualFileSystem.newBuilder().unixMountPoint("/test/\0"));
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void pythonPathsTest() throws IOException {
+        Context ctx = GraalPyResources.createContext();
+        String getPathsSource = "import sys; [__graalpython__.get_python_home_paths(), sys.path, sys.executable]";
+
+        Value paths = ctx.eval("python", getPathsSource);
+        String defaultMountPoint = VirtualFileSystem.newBuilder().build().getMountPoint();
+        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs" : "/graalpy_vfs", defaultMountPoint);
+        checkPaths(paths.as(List.class), defaultMountPoint);
+
+        ctx = GraalPyResources.contextBuilder().build();
+        paths = ctx.eval("python", getPathsSource);
+        checkPaths(paths.as(List.class), defaultMountPoint);
+
+        VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
+                        unixMountPoint(VFS_UNIX_MOUNT_POINT).//
+                        windowsMountPoint(VFS_WIN_MOUNT_POINT).build();
+        assertEquals(VFS_MOUNT_POINT, vfs.getMountPoint());
+        ctx = GraalPyResources.contextBuilder(vfs).build();
+        paths = ctx.eval("python", getPathsSource);
+        checkPaths(paths.as(List.class), vfs.getMountPoint(), true);
+
+        Path resourcesDir = Files.createTempDirectory("python-resources");
+        ctx = GraalPyResources.contextBuilder(resourcesDir).build();
+        paths = ctx.eval("python", getPathsSource);
+        checkPaths(paths.as(List.class), resourcesDir.toString());
+    }
+
+    private static void checkPaths(List<Object> l, String pathPrefix) {
+        checkPaths(l, pathPrefix, false);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void checkPaths(List<Object> l, String pathPrefix, boolean checkHome) {
+        // python.PythonHome
+        // TODO how to check python.PythonHome?
+        // /org.graalvm.python.vfs/home has to be in fileslist.txt
+        // - if it is in fileslist.txt, than it also has to contain the whole stdlib,
+        // or other tests will fail when trying to load python
+        // - the pythonHome value is implicitly covered in maven and gradle plugin tests
+        // if (checkHome) {
+        // assertTrue(((String) l.get(0)).contains(pathPrefix + File.separator + "home" +
+        // File.separator +
+        // "lib-graalpython"));
+        // assertTrue(((String) l.get(0)).contains(pathPrefix + File.separator + "home" +
+        // File.separator +
+        // "lib-python" + File.separator + "3"));
+        // }
+
+        // option python.PythonPath
+        assertTrue(((List<Object>) l.get(1)).contains(pathPrefix + File.separator + "src"));
+        // option python.Executable
+        assertEquals(l.get(2), pathPrefix + (IS_WINDOWS ? "\\venv\\Scripts\\python.exe" : "/venv/bin/python"));
     }
 
     private static Builder addTestOptions(Builder builder) {
