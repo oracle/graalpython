@@ -850,7 +850,7 @@ def read_tags(test_file: Path, config: Config) -> list[TestId]:
     if tag_file.exists():
         with open(tag_file) as f:
             for line in f:
-                test = line.strip().replace('*graalpython.lib-python.3.', '').replace('*', '')
+                test = line.strip()
                 tags.append(TestId(test_file, test))
         return tags
     return tags
