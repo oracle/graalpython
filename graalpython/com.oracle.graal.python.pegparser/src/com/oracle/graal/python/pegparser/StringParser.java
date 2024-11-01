@@ -50,6 +50,8 @@ import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 
 import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
+import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
+import com.oracle.graal.python.pegparser.tokenizer.CodePoints.Builder;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Token.Kind;
@@ -62,8 +64,9 @@ final class StringParser {
     /**
      * _PyPegen_parse_string
      */
-    static ConstantValue parseString(AbstractParser parser, int[] codePoints, Token token) {
-        int s = token.startOffset;
+    static ConstantValue parseString(AbstractParser parser, CodePoints cp, Token token) {
+        int[] codePoints = cp.getBuffer();
+        int s = cp.getOffset();
         boolean bytesmode = false;
         boolean rawmode = false;
         int quote = codePoints[s];
@@ -82,7 +85,7 @@ final class StringParser {
         }
         assert quote == '\'' || quote == '"';
         s++;
-        int len = token.endOffset - s;
+        int len = cp.getLength() - (s - cp.getOffset());
         assert len >= 1;
         len--;
         assert codePoints[s + len] == quote : "last quote char must match the first";
@@ -107,17 +110,17 @@ final class StringParser {
             }
             return ConstantValue.ofBytes(decodeBytesWithEscapes(parser, codePoints, s, len, token));
         }
-        return decodeString(parser, codePoints, rawmode, s, len, token);
+        return ConstantValue.ofCodePoints(decodeString(parser, rawmode, CodePoints.fromBuffer(codePoints, s, len), token));
     }
 
     /**
      * _PyPegen_decode_string
      */
-    static ConstantValue decodeString(AbstractParser parser, int[] codePoints, boolean raw, int s, int len, Token token) {
+    static CodePoints decodeString(AbstractParser parser, boolean raw, CodePoints cp, Token token) {
         if (raw) {
-            return parser.stringFactory.fromCodePoints(codePoints, s, len);
+            return cp;
         }
-        return decodeUnicodeWithEscapes(parser, codePoints, s, len, token);
+        return decodeUnicodeWithEscapes(parser, cp, token);
     }
 
     /**
@@ -237,13 +240,18 @@ final class StringParser {
         return writer.build();
     }
 
-    private static ConstantValue decodeUnicodeWithEscapes(AbstractParser parser, int[] codePoints, int start, int len, Token token) {
-        int end = start + len;
+    private static CodePoints decodeUnicodeWithEscapes(AbstractParser parser, CodePoints cp, Token token) {
+        if (!cp.contains('\\')) {
+            return cp;
+        }
+        int[] codePoints = cp.getBuffer();
+        int start = cp.getOffset();
+        int end = start + cp.getLength();
         int backslashIndex = indexOf(codePoints, start, end, '\\');
         if (backslashIndex < 0) {
-            return parser.stringFactory.fromCodePoints(codePoints, start, end - start);
+            return CodePoints.fromBuffer(codePoints, start, end - start);
         }
-        PythonStringFactory.PythonStringBuilder sb = parser.stringFactory.createBuilder(end - start);
+        CodePoints.Builder sb = new Builder(end - start);
         boolean emittedDeprecationWarning = false;
         int substringStart = start;
         do {
@@ -271,7 +279,7 @@ final class StringParser {
         return sb.build();
     }
 
-    private static int processEscapeSequence(SourceRange sourceRange, ErrorCallback errorCallback, int[] codePoints, int startIndex, int end, PythonStringFactory.PythonStringBuilder sb) {
+    private static int processEscapeSequence(SourceRange sourceRange, ErrorCallback errorCallback, int[] codePoints, int startIndex, int end, CodePoints.Builder sb) {
         int cp = codePoints[startIndex];
         int i = startIndex + 1;
         return switch (cp) {
@@ -410,7 +418,7 @@ final class StringParser {
     }
 
     /**
-     * Replace '/N{Unicode Character Name}' with the code point of the character.
+     * Replace '\N{Unicode Character Name}' with the code point of the character.
      *
      * @param codePoints a text that contains /N{...} escape sequence
      * @param sb string builder where the result code point will be written
@@ -418,7 +426,7 @@ final class StringParser {
      * @param end end of the input
      * @return offset after the close brace or {@code -1} if an error was signaled
      */
-    private static int doCharacterName(int[] codePoints, SourceRange sourceRange, PythonStringFactory.PythonStringBuilder sb, int offset, int end, ErrorCallback errorCallback) {
+    private static int doCharacterName(int[] codePoints, SourceRange sourceRange, CodePoints.Builder sb, int offset, int end, ErrorCallback errorCallback) {
         if (offset >= end) {
             errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
             return -1;

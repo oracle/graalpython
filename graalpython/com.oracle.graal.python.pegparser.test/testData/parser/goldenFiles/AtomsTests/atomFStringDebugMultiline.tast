@@ -9,7 +9,7 @@ Output:
 Module[1:0-3:6]
     JoinedStr[1:0-3:6]
          Values:
-            RAW[1:4-3:2] Value: "ab\n+ \nc="
+            CODEPOINTS[1:4-3:2] Value: "ab\n+ \nc="
             FormattedValue[1:5-3:3]
                 Value: 
                     BinOp[1:6-3:1]

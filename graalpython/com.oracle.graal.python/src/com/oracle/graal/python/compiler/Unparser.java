@@ -41,6 +41,7 @@
 package com.oracle.graal.python.compiler;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -159,8 +160,8 @@ public class Unparser implements SSTreeVisitor<Void> {
     }
 
     private void appendFStringElement(ExprTy e, boolean isFormatSpec) {
-        if (e instanceof ExprTy.Constant) {
-            appendFString(((ExprTy.Constant) e).value.getRaw(TruffleString.class));
+        if (e instanceof ExprTy.Constant c) {
+            appendFString(codePointsToTruffleString(c.value.getCodePoints()));
         } else if (e instanceof ExprTy.JoinedStr) {
             appendJoinedStr((ExprTy.JoinedStr) e, isFormatSpec);
         } else if (e instanceof ExprTy.FormattedValue) {
@@ -540,8 +541,8 @@ public class Unparser implements SSTreeVisitor<Void> {
             case BOOLEAN:
                 appendStr(value.getBoolean() ? "True" : "False");
                 break;
-            case RAW:
-                appendStr(StringNodes.StringReprNode.getUncached().execute(value.getRaw(TruffleString.class)));
+            case CODEPOINTS:
+                appendStr(StringNodes.StringReprNode.getUncached().execute(codePointsToTruffleString(value.getCodePoints())));
                 break;
             case BIGINTEGER:
                 appendStr(value.getBigInteger().toString());

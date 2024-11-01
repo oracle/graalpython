@@ -7,7 +7,7 @@ Output:
 Module[1:0-1:8]
     JoinedStr[1:0-1:8]
          Values:
-            RAW[1:2-1:6] Value: "ab="
+            CODEPOINTS[1:2-1:6] Value: "ab="
             FormattedValue[1:3-1:7]
                 Value: Name[1:4-1:5] Value: "b"
                 Conversion: 114

@@ -10,6 +10,6 @@ Module[1:0-1:23]
         Test: 
             NamedExpr[1:3-1:17]
                 Target: Name[1:3-1:7] Value: "spam" Store
-                Value: RAW[1:11-1:17] Value: "eggs"
+                Value: CODEPOINTS[1:11-1:17] Value: "eggs"
         Then:
             Pass[1:19-1:23]

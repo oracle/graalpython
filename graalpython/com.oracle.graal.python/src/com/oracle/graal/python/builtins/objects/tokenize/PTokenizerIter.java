@@ -46,9 +46,9 @@ import java.util.EnumSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.compiler.PythonStringFactoryImpl;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Token.Kind;
@@ -68,6 +68,7 @@ public final class PTokenizerIter extends PythonBuiltinObject {
     private int lastLineNo = -1;
     private TruffleString lastLine;
     private boolean done;
+    private Source cachedSource;
 
     @TruffleBoundary
     public PTokenizerIter(Object cls, Shape instanceShape, Supplier<int[]> inputSupplier, boolean extraTokens) {
@@ -77,7 +78,7 @@ public final class PTokenizerIter extends PythonBuiltinObject {
         if (extraTokens) {
             flags.add(Flag.EXTRA_TOKENS);
         }
-        tokenizer = Tokenizer.fromReadline(errorCallback, new PythonStringFactoryImpl(), flags, inputSupplier);
+        tokenizer = Tokenizer.fromReadline(errorCallback, flags, inputSupplier);
     }
 
     boolean isDone() {
@@ -98,28 +99,20 @@ public final class PTokenizerIter extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    String getTokenString(Token token) {
-        return tokenizer.getTokenString(token);
+    CodePoints getTokenCodePoints(Token token) {
+        return tokenizer.getTokenCodePoints(token);
     }
 
-    TruffleString getLine(Token token, TruffleString.FromIntArrayUTF32Node fromIntArrayUTF32Node) {
+    TruffleString getLine(Token token, TruffleString.FromIntArrayUTF32Node fromIntArrayUTF32Node, TruffleString.SwitchEncodingNode switchEncodingNode) {
         if (tokenizer.getCurrentLineNumber() == lastLineNo) {
             return lastLine;
         }
-        int lineStart;
-        if (token.type == Kind.STRING || token.type == Kind.FSTRING_MIDDLE) {
-            lineStart = tokenizer.getMultiLineStartIndex();
+        CodePoints line = tokenizer.getTokenLine(token.type);
+        if (line.isEmpty()) {
+            lastLine = TS_ENCODING.getEmpty();
         } else {
-            lineStart = tokenizer.getLineStartIndex();
+            lastLine = switchEncodingNode.execute(fromIntArrayUTF32Node.execute(line.getBuffer(), line.getOffset(), line.getLength()), TS_ENCODING);
         }
-        int size = tokenizer.getCodePointsInputLength() - lineStart;
-        if (size > 1 && tokenizer.isImplicitNewline()) {
-            size -= 1;
-        }
-        if (size <= 0) {
-            return TS_ENCODING.getEmpty();
-        }
-        lastLine = fromIntArrayUTF32Node.execute(tokenizer.getCodePointsInput(), lineStart, size);
         lastLineNo = tokenizer.getCurrentLineNumber();
         return lastLine;
     }
@@ -158,8 +151,11 @@ public final class PTokenizerIter extends PythonBuiltinObject {
     }
 
     private Source getSource() {
-        String src = new String(tokenizer.getCodePointsInput(), 0, tokenizer.getCodePointsInputLength());
-        return Source.newBuilder(PythonLanguage.ID, src, "<string>").build();
+        if (cachedSource == null) {
+            String src = tokenizer.getCodePointsInput().toJavaString();
+            cachedSource = Source.newBuilder(PythonLanguage.ID, src, "<string>").build();
+        }
+        return cachedSource;
     }
 
 }

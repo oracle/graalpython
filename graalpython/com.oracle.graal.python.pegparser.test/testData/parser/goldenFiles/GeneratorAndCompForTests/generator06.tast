@@ -26,7 +26,7 @@ Module[1:0-10:23]
                     Target: Name[2:11-2:12] Value: "a"
             Then:
                 Yield[3:12-3:24]
-                    RAW[3:18-3:24] Value: "neco"
+                    CODEPOINTS[3:18-3:24] Value: "neco"
                 Return[4:12-4:18]
         If[5:8-9:32]
             Test: 
@@ -36,7 +36,7 @@ Module[1:0-10:23]
                     RHS: NONE[5:26-5:30] Value: null
             Then:
                 Yield[6:12-6:22]
-                    RAW[6:18-6:22] Value: "\n"
+                    CODEPOINTS[6:18-6:22] Value: "\n"
                 If[7:12-9:32]
                     Test: 
                         Compare[7:15-7:33]
@@ -60,5 +60,5 @@ Module[1:0-10:23]
                         Yield[9:16-9:32]
                             Name[9:22-9:32] Value: "caretspace"
         Yield[10:8-10:23]
-            RAW[10:14-10:23] Value: "message"
+            CODEPOINTS[10:14-10:23] Value: "message"
         ---- End of format_exception_only function ----

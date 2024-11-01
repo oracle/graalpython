@@ -12,7 +12,7 @@ Output:
 Module[1:0-5:22]
     ClassDef[1:0-5:22] MyClass
         ---- Class body of MyClass ----
-        RAW[2:1-2:29] Value: "A simple example class"
+        CODEPOINTS[2:1-2:29] Value: "A simple example class"
         Assign[3:1-3:10]
             LHS: Name[3:1-3:2] Value: "i" Store
             RHS: LONG[3:5-3:10] Value: 12345
@@ -22,6 +22,6 @@ Module[1:0-5:22]
                 Args:
                     ArgTy[4:7-4:11] self
             ---- Function body of f ----
-            Return[5:2-5:22] RAW[5:9-5:22] Value: "hello world"
+            Return[5:2-5:22] CODEPOINTS[5:9-5:22] Value: "hello world"
             ---- End of f function ----
         ---- End of MyClass class ----

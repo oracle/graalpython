@@ -6,4 +6,4 @@ def'''
 Output:
 -------
 Module[1:0-2:6]
-    RAW[1:0-2:6] Value: "abc\ndef"
+    CODEPOINTS[1:0-2:6] Value: "abc\ndef"

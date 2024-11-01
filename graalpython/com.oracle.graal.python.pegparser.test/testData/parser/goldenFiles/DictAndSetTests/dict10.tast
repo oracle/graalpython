@@ -10,10 +10,10 @@ Module[1:0-1:46]
             Val: 
                 Dict[1:3-1:31]
                     Values:
-                        Key: RAW[1:4-1:7] Value: "a"
-                        Val: RAW[1:9-1:16] Value: "hello"
-                        Key: RAW[1:18-1:21] Value: "b"
-                        Val: RAW[1:23-1:30] Value: "world"
+                        Key: CODEPOINTS[1:4-1:7] Value: "a"
+                        Val: CODEPOINTS[1:9-1:16] Value: "hello"
+                        Key: CODEPOINTS[1:18-1:21] Value: "b"
+                        Val: CODEPOINTS[1:23-1:30] Value: "world"
             Val: 
                 Dict[1:35-1:45]
                     Values:

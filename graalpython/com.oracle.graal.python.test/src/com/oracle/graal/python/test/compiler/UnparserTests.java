@@ -53,6 +53,7 @@ import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.test.PythonTests;
 
@@ -71,8 +72,8 @@ public class UnparserTests extends PythonTests {
     @Test
     public void testUnparseConstant() {
         assertEquals("...", unparseConstant(ConstantValue.ELLIPSIS));
-        assertEquals("'abc'", unparseConstant(ConstantValue.ofRaw(ts("abc"))));
-        assertEquals("u'abc'", unparseConstant(ConstantValue.ofRaw(ts("abc")), "u"));
+        assertEquals("'abc'", unparseConstant(ConstantValue.ofCodePoints(CodePoints.fromJavaString("abc"))));
+        assertEquals("u'abc'", unparseConstant(ConstantValue.ofCodePoints(CodePoints.fromJavaString("abc")), "u"));
         ConstantValue[] empty = new ConstantValue[0];
         ConstantValue[] single = new ConstantValue[]{ConstantValue.ofLong(42)};
         ConstantValue[] multiple = new ConstantValue[]{
@@ -80,7 +81,7 @@ public class UnparserTests extends PythonTests {
                         ConstantValue.ofDouble(3.14),
                         ConstantValue.FALSE,
                         ConstantValue.ELLIPSIS,
-                        ConstantValue.ofRaw(ts("abc")),
+                        ConstantValue.ofCodePoints(CodePoints.fromJavaString("abc")),
                         ConstantValue.ofBytes("xyz".getBytes())
         };
         assertEquals("()", unparseConstant(ConstantValue.ofTuple(empty)));

@@ -148,6 +148,7 @@ import static com.oracle.graal.python.compiler.OpCodes.UNPACK_SEQUENCE;
 import static com.oracle.graal.python.compiler.OpCodes.UNWRAP_EXC;
 import static com.oracle.graal.python.compiler.OpCodes.YIELD_VALUE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
@@ -672,8 +673,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                 ExprTy expr = ((StmtTy.Expr) stmt).value;
                 if (expr instanceof ExprTy.Constant) {
                     ConstantValue value = ((ExprTy.Constant) expr).value;
-                    if (value.kind == ConstantValue.Kind.RAW) {
-                        return value.getRaw(TruffleString.class);
+                    if (value.kind == ConstantValue.Kind.CODEPOINTS) {
+                        return codePointsToTruffleString(value.getCodePoints());
                     }
                 }
             }
@@ -1367,8 +1368,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                 return addOp(LOAD_COMPLEX, addObject(unit.constants, value.getComplex()));
             case BIGINTEGER:
                 return addOp(LOAD_BIGINT, addObject(unit.constants, value.getBigInteger()));
-            case RAW:
-                return addOp(LOAD_STRING, addObject(unit.constants, value.getRaw(TruffleString.class)));
+            case CODEPOINTS:
+                return addOp(LOAD_STRING, addObject(unit.constants, codePointsToTruffleString(value.getCodePoints())));
             case BYTES:
                 return addOp(LOAD_BYTES, addObject(unit.constants, value.getBytes()));
             case TUPLE:
@@ -1883,9 +1884,9 @@ public class Compiler implements SSTreeVisitor<Void> {
                 } else if (c.value.kind == ConstantValue.Kind.DOUBLE) {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_DOUBLE);
                     constants.add(c.value.getDouble());
-                } else if (c.value.kind == ConstantValue.Kind.RAW) {
+                } else if (c.value.kind == ConstantValue.Kind.CODEPOINTS) {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_OBJECT);
-                    constants.add(c.value.getRaw(TruffleString.class));
+                    constants.add(codePointsToTruffleString(c.value.getCodePoints()));
                 } else if (c.value.kind == ConstantValue.Kind.NONE) {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_OBJECT);
                     constants.add(PNone.NONE);
@@ -4019,7 +4020,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 case LONG:
                 case BIGINTEGER:
                     return PythonBuiltinClassType.PInt;
-                case RAW:
+                case CODEPOINTS:
                     return PythonBuiltinClassType.PString;
                 case BYTES:
                     return PythonBuiltinClassType.PBytes;
@@ -4069,7 +4070,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
         if (e instanceof ExprTy.Constant) {
             switch (((ExprTy.Constant) e).value.kind) {
-                case RAW:
+                case CODEPOINTS:
                 case BYTES:
                 case TUPLE:
                     break;
@@ -4091,6 +4092,6 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, EnumSet<AbstractParser.Flags> flags, int featureVersion) {
-        return new Parser(src, new PythonStringFactoryImpl(), errorCb, inputType, flags, featureVersion);
+        return new Parser(src, errorCb, inputType, flags, featureVersion);
     }
 }
