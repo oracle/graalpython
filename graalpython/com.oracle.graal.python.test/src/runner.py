@@ -415,10 +415,11 @@ def interrupt_process(process: subprocess.Popen):
 
 
 class ParallelTestRunner(TestRunner):
-    def __init__(self, *, num_processes, subprocess_args, **kwargs):
+    def __init__(self, *, num_processes, subprocess_args, separate_workers, **kwargs):
         super().__init__(**kwargs)
         self.num_processes = num_processes
         self.subprocess_args = subprocess_args
+        self.separate_workers = separate_workers
         self.stop_event = threading.Event()
         self.crashes = []
         self.last_out_pos = 0
@@ -432,28 +433,35 @@ class ParallelTestRunner(TestRunner):
     def tests_failed(self):
         return super().tests_failed() or bool(self.crashes)
 
-    def run_tests(self, tests: list['TestSuite']):
-        start_time = time.time()
-        if tests:
-            serial_suites, unpartitioned = partition_list(
-                tests,
-                lambda suite: suite.test_file.name.removesuffix('.py') in suite.config.serial_tests,
-            )
-            per_file_suites, unpartitioned = partition_list(
-                unpartitioned,
-                lambda suite: suite.config.new_worker_per_file,
-            )
-            partitions = [suite.collected_tests for suite in per_file_suites]
-            per_partition = int(math.ceil(len(unpartitioned) / self.num_processes))
-            while unpartitioned:
-                partitions.append([test for suite in unpartitioned[:per_partition] for test in suite.collected_tests])
-                unpartitioned = unpartitioned[per_partition:]
+    def partition_tests_into_processes(self, suites: list['TestSuite']) -> list[list[TestId]]:
+        if self.separate_workers:
+            per_file_suites = suites
+            unpartitioned = []
+        else:
+            per_file_suites, unpartitioned = partition_list(suites, lambda suite: suite.config.new_worker_per_file)
+        partitions = [suite.collected_tests for suite in per_file_suites]
+        per_partition = int(math.ceil(len(unpartitioned) / max(1, self.num_processes)))
+        while unpartitioned:
+            partitions.append([test for suite in unpartitioned[:per_partition] for test in suite.collected_tests])
+            unpartitioned = unpartitioned[per_partition:]
+        return partitions
 
-            num_processes = max(1, min(self.num_processes, len(partitions)))
+    def run_tests(self, tests: list['TestSuite']):
+        serial_suites, parallel_suites = partition_list(
+            tests,
+            lambda suite: suite.test_file.name.removesuffix('.py') in suite.config.serial_tests,
+        )
+        parallel_partitions = self.partition_tests_into_processes(parallel_suites)
+        serial_partitions = self.partition_tests_into_processes(serial_suites)
+
+        start_time = time.time()
+        if parallel_partitions:
+            num_processes = max(1, min(self.num_processes, len(parallel_partitions)))
             with concurrent.futures.ThreadPoolExecutor(num_processes) as executor:
-                self.run_partitions_in_subprocesses(executor, partitions)
-                for serial_suite in serial_suites:
-                    self.run_partitions_in_subprocesses(executor, [serial_suite.collected_tests])
+                self.run_partitions_in_subprocesses(executor, parallel_partitions)
+        if serial_partitions:
+            with concurrent.futures.ThreadPoolExecutor(1) as executor:
+                self.run_partitions_in_subprocesses(executor, serial_partitions)
 
         self.total_duration = time.time() - start_time
         self.display_summary()
@@ -794,6 +802,8 @@ def main():
                         help="Interpret test file names relative to tagged test directory")
     parser.add_argument('-n', '--num-processes', type=int,
                         help="Run tests in N subprocess workers. Adds crash recovery, output capture and timeout handling")
+    parser.add_argument('--separate-workers', action='store_true',
+                        help="Create a new worker process for each test file (when -n is specified). Default for tagged unit tests")
     parser.add_argument('--ignore', type=Path, action='append', default=[],
                         help="Ignore path during collection (multi-allowed)")
     parser.add_argument('-f', '--failfast', action='store_true',
@@ -865,10 +875,10 @@ def main():
     if not tests:
         sys.exit("No tests matched\n")
 
-    runner_args = {
-        'failfast': args.failfast,
-        'report_durations': args.durations,
-    }
+    runner_args = dict(
+        failfast=args.failfast,
+        report_durations=args.durations,
+    )
     if not args.num_processes:
         runner = TestRunner(**runner_args)
     else:
@@ -876,6 +886,7 @@ def main():
             **runner_args,
             num_processes=args.num_processes,
             subprocess_args=args.subprocess_args,
+            separate_workers=args.separate_workers,
         )
 
     runner.run_tests(tests)

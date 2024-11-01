@@ -1199,10 +1199,12 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     for file in exclude:
         args += ['--ignore', file]
 
-    if is_collecting_coverage():
-        if mx_gate.get_jacoco_agent_args():
-            with open(python_binary, "r") as f:
-                assert f.read(9) == "#!/bin/sh"
+    if is_collecting_coverage() and mx_gate.get_jacoco_agent_args():
+        # jacoco only dumps the data on exit, and when we run all our unittests
+        # at once it generates so much data we run out of heap space
+        args.append('--separate-workers')
+        with open(python_binary, "r") as f:
+            assert f.read(9) == "#!/bin/sh"
 
     if report:
         reportfile = None
@@ -1211,12 +1213,12 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
             reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
             args += ["--mx-report", reportfile]
 
-    if paths:
+    if paths is not None:
         args += paths
     else:
         args.append('.')
 
-    mx.logv(" ".join([python_binary] + args))
+    mx.logv(shlex.join([python_binary] + args))
     if lock:
         lock.release()
     result = mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
@@ -2683,7 +2685,7 @@ def python_coverage(args):
         if os.environ.get('CI'):
             mx.run(['coverage-uploader.py', '--associated-repos', f.name])
         else:
-            mx.run(['genhtml', '--output-directory', 'coverage-html', '--source-directory', os.path.abspath(os.path.join(SUITE.dir, '..')), '--quiet'])
+            mx.run(['genhtml', '--output-directory', 'coverage-html', '--source-directory', os.path.abspath(os.path.join(SUITE.dir, '..')), '--quiet', 'coverage/lcov.info'])
             print('Generated html report in ./coverage-html')
 
 
