@@ -44,6 +44,7 @@ import math
 import multiprocessing
 import multiprocessing.connection
 import os
+import pickle
 import re
 import shlex
 import signal
@@ -294,6 +295,15 @@ class PipeResult(AbstractRemoteResult):
         self.conn.send(data)
 
 
+class SimpleResult(AbstractRemoteResult):
+    def __init__(self, test_suite: 'TestSuite', data: list[dict]):
+        super().__init__(test_suite)
+        self.data = data
+
+    def emit(self, **data):
+        self.data.append(data)
+
+
 def test_path_to_module(path: Path):
     return str(path).removesuffix('.py').replace(os.sep, '.')
 
@@ -504,6 +514,8 @@ class ParallelTestRunner(TestRunner):
         ]
         try:
             concurrent.futures.wait(futures)
+            for future in futures:
+                future.result()
         except KeyboardInterrupt:
             self.stop_event.set()
             concurrent.futures.wait(futures)
@@ -511,17 +523,23 @@ class ParallelTestRunner(TestRunner):
             sys.exit(1)
 
     def run_in_subprocess_and_watch(self, tests: list[TestId]):
+        # noinspection PyUnresolvedReferences
+        use_pipe = not IS_GRAALPY or __graalpython__.posix_module_backend() == 'native'
+        use_pipe = False
         remaining_tests = tests
         last_started_test: TestId | None = None
         last_started_time: float | None = None
-        last_out_pos = 0
-        conn, child_conn = multiprocessing.Pipe()
         with (
             tempfile.NamedTemporaryFile(prefix='graalpytest-in-', mode='w+') as tests_file,
             tempfile.NamedTemporaryFile(prefix='graalpytest-out-', mode='w+') as out_file,
         ):
             env = os.environ.copy()
             env['IN_PROCESS'] = '1'
+
+            if use_pipe:
+                pipe, child_pipe = multiprocessing.Pipe()
+            else:
+                result_file = out_file.name + '.result'
 
             def process_event(event):
                 nonlocal remaining_tests, last_started_test, last_started_time, last_out_pos
@@ -557,9 +575,12 @@ class ParallelTestRunner(TestRunner):
                     '-u',
                     *self.subprocess_args,
                     __file__,
-                    '--pipe-fd', str(child_conn.fileno()),
                     '--tests-file', tests_file.name,
                 ]
+                if use_pipe:
+                    cmd += ['--pipe-fd', str(child_pipe.fileno())]
+                else:
+                    cmd += ['--result-file', result_file]
                 if self.failfast:
                     cmd.append('--failfast')
                 # We communicate the tests through a temp file to avoid running into too long commandlines on windows
@@ -572,29 +593,37 @@ class ParallelTestRunner(TestRunner):
                     stdout=out_file,
                     stderr=out_file,
                     env=env,
-                    pass_fds=[child_conn.fileno()],
+                    pass_fds=[child_pipe.fileno()] if use_pipe else [],
                 )
 
                 timed_out = False
 
-                while process.poll() is None:
-                    while conn.poll(0.1):
-                        process_event(conn.recv())
-                    if self.stop_event.is_set():
-                        interrupt_process(process)
-                        break
-                    if last_started_time is not None and time.time() - last_started_time >= self.default_test_timeout:
-                        interrupt_process(process)
-                        timed_out = True
-                        # Drain the pipe
-                        while conn.poll(0.1):
-                            conn.recv()
-                        break
+                if use_pipe:
+                    while process.poll() is None:
+                        while pipe.poll(0.1):
+                            process_event(pipe.recv())
+                        if self.stop_event.is_set():
+                            interrupt_process(process)
+                            break
+                        if last_started_time is not None and time.time() - last_started_time >= self.default_test_timeout:
+                            interrupt_process(process)
+                            timed_out = True
+                            # Drain the pipe
+                            while pipe.poll(0.1):
+                                pipe.recv()
+                            break
+
                 returncode = process.wait()
                 if self.stop_event.is_set():
                     return
-                while conn.poll(0.1):
-                    process_event(conn.recv())
+                if use_pipe:
+                    while pipe.poll(0.1):
+                        process_event(pipe.recv())
+                else:
+                    with open(result_file, 'rb') as f:
+                        for file_event in pickle.load(f):
+                            process_event(file_event)
+
                 if returncode != 0 or timed_out:
                     out_file.seek(last_out_pos)
                     output = out_file.read()
@@ -618,8 +647,8 @@ class ParallelTestRunner(TestRunner):
                         continue
                     else:
                         # Crashed outside of tests, don't retry
-                        self.crashes.append(output)
-                return
+                        self.crashes.append(output or 'Runner subprocess crashed')
+                        return
 
 
 def filter_tree(test_file: Path, test_suite: unittest.TestSuite, specifiers: list[TestSpecifier],
@@ -867,7 +896,9 @@ class TopLevelFunctionLoader(unittest.loader.TestLoader):
 
 def in_process():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--pipe-fd', type=int, required=True)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--pipe-fd', type=int)
+    group.add_argument('--result-file', type=Path)
     parser.add_argument('--tests-file', type=Path, required=True)
     parser.add_argument('--failfast', action='store_true')
     args = parser.parse_args()
@@ -876,12 +907,25 @@ def in_process():
         for line in f:
             tests.append(TestSpecifier.from_str(line.strip()))
 
-    conn = multiprocessing.connection.Connection(args.pipe_fd)
+    data = []
+    if args.pipe_fd:
+        conn = multiprocessing.connection.Connection(args.pipe_fd)
+
+        def result_factory(suite):
+            return PipeResult(suite, conn)
+    else:
+        def result_factory(suite):
+            return SimpleResult(suite, data)
 
     for test_suite in collect(tests):
-        result = PipeResult(test_suite, conn)
+        result = result_factory(test_suite)
         result.failfast = args.failfast
         test_suite.run(result)
+
+    if args.result_file:
+        with open(args.result_file, 'wb') as f:
+            # noinspection PyTypeChecker
+            pickle.dump(data, f)
 
 
 def get_bool_env(name: str):
