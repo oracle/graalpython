@@ -1563,11 +1563,11 @@ def graalpython_gate_runner(args, tasks):
 
             # run the test
             mx.logv(f"running with os.environ extended with: {env=}")
-            mx.run([get_cpython(), _python_test_runner(), "-n", "1",
-                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_jbang_integration.py",
-                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py",
-                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_maven_plugin.py",
-                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_gradle_plugin.py"], env=env)
+            run_python_unittests(
+                graalpy_standalone_jvm(),
+                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone"],
+                env=env,
+            )
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
