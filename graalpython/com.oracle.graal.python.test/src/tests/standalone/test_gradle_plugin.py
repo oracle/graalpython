@@ -43,6 +43,7 @@ import unittest
 import shutil
 import util
 import sys
+import textwrap
 
 def append(file, txt):
     with open(file, "a") as f:
@@ -382,54 +383,54 @@ class GradlePluginGroovyTest(GradlePluginTestBase):
                 "repositories {", f"repositories {{\n        {mvn_repos}")
 
     def packages_termcolor(self):
-        return """
-graalPy {
-    packages = ["termcolor"]
-}
-"""
+        return textwrap.dedent("""
+            graalPy {
+                packages = ["termcolor"]
+            }
+            """)
 
     def packages_termcolor_ujson(self):
-        return """
-graalPy {
-    packages = ["termcolor", "ujson"]
-}
-"""
+        return textwrap.dedent("""
+            graalPy {
+                packages = ["termcolor", "ujson"]
+            }
+            """)
 
     def packages_termcolor_resource_dir(self, resources_dir):
         resources_dir = resources_dir if 'win32' != sys.platform else resources_dir.replace("\\", "\\\\")
-        return f"""
-graalPy {{
-    packages = ["termcolor"]
-    pythonResourcesDirectory = file("{resources_dir}")
-}}
-"""
+        return textwrap.dedent(f"""
+            graalPy {{
+                packages = ["termcolor"]
+                pythonResourcesDirectory = file("{resources_dir}")
+            }}
+            """)
 
     def home_includes(self):
-        return """
-graalPy {
-    pythonHome {
-        includes = [".*__init__.py"]
-        excludes = [".*html/__init__.py"]
-    }
-}
-"""
+        return textwrap.dedent("""
+            graalPy {
+                pythonHome {
+                    includes = [".*__init__.py"]
+                    excludes = [".*html/__init__.py"]
+                }
+            }
+            """)
 
     def empty_home_includes(self):
-        return """
-graalPy {
-   pythonHome {
-       includes = []
-       excludes = []
-   }
-}
-"""
+        return textwrap.dedent("""
+            graalPy {
+               pythonHome {
+                   includes = []
+                   excludes = []
+               }
+            }
+            """)
 
     def empty_packages(self):
-        return """
-graalPy {
-    packages = []
-}
-"""
+        return textwrap.dedent("""
+            graalPy {
+                packages = []
+            }
+            """)
 
 class GradlePluginKotlinTest(GradlePluginTestBase):
 
@@ -455,54 +456,54 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
             util.replace_in_file(settings_file, "repositories {", f"repositories {{\n        {mvn_repos}")
 
     def packages_termcolor(self):
-       return """
-graalPy {
-   packages.add("termcolor")
-}
-"""
+       return textwrap.dedent("""
+            graalPy {
+               packages.add("termcolor")
+            }
+            """)
 
     def packages_termcolor_ujson(self):
-        return """
-graalPy {
-    packages.add("termcolor")
-    packages.add("ujson")
-}
-"""
+        return textwrap.dedent("""
+            graalPy {
+                packages.add("termcolor")
+                packages.add("ujson")
+            }
+            """)
 
     def packages_termcolor_resource_dir(self, resources_dir):
         resources_dir = resources_dir if 'win32' != sys.platform else resources_dir.replace("\\", "\\\\")
-        return f"""
-graalPy {{
-    packages.add("termcolor")
-    pythonResourcesDirectory = file("{resources_dir}")
-}}
-"""
+        return textwrap.dedent(f"""
+            graalPy {{
+                packages.add("termcolor")
+                pythonResourcesDirectory = file("{resources_dir}")
+            }}
+            """)
 
     def home_includes(self):
-        return """
-graalPy {
-    pythonHome {
-        includes.add(".*__init__.py")
-        excludes.add(".*html/__init__.py")
-    }
-}
-"""
+        return textwrap.dedent("""
+            graalPy {
+                pythonHome {
+                    includes.add(".*__init__.py")
+                    excludes.add(".*html/__init__.py")
+                }
+            }
+            """)
 
     def empty_home_includes(self):
-        return """
-graalPy {
-   pythonHome {
-       includes
-       excludes
-   }
-}
-"""
+        return textwrap.dedent("""
+            graalPy {
+               pythonHome {
+                   includes
+                   excludes
+               }
+            }
+            """)
 
     def empty_packages(self):
-        return """
-graalPy {
-    packages
-}
-"""
+        return textwrap.dedent("""
+            graalPy {
+                packages
+            }
+            """)
 
 unittest.skip_deselected_test_functions(globals())
