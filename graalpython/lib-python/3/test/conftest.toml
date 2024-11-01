@@ -28,3 +28,7 @@ serial_tests = [
     'test_int',
     'test_zipfile',
 ]
+partial_splits_individual_tests = [
+    'test_multiprocessing_spawn',
+    'test_multiprocessing_graalpy',
+]

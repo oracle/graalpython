@@ -449,7 +449,7 @@ class ParallelTestRunner(TestRunner):
     def run_tests(self, tests: list['TestSuite']):
         serial_suites, parallel_suites = partition_list(
             tests,
-            lambda suite: suite.test_file.name.removesuffix('.py') in suite.config.serial_tests,
+            lambda suite: suite.config.is_serial_test(suite.test_file),
         )
         parallel_partitions = self.partition_tests_into_processes(parallel_suites)
         serial_partitions = self.partition_tests_into_processes(serial_suites)
@@ -616,11 +616,23 @@ def filter_tree(test_file: Path, test_suite: unittest.TestSuite, specifiers: lis
 
 @dataclass
 class Config:
+    configdir: Path = Path('.').resolve()
     rootdir: Path = Path('.').resolve()
     tags_dir: Path | None = None
     run_top_level_functions: bool = False
     new_worker_per_file: bool = False
     serial_tests: frozenset[str] = frozenset()
+    partial_splits_individual_tests: frozenset[str] = frozenset()
+
+    def is_serial_test(self, test_file: Path):
+        resolved = test_file.resolve().relative_to(self.configdir)
+        name = str(resolved).removesuffix('.py')
+        return name in self.serial_tests
+
+    def is_partial_splits_individual_tests(self, test_file: Path):
+        resolved = test_file.resolve().relative_to(self.configdir)
+        name = str(resolved).removesuffix('.py')
+        return name in self.partial_splits_individual_tests
 
 
 @lru_cache
@@ -644,16 +656,19 @@ def config_for_file(test_file: Path) -> Config:
 def parse_config(config_path, path):
     with open(config_path, 'rb') as f:
         config_dict = tomllib.load(f)['tests']
-        rootdir = config_path.parent.parent.resolve()
         tags_dir = None
         if config_tags_dir := config_dict.get('tags_dir'):
             tags_dir = (path / config_tags_dir).resolve()
         return Config(
-            rootdir=rootdir,
+            configdir=config_path.parent.resolve(),
+            rootdir=config_path.parent.parent.resolve(),
             tags_dir=tags_dir,
             run_top_level_functions=config_dict.get('run_top_level_functions', Config.run_top_level_functions),
             new_worker_per_file=config_dict.get('new_worker_per_file', Config.new_worker_per_file),
             serial_tests=frozenset(config_dict.get('serial_tests', Config.serial_tests)),
+            partial_splits_individual_tests=frozenset(
+                config_dict.get('partial_splits_individual_tests', Config.partial_splits_individual_tests)
+            ),
         )
 
 
@@ -717,7 +732,7 @@ def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifie
     return expanded_specifiers
 
 
-def collect_module(test_file: Path, specifiers: list[TestSpecifier], use_tags=False) -> TestSuite | None:
+def collect_module(test_file: Path, specifiers: list[TestSpecifier], use_tags=False, partial=None) -> TestSuite | None:
     config = config_for_file(test_file)
     saved_path = sys.path[:]
     sys.path.insert(0, str(config.rootdir))
@@ -735,6 +750,9 @@ def collect_module(test_file: Path, specifiers: list[TestSpecifier], use_tags=Fa
             log(f"Test file {test_file} skipped: {e}")
             return
         collected_tests, untagged_tests = filter_tree(test_file, test_suite, specifiers, tags)
+        if partial and config.is_partial_splits_individual_tests(test_file):
+            selected, total = partial
+            collected_tests = collected_tests[selected::total]
         if collected_tests:
             return TestSuite(config, test_file, sys.path[:], test_suite, collected_tests, untagged_tests)
     finally:
@@ -755,13 +773,24 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
             s for s in all_specifiers
             if not any(path_for_comparison(s.test_file).is_relative_to(i) for i in ignore)
         ]
+    specifiers_by_file = group_specifiers_by_file(all_specifiers)
     if partial:
         selected, total = partial
-        all_specifiers = all_specifiers[selected::total]
-    for test_file, specifiers in group_specifiers_by_file(all_specifiers).items():
+        to_split = []
+        partial_files = set()
+        # Always keep files that are split per-test
+        for test_file in specifiers_by_file:
+            config = config_for_file(test_file)
+            if config.is_partial_splits_individual_tests(test_file):
+                partial_files.add(test_file)
+            else:
+                to_split.append(test_file)
+        partial_files |= set(to_split[selected::total])
+        specifiers_by_file = {f: s for f, s in specifiers_by_file.items() if f in partial_files}
+    for test_file, specifiers in specifiers_by_file.items():
         if not test_file.exists():
             sys.exit(f"File does not exist: {test_file}")
-        collected = collect_module(test_file, specifiers, use_tags=use_tags)
+        collected = collect_module(test_file, specifiers, use_tags=use_tags, partial=partial)
         if collected:
             to_run.append(collected)
     return to_run

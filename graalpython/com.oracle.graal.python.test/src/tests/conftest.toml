@@ -1,2 +1,6 @@
 [tests]
 run_top_level_functions = true
+partial_splits_individual_tests = [
+    'standalone/test_standalone',
+    'standalone/test_jbang_integration',
+]
