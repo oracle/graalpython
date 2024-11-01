@@ -42,7 +42,6 @@ import enum
 import json
 import math
 import multiprocessing
-import multiprocessing.connection
 import os
 import pickle
 import re
@@ -515,22 +514,19 @@ class ParallelTestRunner(TestRunner):
 
     def run_in_subprocess_and_watch(self, tests: list[TestId]):
         # noinspection PyUnresolvedReferences
-        use_pipe = not IS_GRAALPY or __graalpython__.posix_module_backend() == 'native'
-        use_pipe = False
+        use_pipe = sys.platform != 'win32' and (not IS_GRAALPY or __graalpython__.posix_module_backend() == 'native')
         remaining_tests = tests
         last_started_test: TestId | None = None
         last_started_time: float | None = None
-        with (
-            tempfile.NamedTemporaryFile(prefix='graalpytest-in-', mode='w+') as tests_file,
-            tempfile.NamedTemporaryFile(prefix='graalpytest-out-', mode='w+') as out_file,
-        ):
+        with tempfile.TemporaryDirectory(prefix='graalpytest-') as tmp_dir:
+            tmp_dir = Path(tmp_dir)
             env = os.environ.copy()
             env['IN_PROCESS'] = '1'
 
             if use_pipe:
                 pipe, child_pipe = multiprocessing.Pipe()
             else:
-                result_file = out_file.name + '.result'
+                result_file = tmp_dir / 'result'
 
             def process_event(event):
                 nonlocal remaining_tests, last_started_test, last_started_time, last_out_pos
@@ -560,86 +556,91 @@ class ParallelTestRunner(TestRunner):
                         last_out_pos = event['out_pos']
 
             while remaining_tests and not self.stop_event.is_set():
-                last_out_pos = out_file.tell()
-                cmd = [
-                    sys.executable,
-                    '-u',
-                    *self.subprocess_args,
-                    __file__,
-                    '--tests-file', tests_file.name,
-                ]
-                if use_pipe:
-                    cmd += ['--pipe-fd', str(child_pipe.fileno())]
-                else:
-                    cmd += ['--result-file', result_file]
-                if self.failfast:
-                    cmd.append('--failfast')
-                # We communicate the tests through a temp file to avoid running into too long commandlines on windows
-                tests_file.seek(0)
-                tests_file.truncate()
-                tests_file.write('\n'.join(map(str, remaining_tests)))
-                tests_file.flush()
-                process = subprocess.Popen(
-                    cmd,
-                    stdout=out_file,
-                    stderr=out_file,
-                    env=env,
-                    pass_fds=[child_pipe.fileno()] if use_pipe else [],
-                )
+                with (
+                    open(tmp_dir / 'out', 'w+') as out_file,
+                    open(tmp_dir / 'tests', 'w+') as tests_file,
+                ):
+                    last_out_pos = 0
+                    cmd = [
+                        sys.executable,
+                        '-u',
+                        *self.subprocess_args,
+                        __file__,
+                        '--tests-file', str(tests_file.name),
+                    ]
+                    if use_pipe:
+                        cmd += ['--pipe-fd', str(child_pipe.fileno())]
+                    else:
+                        cmd += ['--result-file', str(result_file)]
+                    if self.failfast:
+                        cmd.append('--failfast')
+                    # We communicate the tests through a temp file to avoid running into too long commandlines on windows
+                    tests_file.seek(0)
+                    tests_file.truncate()
+                    tests_file.write('\n'.join(map(str, remaining_tests)))
+                    tests_file.flush()
+                    popen_kwargs: dict = dict(
+                        stdout=out_file,
+                        stderr=out_file,
+                        env=env,
+                    )
+                    if use_pipe:
+                        popen_kwargs.update(pass_fds=[child_pipe.fileno()])
+                    process = subprocess.Popen(cmd, **popen_kwargs)
 
-                timed_out = False
+                    timed_out = False
 
-                if use_pipe:
-                    while process.poll() is None:
+                    if use_pipe:
+                        while process.poll() is None:
+                            while pipe.poll(0.1):
+                                process_event(pipe.recv())
+                            if self.stop_event.is_set():
+                                interrupt_process(process)
+                                break
+                            if last_started_time is not None and time.time() - last_started_time >= self.default_test_timeout:
+                                interrupt_process(process)
+                                timed_out = True
+                                # Drain the pipe
+                                while pipe.poll(0.1):
+                                    pipe.recv()
+                                break
+
+                    returncode = process.wait()
+                    if self.stop_event.is_set():
+                        return
+                    if use_pipe:
                         while pipe.poll(0.1):
                             process_event(pipe.recv())
-                        if self.stop_event.is_set():
-                            interrupt_process(process)
-                            break
-                        if last_started_time is not None and time.time() - last_started_time >= self.default_test_timeout:
-                            interrupt_process(process)
-                            timed_out = True
-                            # Drain the pipe
-                            while pipe.poll(0.1):
-                                pipe.recv()
-                            break
-
-                returncode = process.wait()
-                if self.stop_event.is_set():
-                    return
-                if use_pipe:
-                    while pipe.poll(0.1):
-                        process_event(pipe.recv())
-                else:
-                    with open(result_file, 'rb') as f:
-                        for file_event in pickle.load(f):
-                            process_event(file_event)
-
-                if returncode != 0 or timed_out:
-                    out_file.seek(last_out_pos)
-                    output = out_file.read()
-                    if last_started_test:
-                        if timed_out:
-                            message = "Timed out"
-                        elif returncode >= 0:
-                            message = f"Test process exitted with code {returncode}"
-                        else:
-                            try:
-                                signal_name = signal.Signals(-returncode).name
-                            except ValueError:
-                                signal_name = str(-returncode)
-                            message = f"Test process killed by signal {signal_name}"
-                        self.report_result(TestResult(
-                            test_id=last_started_test,
-                            status=TestStatus.ERROR,
-                            param=message,
-                            output=output,
-                        ))
-                        continue
                     else:
-                        # Crashed outside of tests, don't retry
-                        self.crashes.append(output or 'Runner subprocess crashed')
-                        return
+                        with open(result_file, 'rb') as f:
+                            for file_event in pickle.load(f):
+                                process_event(file_event)
+
+                    if returncode != 0 or timed_out:
+                        out_file.seek(last_out_pos)
+                        output = out_file.read()
+                        if last_started_test:
+                            if timed_out:
+                                message = "Timed out"
+                            elif returncode >= 0:
+                                message = f"Test process exitted with code {returncode}"
+                            else:
+                                try:
+                                    signal_name = signal.Signals(-returncode).name
+                                except ValueError:
+                                    signal_name = str(-returncode)
+                                message = f"Test process killed by signal {signal_name}"
+                            self.report_result(TestResult(
+                                test_id=last_started_test,
+                                status=TestStatus.ERROR,
+                                param=message,
+                                output=output,
+                            ))
+                            continue
+                        else:
+                            # Crashed outside of tests, don't retry
+                            self.crashes.append(output or 'Runner subprocess crashed')
+                            return
 
 
 def filter_tree(test_file: Path, test_suite: unittest.TestSuite, specifiers: list[TestSpecifier],
@@ -900,6 +901,7 @@ def in_process():
 
     data = []
     if args.pipe_fd:
+        import multiprocessing.connection
         conn = multiprocessing.connection.Connection(args.pipe_fd)
 
         def result_factory(suite):
