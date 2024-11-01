@@ -507,17 +507,30 @@ class ParallelTestRunner(TestRunner):
 
     def run_in_subprocess_and_watch(self, tests: list[TestId]):
         conn, child_conn = multiprocessing.Pipe()
-        with tempfile.NamedTemporaryFile(prefix='graalpytest-out-', mode='w+') as out_file:
+        with (
+            tempfile.NamedTemporaryFile(prefix='graalpytest-in-', mode='w+') as tests_file,
+            tempfile.NamedTemporaryFile(prefix='graalpytest-out-', mode='w+') as out_file,
+        ):
             env = os.environ.copy()
             env['IN_PROCESS'] = '1'
             remaining_tests = tests
             while remaining_tests and not self.stop_event.is_set():
                 self.last_out_pos = out_file.tell()
                 python_args = ['-u', *self.subprocess_args]
-                cmd = [sys.executable, *python_args, __file__, '--pipe-fd', str(child_conn.fileno())]
+                cmd = [
+                    sys.executable,
+                    *python_args,
+                    __file__,
+                    '--pipe-fd', str(child_conn.fileno()),
+                    '--tests-file', tests_file.name,
+                ]
                 if self.failfast:
                     cmd.append('--failfast')
-                cmd += [str(s) for s in remaining_tests]
+                # We communicate the tests through a temp file to avoid running into too long commandlines on windows
+                tests_file.seek(0)
+                tests_file.truncate()
+                tests_file.write('\n'.join(map(str, remaining_tests)))
+                tests_file.flush()
                 process = subprocess.Popen(
                     cmd,
                     stdout=out_file,
@@ -778,11 +791,17 @@ class TopLevelFunctionLoader(unittest.loader.TestLoader):
 def in_process():
     parser = argparse.ArgumentParser()
     parser.add_argument('--pipe-fd', type=int, required=True)
+    parser.add_argument('--tests-file', type=Path, required=True)
     parser.add_argument('--failfast', action='store_true')
-    parser.add_argument('tests', nargs='*', type=TestSpecifier.from_str)
     args = parser.parse_args()
+    tests = []
+    with open(args.tests_file) as f:
+        for line in f:
+            tests.append(TestSpecifier.from_str(line.strip()))
+
     conn = multiprocessing.connection.Connection(args.pipe_fd)
-    for test_suite in collect(args.tests):
+
+    for test_suite in collect(tests):
         result = PipeResult(test_suite, conn)
         result.failfast = args.failfast
         test_suite.run(result)
