@@ -132,7 +132,11 @@ class TestId:
 
     @classmethod
     def from_test_case(cls, test_file: Path, test: unittest.TestCase):
-        return cls(test_file, test.id())
+        test_id = test.id()
+        if type(test).id is not unittest.TestCase.id:
+            # Qualify doctests so that we know what they are
+            test_id = f'{type(test).__qualname__}.{test_id}'
+        return cls(test_file, test_id)
 
 
 @dataclass
@@ -288,10 +292,10 @@ def test_path_to_module(path: Path):
 
 
 class TestRunner:
-    def __init__(self, *, failfast, report_durations):
+    def __init__(self, *, failfast: bool, report_durations: int | None):
         self.failfast = failfast
         self.report_durations = report_durations
-        self.results = []
+        self.results: list[TestResult] = []
         self.total_duration = 0.0
 
     @staticmethod
@@ -398,6 +402,21 @@ class TestRunner:
         with open(path, 'w') as f:
             # noinspection PyTypeChecker
             json.dump(report_data, f)
+
+    def generate_tags(self):
+        by_file = defaultdict(list)
+        for result in self.results:
+            by_file[result.test_id.test_file].append(result)
+        for test_file, results in by_file.items():
+            config = config_for_file(test_file)
+            tag_file = config.get_tag_file(test_file)
+            if not tag_file:
+                log(f"WARNNING: no tag directory for test file {result.test_id.test_file}")
+                continue
+            with open(tag_file, 'w') as f:
+                for result in results:
+                    if result.status == TestStatus.SUCCESS:
+                        f.write(f'*graalpython.lib-python.3.{result.test_id.test_name}\n')
 
 
 def interrupt_process(process: subprocess.Popen):
@@ -640,6 +659,10 @@ class Config:
         name = str(resolved).removesuffix('.py')
         return name in self.partial_splits_individual_tests
 
+    def get_tag_file(self, test_file: Path):
+        if self.tags_dir:
+            return self.tags_dir / (test_file.name.removesuffix('.py') + '.txt')
+
 
 @lru_cache
 def config_for_dir(path: Path) -> Config:
@@ -803,7 +826,7 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
 
 
 def read_tags(test_file: Path, config: Config) -> list[TestId]:
-    tag_file = config.tags_dir / (test_file.name.removesuffix('.py') + '.txt')
+    tag_file = config.get_tag_file(test_file)
     tags = []
     if tag_file.exists():
         with open(tag_file) as f:
@@ -864,6 +887,8 @@ def main():
                         help="Exit immediately after the first failure")
     parser.add_argument('--all', action='store_true',
                         help="Run tests that are normally not enabled due to tags")
+    parser.add_argument('--retag', action='store_true',
+                        help="Run tests and regenerate tags based on the results. Implies --all, --tagged and -n")
     parser.add_argument('--collect-only', action='store_true',
                         help="Print found tests IDs without running tests")
     parser.add_argument('--durations', type=int, default=0,
@@ -893,6 +918,11 @@ def main():
                         """)
 
     args = parser.parse_args()
+
+    if args.retag:
+        args.all = True
+        args.tagged = True
+        args.num_processes = args.num_processes or 1
 
     if get_bool_env('GRAALPYTEST_FAIL_FAST'):
         args.failfast = True
@@ -948,6 +978,9 @@ def main():
     runner.run_tests(tests)
     if args.mx_report:
         runner.generate_mx_report(args.mx_report)
+    if args.retag:
+        runner.generate_tags()
+        return
     if runner.tests_failed():
         sys.exit(1)
 
