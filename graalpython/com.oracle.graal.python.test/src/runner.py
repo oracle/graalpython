@@ -204,39 +204,44 @@ class AbstractResult(unittest.TestResult):
     def __init__(self, test_suite: 'TestSuite'):
         super().__init__()
         self.test_suite = test_suite
+        self.start_time = None
 
     def test_id(self, test):
         return TestId.from_test_case(self.test_suite.test_file, test)
+
+    def startTest(self, test):
+        self.start_time = time.time()
 
     @abstractmethod
     def report_result(self, result: TestResult):
         pass
 
+    def make_result(self, test, status: TestStatus, **kwargs):
+        return TestResult(status=status, test_id=self.test_id(test), duration=(time.time() - self.start_time), **kwargs)
+
     def addSuccess(self, test):
         super().addSuccess(test)
-        self.report_result(TestResult(status=TestStatus.SUCCESS, test_id=self.test_id(test)))
+        self.report_result(self.make_result(test, status=TestStatus.SUCCESS))
 
     def addFailure(self, test, err):
         super().addFailure(test, err)
-        self.report_result(
-            TestResult(status=TestStatus.FAILURE, test_id=self.test_id(test), param=format_exception(err)))
+        self.report_result(self.make_result(test, status=TestStatus.FAILURE, param=format_exception(err)))
 
     def addError(self, test, err):
         super().addError(test, err)
-        self.report_result(TestResult(status=TestStatus.ERROR, test_id=self.test_id(test), param=format_exception(err)))
+        self.report_result(self.make_result(test, status=TestStatus.ERROR, param=format_exception(err)))
 
     def addSkip(self, test, reason):
         super().addSkip(test, reason)
-        self.report_result(TestResult(status=TestStatus.SKIPPED, test_id=self.test_id(test), param=reason))
+        self.report_result(self.make_result(test, status=TestStatus.SKIPPED, param=reason))
 
     def addExpectedFailure(self, test, err):
         super().addExpectedFailure(test, err)
-        self.report_result(
-            TestResult(status=TestStatus.EXPECTED_FAILURE, test_id=self.test_id(test), param=format_exception(err)))
+        self.report_result(self.make_result(test, status=TestStatus.EXPECTED_FAILURE, param=format_exception(err)))
 
     def addUnexpectedSuccess(self, test):
         super().addUnexpectedSuccess(test)
-        self.report_result(TestResult(status=TestStatus.UNEXPECTED_SUCCESS, test_id=self.test_id(test)))
+        self.report_result(self.make_result(test, status=TestStatus.UNEXPECTED_SUCCESS))
 
 
 class DirectResult(AbstractResult):
@@ -286,21 +291,14 @@ class TestRunner:
     def __init__(self, *, failfast, report_durations):
         self.failfast = failfast
         self.report_durations = report_durations
-        self.events = []
         self.results = []
         self.total_duration = 0.0
-        self.last_started_test = None
-        self.last_started_timestamp = None
 
-    def report_start(self, test_id: TestId):
-        self.last_started_test = test_id
-        self.last_started_timestamp = time.time()
+    @staticmethod
+    def report_start(test_id: TestId):
         log(f"{test_id} ... ", incomplete=True)
 
     def report_result(self, result: TestResult):
-        result.duration = time.time() - self.last_started_timestamp
-        self.last_started_timestamp = None
-        self.last_started_test = None
         self.results.append(result)
         message = f"{result.test_id} ... {result.status}"
         if result.status == TestStatus.SKIPPED and result.param:
@@ -398,6 +396,7 @@ class TestRunner:
                 'duration': result.duration,
             })
         with open(path, 'w') as f:
+            # noinspection PyTypeChecker
             json.dump(report_data, f)
 
 
@@ -422,7 +421,6 @@ class ParallelTestRunner(TestRunner):
         self.separate_workers = separate_workers
         self.stop_event = threading.Event()
         self.crashes = []
-        self.last_out_pos = 0
         self.default_test_timeout = 600
 
     def report_result(self, result: TestResult):
@@ -484,28 +482,11 @@ class ParallelTestRunner(TestRunner):
             print("Interrupted!")
             sys.exit(1)
 
-    def process_event(self, event, out_file):
-        self.events.append(event)
-        match event['event']:
-            case 'testStarted':
-                self.last_out_pos = event['out_pos']
-                self.report_start(event['test'])
-            case 'testResult':
-                out_end = event['out_pos']
-                test_output = ''
-                if self.last_out_pos != out_end:
-                    out_file.seek(self.last_out_pos)
-                    test_output = out_file.read(out_end - self.last_out_pos)
-                result = TestResult(
-                    test_id=event['test'],
-                    status=event['status'],
-                    param=event.get('param'),
-                    output=test_output,
-                )
-                self.report_result(result)
-                self.last_out_pos = event['out_pos']
-
     def run_in_subprocess_and_watch(self, tests: list[TestId]):
+        remaining_tests = tests
+        last_started_test: TestId | None = None
+        last_started_time: float | None = None
+        last_out_pos = 0
         conn, child_conn = multiprocessing.Pipe()
         with (
             tempfile.NamedTemporaryFile(prefix='graalpytest-in-', mode='w+') as tests_file,
@@ -513,13 +494,39 @@ class ParallelTestRunner(TestRunner):
         ):
             env = os.environ.copy()
             env['IN_PROCESS'] = '1'
-            remaining_tests = tests
+
+            def process_event(event):
+                nonlocal remaining_tests, last_started_test, last_started_time, last_out_pos
+                match event['event']:
+                    case 'testStarted':
+                        remaining_tests.remove(event['test'])
+                        self.report_start(event['test'])
+                        last_started_test = event['test']
+                        last_started_time = time.time()
+                        last_out_pos = event['out_pos']
+                    case 'testResult':
+                        out_end = event['out_pos']
+                        test_output = ''
+                        if last_out_pos != out_end:
+                            out_file.seek(last_out_pos)
+                            test_output = out_file.read(out_end - last_out_pos)
+                        result = TestResult(
+                            test_id=event['test'],
+                            status=event['status'],
+                            param=event.get('param'),
+                            output=test_output,
+                        )
+                        self.report_result(result)
+                        last_started_test = None
+                        last_started_time = None
+                        last_out_pos = event['out_pos']
+
             while remaining_tests and not self.stop_event.is_set():
-                self.last_out_pos = out_file.tell()
-                python_args = ['-u', *self.subprocess_args]
+                last_out_pos = out_file.tell()
                 cmd = [
                     sys.executable,
-                    *python_args,
+                    '-u',
+                    *self.subprocess_args,
                     __file__,
                     '--pipe-fd', str(child_conn.fileno()),
                     '--tests-file', tests_file.name,
@@ -543,11 +550,11 @@ class ParallelTestRunner(TestRunner):
 
                 while process.poll() is None:
                     while conn.poll(0.1):
-                        self.process_event(conn.recv(), out_file)
+                        process_event(conn.recv())
                     if self.stop_event.is_set():
                         interrupt_process(process)
                         break
-                    if self.last_started_timestamp is not None and time.time() - self.last_started_timestamp >= self.default_test_timeout:
+                    if last_started_time is not None and time.time() - last_started_time >= self.default_test_timeout:
                         interrupt_process(process)
                         timed_out = True
                         # Drain the pipe
@@ -558,11 +565,11 @@ class ParallelTestRunner(TestRunner):
                 if self.stop_event.is_set():
                     return
                 while conn.poll(0.1):
-                    self.process_event(conn.recv(), out_file)
+                    process_event(conn.recv())
                 if returncode != 0 or timed_out:
-                    out_file.seek(self.last_out_pos)
+                    out_file.seek(last_out_pos)
                     output = out_file.read()
-                    if self.last_started_test:
+                    if last_started_test:
                         if timed_out:
                             message = "Timed out"
                         elif returncode >= 0:
@@ -574,12 +581,11 @@ class ParallelTestRunner(TestRunner):
                                 signal_name = str(-returncode)
                             message = f"Test process killed by signal {signal_name}"
                         self.report_result(TestResult(
-                            test_id=self.last_started_test,
+                            test_id=last_started_test,
                             status=TestStatus.ERROR,
                             param=message,
                             output=output,
                         ))
-                        remaining_tests = remaining_tests[remaining_tests.index(self.last_started_test) + 1:]
                         continue
                     else:
                         # Crashed outside of tests, don't retry
@@ -893,9 +899,11 @@ def main():
 
     if IS_GRAALPY:
         if get_bool_env('GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS'):
+            # noinspection PyUnresolvedReferences
             if not __graalpython__.java_assert():
                 sys.exit(
                     "Java assertions are not enabled, refusing to run. Add --vm.ea to your invocation. Set GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS=true to disable this check\n")
+        # noinspection PyUnresolvedReferences
         if not hasattr(__graalpython__, 'tdebug'):
             sys.exit("Needs to be run with --experimental-options --python.EnableDebuggingBuiltins\n")
 
