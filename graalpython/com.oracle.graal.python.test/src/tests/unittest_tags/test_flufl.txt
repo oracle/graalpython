@@ -1,1 +1,1 @@
-*graalpython.lib-python.3.test.test_flufl.FLUFLTests.test_guido_as_bdfl
+test.test_flufl.FLUFLTests.test_guido_as_bdfl

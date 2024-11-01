@@ -1,8 +1,8 @@
-*graalpython.lib-python.3.test.test_pkg.TestPkg.test_1
-*graalpython.lib-python.3.test.test_pkg.TestPkg.test_2
-*graalpython.lib-python.3.test.test_pkg.TestPkg.test_3
-*graalpython.lib-python.3.test.test_pkg.TestPkg.test_4
-*graalpython.lib-python.3.test.test_pkg.TestPkg.test_5
-*graalpython.lib-python.3.test.test_pkg.TestPkg.test_6
-*graalpython.lib-python.3.test.test_pkg.TestPkg.test_7
-*graalpython.lib-python.3.test.test_pkg.TestPkg.test_8
+test.test_pkg.TestPkg.test_1
+test.test_pkg.TestPkg.test_2
+test.test_pkg.TestPkg.test_3
+test.test_pkg.TestPkg.test_4
+test.test_pkg.TestPkg.test_5
+test.test_pkg.TestPkg.test_6
+test.test_pkg.TestPkg.test_7
+test.test_pkg.TestPkg.test_8

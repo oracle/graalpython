@@ -1,1 +1,1 @@
-*graalpython.lib-python.3.test.test_except_star.TestInvalidExceptStar.test_mixed_except_and_except_star_is_syntax_error
+test.test_except_star.TestInvalidExceptStar.test_mixed_except_and_except_star_is_syntax_error

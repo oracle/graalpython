@@ -1,1 +1,1 @@
-*graalpython.lib-python.3.test.test_setcomps.TestMain.test_main
+test.test_setcomps.TestMain.test_main

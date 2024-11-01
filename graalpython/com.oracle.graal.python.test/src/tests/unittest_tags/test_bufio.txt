@@ -1,4 +1,4 @@
-*graalpython.lib-python.3.test.test_bufio.CBufferSizeTest.test_nullpat
-*graalpython.lib-python.3.test.test_bufio.CBufferSizeTest.test_primepat
-*graalpython.lib-python.3.test.test_bufio.PyBufferSizeTest.test_nullpat
-*graalpython.lib-python.3.test.test_bufio.PyBufferSizeTest.test_primepat
+test.test_bufio.CBufferSizeTest.test_nullpat
+test.test_bufio.CBufferSizeTest.test_primepat
+test.test_bufio.PyBufferSizeTest.test_nullpat
+test.test_bufio.PyBufferSizeTest.test_primepat

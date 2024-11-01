@@ -1,8 +1,8 @@
-*graalpython.lib-python.3.test.test_crypt.CryptTestCase.test_blowfish_rounds
-*graalpython.lib-python.3.test.test_crypt.CryptTestCase.test_crypt
-*graalpython.lib-python.3.test.test_crypt.CryptTestCase.test_invalid_rounds
-*graalpython.lib-python.3.test.test_crypt.CryptTestCase.test_methods
-*graalpython.lib-python.3.test.test_crypt.CryptTestCase.test_salt
-*graalpython.lib-python.3.test.test_crypt.CryptTestCase.test_saltedcrypt
-*graalpython.lib-python.3.test.test_crypt.CryptTestCase.test_sha2_rounds
-*graalpython.lib-python.3.test.test_crypt.TestWhyCryptDidNotImport.test_import_failure_message
+test.test_crypt.CryptTestCase.test_blowfish_rounds
+test.test_crypt.CryptTestCase.test_crypt
+test.test_crypt.CryptTestCase.test_invalid_rounds
+test.test_crypt.CryptTestCase.test_methods
+test.test_crypt.CryptTestCase.test_salt
+test.test_crypt.CryptTestCase.test_saltedcrypt
+test.test_crypt.CryptTestCase.test_sha2_rounds
+test.test_crypt.TestWhyCryptDidNotImport.test_import_failure_message

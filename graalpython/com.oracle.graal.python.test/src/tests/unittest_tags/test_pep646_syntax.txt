@@ -1,0 +1,1 @@
+DocTestCase.test.test_pep646_syntax.__test__.doctests
