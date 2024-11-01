@@ -93,9 +93,9 @@ class Logger:
             if self.report_incomplete and self.incomplete_line:
                 first_line, newline, rest = msg.partition('\n')
                 pad = len(self.incomplete_line)
-                print(f"\r{first_line:{pad}}{newline}{rest}", end=end, flush=True)
+                print(f"\r{first_line:{pad}}{newline}{rest}", file=sys.stderr, end=end, flush=True)
             else:
-                print(msg, end=end, flush=True)
+                print(msg, file=sys.stderr, end=end, flush=True)
             self.incomplete_line = msg if incomplete else None
 
 
@@ -178,8 +178,8 @@ class TestResult:
     duration: float = 0.0
 
 
-def format_exception(err):
-    _, exc, tb = err
+def format_exception(exc):
+    tb = exc.__traceback__
     while tb and '__unittest' in tb.tb_frame.f_globals:
         tb = tb.tb_next
     exc.__traceback__ = tb
@@ -229,11 +229,11 @@ class AbstractResult(unittest.TestResult):
 
     def addFailure(self, test, err):
         super().addFailure(test, err)
-        self.report_result(self.make_result(test, status=TestStatus.FAILURE, param=format_exception(err)))
+        self.report_result(self.make_result(test, status=TestStatus.FAILURE, param=format_exception(err[1])))
 
     def addError(self, test, err):
         super().addError(test, err)
-        self.report_result(self.make_result(test, status=TestStatus.ERROR, param=format_exception(err)))
+        self.report_result(self.make_result(test, status=TestStatus.ERROR, param=format_exception(err[1])))
 
     def addSkip(self, test, reason):
         super().addSkip(test, reason)
@@ -241,7 +241,7 @@ class AbstractResult(unittest.TestResult):
 
     def addExpectedFailure(self, test, err):
         super().addExpectedFailure(test, err)
-        self.report_result(self.make_result(test, status=TestStatus.EXPECTED_FAILURE, param=format_exception(err)))
+        self.report_result(self.make_result(test, status=TestStatus.EXPECTED_FAILURE, param=format_exception(err[1])))
 
     def addUnexpectedSuccess(self, test):
         super().addUnexpectedSuccess(test)
@@ -267,7 +267,14 @@ class AbstractRemoteResult(AbstractResult):
         pass
 
     def report_result(self, result: TestResult):
-        self.emit(event='testResult', status=result.status, test=result.test_id, param=result.param, out_pos=out_tell())
+        self.emit(
+            event='testResult',
+            status=result.status,
+            test=result.test_id,
+            param=result.param,
+            out_pos=out_tell(),
+            duration=result.duration,
+        )
 
     def startTest(self, test):
         super().startTest(test)
@@ -403,7 +410,7 @@ class TestRunner:
             # noinspection PyTypeChecker
             json.dump(report_data, f)
 
-    def generate_tags(self):
+    def generate_tags(self, append=False):
         by_file = defaultdict(list)
         for result in self.results:
             by_file[result.test_id.test_file].append(result)
@@ -411,12 +418,14 @@ class TestRunner:
             config = config_for_file(test_file)
             tag_file = config.get_tag_file(test_file)
             if not tag_file:
-                log(f"WARNNING: no tag directory for test file {result.test_id.test_file}")
+                log(f"WARNNING: no tag directory for test file {test_file}")
                 continue
+            tags = {result.test_id.test_name for result in results if result.status == TestStatus.SUCCESS}
+            if append:
+                tags |= {test.test_name for test in read_tags(test_file, config)}
             with open(tag_file, 'w') as f:
-                for result in results:
-                    if result.status == TestStatus.SUCCESS:
-                        f.write(f'*graalpython.lib-python.3.{result.test_id.test_name}\n')
+                for test_name in sorted(tags):
+                    f.write(f'{test_name}\n')
 
 
 def interrupt_process(process: subprocess.Popen):
@@ -534,6 +543,7 @@ class ParallelTestRunner(TestRunner):
                             status=event['status'],
                             param=event.get('param'),
                             output=test_output,
+                            duration=event.get('duration'),
                         )
                         self.report_result(result)
                         last_started_test = None
@@ -754,6 +764,8 @@ def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifie
                 else:
                     expanded_paths += path.rglob("test*.py")
             else:
+                if config.tags_dir and path.name == '__init__.py':
+                    path = path.parent
                 expanded_paths.append(path)
         expanded_paths.sort()
         for path in expanded_paths:
@@ -793,7 +805,8 @@ def path_for_comparison(p: Path):
     return p.parent / p.name.removesuffix('.py')
 
 
-def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None, partial=None) -> list[TestSuite]:
+def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None, partial=None,
+            continue_on_errors=False) -> list[TestSuite]:
     to_run = []
     all_specifiers = expand_specifier_paths(all_specifiers)
     if ignore:
@@ -819,7 +832,13 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
     for test_file, specifiers in specifiers_by_file.items():
         if not test_file.exists():
             sys.exit(f"File does not exist: {test_file}")
-        collected = collect_module(test_file, specifiers, use_tags=use_tags, partial=partial)
+        try:
+            collected = collect_module(test_file, specifiers, use_tags=use_tags, partial=partial)
+        except Exception as e:
+            if continue_on_errors:
+                log(f"WARNING: Failed to collect {test_file}:\n{format_exception(e)}")
+                continue
+            raise e
         if collected:
             to_run.append(collected)
     return to_run
@@ -887,10 +906,14 @@ def main():
                         help="Exit immediately after the first failure")
     parser.add_argument('--all', action='store_true',
                         help="Run tests that are normally not enabled due to tags")
-    parser.add_argument('--retag', action='store_true',
+    parser.add_argument('--retag', dest='retag_mode', action='store_const', const='replace',
                         help="Run tests and regenerate tags based on the results. Implies --all, --tagged and -n")
+    parser.add_argument('--retag-append', dest='retag_mode', action='store_const', const='append',
+                        help="Like --retag, but doesn't remove existing tags. Useful for regtagging subsets of tests")
     parser.add_argument('--collect-only', action='store_true',
                         help="Print found tests IDs without running tests")
+    parser.add_argument('--continue-on-collection-errors', action='store_true',
+                        help="Collection errors are not fatal")
     parser.add_argument('--durations', type=int, default=0,
                         help="Show durations of N slowest tests (-1 to show all)")
     parser.add_argument('--mx-report',
@@ -919,7 +942,7 @@ def main():
 
     args = parser.parse_args()
 
-    if args.retag:
+    if args.retag_mode:
         args.all = True
         args.tagged = True
         args.num_processes = args.num_processes or 1
@@ -951,7 +974,13 @@ def main():
         selected_str, total_str = partial_env.split('/', 1)
         partial = int(selected_str) - 1, int(total_str)
 
-    tests = collect(args.tests, use_tags=(not args.all), ignore=args.ignore, partial=partial)
+    tests = collect(
+        args.tests,
+        use_tags=(not args.all),
+        ignore=args.ignore,
+        partial=partial,
+        continue_on_errors=args.continue_on_collection_errors,
+    )
     if args.collect_only:
         for test_suite in tests:
             for test in test_suite.collected_tests:
@@ -978,8 +1007,8 @@ def main():
     runner.run_tests(tests)
     if args.mx_report:
         runner.generate_mx_report(args.mx_report)
-    if args.retag:
-        runner.generate_tags()
+    if args.retag_mode:
+        runner.generate_tags(append=(args.retag_mode == 'append'))
         return
     if runner.tests_failed():
         sys.exit(1)

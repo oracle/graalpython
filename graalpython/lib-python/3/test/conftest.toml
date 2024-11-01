@@ -30,4 +30,5 @@ serial_tests = [
 ]
 partial_splits_individual_tests = [
     'test_multiprocessing_spawn',
+    'test_multiprocessing_main_handling',
 ]
