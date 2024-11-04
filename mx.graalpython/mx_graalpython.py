@@ -782,7 +782,6 @@ class GraalPythonTags(object):
     unittest_standalone = 'python-unittest-standalone'
     ginstall = 'python-ginstall'
     tagged = 'python-tagged-unittest'
-    tagged_sandboxed = 'python-tagged-unittest-sandboxed'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
     graalvm = 'python-graalvm'
@@ -1580,11 +1579,6 @@ def graalpython_gate_runner(args, tasks):
         if task:
             # don't fail this task if we're running with the jacoco agent, we know that some tests don't pass with it enabled
             run_tagged_unittests(graalpy_standalone_native(), nonZeroIsFatal=(not is_collecting_coverage()), report=report())
-
-    with Task('GraalPython sandboxed Python tests', tasks, tags=[GraalPythonTags.tagged_sandboxed]) as task:
-        if task:
-            with set_env(GRAAL_PYTHON_ARGS=" ".join(SANDBOXED_OPTIONS)):
-                run_tagged_unittests(graalpy_standalone_native_enterprise(), checkIfWithGraalPythonEE=True, cwd=SUITE.dir, report=report())
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit, GraalPythonTags.windows]) as task:
