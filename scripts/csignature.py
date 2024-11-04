@@ -41,7 +41,12 @@
 # C API functions that can be stored in CAPIFunctions.txt to automatically
 # check the consistency of the C API implementation in GraalPy.
 #
-# Pip dependencies: pycparser pycparser-fake-libc
+# Steps to update CAPI functions list:
+# 1. Install GNU Binutils (2.43.1).
+# 2. Build the desired version of CPython.
+# 3. Create and activate a venv using the CPython binary you built above.
+# 4. do `pip install pycparser pycparser-fake-libc`
+# 5. Finally:
 # Just run it in this folder e.g python csignature.py > ../graalpython/com.oracle.graal.python.cext/CAPIFunctions.txt
 #
 # Make sure to use the exact same CPython version as we are targeting
@@ -73,7 +78,7 @@ with tempfile.NamedTemporaryFile('w') as f:
     ast = parse_file(f.name, use_cpp=True, cpp_args=cpp_args)
 
 lib_path = os.path.join(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY'))
-out = subprocess.check_output(['nm', '--defined-only', '--just-symbols', lib_path], text=True)
+out = subprocess.check_output(['nm', '--defined-only', '--format=just-symbols', lib_path], text=True)
 exported_symbols = out.rstrip().splitlines()
 
 
