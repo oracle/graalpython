@@ -57,9 +57,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.test.TestErrorCallbackImpl;
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 
@@ -626,13 +624,7 @@ public class TokenizerTest {
     }
 
     private static Tokenizer createTokenizer(String code, boolean interactive) {
-        ErrorCallback errorCallback = new TestErrorCallbackImpl() {
-            @Override
-            public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
-                fail("Unexpected call to onError");
-            }
-        };
-        return Tokenizer.fromString(errorCallback, code, EnumSet.of(interactive ? Tokenizer.Flag.INTERACTIVE : Tokenizer.Flag.EXEC_INPUT, Tokenizer.Flag.TYPE_COMMENT), null);
+        return Tokenizer.fromString(new TestErrorCallbackImpl(), code, EnumSet.of(interactive ? Tokenizer.Flag.INTERACTIVE : Tokenizer.Flag.EXEC_INPUT, Tokenizer.Flag.TYPE_COMMENT), null);
     }
 
     private static Tokenizer createTokenizer(String code) {

@@ -102,7 +102,7 @@ final class StringParser {
                 // Disallow non-ASCII characters.
                 for (int i = 0; i < len; ++i) {
                     if (codePoints[s + i] >= 0x80) {
-                        parser.raiseSyntaxErrorKnownLocation(token, BYTES_ONLY_ASCII);
+                        throw parser.raiseSyntaxErrorKnownLocation(token, BYTES_ONLY_ASCII);
                     }
                     result[i] = (byte) codePoints[s + i];
                 }
@@ -138,15 +138,14 @@ final class StringParser {
             if (chr != '\\') {
                 // Disallow non-ASCII characters.
                 if (chr >= 0x80) {
-                    parser.raiseSyntaxErrorKnownLocation(token, "bytes can only contain ASCII literal characters");
+                    throw parser.raiseSyntaxErrorKnownLocation(token, "bytes can only contain ASCII literal characters");
                 }
                 writer.append((byte) chr);
                 continue;
             }
 
             if (s == end) {
-                parser.errorCb.onError(ErrorCallback.ErrorType.Value, token.sourceRange, TRAILING_S_IN_STR, "\\");
-                return null;
+                throw parser.errorCb.onError(ErrorCallback.ErrorType.Value, token.sourceRange, TRAILING_S_IN_STR, "\\");
             }
 
             chr = codePoints[s++];
@@ -226,8 +225,7 @@ final class StringParser {
                         }
                     }
                     /* invalid hexadecimal digits */
-                    parser.errorCb.onError(ErrorCallback.ErrorType.Value, token.sourceRange, INVALID_ESCAPE_AT, "\\x", s - 2 - (end - len));
-                    return null;
+                    throw parser.errorCb.onError(ErrorCallback.ErrorType.Value, token.sourceRange, INVALID_ESCAPE_AT, "\\x", s - 2 - (end - len));
                 default:
                     if (!wasInvalidEscapeWarning) {
                         wasInvalidEscapeWarning = true;
@@ -355,8 +353,7 @@ final class StringParser {
                 if (Character.isValidCodePoint(code)) {
                     sb.appendCodePoint(code);
                 } else {
-                    errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, String.format(UNICODE_ERROR + ILLEGAL_CHARACTER, i, i + 9));
-                    yield startIndex;
+                    throw errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, String.format(UNICODE_ERROR + ILLEGAL_CHARACTER, i, i + 9));
                 }
                 yield i + 8;
             }
@@ -413,8 +410,7 @@ final class StringParser {
                 truncatedMessage = TRUNCATED_UXXXXXXXX_ERROR;
                 break;
         }
-        errorCb.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + truncatedMessage, startIndex, endIndex);
-        return -1;
+        throw errorCb.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + truncatedMessage, startIndex, endIndex);
     }
 
     /**
@@ -428,26 +424,22 @@ final class StringParser {
      */
     private static int doCharacterName(int[] codePoints, SourceRange sourceRange, CodePoints.Builder sb, int offset, int end, ErrorCallback errorCallback) {
         if (offset >= end) {
-            errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
-            return -1;
+            throw errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
         }
         int ch = codePoints[offset];
         if (ch != '{') {
-            errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
-            return -1;
+            throw errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
         }
         int closeIndex = indexOf(codePoints, offset + 1, end, '}');
         if (closeIndex == -1) {
-            errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
-            return -1;
+            throw errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
         }
         String charName = new String(codePoints, offset + 1, closeIndex - offset - 1).toUpperCase();
         int cp = getCodePoint(charName);
         if (cp >= 0) {
             sb.appendCodePoint(cp);
         } else {
-            errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
-            return -1;
+            throw errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
         }
         return closeIndex + 1;
     }

@@ -52,6 +52,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Supplier;
 
+import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
@@ -185,25 +186,25 @@ public abstract class AbstractParser {
             }
             int fill = getFill();
             if (fill == 0) {
-                raiseSyntaxError("error at start before reading any input");
+                throw raiseSyntaxError("error at start before reading any input");
             } else if (peekToken(fill - 1).type == Token.Kind.ERRORTOKEN && tokenizer.getDone() == Tokenizer.StatusCode.EOF) {
                 if (tokenizer.getParensNestingLevel() > 0) {
-                    raiseUnclosedParenthesesError();
+                    throw raiseUnclosedParenthesesError();
                 } else {
-                    raiseSyntaxError("unexpected EOF while parsing");
+                    throw raiseSyntaxError("unexpected EOF while parsing");
                 }
             } else {
                 if (peekToken(fill - 1).type == INDENT) {
-                    raiseIndentationError("unexpected indent");
+                    throw raiseIndentationError("unexpected indent");
                 } else if (peekToken(fill - 1).type == DEDENT) {
-                    raiseIndentationError("unexpected unindent");
+                    throw raiseIndentationError("unexpected unindent");
                 } else {
-                    raiseSyntaxErrorKnownLocation(peekToken(fill - 1), "invalid syntax");
+                    throw raiseSyntaxErrorKnownLocation(peekToken(fill - 1), "invalid syntax");
                 }
             }
         }
         if (startRule == InputType.SINGLE && tokenizer.isBadSingleStatement()) {
-            return raiseSyntaxError("multiple statements found while compiling a single statement");
+            throw raiseSyntaxError("multiple statements found while compiling a single statement");
         }
 
         return res;
@@ -404,7 +405,7 @@ public abstract class AbstractParser {
         String number = getText(t);
         if (number.contains("_")) {
             if (featureVersion < 6) {
-                raiseSyntaxError("Underscores in numeric literals are only supported in Python 3.6 and greater");
+                throw raiseSyntaxError("Underscores in numeric literals are only supported in Python 3.6 and greater");
             }
             number = number.replace("_", "");
         }
@@ -492,8 +493,7 @@ public abstract class AbstractParser {
     public Token expect_forced_token(int kind, String expected) {
         Token t = getAndInitializeToken();
         if (t.type != kind) {
-            raiseSyntaxErrorKnownLocation(t, "expected '%s'", expected);
-            return null;
+            throw raiseSyntaxErrorKnownLocation(t, "expected '%s'", expected);
         }
         currentPos++;
         return t;
@@ -692,7 +692,7 @@ public abstract class AbstractParser {
             String conversionKind = ((ExprTy.Name) conversion.result()).id;
             char first = conversionKind.length() == 1 ? conversionKind.charAt(0) : 0;
             if (first != 's' && first != 'r' && first != 'a') {
-                raiseSyntaxErrorKnownLocation(conversion.result(), "f-string: invalid conversion character '%s': expected 's', 'r', or 'a'", conversionKind);
+                throw raiseSyntaxErrorKnownLocation(conversion.result(), "f-string: invalid conversion character '%s': expected 's', 'r', or 'a'", conversionKind);
             }
             conversionVal = first;
         } else if (debug != null && format == null) {
@@ -752,7 +752,7 @@ public abstract class AbstractParser {
         }
 
         if ((unicodeStringFound || fStringFound) && bytesFound) {
-            return (ExprTy) raiseSyntaxError("cannot mix bytes and nonbytes literals");
+            throw raiseSyntaxError("cannot mix bytes and nonbytes literals");
         }
 
         if (bytesFound) {
@@ -869,8 +869,7 @@ public abstract class AbstractParser {
      */
     public boolean checkBarryAsFlufl(Token token) {
         if (flags.contains(Flags.BARRY_AS_BDFL) && !getText(token).equals("<>")) {
-            errorCb.onError(token.sourceRange, BARRY_AS_BDFL);
-            return true;
+            throw errorCb.onError(ErrorType.Generic, token.sourceRange, BARRY_AS_BDFL);
         }
         if (!flags.contains(Flags.BARRY_AS_BDFL) && !getText(token).equals("!=")) {
             // no explicit error message here, the parser will just fail to match the input
@@ -902,7 +901,7 @@ public abstract class AbstractParser {
     ResultTokenWithMetadata checkFstringConversion(Token convToken, ExprTy conv) {
         if (convToken.sourceRange.startLine != conv.getSourceRange().startLine ||
                         convToken.sourceRange.endColumn != conv.getSourceRange().startColumn) {
-            raiseSyntaxErrorKnownRange(convToken, conv, "f-string: conversion type must come right after the exclamanation mark");
+            throw raiseSyntaxErrorKnownRange(convToken, conv, "f-string: conversion type must come right after the exclamanation mark");
         }
         return new ResultTokenWithMetadata(conv, convToken.metadata);
     }
@@ -1013,7 +1012,7 @@ public abstract class AbstractParser {
             }
         }
         if (token.type == ERRORTOKEN) {
-            tokenizerError(token);
+            throw tokenizerError(token);
         }
         return token;
     }
@@ -1298,142 +1297,141 @@ public abstract class AbstractParser {
             return null;
         }
         ComprehensionTy lastComprehension = comprehensions[comprehensions.length - 1];
-        return raiseSyntaxErrorKnownRange(call.args[len - 1], getLastComprehensionItem(lastComprehension),
+        throw raiseSyntaxErrorKnownRange(call.args[len - 1], getLastComprehensionItem(lastComprehension),
                         "Generator expression must be parenthesized");
     }
 
     /**
      * RAISE_SYNTAX_ERROR_INVALID_TARGET
      */
-    SSTNode raiseSyntaxErrorInvalidTarget(TargetsType type, ExprTy expr) {
+    RuntimeException raiseSyntaxErrorInvalidTarget(TargetsType type, ExprTy expr) {
         ExprTy invalidTarget = getInvalidTarget(expr, type);
         if (invalidTarget != null) {
             String message = (type == TargetsType.STAR_TARGETS || type == TargetsType.FOR_TARGETS)
                             ? "cannot assign to %s"
                             : "cannot delete %s";
-            raiseSyntaxErrorKnownLocation(invalidTarget, message, getExprName(invalidTarget));
+            throw raiseSyntaxErrorKnownLocation(invalidTarget, message, getExprName(invalidTarget));
         }
-        return raiseSyntaxError("invalid syntax");
+        throw raiseSyntaxError("invalid syntax");
     }
 
     /**
      * RAISE_SYNTAX_ERROR
      */
-    SSTNode raiseSyntaxError(String msg, Object... arguments) {
+    RuntimeException raiseSyntaxError(String msg, Object... arguments) {
         Token errorToken = peekToken();
-        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
+        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
     }
 
     /**
      * RAISE_SYNTAX_ERROR_ON_NEXT_TOKEN
      */
-    SSTNode raiseSyntaxErrorOnNextToken(String msg) {
+    RuntimeException raiseSyntaxErrorOnNextToken(String msg) {
         Token errorToken = peekToken();
-        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg);
+        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg);
     }
 
     /**
      * RAISE_ERROR_KNOWN_LOCATION the first param is a token, where error begins
      */
-    public SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... arguments) {
-        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
+    RuntimeException raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... arguments) {
+        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_LOCATION
      */
-    SSTNode raiseErrorKnownLocation(ErrorCallback.ErrorType typeError, SourceRange where, String msg, Object... argument) {
+    RuntimeException raiseErrorKnownLocation(ErrorCallback.ErrorType typeError, SourceRange where, String msg, Object... argument) {
         errorIndicator = true;
-        errorCb.onError(typeError, where, msg, argument);
-        return null;
+        throw errorCb.onError(typeError, where, msg, argument);
     }
 
     /**
      * RAISE_ERROR_KNOWN_LOCATION the first param is node, where error begins
      */
-    SSTNode raiseSyntaxErrorKnownLocation(SSTNode where, String msg, Object... arguments) {
-        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, where.getSourceRange(), msg, arguments);
+    RuntimeException raiseSyntaxErrorKnownLocation(SSTNode where, String msg, Object... arguments) {
+        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, where.getSourceRange(), msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_LOCATION
      */
-    SSTNode raiseErrorKnownLocation(ErrorCallback.ErrorType errorType, SSTNode where, String msg, Object... arguments) {
-        return raiseErrorKnownLocation(errorType, where.getSourceRange(), msg, arguments);
+    RuntimeException raiseErrorKnownLocation(ErrorCallback.ErrorType errorType, SSTNode where, String msg, Object... arguments) {
+        throw raiseErrorKnownLocation(errorType, where.getSourceRange(), msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_RANGE
      */
-    SSTNode raiseSyntaxErrorKnownRange(Token startToken, SSTNode endNode, String msg, Object... arguments) {
-        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startToken.sourceRange.withEnd(endNode.getSourceRange()), msg, arguments);
+    RuntimeException raiseSyntaxErrorKnownRange(Token startToken, SSTNode endNode, String msg, Object... arguments) {
+        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startToken.sourceRange.withEnd(endNode.getSourceRange()), msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_RANGE
      */
-    SSTNode raiseSyntaxErrorKnownRange(Token startToken, Token endToken, String msg, Object... arguments) {
-        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startToken.sourceRange.withEnd(endToken.sourceRange), msg, arguments);
+    RuntimeException raiseSyntaxErrorKnownRange(Token startToken, Token endToken, String msg, Object... arguments) {
+        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startToken.sourceRange.withEnd(endToken.sourceRange), msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_RANGE
      */
-    SSTNode raiseSyntaxErrorKnownRange(SSTNode startNode, SSTNode endNode, String msg, Object... arguments) {
-        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startNode.getSourceRange().withEnd(endNode.getSourceRange()), msg, arguments);
+    RuntimeException raiseSyntaxErrorKnownRange(SSTNode startNode, SSTNode endNode, String msg, Object... arguments) {
+        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startNode.getSourceRange().withEnd(endNode.getSourceRange()), msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_RANGE
      */
-    SSTNode raiseSyntaxErrorKnownRange(SSTNode startNode, Token endToken, String msg, Object... arguments) {
-        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startNode.getSourceRange().withEnd(endToken.sourceRange), msg, arguments);
+    RuntimeException raiseSyntaxErrorKnownRange(SSTNode startNode, Token endToken, String msg, Object... arguments) {
+        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startNode.getSourceRange().withEnd(endToken.sourceRange), msg, arguments);
     }
 
     /**
      * RAISE_SYNTAX_ERROR_STARTING_FROM
      */
-    SSTNode raiseSyntaxErrorStartingFrom(Token where, String msg, Object... arguments) {
-        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.sourceRange), msg, arguments);
+    RuntimeException raiseSyntaxErrorStartingFrom(Token where, String msg, Object... arguments) {
+        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.sourceRange), msg, arguments);
     }
 
     /**
      * RAISE_SYNTAX_ERROR_STARTING_FROM
      */
-    SSTNode raiseSyntaxErrorStartingFrom(SSTNode where, String msg, Object... arguments) {
-        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.getSourceRange()), msg, arguments);
+    RuntimeException raiseSyntaxErrorStartingFrom(SSTNode where, String msg, Object... arguments) {
+        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.getSourceRange()), msg, arguments);
     }
 
     /**
      * _PyPegen_arguments_parsing_error
      */
-    SSTNode raiseArgumentsParsingError(ExprTy e) {
+    RuntimeException raiseArgumentsParsingError(ExprTy e) {
         for (KeywordTy keyword : ((ExprTy.Call) e).keywords) {
             if (keyword.arg == null) {
-                return raiseSyntaxError("positional argument follows keyword argument unpacking");
+                throw raiseSyntaxError("positional argument follows keyword argument unpacking");
             }
         }
-        return raiseSyntaxError("positional argument follows keyword argument");
+        throw raiseSyntaxError("positional argument follows keyword argument");
     }
 
     /**
      * RAISE_INDENTATION_ERROR
      */
-    SSTNode raiseIndentationError(String msg, Object... arguments) {
+    RuntimeException raiseIndentationError(String msg, Object... arguments) {
         Token errorToken = peekToken();
-        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Indentation, errorToken.sourceRange, msg, arguments);
+        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Indentation, errorToken.sourceRange, msg, arguments);
     }
 
     /**
      * raise_unclosed_parentheses_error
      */
-    void raiseUnclosedParenthesesError() {
+    RuntimeException raiseUnclosedParenthesesError() {
         int nestingLevel = tokenizer.getParensNestingLevel();
         assert nestingLevel > 0;
         int errorLineno = tokenizer.getParensLineNumberStack()[nestingLevel - 1];
         int errorCol = tokenizer.getParensColumnsStack()[nestingLevel - 1];
         // TODO unknown source offsets
-        raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,
+        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,
                         new SourceRange(errorLineno, errorCol, errorLineno, -1),
                         "'%c' was never closed", tokenizer.getParensStack()[nestingLevel - 1]);
     }
@@ -1441,9 +1439,9 @@ public abstract class AbstractParser {
     /**
      * tokenizer_error
      */
-    void tokenizerError(Token token) {
+    RuntimeException tokenizerError(Token token) {
         if (token.type == ERRORTOKEN && tokenizer.getDone() == Tokenizer.StatusCode.SYNTAX_ERROR) {
-            raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, token.getSourceRange(), (String) token.extraData);
+            throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, token.getSourceRange(), (String) token.extraData);
         }
         ErrorCallback.ErrorType errorType = ErrorCallback.ErrorType.Syntax;
         String msg;
@@ -1454,14 +1452,12 @@ public abstract class AbstractParser {
                 break;
             case EOF:
                 if (tokenizer.getParensNestingLevel() > 0) {
-                    raiseUnclosedParenthesesError();
+                    throw raiseUnclosedParenthesesError();
                 } else {
-                    raiseSyntaxError("unexpected EOF while parsing");
+                    throw raiseSyntaxError("unexpected EOF while parsing");
                 }
-                return;
             case DEDENT_INVALID:
-                raiseIndentationError("unindent does not match any outer indentation level");
-                return;
+                throw raiseIndentationError("unindent does not match any outer indentation level");
             case TABS_SPACES_INCONSISTENT:
                 errorType = ErrorCallback.ErrorType.Tab;
                 msg = "inconsistent use of tabs and spaces in indentation";
@@ -1479,7 +1475,7 @@ public abstract class AbstractParser {
                 break;
         }
         // TODO unknown source offsets
-        raiseErrorKnownLocation(errorType, new SourceRange(tokenizer.getCurrentLineNumber(),
+        throw raiseErrorKnownLocation(errorType, new SourceRange(tokenizer.getCurrentLineNumber(),
                         colOffset >= 0 ? colOffset : 0, tokenizer.getCurrentLineNumber(), -1), msg);
     }
 
@@ -1505,14 +1501,14 @@ public abstract class AbstractParser {
 
     ExprTy ensureReal(ExprTy e) {
         if (!(e instanceof ExprTy.Constant) || ((ExprTy.Constant) e).value.kind == Kind.COMPLEX) {
-            raiseSyntaxErrorKnownLocation(e, "real number required in complex literal");
+            throw raiseSyntaxErrorKnownLocation(e, "real number required in complex literal");
         }
         return e;
     }
 
     ExprTy ensureImaginary(ExprTy e) {
         if (!(e instanceof ExprTy.Constant) || ((ExprTy.Constant) e).value.kind != Kind.COMPLEX) {
-            raiseSyntaxErrorKnownLocation(e, "imaginary number required in complex literal");
+            throw raiseSyntaxErrorKnownLocation(e, "imaginary number required in complex literal");
         }
         return e;
     }
@@ -1543,7 +1539,7 @@ public abstract class AbstractParser {
 
     private void checkVersion(int version, String msg) {
         if (featureVersion < version) {
-            raiseSyntaxError("%s only supported in Python 3.%d and greater", msg, version);
+            throw raiseSyntaxError("%s only supported in Python 3.%d and greater", msg, version);
         }
     }
 

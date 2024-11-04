@@ -499,10 +499,9 @@ public class Tokenizer {
                 }
                 if (interactive) {
                     if (reportIncompleteSourceIfInteractive) {
-                        errorCallback.reportIncompleteSource(currentLineNumber);
-                    } else {
-                        done = StatusCode.INTERACTIVE_STOP;
+                        throw errorCallback.reportIncompleteSource(currentLineNumber);
                     }
+                    done = StatusCode.INTERACTIVE_STOP;
                     return EOF;
                 }
                 done = StatusCode.EOF;

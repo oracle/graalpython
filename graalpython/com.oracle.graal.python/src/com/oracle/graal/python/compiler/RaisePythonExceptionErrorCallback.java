@@ -100,12 +100,12 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
     }
 
     @Override
-    public void reportIncompleteSource(int line) {
+    public RuntimeException reportIncompleteSource(int line) {
         throw new PIncompleteSourceException("", null, line, sourceSupplier.get());
     }
 
     @Override
-    public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
+    public RuntimeException onError(ErrorType errorType, SourceRange sourceRange, String message) {
         throw raiseSyntaxError(errorType, sourceRange, message);
     }
 
