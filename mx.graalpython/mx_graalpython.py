@@ -465,106 +465,6 @@ def compare_unittests(args):
     mx.run([sys.executable, "graalpython/com.oracle.graal.python.test/src/compare_unittests.py", "-v"] + args)
 
 
-def run_cpython_test(raw_args):
-    test_args = ['-v']
-    parser = ArgumentParser()
-    parser.add_argument('--all', action='store_true')
-    parser.add_argument('--svm', dest='standalone_type', action='store_const', const='native', default='jvm')
-    parser.add_argument('-k', dest='tags', action='append')
-    parser.add_argument('globs', nargs='+')
-    args, rest_args = parser.parse_known_args(raw_args)
-
-    testfiles = []
-    for g in args.globs:
-        testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", f"{g}.py"))
-        testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", g, "__init__.py"))
-    if not args.all:
-        test_tags = get_test_tags(args.globs)
-        if args.tags:
-            user_tags = [tag if '*' in tag else f'*{tag}*' for tag in args.tags]
-            test_tags = [tag for tag in test_tags if any(fnmatch.fnmatch(tag.replace('*', ''), user_tag) for user_tag in user_tags)]
-        if not test_tags:
-            sys.exit("No tags matched")
-    else:
-        test_tags = args.tags
-    for tag in test_tags or ():
-        test_args += ['-k', tag]
-
-    python_args = [
-        '--vm.ea',
-        *rest_args,
-        os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
-        *test_args,
-        *testfiles,
-    ]
-    handle_debug_arg(python_args)
-    standalone_home = graalpy_standalone_home(args.standalone_type, dev=True, build=False)
-    graalpy_path = os.path.join(standalone_home, 'bin', _graalpy_launcher())
-    if not os.path.exists(graalpy_path):
-        mx.abort("GraalPy standalone is not built")
-    env = os.environ.copy()
-    delete_bad_env_keys(env)
-    env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python/3')
-    mx.run([graalpy_path, *python_args], env=env)
-
-
-def get_test_tags(globs):
-    sys.path += ["graalpython/com.oracle.graal.python.test/src/tests", "graalpython/lib-python/3"]
-    os.environ['ENABLE_CPYTHON_TAGGED_UNITTESTS'] = 'true'
-    try:
-        import test_tagged_unittests
-        collected = []
-        for name, tags in test_tagged_unittests.collect_working_tests():
-            if any(fnmatch.fnmatch(name, g) for g in globs):
-                collected += tags
-        return collected
-    finally:
-        del os.environ['ENABLE_CPYTHON_TAGGED_UNITTESTS']
-
-
-def retag_unittests(args):
-    """run the cPython stdlib unittests"""
-    parser = ArgumentParser('mx python-retag-unittests')
-    parser.add_argument('--upload-results-to')
-    parser.add_argument('--inspect', action='store_true')
-    parser.add_argument('-debug-java', action='store_true')
-    parser.add_argument('--jvm', action='store_true')
-    parser.add_argument('--timeout')
-    parsed_args, remaining_args = parser.parse_known_args(args)
-    active_branch = mx.VC.get_vc(SUITE.dir).active_branch(SUITE.dir)
-    if parsed_args.upload_results_to and active_branch != MAIN_BRANCH:
-        mx.log("Skipping retagger when not on main branch")
-        return
-    env = extend_os_env(
-        ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
-        PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
-    )
-    delete_bad_env_keys(env)
-    args = [
-        '--experimental-options=true',
-        '--python.CatchAllExceptions=true',
-    ]
-    if parsed_args.inspect:
-        args.append('--inspect')
-    if parsed_args.debug_java:
-        args.append('-debug-java')
-    args += [
-        'graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py',
-        '--retag'
-    ]
-    if parsed_args.timeout:
-        args += [f'--timeout={parsed_args.timeout}']
-    vm = python_svm() if not parsed_args.jvm else python_jvm()
-    if parsed_args.jvm:
-        args += ['--vm.ea']
-    mx.run([vm] + args + remaining_args, env=env)
-    if parsed_args.upload_results_to:
-        with tempfile.TemporaryDirectory(prefix='graalpython-retagger-') as d:
-            filename = os.path.join(d, 'unittest-tags-{}.tar.bz2'.format(sys.platform))
-            mx.run(['tar', 'cJf', filename, 'graalpython/com.oracle.graal.python.test/src/tests/unittest_tags'])
-            mx.run(['scp', filename, parsed_args.upload_results_to.rstrip('/') + '/'])
-
-
 def _read_tags(path='.'):
     tags = set()
     tagfiles = glob.glob(os.path.join(path, 'graalpython/com.oracle.graal.python.test/src/tests/unittest_tags/*.txt'))
@@ -3120,8 +3020,6 @@ mx.update_commands(SUITE, {
     'python-gvm': [no_return(python_gvm), ''],
     'python-unittests': [python3_unittests, ''],
     'python-compare-unittests': [compare_unittests, ''],
-    'python-retag-unittests': [retag_unittests, ''],
-    'python-run-cpython-unittest': [run_cpython_test, '[-k TEST_PATTERN] [--svm] [--all] TESTS'],
     'python-update-unittest-tags': [update_unittest_tags, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
