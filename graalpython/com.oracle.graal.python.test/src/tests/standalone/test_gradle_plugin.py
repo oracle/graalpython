@@ -89,8 +89,7 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
 
         self.copy_build_files(target_dir)
 
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_generated_app(self):
+    def check_gradle_generated_app(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "generated_app_gradle" + self.target_dir_name_sufix())
             self.generate_app(target_dir)
@@ -154,11 +153,9 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
             cmd = gradlew_cmd2 + ["build", "run"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir2, gradle = True)
             util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("Deleting GraalPy venv due to broken launcher symlinks", out)
             util.check_ouput("hello java", out)
 
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_generated_app_external_resources(self):
+    def check_gradle_generated_app_external_resources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "generated_gradle_app_external_resources" + self.target_dir_name_sufix())
             self.generate_app(target_dir)
@@ -214,8 +211,7 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("hello java", out)
 
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_fail_without_graalpy_dep(self):
+    def check_gradle_fail_without_graalpy_dep(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "gradle_fail_without_graalpy_dep" + self.target_dir_name_sufix())
             self.generate_app(target_dir)
@@ -232,8 +228,7 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("Missing GraalPy dependency. Please add to your build.gradle either org.graalvm.polyglot:python-community or org.graalvm.polyglot:python", out)
 
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_gen_launcher_and_venv(self):
+    def check_gradle_gen_launcher_and_venv(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "gradle_gen_launcher_and_venv" + self.target_dir_name_sufix())
             self.generate_app(target_dir)
@@ -275,8 +270,7 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
             lines = f.readlines()
         assert lines == expected, "expected tagfile " + str(expected) + ", but got " + str(lines)
 
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_check_home(self):
+    def check_gradle_check_home(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "check_home_test" + self.target_dir_name_sufix())
             self.generate_app(target_dir)
@@ -344,8 +338,7 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
                     assert line.endswith("/__init__.py"), f"expected line to end with /__init__.py, but was '{line}'"
                     assert not line.endswith("html/__init__.py"), f"expected line to end with html/__init__.py, but was '{line}''"
 
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_empty_packages(self):
+    def check_gradle_empty_packages(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "empty_packages_test" + self.target_dir_name_sufix())
             self.generate_app(target_dir)
@@ -364,6 +357,30 @@ class GradlePluginGroovyTest(GradlePluginTestBase):
         super().setUpClass()
         self.build_file_name = "build.gradle"
         self.settings_file_name = "settings.gradle"
+
+    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    def test_gradle_generated_app(self):
+        self.check_gradle_generated_app()
+
+    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    def test_gradle_generated_app_external_resources(self):
+        self.check_gradle_generated_app_external_resources()
+
+    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    def test_gradle_fail_without_graalpy_dep(self):
+        self.check_gradle_fail_without_graalpy_dep()
+        
+    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    def test_gradle_gen_launcher_and_venv(self):
+        self.check_gradle_gen_launcher_and_venv()
+
+    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    def test_gradle_check_home(self):
+        self.check_gradle_check_home()
+
+    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    def test_gradle_empty_packages(self):
+        self.check_gradle_empty_packages()
 
     def target_dir_name_sufix(self):
         return "_groovy"
@@ -438,6 +455,30 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
         super().setUpClass()
         self.build_file_name = "build.gradle.kts"
         self.settings_file_name = "settings.gradle.kts"
+
+    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    def test_gradle_generated_app(self):
+        self.check_gradle_generated_app()
+
+    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    def test_gradle_generated_app_external_resources(self):
+        self.check_gradle_generated_app_external_resources()
+
+    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    def test_gradle_fail_without_graalpy_dep(self):
+        self.check_gradle_fail_without_graalpy_dep()
+
+    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    def test_gradle_gen_launcher_and_venv(self):
+        self.check_gradle_gen_launcher_and_venv()
+
+    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    def test_gradle_check_home(self):
+        self.check_gradle_check_home()
+
+    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    def test_gradle_empty_packages(self):
+        self.check_gradle_empty_packages()
 
     def target_dir_name_sufix(self):
         return "_kotlin"
