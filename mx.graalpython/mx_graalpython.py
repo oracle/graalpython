@@ -1007,7 +1007,7 @@ def graalpytest(args):
         gp_args = ["--vm.ea", "--vm.esa", "--experimental-options=true", "--python.EnableDebuggingBuiltins"]
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         python_args += gp_args
-    runner_args += ['--subprocess-args', shlex.join(python_args)]
+    runner_args.append(f'--subprocess-args={shlex.join(python_args)}')
     cmd_args = [*python_args, _python_test_runner(), *runner_args]
     delete_bad_env_keys(env)
     if is_graalpy:
@@ -1086,7 +1086,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     if use_pytest:
         args += ["-m", "pytest", "-v", "--assert=plain", "--tb=native"]
     else:
-        args += [_python_test_runner(), "--durations", "25", "-n", str(parallel), "--subprocess-args", shlex.join(args)]
+        args += [_python_test_runner(), "--durations", "25", "-n", str(parallel), f"--subprocess-args={shlex.join(args)}"]
 
     if runner_args:
         args += runner_args
