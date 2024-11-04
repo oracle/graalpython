@@ -44,9 +44,8 @@ import sys
 import subprocess
 import tempfile
 import unittest
-import pathlib
-import util
 import time
+from tests.standalone import util
 
 is_enabled = 'ENABLE_JBANG_INTEGRATION_UNITTESTS' in os.environ and os.environ['ENABLE_JBANG_INTEGRATION_UNITTESTS'] == "true"
 MAVEN_REPO_LOCAL_URL = os.environ.get('org.graalvm.maven.downloader.repository')

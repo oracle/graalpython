@@ -41,8 +41,8 @@ import os
 import tempfile
 import unittest
 import shutil
-import util
 import sys
+from tests.standalone import util
 
 class MavenPluginTest(util.PolyglotAppTestBase):
 

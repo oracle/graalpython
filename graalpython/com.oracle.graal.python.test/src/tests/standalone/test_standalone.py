@@ -40,7 +40,7 @@
 import os
 import tempfile
 import unittest
-import util
+from tests.standalone import util
 
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
 

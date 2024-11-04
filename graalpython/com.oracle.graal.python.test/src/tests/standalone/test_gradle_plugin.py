@@ -41,9 +41,9 @@ import os
 import tempfile
 import unittest
 import shutil
-import util
 import sys
 import textwrap
+from tests.standalone import util
 
 def append(file, txt):
     with open(file, "a") as f:
@@ -369,7 +369,7 @@ class GradlePluginGroovyTest(GradlePluginTestBase):
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_fail_without_graalpy_dep(self):
         self.check_gradle_fail_without_graalpy_dep()
-        
+
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_gen_launcher_and_venv(self):
         self.check_gradle_gen_launcher_and_venv()
