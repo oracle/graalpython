@@ -59,7 +59,7 @@ import unittest
 import unittest.loader
 from abc import abstractmethod
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 
@@ -679,20 +679,33 @@ class Config:
     new_worker_per_file: bool = False
     serial_tests: frozenset[str] = frozenset()
     partial_splits_individual_tests: frozenset[str] = frozenset()
+    excludes: dict[str, frozenset[str]] = field(default_factory=dict)
+
+    def test_file_name(self, test_file):
+        resolved = test_file.resolve().relative_to(self.configdir)
+        return str(resolved).removesuffix('.py')
 
     def is_serial_test(self, test_file: Path):
-        resolved = test_file.resolve().relative_to(self.configdir)
-        name = str(resolved).removesuffix('.py')
-        return name in self.serial_tests
+        return self.test_file_name(test_file) in self.serial_tests
 
     def is_partial_splits_individual_tests(self, test_file: Path):
-        resolved = test_file.resolve().relative_to(self.configdir)
-        name = str(resolved).removesuffix('.py')
-        return name in self.partial_splits_individual_tests
+        return self.test_file_name(test_file) in self.partial_splits_individual_tests
 
     def get_tag_file(self, test_file: Path):
         if self.tags_dir:
             return self.tags_dir / (test_file.name.removesuffix('.py') + '.txt')
+
+    def is_excluded(self, test_file: Path):
+        exclude_keys = [sys.platform]
+        if IS_GRAALPY:
+            # noinspection PyUnresolvedReferences
+            exclude_keys.append('native_image' if __graalpython__.is_native else 'jvm')
+        test_file_name = self.test_file_name(test_file)
+        for key in exclude_keys:
+            if excludes := self.excludes.get(key):
+                if test_file_name in excludes:
+                    return True
+        return False
 
 
 @lru_cache
@@ -712,6 +725,10 @@ def config_for_file(test_file: Path) -> Config:
     return config_for_dir(path)
 
 
+def test_file_name_set(test_files: list[str]):
+    return frozenset({test_file.removesuffix('.py') for test_file in test_files})
+
+
 @lru_cache
 def parse_config(config_path, path):
     with open(config_path, 'rb') as f:
@@ -725,10 +742,11 @@ def parse_config(config_path, path):
             tags_dir=tags_dir,
             run_top_level_functions=config_dict.get('run_top_level_functions', Config.run_top_level_functions),
             new_worker_per_file=config_dict.get('new_worker_per_file', Config.new_worker_per_file),
-            serial_tests=frozenset(config_dict.get('serial_tests', Config.serial_tests)),
-            partial_splits_individual_tests=frozenset(
+            serial_tests=test_file_name_set(config_dict.get('serial_tests', Config.serial_tests)),
+            partial_splits_individual_tests=test_file_name_set(
                 config_dict.get('partial_splits_individual_tests', Config.partial_splits_individual_tests)
             ),
+            excludes={key: test_file_name_set(excludes) for key, excludes in config_dict.get('excludes', {}).items()},
         )
 
 
@@ -827,16 +845,21 @@ def path_for_comparison(p: Path):
 
 
 def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None, partial=None,
-            continue_on_errors=False) -> list[TestSuite]:
+            continue_on_errors=False, no_excludes=False) -> list[TestSuite]:
     to_run = []
     all_specifiers = expand_specifier_paths(all_specifiers)
+    specifiers_by_file = group_specifiers_by_file(all_specifiers)
     if ignore:
         ignore = [path_for_comparison(i) for i in ignore]
-        all_specifiers = [
-            s for s in all_specifiers
-            if not any(path_for_comparison(s.test_file).is_relative_to(i) for i in ignore)
-        ]
-    specifiers_by_file = group_specifiers_by_file(all_specifiers)
+        for test_file in set(specifiers_by_file):
+            if any(path_for_comparison(test_file).is_relative_to(i) for i in ignore):
+                del specifiers_by_file[test_file]
+    if not no_excludes:
+        for test_file in set(specifiers_by_file):
+            config = config_for_file(test_file)
+            if config.is_excluded(test_file):
+                log(f"Test file {test_file} is excluded on this platform/configuration, use --no-excludes to overrride")
+                del specifiers_by_file[test_file]
     if partial:
         selected, total = partial
         to_split = []
@@ -910,7 +933,7 @@ def in_process():
         def result_factory(suite):
             return SimpleResult(suite, data)
 
-    for test_suite in collect(tests):
+    for test_suite in collect(tests, no_excludes=True):
         result = result_factory(test_suite)
         result.failfast = args.failfast
         test_suite.run(result)
@@ -939,6 +962,8 @@ def main():
                         help="Create a new worker process for each test file (when -n is specified). Default for tagged unit tests")
     parser.add_argument('--ignore', type=Path, action='append', default=[],
                         help="Ignore path during collection (multi-allowed)")
+    parser.add_argument('--no-excludes', action='store_true',
+                        help="Don't apply configuration exclusions")
     parser.add_argument('-f', '--failfast', action='store_true',
                         help="Exit immediately after the first failure")
     parser.add_argument('--all', action='store_true',
@@ -1017,6 +1042,7 @@ def main():
         ignore=args.ignore,
         partial=partial,
         continue_on_errors=args.continue_on_collection_errors,
+        no_excludes=args.no_excludes,
     )
     if args.collect_only:
         for test_suite in tests:

@@ -757,17 +757,6 @@ def update_unittest_tags(args):
         mx.warn("Potential regressions:\n" + '\n'.join(x[1] for x in diff))
 
 
-AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_register_interop_behavior.py", "test_jarray.py", "test_ssl_java_integration.py"]
-# These test would work on JVM too, but they are prohibitively slow due to a large amount of subprocesses
-AOT_ONLY_TESTS = ["test_patched_pip.py", "test_multiprocessing_spawn.py"]
-
-GINSTALL_GATE_PACKAGES = {
-    "numpy": "numpy",
-    "scipy": "scipy",
-    "scikit_learn": "sklearn",
-}
-
-
 class GraalPythonTags(object):
     junit = 'python-junit'
     junit_maven = 'python-junit-maven'
@@ -1162,7 +1151,7 @@ def _list_graalpython_unittests(paths=None, exclude=None):
     return testfiles
 
 
-def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None,
+def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env=None,
                          use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, timeout=None,
                          report=False, parallel=1, runner_args=None):
     if lock:
@@ -1175,7 +1164,6 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         "--python.EnableDebuggingBuiltins",
         *args,
     ]
-    exclude = exclude or []
     if env is None:
         env = os.environ.copy()
     env['PYTHONHASHSEED'] = '0'
@@ -1183,12 +1171,6 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
 
     if mx.primary_suite() != SUITE:
         env.setdefault("GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS", "true")
-
-    # list of excluded tests
-    if aot_compatible:
-        exclude += AOT_INCOMPATIBLE_TESTS
-    else:
-        exclude += AOT_ONLY_TESTS
 
     # just to be able to verify, print C ext mode (also works for CPython)
     mx.run(
@@ -1209,8 +1191,9 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     if runner_args:
         args += runner_args
 
-    for file in exclude:
-        args += ['--ignore', file]
+    if exclude:
+        for file in exclude:
+            args += ['--ignore', file]
 
     if is_collecting_coverage() and mx_gate.get_jacoco_agent_args():
         # jacoco only dumps the data on exit, and when we run all our unittests
@@ -1386,49 +1369,6 @@ def get_wrapper_urls(wrapper_properties_file, keys):
 def graalpython_gate_runner(args, tasks):
     report = lambda: (not is_collecting_coverage()) and task
     nonZeroIsFatal = not is_collecting_coverage()
-    if WIN32:
-        # Windows support is still experimental, so we exclude some unittests
-        # on Windows for now. If you add unittests and cannot get them to work
-        # on Windows, yet, add their files here.
-        excluded_tests = [
-            "test_code.py", # forward slash in path problem
-            "test_csv.py",
-            "test_imports.py", # import posix
-            "test_locale.py",
-            "test_math.py",
-            "test_memoryview.py",
-            "test_mmap.py", # sys.getwindowsversion
-            "test_multiprocessing.py", # import _winapi
-            "test_multiprocessing_graalpy.py", # import _winapi
-            "test_patched_pip.py",
-            "test_pathlib.py",
-            "test_pdb.py", # Tends to hit GR-41935
-            "test_posix.py", # import posix
-            "test_pyio.py",
-            "test_signal.py",
-            "test_struct.py",
-            "test_structseq.py", # import posix
-            "test_subprocess.py",
-            "test_thread.py", # sys.getwindowsversion
-            "test_traceback.py",
-            "test_zipimport.py", # sys.getwindowsversion
-            "test_ssl_java_integration.py",
-            "cpyext/test_abstract.py",
-            "cpyext/test_functions.py",
-            "cpyext/test_long.py",
-            "cpyext/test_member.py",
-            "cpyext/test_memoryview.py",
-            "cpyext/test_misc.py",
-            "cpyext/test_mmap.py",
-            "cpyext/test_slice.py",
-            "cpyext/test_shutdown.py",
-            "cpyext/test_thread.py",
-            "cpyext/test_unicode.py",
-            "cpyext/test_wiki.py",
-            "cpyext/test_tp_slots.py",  # Temporarily disabled due to GR-54345
-        ]
-    else:
-        excluded_tests = []
 
     # JUnit tests
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit, GraalPythonTags.windows]) as task:
@@ -1480,7 +1420,6 @@ def graalpython_gate_runner(args, tasks):
         if task:
             run_python_unittests(
                 graalpy_standalone_jvm(),
-                exclude=excluded_tests,
                 nonZeroIsFatal=nonZeroIsFatal,
                 report=report()
             )
@@ -1493,11 +1432,11 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm_enterprise(), args=SANDBOXED_OPTIONS, exclude=excluded_tests, report=report())
+            run_python_unittests(graalpy_standalone_jvm_enterprise(), args=SANDBOXED_OPTIONS, report=report())
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm(), args=["-multi-context"], exclude=excluded_tests, nonZeroIsFatal=nonZeroIsFatal, report=report())
+            run_python_unittests(graalpy_standalone_jvm(), args=["-multi-context"], nonZeroIsFatal=nonZeroIsFatal, report=report())
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
@@ -1577,11 +1516,11 @@ def graalpython_gate_runner(args, tasks):
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit, GraalPythonTags.windows]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_native(), exclude=excluded_tests, aot_compatible=True, report=report())
+            run_python_unittests(graalpy_standalone_native(), report=report())
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_native_enterprise(), args=SANDBOXED_OPTIONS, aot_compatible=True, report=report())
+            run_python_unittests(graalpy_standalone_native_enterprise(), args=SANDBOXED_OPTIONS, report=report())
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
@@ -2601,13 +2540,13 @@ def python_coverage(args):
             ]
             env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
             # deselect some tagged unittests that hang with coverage enabled
-            exclude = [
+            tagged_exclude = [
                 "test_multiprocessing_spawn",
                 "test_multiprocessing_main_handling",
                 "test_multiprocessing_graalpy",
             ]
             if kwds.pop("tagged", False):
-                run_tagged_unittests(executable, env=env, nonZeroIsFatal=False, parallel=1, exclude=exclude)
+                run_tagged_unittests(executable, env=env, nonZeroIsFatal=False, parallel=1, exclude=tagged_exclude)
             elif kwds.pop("hpy", False):
                 run_hpy_unittests(executable, env=env, nonZeroIsFatal=False, timeout=5*60*60) # hpy unittests are really slow under coverage
             else:
