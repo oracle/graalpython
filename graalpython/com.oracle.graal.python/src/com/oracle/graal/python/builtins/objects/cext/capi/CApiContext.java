@@ -318,6 +318,10 @@ public final class CApiContext extends CExtContext {
             primitiveNativeWrapperCache[i] = PrimitiveNativeWrapper.createInt(value);
         }
 
+        // initialize Py_True and Py_False
+        context.getTrue().setNativeWrapper(PrimitiveNativeWrapper.createBool(true));
+        context.getFalse().setNativeWrapper(PrimitiveNativeWrapper.createBool(false));
+
         this.gcTask = new BackgroundGCTask(context);
     }
 
@@ -430,6 +434,12 @@ public final class CApiContext extends CExtContext {
     public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(long l) {
         assert CApiGuards.isSmallLong(l);
         return getCachedPrimitiveNativeWrapper((int) l);
+    }
+
+    public PrimitiveNativeWrapper getCachedBooleanPrimitiveNativeWrapper(boolean b) {
+        PythonAbstractObjectNativeWrapper wrapper = b ? getContext().getTrue().getNativeWrapper() : getContext().getFalse().getNativeWrapper();
+        assert wrapper.getRefCount() > 0;
+        return (PrimitiveNativeWrapper) wrapper;
     }
 
     /**
