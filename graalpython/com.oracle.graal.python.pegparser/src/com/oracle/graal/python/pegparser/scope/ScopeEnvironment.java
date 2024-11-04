@@ -203,7 +203,7 @@ public class ScopeEnvironment {
                     HashSet<String> global) {
         if (flags.contains(DefUse.DefGlobal)) {
             if (flags.contains(DefUse.DefNonLocal)) {
-                errorCallback.onError(ErrorType.Syntax, scope.getDirective(name), "name '%s' is nonlocal and global", name);
+                throw errorCallback.onError(ErrorType.Syntax, scope.getDirective(name), "name '%s' is nonlocal and global", name);
             }
             scopes.put(name, DefUse.GlobalExplicit);
             if (global != null) {
@@ -214,9 +214,9 @@ public class ScopeEnvironment {
             }
         } else if (flags.contains(DefUse.DefNonLocal)) {
             if (bound == null) {
-                errorCallback.onError(ErrorCallback.ErrorType.Syntax, scope.getDirective(name), "nonlocal declaration not allowed at module level");
+                throw errorCallback.onError(ErrorCallback.ErrorType.Syntax, scope.getDirective(name), "nonlocal declaration not allowed at module level");
             } else if (!bound.contains(name)) {
-                errorCallback.onError(ErrorType.Syntax, scope.getDirective(name), "no binding for nonlocal '%s' found", name);
+                throw errorCallback.onError(ErrorType.Syntax, scope.getDirective(name), "no binding for nonlocal '%s' found", name);
             }
             scopes.put(name, DefUse.Free);
             scope.flags.add(ScopeFlags.HasFreeVars);
@@ -355,7 +355,7 @@ public class ScopeEnvironment {
             EnumSet<DefUse> flags = scope.getUseOfName(mangled);
             if (flags != null) {
                 if (flag == DefUse.DefParam && flags.contains(DefUse.DefParam)) {
-                    env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), DUPLICATE_ARGUMENT, mangled);
+                    throw env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), DUPLICATE_ARGUMENT, mangled);
                 }
                 flags.add(flag);
             } else {
@@ -363,7 +363,7 @@ public class ScopeEnvironment {
             }
             if (scope.flags.contains(ScopeFlags.IsVisitingIterTarget)) {
                 if (flags.contains(DefUse.DefGlobal) || flags.contains(DefUse.DefNonLocal)) {
-                    env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_INNER_LOOP_CONFLICT, mangled);
+                    throw env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_INNER_LOOP_CONFLICT, mangled);
                 }
                 flags.add(DefUse.DefCompIter);
             }
@@ -371,7 +371,7 @@ public class ScopeEnvironment {
             switch (flag) {
                 case DefParam:
                     if (scope.varnames.contains(mangled)) {
-                        env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), "duplicate argument '%s' in function definition", mangled);
+                        throw env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), "duplicate argument '%s' in function definition", mangled);
                     }
                     scope.varnames.add(mangled);
 
@@ -428,7 +428,7 @@ public class ScopeEnvironment {
             }
         }
 
-        private void raiseIfComprehensionBlock(ExprTy node) {
+        private RuntimeException raiseIfComprehensionBlock(ExprTy node) {
             String msg;
             switch (currentScope.comprehensionType) {
                 case ListComprehension:
@@ -445,12 +445,12 @@ public class ScopeEnvironment {
                     msg = "'yield' inside generator expression";
                     break;
             }
-            env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), msg);
+            throw env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), msg);
         }
 
         private void raiseIfAnnotationBlock(String name, ExprTy node) {
             if (currentScope.type == ScopeType.Annotation) {
-                env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "'%s' can not be used within an annotation", name);
+                throw env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "'%s' can not be used within an annotation", name);
             }
         }
 
@@ -514,7 +514,7 @@ public class ScopeEnvironment {
             }
             if ("*".equals(importedName)) {
                 if (!currentScope.isModule()) {
-                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), IMPORT_STAR_WARNING);
+                    throw env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), IMPORT_STAR_WARNING);
                 }
             } else {
                 addDef(importedName, DefUse.DefImport, node);
@@ -678,7 +678,7 @@ public class ScopeEnvironment {
         public Void visit(ExprTy.NamedExpr node) {
             raiseIfAnnotationBlock("named expression", node);
             if (currentScope.comprehensionIterExpression > 0) {
-                env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_ITER_EXPR);
+                throw env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_ITER_EXPR);
             }
             if (currentScope.flags.contains(ScopeFlags.IsComprehension)) {
                 // symtable_extend_namedexpr_scope
@@ -688,7 +688,7 @@ public class ScopeEnvironment {
                     // If we find a comprehension scope, check for conflict
                     if (s.flags.contains(ScopeFlags.IsComprehension)) {
                         if (s.getUseOfName(targetName).contains(DefUse.DefCompIter)) {
-                            env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_CONFLICT);
+                            throw env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_CONFLICT);
                         }
                         continue;
                     }
@@ -713,7 +713,7 @@ public class ScopeEnvironment {
                     }
                     // Disallow usage in ClassBlock
                     if (s.type == ScopeType.Class) {
-                        env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_IN_CLASS);
+                        throw env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_IN_CLASS);
                     }
                 }
             }
@@ -781,7 +781,7 @@ public class ScopeEnvironment {
             }
             currentScope.flags.add(ScopeFlags.IsGenerator);
             if (currentScope.flags.contains(ScopeFlags.IsComprehension)) {
-                raiseIfComprehensionBlock(node);
+                throw raiseIfComprehensionBlock(node);
             }
             return null;
         }
@@ -794,7 +794,7 @@ public class ScopeEnvironment {
             }
             currentScope.flags.add(ScopeFlags.IsGenerator);
             if (currentScope.flags.contains(ScopeFlags.IsComprehension)) {
-                raiseIfComprehensionBlock(node);
+                throw raiseIfComprehensionBlock(node);
             }
             return null;
         }
@@ -842,8 +842,7 @@ public class ScopeEnvironment {
                                 currentScope.symbols != globals &&
                                 node.isSimple) {
                     String msg = cur.contains(DefUse.DefGlobal) ? "annotated name '%s' can't be global" : "annotated name '%s' can't be nonlocal";
-                    env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), msg, name.id);
-                    return null;
+                    throw env.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), msg, name.id);
                 }
                 if (node.isSimple) {
                     addDef(name.id, DefUse.DefAnnot, node);
@@ -1005,8 +1004,7 @@ public class ScopeEnvironment {
                         msg = GLOBAL_AFTER_ASSIGN;
                     }
                     if (msg != null) {
-                        env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), msg, n);
-                        continue;
+                        throw env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), msg, n);
                     }
                 }
                 addDef(n, DefUse.DefGlobal, node);
@@ -1130,8 +1128,7 @@ public class ScopeEnvironment {
                         msg = NONLOCAL_AFTER_ASSIGN;
                     }
                     if (msg != null) {
-                        env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), msg, n);
-                        continue;
+                        throw env.errorCallback.onError(ErrorCallback.ErrorType.Syntax, node.getSourceRange(), msg, n);
                     }
                 }
                 addDef(n, DefUse.DefNonLocal, node);

@@ -1123,12 +1123,13 @@ public class CompilerTests extends PythonTests {
 
     static class TestErrorCallbackImpl implements ErrorCallback {
         @Override
-        public void reportIncompleteSource(int line) {
+        public RuntimeException reportIncompleteSource(int line) {
             fail("Unexpected call to reportIncompleteSource");
+            throw new IllegalStateException("unreachable");
         }
 
         @Override
-        public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
+        public RuntimeException onError(ErrorType errorType, SourceRange sourceRange, String message) {
             throw new SyntaxError(errorType, message);
         }
 

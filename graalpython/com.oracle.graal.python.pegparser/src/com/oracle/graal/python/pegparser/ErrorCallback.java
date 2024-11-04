@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,18 +58,14 @@ public interface ErrorCallback {
         Syntax
     }
 
-    void reportIncompleteSource(int line);
+    RuntimeException reportIncompleteSource(int line);
 
-    void onError(ErrorType errorType, SourceRange sourceRange, String message);
+    RuntimeException onError(ErrorType errorType, SourceRange sourceRange, String message);
 
     void onWarning(WarningType warningType, SourceRange sourceRange, String message);
 
-    default void onError(ErrorType errorType, SourceRange sourceRange, String message, Object... arguments) {
-        onError(errorType, sourceRange, String.format(message, arguments));
-    }
-
-    default void onError(SourceRange sourceRange, String message, Object... arguments) {
-        onError(ErrorType.Generic, sourceRange, String.format(message, arguments));
+    default RuntimeException onError(ErrorType errorType, SourceRange sourceRange, String message, Object... arguments) {
+        throw onError(errorType, sourceRange, String.format(message, arguments));
     }
 
     default void onWarning(WarningType warningType, SourceRange sourceRange, String message, Object... arguments) {
