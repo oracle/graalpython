@@ -1678,6 +1678,7 @@ public abstract class CExtNodes {
         // according to definitions in 'moduleobject.h'
         static final int SLOT_PY_MOD_CREATE = 1;
         static final int SLOT_PY_MOD_EXEC = 2;
+        static final int SLOT_PY_MOD_MULTIPLE_INTERPRETERS = 3;
 
     }
 
@@ -1769,6 +1770,10 @@ public abstract class CExtNodes {
                             break;
                         case SLOT_PY_MOD_EXEC:
                             hasExecutionSlots = true;
+                            break;
+                        case SLOT_PY_MOD_MULTIPLE_INTERPRETERS:
+                            // ignored
+                            // (mq) TODO: handle multiple interpreter cases
                             break;
                         default:
                             throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.MODULE_USES_UNKNOW_SLOT_ID, mName, slotId);
