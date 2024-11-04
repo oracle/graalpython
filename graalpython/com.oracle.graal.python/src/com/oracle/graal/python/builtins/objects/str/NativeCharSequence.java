@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,13 +46,8 @@ import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -95,17 +90,6 @@ public final class NativeCharSequence implements CharSequence {
     @Override
     public int length() {
         return TruffleString.CodePointLengthNode.getUncached().execute(materialize(), TS_ENCODING);
-    }
-
-    int length(Node inliningTarget, InteropLibrary lib, CastToJavaIntExactNode castToJavaIntNode) {
-        try {
-            int arraySize = castToJavaIntNode.execute(inliningTarget, lib.getArraySize(ptr));
-            assert arraySize % elementSize == 0;
-            // we need to subtract the terminating null character
-            return arraySize / elementSize;
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere("pointer of NativeCharSequence is not an array");
-        }
     }
 
     @Override
