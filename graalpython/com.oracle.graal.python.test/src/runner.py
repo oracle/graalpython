@@ -39,6 +39,7 @@
 import argparse
 import concurrent.futures
 import enum
+import fnmatch
 import json
 import math
 import multiprocessing
@@ -59,7 +60,7 @@ import unittest
 import unittest.loader
 from abc import abstractmethod
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
@@ -294,7 +295,8 @@ class SimpleResult(AbstractRemoteResult):
         self.data.append(data)
 
 
-def test_path_to_module(path: Path):
+def test_path_to_module(test_file: 'TestFileConfig'):
+    path = test_file.path.resolve().relative_to(test_file.config.rootdir)
     return str(path).removesuffix('.py').replace(os.sep, '.')
 
 
@@ -415,14 +417,14 @@ class TestRunner:
         for result in self.results:
             by_file[result.test_id.test_file].append(result)
         for test_file, results in by_file.items():
-            config = config_for_file(test_file)
-            tag_file = config.get_tag_file(test_file)
+            test_file = configure_test_file(test_file)
+            tag_file = test_file.get_tag_file()
             if not tag_file:
                 log(f"WARNNING: no tag directory for test file {test_file}")
                 continue
             tags = {result.test_id.test_name for result in results if result.status == TestStatus.SUCCESS}
             if append:
-                tags |= {test.test_name for test in read_tags(test_file, config)}
+                tags |= {test.test_name for test in read_tags(test_file)}
             with open(tag_file, 'w') as f:
                 for test_name in sorted(tags):
                     f.write(f'{test_name}\n')
@@ -670,6 +672,17 @@ def filter_tree(test_file: Path, test_suite: unittest.TestSuite, specifiers: lis
     return collected_tests, untagged_tests
 
 
+class TestFileNameMatcher:
+    def __init__(self, matcher: typing.Iterable[str] = ()):
+        matcher = [name.removesuffix('.py') for name in matcher]
+        globs, exact_matches = partition_list(matcher, lambda x: '*' in x)
+        self.exact_matches = frozenset(exact_matches)
+        self.globs = [re.compile(fnmatch.translate(glob)) for glob in globs]
+
+    def matches(self, name):
+        return name in self.exact_matches or any(glob.match(name) for glob in self.globs)
+
+
 @dataclass
 class Config:
     configdir: Path = Path('.').resolve()
@@ -677,35 +690,45 @@ class Config:
     tags_dir: Path | None = None
     run_top_level_functions: bool = False
     new_worker_per_file: bool = False
-    serial_tests: frozenset[str] = frozenset()
-    partial_splits_individual_tests: frozenset[str] = frozenset()
-    excludes: dict[str, frozenset[str]] = field(default_factory=dict)
+    serial_tests: TestFileNameMatcher = TestFileNameMatcher()
+    partial_splits_individual_tests: TestFileNameMatcher = TestFileNameMatcher()
+    excludes: TestFileNameMatcher = TestFileNameMatcher()
 
-    def test_file_name(self, test_file):
-        resolved = test_file.resolve().relative_to(self.configdir)
-        return str(resolved).removesuffix('.py')
 
-    def is_serial_test(self, test_file: Path):
-        return self.test_file_name(test_file) in self.serial_tests
+@dataclass
+class TestFileConfig:
+    path: Path
+    name: str
+    config: Config
 
-    def is_partial_splits_individual_tests(self, test_file: Path):
-        return self.test_file_name(test_file) in self.partial_splits_individual_tests
+    excluded: bool
+    serial: bool
+    partial_splits_individual_tests: bool
 
-    def get_tag_file(self, test_file: Path):
-        if self.tags_dir:
-            return self.tags_dir / (test_file.name.removesuffix('.py') + '.txt')
+    def __str__(self):
+        return str(self.path)
 
-    def is_excluded(self, test_file: Path):
-        exclude_keys = [sys.platform]
-        if IS_GRAALPY:
-            # noinspection PyUnresolvedReferences
-            exclude_keys.append('native_image' if __graalpython__.is_native else 'jvm')
-        test_file_name = self.test_file_name(test_file)
-        for key in exclude_keys:
-            if excludes := self.excludes.get(key):
-                if test_file_name in excludes:
-                    return True
-        return False
+    def __eq__(self, other):
+        return self.path == other.path
+
+    def get_tag_file(self):
+        if self.config.tags_dir:
+            return self.config.tags_dir / (self.name.removesuffix('.py') + '.txt')
+
+
+def configure_test_file(path: Path) -> TestFileConfig:
+    config = config_for_file(path)
+    resolved = path.resolve().relative_to(config.configdir)
+    name = str(resolved).removesuffix('.py')
+
+    return TestFileConfig(
+        path=path,
+        name=name,
+        config=config,
+        excluded=config.excludes.matches(name),
+        serial=config.serial_tests.matches(name),
+        partial_splits_individual_tests=config.partial_splits_individual_tests.matches(name),
+    )
 
 
 @lru_cache
@@ -725,10 +748,6 @@ def config_for_file(test_file: Path) -> Config:
     return config_for_dir(path)
 
 
-def test_file_name_set(test_files: list[str]):
-    return frozenset({test_file.removesuffix('.py') for test_file in test_files})
-
-
 @lru_cache
 def parse_config(config_path, path):
     with open(config_path, 'rb') as f:
@@ -736,17 +755,23 @@ def parse_config(config_path, path):
         tags_dir = None
         if config_tags_dir := config_dict.get('tags_dir'):
             tags_dir = (path / config_tags_dir).resolve()
+        exclude_keys = [sys.platform]
+        if IS_GRAALPY:
+            # noinspection PyUnresolvedReferences
+            exclude_keys.append('native_image' if __graalpython__.is_native else 'jvm')
+        excludes = []
+        if excludes_dict := config_dict.get('excludes'):
+            for key in exclude_keys:
+                excludes += excludes_dict.get(key, ())
         return Config(
             configdir=config_path.parent.resolve(),
             rootdir=config_path.parent.parent.resolve(),
             tags_dir=tags_dir,
             run_top_level_functions=config_dict.get('run_top_level_functions', Config.run_top_level_functions),
             new_worker_per_file=config_dict.get('new_worker_per_file', Config.new_worker_per_file),
-            serial_tests=test_file_name_set(config_dict.get('serial_tests', Config.serial_tests)),
-            partial_splits_individual_tests=test_file_name_set(
-                config_dict.get('partial_splits_individual_tests', Config.partial_splits_individual_tests)
-            ),
-            excludes={key: test_file_name_set(excludes) for key, excludes in config_dict.get('excludes', {}).items()},
+            serial_tests=TestFileNameMatcher(config_dict.get('serial_tests', ())),
+            partial_splits_individual_tests=TestFileNameMatcher(config_dict.get('partial_splits_individual_tests', ())),
+            excludes=TestFileNameMatcher(excludes),
         )
 
 
@@ -766,13 +791,6 @@ class TestSuite:
             self.test_suite.run(result)
         finally:
             sys.path[:] = saved_path
-
-
-def group_specifiers_by_file(specifiers: list[TestSpecifier]) -> dict[Path, list[TestSpecifier]]:
-    by_file = defaultdict(list)
-    for specifier in specifiers:
-        by_file[specifier.test_file].append(specifier)
-    return by_file
 
 
 def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifier]:
@@ -812,29 +830,30 @@ def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifie
     return expanded_specifiers
 
 
-def collect_module(test_file: Path, specifiers: list[TestSpecifier], use_tags=False, partial=None) -> TestSuite | None:
-    config = config_for_file(test_file)
+def collect_module(test_file: TestFileConfig, specifiers: list[TestSpecifier], use_tags=False,
+                   partial=None) -> TestSuite | None:
+    config = test_file.config
     saved_path = sys.path[:]
     sys.path.insert(0, str(config.rootdir))
     try:
         loader = TopLevelFunctionLoader() if config.run_top_level_functions else unittest.TestLoader()
         tags = None
         if use_tags and config.tags_dir:
-            tags = read_tags(test_file, config)
+            tags = read_tags(test_file)
             if not tags:
                 return None
+        test_module = test_path_to_module(test_file)
         try:
-            test_module = test_path_to_module(test_file.resolve().relative_to(config.rootdir))
             test_suite = loader.loadTestsFromName(test_module)
         except unittest.SkipTest as e:
             log(f"Test file {test_file} skipped: {e}")
             return
-        collected_tests, untagged_tests = filter_tree(test_file, test_suite, specifiers, tags)
-        if partial and config.is_partial_splits_individual_tests(test_file):
+        collected_tests, untagged_tests = filter_tree(test_file.path, test_suite, specifiers, tags)
+        if partial and test_file.partial_splits_individual_tests:
             selected, total = partial
             collected_tests = collected_tests[selected::total]
         if collected_tests:
-            return TestSuite(config, test_file, sys.path[:], test_suite, collected_tests, untagged_tests)
+            return TestSuite(config, test_file.path, sys.path[:], test_suite, collected_tests, untagged_tests)
     finally:
         sys.path[:] = saved_path
 
@@ -848,34 +867,35 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
             continue_on_errors=False, no_excludes=False) -> list[TestSuite]:
     to_run = []
     all_specifiers = expand_specifier_paths(all_specifiers)
-    specifiers_by_file = group_specifiers_by_file(all_specifiers)
+    test_files = []
+    for specifier in all_specifiers:
+        if not specifier.test_file.exists():
+            sys.exit(f"File does not exist: {specifier.test_file}")
+        test_files.append(configure_test_file(specifier.test_file))
     if ignore:
         ignore = [path_for_comparison(i) for i in ignore]
-        for test_file in set(specifiers_by_file):
-            if any(path_for_comparison(test_file).is_relative_to(i) for i in ignore):
-                del specifiers_by_file[test_file]
+        test_files = [
+            test_file for test_file in test_files
+            if any(path_for_comparison(test_file.path).is_relative_to(i) for i in ignore)
+        ]
     if not no_excludes:
-        for test_file in set(specifiers_by_file):
-            config = config_for_file(test_file)
-            if config.is_excluded(test_file):
-                log(f"Test file {test_file} is excluded on this platform/configuration, use --no-excludes to overrride")
-                del specifiers_by_file[test_file]
+        excluded, test_files = partition_list(test_files, lambda f: f.excluded)
+        for file in excluded:
+            log(f"Test file {file} is excluded on this platform/configuration, use --no-excludes to overrride")
     if partial:
         selected, total = partial
         to_split = []
         partial_files = set()
         # Always keep files that are split per-test
-        for test_file in specifiers_by_file:
-            config = config_for_file(test_file)
-            if config.is_partial_splits_individual_tests(test_file):
+        for test_file in test_files:
+            if test_file.partial_splits_individual_tests:
                 partial_files.add(test_file)
             else:
                 to_split.append(test_file)
         partial_files |= set(to_split[selected::total])
-        specifiers_by_file = {f: s for f, s in specifiers_by_file.items() if f in partial_files}
-    for test_file, specifiers in specifiers_by_file.items():
-        if not test_file.exists():
-            sys.exit(f"File does not exist: {test_file}")
+        test_files = [f for f in test_files if f in partial_files]
+    for test_file in test_files:
+        specifiers = [s for s in all_specifiers if s.test_file == test_file.path]
         try:
             collected = collect_module(test_file, specifiers, use_tags=use_tags, partial=partial)
         except Exception as e:
@@ -888,14 +908,14 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
     return to_run
 
 
-def read_tags(test_file: Path, config: Config) -> list[TestId]:
-    tag_file = config.get_tag_file(test_file)
+def read_tags(test_file: TestFileConfig) -> list[TestId]:
+    tag_file = test_file.get_tag_file()
     tags = []
     if tag_file.exists():
         with open(tag_file) as f:
             for line in f:
                 test = line.strip()
-                tags.append(TestId(test_file, test))
+                tags.append(TestId(test_file.path, test))
         return tags
     return tags
 
