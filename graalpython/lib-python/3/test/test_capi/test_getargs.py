@@ -1349,19 +1349,32 @@ class ParseTupleAndKeywords_Test(unittest.TestCase):
                     "argument 1 must be sequence of length 1, not 0"):
                 parse(((),), {}, '(' + f + ')', ['a'])
 
+    @unittest.skipIf(_testinternalcapi is None, 'needs _testinternalcapi')
+    def test_gh_119213(self):
+        rc, out, err = script_helper.assert_python_ok("-c", """if True:
+            from test import support
+            script = '''if True:
+                import _testinternalcapi
+                _testinternalcapi.gh_119213_getargs(spam='eggs')
+                '''
+            config = dict(
+                allow_fork=False,
+                allow_exec=False,
+                allow_threads=True,
+                allow_daemon_threads=False,
+                use_main_obmalloc=False,
+                gil=2,
+                check_multi_interp_extensions=True,
+            )
+            rc = support.run_in_subinterp_with_config(script, **config)
+            assert rc == 0
 
-class Test_testcapi(unittest.TestCase):
-    locals().update((name, getattr(_testcapi, name))
-                    for name in dir(_testcapi)
-                    if name.startswith('test_') and name.endswith('_code'))
-
-    @warnings_helper.ignore_warnings(category=DeprecationWarning)
-    def test_u_code(self):
-        _testcapi.test_u_code()
-
-    @warnings_helper.ignore_warnings(category=DeprecationWarning)
-    def test_Z_code(self):
-        _testcapi.test_Z_code()
+            # The crash is different if the interpreter was not destroyed first.
+            #interpid = _testinternalcapi.create_interpreter()
+            #rc = _testinternalcapi.exec_interpreter(interpid, script)
+            #assert rc == 0
+            """)
+        self.assertEqual(rc, 0)
 
 
 if __name__ == "__main__":
