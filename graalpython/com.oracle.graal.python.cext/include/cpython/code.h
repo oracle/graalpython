@@ -35,20 +35,35 @@ typedef struct _Py_GlobalMonitors {
  * 2**32 - 1, rather than INT_MAX.
  */
 
-typedef uint16_t _Py_CODEUNIT;
+typedef union {
+    uint16_t cache;
+    struct {
+        uint8_t code;
+        uint8_t arg;
+    } op;
+} _Py_CODEUNIT;
 
-#ifdef WORDS_BIGENDIAN
-#  define _Py_OPCODE(word) ((word) >> 8)
-#  define _Py_OPARG(word) ((word) & 255)
-#  define _Py_MAKECODEUNIT(opcode, oparg) (((opcode)<<8)|(oparg))
-#else
-#  define _Py_OPCODE(word) ((word) & 255)
-#  define _Py_OPARG(word) ((word) >> 8)
-#  define _Py_MAKECODEUNIT(opcode, oparg) ((opcode)|((oparg)<<8))
-#endif
 
-// Use "unsigned char" instead of "uint8_t" here to avoid illegal aliasing:
-#define _Py_SET_OPCODE(word, opcode) (((unsigned char *)&(word))[0] = (opcode))
+/* These macros only remain defined for compatibility. */
+#define _Py_OPCODE(word) ((word).op.code)
+#define _Py_OPARG(word) ((word).op.arg)
+
+static inline _Py_CODEUNIT
+_py_make_codeunit(uint8_t opcode, uint8_t oparg)
+{
+    // No designated initialisers because of C++ compat
+    _Py_CODEUNIT word;
+    word.op.code = opcode;
+    word.op.arg = oparg;
+    return word;
+}
+
+static inline void
+_py_set_opcode(_Py_CODEUNIT *word, uint8_t opcode)
+{
+    word->op.code = opcode;
+}
+
 #define _Py_MAKE_CODEUNIT(opcode, oparg) _py_make_codeunit((opcode), (oparg))
 #define _Py_SET_OPCODE(word, opcode) _py_set_opcode(&(word), (opcode))
 
