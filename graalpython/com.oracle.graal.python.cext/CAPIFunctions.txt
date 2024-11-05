@@ -782,7 +782,6 @@ PyUnicode_IsIdentifier;int;PyObject*
 PyUnicode_Join;PyObject*;PyObject*|PyObject*
 PyUnicode_New;PyObject*;Py_ssize_t|Py_UCS4
 PyUnicode_Partition;PyObject*;PyObject*|PyObject*
-PyUnicode_READ_CHAR;Py_UCS4;PyObject*|Py_ssize_t
 PyUnicode_RPartition;PyObject*;PyObject*|PyObject*
 PyUnicode_RSplit;PyObject*;PyObject*|PyObject*|Py_ssize_t
 PyUnicode_ReadChar;Py_UCS4;PyObject*|Py_ssize_t
