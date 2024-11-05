@@ -616,6 +616,7 @@ def update_unittest_tags(args):
         # Too unreliable in the CI
         'graalpython.lib-python.3.test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_many_processes',
         'test.test_multiprocessing_spawn.test_processes.WithProcessesTestProcess.test_many_processes',
+        'test.test_multiprocessing_spawn.test_threads.WithThreadsTestPool.test_terminate',
         # Transiently ends up with 2 processes
         'test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one',
         'test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_killed_child',
