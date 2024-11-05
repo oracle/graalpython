@@ -139,7 +139,7 @@ Here are some advanced commands to debug test failures and fix issues.
 First, we have three sets of unit tests in the base repository:
 1. Our own Python-bases unit tests
 2. JUnit tests
-3. Python's standard library tests
+3. Python's standard library tests, we often refer to those as tagged tests
 
 To run the first, you can use this command:
 
@@ -147,11 +147,11 @@ To run the first, you can use this command:
 mx python-gate --tags python-unittest
 ```
 
-If some of the tests fail, you can re-run just a single test like this, substituting TEST-PATTERN (and possibly the file glob on the third line) with the test you want to run.
+If some of the tests fail, you can re-run just a single test like this, substituting TEST-SELECTOR with the test you want to run. You can use the whole failed test name including the path as the selector.
 Note that you can insert `-d` to debug on the Java level or use `--inspect` to debug in the Chrome debugger.
 
 ```bash
-mx [-d] graalpytest [--inspect] test_*.py -k TEST-PATTERN
+mx [-d] graalpytest [--inspect] TEST-SELECTOR
 ```
 
 To run the JUnit tests, you can use this command:
@@ -174,16 +174,16 @@ mx python-gate --tags python-tagged-unittest
 ```
 
 Note that we use "tag files", small _*.txt_ files that select which tests to run, so we only run tests that we know should pass.
-To run a subset of those tests, use the following command:
+To run a subset of those tests, use the following command. The selector can be a test name, a test file path a glob or an individual test ID.
 
 ```
-mx [-d] python-run-cpython-unittest [--inspect] NAME-OF-CPYTHON-UNITTEST
+mx [-d] graalpytest [--inspect] --tagged TEST-SELECTOR
 ```
 
 A tag file can be regenerated with
 
 ```
-mx python-retag-unittests NAME-OF-CPYTHON-UNITTEST
+mx graalpytest --retag TEST-SELECTOR
 ```
 
 There are also several other gates that may fail with changes.

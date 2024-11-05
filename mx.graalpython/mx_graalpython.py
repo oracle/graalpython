@@ -998,7 +998,7 @@ def graalpytest(args):
     python_args = []
     runner_args = []
     for arg in unknown_args:
-        if arg.startswith(('--python.', '--engine.', '--llvm.', '--vm.')):
+        if arg.startswith(('--python.', '--engine.', '--llvm.', '--vm.', '--inspect', '--experimental-options')):
             python_args.append(arg)
         else:
             runner_args.append(arg)
@@ -3031,7 +3031,7 @@ mx.update_commands(SUITE, {
     'python-src-import': [mx_graalpython_import.import_python_sources, ''],
     'python-coverage': [python_coverage, ''],
     'punittest': [punittest, ''],
-    'graalpytest': [graalpytest, '[-h] [-v] [--python PYTHON] [-k TEST_PATTERN] [TESTS]'],
+    'graalpytest': [graalpytest, '[-h] [--python PYTHON] [TESTS]'],
     'clean': [python_clean, ''],
     'python-update-hpy-import': [update_hpy_import_cmd, '[--no-pull] PATH_TO_HPY'],
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
