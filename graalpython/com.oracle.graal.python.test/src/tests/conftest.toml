@@ -1,14 +1,17 @@
-[tests]
+[settings]
 run_top_level_functions = true
-partial_splits_individual_tests = [
-    'standalone/test_standalone',
-    'standalone/test_jbang_integration',
-]
-[tests.excludes]
+
+[[test_rules]]
+selector = ['standalone/*']
+per_test_timeout = 1800
+partial_splits_individual_tests = true
+
+[[test_rules]]
 # Windows support is still experimental, so we exclude some unittests
 # on Windows for now. If you add unittests and cannot get them to work
 # on Windows, yet, add their files here.
-win32 = [
+exclude_on = ['win32']
+selector = [
     "test_code.py", # forward slash in path problem
     "test_csv.py",
     "test_imports.py", # import posix
@@ -45,13 +48,19 @@ win32 = [
     "cpyext/test_wiki.py",
     "cpyext/test_tp_slots.py", # Temporarily disabled due to GR-54345
 ]
-native_image = [
+
+[[test_rules]]
+exclude_on = ['native-image']
+selector = [
     "test_interop.py",
     "test_register_interop_behavior.py",
     "test_jarray.py",
     "test_ssl_java_integration.py",
 ]
-jvm = [
+
+[[test_rules]]
+exclude_on = ['jvm']
+selector = [
     # These test would work on JVM too, but they are prohibitively slow due to a large amount of subprocesses
     "test_patched_pip.py",
 ]

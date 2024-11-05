@@ -60,7 +60,7 @@ import unittest
 import unittest.loader
 from abc import abstractmethod
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 
@@ -107,7 +107,7 @@ SUCCESSFUL_STATES = TestStatus.SUCCESS, TestStatus.SKIPPED, TestStatus.EXPECTED_
 FAILED_STATES = TestStatus.FAILURE, TestStatus.ERROR, TestStatus.UNEXPECTED_SUCCESS
 
 
-@dataclass(repr=False)
+@dataclass(repr=False, frozen=True)
 class TestId:
     test_file: Path
     test_name: str
@@ -131,7 +131,7 @@ class TestId:
         return cls(test_file, test_id)
 
 
-@dataclass
+@dataclass(frozen=True)
 class TestSpecifier:
     test_file: Path
     test_name: str | None
@@ -203,7 +203,7 @@ class AbstractResult(unittest.TestResult):
         self.start_time = None
 
     def test_id(self, test):
-        return TestId.from_test_case(self.test_suite.test_file, test)
+        return TestId.from_test_case(self.test_suite.test_file.path, test)
 
     def startTest(self, test):
         self.start_time = time.time()
@@ -295,7 +295,7 @@ class SimpleResult(AbstractRemoteResult):
         self.data.append(data)
 
 
-def test_path_to_module(test_file: 'TestFileConfig'):
+def test_path_to_module(test_file: 'TestFile'):
     path = test_file.path.resolve().relative_to(test_file.config.rootdir)
     return str(path).removesuffix('.py').replace(os.sep, '.')
 
@@ -461,12 +461,15 @@ class ParallelTestRunner(TestRunner):
     def tests_failed(self):
         return super().tests_failed() or bool(self.crashes)
 
-    def partition_tests_into_processes(self, suites: list['TestSuite']) -> list[list[TestId]]:
+    def partition_tests_into_processes(self, suites: list['TestSuite']) -> list[list['Test']]:
         if self.separate_workers:
             per_file_suites = suites
             unpartitioned = []
         else:
-            per_file_suites, unpartitioned = partition_list(suites, lambda suite: suite.config.new_worker_per_file)
+            per_file_suites, unpartitioned = partition_list(
+                suites,
+                lambda suite: suite.test_file.config.new_worker_per_file,
+            )
         partitions = [suite.collected_tests for suite in per_file_suites]
         per_partition = int(math.ceil(len(unpartitioned) / max(1, self.num_processes)))
         while unpartitioned:
@@ -477,7 +480,7 @@ class ParallelTestRunner(TestRunner):
     def run_tests(self, tests: list['TestSuite']):
         serial_suites, parallel_suites = partition_list(
             tests,
-            lambda suite: suite.config.is_serial_test(suite.test_file),
+            lambda suite: suite.test_file.test_config.serial,
         )
         parallel_partitions = self.partition_tests_into_processes(parallel_suites)
         serial_partitions = self.partition_tests_into_processes(serial_suites)
@@ -499,10 +502,10 @@ class ParallelTestRunner(TestRunner):
                 log('Internal error, test worker crashed outside of tests:')
                 log(crash)
 
-    def run_partitions_in_subprocesses(self, executor, partitions: list[list[TestId]]):
+    def run_partitions_in_subprocesses(self, executor, partitions: list[list['Test']]):
         futures = [
-            executor.submit(self.run_in_subprocess_and_watch, test_list)
-            for test_list in partitions
+            executor.submit(self.run_in_subprocess_and_watch, partition)
+            for partition in partitions
         ]
         try:
             concurrent.futures.wait(futures)
@@ -514,11 +517,12 @@ class ParallelTestRunner(TestRunner):
             print("Interrupted!")
             sys.exit(1)
 
-    def run_in_subprocess_and_watch(self, tests: list[TestId]):
+    def run_in_subprocess_and_watch(self, tests: list['Test']):
         # noinspection PyUnresolvedReferences
         use_pipe = sys.platform != 'win32' and (not IS_GRAALPY or __graalpython__.posix_module_backend() == 'native')
-        remaining_tests = tests
-        last_started_test: TestId | None = None
+        tests_by_id = {test.test_id: test for test in tests}
+        remaining_test_ids = [test.test_id for test in tests]
+        last_started_test: Test | None = None
         last_started_time: float | None = None
         with tempfile.TemporaryDirectory(prefix='graalpytest-') as tmp_dir:
             tmp_dir = Path(tmp_dir)
@@ -531,12 +535,12 @@ class ParallelTestRunner(TestRunner):
                 result_file = tmp_dir / 'result'
 
             def process_event(event):
-                nonlocal remaining_tests, last_started_test, last_started_time, last_out_pos
+                nonlocal remaining_test_ids, last_started_test, last_started_time, last_out_pos
                 match event['event']:
                     case 'testStarted':
-                        remaining_tests.remove(event['test'])
+                        remaining_test_ids.remove(event['test'])
                         self.report_start(event['test'])
-                        last_started_test = event['test']
+                        last_started_test = tests_by_id[event['test']]
                         last_started_time = time.time()
                         last_out_pos = event['out_pos']
                     case 'testResult':
@@ -557,7 +561,7 @@ class ParallelTestRunner(TestRunner):
                         last_started_time = None
                         last_out_pos = event['out_pos']
 
-            while remaining_tests and not self.stop_event.is_set():
+            while remaining_test_ids and not self.stop_event.is_set():
                 with (
                     open(tmp_dir / 'out', 'w+') as out_file,
                     open(tmp_dir / 'tests', 'w+') as tests_file,
@@ -579,7 +583,7 @@ class ParallelTestRunner(TestRunner):
                     # We communicate the tests through a temp file to avoid running into too long commandlines on windows
                     tests_file.seek(0)
                     tests_file.truncate()
-                    tests_file.write('\n'.join(map(str, remaining_tests)))
+                    tests_file.write('\n'.join(map(str, remaining_test_ids)))
                     tests_file.flush()
                     popen_kwargs: dict = dict(
                         stdout=out_file,
@@ -599,13 +603,15 @@ class ParallelTestRunner(TestRunner):
                             if self.stop_event.is_set():
                                 interrupt_process(process)
                                 break
-                            if last_started_time is not None and time.time() - last_started_time >= self.default_test_timeout:
-                                interrupt_process(process)
-                                timed_out = True
-                                # Drain the pipe
-                                while pipe.poll(0.1):
-                                    pipe.recv()
-                                break
+                            if last_started_test is not None:
+                                timeout = last_started_test.test_file.test_config.per_test_timeout
+                                if time.time() - last_started_time >= timeout:
+                                    interrupt_process(process)
+                                    timed_out = True
+                                    # Drain the pipe
+                                    while pipe.poll(0.1):
+                                        pipe.recv()
+                                    break
 
                     returncode = process.wait()
                     if self.stop_event.is_set():
@@ -633,7 +639,7 @@ class ParallelTestRunner(TestRunner):
                                     signal_name = str(-returncode)
                                 message = f"Test process killed by signal {signal_name}"
                             self.report_result(TestResult(
-                                test_id=last_started_test,
+                                test_id=last_started_test.test_id,
                                 status=TestStatus.ERROR,
                                 param=message,
                                 output=output,
@@ -645,39 +651,42 @@ class ParallelTestRunner(TestRunner):
                             return
 
 
-def filter_tree(test_file: Path, test_suite: unittest.TestSuite, specifiers: list[TestSpecifier],
-                tags: list[TestId] | None):
-    keep_tests = []
-    untagged_tests = []
-    collected_tests = []
-    for test in test_suite:
-        # When test loading fails, unittest just creates an instance of _FailedTest
-        if exception := getattr(test, '_exception', None):
-            raise exception
-        if hasattr(test, '__iter__'):
-            sub_collected, sub_untagged = filter_tree(test_file, test, specifiers, tags)
-            if sub_collected:
-                keep_tests.append(test)
-                collected_tests += sub_collected
-            untagged_tests += sub_untagged
-        else:
-            specifier = TestId.from_test_case(test_file, test)
-            if any(s.match(specifier) for s in specifiers):
-                if tags is None or specifier in tags:
-                    keep_tests.append(test)
-                    collected_tests.append(specifier)
-                elif tags is not None:
-                    untagged_tests.append(specifier)
-    test_suite._tests = keep_tests
-    return collected_tests, untagged_tests
+@dataclass
+class TestFileConfig:
+    serial: bool = False
+    partial_splits: bool = False
+    per_test_timeout: float = 300
+    exclude: bool = False
+
+    @classmethod
+    def from_dict(cls, config: dict):
+        exclude_keys = {sys.platform}
+        if IS_GRAALPY:
+            # noinspection PyUnresolvedReferences
+            exclude_keys.add('native_image' if __graalpython__.is_native else 'jvm')
+        return cls(
+            serial=config.get('serial', cls.serial),
+            partial_splits=config.get('partial_splits_individual_tests', cls.partial_splits),
+            per_test_timeout=config.get('per_test_timeout', cls.per_test_timeout),
+            exclude=bool(set(config.get('exclude_on', set())) & exclude_keys),
+        )
+
+    def combine(self, other: 'TestFileConfig'):
+        return TestFileConfig(
+            serial=self.serial or other.serial,
+            partial_splits=self.partial_splits or other.partial_splits,
+            per_test_timeout=max(self.per_test_timeout, other.per_test_timeout),
+            exclude=self.exclude or other.exclude,
+        )
 
 
-class TestFileNameMatcher:
-    def __init__(self, matcher: typing.Iterable[str] = ()):
-        matcher = [name.removesuffix('.py') for name in matcher]
-        globs, exact_matches = partition_list(matcher, lambda x: '*' in x)
+class TestFileRule:
+    def __init__(self, rule: dict):
+        selector = [name.removesuffix('.py') for name in rule['selector']]
+        globs, exact_matches = partition_list(selector, lambda x: '*' in x)
         self.exact_matches = frozenset(exact_matches)
         self.globs = [re.compile(fnmatch.translate(glob)) for glob in globs]
+        self.test_config = TestFileConfig.from_dict(rule)
 
     def matches(self, name):
         return name in self.exact_matches or any(glob.match(name) for glob in self.globs)
@@ -690,20 +699,34 @@ class Config:
     tags_dir: Path | None = None
     run_top_level_functions: bool = False
     new_worker_per_file: bool = False
-    serial_tests: TestFileNameMatcher = TestFileNameMatcher()
-    partial_splits_individual_tests: TestFileNameMatcher = TestFileNameMatcher()
-    excludes: TestFileNameMatcher = TestFileNameMatcher()
+    rules: list[TestFileRule] = field(default_factory=list)
+
+    @classmethod
+    @lru_cache
+    def parse_config(cls, config_path):
+        with open(config_path, 'rb') as f:
+            config_dict = tomllib.load(f)
+            settings = config_dict.get('settings', {})
+            rules = [TestFileRule(rule) for rule in config_dict.get('test_rules', ())]
+            tags_dir = None
+            if config_tags_dir := settings.get('tags_dir'):
+                tags_dir = (config_path.parent / config_tags_dir).resolve()
+            return cls(
+                configdir=config_path.parent.resolve(),
+                rootdir=config_path.parent.parent.resolve(),
+                tags_dir=tags_dir,
+                run_top_level_functions=settings.get('run_top_level_functions', cls.run_top_level_functions),
+                new_worker_per_file=settings.get('new_worker_per_file', cls.new_worker_per_file),
+                rules=rules,
+            )
 
 
-@dataclass
-class TestFileConfig:
+@dataclass(frozen=True)
+class TestFile:
     path: Path
     name: str
     config: Config
-
-    excluded: bool
-    serial: bool
-    partial_splits_individual_tests: bool
+    test_config: TestFileConfig
 
     def __str__(self):
         return str(self.path)
@@ -716,18 +739,19 @@ class TestFileConfig:
             return self.config.tags_dir / (self.name.removesuffix('.py') + '.txt')
 
 
-def configure_test_file(path: Path) -> TestFileConfig:
+def configure_test_file(path: Path) -> TestFile:
     config = config_for_file(path)
     resolved = path.resolve().relative_to(config.configdir)
     name = str(resolved).removesuffix('.py')
-
-    return TestFileConfig(
+    test_config = TestFileConfig()
+    for rule in config.rules:
+        if rule.matches(name):
+            test_config = test_config.combine(rule.test_config)
+    return TestFile(
         path=path,
         name=name,
         config=config,
-        excluded=config.excludes.matches(name),
-        serial=config.serial_tests.matches(name),
-        partial_splits_individual_tests=config.partial_splits_individual_tests.matches(name),
+        test_config=test_config
     )
 
 
@@ -736,7 +760,7 @@ def config_for_dir(path: Path) -> Config:
     while path.is_dir():
         config_path = path / 'conftest.toml'
         if config_path.exists():
-            return parse_config(config_path, path)
+            return Config.parse_config(config_path)
         if path.parent == path:
             break
         path = path.parent
@@ -748,41 +772,12 @@ def config_for_file(test_file: Path) -> Config:
     return config_for_dir(path)
 
 
-@lru_cache
-def parse_config(config_path, path):
-    with open(config_path, 'rb') as f:
-        config_dict = tomllib.load(f)['tests']
-        tags_dir = None
-        if config_tags_dir := config_dict.get('tags_dir'):
-            tags_dir = (path / config_tags_dir).resolve()
-        exclude_keys = [sys.platform]
-        if IS_GRAALPY:
-            # noinspection PyUnresolvedReferences
-            exclude_keys.append('native_image' if __graalpython__.is_native else 'jvm')
-        excludes = []
-        if excludes_dict := config_dict.get('excludes'):
-            for key in exclude_keys:
-                excludes += excludes_dict.get(key, ())
-        return Config(
-            configdir=config_path.parent.resolve(),
-            rootdir=config_path.parent.parent.resolve(),
-            tags_dir=tags_dir,
-            run_top_level_functions=config_dict.get('run_top_level_functions', Config.run_top_level_functions),
-            new_worker_per_file=config_dict.get('new_worker_per_file', Config.new_worker_per_file),
-            serial_tests=TestFileNameMatcher(config_dict.get('serial_tests', ())),
-            partial_splits_individual_tests=TestFileNameMatcher(config_dict.get('partial_splits_individual_tests', ())),
-            excludes=TestFileNameMatcher(excludes),
-        )
-
-
 @dataclass
 class TestSuite:
-    config: Config
-    test_file: Path
+    test_file: TestFile
     pythonpath: list[str]
     test_suite: unittest.TestSuite
-    collected_tests: list[TestId]
-    untagged_tests: list[TestId]
+    collected_tests: list['Test']
 
     def run(self, result):
         saved_path = sys.path[:]
@@ -791,6 +786,38 @@ class TestSuite:
             self.test_suite.run(result)
         finally:
             sys.path[:] = saved_path
+
+
+@dataclass
+class Test:
+    test_id: TestId
+    test_file: TestFile
+
+    def __str__(self):
+        return repr(self.test_id)
+
+
+def filter_tree(test_file: TestFile, test_suite: unittest.TestSuite, specifiers: list[TestSpecifier],
+                tags: list[TestId] | None):
+    keep_tests = []
+    collected_tests = []
+    for test in test_suite:
+        # When test loading fails, unittest just creates an instance of _FailedTest
+        if exception := getattr(test, '_exception', None):
+            raise exception
+        if hasattr(test, '__iter__'):
+            sub_collected = filter_tree(test_file, test, specifiers, tags)
+            if sub_collected:
+                keep_tests.append(test)
+                collected_tests += sub_collected
+        else:
+            test_id = TestId.from_test_case(test_file.path, test)
+            if any(s.match(test_id) for s in specifiers):
+                if tags is None or test_id in tags:
+                    keep_tests.append(test)
+                    collected_tests.append(Test(test_id, test_file))
+    test_suite._tests = keep_tests
+    return collected_tests
 
 
 def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifier]:
@@ -830,7 +857,7 @@ def expand_specifier_paths(specifiers: list[TestSpecifier]) -> list[TestSpecifie
     return expanded_specifiers
 
 
-def collect_module(test_file: TestFileConfig, specifiers: list[TestSpecifier], use_tags=False,
+def collect_module(test_file: TestFile, specifiers: list[TestSpecifier], use_tags=False,
                    partial=None) -> TestSuite | None:
     config = test_file.config
     saved_path = sys.path[:]
@@ -848,12 +875,12 @@ def collect_module(test_file: TestFileConfig, specifiers: list[TestSpecifier], u
         except unittest.SkipTest as e:
             log(f"Test file {test_file} skipped: {e}")
             return
-        collected_tests, untagged_tests = filter_tree(test_file.path, test_suite, specifiers, tags)
-        if partial and test_file.partial_splits_individual_tests:
+        collected_tests = filter_tree(test_file, test_suite, specifiers, tags)
+        if partial and test_file.test_config.partial_splits:
             selected, total = partial
             collected_tests = collected_tests[selected::total]
         if collected_tests:
-            return TestSuite(config, test_file.path, sys.path[:], test_suite, collected_tests, untagged_tests)
+            return TestSuite(test_file, sys.path[:], test_suite, collected_tests)
     finally:
         sys.path[:] = saved_path
 
@@ -868,7 +895,11 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
     to_run = []
     all_specifiers = expand_specifier_paths(all_specifiers)
     test_files = []
+    test_paths = set()
     for specifier in all_specifiers:
+        if specifier.test_file in test_paths:
+            continue
+        test_paths.add(specifier.test_file)
         if not specifier.test_file.exists():
             sys.exit(f"File does not exist: {specifier.test_file}")
         test_files.append(configure_test_file(specifier.test_file))
@@ -879,20 +910,20 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
             if any(path_for_comparison(test_file.path).is_relative_to(i) for i in ignore)
         ]
     if not no_excludes:
-        excluded, test_files = partition_list(test_files, lambda f: f.excluded)
+        excluded, test_files = partition_list(test_files, lambda f: f.test_config.exclude)
         for file in excluded:
             log(f"Test file {file} is excluded on this platform/configuration, use --no-excludes to overrride")
     if partial:
         selected, total = partial
         to_split = []
-        partial_files = set()
+        partial_files = []
         # Always keep files that are split per-test
         for test_file in test_files:
-            if test_file.partial_splits_individual_tests:
-                partial_files.add(test_file)
+            if test_file.test_config.partial_splits:
+                partial_files.append(test_file)
             else:
                 to_split.append(test_file)
-        partial_files |= set(to_split[selected::total])
+        partial_files += to_split[selected::total]
         test_files = [f for f in test_files if f in partial_files]
     for test_file in test_files:
         specifiers = [s for s in all_specifiers if s.test_file == test_file.path]
@@ -908,7 +939,7 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
     return to_run
 
 
-def read_tags(test_file: TestFileConfig) -> list[TestId]:
+def read_tags(test_file: TestFile) -> list[TestId]:
     tag_file = test_file.get_tag_file()
     tags = []
     if tag_file.exists():

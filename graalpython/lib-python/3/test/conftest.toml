@@ -1,8 +1,11 @@
-[tests]
+[settings]
 tags_dir = '../../../com.oracle.graal.python.test/src/tests/unittest_tags'
 new_worker_per_file = true
+
+[[test_rules]]
 # A list of tests that cannot run in parallel with other tests
-serial_tests = [
+serial = true
+selector = [
     # test_compileall tries to recompile the whole PYTHONPATH, which makes it interfere with any test that
     # creates temporary py files
     'test_compileall',
@@ -28,7 +31,10 @@ serial_tests = [
     'test_int',
     'test_zipfile',
 ]
-partial_splits_individual_tests = [
+
+[[test_rules]]
+partial_splits_individual_tests = true
+selector = [
     'test_multiprocessing_spawn',
     'test_multiprocessing_main_handling',
 ]
