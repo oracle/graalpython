@@ -63,6 +63,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
+from textwrap import dedent
 
 DIR = Path(__file__).parent.resolve()
 UNIT_TEST_ROOT = (DIR / 'tests').resolve()
@@ -1001,7 +1002,10 @@ def get_bool_env(name: str):
 
 def main():
     is_mx_graalpytest = get_bool_env('MX_GRAALPYTEST')
-    parser = argparse.ArgumentParser(prog=('mx graalpytest' if is_mx_graalpytest else None))
+    parser = argparse.ArgumentParser(
+        prog=('mx graalpytest' if is_mx_graalpytest else None),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
     if is_mx_graalpytest:
         # mx graalpytest takes this option, but it forwards --help here, so pretend we take it
         parser.add_argument('--python', help="Run tests with given Python binary")
@@ -1018,7 +1022,7 @@ def main():
     parser.add_argument('-f', '--failfast', action='store_true',
                         help="Exit immediately after the first failure")
     parser.add_argument('--all', action='store_true',
-                        help="Run tests that are normally not enabled due to tags")
+                        help="Run tests that are normally not enabled due to tags. Implies --tagged")
     parser.add_argument('--retag', dest='retag_mode', action='store_const', const='replace',
                         help="Run tests and regenerate tags based on the results. Implies --all, --tagged and -n")
     parser.add_argument('--retag-append', dest='retag_mode', action='store_const', const='append',
@@ -1041,7 +1045,7 @@ def main():
         ] if IS_GRAALPY else [],
         help="Interpreter arguments to pass for subprocess invocation (when using -n)")
     parser.add_argument('tests', nargs='+', type=TestSpecifier.from_str,
-                        help="""
+                        help=dedent("""
                         List of test specifiers. A specifier can be:
                         - A test file name. It will be looked up in our unittests or, if you pass --tagged, in tagged tests. Example: test_int
                         - A test file path. Example: graalpython/lib-python/3/test/test_int.py. Note you do not need to pass --tagged to refer to a tagged test by path
@@ -1051,7 +1055,7 @@ def main():
                         - You can use wildcards in tests paths and selectors. Example: 'test_int::test_create*'
 
                         Tip: the test IDs printed in test results directly work as specifiers here.
-                        """)
+                        """))
 
     args = parser.parse_args()
 
@@ -1059,6 +1063,9 @@ def main():
         args.all = True
         args.tagged = True
         args.num_processes = args.num_processes or 1
+
+    if args.all:
+        args.tagged = True
 
     if get_bool_env('GRAALPYTEST_FAIL_FAST'):
         args.failfast = True
