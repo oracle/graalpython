@@ -1923,6 +1923,10 @@ public abstract class CExtNodes {
                             transformExceptionFromNativeNode.execute(inliningTarget, threadState, mName, iResult != 0, true, ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION,
                                             ErrorMessages.EXECUTION_RAISED_EXCEPTION);
                             break;
+                        case SLOT_PY_MOD_MULTIPLE_INTERPRETERS:
+                            // ignored
+                            // (mq) TODO: handle multiple interpreter cases
+                            break;
                         default:
                             throw raiseNode.raise(SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);
                     }
