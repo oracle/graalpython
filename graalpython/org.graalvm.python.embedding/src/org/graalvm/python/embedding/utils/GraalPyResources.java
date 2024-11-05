@@ -145,7 +145,10 @@ import java.nio.file.Paths;
  * @see VirtualFileSystem.Builder
  */
 // TODO: link to user guide
-public class GraalPyResources {
+public final class GraalPyResources {
+
+    private GraalPyResources() {
+    }
 
     /**
      * Creates a GraalPy context preconfigured with a {@link VirtualFileSystem} and other GraalPy
@@ -362,7 +365,7 @@ public class GraalPyResources {
      * <p>
      * <b>Example </b> creating a GraalPy context precofigured with an external resource directory
      * located next to a native image executable.
-     * 
+     *
      * <pre>
      * Path resourcesDir = GraalPyResources.getNativeExecutablePath().getParent().resolve("python-resources");
      * try (Context context = GraalPyResources.contextBuilder(resourcesDir).build()) {
@@ -405,7 +408,7 @@ public class GraalPyResources {
      * </p>
      * <p>
      * <b>Example</b>
-     * 
+     *
      * <pre>
      * Path resourcesDir = Path.of(System.getProperty("user.home"), ".cache", "my.java.python.app.resources");
      * FileSystem fs = GraalPyResources.createVirtualFileSystem();
