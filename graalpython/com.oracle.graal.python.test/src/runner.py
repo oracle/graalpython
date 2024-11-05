@@ -742,7 +742,7 @@ class TestFile:
 def configure_test_file(path: Path) -> TestFile:
     config = config_for_file(path)
     resolved = path.resolve().relative_to(config.configdir)
-    name = str(resolved).removesuffix('.py')
+    name = str(resolved).replace(os.sep, '/').removesuffix('.py')
     test_config = TestFileConfig()
     for rule in config.rules:
         if rule.matches(name):
