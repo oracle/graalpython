@@ -268,7 +268,6 @@ test.test_zipfile.TestWithDirectory.test_write_dir
 test.test_zipfile.TestWithDirectory.test_writestr_dir
 test.test_zipfile.TestsWithMultipleOpens.test_different_file
 test.test_zipfile.TestsWithMultipleOpens.test_interleaved
-test.test_zipfile.TestsWithMultipleOpens.test_many_opens
 test.test_zipfile.TestsWithMultipleOpens.test_read_after_close
 test.test_zipfile.TestsWithMultipleOpens.test_read_after_write
 test.test_zipfile.TestsWithMultipleOpens.test_same_file

@@ -29,7 +29,6 @@ selector = [
     # test_int contains a denial-of-service prevention test that requires to finish within a certain time.
     # We are actually fast enough but the parallel execution overhead can cause transient failures.
     'test_int',
-    'test_zipfile',
 ]
 
 [[test_rules]]

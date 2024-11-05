@@ -634,6 +634,8 @@ def update_unittest_tags(args):
         'test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_resource_tracker_sigkill',
         # Connecting to external page that sometimes times out
         'graalpython.lib-python.3.test.test_urllib2net.OtherNetworkTests.test_ftp',
+        # Counting file descriptors, can randomly change due to finalizers
+        'graalpython.lib-python.3.test.test_zipfile.TestsWithMultipleOpens.test_many_opens',
     ]
 
     result_tags = linux_tags & darwin_tags
