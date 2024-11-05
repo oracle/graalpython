@@ -1754,7 +1754,7 @@ def tox_example(args=None):
                         help="Whether to reuse existing venv created by previous invocations of this command.")
     opts = parser.parse_args(args)
 
-    graalpy = graalpy_standalone_jvm_enterprise()
+    graalpy = graalpy_standalone_native_enterprise()
 
     tox_project_dir = os.path.join(
         mx.project("com.oracle.graal.python.test", fatalIfMissing=True).dir,
