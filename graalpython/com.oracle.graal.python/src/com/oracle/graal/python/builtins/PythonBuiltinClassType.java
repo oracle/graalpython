@@ -134,6 +134,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
@@ -298,9 +299,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     // Foreign
     ForeignObject("ForeignObject", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, ForeignObjectBuiltins.SLOTS),
-    // TODO: should ForeignBoolean inherit from ForeignNumber? And/or from bool?
-    ForeignBoolean("ForeignBoolean", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
     ForeignNumber("ForeignNumber", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
+    ForeignBoolean("ForeignBoolean", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignBooleanBuiltins.SLOTS),
 
     // bz2
     BZ2Compressor("BZ2Compressor", "_bz2"),
@@ -835,8 +835,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
         Boolean.base = PInt;
 
-        ForeignBoolean.base = ForeignObject;
         ForeignNumber.base = ForeignObject;
+        ForeignBoolean.base = ForeignNumber;
 
         PBaseExceptionGroup.base = PBaseException;
         SystemExit.base = PBaseException;

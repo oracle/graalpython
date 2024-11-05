@@ -108,14 +108,15 @@ import com.oracle.truffle.api.strings.TruffleString;
  * This class handles foreign numbers, whether they are integral or floating-point,
  * since interop has no message to know which one, and it would be impractical to handle
  * foreign integers in IntBuiltins for instance.
- * We are also currently handling foreign booleans here since Python bool inherits from int.
+ * We are also handling part of foreign booleans here since Python ForeignBoolean inherits from ForeignNumber,
+ * to avoid duplication and to be similar to Python bool/int.
  *
- * NOTE: We are not using IndirectCallContext here in this file (except for CallNode)
+ * NOTE: We are not using IndirectCallContext here in this file
  * because it seems unlikely that these interop messages would call back to Python
  * and that we would also need precise frame info for that case.
  * Adding it shouldn't hurt peak, but might be a non-trivial overhead in interpreter.
  */
-@CoreFunctions(extendClasses = { PythonBuiltinClassType.ForeignNumber, PythonBuiltinClassType.ForeignBoolean })
+@CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignNumber)
 public final class ForeignNumberBuiltins extends PythonBuiltins {
     public static TpSlots SLOTS = ForeignNumberBuiltinsSlotsGen.SLOTS;
 
@@ -132,11 +133,9 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static boolean bool(Object receiver,
                         @CachedLibrary("receiver") InteropLibrary lib,
                         @Cached GilNode gil) {
+            assert !lib.isBoolean(receiver);
             gil.release(true);
             try {
-                if (lib.isBoolean(receiver)) {
-                    return lib.asBoolean(receiver);
-                }
                 if (lib.fitsInLong(receiver)) {
                     return lib.asLong(receiver) != 0;
                 }
@@ -592,16 +591,9 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
                         @CachedLibrary("object") InteropLibrary lib,
                         @Cached GilNode gil,
                         @Cached PythonObjectFactory factory) {
+            assert !lib.isBoolean(object);
             gil.release(true);
             try {
-                if (lib.isBoolean(object)) {
-                    try {
-                        return PInt.intValue(lib.asBoolean(object));
-                    } catch (UnsupportedMessageException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw new IllegalStateException("foreign value claims to be a boolean but isn't");
-                    }
-                }
                 if (lib.fitsInInt(object)) {
                     try {
                         return lib.asInt(object);
@@ -645,23 +637,15 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
-                        @Cached InlinedBranchProfile isBoolean,
                         @Cached InlinedBranchProfile isLong,
                         @Cached InlinedBranchProfile isDouble,
                         @Cached InlinedBranchProfile isBigInteger,
                         @Cached InlinedBranchProfile defaultCase,
                         @Cached PythonObjectFactory factory) {
+            assert !lib.isBoolean(object);
             final Object value;
             try {
-                if (lib.isBoolean(object)) {
-                    isBoolean.enter(inliningTarget);
-                    gil.release(true);
-                    try {
-                        value = lib.asBoolean(object);
-                    } finally {
-                        gil.acquire();
-                    }
-                } else if (lib.fitsInLong(object)) {
+                if (lib.fitsInLong(object)) {
                     isLong.enter(inliningTarget);
                     gil.release(true);
                     try {

@@ -231,8 +231,7 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
 
         // If the single-trait class already inherits from ForeignObject, return it as-is, the name
         // would clash and no need to create a composed class
-        if (singleTrait && traitsList.size() == 1 && traitsList.get(0) instanceof PythonBuiltinClass pbc && pbc.getType().getBase() == PythonBuiltinClassType.ForeignObject) {
-            assert pbc.getType().getName().equals(name) : name;
+        if (singleTrait && traitsList.size() == 1 && traitsList.get(0) instanceof PythonBuiltinClass pbc && pbc.getType().getName().equals(name)) {
             return pbc;
         }
 

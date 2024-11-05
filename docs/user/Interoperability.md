@@ -226,7 +226,7 @@ Types not listed in the table below have no special interpretation in Python.
 | Interop Type   | Inherits from                     | Python Interpretation                                                                                                                                                                                                                      |
 |:---------------|:----------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `null`         | ForeignNone, `NoneType`           | `null` is like `None`. Important to know: interop `null` values are all identical to `None`. JavaScript defines two "null-like" values; `undefined` and `null`, which are *not* identical, but when passed to Python, they are treated so. |
-| `boolean`      | ForeignBoolean                    | `boolean` behaves like Python booleans, including the fact that in Python, all booleans are also integers (1 and 0 for true and false, respectively).                                                                                      |
+| `boolean`      | ForeignBoolean, ForeignNumber     | `boolean` behaves like Python booleans, including the fact that in Python, all booleans are also integers (1 and 0 for true and false, respectively).                                                                                      |
 | `number`       | ForeignNumber                     | `number` behaves like Python numbers. Python only has one integer and one floating point type, but ranges are imported in some places such as typed arrays.                                                                                |
 | `string`       | ForeignString, `str`              | Behaves in the same way as a Python string.                                                                                                                                                                                                |
 | `buffer`       | ForeignObject                     | Buffers are also a concept in Python's native API (albeit slightly different). Interop buffers are treated in the same was as Python buffers in some places (such as `memoryview`) to avoid copies of data.                                |
@@ -241,8 +241,10 @@ Types not listed in the table below have no special interpretation in Python.
 | `instantiable` | ForeignInstantiable               | An `instantiable` object can be called just like a Python type, but never with keyword arguments.                                                                                                                                          |
 
 Foreign numbers inherit from `polyglot.ForeignNumber` and not `int` or `float` because `InteropLibrary` has currently no way to differentiate integers and floats.
-However, when foreign numbers are represented as Java primitives `byte`, `short`, `int`, `long`, they are considered Python `int` objects,
-and when foreign numbers are represented as Java primitives `float`, `double`, they are considered Python `float` objects.
+However:
+* When foreign numbers are represented as Java primitives `byte`, `short`, `int`, `long`, they are considered Python `int` objects.
+* When foreign numbers are represented as Java primitives `float`, `double`, they are considered Python `float` objects.
+* When foreign booleans re represented as Java primitives `boolean`, they are considered Python `bool` objects.
 
 ### Python to Interop Types
 

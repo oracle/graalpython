@@ -59,6 +59,7 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.object.GetForeignObjectClassNode;
@@ -486,6 +487,7 @@ public abstract class Python3Core {
                         new IntBuiltins(),
                         new ForeignObjectBuiltins(),
                         new ForeignNumberBuiltins(),
+                        new ForeignBooleanBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
                         new DictReprBuiltin(),

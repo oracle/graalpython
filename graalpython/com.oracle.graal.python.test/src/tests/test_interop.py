@@ -128,8 +128,10 @@ class InteropTests(unittest.TestCase):
 
         for c in classes:
             self.assertIsInstance(c, type)
-            if c != polyglot.ForeignObject:
-                self.assertEqual(c.__base__, polyglot.ForeignObject)
+            if c is polyglot.ForeignBoolean:
+                self.assertIs(c.__base__, polyglot.ForeignNumber)
+            elif c is not polyglot.ForeignObject:
+                self.assertIs(c.__base__, polyglot.ForeignObject)
 
     def test_get_class(self):
         def wrap(obj):
@@ -1248,9 +1250,42 @@ class InteropTests(unittest.TestCase):
         assert l > n
         assert n < l
 
+    def test_foreign_number(self):
+        def wrap(obj):
+            return __graalpython__.foreign_wrapper(obj)
+
+        n = wrap(42)
+        self.assertEqual(type(n).mro(), [polyglot.ForeignNumber, polyglot.ForeignObject, object])
+        assert repr(n) == '42', repr(n)
+        assert str(n) == '42', str(n)
+        assert n
+
+        assert wrap(2) + wrap(3) == 5
+        assert wrap(2) - wrap(3) == -1
+        assert wrap(2) * wrap(3) == 6
+        assert wrap(7) / wrap(2) == 3.5
+        assert wrap(7) // wrap(2) == 3
+
+        assert wrap(0b1110) & wrap(0b0111) == 0b0110
+        assert wrap(0b1110) | wrap(0b0111) == 0b1111
+        assert wrap(0b1110) ^ wrap(0b0111) == 0b1001
+
+        # TODO test ~invert and more
+
     def test_foreign_boolean(self):
         def wrap(obj):
             return __graalpython__.foreign_wrapper(obj)
+
+        self.assertEqual(type(wrap(True)).mro(), [polyglot.ForeignBoolean, polyglot.ForeignNumber, polyglot.ForeignObject, object])
+        assert repr(wrap(True)) == 'True'
+        assert repr(wrap(False)) == 'False'
+        assert str(wrap(True)) == 'True'
+        assert str(wrap(False)) == 'False'
+        assert wrap(True)
+        assert not wrap(False)
+
+        assert bool(wrap(True)) is True
+        assert bool(wrap(False)) is False
 
         assert wrap(True) + wrap(2) == 3
         assert wrap(False) + wrap(2) == 2
@@ -1259,6 +1294,17 @@ class InteropTests(unittest.TestCase):
 
         assert wrap(True) - wrap(2) == -1
         assert wrap(2) - wrap(True) == 1
+
+        assert wrap(True) & wrap(True) is True
+        assert wrap(True) & wrap(False) is False
+
+        assert wrap(True) | wrap(False) is True
+        assert wrap(False) | wrap(False) is False
+
+        assert wrap(True) ^ wrap(False) is True
+        assert wrap(False) ^ wrap(False) is False
+
+        # TODO ~invert
 
     def test_foreign_repl(self):
         from java.util.logging import LogRecord
