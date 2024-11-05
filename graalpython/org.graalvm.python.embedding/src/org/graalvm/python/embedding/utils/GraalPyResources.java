@@ -255,17 +255,17 @@ public final class GraalPyResources {
     public static Context.Builder contextBuilder(VirtualFileSystem vfs) {
         return createContextBuilder().
         // allow access to the virtual and the host filesystem, as well as sockets
-                        allowIO(IOAccess.newBuilder().allowHostSocketAccess(true).fileSystem(vfs).build()).
+                        allowIO(IOAccess.newBuilder().allowHostSocketAccess(true).fileSystem(vfs.impl).build()).
                         // The sys.executable path, a virtual path that is used by the interpreter
                         // to discover packages
-                        option("python.Executable", vfs.vfsVenvPath() + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.exe" : "/bin/python")).
+                        option("python.Executable", vfs.impl.vfsVenvPath() + (VirtualFileSystemImpl.isWindows() ? "\\Scripts\\python.exe" : "/bin/python")).
                         // Set the python home to be read from the embedded resources
-                        option("python.PythonHome", vfs.vfsHomePath()).
+                        option("python.PythonHome", vfs.impl.vfsHomePath()).
                         // Set python path to point to sources stored in
                         // src/main/resources/org.graalvm.python.vfs/src
-                        option("python.PythonPath", vfs.vfsSrcPath()).
+                        option("python.PythonPath", vfs.impl.vfsSrcPath()).
                         // pass the path to be executed
-                        option("python.InputFilePath", vfs.vfsSrcPath());
+                        option("python.InputFilePath", vfs.impl.vfsSrcPath());
     }
 
     /**
@@ -311,14 +311,14 @@ public final class GraalPyResources {
      */
     public static Context.Builder contextBuilder(Path resourcesDirectory) {
         String execPath;
-        if (VirtualFileSystem.isWindows()) {
-            execPath = resourcesDirectory.resolve(VirtualFileSystem.VFS_VENV).resolve("Scripts").resolve("python.exe").toAbsolutePath().toString();
+        if (VirtualFileSystemImpl.isWindows()) {
+            execPath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_VENV).resolve("Scripts").resolve("python.exe").toAbsolutePath().toString();
         } else {
-            execPath = resourcesDirectory.resolve(VirtualFileSystem.VFS_VENV).resolve("bin").resolve("python").toAbsolutePath().toString();
+            execPath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_VENV).resolve("bin").resolve("python").toAbsolutePath().toString();
         }
 
-        String homePath = resourcesDirectory.resolve(VirtualFileSystem.VFS_HOME).toAbsolutePath().toString();
-        String srcPath = resourcesDirectory.resolve(VirtualFileSystem.VFS_SRC).toAbsolutePath().toString();
+        String homePath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_HOME).toAbsolutePath().toString();
+        String srcPath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_SRC).toAbsolutePath().toString();
         return createContextBuilder().
         // allow all IO access
                         allowIO(IOAccess.ALL).
@@ -426,6 +426,6 @@ public final class GraalPyResources {
         if (Files.exists(resourcesDirectory) && !Files.isDirectory(resourcesDirectory)) {
             throw new IOException(String.format("%s has to be a directory", resourcesDirectory.toString()));
         }
-        vfs.extractResources(resourcesDirectory);
+        vfs.impl.extractResources(resourcesDirectory);
     }
 }
