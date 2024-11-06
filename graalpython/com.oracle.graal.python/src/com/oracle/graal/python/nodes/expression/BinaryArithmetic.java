@@ -584,4 +584,29 @@ public enum BinaryArithmetic {
             return callNode.executeObject(frame, left, right);
         }
     }
+
+    public abstract static class GenericBinaryArithmeticNode extends BinaryArithmeticNode {
+
+        private final SpecialMethodSlot slot;
+
+        protected GenericBinaryArithmeticNode(SpecialMethodSlot slot) {
+            this.slot = slot;
+        }
+
+        @Specialization
+        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode()") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+
+        @NeverDefault
+        protected LookupAndCallBinaryNode createCallNode() {
+            return LookupAndCallBinaryNode.create(slot, createHandler(slot.getName().toString()));
+        }
+
+        @NeverDefault
+        public static GenericBinaryArithmeticNode create(SpecialMethodSlot slot) {
+            return BinaryArithmeticFactory.GenericBinaryArithmeticNodeGen.create(slot);
+        }
+    }
 }

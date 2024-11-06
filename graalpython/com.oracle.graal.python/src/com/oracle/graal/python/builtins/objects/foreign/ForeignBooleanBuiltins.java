@@ -36,11 +36,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitOrNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitXorNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -58,15 +54,9 @@ import com.oracle.truffle.api.nodes.Node;
 
 import java.util.List;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 
 /*
  * This class handles foreign booleans and reimplements the methods of Python bool.
@@ -109,7 +99,7 @@ public final class ForeignBooleanBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        protected static Object doIt(Object object,
+        protected static int doIt(Object object,
                         @CachedLibrary("object") InteropLibrary lib,
                         @Cached GilNode gil) {
             gil.release(true);
@@ -126,6 +116,7 @@ public final class ForeignBooleanBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -147,83 +138,6 @@ public final class ForeignBooleanBuiltins extends PythonBuiltins {
             }
 
             return strNode.execute(frame, inliningTarget, value);
-        }
-    }
-
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class ReprNode extends StrNode {
-    }
-
-    @Builtin(name = J___RAND__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___AND__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class AndNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
-        protected static Object op(VirtualFrame frame, Object left, Object right,
-                        @Cached BitAndNode andNode,
-                        @CachedLibrary("left") InteropLibrary lib,
-                        @Cached GilNode gil) {
-            try {
-                boolean leftBoolean;
-                gil.release(true);
-                try {
-                    leftBoolean = lib.asBoolean(left);
-                } finally {
-                    gil.acquire();
-                }
-                return andNode.executeObject(frame, leftBoolean, right);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-    }
-
-    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class OrNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
-        protected static Object op(VirtualFrame frame, Object left, Object right,
-                        @Cached BitOrNode orNode,
-                        @CachedLibrary("left") InteropLibrary lib,
-                        @Cached GilNode gil) {
-            try {
-                boolean leftBoolean;
-                gil.release(true);
-                try {
-                    leftBoolean = lib.asBoolean(left);
-                } finally {
-                    gil.acquire();
-                }
-                return orNode.executeObject(frame, leftBoolean, right);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-    }
-
-    @Builtin(name = J___RXOR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___XOR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class XorNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
-        protected static Object op(VirtualFrame frame, Object left, Object right,
-                        @Cached BitXorNode xorNode,
-                        @CachedLibrary("left") InteropLibrary lib,
-                        @Cached GilNode gil) {
-            try {
-                boolean leftBoolean;
-                gil.release(true);
-                try {
-                    leftBoolean = lib.asBoolean(left);
-                } finally {
-                    gil.acquire();
-                }
-                return xorNode.executeObject(frame, leftBoolean, right);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
         }
     }
 }

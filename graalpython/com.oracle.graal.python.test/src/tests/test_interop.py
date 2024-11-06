@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import math
 import os
 import types
 import unittest
@@ -1254,6 +1255,10 @@ class InteropTests(unittest.TestCase):
         def wrap(obj):
             return __graalpython__.foreign_wrapper(obj)
 
+        def assertValueAndType(actual, expected):
+            self.assertEqual(expected, actual)
+            self.assertEqual(type(expected), type(actual))
+
         n = wrap(42)
         self.assertEqual(type(n).mro(), [polyglot.ForeignNumber, polyglot.ForeignObject, object])
         assert repr(n) == '42', repr(n)
@@ -1265,16 +1270,63 @@ class InteropTests(unittest.TestCase):
         assert wrap(2) * wrap(3) == 6
         assert wrap(7) / wrap(2) == 3.5
         assert wrap(7) // wrap(2) == 3
+        assert wrap(8) % wrap(3) == 2
+        assert wrap(2) ** wrap(3) == 8
+        assert wrap(1) << wrap(3) == 8
+        assert wrap(8) >> wrap(2) == 2
+
+        # 1 and not 1.0 is unfortunate but interop does not give us a way to know if a non-primitive/wrapped 3.0 is integral or floating point
+        assertValueAndType(wrap(3.0) // wrap(2.0), 1)
+        assertValueAndType(wrap(3.0) // 2.0, 1.0)
+        assertValueAndType(3.0 // wrap(2.0), 1.0)
+
+        assertValueAndType(wrap(3) - 2.0, 1.0)
+        assertValueAndType(3.0 - wrap(2), 1.0)
 
         assert wrap(0b1110) & wrap(0b0111) == 0b0110
         assert wrap(0b1110) | wrap(0b0111) == 0b1111
         assert wrap(0b1110) ^ wrap(0b0111) == 0b1001
 
-        # TODO test ~invert and more
+        assert wrap((1 << 65) - 2) & wrap(0b111) == 0b110
+        assert wrap((1 << 65) - 2) | wrap(0b111) == ((1 << 65) - 1)
+        assert wrap((1 << 65) - 2) ^ wrap(0b1) == ((1 << 65) - 1)
+
+        assert wrap(42).as_integer_ratio() == (42, 1)
+        assert wrap(0b1010).bit_count() == 2
+        assert wrap(0b1010).bit_length() == 4
+        assert wrap(42).conjugate() == 42
+        assert wrap(42).is_integer()
+        assert wrap(42.0).is_integer()
+        assert not wrap(42.5).is_integer()
+        assert wrap(42.0).to_bytes() == b"*"
+
+        assert ~wrap(42) == -43
+        assert -wrap(42) == -42
+        assert +wrap(42) == 42
+
+        assertValueAndType(abs(wrap(-2)), 2)
+        assertValueAndType(float(wrap(2)), 2.0)
+        assertValueAndType(int(wrap(2.3)), 2)
+        assertValueAndType(math.floor(wrap(2.3)), 2)
+        assertValueAndType(math.ceil(wrap(2.3)), 3)
+        assertValueAndType(math.trunc(wrap(-2.3)), -2)
+        assertValueAndType(round(wrap(2.3)), 2)
+
+        missing_int_methods = set(dir(int)) - set(dir(type(wrap(1))))
+        missing_int_methods = [m for m in missing_int_methods if m.startswith('_') and m != '__getnewargs__']
+        self.assertEqual([], missing_int_methods)
+
+        missing_float_methods = set(dir(float)) - set(dir(type(wrap(1.2))))
+        missing_float_methods = [m for m in missing_float_methods if m.startswith('_') and m not in ('__getnewargs__', '__getformat__')]
+        self.assertEqual([], missing_float_methods)
 
     def test_foreign_boolean(self):
         def wrap(obj):
             return __graalpython__.foreign_wrapper(obj)
+
+        def assertValueAndType(actual, expected):
+            self.assertEqual(expected, actual)
+            self.assertEqual(type(expected), type(actual))
 
         self.assertEqual(type(wrap(True)).mro(), [polyglot.ForeignBoolean, polyglot.ForeignNumber, polyglot.ForeignObject, object])
         assert repr(wrap(True)) == 'True'
@@ -1287,13 +1339,13 @@ class InteropTests(unittest.TestCase):
         assert bool(wrap(True)) is True
         assert bool(wrap(False)) is False
 
-        assert wrap(True) + wrap(2) == 3
-        assert wrap(False) + wrap(2) == 2
-        assert wrap(2) + wrap(True) == 3
-        assert wrap(2) + wrap(False) == 2
+        assertValueAndType(wrap(True) + wrap(2), 3)
+        assertValueAndType(wrap(False) + wrap(2), 2)
+        assertValueAndType(wrap(2) + wrap(True), 3)
+        assertValueAndType(wrap(2) + wrap(False), 2)
 
-        assert wrap(True) - wrap(2) == -1
-        assert wrap(2) - wrap(True) == 1
+        assertValueAndType(wrap(True) - wrap(2), -1)
+        assertValueAndType(wrap(2) - wrap(True), 1)
 
         assert wrap(True) & wrap(True) is True
         assert wrap(True) & wrap(False) is False
@@ -1304,7 +1356,15 @@ class InteropTests(unittest.TestCase):
         assert wrap(True) ^ wrap(False) is True
         assert wrap(False) ^ wrap(False) is False
 
-        # TODO ~invert
+        assertValueAndType(~wrap(True), -2)
+        assertValueAndType(~wrap(False), -1)
+
+        assertValueAndType(float(wrap(True)), 1.0)
+        assertValueAndType(int(wrap(True)), 1)
+
+        missing_bool_methods = set(dir(bool)) - set(dir(type(wrap(True))))
+        missing_bool_methods = [m for m in missing_bool_methods if m.startswith('_') and m != '__getnewargs__']
+        self.assertEqual([], missing_bool_methods)
 
     def test_foreign_repl(self):
         from java.util.logging import LogRecord

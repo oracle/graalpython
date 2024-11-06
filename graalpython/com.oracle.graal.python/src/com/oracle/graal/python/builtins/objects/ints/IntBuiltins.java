@@ -3159,6 +3159,22 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "is_integer", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class IsIntegerNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean doLong(long argument) {
+            return true;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        static boolean doPInt(PInt argument) {
+            return true;
+        }
+    }
+
     @GenerateNodeFactory
     @Builtin(name = "real", minNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
     abstract static class RealNode extends IntNode {

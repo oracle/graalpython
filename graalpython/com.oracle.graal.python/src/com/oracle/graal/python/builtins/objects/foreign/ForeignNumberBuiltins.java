@@ -27,31 +27,48 @@
 package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INVERT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RLSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RRSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
@@ -60,30 +77,34 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins.ForeignGetattrNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitOrNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitXorNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
+import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -125,6 +146,198 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         return ForeignNumberBuiltinsFactory.getFactories();
     }
 
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class UnboxForeignObjectNode extends Node {
+        public abstract Object execute(Node inliningTarget, Object value);
+
+        @Specialization(guards = "lib.isBoolean(obj)")
+        boolean doBool(Object obj,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached(inline = false) GilNode gil) {
+            gil.release(true);
+            try {
+                return lib.asBoolean(obj);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @Specialization(guards = "lib.fitsInLong(obj)")
+        long doLong(Object obj,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached(inline = false) GilNode gil) {
+            assert !lib.isBoolean(obj);
+            gil.release(true);
+            try {
+                return lib.asLong(obj);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @Specialization(guards = {"!lib.fitsInLong(obj)", "lib.fitsInBigInteger(obj)"})
+        PInt doBigInt(Object obj,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) PythonObjectFactory factory) {
+            assert !lib.isBoolean(obj);
+            gil.release(true);
+            try {
+                return factory.createInt(lib.asBigInteger(obj));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @Specialization(guards = {"!lib.fitsInLong(obj)", "!lib.fitsInBigInteger(obj)", "lib.fitsInDouble(obj)"})
+        double doDouble(Object obj,
+                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared @Cached(inline = false) GilNode gil) {
+            assert !lib.isBoolean(obj);
+            gil.release(true);
+            try {
+                return lib.asDouble(obj);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public static Object doGeneric(Object left) {
+            return null;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class UnboxNode extends Node {
+        public final Object execute(Node inliningTarget, Object value) {
+            Object unboxed = executeInternal(inliningTarget, value);
+            assert unboxed == null || !IsForeignObjectNode.executeUncached(unboxed) : unboxed;
+            return unboxed;
+        }
+
+        protected abstract Object executeInternal(Node inliningTarget, Object value);
+
+        @Specialization
+        static boolean unbox(boolean value) {
+            return value;
+        }
+
+        @Specialization
+        static int unbox(int value) {
+            return value;
+        }
+
+        @Specialization
+        static long unbox(long value) {
+            return value;
+        }
+
+        @Specialization
+        static PInt unbox(PInt value) {
+            return value;
+        }
+
+        @Specialization
+        static double unbox(double value) {
+            return value;
+        }
+
+        @Fallback
+        static Object unbox(Node inliningTarget, Object value,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
+                        @Cached UnboxForeignObjectNode unboxForeignObjectNode) {
+            if (isForeignObjectNode.execute(inliningTarget, value)) {
+                return unboxForeignObjectNode.execute(inliningTarget, value);
+            } else {
+                return null;
+            }
+        }
+    }
+
+    abstract static class ForeignUnaryNode extends PythonUnaryBuiltinNode {
+        @Child private UnaryOpNode op;
+
+        protected ForeignUnaryNode(UnaryOpNode op) {
+            this.op = op;
+        }
+
+        @Specialization
+        Object doGeneric(VirtualFrame frame, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached UnboxNode unboxNode) {
+            Object unboxed = unboxNode.execute(inliningTarget, value);
+            if (unboxed != null) {
+                return op.executeCached(frame, unboxed);
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+        }
+    }
+
+    abstract static class ForeignBinaryNode extends BinaryOpBuiltinNode {
+        @Child private BinaryOpNode op;
+        protected final boolean reverse;
+
+        protected ForeignBinaryNode(BinaryOpNode op, boolean reverse) {
+            this.op = op;
+            this.reverse = reverse;
+        }
+
+        @Specialization
+        Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached UnboxNode unboxNode) {
+            Object unboxed = unboxNode.execute(inliningTarget, left);
+            if (unboxed != null) {
+                if (!reverse) {
+                    return op.executeObject(frame, unboxed, right);
+                } else {
+                    return op.executeObject(frame, right, unboxed);
+                }
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class ForeignBinarySlotNode extends Node {
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right, BinaryOpNode binaryOpNode);
+
+        @Specialization
+        static Object doIt(VirtualFrame frame, Node inliningTarget, Object left, Object right, BinaryOpNode op,
+                        @Cached IsForeignObjectNode isForeignLeft,
+                        @Cached IsForeignObjectNode isForeignRight,
+                        @Cached UnboxNode unboxLeft,
+                        @Cached UnboxNode unboxRight) {
+            boolean leftIsForeign = isForeignLeft.execute(inliningTarget, left);
+            boolean rightIsForeign = isForeignRight.execute(inliningTarget, right);
+            if (!leftIsForeign && !rightIsForeign) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+
+            Object newLeft = unboxLeft.execute(inliningTarget, left);
+            Object newRight = unboxRight.execute(inliningTarget, right);
+            if (newLeft == null || newRight == null) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            return op.executeObject(frame, newLeft, newRight);
+        }
+    }
+
     @Slot(SlotKind.nb_bool)
     @GenerateUncached
     @GenerateNodeFactory
@@ -154,212 +367,75 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateInline
-    @GenerateCached(false)
-    abstract static class NormalizeForeignForBinopNode extends Node {
-        public abstract Object execute(Node inliningTarget, Object value);
-
-        @Specialization(guards = "lib.isBoolean(obj)")
-        Object doBool(Object obj,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached(inline = false) GilNode gil) {
-            gil.release(true);
-            try {
-                return lib.asBoolean(obj);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            } finally {
-                gil.acquire();
-            }
-        }
-
-        @Specialization(guards = "lib.fitsInLong(obj)")
-        Object doLong(Object obj,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached(inline = false) GilNode gil) {
-            assert !lib.isBoolean(obj);
-            gil.release(true);
-            try {
-                return lib.asLong(obj);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            } finally {
-                gil.acquire();
-            }
-        }
-
-        @Specialization(guards = {"!lib.fitsInLong(obj)", "lib.fitsInBigInteger(obj)"})
-        Object doBigInt(Object obj,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached(inline = false) GilNode gil,
-                        @Cached(inline = false) PythonObjectFactory factory) {
-            assert !lib.isBoolean(obj);
-            gil.release(true);
-            try {
-                return factory.createInt(lib.asBigInteger(obj));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            } finally {
-                gil.acquire();
-            }
-        }
-
-        @Specialization(guards = {"!lib.fitsInLong(obj)", "!lib.fitsInBigInteger(obj)", "lib.fitsInDouble(obj)"})
-        Object doDouble(Object obj,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached(inline = false) GilNode gil) {
-            assert !lib.isBoolean(obj);
-            gil.release(true);
-            try {
-                return lib.asDouble(obj);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            } finally {
-                gil.acquire();
-            }
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        public static Object doGeneric(Object left) {
-            return null;
+    @Builtin(name = J___POS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PosNode extends ForeignUnaryNode {
+        PosNode() {
+            super(UnaryArithmetic.PosNode.create());
         }
     }
 
-    // TODO: remove once all dunder methods are converted to slots and to
-    // NormalizeForeignForBinopNode
-    abstract static class ForeignBinaryNode extends BinaryOpBuiltinNode {
-        @Child private BinaryOpNode op;
-        protected final boolean reverse;
-
-        protected ForeignBinaryNode(BinaryOpNode op, boolean reverse) {
-            this.op = op;
-            this.reverse = reverse;
-        }
-
-        @Specialization(guards = "lib.isBoolean(left)")
-        Object doComparisonBool(VirtualFrame frame, Object left, Object right,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached GilNode gil) {
-            boolean leftBoolean;
-            gil.release(true);
-            try {
-                leftBoolean = lib.asBoolean(left);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to boolean as it claims to");
-            } finally {
-                gil.acquire();
-            }
-            if (!reverse) {
-                return op.executeObject(frame, leftBoolean, right);
-            } else {
-                return op.executeObject(frame, right, leftBoolean);
-            }
-
-        }
-
-        @Specialization(guards = "lib.fitsInLong(left)")
-        Object doComparisonLong(VirtualFrame frame, Object left, Object right,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached GilNode gil) {
-            assert !lib.isBoolean(left);
-            long leftLong;
-            gil.release(true);
-            try {
-                leftLong = lib.asLong(left);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to long as it claims to");
-            } finally {
-                gil.acquire();
-            }
-            if (!reverse) {
-                return op.executeObject(frame, leftLong, right);
-            } else {
-                return op.executeObject(frame, right, leftLong);
-            }
-        }
-
-        @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInBigInteger(left)"})
-        Object doComparisonBigInt(VirtualFrame frame, Object left, Object right,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached GilNode gil,
-                        @Cached.Exclusive @Cached PythonObjectFactory factory) {
-            assert !lib.isBoolean(left);
-            BigInteger leftBigInteger;
-            PInt leftInt;
-            gil.release(true);
-            try {
-                leftBigInteger = lib.asBigInteger(left);
-                leftInt = factory.createInt(leftBigInteger);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to BigInteger as it claims to");
-            } finally {
-                gil.acquire();
-            }
-            if (!reverse) {
-                return op.executeObject(frame, leftInt, right);
-            } else {
-                return op.executeObject(frame, right, leftInt);
-            }
-        }
-
-        @Specialization(guards = {"!lib.fitsInLong(left)", "!lib.fitsInBigInteger(left)", "lib.fitsInDouble(left)"})
-        Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached GilNode gil) {
-            assert !lib.isBoolean(left);
-            double leftDouble;
-            gil.release(true);
-            try {
-                leftDouble = lib.asDouble(left);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to double as it claims to");
-            } finally {
-                gil.acquire();
-            }
-            if (!reverse) {
-                return op.executeObject(frame, leftDouble, right);
-            } else {
-                return op.executeObject(frame, right, leftDouble);
-            }
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        public static PNotImplemented doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+    @Builtin(name = J___NEG__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class NegNode extends ForeignUnaryNode {
+        NegNode() {
+            super(UnaryArithmetic.NegNode.create());
         }
     }
 
-    @GenerateInline
-    @GenerateCached(false)
-    abstract static class ForeignBinarySlotNode extends Node {
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object left, Object right, BinaryOpNode binaryOpNode);
+    @Builtin(name = J___INVERT__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class InvertNode extends ForeignUnaryNode {
+        InvertNode() {
+            super(UnaryArithmetic.InvertNode.create());
+        }
+    }
 
-        @Specialization
-        static Object doIt(VirtualFrame frame, Node inliningTarget, Object left, Object right, BinaryOpNode op,
-                        @Cached IsForeignObjectNode isForeignLeft,
-                        @Cached IsForeignObjectNode isForeignRight,
-                        @Cached NormalizeForeignForBinopNode normalizeLeft,
-                        @Cached NormalizeForeignForBinopNode normalizeRight) {
-            boolean leftIsForeign = isForeignLeft.execute(inliningTarget, left);
-            boolean rightIsForeign = isForeignRight.execute(inliningTarget, right);
-            if (!leftIsForeign && !rightIsForeign) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
+    @Builtin(name = J___ABS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class AbsNode extends ForeignUnaryNode {
+        AbsNode() {
+            super(UnaryArithmetic.GenericUnaryArithmeticNode.create(SpecialMethodNames.T___ABS__));
+        }
+    }
 
-            Object newLeft = normalizeLeft.execute(inliningTarget, left);
-            Object newRight = normalizeRight.execute(inliningTarget, right);
-            assert newLeft == null || !IsForeignObjectNode.executeUncached(newLeft) : newLeft;
-            assert newRight == null || !IsForeignObjectNode.executeUncached(newRight) : newRight;
-            if (newLeft == null || newRight == null) {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-            return op.executeObject(frame, newLeft, newRight);
+    @Builtin(name = J___CEIL__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class CeilNode extends ForeignUnaryNode {
+        CeilNode() {
+            super(UnaryArithmetic.GenericUnaryArithmeticNode.create(SpecialMethodNames.T___CEIL__));
+        }
+    }
+
+    @Builtin(name = J___FLOOR__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class FloorNode extends ForeignUnaryNode {
+        FloorNode() {
+            super(UnaryArithmetic.GenericUnaryArithmeticNode.create(SpecialMethodNames.T___FLOOR__));
+        }
+    }
+
+    @Builtin(name = J___TRUNC__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class TruncNode extends ForeignUnaryNode {
+        TruncNode() {
+            super(UnaryArithmetic.GenericUnaryArithmeticNode.create(SpecialMethodNames.T___TRUNC__));
+        }
+    }
+
+    @Builtin(name = J___INT__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IntNode extends ForeignUnaryNode {
+        IntNode() {
+            super(UnaryArithmetic.GenericUnaryArithmeticNode.create(SpecialMethodNames.T___INT__));
+        }
+    }
+
+    @Builtin(name = J___FLOAT__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class FloatNode extends ForeignUnaryNode {
+        FloatNode() {
+            super(UnaryArithmetic.GenericUnaryArithmeticNode.create(SpecialMethodNames.T___FLOAT__));
         }
     }
 
@@ -384,6 +460,22 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
                         @Cached ForeignBinarySlotNode binarySlotNode,
                         @Cached(inline = false) PyNumberMultiplyNode mulNode) {
             return binarySlotNode.execute(frame, inliningTarget, left, right, mulNode);
+        }
+    }
+
+    @Builtin(name = J___POW__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PowNode extends ForeignBinaryNode {
+        PowNode() {
+            super(BinaryArithmetic.Pow.create(), false);
+        }
+    }
+
+    @Builtin(name = J___RPOW__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class RPowNode extends ForeignBinaryNode {
+        RPowNode() {
+            super(BinaryArithmetic.Pow.create(), true);
         }
     }
 
@@ -451,94 +543,127 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = J___MOD__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class ModNode extends ForeignBinaryNode {
+        ModNode() {
+            super(BinaryArithmetic.Mod.create(), false);
+        }
+    }
+
+    @Builtin(name = J___RMOD__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class RModNode extends ForeignBinaryNode {
+        RModNode() {
+            super(BinaryArithmetic.Mod.create(), true);
+        }
+    }
+
+    @Builtin(name = J___LSHIFT__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class LShiftNode extends ForeignBinaryNode {
+        LShiftNode() {
+            super(BinaryArithmetic.LShift.create(), false);
+        }
+    }
+
+    @Builtin(name = J___RLSHIFT__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class RLShiftNode extends ForeignBinaryNode {
+        RLShiftNode() {
+            super(BinaryArithmetic.LShift.create(), true);
+        }
+    }
+
+    @Builtin(name = J___RSHIFT__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class RShiftNode extends ForeignBinaryNode {
+        RShiftNode() {
+            super(BinaryArithmetic.RShift.create(), false);
+        }
+    }
+
+    @Builtin(name = J___RRSHIFT__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class RRShiftNode extends ForeignBinaryNode {
+        RRShiftNode() {
+            super(BinaryArithmetic.RShift.create(), true);
+        }
+    }
+
+    @Builtin(name = J___AND__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class AndNode extends ForeignBinaryNode {
+        AndNode() {
+            super(BinaryArithmetic.And.create(), false);
+        }
+    }
+
+    @Builtin(name = J___RAND__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class RAndNode extends ForeignBinaryNode {
+        RAndNode() {
+            super(BinaryArithmetic.And.create(), true);
+        }
+    }
+
+    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class OrNode extends ForeignBinaryNode {
+        OrNode() {
+            super(BinaryArithmetic.Or.create(), false);
+        }
+    }
+
+    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class ROrNode extends ForeignBinaryNode {
+        ROrNode() {
+            super(BinaryArithmetic.Or.create(), true);
+        }
+    }
+
+    @Builtin(name = J___XOR__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class XorNode extends ForeignBinaryNode {
+        XorNode() {
+            super(BinaryArithmetic.Xor.create(), false);
+        }
+    }
+
+    @Builtin(name = J___RXOR__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class RXorNode extends ForeignBinaryNode {
+        RXorNode() {
+            super(BinaryArithmetic.Xor.create(), true);
+        }
+    }
+
+    @Builtin(name = J___ROUND__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class RoundNode extends ForeignBinaryNode {
+        RoundNode() {
+            super(BinaryArithmetic.GenericBinaryArithmeticNode.create(SpecialMethodSlot.Round), false);
+        }
+    }
+
     public abstract static class ForeignBinaryComparisonNode extends PythonBinaryBuiltinNode {
         @Child private LookupAndCallBinaryNode comparisonNode;
 
         protected ForeignBinaryComparisonNode(SpecialMethodSlot slot, SpecialMethodSlot rslot) {
-            comparisonNode = LookupAndCallBinaryNode.create(slot, rslot, true, true);
+            this.comparisonNode = LookupAndCallBinaryNode.create(slot, rslot, true, true);
         }
 
-        @Specialization(guards = {"lib.isBoolean(left)"})
-        Object doComparisonBool(VirtualFrame frame, Object left, Object right,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached GilNode gil) {
-            boolean leftBoolean;
-            gil.release(true);
-            try {
-                leftBoolean = lib.asBoolean(left);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to boolean for comparison as it claims to");
-            } finally {
-                gil.acquire();
+        @Specialization
+        Object doComparison(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached UnboxNode unboxNode) {
+            Object unboxed = unboxNode.execute(inliningTarget, left);
+            if (unboxed != null) {
+                return comparisonNode.executeObject(frame, unboxed, right);
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return comparisonNode.executeObject(frame, leftBoolean, right);
-        }
-
-        @Specialization(guards = {"lib.fitsInLong(left)"})
-        Object doComparisonLong(VirtualFrame frame, Object left, Object right,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached GilNode gil) {
-            long leftLong;
-            gil.release(true);
-            try {
-                leftLong = lib.asLong(left);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to long for comparison as it claims to");
-            } finally {
-                gil.acquire();
-            }
-            return comparisonNode.executeObject(frame, leftLong, right);
-        }
-
-        @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInBigInteger(left)"})
-        Object doComparisonBigInt(VirtualFrame frame, Object left, Object right,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached GilNode gil,
-                        @Cached PythonObjectFactory factory) {
-            BigInteger leftBigInteger;
-            PInt leftInt;
-            gil.release(true);
-            try {
-                leftBigInteger = lib.asBigInteger(left);
-                leftInt = factory.createInt(leftBigInteger);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to BigInteger as it claims to");
-            } finally {
-                gil.acquire();
-            }
-            return comparisonNode.executeObject(frame, leftInt, right);
-        }
-
-        @Specialization(guards = {"lib.fitsInDouble(left)"})
-        Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached GilNode gil) {
-            double leftDouble;
-            gil.release(true);
-            try {
-                leftDouble = lib.asDouble(left);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to double for comparison as it claims to");
-            } finally {
-                gil.acquire();
-            }
-            return comparisonNode.executeObject(frame, leftDouble, right);
-        }
-
-        @Specialization(guards = "lib.isNull(left)")
-        Object doComparison(VirtualFrame frame, @SuppressWarnings("unused") Object left, Object right,
-                        @SuppressWarnings("unused") @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return comparisonNode.executeObject(frame, PNone.NONE, right);
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        public static PNotImplemented doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -634,49 +759,15 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         @Specialization
         Object str(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
+                        @Cached UnboxNode unboxNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
-                        @Cached InlinedBranchProfile isLong,
-                        @Cached InlinedBranchProfile isDouble,
-                        @Cached InlinedBranchProfile isBigInteger,
-                        @Cached InlinedBranchProfile defaultCase,
-                        @Cached PythonObjectFactory factory) {
-            assert !lib.isBoolean(object);
-            final Object value;
-            try {
-                if (lib.fitsInLong(object)) {
-                    isLong.enter(inliningTarget);
-                    gil.release(true);
-                    try {
-                        value = lib.asLong(object);
-                    } finally {
-                        gil.acquire();
-                    }
-                } else if (lib.fitsInDouble(object)) {
-                    isDouble.enter(inliningTarget);
-                    gil.release(true);
-                    try {
-                        value = lib.asDouble(object);
-                    } finally {
-                        gil.acquire();
-                    }
-                } else if (lib.fitsInBigInteger(object)) {
-                    isBigInteger.enter(inliningTarget);
-                    gil.release(true);
-                    try {
-                        value = factory.createInt(lib.asBigInteger(object));
-                    } finally {
-                        gil.acquire();
-                    }
-                } else {
-                    defaultCase.enter(inliningTarget);
-                    return defaultConversion(frame, lib, object);
-                }
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
+                        @Cached InlinedBranchProfile defaultCase) {
+            final Object value = unboxNode.execute(inliningTarget, object);
+            if (value == null) {
+                defaultCase.enter(inliningTarget);
+                return defaultConversion(frame, lib, object);
             }
-
             return strNode.execute(frame, inliningTarget, value);
         }
 
@@ -730,87 +821,33 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RAND__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___AND__, minNumOfPositionalArgs = 2)
+    // NOTE: This does not get called e.g. for `~foreign`, only for non-__dunder__ methods or
+    // explicit calls like `foreign.__invert__()`.
+    @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
-    abstract static class AndNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
-        protected static Object op(VirtualFrame frame, Object left, Object right,
-                        @Cached BitAndNode andNode,
-                        @CachedLibrary("left") InteropLibrary lib,
-                        @Cached GilNode gil) {
-            if (lib.isNumber(left) && lib.fitsInLong(left)) {
+    abstract static class GetAttributeNode extends GetAttrBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object self, Object name,
+                        @Bind("this") Node inliningTarget,
+                        @Cached UnboxNode unboxNode,
+                        @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Cached IsBuiltinObjectProfile isAttrError,
+                        @Cached ForeignGetattrNode foreignGetattrNode) {
+            /*
+             * We unbox so we automatically get all methods from bool, int or float. We want the
+             * default Python attribute lookup first and try foreign members last. Because method
+             * calls in a Python source should prioritize Python methods over foreign methods.
+             */
+            Object unboxed = unboxNode.execute(inliningTarget, self);
+            if (unboxed != null) {
                 try {
-                    long leftLong;
-                    gil.release(true);
-                    try {
-                        leftLong = lib.asLong(left);
-                    } finally {
-                        gil.acquire();
-                    }
-                    return andNode.executeObject(frame, leftLong, right);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    return objectGetattrNode.execute(frame, unboxed, name);
+                } catch (PException e) {
+                    e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, isAttrError);
                 }
-            } else {
-                return PNotImplemented.NOT_IMPLEMENTED;
             }
-        }
-    }
 
-    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class OrNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
-        protected static Object op(VirtualFrame frame, Object left, Object right,
-                        @Cached BitOrNode orNode,
-                        @CachedLibrary("left") InteropLibrary lib,
-                        @Cached GilNode gil) {
-            if (lib.isNumber(left) && lib.fitsInLong(left)) {
-                try {
-                    long leftLong;
-                    gil.release(true);
-                    try {
-                        leftLong = lib.asLong(left);
-                    } finally {
-                        gil.acquire();
-                    }
-                    return orNode.executeObject(frame, leftLong, right);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-            } else {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
-        }
-    }
-
-    @Builtin(name = J___RXOR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___XOR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class XorNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
-        protected static Object op(VirtualFrame frame, Object left, Object right,
-                        @Cached BitXorNode xorNode,
-                        @CachedLibrary("left") InteropLibrary lib,
-                        @Cached GilNode gil) {
-            if (lib.isNumber(left) && lib.fitsInLong(left)) {
-                try {
-                    long leftLong;
-                    gil.release(true);
-                    try {
-                        leftLong = lib.asLong(left);
-                    } finally {
-                        gil.acquire();
-                    }
-                    return xorNode.executeObject(frame, leftLong, right);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-            } else {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
+            return foreignGetattrNode.execute(inliningTarget, self, name);
         }
     }
 }
