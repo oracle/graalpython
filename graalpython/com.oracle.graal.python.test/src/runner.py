@@ -75,7 +75,7 @@ class Logger:
     report_incomplete = sys.stdout.isatty()
 
     def __init__(self):
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.incomplete_line = None
 
     def log(self, msg='', incomplete=False):
@@ -92,7 +92,8 @@ class Logger:
             self.incomplete_line = msg if incomplete else None
 
 
-log = Logger().log
+logger = Logger()
+log = logger.log
 
 
 class TestStatus(enum.StrEnum):
@@ -504,27 +505,105 @@ class ParallelTestRunner(TestRunner):
                 log(crash)
 
     def run_partitions_in_subprocesses(self, executor, partitions: list[list['Test']]):
-        futures = [
-            executor.submit(self.run_in_subprocess_and_watch, partition)
-            for partition in partitions
-        ]
-        try:
-            concurrent.futures.wait(futures)
-            for future in futures:
-                future.result()
-        except KeyboardInterrupt:
-            self.stop_event.set()
-            concurrent.futures.wait(futures)
-            print("Interrupted!")
-            sys.exit(1)
+        workers = [SubprocessWorker(self, partition) for i, partition in enumerate(partitions)]
+        futures = [executor.submit(worker.run_in_subprocess_and_watch) for worker in workers]
 
-    def run_in_subprocess_and_watch(self, tests: list['Test']):
+        def dump_worker_status():
+            with logger.lock:
+                for i, partition in enumerate(partitions):
+                    not_started = 0
+                    if futures[i].running():
+                        log(f"Worker on {workers[i].thread}: {workers[i].get_status()}")
+                    elif not futures[i].done():
+                        not_started += len(partition)
+                if not_started:
+                    log(f"There are {not_started} tests not assigned to any worker")
+
+        try:
+            def sigterm_handler(_signum, _frame):
+                dump_worker_status()
+                # noinspection PyUnresolvedReferences,PyProtectedMember
+                os._exit(1)
+
+            prev_sigterm = signal.signal(signal.SIGTERM, sigterm_handler)
+        except Exception:
+            prev_sigterm = None
+
+        try:
+            try:
+                concurrent.futures.wait(futures)
+                for future in futures:
+                    future.result()
+            except KeyboardInterrupt:
+                log("Received keyboard interrupt, stopping")
+                dump_worker_status()
+                self.stop_event.set()
+                concurrent.futures.wait(futures)
+                sys.exit(1)
+        finally:
+            if prev_sigterm:
+                signal.signal(signal.SIGTERM, prev_sigterm)
+
+
+class SubprocessWorker:
+    def __init__(self, runner: ParallelTestRunner, tests: list['Test']):
+        self.runner = runner
+        self.stop_event = runner.stop_event
+        self.remaining_test_ids = [test.test_id for test in tests]
+        self.tests_by_id = {test.test_id: test for test in tests}
+        self.out_file: typing.TextIO | None = None
+        self.last_started_test: Test | None = None
+        self.last_started_time: float | None = None
+        self.last_out_pos = 0
+        self.process: subprocess.Popen | None = None
+        self.thread = None
+
+    def process_event(self, event):
+        match event['event']:
+            case 'testStarted':
+                self.remaining_test_ids.remove(event['test'])
+                self.runner.report_start(event['test'])
+                self.last_started_test = self.tests_by_id[event['test']]
+                self.last_started_time = time.time()
+                self.last_out_pos = event['out_pos']
+            case 'testResult':
+                out_end = event['out_pos']
+                test_output = ''
+                if self.last_out_pos != out_end:
+                    self.out_file.seek(self.last_out_pos)
+                    test_output = self.out_file.read(out_end - self.last_out_pos)
+                result = TestResult(
+                    test_id=event['test'],
+                    status=event['status'],
+                    param=event.get('param'),
+                    output=test_output,
+                    duration=event.get('duration'),
+                )
+                self.runner.report_result(result)
+                self.last_started_test = None
+                self.last_started_time = None
+                self.last_out_pos = event['out_pos']
+
+    def get_status(self):
+        if not self.process:
+            process_status = "not started"
+        elif self.process.poll() is not None:
+            process_status = f"exitted with code {self.process.returncode}"
+        else:
+            process_status = "running"
+
+        if self.last_started_test is not None:
+            duration = time.time() - self.last_started_time
+            test_status = f"executing {self.last_started_test} for {duration:.2f}s"
+        else:
+            test_status = "no current test"
+        remaining = len(self.remaining_test_ids)
+        return f"test: {test_status}; remaining: {remaining}; process status: {process_status}"
+
+    def run_in_subprocess_and_watch(self):
+        self.thread = threading.current_thread()
         # noinspection PyUnresolvedReferences
         use_pipe = sys.platform != 'win32' and (not IS_GRAALPY or __graalpython__.posix_module_backend() == 'native')
-        tests_by_id = {test.test_id: test for test in tests}
-        remaining_test_ids = [test.test_id for test in tests]
-        last_started_test: Test | None = None
-        last_started_time: float | None = None
         with tempfile.TemporaryDirectory(prefix='graalpytest-') as tmp_dir:
             tmp_dir = Path(tmp_dir)
             env = os.environ.copy()
@@ -535,43 +614,16 @@ class ParallelTestRunner(TestRunner):
             else:
                 result_file = tmp_dir / 'result'
 
-            def process_event(event):
-                nonlocal remaining_test_ids, last_started_test, last_started_time, last_out_pos
-                match event['event']:
-                    case 'testStarted':
-                        remaining_test_ids.remove(event['test'])
-                        self.report_start(event['test'])
-                        last_started_test = tests_by_id[event['test']]
-                        last_started_time = time.time()
-                        last_out_pos = event['out_pos']
-                    case 'testResult':
-                        out_end = event['out_pos']
-                        test_output = ''
-                        if last_out_pos != out_end:
-                            out_file.seek(last_out_pos)
-                            test_output = out_file.read(out_end - last_out_pos)
-                        result = TestResult(
-                            test_id=event['test'],
-                            status=event['status'],
-                            param=event.get('param'),
-                            output=test_output,
-                            duration=event.get('duration'),
-                        )
-                        self.report_result(result)
-                        last_started_test = None
-                        last_started_time = None
-                        last_out_pos = event['out_pos']
-
-            while remaining_test_ids and not self.stop_event.is_set():
+            while self.remaining_test_ids and not self.stop_event.is_set():
                 with (
-                    open(tmp_dir / 'out', 'w+') as out_file,
+                    open(tmp_dir / 'out', 'w+') as self.out_file,
                     open(tmp_dir / 'tests', 'w+') as tests_file,
                 ):
-                    last_out_pos = 0
+                    self.last_out_pos = 0
                     cmd = [
                         sys.executable,
                         '-u',
-                        *self.subprocess_args,
+                        *self.runner.subprocess_args,
                         __file__,
                         '--tests-file', str(tests_file.name),
                     ]
@@ -579,62 +631,62 @@ class ParallelTestRunner(TestRunner):
                         cmd += ['--pipe-fd', str(child_pipe.fileno())]
                     else:
                         cmd += ['--result-file', str(result_file)]
-                    if self.failfast:
+                    if self.runner.failfast:
                         cmd.append('--failfast')
                     # We communicate the tests through a temp file to avoid running into too long commandlines on windows
                     tests_file.seek(0)
                     tests_file.truncate()
-                    tests_file.write('\n'.join(map(str, remaining_test_ids)))
+                    tests_file.write('\n'.join(map(str, self.remaining_test_ids)))
                     tests_file.flush()
                     popen_kwargs: dict = dict(
-                        stdout=out_file,
-                        stderr=out_file,
+                        stdout=self.out_file,
+                        stderr=self.out_file,
                         env=env,
                     )
                     if use_pipe:
                         popen_kwargs.update(pass_fds=[child_pipe.fileno()])
-                    process = subprocess.Popen(cmd, **popen_kwargs)
+                    self.process = subprocess.Popen(cmd, **popen_kwargs)
 
                     timed_out = False
 
                     if use_pipe:
-                        while process.poll() is None:
+                        while self.process.poll() is None:
                             while pipe.poll(0.1):
-                                process_event(pipe.recv())
+                                self.process_event(pipe.recv())
                             if self.stop_event.is_set():
-                                interrupt_process(process)
+                                interrupt_process(self.process)
                                 break
-                            if last_started_test is not None:
-                                timeout = last_started_test.test_file.test_config.per_test_timeout
-                                if time.time() - last_started_time >= timeout:
-                                    interrupt_process(process)
+                            if self.last_started_test is not None:
+                                timeout = self.last_started_test.test_file.test_config.per_test_timeout
+                                if time.time() - self.last_started_time >= timeout:
+                                    interrupt_process(self.process)
                                     timed_out = True
                                     # Drain the pipe
                                     while pipe.poll(0.1):
                                         pipe.recv()
                                     break
                         try:
-                            returncode = process.wait(60)
+                            returncode = self.process.wait(60)
                         except subprocess.TimeoutExpired:
                             log("Warning: Worker didn't shutdown in a timely manner, interrupting it")
-                            interrupt_process(process)
+                            interrupt_process(self.process)
 
-                    process.wait()
+                    self.process.wait()
 
                     if self.stop_event.is_set():
                         return
                     if use_pipe:
                         while pipe.poll(0.1):
-                            process_event(pipe.recv())
+                            self.process_event(pipe.recv())
                     else:
                         with open(result_file, 'rb') as f:
                             for file_event in pickle.load(f):
-                                process_event(file_event)
+                                self.process_event(file_event)
 
                     if returncode != 0 or timed_out:
-                        out_file.seek(last_out_pos)
-                        output = out_file.read()
-                        if last_started_test:
+                        self.out_file.seek(self.last_out_pos)
+                        output = self.out_file.read()
+                        if self.last_started_test:
                             if timed_out:
                                 message = "Timed out"
                             elif returncode >= 0:
@@ -645,8 +697,8 @@ class ParallelTestRunner(TestRunner):
                                 except ValueError:
                                     signal_name = str(-returncode)
                                 message = f"Test process killed by signal {signal_name}"
-                            self.report_result(TestResult(
-                                test_id=last_started_test.test_id,
+                            self.runner.report_result(TestResult(
+                                test_id=self.last_started_test.test_id,
                                 status=TestStatus.ERROR,
                                 param=message,
                                 output=output,
@@ -654,7 +706,7 @@ class ParallelTestRunner(TestRunner):
                             continue
                         else:
                             # Crashed outside of tests, don't retry
-                            self.crashes.append(output or 'Runner subprocess crashed')
+                            self.runner.crashes.append(output or 'Runner subprocess crashed')
                             return
 
 
@@ -1113,6 +1165,8 @@ def main():
             for test in test_suite.collected_tests:
                 print(test)
         return
+
+    log(f"Collected {sum(len(test_suite.collected_tests) for test_suite in tests)} tests")
 
     if not tests:
         sys.exit("No tests matched\n")
