@@ -844,7 +844,7 @@ class UnicodeTest(string_tests.CommonTest,
         self.assertFalse("0".isidentifier())
 
     @support.cpython_only
-    @support.requires_legacy_unicode_capi
+    @support.requires_legacy_unicode_capi()
     @unittest.skipIf(_testcapi is None, 'need _testcapi module')
     def test_isidentifier_legacy(self):
         u = '𝖀𝖓𝖎𝖈𝖔𝖉𝖊'
@@ -2453,12 +2453,7 @@ class UnicodeTest(string_tests.CommonTest,
             def __repr__(self):
                 return '\\n'
 
-        class s2:
-            def __repr__(self):
-                return '\\n'
-
         self.assertEqual(repr(s1()), '\\n')
-        self.assertEqual(repr(s2()), '\\n')
 
     def test_printable_repr(self):
         self.assertEqual(repr('\U00010000'), "'%c'" % (0x10000,)) # printable
@@ -2545,7 +2540,7 @@ class UnicodeTest(string_tests.CommonTest,
         self.assertEqual(len(args), 1)
 
     @support.cpython_only
-    @support.requires_legacy_unicode_capi
+    @support.requires_legacy_unicode_capi()
     @unittest.skipIf(_testcapi is None, 'need _testcapi module')
     def test_resize(self):
         for length in range(1, 100, 7):

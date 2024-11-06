@@ -1339,42 +1339,6 @@ class TestArchives(BaseTest, unittest.TestCase):
 
     ### shutil.make_archive
 
-    @support.requires_zlib()
-    def test_make_tarball(self):
-        # creating something to tar
-        root_dir, base_dir = self._create_files('')
-
-        tmpdir2 = self.mkdtemp()
-        # force shutil to create the directory
-        os.rmdir(tmpdir2)
-        # working with relative paths
-        work_dir = os.path.dirname(tmpdir2)
-        rel_base_name = os.path.join(os.path.basename(tmpdir2), 'archive')
-
-        with os_helper.change_cwd(work_dir), no_chdir:
-            base_name = os.path.abspath(rel_base_name)
-            tarball = make_archive(rel_base_name, 'gztar', root_dir, '.')
-
-        # check if the compressed tarball was created
-        self.assertEqual(tarball, base_name + '.tar.gz')
-        self.assertTrue(os.path.isfile(tarball))
-        self.assertTrue(tarfile.is_tarfile(tarball))
-        with tarfile.open(tarball, 'r:gz') as tf:
-            self.assertCountEqual(tf.getnames(),
-                                  ['.', './sub', './sub2',
-                                   './file1', './file2', './sub/file3'])
-
-        # trying an uncompressed one
-        with os_helper.change_cwd(work_dir), no_chdir:
-            tarball = make_archive(rel_base_name, 'tar', root_dir, '.')
-        self.assertEqual(tarball, base_name + '.tar')
-        self.assertTrue(os.path.isfile(tarball))
-        self.assertTrue(tarfile.is_tarfile(tarball))
-        with tarfile.open(tarball, 'r') as tf:
-            self.assertCountEqual(tf.getnames(),
-                                  ['.', './sub', './sub2',
-                                  './file1', './file2', './sub/file3'])
-
     def _tarinfo(self, path):
         with tarfile.open(path) as tar:
             names = tar.getnames()
@@ -1599,17 +1563,19 @@ class TestArchives(BaseTest, unittest.TestCase):
             unregister_archive_format('xxx')
 
     def test_make_tarfile_in_curdir(self):
-        # Issue #21280
+        # Issue #21280: Test with the archive in the current directory.
         root_dir = self.mkdtemp()
         with os_helper.change_cwd(root_dir), no_chdir:
+            # root_dir must be None, so the archive path is relative.
             self.assertEqual(make_archive('test', 'tar'), 'test.tar')
             self.assertTrue(os.path.isfile('test.tar'))
 
     @support.requires_zlib()
     def test_make_zipfile_in_curdir(self):
-        # Issue #21280
+        # Issue #21280: Test with the archive in the current directory.
         root_dir = self.mkdtemp()
         with os_helper.change_cwd(root_dir), no_chdir:
+            # root_dir must be None, so the archive path is relative.
             self.assertEqual(make_archive('test', 'zip'), 'test.zip')
             self.assertTrue(os.path.isfile('test.zip'))
 
@@ -1630,10 +1596,11 @@ class TestArchives(BaseTest, unittest.TestCase):
         self.assertNotIn('xxx', formats)
 
     def test_make_tarfile_rootdir_nodir(self):
-        # GH-99203
+        # GH-99203: Test with root_dir is not a real directory.
         self.addCleanup(os_helper.unlink, f'{TESTFN}.tar')
         for dry_run in (False, True):
             with self.subTest(dry_run=dry_run):
+                # root_dir does not exist.
                 tmp_dir = self.mkdtemp()
                 nonexisting_file = os.path.join(tmp_dir, 'nonexisting')
                 with self.assertRaises(FileNotFoundError) as cm:
@@ -1642,6 +1609,7 @@ class TestArchives(BaseTest, unittest.TestCase):
                 self.assertEqual(cm.exception.filename, nonexisting_file)
                 self.assertFalse(os.path.exists(f'{TESTFN}.tar'))
 
+                # root_dir is a file.
                 tmp_fd, tmp_file = tempfile.mkstemp(dir=tmp_dir)
                 os.close(tmp_fd)
                 with self.assertRaises(NotADirectoryError) as cm:
@@ -1652,10 +1620,11 @@ class TestArchives(BaseTest, unittest.TestCase):
 
     @support.requires_zlib()
     def test_make_zipfile_rootdir_nodir(self):
-        # GH-99203
+        # GH-99203: Test with root_dir is not a real directory.
         self.addCleanup(os_helper.unlink, f'{TESTFN}.zip')
         for dry_run in (False, True):
             with self.subTest(dry_run=dry_run):
+                # root_dir does not exist.
                 tmp_dir = self.mkdtemp()
                 nonexisting_file = os.path.join(tmp_dir, 'nonexisting')
                 with self.assertRaises(FileNotFoundError) as cm:
@@ -1664,6 +1633,7 @@ class TestArchives(BaseTest, unittest.TestCase):
                 self.assertEqual(cm.exception.filename, nonexisting_file)
                 self.assertFalse(os.path.exists(f'{TESTFN}.zip'))
 
+                # root_dir is a file.
                 tmp_fd, tmp_file = tempfile.mkstemp(dir=tmp_dir)
                 os.close(tmp_fd)
                 with self.assertRaises(NotADirectoryError) as cm:
