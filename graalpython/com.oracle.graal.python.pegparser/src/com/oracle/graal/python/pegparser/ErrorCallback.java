@@ -58,6 +58,8 @@ public interface ErrorCallback {
         Syntax
     }
 
+    void safePointPoll();
+
     RuntimeException reportIncompleteSource(int line);
 
     RuntimeException onError(ErrorType errorType, SourceRange sourceRange, String message);

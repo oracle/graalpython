@@ -484,6 +484,9 @@ public class Tokenizer {
                 if (c == '\n') {
                     readNewline = true;
                 }
+                if ((nextCharIndex & 1023) == 0) {
+                    errorCallback.safePointPoll();
+                }
                 return c;
             } else {
                 if (fillInput()) {

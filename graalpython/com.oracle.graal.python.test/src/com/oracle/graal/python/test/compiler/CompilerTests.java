@@ -1123,6 +1123,10 @@ public class CompilerTests extends PythonTests {
 
     static class TestErrorCallbackImpl implements ErrorCallback {
         @Override
+        public void safePointPoll() {
+        }
+
+        @Override
         public RuntimeException reportIncompleteSource(int line) {
             fail("Unexpected call to reportIncompleteSource");
             throw new IllegalStateException("unreachable");

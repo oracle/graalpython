@@ -59,6 +59,10 @@ public class TestErrorCallbackImpl implements ErrorCallback {
     }
 
     @Override
+    public void safePointPoll() {
+    }
+
+    @Override
     public RuntimeException onError(ErrorType errorType, SourceRange sourceRange, String message) {
         throw new ParserErrorWrapperException(new Error(errorType, sourceRange, message));
     }
