@@ -127,7 +127,15 @@ class TestId:
     @classmethod
     def from_test_case(cls, test_file: Path, test: unittest.TestCase):
         test_id = test.id()
-        if type(test).id is not unittest.TestCase.id:
+        if type(test).__name__ == '_ErrorHolder':
+            if match := re.match(r'(\S+) \(([^)]+)\)', test_id):
+                action = match.group(1)
+                class_name = match.group(2)
+                if 'Module' in action:
+                    test_id = f'<{action}>'
+                else:
+                    test_id = f'{class_name}.<{action}>'
+        elif type(test).id is not unittest.TestCase.id:
             # Qualify doctests so that we know what they are
             test_id = f'{type(test).__qualname__}.{test_id}'
         return cls(test_file, test_id)
@@ -215,7 +223,10 @@ class AbstractResult(unittest.TestResult):
         pass
 
     def make_result(self, test, status: TestStatus, **kwargs):
-        return TestResult(status=status, test_id=self.test_id(test), duration=(time.time() - self.start_time), **kwargs)
+        duration = 0.0
+        if self.start_time:
+            duration = time.time() - self.start_time
+        return TestResult(status=status, test_id=self.test_id(test), duration=duration, **kwargs)
 
     def addSuccess(self, test):
         super().addSuccess(test)
@@ -549,56 +560,88 @@ class SubprocessWorker:
     def __init__(self, runner: ParallelTestRunner, tests: list['Test']):
         self.runner = runner
         self.stop_event = runner.stop_event
+        self.lock = threading.RLock()
         self.remaining_test_ids = [test.test_id for test in tests]
         self.tests_by_id = {test.test_id: test for test in tests}
         self.out_file: typing.TextIO | None = None
-        self.last_started_test: Test | None = None
+        self.last_started_test_id: TestId | None = None
         self.last_started_time: float | None = None
         self.last_out_pos = 0
+        self.last_test_id_for_blame: TestId | None = None
         self.process: subprocess.Popen | None = None
         self.thread = None
 
     def process_event(self, event):
+        test_id = event['test']
         match event['event']:
             case 'testStarted':
-                self.remaining_test_ids.remove(event['test'])
-                self.runner.report_start(event['test'])
-                self.last_started_test = self.tests_by_id[event['test']]
-                self.last_started_time = time.time()
-                self.last_out_pos = event['out_pos']
+                self.remaining_test_ids.remove(test_id)
+                self.runner.report_start(test_id)
+                with self.lock:
+                    self.last_started_test_id = test_id
+                    self.last_started_time = time.time()
+                    self.last_out_pos = event['out_pos']
             case 'testResult':
+                status = event['status']
                 out_end = event['out_pos']
                 test_output = ''
                 if self.last_out_pos != out_end:
                     self.out_file.seek(self.last_out_pos)
                     test_output = self.out_file.read(out_end - self.last_out_pos)
                 result = TestResult(
-                    test_id=event['test'],
-                    status=event['status'],
+                    test_id=test_id,
+                    status=status,
                     param=event.get('param'),
                     output=test_output,
                     duration=event.get('duration'),
                 )
                 self.runner.report_result(result)
-                self.last_started_test = None
-                self.last_started_time = None
-                self.last_out_pos = event['out_pos']
+                with self.lock:
+                    self.last_started_test_id = None
+                    self.last_started_time = time.time()  # Starts timeout for the following teardown/setup
+                    self.last_test_id_for_blame = test_id
+                    self.last_out_pos = event['out_pos']
+                    if test_id.test_name.endswith('>'):
+                        class_name = test_id.test_name[:test_id.test_name.find('<')]
+                        specifier = TestSpecifier(test_id.test_file, class_name or None)
+                        self.remaining_test_ids = [
+                            test for test in self.remaining_test_ids if not specifier.match(test_id)
+                        ]
 
     def get_status(self):
-        if not self.process:
-            process_status = "not started"
-        elif self.process.poll() is not None:
-            process_status = f"exitted with code {self.process.returncode}"
-        else:
-            process_status = "running"
+        with self.lock:
+            if not self.process:
+                process_status = "not started"
+            elif self.process.poll() is not None:
+                process_status = f"exitted with code {self.process.returncode}"
+            else:
+                process_status = "running"
 
-        if self.last_started_test is not None:
-            duration = time.time() - self.last_started_time
-            test_status = f"executing {self.last_started_test} for {duration:.2f}s"
-        else:
-            test_status = "no current test"
-        remaining = len(self.remaining_test_ids)
-        return f"test: {test_status}; remaining: {remaining}; process status: {process_status}"
+            last_test_id = self.get_test_to_blame()
+            if last_test_id is not None:
+                if last_test_id is not self.last_started_test_id:
+                    last_test_id = f'{last_test_id} (approximate)'
+                duration = time.time() - self.last_started_time
+                test_status = f"executing {last_test_id} for {duration:.2f}s"
+            else:
+                test_status = "no current test"
+            remaining = len(self.remaining_test_ids)
+            return f"test: {test_status}; remaining: {remaining}; process status: {process_status}"
+
+    def get_test_to_blame(self):
+        if self.last_started_test_id:
+            return self.last_started_test_id
+        # XXX unittest doesn't report module/class setups/teardowns, so if a test hard crashes or times out during
+        # those, we can't tell which one is to blame. So we make a combined result for both as a last resort
+        next_test_id = self.remaining_test_ids[0] if self.remaining_test_ids else None
+        if self.last_test_id_for_blame is None:
+            return TestId(next_test_id.test_file, f'<before> {next_test_id}')
+        if next_test_id is None:
+            return TestId(self.last_test_id_for_blame.test_file, f'<after> {self.last_test_id_for_blame}')
+        return TestId(
+            Path(''),
+            f'<between> {self.last_test_id_for_blame} <and> {next_test_id}',
+        )
 
     def run_in_subprocess_and_watch(self):
         self.thread = threading.current_thread()
@@ -615,11 +658,13 @@ class SubprocessWorker:
                 result_file = tmp_dir / 'result'
 
             while self.remaining_test_ids and not self.stop_event.is_set():
+                last_remaining_count = len(self.remaining_test_ids)
                 with (
                     open(tmp_dir / 'out', 'w+') as self.out_file,
                     open(tmp_dir / 'tests', 'w+') as tests_file,
                 ):
                     self.last_out_pos = 0
+                    self.last_started_time = time.time()
                     cmd = [
                         sys.executable,
                         '-u',
@@ -656,22 +701,26 @@ class SubprocessWorker:
                             if self.stop_event.is_set():
                                 interrupt_process(self.process)
                                 break
-                            if self.last_started_test is not None:
-                                timeout = self.last_started_test.test_file.test_config.per_test_timeout
-                                if time.time() - self.last_started_time >= timeout:
-                                    interrupt_process(self.process)
-                                    timed_out = True
-                                    # Drain the pipe
-                                    while pipe.poll(0.1):
-                                        pipe.recv()
-                                    break
+                            if self.last_started_test_id:
+                                last_started_test = self.tests_by_id.get(self.last_started_test_id)
+                                timeout = last_started_test.test_file.test_config.per_test_timeout
+                            else:
+                                timeout = self.runner.default_test_timeout
+
+                            if time.time() - self.last_started_time >= timeout:
+                                interrupt_process(self.process)
+                                timed_out = True
+                                # Drain the pipe
+                                while pipe.poll(0.1):
+                                    pipe.recv()
+                                break
                         try:
-                            returncode = self.process.wait(60)
+                            self.process.wait(self.runner.default_test_timeout)
                         except subprocess.TimeoutExpired:
                             log("Warning: Worker didn't shutdown in a timely manner, interrupting it")
                             interrupt_process(self.process)
 
-                    self.process.wait()
+                    returncode = self.process.wait()
 
                     if self.stop_event.is_set():
                         return
@@ -686,28 +735,38 @@ class SubprocessWorker:
                     if returncode != 0 or timed_out:
                         self.out_file.seek(self.last_out_pos)
                         output = self.out_file.read()
-                        if self.last_started_test:
-                            if timed_out:
-                                message = "Timed out"
-                            elif returncode >= 0:
-                                message = f"Test process exitted with code {returncode}"
-                            else:
-                                try:
-                                    signal_name = signal.Signals(-returncode).name
-                                except ValueError:
-                                    signal_name = str(-returncode)
-                                message = f"Test process killed by signal {signal_name}"
-                            self.runner.report_result(TestResult(
-                                test_id=self.last_started_test.test_id,
-                                status=TestStatus.ERROR,
-                                param=message,
-                                output=output,
-                            ))
-                            continue
+                        if timed_out:
+                            message = "Timed out"
+                        elif returncode >= 0:
+                            message = f"Test process exitted with code {returncode}"
                         else:
-                            # Crashed outside of tests, don't retry
-                            self.runner.crashes.append(output or 'Runner subprocess crashed')
-                            return
+                            try:
+                                signal_name = signal.Signals(-returncode).name
+                            except ValueError:
+                                signal_name = str(-returncode)
+                            message = f"Test process killed by signal {signal_name}"
+                        blame_id = self.get_test_to_blame()
+                        self.runner.report_result(TestResult(
+                            test_id=blame_id,
+                            status=TestStatus.ERROR,
+                            param=message,
+                            output=output,
+                        ))
+                        if blame_id is not self.last_started_test_id:
+                            # If we're here, it means we didn't know exactly which test we were executing, we were
+                            # somewhere in between
+                            if self.last_test_id_for_blame:
+                                # Retry the same test again, if it crashes again, we would get into the else branch
+                                self.last_started_test_id = None
+                                self.last_test_id_for_blame = None
+                                continue
+                            else:
+                                # The current test caused the crash for sure, continue with the next
+                                if self.remaining_test_ids:
+                                    del self.remaining_test_ids[0]
+                    self.last_started_test_id = None
+                    if last_remaining_count == len(self.remaining_test_ids):
+                        raise RuntimeError("Worker is not making progress")
 
 
 @dataclass
@@ -966,7 +1025,7 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
         ignore = [path_for_comparison(i) for i in ignore]
         test_files = [
             test_file for test_file in test_files
-            if any(path_for_comparison(test_file.path).is_relative_to(i) for i in ignore)
+            if not any(path_for_comparison(test_file.path).is_relative_to(i) for i in ignore)
         ]
     if not no_excludes:
         excluded, test_files = partition_list(test_files, lambda f: f.test_config.exclude)
