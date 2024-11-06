@@ -285,6 +285,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.LoopNode;
@@ -1089,7 +1090,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 PCode code = factory.createCode(fr.getTarget());
                 flags |= code.getFlags() & PyCF_MASK;
             }
-            return compile(expression, filename, mode, flags, dontInherit, optimize, featureVersion, factory);
+            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
+            Node encapsulatingNode = encapsulating.set(this);
+            try {
+                return compile(expression, filename, mode, flags, dontInherit, optimize, featureVersion, factory);
+            } finally {
+                encapsulating.set(encapsulatingNode);
+            }
         }
 
         @TruffleBoundary
@@ -1197,16 +1204,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 flags |= code.getFlags() & PyCF_MASK;
             }
 
-            if (AstModuleBuiltins.isAst(getContext(), wSource)) {
-                ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource, getParserInputType(mode, flags));
-                Source source = PythonUtils.createFakeSource(filename);
-                RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null, null, flags);
-                return wrapRootCallTarget(rootCallTarget, factory);
+            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
+            Node encapsulatingNode = encapsulating.set(this);
+            try {
+                if (AstModuleBuiltins.isAst(getContext(), wSource)) {
+                    ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource, getParserInputType(mode, flags));
+                    Source source = PythonUtils.createFakeSource(filename);
+                    RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null, null, flags);
+                    return wrapRootCallTarget(rootCallTarget, factory);
+                }
+                TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode, factory,
+                                raiseNode, indirectCallData);
+                checkSource(source);
+                return compile(source, filename, mode, flags, dontInherit, optimize, featureVersion, factory);
+            } finally {
+                encapsulating.set(encapsulatingNode);
             }
-            TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode, factory,
-                            raiseNode, indirectCallData);
-            checkSource(source);
-            return compile(source, filename, mode, flags, dontInherit, optimize, featureVersion, factory);
         }
 
         private static PCode wrapRootCallTarget(RootCallTarget rootCallTarget, PythonObjectFactory factory) {

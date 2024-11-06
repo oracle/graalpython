@@ -65,6 +65,8 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -96,6 +98,15 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
             this.type = type;
             this.sourceRange = sourceRange;
             this.message = message;
+        }
+    }
+
+    @Override
+    public void safePointPoll() {
+        Node node = EncapsulatingNodeReference.getCurrent().get();
+        // TODO remove the condition once GR-59720 is done
+        if (node != null) {
+            TruffleSafepoint.poll(node);
         }
     }
 

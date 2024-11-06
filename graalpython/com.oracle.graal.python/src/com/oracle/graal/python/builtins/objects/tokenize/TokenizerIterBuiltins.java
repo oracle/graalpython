@@ -65,6 +65,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -102,7 +103,14 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
             if (self.isDone()) {
                 throw raiseNode.get(inliningTarget).raiseStopIteration(T_EOF);
             }
-            Token token = self.getNextToken();
+            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
+            Node encapsulatingNode = encapsulating.set(inliningTarget);
+            Token token;
+            try {
+                token = self.getNextToken();
+            } finally {
+                encapsulating.set(encapsulatingNode);
+            }
             CodePoints tokenCp = self.getTokenCodePoints(token);
             int type = token.type;
             boolean isTrailingToken = false;
