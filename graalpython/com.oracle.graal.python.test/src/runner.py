@@ -613,8 +613,14 @@ class ParallelTestRunner(TestRunner):
                                     while pipe.poll(0.1):
                                         pipe.recv()
                                     break
+                        try:
+                            returncode = process.wait(60)
+                        except subprocess.TimeoutExpired:
+                            log("Warning: Worker didn't shutdown in a timely manner, interrupting it")
+                            interrupt_process(process)
 
-                    returncode = process.wait()
+                    process.wait()
+
                     if self.stop_event.is_set():
                         return
                     if use_pipe:
