@@ -1539,7 +1539,8 @@ def graalpython_gate_runner(args, tasks):
             env['GRADLE_JAVA_HOME'] = env.get('JAVA_HOME')
 
             env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
-            env['ENABLE_GRADLE_STANDALONE_UNITTESTS'] = 'true'
+            env['ENABLE_GRADLE_PLUGIN_UNITTESTS'] = 'true'
+            env['ENABLE_MAVEN_PLUGIN_UNITTESTS'] = 'true'
             env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home
@@ -1571,7 +1572,9 @@ def graalpython_gate_runner(args, tasks):
             mx.logv(f"running with os.environ extended with: {env=}")
             mx.run([sys.executable, _graalpytest_driver(), "-v",
                 "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_jbang_integration.py",
-                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py"], env=env)
+                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py",
+                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_maven_plugin.py",
+                "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_gradle_plugin.py"], env=env)
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:

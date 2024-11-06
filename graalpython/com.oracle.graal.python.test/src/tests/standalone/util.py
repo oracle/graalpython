@@ -38,12 +38,94 @@
 # SOFTWARE.
 
 import os
-import shutil
 import subprocess
 import sys
+import unittest
+import urllib.parse
+import shutil
 
 MAVEN_VERSION = "3.9.8"
+GLOBAL_MVN_CMD = [shutil.which('mvn'), "--batch-mode"]
+
 GRADLE_VERSION = "8.9"
+
+VFS_PREFIX = "org.graalvm.python.vfs"
+
+is_maven_plugin_test_enabled = 'ENABLE_MAVEN_PLUGIN_UNITTESTS' in os.environ and os.environ['ENABLE_MAVEN_PLUGIN_UNITTESTS'] == "true"
+is_gradle_plugin_test_enabled = 'ENABLE_GRADLE_PLUGIN_UNITTESTS' in os.environ and os.environ['ENABLE_GRADLE_PLUGIN_UNITTESTS'] == "true"
+
+class PolyglotAppTestBase(unittest.TestCase):
+    def setUpClass(self):
+        if not is_maven_plugin_test_enabled and not is_gradle_plugin_test_enabled:
+            return
+
+        self.env = os.environ.copy()
+        self.env["PYLAUNCHER_DEBUG"] = "1"
+
+        self.archetypeGroupId = "org.graalvm.python"
+        self.archetypeArtifactId = "graalpy-archetype-polyglot-app"
+        self.pluginArtifactId = "graalpy-maven-plugin"
+        self.graalvmVersion = get_graalvm_version()
+
+        for custom_repo in os.environ.get("MAVEN_REPO_OVERRIDE", "").split(","):
+            url = urllib.parse.urlparse(custom_repo)
+            if url.scheme == "file":
+                jar = os.path.join(
+                    url.path,
+                    self.archetypeGroupId.replace(".", os.path.sep),
+                    self.archetypeArtifactId,
+                    self.graalvmVersion,
+                    f"{self.archetypeArtifactId}-{self.graalvmVersion}.jar",
+                )
+                pom = os.path.join(
+                    url.path,
+                    self.archetypeGroupId.replace(".", os.path.sep),
+                    self.archetypeArtifactId,
+                    self.graalvmVersion,
+                    f"{self.archetypeArtifactId}-{self.graalvmVersion}.pom",
+                )
+                cmd = GLOBAL_MVN_CMD + [
+                    "install:install-file",
+                    f"-Dfile={jar}",
+                    f"-DgroupId={self.archetypeGroupId}",
+                    f"-DartifactId={self.archetypeArtifactId}",
+                    f"-Dversion={self.graalvmVersion}",
+                    "-Dpackaging=jar",
+                    f"-DpomFile={pom}",
+                    "-DcreateChecksum=true",
+                ]
+                out, return_code = run_cmd(cmd, self.env)
+                assert return_code == 0
+
+                jar = os.path.join(
+                    url.path,
+                    self.archetypeGroupId.replace(".", os.path.sep),
+                    self.pluginArtifactId,
+                    self.graalvmVersion,
+                    f"{self.pluginArtifactId}-{self.graalvmVersion}.jar",
+                )
+
+                pom = os.path.join(
+                    url.path,
+                    self.archetypeGroupId.replace(".", os.path.sep),
+                    self.pluginArtifactId,
+                    self.graalvmVersion,
+                    f"{self.pluginArtifactId}-{self.graalvmVersion}.pom",
+                )
+
+                cmd = GLOBAL_MVN_CMD + [
+                    "install:install-file",
+                    f"-Dfile={jar}",
+                    f"-DgroupId={self.archetypeGroupId}",
+                    f"-DartifactId={self.pluginArtifactId}",
+                    f"-Dversion={self.graalvmVersion}",
+                    "-Dpackaging=jar",
+                    f"-DpomFile={pom}",
+                    "-DcreateChecksum=true",
+                ]
+                out, return_code = run_cmd(cmd, self.env)
+                assert return_code == 0
+                break
 
 def run_cmd(cmd, env, cwd=None, print_out=False, gradle=False):
     out = []
@@ -191,3 +273,16 @@ def replace_in_file(file, str, replace_str):
     assert str in contents
     with open(file, "w") as f:
         f.write(contents.replace(str, replace_str))
+
+def patch_properties_file(properties_file, distribution_url_override):
+    if distribution_url_override:
+        new_lines = []
+        with(open(properties_file)) as f:
+            while line := f.readline():
+                line.strip()
+                if not line.startswith("#") and "distributionUrl" in line:
+                    new_lines.append(f"distributionUrl={distribution_url_override}\n")
+                else:
+                    new_lines.append(line)
+        with(open(properties_file, "w")) as f:
+            f.writelines(new_lines)
