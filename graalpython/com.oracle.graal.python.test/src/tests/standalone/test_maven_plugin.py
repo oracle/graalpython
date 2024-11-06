@@ -44,7 +44,6 @@ import tempfile
 import unittest
 
 from tests.standalone import util
-from tests.util import skip_deselected_test_functions
 
 
 class MavenPluginTest(util.PolyglotAppTestBase):
@@ -357,5 +356,3 @@ class MavenPluginTest(util.PolyglotAppTestBase):
             cmd = mvnw_cmd + ["process-resources"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
-
-skip_deselected_test_functions(globals())

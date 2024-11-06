@@ -45,7 +45,6 @@ import textwrap
 import unittest
 
 from tests.standalone import util
-from tests.util import skip_deselected_test_functions
 
 
 def append(file, txt):
@@ -53,9 +52,10 @@ def append(file, txt):
         f.write(txt)
 
 class GradlePluginTestBase(util.PolyglotAppTestBase):
-    def setUpClass(self):
+    @classmethod
+    def setUpClass(cls):
         super().setUpClass()
-        self.test_prj_path = os.path.join(os.path.dirname(__file__), "gradle", "gradle-test-project")
+        cls.test_prj_path = os.path.join(os.path.dirname(__file__), "gradle", "gradle-test-project")
 
     def target_dir_name_sufix(self, target_dir):
         pass
@@ -356,10 +356,11 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
 
 class GradlePluginGroovyTest(GradlePluginTestBase):
 
-    def setUpClass(self):
+    @classmethod
+    def setUpClass(cls):
         super().setUpClass()
-        self.build_file_name = "build.gradle"
-        self.settings_file_name = "settings.gradle"
+        cls.build_file_name = "build.gradle"
+        cls.settings_file_name = "settings.gradle"
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_generated_app(self):
@@ -454,10 +455,11 @@ class GradlePluginGroovyTest(GradlePluginTestBase):
 
 class GradlePluginKotlinTest(GradlePluginTestBase):
 
-    def setUpClass(self):
+    @classmethod
+    def setUpClass(cls):
         super().setUpClass()
-        self.build_file_name = "build.gradle.kts"
-        self.settings_file_name = "settings.gradle.kts"
+        cls.build_file_name = "build.gradle.kts"
+        cls.settings_file_name = "settings.gradle.kts"
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_generated_app(self):
@@ -549,5 +551,3 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
                 packages
             }
             """)
-
-skip_deselected_test_functions(globals())
