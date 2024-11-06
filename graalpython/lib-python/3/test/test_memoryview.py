@@ -17,6 +17,10 @@ import pickle
 from test.support import import_helper
 
 
+class MyObject:
+    pass
+
+
 class AbstractMemoryTests:
     source_bytes = b"abcdef"
 
@@ -226,8 +230,6 @@ class AbstractMemoryTests:
                 def __init__(self, base):
                     self.m = memoryview(base)
             class MySource(tp):
-                pass
-            class MyObject:
                 pass
 
             # Create a reference cycle through a memoryview object.

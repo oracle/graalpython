@@ -2104,16 +2104,6 @@ class POSIXProcessTestCase(BaseTestCase):
                                   cwd=os.curdir, env=os.environ,
                                   extra_groups=[2**64])
 
-        if grp is None:
-            with self.assertRaises(ValueError):
-                subprocess.check_call(ZERO_RETURN_CMD,
-                                      extra_groups=[name_group])
-
-    @unittest.skipIf(hasattr(os, 'setgroups'), 'setgroups() available on platform')
-    def test_extra_groups_error(self):
-        with self.assertRaises(ValueError):
-            subprocess.check_call(ZERO_RETURN_CMD, extra_groups=[])
-
     @unittest.skipIf(mswindows or not hasattr(os, 'umask'),
                      'POSIX umask() is not available.')
     def test_umask(self):

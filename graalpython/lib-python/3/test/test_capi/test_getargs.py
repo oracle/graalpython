@@ -10,6 +10,11 @@ from test.support import warnings_helper
 _testcapi = import_helper.import_module('_testcapi')
 from _testcapi import getargs_keywords, getargs_keyword_only
 
+try:
+    import _testinternalcapi
+except ImportError:
+    _testinternalcapi = NULL
+
 # > How about the following counterproposal. This also changes some of
 # > the other format codes to be a little more regular.
 # >
@@ -55,6 +60,8 @@ NAN = float('nan')
 LLONG_MAX = 2**63-1
 LLONG_MIN = -2**63
 ULLONG_MAX = 2**64-1
+
+NULL = None
 
 class Index:
     def __index__(self):
@@ -1041,7 +1048,7 @@ class String_TestCase(unittest.TestCase):
         buf = bytearray()
         self.assertRaises(ValueError, getargs_et_hash, 'abc\xe9', 'latin1', buf)
 
-    @support.requires_legacy_unicode_capi
+    @support.requires_legacy_unicode_capi()
     def test_u(self):
         from _testcapi import getargs_u
         with self.assertWarns(DeprecationWarning):
@@ -1056,11 +1063,8 @@ class String_TestCase(unittest.TestCase):
             self.assertRaises(TypeError, getargs_u, memoryview(b'memoryview'))
         with self.assertWarns(DeprecationWarning):
             self.assertRaises(TypeError, getargs_u, None)
-        with warnings.catch_warnings():
-            warnings.simplefilter('error', DeprecationWarning)
-            self.assertRaises(DeprecationWarning, getargs_u, 'abc\xe9')
 
-    @support.requires_legacy_unicode_capi
+    @support.requires_legacy_unicode_capi()
     def test_u_hash(self):
         from _testcapi import getargs_u_hash
         with self.assertWarns(DeprecationWarning):
@@ -1075,11 +1079,8 @@ class String_TestCase(unittest.TestCase):
             self.assertRaises(TypeError, getargs_u_hash, memoryview(b'memoryview'))
         with self.assertWarns(DeprecationWarning):
             self.assertRaises(TypeError, getargs_u_hash, None)
-        with warnings.catch_warnings():
-            warnings.simplefilter('error', DeprecationWarning)
-            self.assertRaises(DeprecationWarning, getargs_u_hash, 'abc\xe9')
 
-    @support.requires_legacy_unicode_capi
+    @support.requires_legacy_unicode_capi()
     def test_Z(self):
         from _testcapi import getargs_Z
         with self.assertWarns(DeprecationWarning):
@@ -1094,11 +1095,8 @@ class String_TestCase(unittest.TestCase):
             self.assertRaises(TypeError, getargs_Z, memoryview(b'memoryview'))
         with self.assertWarns(DeprecationWarning):
             self.assertIsNone(getargs_Z(None))
-        with warnings.catch_warnings():
-            warnings.simplefilter('error', DeprecationWarning)
-            self.assertRaises(DeprecationWarning, getargs_Z, 'abc\xe9')
 
-    @support.requires_legacy_unicode_capi
+    @support.requires_legacy_unicode_capi()
     def test_Z_hash(self):
         from _testcapi import getargs_Z_hash
         with self.assertWarns(DeprecationWarning):
@@ -1113,9 +1111,6 @@ class String_TestCase(unittest.TestCase):
             self.assertRaises(TypeError, getargs_Z_hash, memoryview(b'memoryview'))
         with self.assertWarns(DeprecationWarning):
             self.assertIsNone(getargs_Z_hash(None))
-        with warnings.catch_warnings():
-            warnings.simplefilter('error', DeprecationWarning)
-            self.assertRaises(DeprecationWarning, getargs_Z_hash, 'abc\xe9')
 
     def test_gh_99240_clear_args(self):
         from _testcapi import gh_99240_clear_args
@@ -1235,7 +1230,7 @@ class SkipitemTest(unittest.TestCase):
         dict_b = {'b':1}
         keywords = ["a", "b"]
 
-        supported = ('s#', 's*', 'z#', 'z*', 'u#', 'Z#', 'y#', 'y*', 'w#', 'w*')
+        supported = ('s#', 's*', 'z#', 'z*', 'y#', 'y*', 'w#', 'w*')
         for c in string.ascii_letters:
             for c2 in '#*':
                 f = c + c2

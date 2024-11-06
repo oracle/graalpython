@@ -17,11 +17,6 @@ import unittest
 import warnings
 
 
-try:
-    from _testcapi import unicode_legacy_string
-except ImportError:
-    unicode_legacy_string = None
-
 __all__ = [
     # globals
     "PIPE_MAX_SIZE", "verbose", "max_memuse", "use_resources", "failfast",
@@ -507,11 +502,18 @@ def has_no_debug_ranges():
 def requires_debug_ranges(reason='requires co_positions / debug_ranges'):
     return unittest.skipIf(has_no_debug_ranges(), reason)
 
-requires_legacy_unicode_capi = unittest.skipUnless(unicode_legacy_string,
-                        'requires legacy Unicode C API')
+def requires_legacy_unicode_capi():
+    try:
+        from _testcapi import unicode_legacy_string
+    except ImportError:
+        unicode_legacy_string = None
+
+    return unittest.skipUnless(unicode_legacy_string,
+                               'requires legacy Unicode C API')
 
 MS_WINDOWS = (sys.platform == 'win32')
 
+# Is not actually used in tests, but is kept for compatibility.
 is_jython = sys.platform.startswith('java')
 
 is_android = hasattr(sys, 'getandroidapilevel')
@@ -587,7 +589,8 @@ def darwin_malloc_err_warning(test_name):
     msg = ' NOTICE '
     detail = (f'{test_name} may generate "malloc can\'t allocate region"\n'
               'warnings on macOS systems. This behavior is known. Do not\n'
-              'report a bug unless tests are also failing. See bpo-40928.')
+              'report a bug unless tests are also failing.\n'
+              'See https://github.com/python/cpython/issues/85100')
 
     padding, _ = shutil.get_terminal_size()
     print(msg.center(padding, '-'))
@@ -743,8 +746,6 @@ def gc_collect():
     """
     import gc
     gc.collect()
-    if is_jython:
-        time.sleep(0.1)
     gc.collect()
     gc.collect()
 
@@ -795,9 +796,19 @@ if hasattr(sys, "getobjects"):
     _align = '0P'
 _vheader = _header + 'n'
 
+def check_bolt_optimized():
+    # Always return false, if the platform is WASI,
+    # because BOLT optimization does not support WASM binary.
+    if is_wasi:
+        return False
+    config_args = sysconfig.get_config_var('CONFIG_ARGS') or ''
+    return '--enable-bolt' in config_args
+
+
 def calcobjsize(fmt):
     import struct
     return struct.calcsize(_header + fmt + _align)
+
 
 def calcvobjsize(fmt):
     import struct
@@ -1097,6 +1108,19 @@ def refcount_test(test):
 
     """
     return no_tracing(cpython_only(test))
+
+
+def requires_limited_api(test):
+    try:
+        import _testcapi
+    except ImportError:
+        return unittest.skip('needs _testcapi module')(test)
+    return unittest.skipUnless(
+        _testcapi.LIMITED_API_AVAILABLE, 'needs Limited API support')(test)
+
+def requires_specialization(test):
+    return unittest.skipUnless(
+        opcode.ENABLE_SPECIALIZATION, "requires specialization")(test)
 
 
 #=======================================================================
@@ -1722,6 +1746,18 @@ def setswitchinterval(interval):
     return sys.setswitchinterval(interval)
 
 
+def get_pagesize():
+    """Get size of a page in bytes."""
+    try:
+        page_size = os.sysconf('SC_PAGESIZE')
+    except (ValueError, AttributeError):
+        try:
+            page_size = os.sysconf('SC_PAGE_SIZE')
+        except (ValueError, AttributeError):
+            page_size = 4096
+    return page_size
+
+
 @contextlib.contextmanager
 def disable_faulthandler():
     import faulthandler
@@ -2041,16 +2077,7 @@ def get_recursion_available():
     """
     limit = sys.getrecursionlimit()
     depth = get_recursion_depth()
-
-    try:
-        from _testcapi import USE_STACKCHECK
-    except ImportError:
-        USE_STACKCHECK = False
-
-    if USE_STACKCHECK:
-        return max(limit - depth - 1, 0)
-    else:
-        return limit - depth
+    return limit - depth
 
 @contextlib.contextmanager
 def set_recursion_limit(limit):
@@ -2125,6 +2152,43 @@ def requires_venv_with_pip():
 # True if Python is built with the Py_DEBUG macro defined: if
 # Python is built in debug mode (./configure --with-pydebug).
 Py_DEBUG = hasattr(sys, 'gettotalrefcount')
+
+
+def late_deletion(obj):
+    """
+    Keep a Python alive as long as possible.
+
+    Create a reference cycle and store the cycle in an object deleted late in
+    Python finalization. Try to keep the object alive until the very last
+    garbage collection.
+
+    The function keeps a strong reference by design. It should be called in a
+    subprocess to not mark a test as "leaking a reference".
+    """
+
+    # Late CPython finalization:
+    # - finalize_interp_clear()
+    # - _PyInterpreterState_Clear(): Clear PyInterpreterState members
+    #   (ex: codec_search_path, before_forkers)
+    # - clear os.register_at_fork() callbacks
+    # - clear codecs.register() callbacks
+
+    ref_cycle = [obj]
+    ref_cycle.append(ref_cycle)
+
+    # Store a reference in PyInterpreterState.codec_search_path
+    import codecs
+    def search_func(encoding):
+        return None
+    search_func.reference = ref_cycle
+    codecs.register(search_func)
+
+    if hasattr(os, 'register_at_fork'):
+        # Store a reference in PyInterpreterState.before_forkers
+        def atfork_func():
+            pass
+        atfork_func.reference = ref_cycle
+        os.register_at_fork(before=atfork_func)
 
 
 def busy_retry(timeout, err_msg=None, /, *, error=True):
@@ -2238,3 +2302,75 @@ def copy_python_src_ignore(path, names):
             'build',
         }
     return ignored
+
+
+def iter_builtin_types():
+    for obj in __builtins__.values():
+        if not isinstance(obj, type):
+            continue
+        cls = obj
+        if cls.__module__ != 'builtins':
+            continue
+        yield cls
+
+
+def iter_slot_wrappers(cls):
+    assert cls.__module__ == 'builtins', cls
+
+    def is_slot_wrapper(name, value):
+        if not isinstance(value, types.WrapperDescriptorType):
+            assert not repr(value).startswith('<slot wrapper '), (cls, name, value)
+            return False
+        assert repr(value).startswith('<slot wrapper '), (cls, name, value)
+        assert callable(value), (cls, name, value)
+        assert name.startswith('__') and name.endswith('__'), (cls, name, value)
+        return True
+
+    ns = vars(cls)
+    unused = set(ns)
+    for name in dir(cls):
+        if name in ns:
+            unused.remove(name)
+
+        try:
+            value = getattr(cls, name)
+        except AttributeError:
+            # It's as though it weren't in __dir__.
+            assert name in ('__annotate__', '__annotations__', '__abstractmethods__'), (cls, name)
+            if name in ns and is_slot_wrapper(name, ns[name]):
+                unused.add(name)
+            continue
+
+        if not name.startswith('__') or not name.endswith('__'):
+            assert not is_slot_wrapper(name, value), (cls, name, value)
+        if not is_slot_wrapper(name, value):
+            if name in ns:
+                assert not is_slot_wrapper(name, ns[name]), (cls, name, value, ns[name])
+        else:
+            if name in ns:
+                assert ns[name] is value, (cls, name, value, ns[name])
+                yield name, True
+            else:
+                yield name, False
+
+    for name in unused:
+        value = ns[name]
+        if is_slot_wrapper(cls, name, value):
+            yield name, True
+
+
+class BrokenIter:
+    def __init__(self, init_raises=False, next_raises=False, iter_raises=False):
+        if init_raises:
+            1/0
+        self.next_raises = next_raises
+        self.iter_raises = iter_raises
+
+    def __next__(self):
+        if self.next_raises:
+            1/0
+
+    def __iter__(self):
+        if self.iter_raises:
+            1/0
+        return self
