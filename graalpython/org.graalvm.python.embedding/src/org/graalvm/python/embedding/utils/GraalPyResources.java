@@ -141,10 +141,13 @@ import java.nio.file.Paths;
  * </ul>
  * </p>
  *
+ * For <b>more examples</b> on how to use this class refer to
+ * <a href="https://github.com/graalvm/graal-languages-demos/tree/main/graalpy">GraalPy Demos and
+ * Guides</a>.
+ *
  * @see VirtualFileSystem
  * @see VirtualFileSystem.Builder
  */
-// TODO: link to user guide
 public final class GraalPyResources {
 
     private GraalPyResources() {
@@ -197,9 +200,10 @@ public final class GraalPyResources {
      *     }
      * }
      * </pre>
-     *
+     * 
+     * @see <a href=
+     *      "https://github.com/oracle/graalpython/blob/master/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonOptions.java">PythonOptions</a>
      */
-    // TODO add link to python options doc
     public static Context.Builder contextBuilder() {
         VirtualFileSystem vfs = VirtualFileSystem.create();
         return contextBuilder(vfs);
