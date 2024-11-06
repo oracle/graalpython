@@ -99,10 +99,19 @@ public class VirtualFileSystemTest {
     @Test
     public void mountPoints() {
         VirtualFileSystem fs = VirtualFileSystem.newBuilder().//
-                        unixMountPoint(VFS_MOUNT_POINT).//
+                        unixMountPoint(VFS_UNIX_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).build();
 
         assertEquals(VFS_MOUNT_POINT, fs.getMountPoint());
+
+        String multiPathUnixMountPoint = "/test/mount/point";
+        String multiPathWinMountPoint = "X:\\test\\win\\mount\\point";
+        VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
+                        unixMountPoint(multiPathUnixMountPoint).//
+                        windowsMountPoint(multiPathWinMountPoint).//
+                        resourceLoadingClass(VirtualFileSystemTest.class).build();
+        Context ctx = addTestOptions(GraalPyResources.contextBuilder(vfs)).build();
+        ctx.eval(PYTHON, "from os import listdir; listdir('" + (IS_WINDOWS ? multiPathWinMountPoint.replace("\\", "\\\\") : multiPathUnixMountPoint) + "')");
     }
 
     private static void checkExtractedFile(Path extractedFile, String[] expectedContens) throws IOException {
@@ -391,7 +400,6 @@ public class VirtualFileSystemTest {
 
     private void eval(String s, Function<VirtualFileSystem.Builder, VirtualFileSystem.Builder> builderFunction) {
         String src = patchMountPoint(s);
-
         getContext(builderFunction).eval(PYTHON, src);
     }
 

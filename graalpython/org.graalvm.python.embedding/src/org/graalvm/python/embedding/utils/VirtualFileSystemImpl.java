@@ -101,16 +101,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     /*
      * Root of the virtual filesystem in the resources.
      */
-    private static final String VFS_ROOT;
-    static {
-        String root = System.getProperty("org.graalvm.python.vfs.root");
-        if (root != null && !root.trim().isEmpty()) {
-            VFS_ROOT = root;
-            info("VFS.VFS_ROOT override to'%s'", VFS_ROOT);
-        } else {
-            VFS_ROOT = "/org.graalvm.python.vfs";
-        }
-    }
+    private static final String VFS_ROOT = "/org.graalvm.python.vfs";
 
     static final String VFS_HOME = "home";
     static final String VFS_VENV = "venv";
@@ -378,9 +369,9 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                 }
 
                 String platformPath = resourcePathToPlatformPath(line);
-                int i = 0;
+                int i = mountPoint.toString().length();
                 DirEntry parent = null;
-                while ((i = platformPath.indexOf(PLATFORM_SEPARATOR, i)) != -1) {
+                do {
                     String dir = platformPath.substring(0, i);
                     String dirKey = toCaseComparable(dir);
                     DirEntry dirEntry = (DirEntry) vfsEntries.get(dirKey);
@@ -394,7 +385,8 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                     }
                     parent = dirEntry;
                     i++;
-                }
+                } while ((i = platformPath.indexOf(PLATFORM_SEPARATOR, i)) != -1);
+
                 assert parent != null;
                 if (!platformPath.endsWith(PLATFORM_SEPARATOR)) {
                     FileEntry fileEntry = new FileEntry(platformPath);
