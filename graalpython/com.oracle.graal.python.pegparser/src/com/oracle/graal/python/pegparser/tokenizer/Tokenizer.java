@@ -732,7 +732,6 @@ public class Tokenizer {
     /**
      * tok_get, PyTokenizer_Get
      */
-    @SuppressWarnings("fallthrough")
     public Token next() {
         Mode currentMode = modeStack.getFirst();
         if (currentMode.kind == Mode.Kind.REGULAR) {
@@ -899,8 +898,9 @@ public class Tokenizer {
                         indentationOfAsyncDef = 0;
                         asyncDefFollowedByNewline = false;
                     }
-
+                    // Checkstyle: stop fallthrough
                 case LABEL_AGAIN:
+                    // Checkstyle: resume fallthrough
                     // skip spaces
                     do {
                         c = nextChar();
@@ -1279,9 +1279,8 @@ public class Tokenizer {
                     }
                     oneBack();
                     return createToken(Token.Kind.NUMBER);
-                case LABEL_EXPONENT:
-                // exponent part
-                {
+                case LABEL_EXPONENT: {
+                    // exponent part
                     int e = c;
                     c = nextChar();
                     if (c == '+' || c == '-') {
@@ -1303,7 +1302,6 @@ public class Tokenizer {
                     if (c == 0) {
                         return syntaxError("invalid decimal literal");
                     }
-                }
                     if (c == 'j' || c == 'J') {
                         target = LABEL_IMAGINARY;
                         continue GOTO_LOOP;
@@ -1315,15 +1313,16 @@ public class Tokenizer {
                     }
                     oneBack();
                     return createToken(Token.Kind.NUMBER);
+                }
                 case LABEL_IMAGINARY: {
                     c = nextChar();
                     Token syntaxError = verifyEndOfNumber(c, "decimal");
                     if (syntaxError != null) {
                         return syntaxError;
                     }
-                }
                     oneBack();
                     return createToken(Token.Kind.NUMBER);
+                }
                 case LABEL_F_STRING_QUOTE: {
                     int firstChar = Character.toLowerCase(codePointsInput[tokenStart]);
                     if ((firstChar == 'f' || firstChar == 'r') && (c == '\'' || c == '"')) {
@@ -1363,7 +1362,9 @@ public class Tokenizer {
                     }
                     // fallthrough
                 }
-                case LABEL_LETTER_QUOTE:
+                // Checkstyle: stop fallthrough
+                case LABEL_LETTER_QUOTE: {
+                    // Checkstyle: resume fallthrough
                     // String
                     if (c == '\'' || c == '"') {
                         int quote = c;
@@ -1478,8 +1479,7 @@ public class Tokenizer {
                         }
                     }
 
-                /* Check for two-character token */
-                {
+                    /* Check for two-character token */
                     int c2 = nextChar();
                     int kind2 = Token.twoChars(c, c2);
                     if (kind2 != Token.Kind.OP) {
@@ -1493,7 +1493,6 @@ public class Tokenizer {
                         return createToken(kind2);
                     }
                     oneBack();
-                }
 
                     /* Keep track of parentheses nesting level */
                     switch (c) {
@@ -1572,6 +1571,7 @@ public class Tokenizer {
 
                     /* Punctuation character */
                     return createToken(Token.oneChar(c));
+                }
             }
         }
     }
