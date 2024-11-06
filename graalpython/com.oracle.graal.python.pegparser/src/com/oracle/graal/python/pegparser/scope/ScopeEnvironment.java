@@ -40,12 +40,13 @@
  */
 package com.oracle.graal.python.pegparser.scope;
 
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
-import java.util.Stack;
 
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
@@ -83,20 +84,20 @@ import com.oracle.graal.python.pegparser.sst.WithItemTy;
  */
 public class ScopeEnvironment {
     // error strings used for warnings
-    private final static String GLOBAL_PARAM = "name '%s' is parameter and global";
-    private final static String NONLOCAL_PARAM = "name '%s' is parameter and nonlocal";
-    private final static String GLOBAL_AFTER_ASSIGN = "name '%s' is assigned to before global declaration";
-    private final static String NONLOCAL_AFTER_ASSIGN = "name '%s' is assigned to before nonlocal declaration";
-    private final static String GLOBAL_AFTER_USE = "name '%s' is used prior to global declaration";
-    private final static String NONLOCAL_AFTER_USE = "name '%s' is used prior to nonlocal declaration";
-    private final static String GLOBAL_ANNOT = "annotated name '%s' can't be global";
-    private final static String NONLOCAL_ANNOT = "annotated name '%s' can't be nonlocal";
-    private final static String IMPORT_STAR_WARNING = "import * only allowed at module level";
-    private final static String NAMED_EXPR_COMP_IN_CLASS = "assignment expression within a comprehension cannot be used in a class body";
-    private final static String NAMED_EXPR_COMP_CONFLICT = "assignment expression cannot rebind comprehension iteration variable '%s'";
-    private final static String NAMED_EXPR_COMP_INNER_LOOP_CONFLICT = "comprehension inner loop cannot rebind assignment expression target '%s'";
-    private final static String NAMED_EXPR_COMP_ITER_EXPR = "assignment expression cannot be used in a comprehension iterable expression";
-    private final static String DUPLICATE_ARGUMENT = "duplicate argument '%s' in function definition";
+    private static final String GLOBAL_PARAM = "name '%s' is parameter and global";
+    private static final String NONLOCAL_PARAM = "name '%s' is parameter and nonlocal";
+    private static final String GLOBAL_AFTER_ASSIGN = "name '%s' is assigned to before global declaration";
+    private static final String NONLOCAL_AFTER_ASSIGN = "name '%s' is assigned to before nonlocal declaration";
+    private static final String GLOBAL_AFTER_USE = "name '%s' is used prior to global declaration";
+    private static final String NONLOCAL_AFTER_USE = "name '%s' is used prior to nonlocal declaration";
+    private static final String GLOBAL_ANNOT = "annotated name '%s' can't be global";
+    private static final String NONLOCAL_ANNOT = "annotated name '%s' can't be nonlocal";
+    private static final String IMPORT_STAR_WARNING = "import * only allowed at module level";
+    private static final String NAMED_EXPR_COMP_IN_CLASS = "assignment expression within a comprehension cannot be used in a class body";
+    private static final String NAMED_EXPR_COMP_CONFLICT = "assignment expression cannot rebind comprehension iteration variable '%s'";
+    private static final String NAMED_EXPR_COMP_INNER_LOOP_CONFLICT = "comprehension inner loop cannot rebind assignment expression target '%s'";
+    private static final String NAMED_EXPR_COMP_ITER_EXPR = "assignment expression cannot be used in a comprehension iterable expression";
+    private static final String DUPLICATE_ARGUMENT = "duplicate argument '%s' in function definition";
 
     final Scope topScope;
     final HashMap<SSTNode, Scope> blocks = new HashMap<>();
@@ -279,8 +280,7 @@ public class ScopeEnvironment {
                 if (isClass && (v.contains(DefUse.DefGlobal) || !Collections.disjoint(v, DefUse.DefBound))) {
                     v.add(DefUse.DefFreeClass);
                 }
-            } else if (bound != null && !bound.contains(name)) {
-            } else {
+            } else if (bound == null || bound.contains(name)) {
                 symbols.put(name, EnumSet.of(DefUse.Free));
             }
         }
@@ -304,14 +304,14 @@ public class ScopeEnvironment {
     }
 
     private static final class FirstPassVisitor implements SSTreeVisitor<Void> {
-        private final Stack<Scope> stack;
+        private final Deque<Scope> stack;
         private final HashMap<String, EnumSet<DefUse>> globals;
         private final ScopeEnvironment env;
         private Scope currentScope;
         private String currentClassName;
 
         private FirstPassVisitor(ModTy moduleNode, ScopeEnvironment env) {
-            this.stack = new Stack<>();
+            this.stack = new ArrayDeque<>();
             this.env = env;
             enterBlock(null, Scope.ScopeType.Module, moduleNode);
             this.globals = this.currentScope.symbols;
@@ -320,7 +320,7 @@ public class ScopeEnvironment {
         private void enterBlock(String name, Scope.ScopeType type, SSTNode ast) {
             Scope scope = new Scope(name, type, ast);
             env.addScope(ast, scope);
-            stack.add(scope);
+            stack.push(scope);
             Scope prev = currentScope;
             if (prev != null) {
                 scope.comprehensionIterExpression = prev.comprehensionIterExpression;
@@ -683,8 +683,7 @@ public class ScopeEnvironment {
             if (currentScope.flags.contains(ScopeFlags.IsComprehension)) {
                 // symtable_extend_namedexpr_scope
                 String targetName = ((ExprTy.Name) node.target).id;
-                for (int i = stack.size() - 1; i >= 0; i--) {
-                    Scope s = stack.get(i);
+                for (Scope s : stack) {
                     // If we find a comprehension scope, check for conflict
                     if (s.flags.contains(ScopeFlags.IsComprehension)) {
                         if (s.getUseOfName(targetName).contains(DefUse.DefCompIter)) {

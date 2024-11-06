@@ -1056,14 +1056,14 @@ public abstract class AbstractParser {
     }
 
     // debug methods
-    private void indent(StringBuffer sb) {
+    private void indent(StringBuilder sb) {
         for (int i = 0; i < level; i++) {
             sb.append("  ");
         }
     }
 
     void debugMessageln(String text, Object... args) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         indent(sb);
         sb.append(String.format(text, args));
         System.out.println(sb);
