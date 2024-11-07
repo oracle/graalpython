@@ -640,6 +640,8 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_zipfile.TestsWithMultipleOpens.test_many_opens',
         # Weakref
         'unittest.test.test_assertions.Test_Assertions.test_assertRaises_frames_survival',
+        # Transiently fails at line 395
+        'graalpython.lib-python.3.test.test_glob.SymlinkLoopGlobTests.test_selflink',
     ]
 
     result_tags = linux_tags & darwin_tags

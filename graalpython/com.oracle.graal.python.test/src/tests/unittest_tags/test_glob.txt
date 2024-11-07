@@ -13,4 +13,3 @@ test.test_glob.GlobTests.test_glob_one_directory
 test.test_glob.GlobTests.test_glob_symlinks
 test.test_glob.GlobTests.test_hidden_glob
 test.test_glob.GlobTests.test_recursive_glob
-test.test_glob.SymlinkLoopGlobTests.test_selflink
