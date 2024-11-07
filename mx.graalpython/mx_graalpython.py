@@ -1096,7 +1096,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     if use_pytest:
         args += ["-m", "pytest", "-v", "--assert=plain", "--tb=native"]
     else:
-        args += [_python_test_runner(), "--durations", "25", "-n", str(parallel), f"--subprocess-args={shlex.join(args)}"]
+        args += [_python_test_runner(), "--durations", "10", "-n", str(parallel), f"--subprocess-args={shlex.join(args)}"]
 
     if runner_args:
         args += runner_args

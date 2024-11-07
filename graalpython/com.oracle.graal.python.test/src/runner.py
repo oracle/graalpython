@@ -329,6 +329,8 @@ class TestRunner:
         message = f"{result.test_id} ... {result.status}"
         if result.status == TestStatus.SKIPPED and result.param:
             message = f"{message} {result.param!r}"
+        else:
+            message = f"{message} ({result.duration:.2f}s)"
         log(message)
 
     def tests_failed(self):
@@ -521,6 +523,8 @@ class ParallelTestRunner(TestRunner):
 
         def dump_worker_status():
             with logger.lock:
+                log("=" * 80)
+                log("Dumping test worker status:")
                 for i, partition in enumerate(partitions):
                     not_started = 0
                     if futures[i].running():
@@ -529,6 +533,7 @@ class ParallelTestRunner(TestRunner):
                         not_started += len(partition)
                 if not_started:
                     log(f"There are {not_started} tests not assigned to any worker")
+                log("=" * 80)
 
         try:
             def sigterm_handler(_signum, _frame):
