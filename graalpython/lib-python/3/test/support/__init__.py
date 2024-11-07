@@ -749,6 +749,8 @@ def gc_collect():
     """
     import gc
     gc.collect()
+    if is_graalpy:
+        time.sleep(0.1)
     gc.collect()
     if is_graalpy:
         time.sleep(0.1)

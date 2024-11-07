@@ -57,7 +57,6 @@ SERIAL_TESTS = [
     # test_import tests various behaviors related to __pycache__ directory,
     # it can interfere with other tests that generate code
     'test_import',
-    'test_imp',
     'test_subprocess',
     'test_posix',
     'test_os',

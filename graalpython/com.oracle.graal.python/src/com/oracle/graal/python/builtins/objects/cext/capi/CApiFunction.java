@@ -55,7 +55,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_BUFFER_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_UCS4;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_UNICODE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR_LIST;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_WCHAR_PTR;
@@ -104,7 +103,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_TYPE_SPEC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UCS4;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UCS4_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UNICODE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult32;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeAddressRange;
@@ -220,8 +218,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyCFunction_NewEx", ret = PyObject, args = {PyMethodDef, PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCMethod_GetClass", ret = PyTypeObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCMethod_New", ret = PyObject, args = {PyMethodDef, PyObject, PyObject, PyTypeObject}, call = CImpl)
-    @CApiBuiltin(name = "PyUnstable_Code_New", ret = PyCodeObject, args = {Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject,
-                    PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyUnstable_Code_New", ret = PyCodeObject, args = {Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int,
+                    PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCodec_StrictErrors", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyComplex_AsCComplex", ret = PY_COMPLEX, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyComplex_FromCComplex", ret = PyObject, args = {PY_COMPLEX}, call = CImpl)
@@ -1221,7 +1219,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnstable_Code_GetExtra", ret = PrimitiveResult32, args = {PyObject, Py_ssize_t, VOID_PTR_LIST}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnstable_Code_SetExtra", ret = PrimitiveResult32, args = {PyObject, Py_ssize_t, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "PyVectorcall_NARGS", ret = Py_ssize_t, args = {SIZE_T}, call = NotImplemented)
-
 
     private static final class Dummy {
         // only here for the annotations
