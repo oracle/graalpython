@@ -2370,10 +2370,10 @@ _Py_Dealloc(PyObject *op)
     destructor dealloc = type->tp_dealloc;
 #ifdef Py_DEBUG
     PyThreadState *tstate = _PyThreadState_GET();
-    PyObject *old_exc_type = tstate->curexc_type;
+    PyObject *old_exc = tstate != NULL ? tstate->current_exception : NULL;
     // Keep the old exception type alive to prevent undefined behavior
     // on (tstate->curexc_type != old_exc_type) below
-    Py_XINCREF(old_exc_type);
+    Py_XINCREF(old_exc);
     // Make sure that type->tp_name remains valid
     Py_INCREF(type);
 #endif
@@ -2386,12 +2386,12 @@ _Py_Dealloc(PyObject *op)
 #ifdef Py_DEBUG
     // gh-89373: The tp_dealloc function must leave the current exception
     // unchanged.
-    if (tstate->curexc_type != old_exc_type) {
+    if (tstate != NULL && tstate->current_exception != old_exc) {
         const char *err;
-        if (old_exc_type == NULL) {
+        if (old_exc == NULL) {
             err = "Deallocator of type '%s' raised an exception";
         }
-        else if (tstate->curexc_type == NULL) {
+        else if (tstate->current_exception == NULL) {
             err = "Deallocator of type '%s' cleared the current exception";
         }
         else {
