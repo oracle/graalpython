@@ -820,11 +820,6 @@ _pysqlite_query_execute(pysqlite_Cursor* self, int multiple, PyObject* operation
         }
     }
 
-    if (self->statement != NULL) {
-        /* There is an active statement */
-        stmt_reset(self->statement);
-    }
-
     /* reset description */
     Py_INCREF(Py_None);
     Py_SETREF(self->description, Py_None);
@@ -855,7 +850,7 @@ _pysqlite_query_execute(pysqlite_Cursor* self, int multiple, PyObject* operation
         }
     }
 
-    stmt_reset(self->statement);
+    (void)stmt_reset(self->statement);
     self->rowcount = self->statement->is_dml ? 0L : -1L;
 
     /* We start a transaction implicitly before a DML statement.
@@ -890,7 +885,6 @@ _pysqlite_query_execute(pysqlite_Cursor* self, int multiple, PyObject* operation
                     PyErr_Clear();
                 }
             }
-            (void)stmt_reset(self->statement);
             _pysqlite_seterror(state, self->connection->db);
             goto error;
         }
@@ -1099,11 +1093,7 @@ pysqlite_cursor_iternext(pysqlite_Cursor *self)
 
     sqlite3_stmt *stmt = self->statement->st;
     assert(stmt != NULL);
-    if (sqlite3_data_count(stmt) == 0) {
-        (void)stmt_reset(self->statement);
-        Py_CLEAR(self->statement);
-        return NULL;
-    }
+    assert(sqlite3_data_count(stmt) != 0);
 
     self->locked = 1;  // GH-80254: Prevent recursive use of cursors.
     PyObject *row = _pysqlite_fetch_one_row(self);

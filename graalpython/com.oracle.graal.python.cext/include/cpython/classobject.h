@@ -40,7 +40,7 @@ typedef struct {
 
 PyAPI_DATA(PyTypeObject) PyInstanceMethod_Type;
 
-#define PyInstanceMethod_Check(op) Py_IS_TYPE(op, &PyInstanceMethod_Type)
+#define PyInstanceMethod_Check(op) Py_IS_TYPE((op), &PyInstanceMethod_Type)
 
 PyAPI_FUNC(PyObject *) PyInstanceMethod_New(PyObject *);
 PyAPI_FUNC(PyObject *) PyInstanceMethod_Function(PyObject *);
