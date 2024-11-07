@@ -575,7 +575,11 @@ class SubprocessWorker:
         test_id = event['test']
         match event['event']:
             case 'testStarted':
-                self.remaining_test_ids.remove(test_id)
+                try:
+                    self.remaining_test_ids.remove(test_id)
+                except ValueError:
+                    # It executed something we didn't ask for. Not sure why this happens
+                    log(f'WARNING: unexpected test started {test_id}')
                 self.runner.report_start(test_id)
                 with self.lock:
                     self.last_started_test_id = test_id
