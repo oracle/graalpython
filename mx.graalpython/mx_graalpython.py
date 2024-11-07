@@ -638,6 +638,8 @@ def update_unittest_tags(args):
         'graalpython.lib-python.3.test.test_urllib2net.OtherNetworkTests.test_ftp',
         # Counting file descriptors, can randomly change due to finalizers
         'graalpython.lib-python.3.test.test_zipfile.TestsWithMultipleOpens.test_many_opens',
+        # Weakref
+        'unittest.test.test_assertions.Test_Assertions.test_assertRaises_frames_survival',
     ]
 
     result_tags = linux_tags & darwin_tags
