@@ -93,7 +93,7 @@ mbuf_alloc(void)
 }
 
 static PyObject *
-_PyManagedBuffer_FromObject(PyObject *base)
+_PyManagedBuffer_FromObject(PyObject *base, int flags)
 {
     _PyManagedBufferObject *mbuf;
 
@@ -101,7 +101,7 @@ _PyManagedBuffer_FromObject(PyObject *base)
     if (mbuf == NULL)
         return NULL;
 
-    if (PyObject_GetBuffer(base, &mbuf->master, PyBUF_FULL_RO) < 0) {
+    if (PyObject_GetBuffer(base, &mbuf->master, flags) < 0) {
         mbuf->master.obj = NULL;
         Py_DECREF(mbuf);
         return NULL;

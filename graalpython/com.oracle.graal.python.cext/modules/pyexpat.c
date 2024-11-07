@@ -6,6 +6,7 @@
 #include "Python.h"
 #include <ctype.h>
 
+#include <stdbool.h>
 #include "structmember.h"         // PyMemberDef
 #include "expat.h"
 
@@ -81,6 +82,12 @@ typedef struct {
                                 /* NULL if not enabled */
     int buffer_size;            /* Size of buffer, in XML_Char units */
     int buffer_used;            /* Buffer units in use */
+    bool reparse_deferral_enabled; /* Whether to defer reparsing of
+                                   unfinished XML tokens; a de-facto cache of
+                                   what Expat has the authority on, for lack
+                                   of a getter API function
+                                   "XML_GetReparseDeferralEnabled" in Expat
+                                   2.6.0 */
     PyObject *intern;           /* Dictionary to intern strings */
     PyObject **handlers;
 } xmlparseobject;
@@ -711,11 +718,45 @@ get_parse_result(pyexpat_state *state, xmlparseobject *self, int rv)
 #define MAX_CHUNK_SIZE (1 << 20)
 
 /*[clinic input]
+pyexpat.xmlparser.SetReparseDeferralEnabled
+
+    enabled: bool
+    /
+
+Enable/Disable reparse deferral; enabled by default with Expat >=2.6.0.
+[clinic start generated code]*/
+
+static PyObject *
+pyexpat_xmlparser_SetReparseDeferralEnabled_impl(xmlparseobject *self,
+                                                 int enabled)
+/*[clinic end generated code: output=5ec539e3b63c8c49 input=021eb9e0bafc32c5]*/
+{
+#if XML_COMBINED_VERSION >= 20600
+    XML_SetReparseDeferralEnabled(self->itself, enabled ? XML_TRUE : XML_FALSE);
+    self->reparse_deferral_enabled = (bool)enabled;
+#endif
+    Py_RETURN_NONE;
+}
+
+/*[clinic input]
+pyexpat.xmlparser.GetReparseDeferralEnabled
+
+Retrieve reparse deferral enabled status; always returns false with Expat <2.6.0.
+[clinic start generated code]*/
+
+static PyObject *
+pyexpat_xmlparser_GetReparseDeferralEnabled_impl(xmlparseobject *self)
+/*[clinic end generated code: output=4e91312e88a595a8 input=54b5f11d32b20f3e]*/
+{
+    return PyBool_FromLong(self->reparse_deferral_enabled);
+}
+
+/*[clinic input]
 pyexpat.xmlparser.Parse
 
     cls: defining_class
     data: object
-    isfinal: bool(accept={int}) = False
+    isfinal: bool = False
     /
 
 Parse XML data.
@@ -726,7 +767,7 @@ Parse XML data.
 static PyObject *
 pyexpat_xmlparser_Parse_impl(xmlparseobject *self, PyTypeObject *cls,
                              PyObject *data, int isfinal)
-/*[clinic end generated code: output=8faffe07fe1f862a input=fc97f833558ca715]*/
+/*[clinic end generated code: output=8faffe07fe1f862a input=d0eb2a69fab3b9f1]*/
 {
     const char *s;
     Py_ssize_t slen;
@@ -1070,6 +1111,8 @@ static struct PyMethodDef xmlparse_methods[] = {
 #if XML_COMBINED_VERSION >= 19505
     PYEXPAT_XMLPARSER_USEFOREIGNDTD_METHODDEF
 #endif
+    PYEXPAT_XMLPARSER_SETREPARSEDEFERRALENABLED_METHODDEF
+    PYEXPAT_XMLPARSER_GETREPARSEDEFERRALENABLED_METHODDEF
     {NULL, NULL}  /* sentinel */
 };
 
@@ -1081,26 +1124,39 @@ static struct PyMethodDef xmlparse_methods[] = {
    Make it as simple as possible.
 */
 
+static const unsigned char template_buffer[256] =
+    {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+     20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
+     38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
+     56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
+     74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91,
+     92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
+     108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
+     123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137,
+     138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152,
+     153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167,
+     168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182,
+     183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197,
+     198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212,
+     213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227,
+     228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242,
+     243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255};
+
+
 static int
 PyUnknownEncodingHandler(void *encodingHandlerData,
                          const XML_Char *name,
                          XML_Encoding *info)
 {
-    static unsigned char template_buffer[256] = {0};
-    PyObject* u;
+    PyObject *u;
     int i;
     const void *data;
-    unsigned int kind;
+    int kind;
 
     if (PyErr_Occurred())
         return XML_STATUS_ERROR;
 
-    if (template_buffer[1] == 0) {
-        for (i = 0; i < 256; i++)
-            template_buffer[i] = i;
-    }
-
-    u = PyUnicode_Decode((char*) template_buffer, 256, name, "replace");
+    u = PyUnicode_Decode((const char*) template_buffer, 256, name, "replace");
     if (u == NULL || PyUnicode_READY(u)) {
         Py_XDECREF(u);
         return XML_STATUS_ERROR;
@@ -1151,8 +1207,12 @@ newxmlparseobject(pyexpat_state *state, const char *encoding,
     self->in_callback = 0;
     self->ns_prefixes = 0;
     self->handlers = NULL;
-    self->intern = intern;
-    Py_XINCREF(self->intern);
+    self->intern = Py_XNewRef(intern);
+#if XML_COMBINED_VERSION >= 20600
+    self->reparse_deferral_enabled = true;
+#else
+    self->reparse_deferral_enabled = false;
+#endif
 
     /* namespace_separator is either NULL or contains one char + \0 */
     self->itself = XML_ParserCreate_MM(encoding, &ExpatMemoryHandler,
@@ -1367,9 +1427,7 @@ xmlparse_buffer_size_setter(xmlparseobject *self, PyObject *v, void *closure)
 
     /* check maximum */
     if (new_buffer_size > INT_MAX) {
-        char errmsg[100];
-        sprintf(errmsg, "buffer_size must not be greater than %i", INT_MAX);
-        PyErr_SetString(PyExc_ValueError, errmsg);
+        PyErr_Format(PyExc_ValueError, "buffer_size must not be greater than %i", INT_MAX);
         return -1;
     }
 
@@ -1727,7 +1785,7 @@ add_error(PyObject *errors_module, PyObject *codes_dict,
     const int error_code = (int)error_index;
 
     /* NOTE: This keeps the source of truth regarding error
-     *       messages with libexpat and (by definiton) in bulletproof sync
+     *       messages with libexpat and (by definition) in bulletproof sync
      *       with the other uses of the XML_ErrorString function
      *       elsewhere within this file.  pyexpat's copy of the messages
      *       only acts as a fallback in case of outdated runtime libexpat,
@@ -1890,6 +1948,18 @@ error:
 }
 #endif
 
+static void
+pyexpat_capsule_destructor(PyObject *capsule)
+{
+    void *p = PyCapsule_GetPointer(capsule, PyExpat_CAPSULE_NAME);
+    if (p == NULL) {
+        PyErr_WriteUnraisable(capsule);
+        return;
+    }
+    PyMem_Free(p);
+}
+
+
 static int
 pyexpat_exec(PyObject *mod)
 {
@@ -1977,40 +2047,51 @@ pyexpat_exec(PyObject *mod)
     MYCONST(XML_PARAM_ENTITY_PARSING_ALWAYS);
 #undef MYCONST
 
-    static struct PyExpat_CAPI capi;
+    struct PyExpat_CAPI *capi = PyMem_Malloc(sizeof(*capi));
+    if (capi == NULL) {
+        PyErr_NoMemory();
+        return -1;
+    }
     /* initialize pyexpat dispatch table */
-    capi.size = sizeof(capi);
-    capi.magic = PyExpat_CAPI_MAGIC;
-    capi.MAJOR_VERSION = XML_MAJOR_VERSION;
-    capi.MINOR_VERSION = XML_MINOR_VERSION;
-    capi.MICRO_VERSION = XML_MICRO_VERSION;
-    capi.ErrorString = XML_ErrorString;
-    capi.GetErrorCode = XML_GetErrorCode;
-    capi.GetErrorColumnNumber = XML_GetErrorColumnNumber;
-    capi.GetErrorLineNumber = XML_GetErrorLineNumber;
-    capi.Parse = XML_Parse;
-    capi.ParserCreate_MM = XML_ParserCreate_MM;
-    capi.ParserFree = XML_ParserFree;
-    capi.SetCharacterDataHandler = XML_SetCharacterDataHandler;
-    capi.SetCommentHandler = XML_SetCommentHandler;
-    capi.SetDefaultHandlerExpand = XML_SetDefaultHandlerExpand;
-    capi.SetElementHandler = XML_SetElementHandler;
-    capi.SetNamespaceDeclHandler = XML_SetNamespaceDeclHandler;
-    capi.SetProcessingInstructionHandler = XML_SetProcessingInstructionHandler;
-    capi.SetUnknownEncodingHandler = XML_SetUnknownEncodingHandler;
-    capi.SetUserData = XML_SetUserData;
-    capi.SetStartDoctypeDeclHandler = XML_SetStartDoctypeDeclHandler;
-    capi.SetEncoding = XML_SetEncoding;
-    capi.DefaultUnknownEncodingHandler = PyUnknownEncodingHandler;
+    capi->size = sizeof(*capi);
+    capi->magic = PyExpat_CAPI_MAGIC;
+    capi->MAJOR_VERSION = XML_MAJOR_VERSION;
+    capi->MINOR_VERSION = XML_MINOR_VERSION;
+    capi->MICRO_VERSION = XML_MICRO_VERSION;
+    capi->ErrorString = XML_ErrorString;
+    capi->GetErrorCode = XML_GetErrorCode;
+    capi->GetErrorColumnNumber = XML_GetErrorColumnNumber;
+    capi->GetErrorLineNumber = XML_GetErrorLineNumber;
+    capi->Parse = XML_Parse;
+    capi->ParserCreate_MM = XML_ParserCreate_MM;
+    capi->ParserFree = XML_ParserFree;
+    capi->SetCharacterDataHandler = XML_SetCharacterDataHandler;
+    capi->SetCommentHandler = XML_SetCommentHandler;
+    capi->SetDefaultHandlerExpand = XML_SetDefaultHandlerExpand;
+    capi->SetElementHandler = XML_SetElementHandler;
+    capi->SetNamespaceDeclHandler = XML_SetNamespaceDeclHandler;
+    capi->SetProcessingInstructionHandler = XML_SetProcessingInstructionHandler;
+    capi->SetUnknownEncodingHandler = XML_SetUnknownEncodingHandler;
+    capi->SetUserData = XML_SetUserData;
+    capi->SetStartDoctypeDeclHandler = XML_SetStartDoctypeDeclHandler;
+    capi->SetEncoding = XML_SetEncoding;
+    capi->DefaultUnknownEncodingHandler = PyUnknownEncodingHandler;
 #if XML_COMBINED_VERSION >= 20100
-    capi.SetHashSalt = XML_SetHashSalt;
+    capi->SetHashSalt = XML_SetHashSalt;
 #else
-    capi.SetHashSalt = NULL;
+    capi->SetHashSalt = NULL;
+#endif
+#if XML_COMBINED_VERSION >= 20600
+    capi->SetReparseDeferralEnabled = XML_SetReparseDeferralEnabled;
+#else
+    capi->SetReparseDeferralEnabled = NULL;
 #endif
 
     /* export using capsule */
-    PyObject *capi_object = PyCapsule_New(&capi, PyExpat_CAPSULE_NAME, NULL);
+    PyObject *capi_object = PyCapsule_New(capi, PyExpat_CAPSULE_NAME,
+                                          pyexpat_capsule_destructor);
     if (capi_object == NULL) {
+        PyMem_Free(capi);
         return -1;
     }
 
@@ -2050,6 +2131,9 @@ pyexpat_free(void *module)
 
 static PyModuleDef_Slot pyexpat_slots[] = {
     {Py_mod_exec, pyexpat_exec},
+    // XXX gh-103092: fix isolation.
+    {Py_mod_multiple_interpreters, Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED},
+    //{Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
     {0, NULL}
 };
 

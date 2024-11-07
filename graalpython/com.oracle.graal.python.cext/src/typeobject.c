@@ -10,11 +10,14 @@
 #if 0 // GraalPy change
 #include "pycore_call.h"
 #include "pycore_code.h"          // CO_FAST_FREE
-#include "pycore_compile.h"       // _Py_Mangle()
+#include "pycore_symtable.h"      // _Py_Mangle()
+#include "pycore_dict.h"          // _PyDict_KeysSize()
 #include "pycore_initconfig.h"    // _PyStatus_OK()
+#include "pycore_memoryobject.h"  // _PyMemoryView_FromBufferProc()
 #include "pycore_moduleobject.h"  // _PyModule_GetDef()
 #endif // GraalPy change
 #include "pycore_object.h"        // _PyType_HasFeature()
+#include "pycore_long.h"          // _PyLong_IsNegative()
 #include "pycore_pyerrors.h"      // _PyErr_Occurred()
 #if 0 // GraalPy change
 #include "pycore_pystate.h"       // _PyThreadState_GET()
@@ -26,6 +29,7 @@
 #endif // GraalPy change
 
 #include <ctype.h>
+#include <stddef.h>               // ptrdiff_t
 
 #if 0 // GraalPy change
 /*[clinic input]
@@ -362,6 +366,7 @@ type_mro_modified(PyTypeObject *type, PyObject *bases) {
         }
     }
     return;
+
  clear:
     type->tp_flags &= ~Py_TPFLAGS_VALID_VERSION_TAG;
     type->tp_version_tag = 0; /* 0 is not a valid version tag */
@@ -405,6 +410,8 @@ static PyMemberDef type_members[] = {
     {"__basicsize__", T_PYSSIZET, offsetof(PyTypeObject,tp_basicsize),READONLY},
     {"__itemsize__", T_PYSSIZET, offsetof(PyTypeObject, tp_itemsize), READONLY},
     {"__flags__", T_ULONG, offsetof(PyTypeObject, tp_flags), READONLY},
+    /* Note that this value is misleading for static builtin types,
+       since the memory at this offset will always be NULL. */
     {"__weakrefoffset__", T_PYSSIZET,
      offsetof(PyTypeObject, tp_weaklistoffset), READONLY},
     {"__base__", T_OBJECT, offsetof(PyTypeObject, tp_base), READONLY},
@@ -2424,8 +2431,7 @@ subtype_getweakref(PyObject *obj, void *context)
         result = Py_None;
     else
         result = *weaklistptr;
-    Py_INCREF(result);
-    return result;
+    return Py_NewRef(result);
 }
 
 /* Three variants on the subtype_getsets list. */
@@ -2589,8 +2595,7 @@ type_new_visit_slots(type_new_ctx *ctx)
             if (!ctx->may_add_weak || ctx->add_weak != 0) {
                 PyErr_SetString(PyExc_TypeError,
                     "__weakref__ slot disallowed: "
-                    "either we already got one, "
-                    "or __itemsize__ != 0");
+                    "we already got one");
                 return -1;
             }
             ctx->add_weak++;
@@ -2636,7 +2641,7 @@ type_new_copy_slots(type_new_ctx *ctx, PyObject *dict)
             goto error;
         }
         if (r > 0) {
-            /* CPython inserts __qualname__ and __classcell__ (when needed)
+            /* CPython inserts these names (when needed)
                into the namespace when creating a class.  They will be deleted
                below so won't act as class variables. */
             if (!_PyUnicode_Equal(slot, &_Py_ID(__qualname__)) &&
@@ -3408,6 +3413,11 @@ PyType_FromModuleAndSpec(PyObject *module, PyType_Spec *spec, PyObject *bases)
     PyTypeObject *type, *base;
     int r;
 
+    /* Prepare slots that need special handling.
+     * Keep in mind that a slot can be given multiple times:
+     * if that would cause trouble (leaks, UB, ...), raise an exception.
+     */
+
     const PyType_Slot *slot;
     Py_ssize_t nmembers, weaklistoffset, dictoffset, vectorcalloffset;
     char *res_start;
@@ -3456,7 +3466,6 @@ PyType_FromModuleAndSpec(PyObject *module, PyType_Spec *spec, PyObject *bases)
     /* The flags must be initialized early, before the GC traverses us */
     type->tp_flags = spec->flags | Py_TPFLAGS_HEAPTYPE;
 
-    /* Set the type name and qualname */
     const char *s = strrchr(spec->name, '.');
     if (s == NULL) {
         s = spec->name;
@@ -4595,9 +4604,10 @@ object_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         PyObject *abstract_methods;
         PyObject *sorted_methods;
         PyObject *joined;
+        PyObject* comma_w_quotes_sep;
         Py_ssize_t method_count;
 
-        /* Compute ", ".join(sorted(type.__abstractmethods__))
+        /* Compute "', '".join(sorted(type.__abstractmethods__))
            into joined. */
         abstract_methods = type_abstractmethods(type, NULL);
         if (abstract_methods == NULL)
@@ -4832,7 +4842,6 @@ differs:
 static int
 object_set_class(PyObject *self, PyObject *value, void *closure)
 {
-    PyTypeObject *oldto = Py_TYPE(self);
 
     if (value == NULL) {
         PyErr_SetString(PyExc_TypeError,
@@ -4851,6 +4860,8 @@ object_set_class(PyObject *self, PyObject *value, void *closure)
                     self, "__class__", value) < 0) {
         return -1;
     }
+
+    PyTypeObject *oldto = Py_TYPE(self);
 
     /* In versions of CPython prior to 3.5, the code in
        compatible_for_assignment was not set up to correctly check for memory
@@ -5801,6 +5812,7 @@ inherit_special(PyTypeObject *type, PyTypeObject *base)
     COPYVAL(tp_itemsize);
     COPYVAL(tp_weaklistoffset);
     COPYVAL(tp_dictoffset);
+
 #undef COPYVAL
 
     /* Setup fast subclass flags */
@@ -5828,6 +5840,8 @@ inherit_special(PyTypeObject *type, PyTypeObject *base)
     else if (PyType_IsSubtype(base, &PyDict_Type)) {
         type->tp_flags |= Py_TPFLAGS_DICT_SUBCLASS;
     }
+
+    /* Setup some inheritable flags */
     if (PyType_HasFeature(base, _Py_TPFLAGS_MATCH_SELF)) {
         type->tp_flags |= _Py_TPFLAGS_MATCH_SELF;
     }
@@ -7354,7 +7368,7 @@ slot_sq_length(PyObject *self)
         return -1;
 
     assert(PyLong_Check(res));
-    if (Py_SIZE(res) < 0) {
+    if (_PyLong_IsNegative((PyLongObject *)res)) {
         Py_DECREF(res);
         PyErr_SetString(PyExc_ValueError,
                         "__len__() should return >= 0");
@@ -8857,6 +8871,10 @@ super_repr(PyObject *self)
             su->type ? su->type->tp_name : "NULL");
 }
 
+/* Do a super lookup without executing descriptors or falling back to getattr
+on the super object itself.
+
+May return NULL with or without an exception set, like PyDict_GetItemWithError. */
 static PyObject *
 super_getattro(PyObject *self, PyObject *name)
 {

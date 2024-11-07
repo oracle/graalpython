@@ -87,7 +87,6 @@ get_small_int(sdigit ival)
     assert(IS_SMALL_INT(ival));
     // GraalPy change: use our array of pointers
     PyObject *v = _PyLong_SMALL_INT_PTRS[_PY_NSMALLNEGINTS + ival];
-    Py_INCREF(v);
     return v;
 }
 
@@ -1073,7 +1072,7 @@ _PyLong_UnsignedShort_Converter(PyObject *obj, void *ptr)
 {
     unsigned long uval;
 
-    if (PyLong_Check(obj) && _PyLong_Sign(obj) < 0) {
+    if (PyLong_Check(obj) && _PyLong_IsNegative((PyLongObject *)obj)) {
         PyErr_SetString(PyExc_ValueError, "value must be positive");
         return 0;
     }
@@ -1095,7 +1094,7 @@ _PyLong_UnsignedInt_Converter(PyObject *obj, void *ptr)
 {
     unsigned long uval;
 
-    if (PyLong_Check(obj) && _PyLong_Sign(obj) < 0) {
+    if (PyLong_Check(obj) && _PyLong_IsNegative((PyLongObject *)obj)) {
         PyErr_SetString(PyExc_ValueError, "value must be positive");
         return 0;
     }
@@ -1118,7 +1117,7 @@ _PyLong_UnsignedLong_Converter(PyObject *obj, void *ptr)
 {
     unsigned long uval;
 
-    if (PyLong_Check(obj) && _PyLong_Sign(obj) < 0) {
+    if (PyLong_Check(obj) && _PyLong_IsNegative((PyLongObject *)obj)) {
         PyErr_SetString(PyExc_ValueError, "value must be positive");
         return 0;
     }
@@ -1136,7 +1135,7 @@ _PyLong_UnsignedLongLong_Converter(PyObject *obj, void *ptr)
 {
     unsigned long long uval;
 
-    if (PyLong_Check(obj) && _PyLong_Sign(obj) < 0) {
+    if (PyLong_Check(obj) && _PyLong_IsNegative((PyLongObject *)obj)) {
         PyErr_SetString(PyExc_ValueError, "value must be positive");
         return 0;
     }
@@ -1153,7 +1152,7 @@ _PyLong_Size_t_Converter(PyObject *obj, void *ptr)
 {
     size_t uval;
 
-    if (PyLong_Check(obj) && _PyLong_Sign(obj) < 0) {
+    if (PyLong_Check(obj) && _PyLong_IsNegative((PyLongObject *)obj)) {
         PyErr_SetString(PyExc_ValueError, "value must be positive");
         return 0;
     }
@@ -1307,14 +1306,14 @@ inplace_divrem1(digit *pout, digit *pin, Py_ssize_t size, digit n)
 static PyLongObject *
 divrem1(PyLongObject *a, digit n, digit *prem)
 {
-    const Py_ssize_t size = Py_ABS(Py_SIZE(a));
+    const Py_ssize_t size = _PyLong_DigitCount(a);
     PyLongObject *z;
 
     assert(n > 0 && n <= PyLong_MASK);
     z = _PyLong_New(size);
     if (z == NULL)
         return NULL;
-    *prem = inplace_divrem1(z->ob_digit, a->ob_digit, size, n);
+    *prem = inplace_divrem1(z->long_value.ob_digit, a->long_value.ob_digit, size, n);
     return long_normalize(z);
 }
 
@@ -1974,16 +1973,12 @@ long_from_binary_base(const char *start, const char *end, Py_ssize_t digits, int
 }
 #endif // GraalPy change
 
-/* Parses an int from a bytestring. Leading and trailing whitespace will be
- * ignored.
- *
- * If successful, a PyLong object will be returned and 'pend' will be pointing
- * to the first unused byte unless it's NULL.
- *
- * If unsuccessful, NULL will be returned.
- */
-PyObject *
-PyLong_FromString(const char *str, char **pend, int base)
+static PyObject *long_neg(PyLongObject *v);
+
+#ifdef WITH_PYLONG_MODULE
+/* asymptotically faster str-to-long conversion for base 10, using _pylong.py */
+static int
+pylong_int_from_string(const char *start, const char *end, PyLongObject **res)
 {
     // GraalPy change: different implementation
     int negative = 0, error_if_nonzero = 0;

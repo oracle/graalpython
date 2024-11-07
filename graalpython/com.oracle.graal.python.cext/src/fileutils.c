@@ -85,7 +85,8 @@ _Py_device_encoding(int fd)
     if (!valid)
         Py_RETURN_NONE;
 
-#if defined(MS_WINDOWS)
+#ifdef MS_WINDOWS
+#ifdef HAVE_WINDOWS_CONSOLE_IO
     UINT cp;
     if (fd == 0)
         cp = GetConsoleCP();
@@ -100,6 +101,9 @@ _Py_device_encoding(int fd)
     }
 
     return PyUnicode_FromFormat("cp%u", (unsigned int)cp);
+#else
+    Py_RETURN_NONE;
+#endif /* HAVE_WINDOWS_CONSOLE_IO */
 #else
     if (_PyRuntime.preconfig.utf8_mode) {
         _Py_DECLARE_STR(utf_8, "utf-8");
@@ -1259,18 +1263,12 @@ _Py_stat(PyObject *path, struct stat *statbuf)
 #ifdef MS_WINDOWS
     int err;
 
-#if USE_UNICODE_WCHAR_CACHE
-    const wchar_t *wpath = _PyUnicode_AsUnicode(path);
-#else /* USE_UNICODE_WCHAR_CACHE */
     wchar_t *wpath = PyUnicode_AsWideCharString(path, NULL);
-#endif /* USE_UNICODE_WCHAR_CACHE */
     if (wpath == NULL)
         return -2;
 
     err = _Py_wstat(wpath, statbuf);
-#if !USE_UNICODE_WCHAR_CACHE
     PyMem_Free(wpath);
-#endif /* USE_UNICODE_WCHAR_CACHE */
     return err;
 #else
     int ret;
@@ -1293,6 +1291,13 @@ _Py_stat(PyObject *path, struct stat *statbuf)
 #endif
 }
 
+#ifdef MS_WINDOWS
+// For some Windows API partitions, SetHandleInformation() is declared
+// but none of the handle flags are defined.
+#ifndef HANDLE_FLAG_INHERIT
+#define HANDLE_FLAG_INHERIT 0x00000001
+#endif
+#endif
 
 /* This function MUST be kept async-signal-safe on POSIX when raise=0. */
 static int
@@ -1385,17 +1390,11 @@ set_inheritable(int fd, int inheritable, int raise, int *atomic_flag_works)
     else
         flags = 0;
 
-    /* This check can be removed once support for Windows 7 ends. */
-#define CONSOLE_PSEUDOHANDLE(handle) (((ULONG_PTR)(handle) & 0x3) == 0x3 && \
-        GetFileType(handle) == FILE_TYPE_CHAR)
-
-    if (!CONSOLE_PSEUDOHANDLE(handle) &&
-        !SetHandleInformation(handle, HANDLE_FLAG_INHERIT, flags)) {
+    if (!SetHandleInformation(handle, HANDLE_FLAG_INHERIT, flags)) {
         if (raise)
             PyErr_SetFromWindowsErr(0);
         return -1;
     }
-#undef CONSOLE_PSEUDOHANDLE
     return 0;
 
 #else
@@ -1678,11 +1677,8 @@ _Py_fopen_obj(PyObject *path, const char *mode)
                      Py_TYPE(path));
         return NULL;
     }
-#if USE_UNICODE_WCHAR_CACHE
-    const wchar_t *wpath = _PyUnicode_AsUnicode(path);
-#else /* USE_UNICODE_WCHAR_CACHE */
+
     wchar_t *wpath = PyUnicode_AsWideCharString(path, NULL);
-#endif /* USE_UNICODE_WCHAR_CACHE */
     if (wpath == NULL)
         return NULL;
 
@@ -1690,9 +1686,7 @@ _Py_fopen_obj(PyObject *path, const char *mode)
                                 wmode, Py_ARRAY_LENGTH(wmode));
     if (usize == 0) {
         PyErr_SetFromWindowsErr(0);
-#if !USE_UNICODE_WCHAR_CACHE
         PyMem_Free(wpath);
-#endif /* USE_UNICODE_WCHAR_CACHE */
         return NULL;
     }
 
@@ -1703,9 +1697,7 @@ _Py_fopen_obj(PyObject *path, const char *mode)
     } while (f == NULL
              && errno == EINTR && !(async_err = PyErr_CheckSignals()));
     int saved_errno = errno;
-#if !USE_UNICODE_WCHAR_CACHE
     PyMem_Free(wpath);
-#endif /* USE_UNICODE_WCHAR_CACHE */
 #else
     PyObject *bytes;
     const char *path_bytes;
@@ -1836,6 +1828,7 @@ _Py_write_impl(int fd, const void *buf, size_t count, int gil_held)
             }
         }
     }
+
 #endif
     if (count > _PY_WRITE_MAX) {
         count = _PY_WRITE_MAX;

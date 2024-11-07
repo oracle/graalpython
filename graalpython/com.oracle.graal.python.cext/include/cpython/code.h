@@ -345,6 +345,16 @@ PyAPI_FUNC(int) PyUnstable_Code_GetExtra(
 PyAPI_FUNC(int) PyUnstable_Code_SetExtra(
     PyObject *code, Py_ssize_t index, void *extra);
 // Old names -- remove when this API changes:
+_Py_DEPRECATED_EXTERNALLY(3.12) static inline int
+_PyCode_GetExtra(PyObject *code, Py_ssize_t index, void **extra)
+{
+    return PyUnstable_Code_GetExtra(code, index, extra);
+}
+_Py_DEPRECATED_EXTERNALLY(3.12) static inline int
+_PyCode_SetExtra(PyObject *code, Py_ssize_t index, void *extra)
+{
+    return PyUnstable_Code_SetExtra(code, index, extra);
+}
 
 /* Equivalent to getattr(code, 'co_code') in Python.
    Returns a strong reference to a bytes object. */

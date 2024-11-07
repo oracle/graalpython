@@ -39,11 +39,12 @@ get_type_attr_as_size(PyTypeObject *tp, _Py_Identifier *key)
     if (name == NULL) {
         return -1;
     }
-    PyObject *v = PyDict_GetItemWithError(tp->tp_dict, name);
+    PyObject *v = PyDict_GetItemWithError(_PyType_GetDict(tp), name);
     if (v == NULL && !PyErr_Occurred()) {
         PyErr_Format(PyExc_TypeError,
                      "Missed attribute '%U' of type %s",
                      name, tp->tp_name);
+        return -1;
     }
     return PyLong_AsSsize_t(v);
 }
@@ -461,7 +462,6 @@ static void
 initialize_members(PyStructSequence_Desc *desc, PyMemberDef* members,
                    Py_ssize_t n_members) {
     Py_ssize_t i, k;
-
     for (i = k = 0; i < n_members; ++i) {
         if (desc->fields[i].name == PyStructSequence_UnnamedField) {
             continue;
@@ -597,6 +597,59 @@ _PyStructSequence_FiniType(PyTypeObject *type)
     assert(type->tp_name == NULL);
 }
 #endif // GraalPy change
+
+PyTypeObject *
+_PyStructSequence_NewType(PyStructSequence_Desc *desc, unsigned long tp_flags)
+{
+    PyMemberDef *members;
+    PyTypeObject *type;
+    PyType_Slot slots[8];
+    PyType_Spec spec;
+    Py_ssize_t n_members, n_unnamed_members;
+
+    /* Initialize MemberDefs */
+    n_members = count_members(desc, &n_unnamed_members);
+    members = PyMem_NEW(PyMemberDef, n_members - n_unnamed_members + 1);
+    if (members == NULL) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+    initialize_members(desc, members, n_members);
+
+    /* Initialize Slots */
+    slots[0] = (PyType_Slot){Py_tp_dealloc, (destructor)structseq_dealloc};
+    slots[1] = (PyType_Slot){Py_tp_repr, (reprfunc)structseq_repr};
+    slots[2] = (PyType_Slot){Py_tp_doc, (void *)desc->doc};
+    slots[3] = (PyType_Slot){Py_tp_methods, structseq_methods};
+    slots[4] = (PyType_Slot){Py_tp_new, structseq_new};
+    slots[5] = (PyType_Slot){Py_tp_members, members};
+    slots[6] = (PyType_Slot){Py_tp_traverse, (traverseproc)structseq_traverse};
+    slots[7] = (PyType_Slot){0, 0};
+
+    /* Initialize Spec */
+    /* The name in this PyType_Spec is statically allocated so it is */
+    /* expected that it'll outlive the PyType_Spec */
+    spec.name = desc->name;
+    spec.basicsize = sizeof(PyStructSequence) - sizeof(PyObject *);
+    spec.itemsize = sizeof(PyObject *);
+    spec.flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | tp_flags;
+    spec.slots = slots;
+
+    type = (PyTypeObject *)PyType_FromSpecWithBases(&spec, (PyObject *)&PyTuple_Type);
+    PyMem_Free(members);
+    if (type == NULL) {
+        return NULL;
+    }
+
+    if (initialize_structseq_dict(
+            desc, _PyType_GetDict(type), n_members, n_unnamed_members) < 0) {
+        Py_DECREF(type);
+        return NULL;
+    }
+
+    return type;
+}
+
 
 PyTypeObject *
 PyStructSequence_NewType(PyStructSequence_Desc *desc)

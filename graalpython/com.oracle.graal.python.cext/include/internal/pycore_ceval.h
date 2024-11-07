@@ -66,6 +66,28 @@ extern PyObject* _PyEval_BuiltinsFromGlobals(
     PyThreadState *tstate,
     PyObject *globals);
 
+// Trampoline API
+
+typedef struct {
+    // Callback to initialize the trampoline state
+    void* (*init_state)(void);
+    // Callback to register every trampoline being created
+    void (*write_state)(void* state, const void *code_addr,
+                        unsigned int code_size, PyCodeObject* code);
+    // Callback to free the trampoline state
+    int (*free_state)(void* state);
+} _PyPerf_Callbacks;
+
+extern int _PyPerfTrampoline_SetCallbacks(_PyPerf_Callbacks *);
+extern void _PyPerfTrampoline_GetCallbacks(_PyPerf_Callbacks *);
+extern int _PyPerfTrampoline_Init(int activate);
+extern int _PyPerfTrampoline_Fini(void);
+extern void _PyPerfTrampoline_FreeArenas(void);
+extern int _PyIsPerfTrampolineActive(void);
+extern PyStatus _PyPerfTrampoline_AfterFork_Child(void);
+#ifdef PY_HAVE_PERF_TRAMPOLINE
+extern _PyPerf_Callbacks _Py_perfmap_callbacks;
+#endif
 
 static inline PyObject*
 _PyEval_EvalFrame(PyThreadState *tstate, struct _PyInterpreterFrame *frame, int throwflag)
@@ -111,6 +133,9 @@ PyAPI_FUNC(int) _Py_CheckRecursiveCall(
     PyThreadState *tstate,
     const char *where);
 
+int _Py_CheckRecursiveCallPy(
+    PyThreadState *tstate);
+
 static inline int _Py_EnterRecursiveCallTstate(PyThreadState *tstate,
                                                const char *where) {
     return (_Py_MakeRecCheck(tstate) && _Py_CheckRecursiveCall(tstate, where));
@@ -135,6 +160,11 @@ extern struct _PyInterpreterFrame* _PyEval_GetFrame(void);
 
 extern PyObject* _Py_MakeCoro(PyFunctionObject *func);
 #endif // GraalPy change
+
+extern int _Py_HandlePending(PyThreadState *tstate);
+
+extern PyObject * _PyEval_GetFrameLocals(void);
+
 
 #ifdef __cplusplus
 }

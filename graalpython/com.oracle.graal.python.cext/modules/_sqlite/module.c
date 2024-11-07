@@ -46,7 +46,8 @@ module _sqlite3
 PyDoc_STRVAR(module_connect_doc,
 "connect($module, /, database, timeout=5.0, detect_types=0,\n"
 "        isolation_level='', check_same_thread=True,\n"
-"        factory=ConnectionType, cached_statements=128, uri=False)\n"
+"        factory=ConnectionType, cached_statements=128, uri=False, *,\n"
+"        autocommit=sqlite3.LEGACY_TRANSACTION_CONTROL)\n"
 "--\n"
 "\n"
 "Opens a connection to the SQLite database file database.\n"
@@ -98,36 +99,6 @@ pysqlite_complete_statement_impl(PyObject *module, const char *statement)
         return Py_NewRef(Py_True);
     } else {
         return Py_NewRef(Py_False);
-    }
-}
-
-/*[clinic input]
-_sqlite3.enable_shared_cache as pysqlite_enable_shared_cache
-
-    do_enable: int
-
-Enable or disable shared cache mode for the calling thread.
-
-This method is deprecated and will be removed in Python 3.12.
-Shared cache is strongly discouraged by the SQLite 3 documentation.
-If shared cache must be used, open the database in URI mode using
-the cache=shared query parameter.
-[clinic start generated code]*/
-
-static PyObject *
-pysqlite_enable_shared_cache_impl(PyObject *module, int do_enable)
-/*[clinic end generated code: output=259c74eedee1516b input=26e40d5971d3487d]*/
-{
-    int rc;
-
-    rc = sqlite3_enable_shared_cache(do_enable);
-
-    if (rc != SQLITE_OK) {
-        pysqlite_state *state = pysqlite_get_state(module);
-        PyErr_SetString(state->OperationalError, "Changing the shared_cache flag failed");
-        return NULL;
-    } else {
-        Py_RETURN_NONE;
     }
 }
 
@@ -273,7 +244,6 @@ static PyMethodDef module_methods[] = {
     PYSQLITE_COMPLETE_STATEMENT_METHODDEF
     PYSQLITE_CONNECT_METHODDEF
     PYSQLITE_ENABLE_CALLBACK_TRACE_METHODDEF
-    PYSQLITE_ENABLE_SHARED_CACHE_METHODDEF
     PYSQLITE_REGISTER_ADAPTER_METHODDEF
     PYSQLITE_REGISTER_CONVERTER_METHODDEF
     {NULL, NULL}
@@ -774,6 +744,7 @@ error:
 
 static struct PyModuleDef_Slot module_slots[] = {
     {Py_mod_exec, module_exec},
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
     {0, NULL},
 };
 
