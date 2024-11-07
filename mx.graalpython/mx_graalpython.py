@@ -508,6 +508,7 @@ def _fetch_tags_for_platform(parsed_args, platform):
 
 
 def update_unittest_tags(args):
+    sys.exit("[GR-59659] This command is temporarily disabled. If you're doing rota, just skip this step")
     parser = ArgumentParser('mx python-update-unittest-tags')
     parser.add_argument('tags_directory_url')
     parser.add_argument('--untag', action='store_true', help="Allow untagging existing tests")
