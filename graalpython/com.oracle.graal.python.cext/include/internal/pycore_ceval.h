@@ -120,12 +120,12 @@ extern void _PyEval_DeactivateOpCache(void);
 /* With USE_STACKCHECK macro defined, trigger stack checks in
    _Py_CheckRecursiveCall() on every 64th call to _Py_EnterRecursiveCall. */
 static inline int _Py_MakeRecCheck(PyThreadState *tstate)  {
-    return (tstate->recursion_remaining-- <= 0
-            || (tstate->recursion_remaining & 63) == 0);
+    return (tstate->c_recursion_remaining-- <= 0
+            || (tstate->c_recursion_remaining & 63) == 0);
 }
 #else
 static inline int _Py_MakeRecCheck(PyThreadState *tstate) {
-    return tstate->recursion_remaining-- <= 0;
+    return tstate->c_recursion_remaining-- <= 0;
 }
 #endif
 
@@ -147,7 +147,7 @@ static inline int _Py_EnterRecursiveCall(const char *where) {
 }
 
 static inline void _Py_LeaveRecursiveCallTstate(PyThreadState *tstate)  {
-    tstate->recursion_remaining++;
+    tstate->c_recursion_remaining++;
 }
 
 static inline void _Py_LeaveRecursiveCall(void)  {
