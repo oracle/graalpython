@@ -1235,7 +1235,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,
-                         report=False, parallel=min(os.cpu_count(), 8), exclude=None):
+                         report=False, parallel=min(os.cpu_count(), 8), exclude=None, runner_args=()):
     sub_env = dict(env or os.environ)
     sub_env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python', '3')
 
@@ -1243,7 +1243,7 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
         mx.run([python_binary, "-c", "import sys; print(sys.version)"])
     run_python_unittests(
         python_binary,
-        runner_args=['--tagged'],
+        runner_args=['--tagged', *runner_args],
         paths=[os.path.relpath(SUITE.dir)],
         env=sub_env,
         cwd=cwd,
@@ -2456,7 +2456,7 @@ def python_coverage(args):
                 "test_multiprocessing_graalpy",
             ]
             if kwds.pop("tagged", False):
-                run_tagged_unittests(executable, env=env, nonZeroIsFatal=False, parallel=1, exclude=tagged_exclude)
+                run_tagged_unittests(executable, env=env, nonZeroIsFatal=False, parallel=1, exclude=tagged_exclude, runner_args=['--continue-on-collection-errors'])
             elif kwds.pop("hpy", False):
                 run_hpy_unittests(executable, env=env, nonZeroIsFatal=False, timeout=5*60*60) # hpy unittests are really slow under coverage
             else:
