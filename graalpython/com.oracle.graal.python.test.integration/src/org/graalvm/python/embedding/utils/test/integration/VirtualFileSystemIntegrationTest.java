@@ -70,7 +70,7 @@ import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class VirtualFileSystemTest {
+public class VirtualFileSystemIntegrationTest {
 
     static final String VFS_UNIX_MOUNT_POINT = "/test_mount_point";
     static final String VFS_WIN_MOUNT_POINT = "X:\\test_win_mount_point";
@@ -78,7 +78,7 @@ public class VirtualFileSystemTest {
 
     static final String PYTHON = "python";
 
-    public VirtualFileSystemTest() {
+    public VirtualFileSystemIntegrationTest() {
         Logger logger = Logger.getLogger(VirtualFileSystem.class.getName());
         for (Handler handler : logger.getHandlers()) {
             handler.setLevel(Level.FINE);
@@ -109,7 +109,7 @@ public class VirtualFileSystemTest {
         VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(multiPathUnixMountPoint).//
                         windowsMountPoint(multiPathWinMountPoint).//
-                        resourceLoadingClass(VirtualFileSystemTest.class).build();
+                        resourceLoadingClass(VirtualFileSystemIntegrationTest.class).build();
         Context ctx = addTestOptions(GraalPyResources.contextBuilder(vfs)).build();
         ctx.eval(PYTHON, "from os import listdir; listdir('" + (IS_WINDOWS ? multiPathWinMountPoint.replace("\\", "\\\\") : multiPathUnixMountPoint) + "')");
     }
@@ -420,7 +420,7 @@ public class VirtualFileSystemTest {
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().endsWith(".tso")).//
-                        resourceLoadingClass(VirtualFileSystemTest.class);
+                        resourceLoadingClass(VirtualFileSystemIntegrationTest.class);
         if (builderFunction != null) {
             builder = builderFunction.apply(builder);
         }
@@ -451,7 +451,7 @@ public class VirtualFileSystemTest {
         VirtualFileSystem fs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
-                        resourceLoadingClass(VirtualFileSystemTest.class).build();
+                        resourceLoadingClass(VirtualFileSystemIntegrationTest.class).build();
         context = addTestOptions(GraalPyResources.contextBuilder(fs)).build();
         context.eval(PYTHON, patchMountPoint("from os import listdir; listdir('/test_mount_point')"));
 
@@ -470,14 +470,14 @@ public class VirtualFileSystemTest {
 
     @Test
     public void externalResourcesBuilderTest() throws IOException {
-        VirtualFileSystem fs = VirtualFileSystem.newBuilder().resourceLoadingClass(VirtualFileSystemTest.class).build();
+        VirtualFileSystem fs = VirtualFileSystem.newBuilder().resourceLoadingClass(VirtualFileSystemIntegrationTest.class).build();
         Path resourcesDir = Files.createTempDirectory("vfs-test-resources");
 
         // extract VFS
         GraalPyResources.extractVirtualFileSystemResources(fs, resourcesDir);
 
         // check extracted contents
-        InputStream stream = VirtualFileSystemTest.class.getResourceAsStream("/org.graalvm.python.vfs/fileslist.txt");
+        InputStream stream = VirtualFileSystemIntegrationTest.class.getResourceAsStream("/org.graalvm.python.vfs/fileslist.txt");
         BufferedReader br = new BufferedReader(new InputStreamReader(stream));
         String line;
         while ((line = br.readLine()) != null) {
