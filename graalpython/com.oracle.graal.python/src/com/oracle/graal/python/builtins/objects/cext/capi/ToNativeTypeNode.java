@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -321,22 +320,7 @@ public abstract class ToNativeTypeNode {
         Object tpTraverse = nullValue;
         Object tpIsGc = nullValue;
         if ((flags & TypeFlags.HAVE_GC) != 0) {
-            /*
-             * In CPython, classes created via 'type_new' will always have 'subtype_traverse' (this
-             * is done in 'typeobject.c: type_new_alloc'). We don't set this in our 'CreateTypeNode'
-             * already because we don't know if the class will ever be used in native code. So, we
-             * do it here.
-             */
-            if (clazz instanceof PythonClass) {
-                tpTraverse = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_SUBTYPE_TRAVERSE);
-            } else {
-                tpTraverse = lookup(clazz, PyTypeObject__tp_traverse, HiddenAttr.TRAVERSE);
-            }
-            /*
-             * We allow 'tp_traverse' to be null for built-in classes until we've implemented for
-             * all of them. Once this is done, 'tp_traverse' must not be null here for all classes.
-             */
-            assert clazz instanceof PythonBuiltinClass || tpTraverse != nullValue;
+            tpTraverse = lookup(clazz, PyTypeObject__tp_traverse, HiddenAttr.TRAVERSE);
             tpIsGc = lookup(clazz, PyTypeObject__tp_is_gc, HiddenAttr.IS_GC);
         }
         writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, tpTraverse);

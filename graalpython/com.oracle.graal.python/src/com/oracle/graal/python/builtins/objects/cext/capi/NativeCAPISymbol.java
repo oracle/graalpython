@@ -72,6 +72,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_VA_ARG_POINTER("truffle_va_arg_pointer", Pointer, Pointer),
     FUN_CONVERT_POINTER("truffle_convert_pointer", Pointer, Py_ssize_t),
     FUN_NO_OP_CLEAR("truffle_no_op_clear", Int, PyObject),
+    FUN_NO_OP_TRAVERSE("truffle_no_op_traverse", Int, PyObject, Pointer, Pointer),
 
     FUN_PYTRUFFLE_CONSTANTS("PyTruffle_constants", PY_SSIZE_T_PTR),
     FUN_PYTRUFFLE_STRUCT_OFFSETS("PyTruffle_struct_offsets", PY_SSIZE_T_PTR),
