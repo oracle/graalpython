@@ -1106,11 +1106,12 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
             args += ['--ignore', file]
 
     if is_collecting_coverage() and mx_gate.get_jacoco_agent_args():
-        # jacoco only dumps the data on exit, and when we run all our unittests
-        # at once it generates so much data we run out of heap space
-        args.append('--separate-workers')
         with open(python_binary, "r") as f:
             assert f.read(9) == "#!/bin/sh"
+        if not use_pytest:
+            # jacoco only dumps the data on exit, and when we run all our unittests
+            # at once it generates so much data we run out of heap space
+            args.append('--separate-workers')
 
     if report:
         reportfile = None
