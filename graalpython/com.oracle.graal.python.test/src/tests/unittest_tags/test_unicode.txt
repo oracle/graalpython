@@ -19,7 +19,6 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_bug1001011
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_bytes_comparison
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_capitalize
-*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_capitalize_nonascii
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_case_operation_overflow
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_casefold
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_center
@@ -103,7 +102,6 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_none_arguments
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_partition
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_pickle_iterator
-*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_printable_repr
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_printing
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_raiseMemError
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_removeprefix
