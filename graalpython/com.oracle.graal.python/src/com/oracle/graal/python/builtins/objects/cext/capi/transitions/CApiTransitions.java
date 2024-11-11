@@ -994,8 +994,7 @@ public abstract class CApiTransitions {
                         @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached(inline = false) CStructAccess.WriteIntNode writeIntNode,
                         @Cached(inline = false) CStructAccess.GetElementPtrNode getElementPtrNode,
-                        @Cached CoerceNativePointerToLongNode coerceToLongNode,
-                        @Cached PyObjectGCTrackNode gcTrackNode) {
+                        @Cached CoerceNativePointerToLongNode coerceToLongNode) {
 
             log(wrapper);
             pollReferenceQueue();
