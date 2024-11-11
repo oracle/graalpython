@@ -130,7 +130,8 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
 
             # import struct from python file triggers extract of native extension files in VirtualFileSystem
             hello_src = os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs", "src", "hello.py")
-            contents = open(hello_src, 'r').read()
+            with open(hello_src) as f:
+                contents = f.read()
             with open(hello_src, 'w') as f:
                 f.write("import struct\n" + contents)
 
