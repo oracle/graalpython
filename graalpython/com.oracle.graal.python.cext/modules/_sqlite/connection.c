@@ -185,8 +185,9 @@ pysqlite_connection_init_impl(pysqlite_Connection *self, PyObject *database,
                               double timeout, int detect_types,
                               const char *isolation_level,
                               int check_same_thread, PyObject *factory,
-                              int cache_size, int uri)
-/*[clinic end generated code: output=839eb2fee4293bda input=b8ce63dc6f70a383]*/
+                              int cache_size, int uri,
+                              enum autocommit_mode autocommit)
+/*[clinic end generated code: output=cba057313ea7712f input=9b0ab6c12f674fa3]*/
 {
     if (PySys_Audit("sqlite3.connect", "O", database) < 0) {
         return -1;
