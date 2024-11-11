@@ -2102,6 +2102,7 @@ def update_import_cmd(args):
         join(overlaydir, "python", "graal", "ci"),
         dirs_exist_ok=True)
 
+    mx.run_mx(['--dynamicimports', '/graal-enterprise', 'checkout-downstream', 'compiler', 'graal-enterprise'])
     enterprisedir = join(SUITE.dir, "..", "graal-enterprise")
     shutil.copy(
         join(enterprisedir, "common.json"),
