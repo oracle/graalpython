@@ -1096,7 +1096,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     if use_pytest:
         args += ["-m", "pytest", "-v", "--assert=plain", "--tb=native"]
     else:
-        args += [_python_test_runner(), "--durations", "10", "-n", str(parallel), f"--subprocess-args={shlex.join(args)}"]
+        args += [_python_test_runner(), "--durations", "10", "-n", str(min(os.cpu_count(), parallel)), f"--subprocess-args={shlex.join(args)}"]
 
     if runner_args:
         args += runner_args
@@ -1236,7 +1236,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,
-                         report=False, parallel=min(os.cpu_count(), 8), exclude=None, runner_args=()):
+                         report=False, parallel=8, exclude=None, runner_args=()):
     sub_env = dict(env or os.environ)
     sub_env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python', '3')
 
@@ -1332,22 +1332,23 @@ def graalpython_gate_runner(args, tasks):
             run_python_unittests(
                 graalpy_standalone_jvm(),
                 nonZeroIsFatal=nonZeroIsFatal,
-                report=report()
+                report=report(),
+                parallel=6,
             )
 
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
             env = extend_os_env(PYTHONHASHSEED='0')
-            test_args = [get_cpython(), _python_test_runner(), "-n", "1", "graalpython/com.oracle.graal.python.test/src/tests"]
+            test_args = [get_cpython(), _python_test_runner(), "-n", "6", "graalpython/com.oracle.graal.python.test/src/tests"]
             mx.run(test_args, nonZeroIsFatal=True, env=env)
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm_enterprise(), args=SANDBOXED_OPTIONS, report=report())
+            run_python_unittests(graalpy_standalone_jvm_enterprise(), args=SANDBOXED_OPTIONS, report=report(), parallel=6)
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm(), args=["-multi-context"], nonZeroIsFatal=nonZeroIsFatal, report=report())
+            run_python_unittests(graalpy_standalone_jvm(), args=["-multi-context"], nonZeroIsFatal=nonZeroIsFatal, parallel=6, report=report())
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
@@ -1355,7 +1356,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython with Arrow Storage Strategy', tasks, tags=[GraalPythonTags.unittest_arrow]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm(), args=["--python.UseNativePrimitiveStorageStrategy"], report=report(), nonZeroIsFatal=nonZeroIsFatal)
+            run_python_unittests(graalpy_standalone_jvm(), args=["--python.UseNativePrimitiveStorageStrategy"], parallel=6, report=report(), nonZeroIsFatal=nonZeroIsFatal)
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
@@ -1417,6 +1418,7 @@ def graalpython_gate_runner(args, tasks):
                 graalpy_standalone_jvm(),
                 paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone"],
                 env=env,
+                parallel=3,
             )
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
@@ -1427,11 +1429,11 @@ def graalpython_gate_runner(args, tasks):
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit, GraalPythonTags.windows]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_native(), report=report())
+            run_python_unittests(graalpy_standalone_native(), parallel=8, report=report())
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_native_enterprise(), args=SANDBOXED_OPTIONS, report=report())
+            run_python_unittests(graalpy_standalone_native_enterprise(), parallel=8, args=SANDBOXED_OPTIONS, report=report())
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
@@ -2457,11 +2459,11 @@ def python_coverage(args):
                 "test_multiprocessing_graalpy",
             ]
             if kwds.pop("tagged", False):
-                run_tagged_unittests(executable, env=env, nonZeroIsFatal=False, parallel=1, exclude=tagged_exclude, runner_args=['--continue-on-collection-errors'])
+                run_tagged_unittests(executable, env=env, nonZeroIsFatal=False, parallel=6, exclude=tagged_exclude, runner_args=['--continue-on-collection-errors'])
             elif kwds.pop("hpy", False):
                 run_hpy_unittests(executable, env=env, nonZeroIsFatal=False, timeout=5*60*60) # hpy unittests are really slow under coverage
             else:
-                run_python_unittests(executable, env=env, nonZeroIsFatal=False, timeout=3600, parallel=1, **kwds) # pylint: disable=unexpected-keyword-arg;
+                run_python_unittests(executable, env=env, nonZeroIsFatal=False, timeout=3600, parallel=6, **kwds) # pylint: disable=unexpected-keyword-arg;
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
