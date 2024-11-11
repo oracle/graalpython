@@ -880,7 +880,7 @@ def deploy_local_maven_repo():
 
     if not DISABLE_REBUILD:
         # build GraalPy and all the necessary dependencies, so that we can deploy them
-        mx.run_mx(["build"], env=env)
+        mx.run_mx(["-p", os.path.join(mx.suite('truffle').dir, '..', 'vm'), "--dy", "graalpython", "build"], env=env)
 
     # deploy maven artifacts
     version = GRAAL_VERSION
