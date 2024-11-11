@@ -1415,7 +1415,7 @@ def graalpython_gate_runner(args, tasks):
             # run the test
             mx.logv(f"running with os.environ extended with: {env=}")
             run_python_unittests(
-                graalpy_standalone_jvm(),
+                os.path.join(standalone_home, 'bin', _graalpy_launcher()),
                 paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone"],
                 env=env,
                 parallel=3,
