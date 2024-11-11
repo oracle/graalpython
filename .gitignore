@@ -70,6 +70,7 @@ Python.asdl.stamp
 *.jfr
 .DS_Store
 
+docs/site/_site
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/.antlr/
 graalpython/lib-python/3/test/data
 !graalpython/lib-python/3/test/data/README

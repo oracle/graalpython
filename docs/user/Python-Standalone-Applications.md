@@ -1,11 +1,3 @@
----
-layout: docs
-toc_group: python
-link_title: Python Standalone Applications
-permalink: /reference-manual/python/standalone-applications/
-redirect_from: /reference-manual/python/standalone-binaries/
----
-
 # Python Standalone Applications
 
 GraalPy enables you to create a Python application or library as a native application or JAR file with no external dependencies.
@@ -29,7 +21,7 @@ graalpy -m standalone native \
 It produces a native _my_binary_ file which includes your Python code, the GraalPy runtime, and the Python standard library in a single, self-contained executable.
 Use `graalpy -m standalone native --help` for further options.
 
-## Security Considerations
+### Security Considerations of Python Standalone Applications
 
 Creating a native executable or a JAR file that includes Python code could be seen as a mild form of obfuscation, but it does not protect your source code.
 Python source code is not stored verbatim into the executable (only the GraalPy bytecode is stored), but bytecode is easy to convert back into Python source code.

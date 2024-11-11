@@ -1,13 +1,3 @@
----
-layout: docs
-toc_group: python
-link_title: Python Reference
-permalink: /reference-manual/python/
-redirect_from:
-  - /docs/reference-manual/python/
-  - /reference-manual/python/FAQ/
----
-
 # Getting Started with GraalPy on the JVM
 
 You can use GraalPy with GraalVM JDK, Oracle JDK, or OpenJDK.
@@ -16,7 +6,7 @@ Other build systems (Ant, Make, CMake, and so on) can also be used with a bit mo
 
 ## Maven
 
-GraalPy can generate a Maven project that embeds Python packages into a Java application using [Maven artefacts](https://mvnrepository.com/artifact/org.graalvm.python).
+GraalPy can generate a Maven project that embeds Python packages into a Java application using [Maven artefacts](https://central.sonatype.com/namespace/org.graalvm.python).
 
 1. GraalPy project publishes a Maven archetype to generate a starter project:
    ```bash
@@ -26,13 +16,13 @@ GraalPy can generate a Maven project that embeds Python packages into a Java app
      -DarchetypeVersion=24.1.0
    ```
 
-2. Build a native executable using the [ GraalVM Native Image "tool"](https://www.graalvm.org/latest/reference-manual/native-image/) plugin that was added for you automatically:
+2. Build a native executable using the [GraalVM Native Image "tool"](https://www.graalvm.org/latest/reference-manual/native-image/) plugin that was added for you automatically:
     ```bash
     mvn -Pnative package
     ```
 
 3. Once completed, run the executable:
-    ```
+    ```bash
     ./target/polyglot_app
     ```
     The application prints "hello java" to the console.
@@ -66,8 +56,6 @@ In order to distribute the resulting application for other systems, follow these
 
 ## Gradle
 
-> Note: GraalPy Gradle Plugin will become available as of GraalPy version 24.1.1, planned for October 15, 2024.
-
 1. Create a Java application with Gradle using the command below and follow the prompts (select the Groovy build script language, select a test framework, and so on):
     ```bash
     gradle init --type java-application \
@@ -90,9 +78,9 @@ In order to distribute the resulting application for other systems, follow these
 
 2. Open your project configuration file, _app/build.gradle_, and modify it as follows. 
     - Include the GraalPy support and the [GraalVM Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) in the `dependencies` section:
-        ```
-        implementation("org.graalvm.polyglot:polyglot:24.1.1")
-        implementation("org.graalvm.polyglot:python:24.1.1")
+        ```bash
+        implementation("org.graalvm.polyglot:polyglot:24.1.2")
+        implementation("org.graalvm.polyglot:python:24.1.2")
         ```
 
 3. Finally, replace the code in the file named _App.java_ as follows for a small Python embedding:
@@ -118,23 +106,23 @@ In order to distribute the resulting application for other systems, follow these
 
     > Note: The performance of the GraalPy runtime depends on the JDK in which you embed it. For more information, see [Runtime Optimization Support](https://www.graalvm.org/latest/reference-manual/embed-languages/#runtime-optimization-support).
 
-5. Optionally, you can also use a third-party Python package:
+5. Optionally, you can also use a third-party Python package.
 
    5.1. In _app/build.gradle_:
    - add the graalpy-gradle-plugin to the `plugins` section:
-   ```
-   id "org.graalvm.python" version "24.1.1"
+   ```bash
+   id "org.graalvm.python" version "24.1.2"
    ```
 
    - configure the GraalPy Gradle plugin:  
-   ```
+   ```bash
    graalPy { 
       packages = ["termcolor==2.2"]
    }
    ```
    
    5.2. In _settings.gradle_, add the following `pluginManagement` configuration.
-   ```
+   ```bash
    pluginManagement {
       repositories {
          gradlePluginPortal()        
@@ -173,7 +161,7 @@ GraalPy comes with a tool to obtain the required JAR files from Maven.
 
 1. Assuming there is some directory where third-party dependencies are stored for the project and that the build system is set up to put any JAR files there on the classpath, the project directory tree might look similar to this:
 
-    ```
+    ```bash
     ├───lib
     │   └─── ... *.jar dependencies are here
     └───src
@@ -191,7 +179,7 @@ GraalPy comes with a tool to obtain the required JAR files from Maven.
     ```
 
     In PowerShell:
-    ```
+    ```bash
     $GRAALPY_HOME = graalpy -c "print(__graalpython__.home)"
     & "$GRAALPY_HOME/libexec/graalpy-polyglot-get" -a python -o lib -v "24.1.0"
     ```
@@ -212,9 +200,9 @@ GraalPy comes with a tool to obtain the required JAR files from Maven.
     }
     ```
 
-## GraalPy as CPython Replacement
+## Testing Python Applications and Packages on GraalPy
 
-Go [here](Python-Runtime.md) to get started with GraalPy as CPython replacement.
+Go [here](Python-Runtime.md) to get a CPython compatible distribution of GraalPy to test Python applications and packages.
 
 #### Related Documentation
 

@@ -1,10 +1,3 @@
----
-layout: docs
-toc_group: python
-link_title: Embedding Build Tools
-permalink: /reference-manual/python/Embedding-Build-Tools/
----
-
 # Embedding Build Tools
 
 The GraalPy **Maven** and **Gradle** plugins provide functionality to manage Python related resources
@@ -41,20 +34,19 @@ factory methods to create GraalPy Context preconfigured for the use of the Virtu
 
 #### Java Resource Path
 Particularly when developing reusable libraries, it is recommended to use custom unique Java resources path for your
-virtual filesystem to avoid conflicts with other libraries on the classpath or modulepath that may also use the
+virtual filesystem to avoid conflicts with other libraries on the classpath or module path that may also use the
 Virtual Filesystem. The recommended path is:
-  ```
-  GRAALPY-VFS/${project.groupId}/${project.artifactId}
-  ```
+```bash
+GRAALPY-VFS/${project.groupId}/${project.artifactId}
+```
 
 The Java resources path must be configured in the Maven and Gradle plugins and must be also set to the same value
 at runtime using the `VirtualFileSystem$Builder#resourceDirectory` API.
 
 *Note regarding Java module system: resources in named modules are subject to the encapsulation rules specified by
 [Module.getResourceAsStream](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Module.html#getResourceAsStream(java.lang.String)).
-This is also the case of the default virtual filesystem location. When a resources directory is not
-a valid Java package name, such as the recommended "GRAALPY-VFS", the resources are not subject to
-the encapsulation rules and do not require additional module system configuration.*
+This is also the case of the default virtual filesystem location.
+When a resources directory is not a valid Java package name, such as the recommended "GRAALPY-VFS", the resources are not subject to the encapsulation rules and do not require additional module system configuration.*
 
 ### External Directory
 
@@ -84,6 +76,7 @@ Whether deployed in a virtual filesystem or an external directory, its contents 
 specified in the plugin configuration.
 
 ## Python Dependency Management
+
 The list of third-party Python packages to be downloaded and installed can be specified in Maven or Gradle plugin configuration. Unfortunately,
 Python does not enforce strict versioning of dependencies, which can result in problems if a third-party package or one of its transitive
 dependencies is unexpectedly updated to a newer version, leading to unforeseen behavior.
@@ -173,7 +166,7 @@ above in this document.
 ### Gradle Plugin Configuration
 The plugin must be added to the plugins section in the _build.gradle_ file.
 The **version** property defines which version of GraalPy to use.
-```
+```groovy
 plugins {
     // other plugins ...
     id 'org.graalvm.python' version '24.2.0'
@@ -188,7 +181,7 @@ The plugin can be configured in the `graalPy` block:
 
 - The **packages** element declares a list of third-party Python packages to be downloaded and installed by the plugin.
   The Python packages and their versions are specified as if used with `pip`.
-  ```
+  ```bash
   graalPy {
     packages = ["termcolor==2.2"]
     ...
@@ -197,7 +190,7 @@ The plugin can be configured in the `graalPy` block:
 
 - The **graalPyLockFile** element can specify an alternative path to a GraalPy lock file.
   Default value is `$rootDir/graalpy.lock`.
-  ```
+  ```bash
   graalPy {
     graalPyLockFile = file("$rootDir/graalpy.lock")
     ...
@@ -206,13 +199,13 @@ The plugin can be configured in the `graalPy` block:
   
 - The **resourceDirectory** element can specify the relative [Java resource path](#java-resource-path).
   Remember to use `VirtualFileSystem$Builder#resourceDirectory` when configuring the `VirtualFileSystem` in Java.
-  ```
+  ```bash
   resourceDirectory = "GRAALPY-VFS/my.group.id/artifact.id"
   ```
 
 - If the **externalDirectory** element is specified, then the given directory is used as an [external directory](#external-directory) and no Java resources are embedded.
   Remember to use the appropriate `GraalPyResources` API to create the Context.
-  ```
+  ```bash
   graalPy {
     externalDirectory = file("$rootDir/python-resources")
     ...
@@ -220,7 +213,7 @@ The plugin can be configured in the `graalPy` block:
   ```
 - Boolean flag **community** switches the automatically injected
 dependency `org.graalvm.python:python` to the community build: `org.graalvm.python:python-community`.
-  ```
+  ```bash
   graalPy {
     community = true
     ...
@@ -229,7 +222,7 @@ dependency `org.graalvm.python:python` to the community build: `org.graalvm.pyth
 ### Locking Python Packages
 To lock the dependency tree of the specified Python packages, execute the GraalPy plugin task `graalPyLockPackages`.
 ```bash
-$ gradle graalPyLockPackages
+gradle graalPyLockPackages
 ```
 *Note that the action will override the existing lock file.*
 

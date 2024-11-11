@@ -1,11 +1,3 @@
----
-layout: docs
-toc_group: python
-link_title: Embedding Permissions
-permalink: /reference-manual/python/Embedding-Permissions/
-redirect_from: /reference-manual/python/OSInterface/
----
-
 # Permissions for Python Embeddings
 
 ## Access Control and Security Limits for Python Scripts
