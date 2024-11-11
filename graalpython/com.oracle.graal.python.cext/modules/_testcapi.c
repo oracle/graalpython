@@ -2045,41 +2045,6 @@ test_widechar(PyObject *self, PyObject *Py_UNUSED(ignored))
     Py_DECREF(wide);
     Py_DECREF(utf8);
 
-#if defined(SIZEOF_WCHAR_T) && (SIZEOF_WCHAR_T == 4)
-    wide = PyUnicode_FromWideChar(invalid, 1);
-    if (wide == NULL)
-        PyErr_Clear();
-    else
-        return raiseTestError("test_widechar",
-                              "PyUnicode_FromWideChar(L\"\\U00110000\", 1) didn't fail");
-
-#if USE_UNICODE_WCHAR_CACHE
-/* Ignore use of deprecated APIs */
-_Py_COMP_DIAG_PUSH
-_Py_COMP_DIAG_IGNORE_DEPR_DECLS
-    wide = PyUnicode_FromUnicode(invalid, 1);
-    if (wide == NULL)
-        PyErr_Clear();
-    else
-        return raiseTestError("test_widechar",
-                              "PyUnicode_FromUnicode(L\"\\U00110000\", 1) didn't fail");
-
-    wide = PyUnicode_FromUnicode(NULL, 1);
-    if (wide == NULL)
-        return NULL;
-    PyUnicode_AS_UNICODE(wide)[0] = invalid[0];
-    if (_PyUnicode_Ready(wide) < 0) {
-        Py_DECREF(wide);
-        PyErr_Clear();
-    }
-    else {
-        Py_DECREF(wide);
-        return raiseTestError("test_widechar",
-                              "PyUnicode_Ready() didn't fail");
-    }
-_Py_COMP_DIAG_POP
-#endif /* USE_UNICODE_WCHAR_CACHE */
-#endif
 
     Py_RETURN_NONE;
 }
@@ -2292,35 +2257,6 @@ unicode_copycharacters(PyObject *self, PyObject *args)
     return Py_BuildValue("(Nn)", to_copy, copied);
 }
 
-#if USE_UNICODE_WCHAR_CACHE
-/* Ignore use of deprecated APIs */
-_Py_COMP_DIAG_PUSH
-_Py_COMP_DIAG_IGNORE_DEPR_DECLS
-
-static PyObject *
-unicode_legacy_string(PyObject *self, PyObject *args)
-{
-    Py_UNICODE *data;
-    Py_ssize_t len;
-    PyObject *u;
-
-    if (!PyArg_ParseTuple(args, "u#", &data, &len))
-        return NULL;
-
-    u = PyUnicode_FromUnicode(NULL, len);
-    if (u == NULL)
-        return NULL;
-
-    memcpy(PyUnicode_AS_UNICODE(u), data, len * sizeof(Py_UNICODE));
-
-    if (len > 0) { /* The empty string is always ready. */
-        assert(!PyUnicode_IS_READY(u));
-    }
-
-    return u;
-}
-_Py_COMP_DIAG_POP
-#endif /* USE_UNICODE_WCHAR_CACHE */
 
 static PyObject *
 getargs_w_star(PyObject *self, PyObject *args)
@@ -6524,9 +6460,6 @@ static PyMethodDef TestMethods[] = {
     {"unicode_decodeutf8",       unicode_decodeutf8,             METH_VARARGS},
     {"unicode_decodeutf8stateful",unicode_decodeutf8stateful,    METH_VARARGS},    {"unicode_findchar",        unicode_findchar,                METH_VARARGS},
     {"unicode_copycharacters",  unicode_copycharacters,          METH_VARARGS},
-#if USE_UNICODE_WCHAR_CACHE
-    {"unicode_legacy_string",   unicode_legacy_string,           METH_VARARGS},
-#endif /* USE_UNICODE_WCHAR_CACHE */
     {"_test_thread_state",      test_thread_state,               METH_VARARGS},
     {"_pending_threadfunc",     pending_threadfunc,              METH_VARARGS},
 #ifdef HAVE_GETTIMEOFDAY

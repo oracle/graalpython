@@ -512,20 +512,6 @@ PyAPI_FUNC(Py_UCS4) _PyUnicode_FindMaxChar (
 
 /* --- Legacy deprecated API ---------------------------------------------- */
 
-/* Create a Unicode Object from the Py_UNICODE buffer u of the given
-   size.
-
-   u may be NULL which causes the contents to be undefined. It is the
-   user's responsibility to fill in the needed data afterwards. Note
-   that modifying the Unicode object contents after construction is
-   only allowed if u was set to NULL.
-
-   The buffer is copied into the new object. */
-Py_DEPRECATED(3.3) PyAPI_FUNC(PyObject*) PyUnicode_FromUnicode(
-    const Py_UNICODE *u,        /* Unicode buffer */
-    Py_ssize_t size             /* size of buffer */
-    );
-
 /* Return a read-only pointer to the Unicode object's internal
    Py_UNICODE buffer.
    If the wchar_t/Py_UNICODE representation is not yet available, this
@@ -539,17 +525,6 @@ Py_DEPRECATED(3.3) PyAPI_FUNC(Py_UNICODE *) PyUnicode_AsUnicode(
 PyAPI_FUNC(const Py_UNICODE *) _PyUnicode_AsUnicode(
     PyObject *unicode           /* Unicode object */
     );
-
-/* Return a read-only pointer to the Unicode object's internal
-   Py_UNICODE buffer and save the length at size.
-   If the wchar_t/Py_UNICODE representation is not yet available, this
-   function will calculate it. */
-
-Py_DEPRECATED(3.3) PyAPI_FUNC(Py_UNICODE *) PyUnicode_AsUnicodeAndSize(
-    PyObject *unicode,          /* Unicode object */
-    Py_ssize_t *size            /* location where to save the length */
-    );
-
 
 /* Fast access macros */
 
