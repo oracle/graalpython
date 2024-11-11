@@ -924,12 +924,6 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         return attrs;
     }
 
-    private static void info(String msgFormat, Object... args) {
-        if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.log(Level.INFO, String.format(msgFormat, args));
-        }
-    }
-
     private static void warn(String msgFormat, Object... args) {
         if (LOGGER.isLoggable(Level.WARNING)) {
             LOGGER.log(Level.WARNING, String.format(msgFormat, args));
