@@ -472,6 +472,7 @@ suite = {
                 "java.management",
                 "jdk.management",
                 "jdk.unsupported",
+                "java.logging",
             ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",

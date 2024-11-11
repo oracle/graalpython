@@ -3137,6 +3137,7 @@ class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.truffle/com.oracle.truffle.api.impl=ALL-UNNAMED'])  # for TruffleRunner/TCK
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.py/*=ALL-UNNAMED'])  # for Python internals
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.py.launcher/*=ALL-UNNAMED'])  # for Python launcher internals
+        mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.python.embedding/*=ALL-UNNAMED'])
         if not PythonMxUnittestConfig.useResources:
             vmArgs.append('-Dorg.graalvm.language.python.home=' + mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output())
         return (vmArgs, mainClass, mainClassArgs)
