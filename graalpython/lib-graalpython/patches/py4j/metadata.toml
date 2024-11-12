@@ -1,4 +1,0 @@
-[[rules]]
-patch = 'py4j.patch'
-license = 'BSD-3-Clause'
-subdir = 'src'

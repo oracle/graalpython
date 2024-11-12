@@ -457,7 +457,7 @@ validate_list(PyGC_Head *head, enum flagstates flags)
 static int
 visit_reachable(PyObject *op, PyGC_Head *reachable);
 
-/* A traversal callback for move_weak_candidates.
+/* A traversal callback for move_unreachable.
  *
  * This function is only used to traverse the referents of an object that was
  * moved from 'unreachable' to 'young' because it was made reachable due to a
@@ -729,7 +729,7 @@ visit_reachable(PyObject *op, PyGC_Head *reachable)
     // an untracked object.
     assert(UNTAG(gc)->_gc_next != 0);
 
-    const Py_ssize_t gc_refs_reset = is_managed(gc) ? MANAGED_REFCNT + 1 : 1;
+    const Py_ssize_t gc_refs_reset = is_managed(gc) ? MANAGED_REFCNT + 1 : 1; // GraalPy change
     if (UNTAG(gc)->_gc_next & NEXT_MASK_UNREACHABLE) {
         /* This had gc_refs = 0 when move_unreachable got
          * to it, but turns out it's reachable after all.
@@ -749,15 +749,18 @@ visit_reachable(PyObject *op, PyGC_Head *reachable)
         _PyGCHead_SET_PREV(next, prev);
 
         gc_list_append(gc, reachable);
-        gc_set_refs(gc, gc_refs_reset);
+        gc_set_refs(gc, gc_refs_reset); // GraalPy change: 1->gc_refs_reset
     }
-    else if (gc_refs == 0 || (gc_refs == MANAGED_REFCNT && is_managed(gc))) {
+    else if (gc_refs == 0 ||
+        // GraalPy change: the additional condition, managed objects with MANAGED_REFCNT
+        // may be still reachanble from managed, we must not declare them unreachable
+        (gc_refs == MANAGED_REFCNT && is_managed(gc))) {
         /* This is in move_unreachable's 'young' list, but
          * the traversal hasn't yet gotten to it.  All
          * we need to do is tell move_unreachable that it's
          * reachable.
          */
-        gc_set_refs(gc, gc_refs_reset);
+        gc_set_refs(gc, gc_refs_reset); // GraalPy change: 1->gc_refs_reset
     }
     /* Else there's nothing to do.
      * If gc_refs > 0, it must be in move_unreachable's 'young'
@@ -837,12 +840,12 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
                                       "refcount is too small");
             // NOTE: visit_reachable may change gc->_gc_next when
             // young->_gc_prev == gc.  Don't do gc = GC_NEXT(gc) before!
-            // GraalPy change
-            // CALL_TRAVERSE(traverse, op, visit_reachable, (void *)young);
             if (PyTruffle_PythonGC()) {
+                // GraalPy change: this branch, else branch is original CPython code
                 cycle.head = NULL;
                 cycle.n = 0;
                 assert (cycle.reachable == weak_candidates );
+                /* visit_collect_managed_referents is visit_reachable + capture the references into "cycle" */
                 CALL_TRAVERSE(traverse, op, visit_collect_managed_referents, (void *)&cycle);
 
                 /* replicate any native reference to managed objects to Java */
@@ -856,6 +859,9 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
 
             if (gc_refcnt == MANAGED_REFCNT && is_managed(gc) &&
                     Py_REFCNT(op) > MANAGED_REFCNT) {
+                // The refcount fell to MANAGED_REFCNT, we have a managed object that was
+                // part of a cycle and is no longer referenced from native space.
+
                 // Assertion is enough because if Python GC is disabled, we will
                 // never track managed objects.
                 assert (PyTruffle_PythonGC());

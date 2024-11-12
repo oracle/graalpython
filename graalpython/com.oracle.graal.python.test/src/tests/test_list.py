@@ -6,15 +6,11 @@
 import sys
 import unittest
 
+from tests import list_tests
+from tests.compare import CompareTest
 from tests.util import storage_to_native
 
-# import pickle
-
-LONG_NUMBER = 6227020800;
-
-import list_tests
-from compare import CompareTest
-
+LONG_NUMBER = 6227020800
 
 class ListTest(list_tests.CommonTest):
     type2test = list

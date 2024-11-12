@@ -37,11 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import tempfile
+
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
-
-__dir__ = __file__.rpartition("/")[0]
-
-import tempfile            
 
 tmp_write_file = None
 

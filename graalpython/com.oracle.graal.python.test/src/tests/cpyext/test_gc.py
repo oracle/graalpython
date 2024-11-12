@@ -38,14 +38,13 @@
 # SOFTWARE.
 
 import gc
+import os
 import sys
 import time
-
-import os
+import unittest
 from unittest import skipIf
-from . import CPyExtType, RUNS_ON_LLVM
 
-__dir__ = __file__.rpartition("/")[0]
+from . import CPyExtType, RUNS_ON_LLVM
 
 GRAALPY = sys.implementation.name == 'graalpy'
 
@@ -121,7 +120,7 @@ GCTestClass = CPyExtType("GCTestClass",
         tp_methods='{"getCounters", (PyCFunction)getCounters, METH_NOARGS | METH_STATIC, ""}, {"resetCounters", (PyCFunction)resetCounters, METH_NOARGS | METH_STATIC, ""}',
 )
 
-class TestGC1():
+class TestGC1(unittest.TestCase):
 
     def test_native_class(self):
         if GRAALPY:
@@ -213,7 +212,7 @@ else:
     def assert_is_strong(x): pass
     def assert_is_weak(x): pass
 
-class TestGCRefCycles:
+class TestGCRefCycles(unittest.TestCase):
     def _trigger_gc(self):
         gc.collect()
         for i in range(4 if GRAALPY and RELY_ON_GC else 1):

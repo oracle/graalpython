@@ -677,14 +677,19 @@ class ExceptionTests(unittest.TestCase):
         assert getattr(Obj1(), 'does_not_exist', sentinel) is sentinel
 
 
-# There is no simple way to restrict memory for CPython process
-@unittest.skipUnless(GRAALPYTHON)
+@unittest.skipUnless(GRAALPYTHON, "There is no simple way to restrict memory for CPython process")
 def test_memory_error():
     import subprocess
+    compiler_options = []
+    if subprocess.run([sys.executable, '--engine.Compilation=true', '-c', '1'], stderr=subprocess.DEVNULL).returncode == 0:
+        compiler_options = [
+            '--experimental-options',
+            '--engine.MultiTier=false',
+            '--engine.BackgroundCompilation=false',
+            '--engine.CompileImmediately',
+            '--engine.CompileOnly=alloc',
+        ]
     file = os.path.join(os.path.dirname(__file__), 'memoryerror.py')
-    result = subprocess.check_output([sys.executable, '-S', '--experimental-options',
-                                      '--engine.MultiTier=false', '--engine.BackgroundCompilation=false',
-                                      '--engine.CompileImmediately', '--engine.CompileOnly=alloc',
-                                      '--vm.Xmx400m', file], text=True)
+    result = subprocess.check_output([sys.executable, '-S', *compiler_options, '--vm.Xmx400m', file], text=True)
     assert 'ERROR' not in result, result
     assert 'DONE' in result, result

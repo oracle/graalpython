@@ -1,3 +1,0 @@
-[[rules]]
-# Pin to match our pinned pydantic-core
-version = '== 2.4.2'

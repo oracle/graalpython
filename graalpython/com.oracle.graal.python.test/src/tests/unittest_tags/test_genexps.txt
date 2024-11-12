@@ -1,1 +1,2 @@
-*graalpython.lib-python.3.test.test_genexps.TestMain.test_main
+DocTestCase.test.test_genexps.__test__.doctests
+test.test_genexps.TestMain.test_main

@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -120,10 +121,11 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
     public abstract PythonManagedClass execute(Object object);
 
     // isSingleContext() because making cachedTraits PE constant has no value in multi-context
-    @Specialization(guards = {"isSingleContext()", "getTraits(object, interop) == cachedTraits"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"isSingleContext()", "traits == cachedTraits"}, limit = "getCallSiteInlineCacheMaxDepth()")
     PythonManagedClass cached(Object object,
                     @CachedLibrary("object") InteropLibrary interop,
-                    @Cached("getTraits(object, interop)") int cachedTraits) {
+                    @Bind("getTraits(object, interop)") int traits,
+                    @Cached("traits") int cachedTraits) {
         assert IsForeignObjectNode.executeUncached(object);
         return classForTraits(cachedTraits);
     }
@@ -167,6 +169,7 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
     private PythonManagedClass resolvePolyglotForeignClass(int traits) {
         PythonBuiltinClass base = getContext().lookupType(PythonBuiltinClassType.ForeignObject);
         if (traits == 0) {
+            getContext().polyglotForeignClasses[traits] = base;
             return base;
         }
 

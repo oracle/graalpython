@@ -1,2 +1,2 @@
-*graalpython.lib-python.3.test.test_uu.UUTest.test_missingbegin
-*graalpython.lib-python.3.test.test_uu.UUTest.test_no_directory_traversal
+test.test_uu.UUTest.test_missingbegin
+test.test_uu.UUTest.test_no_directory_traversal

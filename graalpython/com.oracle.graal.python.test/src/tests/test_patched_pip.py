@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,8 +42,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
+from urllib.parse import urljoin
+from urllib.request import pathname2url
 
 SETUP_PY_TEMPLATE = '''
 from setuptools import setup, find_packages
@@ -79,25 +83,27 @@ if sys.implementation.name == "graalpy":
         installed from source or binary distribution.
         """
 
-        def setUpClass(self):
-            self.venv_dir = Path(tempfile.mkdtemp()).resolve()
-            subprocess.check_output([sys.executable, "-m", "venv", str(self.venv_dir)])
-            self.venv_python = str(self.venv_dir / 'bin' / 'python')
-            subprocess.check_output([self.venv_python, '-m', 'pip', 'install', 'wheel'])
-            self.venv_template_dir = f'{self.venv_dir}.template'
-            self.venv_dir.rename(self.venv_template_dir)
-            self.build_dir = Path(tempfile.mkdtemp()).resolve()
-            self.package_cache = {}
+        @classmethod
+        def setUpClass(cls):
+            cls.venv_dir = Path(tempfile.mkdtemp()).resolve()
+            subprocess.check_output([sys.executable, "-m", "venv", str(cls.venv_dir)])
+            cls.venv_python = str(cls.venv_dir / 'bin' / 'python')
+            subprocess.check_output([cls.venv_python, '-m', 'pip', 'install', 'wheel'])
+            cls.venv_template_dir = f'{cls.venv_dir}.template'
+            cls.venv_dir.rename(cls.venv_template_dir)
+            cls.build_dir = Path(tempfile.mkdtemp()).resolve()
+            cls.package_cache = {}
 
-        def tearDownClass(self):
-            shutil.rmtree(self.venv_template_dir, ignore_errors=True)
-            shutil.rmtree(self.build_dir, ignore_errors=True)
+        @classmethod
+        def tearDownClass(cls):
+            shutil.rmtree(cls.venv_template_dir, ignore_errors=True)
+            shutil.rmtree(cls.build_dir, ignore_errors=True)
 
         def setUp(self):
             shutil.copytree(self.venv_template_dir, self.venv_dir, symlinks=True)
             self.patch_dir = Path(tempfile.mkdtemp()).resolve()
             self.pip_env = os.environ.copy()
-            self.pip_env['PIPLOADER_PATCHES_BASE_DIRS'] = str(self.patch_dir)
+            self.pip_env['PIP_GRAALPY_PATCHES_URL'] = str(self.patch_dir)
             self.index_dir = Path(tempfile.mkdtemp()).resolve()
 
         def tearDown(self):
@@ -106,18 +112,16 @@ if sys.implementation.name == "graalpy":
             shutil.rmtree(self.index_dir, ignore_errors=True)
 
         def prepare_config(self, name, rules):
-            package_dir = self.patch_dir / name
-            package_dir.mkdir(exist_ok=True)
             toml_lines = []
             for rule in rules:
-                toml_lines.append('[[rules]]')
+                toml_lines.append(f'[[{name}.rules]]')
                 for k, v in rule.items():
                     if not k.startswith('$'):
                         toml_lines.append(f'{k} = {v!r}')
                 if patch := rule.get('patch'):
-                    with open(package_dir / patch, 'w') as f:
+                    with open(self.patch_dir / patch, 'w') as f:
                         f.write(PATCH_TEMPLATE.format(rule.get('$patch-text', 'Patched')))
-            with open(package_dir / 'metadata.toml', 'w') as f:
+            with open(self.patch_dir / 'metadata.toml', 'w') as f:
                 f.write('\n'.join(toml_lines))
 
         def build_package(self, name, version):
@@ -147,26 +151,36 @@ if sys.implementation.name == "graalpy":
             package = self.build_package(name, version)[dist_type]
             shutil.copy(package, self.index_dir)
 
-        def run_venv_pip_install(self, package, extra_env=None):
+        def run_venv_pip_install(self, package, extra_env=None, assert_stderr_matches=None):
             env = self.pip_env.copy()
             if extra_env:
                 env.update(extra_env)
-            out = subprocess.check_output([
-                self.venv_python,
-                '--experimental-options', '--python.EnableDebuggingBuiltins=true',
-                '-m', 'pip', 'install', '--force-reinstall',
-                '--find-links', self.index_dir, '--no-index', '--no-cache-dir',
-                package],
-                env=env, universal_newlines=True)
-            assert 'Applying GraalPy patch failed for' not in out
-            return re.findall(r'Successfully installed (\S+)', out)
+            proc = subprocess.run(
+                [
+                    str(self.venv_dir / 'bin' / 'pip'),
+                    '--isolated',
+                    'install',
+                    '--force-reinstall',
+                    '--find-links', self.index_dir,
+                    '--no-index',
+                    '--no-cache-dir',
+                    package,
+                ],
+                check=True,
+                capture_output=True,
+                env=env,
+                universal_newlines=True,
+            )
+            print(proc.stderr)
+            assert 'Applying GraalPy patch failed for' not in proc.stderr
+            if assert_stderr_matches:
+                assert re.search(assert_stderr_matches, proc.stderr), \
+                    f"Didn't match expected stderr.\nExpected (regex): {assert_stderr_matches}\nActual:{proc.stderr}"
+            return re.findall(r'Successfully installed (\S+)', proc.stdout)
 
         def run_test_fun(self):
             code = "import patched_package; print(patched_package.test_fun())"
             return subprocess.check_output([self.venv_python, '-c', code], universal_newlines=True).strip()
-
-        def test_pip_launcher(self):
-            subprocess.check_output([str(self.venv_dir / 'bin' / 'pip'), 'install', '--help'])
 
         def test_wheel_unpatched_version(self):
             self.add_package_to_index('foo', '1.0.0', 'wheel')
@@ -388,3 +402,62 @@ if sys.implementation.name == "graalpy":
             }])
             assert self.run_venv_pip_install('package-with-dashes') == ['package-with-dashes-1.0.0']
             assert self.run_test_fun() == "Patched"
+
+        def check_installing_with_patch_repo(self, url_or_path: str, *, graalpy_version=None, should_be_skipped=False,
+                                             assert_stderr_matches=None):
+            self.pip_env['PIP_GRAALPY_PATCHES_URL'] = url_or_path
+            if graalpy_version:
+                self.pip_env['TEST_PIP_GRAALPY_VERSION'] = graalpy_version
+            self.add_package_to_index('foo', '1.1.0', 'wheel')
+            self.prepare_config('foo', [{'patch': 'foo.patch'}])
+            assert self.run_venv_pip_install('foo', assert_stderr_matches=assert_stderr_matches) == ['foo-1.1.0']
+            assert self.run_test_fun() == ("Unpatched" if should_be_skipped else "Patched")
+
+        def test_broken_patches_path(self):
+            self.check_installing_with_patch_repo(
+                '/tmp/not-there',
+                should_be_skipped=True,
+                assert_stderr_matches="WARNING: Failed to load GraalPy patch repository",
+            )
+
+        def test_patches_file_url(self):
+            self.check_installing_with_patch_repo(urljoin('file:', pathname2url(str(self.patch_dir.absolute()))))
+
+        @unittest.skipIf(
+            __graalpython__.posix_module_backend() == 'java',
+            "Server doesn't work properly under Java posix backend"
+        )
+        def test_patches_http_url(self):
+            patch_dir = self.patch_dir
+
+            class Handler(SimpleHTTPRequestHandler):
+                def __init__(self, *args, **kwargs):
+                    super().__init__(*args, directory=str(patch_dir), **kwargs)
+
+            try:
+                with HTTPServer(('localhost', 0), Handler) as server:
+                    thread = threading.Thread(target=server.serve_forever)
+                    thread.start()
+                    try:
+                        self.check_installing_with_patch_repo(f'http://localhost:{server.server_port}')
+                    finally:
+                        server.shutdown()
+            finally:
+                thread.join()
+
+        def test_patches_repo_version_resolution(self):
+            patch_dir_parent = self.patch_dir
+            graalpy_version = '1.3.2'
+            self.patch_dir = patch_dir_parent / graalpy_version
+            self.patch_dir.mkdir()
+            self.check_installing_with_patch_repo(str(patch_dir_parent / '<version>'), graalpy_version=graalpy_version)
+
+        def test_patches_repo_version_resolution_dev(self):
+            patch_dir_parent = self.patch_dir
+            self.patch_dir = patch_dir_parent / '1.3.2-dev'
+            self.patch_dir.mkdir()
+            self.check_installing_with_patch_repo(
+                str(patch_dir_parent / '<version>'),
+                graalpy_version='1.3.2-dev',
+                should_be_skipped=True,
+            )

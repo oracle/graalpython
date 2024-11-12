@@ -1,4 +1,0 @@
-[[rules]]
-version = '== 2.*'
-patch = 'pygame-2.patch'
-license = 'LGPL-2.0-or-later'

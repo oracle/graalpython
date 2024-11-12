@@ -1,8 +1,8 @@
-*graalpython.lib-python.3.test.test_multibytecodec.TestStateful.test_encode
-*graalpython.lib-python.3.test.test_multibytecodec.Test_ISO2022.test_bug1572832
-*graalpython.lib-python.3.test.test_multibytecodec.Test_IncrementalDecoder.test_dbcs
-*graalpython.lib-python.3.test.test_multibytecodec.Test_IncrementalDecoder.test_dbcs_keep_buffer
-*graalpython.lib-python.3.test.test_multibytecodec.Test_IncrementalEncoder.test_issue5640
-*graalpython.lib-python.3.test.test_multibytecodec.Test_IncrementalEncoder.test_stateless
-*graalpython.lib-python.3.test.test_multibytecodec.Test_IncrementalEncoder.test_subinterp
-*graalpython.lib-python.3.test.test_multibytecodec.Test_MultibyteCodec.test_codingspec
+test.test_multibytecodec.TestStateful.test_encode
+test.test_multibytecodec.Test_ISO2022.test_bug1572832
+test.test_multibytecodec.Test_IncrementalDecoder.test_dbcs
+test.test_multibytecodec.Test_IncrementalDecoder.test_dbcs_keep_buffer
+test.test_multibytecodec.Test_IncrementalEncoder.test_issue5640
+test.test_multibytecodec.Test_IncrementalEncoder.test_stateless
+test.test_multibytecodec.Test_IncrementalEncoder.test_subinterp
+test.test_multibytecodec.Test_MultibyteCodec.test_codingspec

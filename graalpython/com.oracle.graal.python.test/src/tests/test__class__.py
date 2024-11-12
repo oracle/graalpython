@@ -48,7 +48,8 @@ def find_code_object(t):
 
 class BasicTests(unittest.TestCase):
 
-    def tearDownClass(self):
+    @classmethod
+    def tearDownClass(cls):
         nonlocal __class__
         __class__ = BasicTests
 

@@ -1,0 +1,38 @@
+[settings]
+tags_dir = '../../../com.oracle.graal.python.test/src/tests/unittest_tags'
+new_worker_per_file = true
+
+[[test_rules]]
+# A list of tests that cannot run in parallel with other tests
+serial = true
+selector = [
+    # test_compileall tries to recompile the whole PYTHONPATH, which makes it interfere with any test that
+    # creates temporary py files
+    'test_compileall',
+    # test_import tests various behaviors related to __pycache__ directory,
+    # it can interfere with other tests that generate code
+    'test_import',
+    'test_imp',
+    'test_subprocess',
+    'test_posix',
+    'test_os',
+    'test_io',
+    'test_fileio',
+    'test_imaplib',
+    'test_ftplib',
+    'test_multiprocessing_spawn',
+    'test_multiprocessing_graalpy',
+    # trying to avoid transient issues there, not sure about the reason
+    'test_unittest',
+    'test_logging',
+    # test_int contains a denial-of-service prevention test that requires to finish within a certain time.
+    # We are actually fast enough but the parallel execution overhead can cause transient failures.
+    'test_int',
+]
+
+[[test_rules]]
+partial_splits_individual_tests = true
+selector = [
+    'test_multiprocessing_spawn',
+    'test_multiprocessing_main_handling',
+]

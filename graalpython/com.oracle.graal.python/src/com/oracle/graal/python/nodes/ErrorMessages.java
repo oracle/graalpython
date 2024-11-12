@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.graal.python.builtins.PythonOS;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -190,7 +191,9 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_IMPORT_NAME_CIRCULAR = tsLiteral("cannot import name '%s' from partially initialized module '%s' (most likely due to a circular import)");
     public static final TruffleString CANNOT_INITIALIZE_WITH = tsLiteral("cannot initialize %s with %s%s");
     public static final TruffleString CANNOT_LOAD = tsLiteral("cannot load %s: %s");
-    public static final TruffleString CANNOT_LOAD_M = tsLiteral("cannot load %s: %m");
+    public static final TruffleString CANNOT_LOAD_M = (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) ? tsLiteral(
+                    "cannot load %s: %m. Error 126 indicates missing DLLs, please make sure you have the latest Microsoft Visual C++ Redistributable from https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist.")
+                    : tsLiteral("cannot load %s: %m");
     public static final TruffleString CANNOT_RELEASE_UNAQUIRED_LOCK = tsLiteral("cannot release un-acquired lock");
     public static final TruffleString CANNOT_REENTER_TEE_ITERATOR = tsLiteral("cannot re-enter the tee iterator");
     public static final TruffleString CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = tsLiteral("Cannot specify both ',' and '_'.");

@@ -1,7 +1,0 @@
-[[rules]]
-# With pyo3 changes upstreamed, this patch is not needed in recent versions
-# This old version is still used in ray's tests
-install-priority = 0
-version = '== 4.0.1'
-patch = 'bcrypt-4.0.1.patch'
-license = 'Apache-2.0'

@@ -48,7 +48,6 @@ import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -205,20 +204,10 @@ public abstract class CApiTransitions {
 
     public abstract static class IdReference<T> extends WeakReference<T> {
 
-        private boolean collected = false;
-
         public IdReference(HandleContext handleContext, T referent) {
             super(referent, handleContext.referenceQueue);
         }
 
-        public boolean isCollected() {
-            return collected;
-        }
-
-        public IdReference<T> setCollected() {
-            this.collected = true;
-            return this;
-        }
     }
 
     /**
@@ -448,23 +437,8 @@ public abstract class CApiTransitions {
                     }
                 }
                 try {
-                    LinkedList<IdReference<?>> manualCleanupQueue = new LinkedList<>();
-                    for (IdReference<?> ref : handleContext.nativeLookup.values()) {
-                        if (ref != null && ref.refersTo(null)) {
-                            manualCleanupQueue.add(ref);
-                        }
-                    }
-                    manuallyCollected = manualCleanupQueue.size();
                     while (true) {
-                        Object entry;
-                        if (!manualCleanupQueue.isEmpty()) {
-                            entry = manualCleanupQueue.pop().setCollected();
-                        } else {
-                            entry = queue.poll();
-                            if (entry instanceof IdReference<?> ref && ref.isCollected()) {
-                                continue;
-                            }
-                        }
+                        Object entry = queue.poll();
                         if (entry == null) {
                             if (count > 0) {
                                 assert handleContext.referenceQueuePollActive;
@@ -1020,8 +994,7 @@ public abstract class CApiTransitions {
                         @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached(inline = false) CStructAccess.WriteIntNode writeIntNode,
                         @Cached(inline = false) CStructAccess.GetElementPtrNode getElementPtrNode,
-                        @Cached CoerceNativePointerToLongNode coerceToLongNode,
-                        @Cached PyObjectGCTrackNode gcTrackNode) {
+                        @Cached CoerceNativePointerToLongNode coerceToLongNode) {
 
             log(wrapper);
             pollReferenceQueue();
@@ -1212,7 +1185,7 @@ public abstract class CApiTransitions {
         static PythonNativeWrapper doGeneric(Node inliningTarget, long pointer,
                         @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedExactClassProfile profile,
-                        @Cached UpdateRefNode updateRefNode) {
+                        @Cached UpdateStrongRefNode updateRefNode) {
             HandleContext nativeContext = PythonContext.get(inliningTarget).nativeContext;
             int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
             PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer, idx);
@@ -1296,7 +1269,7 @@ public abstract class CApiTransitions {
                         @Bind("needsTransfer()") boolean needsTransfer,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached InlinedBranchProfile inlinedBranchProfile,
-                        @Exclusive @Cached UpdateRefNode updateRefNode) {
+                        @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             if (needsTransfer && PythonContext.get(inliningTarget).isNativeAccessAllowed()) {
                 long ptr = PythonUtils.coerceToLong(obj.getPtr(), lib);
                 long newRefcnt = CApiTransitions.addNativeRefCount(ptr, 1);
@@ -1349,7 +1322,7 @@ public abstract class CApiTransitions {
                         @Cached GetNativeWrapperNode getWrapper,
                         @Cached GetReplacementNode getReplacementNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Exclusive @Cached UpdateRefNode updateRefNode) {
+                        @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             CompilerAsserts.partialEvaluationConstant(needsTransfer);
             assert PythonContext.get(inliningTarget).ownsGil();
             pollReferenceQueue();
@@ -1469,7 +1442,7 @@ public abstract class CApiTransitions {
         static Object doWrapper(PythonNativeWrapper value,
                         @Bind("$node") Node inliningTarget,
                         @Exclusive @Cached InlinedExactClassProfile wrapperProfile,
-                        @Exclusive @Cached UpdateRefNode updateRefNode) {
+                        @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, false, value);
         }
 
@@ -1486,7 +1459,7 @@ public abstract class CApiTransitions {
                         @Cached InlinedConditionProfile isNativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile,
                         @Exclusive @Cached InlinedExactClassProfile wrapperProfile,
-                        @Exclusive @Cached UpdateRefNode updateRefNode) {
+                        @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             assert !(value instanceof TruffleString);
             assert !(value instanceof PythonAbstractObject);
             assert !(value instanceof Number);
@@ -1573,7 +1546,7 @@ public abstract class CApiTransitions {
          * @param wrapper The native wrapper to unwrap.
          * @return The Python value contained in the native wrapper.
          */
-        static Object handleWrapper(Node node, InlinedExactClassProfile wrapperProfile, UpdateRefNode updateRefNode, boolean transfer, PythonNativeWrapper wrapper) {
+        static Object handleWrapper(Node node, InlinedExactClassProfile wrapperProfile, UpdateStrongRefNode updateRefNode, boolean transfer, PythonNativeWrapper wrapper) {
             PythonNativeWrapper profiledWrapper = wrapperProfile.profile(node, wrapper);
             if (transfer && profiledWrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
                 /*
@@ -1682,7 +1655,7 @@ public abstract class CApiTransitions {
                         @Cached InlinedConditionProfile isNativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile,
                         @Cached InlinedExactClassProfile wrapperProfile,
-                        @Cached UpdateRefNode updateRefNode) {
+                        @Cached UpdateStrongRefNode updateRefNode) {
 
             assert PythonContext.get(null).ownsGil();
             CompilerAsserts.partialEvaluationConstant(stealing);
@@ -2027,25 +2000,33 @@ public abstract class CApiTransitions {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    public abstract static class UpdateRefNode extends Node {
+    public abstract static class UpdateStrongRefNode extends Node {
 
-        public abstract void execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, long refCount);
+        public final void execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, long refCount) {
+            execute(inliningTarget, wrapper, refCount > MANAGED_REFCNT);
+        }
+
+        public final void clearStrongRef(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper) {
+            execute(inliningTarget, wrapper, false);
+        }
+
+        public abstract void execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean setStrong);
 
         @Specialization
-        static void doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, long refCount,
+        static void doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean setStrong,
                         @Cached InlinedConditionProfile hasRefProfile,
                         @Cached PyObjectGCTrackNode gcTrackNode) {
             PythonObjectReference ref;
             if (hasRefProfile.profile(inliningTarget, (ref = wrapper.ref) != null)) {
                 assert ref.pointer == wrapper.getNativePointer();
-                if (refCount > MANAGED_REFCNT && !ref.isStrongReference()) {
+                if (setStrong && !ref.isStrongReference()) {
                     ref.setStrongReference(wrapper);
                     if (ref.gc && PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC)) {
                         // gc = AS_GC(op)
                         long gc = wrapper.getNativePointer() - CStructs.PyGC_Head.size();
                         gcTrackNode.execute(inliningTarget, gc);
                     }
-                } else if (refCount <= MANAGED_REFCNT && ref.isStrongReference()) {
+                } else if (!setStrong && ref.isStrongReference()) {
                     ref.setStrongReference(null);
                 }
             }

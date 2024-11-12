@@ -108,6 +108,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -137,7 +138,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    public enum PythonMethod {
+    public enum PythonMethod implements TruffleObject {
         Search(tsLiteral("search")),
         Match(tsLiteral("match")),
         FullMatch(tsLiteral("fullmatch"));

@@ -1,4 +1,0 @@
-[[rules]]
-version = '== 2.7.0'
-patch = 'cramjam-2.7.0.patch'
-license = 'MIT'

@@ -131,6 +131,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -774,53 +775,38 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TranslateNode extends BytesNodes.BaseTranslateNode {
 
-        @Specialization(guards = "isNoValue(delete)")
-        static PByteArray translate(PByteArray self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete,
-                        @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            byte[] content = toBytesNode.execute(self);
-            return factory.createByteArray(content);
-        }
-
-        @Specialization(guards = "!isNone(table)")
-        static PByteArray translate(VirtualFrame frame, PByteArray self, Object table, @SuppressWarnings("unused") PNone delete,
+        @Specialization
+        static PByteArray translate(VirtualFrame frame, PByteArray self, Object table, Object delete,
                         @Bind("this") Node inliningTarget,
-                        @Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
-                        @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            byte[] bTable = toBytesNode.execute(frame, table);
-            checkLengthOfTable(inliningTarget, bTable, isLenTable256Profile, raiseNode);
+                        @Cached InlinedConditionProfile isLenTable256Profile,
+                        @Cached InlinedBranchProfile hasTable,
+                        @Cached InlinedBranchProfile hasDelete,
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            byte[] bTable = null;
+            if (table != PNone.NONE) {
+                hasTable.enter(inliningTarget);
+                bTable = toBytesNode.execute(frame, table);
+                checkLengthOfTable(inliningTarget, bTable, isLenTable256Profile, raiseNode);
+            }
+            byte[] bDelete = null;
+            if (delete != PNone.NO_VALUE) {
+                hasDelete.enter(inliningTarget);
+                bDelete = toBytesNode.execute(frame, delete);
+            }
             byte[] bSelf = toBytesNode.execute(self);
 
-            Result result = translate(bSelf, bTable);
-            return factory.createByteArray(result.array);
-        }
-
-        @Specialization(guards = "isNone(table)")
-        static PByteArray delete(VirtualFrame frame, PByteArray self, @SuppressWarnings("unused") PNone table, Object delete,
-                        @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            byte[] bSelf = toBytesNode.execute(self);
-            byte[] bDelete = toBytesNode.execute(frame, delete);
-
-            Result result = delete(bSelf, bDelete);
-            return factory.createByteArray(result.array);
-        }
-
-        @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
-        static PByteArray translateAndDelete(VirtualFrame frame, PByteArray self, Object table, Object delete,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
-                        @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            byte[] bTable = toBytesNode.execute(frame, table);
-            checkLengthOfTable(inliningTarget, bTable, isLenTable256Profile, raiseNode);
-            byte[] bDelete = toBytesNode.execute(frame, delete);
-            byte[] bSelf = toBytesNode.execute(self);
-
-            Result result = translateAndDelete(bSelf, bTable, bDelete);
+            Result result;
+            if (bTable != null && bDelete != null) {
+                result = translateAndDelete(bSelf, bTable, bDelete);
+            } else if (bTable != null) {
+                result = translate(bSelf, bTable);
+            } else if (bDelete != null) {
+                result = delete(bSelf, bDelete);
+            } else {
+                return factory.createByteArray(bSelf);
+            }
             return factory.createByteArray(result.array);
         }
     }

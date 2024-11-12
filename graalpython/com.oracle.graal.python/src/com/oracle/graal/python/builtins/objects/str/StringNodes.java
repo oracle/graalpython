@@ -73,7 +73,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -95,8 +94,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -160,27 +157,24 @@ public abstract class StringNodes {
             return doString(x.getMaterialized(), codePointLengthNode);
         }
 
-        @Specialization(guards = "x.isNativeCharSequence()")
-        static int doNativeCharSequence(PString x,
+        @Specialization(guards = {"x.isNativeCharSequence()", "isKnownLength(elements)"})
+        static int doNativeKnownLength(PString x,
+                        @Bind("x.getNativeCharSequence().getElements()") int elements) {
+            return elements;
+        }
+
+        @Specialization(guards = {"x.isNativeCharSequence()", "!isKnownLength(elements)"})
+        static int doNativeUnknownLength(PString x,
+                        @SuppressWarnings("unused") @Bind("x.getNativeCharSequence().getElements()") int elements,
                         @Bind("this") Node inliningTarget,
                         @Cached StringMaterializeNode materializeNode,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             return doString(materializeNode.execute(inliningTarget, x), codePointLengthNode);
         }
 
-        @Specialization(guards = {"x.isNativeCharSequence()", "x.isNativeMaterialized()"})
-        static int nativeString(PString x,
-                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            return doString(x.getNativeCharSequence().getMaterialized(), codePointLengthNode);
-        }
-
-        @Specialization(guards = {"x.isNativeCharSequence()", "!x.isNativeMaterialized()"}, replaces = "nativeString", limit = "3")
-        static int nativeStringMat(@SuppressWarnings("unused") PString x,
-                        @Bind("this") Node inliningTarget,
-                        @Bind("x.getNativeCharSequence()") NativeCharSequence ncs,
-                        @CachedLibrary("ncs") InteropLibrary lib,
-                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
-            return ncs.length(inliningTarget, lib, castToJavaIntNode);
+        static boolean isKnownLength(int elements) {
+            // -1 means we have to search for the null terminator to compute the length
+            return elements != -1;
         }
 
         @Specialization

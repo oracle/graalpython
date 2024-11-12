@@ -37,10 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import datetime
+import unittest
 
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, is_native_object
-
-__dir__ = __file__.rpartition("/")[0]
 
 
 def create_datetime_subclass(typename):
@@ -306,7 +305,7 @@ class TestPyDateTime(CPyExtTestCase):
     )
 
 
-class TestDateTime(object):
+class TestDateTime(unittest.TestCase):
 
     def test_date_type(self):
         TestDate = CPyExtType("TestDate",
@@ -614,7 +613,7 @@ class TestDateTime(object):
         assert tester.getDate() == "foo"
 
 
-class TestNativeSubclasses:
+class TestNativeSubclasses(unittest.TestCase):
     def test_time(self):
         for t in (NativeTimeSubclass, ManagedNativeTimeSubclass):
             x = t(hour=6)

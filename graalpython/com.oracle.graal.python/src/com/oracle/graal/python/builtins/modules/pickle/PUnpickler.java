@@ -1223,11 +1223,8 @@ public class PUnpickler extends PythonBuiltinObject {
                 if (s.length < 2) {
                     throw badReadLine();
                 }
-                try {
-                    Object className = decodeASCII(frame, s, s.length - 1, T_ERRORS_STRICT);
-                    cls = findClass(frame, ctx.getCore(), self, moduleName, className);
-                } catch (PException ignored) {
-                }
+                Object className = decodeASCII(frame, s, s.length - 1, T_ERRORS_STRICT);
+                cls = findClass(frame, ctx.getCore(), self, moduleName, className);
             }
 
             assert cls != null;

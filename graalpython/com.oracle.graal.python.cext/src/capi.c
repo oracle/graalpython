@@ -901,6 +901,10 @@ PyAPI_FUNC(int) truffle_no_op_clear(PyObject* o) {
     return 0;
 }
 
+PyAPI_FUNC(int) truffle_no_op_traverse(PyObject *self, visitproc visit, void *arg) {
+    return 0;
+}
+
 // defined in 'exceptions.c'
 void initialize_exceptions();
 // defined in 'pyhash.c'

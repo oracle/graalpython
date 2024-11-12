@@ -131,7 +131,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonWrapperNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformExceptionToNativeNodeGen;
@@ -1541,7 +1541,7 @@ public final class PythonCextBuiltins {
                         @Cached CStructAccess.ReadI64Node readI64Node,
                         @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached NativePtrToPythonWrapperNode nativePtrToPythonWrapperNode,
-                        @Cached UpdateRefNode updateRefNode) {
+                        @Cached UpdateStrongRefNode updateRefNode) {
             // guaranteed by the guard
             assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
             assert PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC);
@@ -1571,7 +1571,7 @@ public final class PythonCextBuiltins {
                     if (GC_LOGGER.isLoggable(Level.FINE)) {
                         GC_LOGGER.fine(PythonUtils.formatJString("Breaking reference cycle for %s", abstractObjectNativeWrapper.ref));
                     }
-                    updateRefNode.execute(inliningTarget, abstractObjectNativeWrapper, PythonAbstractObjectNativeWrapper.MANAGED_REFCNT);
+                    updateRefNode.clearStrongRef(inliningTarget, abstractObjectNativeWrapper);
                 }
 
                 // next = GC_NEXT(gc)

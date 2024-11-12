@@ -49,7 +49,6 @@ import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.polyglot.io.IOAccess;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -142,11 +141,17 @@ import java.nio.file.Paths;
  * </ul>
  * </p>
  *
+ * For <b>more examples</b> on how to use this class refer to
+ * <a href="https://github.com/graalvm/graal-languages-demos/tree/main/graalpy">GraalPy Demos and
+ * Guides</a>.
+ *
  * @see VirtualFileSystem
  * @see VirtualFileSystem.Builder
  */
-// TODO: link to user guide
-public class GraalPyResources {
+public final class GraalPyResources {
+
+    private GraalPyResources() {
+    }
 
     /**
      * Creates a GraalPy context preconfigured with a {@link VirtualFileSystem} and other GraalPy
@@ -195,9 +200,10 @@ public class GraalPyResources {
      *     }
      * }
      * </pre>
-     *
+     * 
+     * @see <a href=
+     *      "https://github.com/oracle/graalpython/blob/master/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonOptions.java">PythonOptions</a>
      */
-    // TODO add link to python options doc
     public static Context.Builder contextBuilder() {
         VirtualFileSystem vfs = VirtualFileSystem.create();
         return contextBuilder(vfs);
@@ -253,17 +259,17 @@ public class GraalPyResources {
     public static Context.Builder contextBuilder(VirtualFileSystem vfs) {
         return createContextBuilder().
         // allow access to the virtual and the host filesystem, as well as sockets
-                        allowIO(IOAccess.newBuilder().allowHostSocketAccess(true).fileSystem(vfs).build()).
+                        allowIO(IOAccess.newBuilder().allowHostSocketAccess(true).fileSystem(vfs.impl).build()).
                         // The sys.executable path, a virtual path that is used by the interpreter
                         // to discover packages
-                        option("python.Executable", vfs.vfsVenvPath() + (VirtualFileSystem.isWindows() ? "\\Scripts\\python.exe" : "/bin/python")).
+                        option("python.Executable", vfs.impl.vfsVenvPath() + (VirtualFileSystemImpl.isWindows() ? "\\Scripts\\python.exe" : "/bin/python")).
                         // Set the python home to be read from the embedded resources
-                        option("python.PythonHome", vfs.vfsHomePath()).
+                        option("python.PythonHome", vfs.impl.vfsHomePath()).
                         // Set python path to point to sources stored in
                         // src/main/resources/org.graalvm.python.vfs/src
-                        option("python.PythonPath", vfs.vfsSrcPath() + File.pathSeparator + vfs.vfsProjPath()).
+                        option("python.PythonPath", vfs.impl.vfsSrcPath()).
                         // pass the path to be executed
-                        option("python.InputFilePath", vfs.vfsSrcPath());
+                        option("python.InputFilePath", vfs.impl.vfsSrcPath());
     }
 
     /**
@@ -308,9 +314,15 @@ public class GraalPyResources {
      * @param resourcesDirectory the root directory with GraalPy specific embedding resources
      */
     public static Context.Builder contextBuilder(Path resourcesDirectory) {
-        String execPath = resourcesDirectory.resolve(VirtualFileSystem.VFS_VENV + "/bin/python").toAbsolutePath().toString();
-        String homePath = resourcesDirectory.resolve(VirtualFileSystem.VFS_HOME).toAbsolutePath().toString();
-        String srcPath = resourcesDirectory.resolve(VirtualFileSystem.VFS_SRC).toAbsolutePath().toString();
+        String execPath;
+        if (VirtualFileSystemImpl.isWindows()) {
+            execPath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_VENV).resolve("Scripts").resolve("python.exe").toAbsolutePath().toString();
+        } else {
+            execPath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_VENV).resolve("bin").resolve("python").toAbsolutePath().toString();
+        }
+
+        String homePath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_HOME).toAbsolutePath().toString();
+        String srcPath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_SRC).toAbsolutePath().toString();
         return createContextBuilder().
         // allow all IO access
                         allowIO(IOAccess.ALL).
@@ -357,7 +369,7 @@ public class GraalPyResources {
      * <p>
      * <b>Example </b> creating a GraalPy context precofigured with an external resource directory
      * located next to a native image executable.
-     * 
+     *
      * <pre>
      * Path resourcesDir = GraalPyResources.getNativeExecutablePath().getParent().resolve("python-resources");
      * try (Context context = GraalPyResources.contextBuilder(resourcesDir).build()) {
@@ -400,7 +412,7 @@ public class GraalPyResources {
      * </p>
      * <p>
      * <b>Example</b>
-     * 
+     *
      * <pre>
      * Path resourcesDir = Path.of(System.getProperty("user.home"), ".cache", "my.java.python.app.resources");
      * FileSystem fs = GraalPyResources.createVirtualFileSystem();
@@ -418,6 +430,6 @@ public class GraalPyResources {
         if (Files.exists(resourcesDirectory) && !Files.isDirectory(resourcesDirectory)) {
             throw new IOException(String.format("%s has to be a directory", resourcesDirectory.toString()));
         }
-        vfs.extractResources(resourcesDirectory);
+        vfs.impl.extractResources(resourcesDirectory);
     }
 }

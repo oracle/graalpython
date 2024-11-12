@@ -1,3 +1,0 @@
-[[rules]]
-# Pin this version to avoid pulling newer cryptography than we have patch for
-version = "== 23.2.0"

@@ -38,12 +38,11 @@
 # SOFTWARE.
 
 import sys
+import unittest
 import warnings
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionVoid, unhandled_error_compare, \
     CPyExtType, is_native_object
-
-__dir__ = __file__.rpartition("/")[0]
 
 
 def _reference_setstring(args):
@@ -659,7 +658,7 @@ def raise_native_exception():
     raise ExceptionSubclass(1)
 
 
-class TestNativeExceptionSubclass:
+class TestNativeExceptionSubclass(unittest.TestCase):
     def test_init(self):
         e = ExceptionSubclass(1, 2, 3)
         assert is_native_object(e)

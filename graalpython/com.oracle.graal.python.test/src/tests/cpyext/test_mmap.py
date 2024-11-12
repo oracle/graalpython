@@ -42,8 +42,6 @@ import tempfile
 from unittest import skipIf
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, RUNS_ON_LLVM
 
-__dir__ = __file__.rpartition("/")[0]
-
 
 def create_and_map_file():
     tmp = tempfile.mktemp(prefix="pymmap_")
