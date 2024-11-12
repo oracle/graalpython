@@ -56,7 +56,6 @@ PyAPI_FUNC(PyObject **) _Py_VaBuildStack(
     Py_ssize_t *p_nargs);
 
 typedef struct _PyArg_Parser {
-    int initialized;
     const char *format;
     const char * const *keywords;
     const char *fname;
@@ -66,6 +65,7 @@ typedef struct _PyArg_Parser {
     int max;            /* maximal number of positional arguments */
     PyObject *kwtuple;  /* tuple of keyword parameter names */
     struct _PyArg_Parser *next;
+    int initialized;
 } _PyArg_Parser;
 
 #ifdef PY_SSIZE_T_CLEAN
