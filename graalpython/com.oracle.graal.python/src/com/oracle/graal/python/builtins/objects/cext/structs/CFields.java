@@ -338,6 +338,9 @@ public enum CFields {
     PyThreadState__dict(PyObject),
     PyThreadState__small_ints(PyObjectPtr),
     PyThreadState__gc(Pointer),
+    PyThreadState__py_recursion_limit(Int),
+    PyThreadState__py_recursion_remaining(Int),
+    PyThreadState__c_recursion_remaining(Int),
 
     GCState__enabled(Int),
     GCState__debug(Int),

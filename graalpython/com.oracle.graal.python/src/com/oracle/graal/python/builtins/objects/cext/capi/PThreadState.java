@@ -119,6 +119,14 @@ public final class PThreadState extends PythonStructNativeWrapper {
             CStructAccess.WritePointerNode.getUncached().write(ptr, CFields.PyThreadState__current_exception, PythonToNativeNode.getUncached().execute(currentException));
         }
         writePtrNode.write(ptr, CFields.PyThreadState__gc, cApiContext.getGCState());
+        CStructAccess.WriteIntNode writeIntNode = CStructAccess.WriteIntNode.getUncached();
+        // py_recursion_limit = Py_DEFAULT_RECURSION_LIMIT (1000)
+        // (cpython/Include/internal/pycore_runtime_init.h)
+        int recLimit = pythonContext.getSysModuleState().getRecursionLimit();
+        writeIntNode.write(ptr, CFields.PyThreadState__py_recursion_limit, recLimit);
+        writeIntNode.write(ptr, CFields.PyThreadState__py_recursion_remaining, recLimit);
+        // c_recursion_remaining = Py_C_RECURSION_LIMIT (1000) (cpython/Include/cpython/pystate.h)
+        writeIntNode.write(ptr, CFields.PyThreadState__c_recursion_remaining, recLimit);
         return ptr;
     }
 }
