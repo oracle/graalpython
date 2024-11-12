@@ -26,7 +26,7 @@ static inline PyObject* _PyErr_Occurred(PyThreadState *tstate)
 {
     assert(tstate != NULL);
     // GraalPy change
-    assert(tstate->curexc_type == Graal_PyTruffleErr_Occurred(tstate));
+    assert(tstate->current_exception == Graal_PyTruffleErr_Occurred(tstate));
     if (tstate->current_exception == NULL) {
         return NULL;
     }
