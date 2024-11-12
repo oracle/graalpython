@@ -701,7 +701,7 @@ class SubprocessWorker:
                         popen_kwargs.update(pass_fds=[child_pipe.fileno()])
                     self.process = subprocess.Popen(cmd, **popen_kwargs)
 
-                    timed_out = False
+                    timed_out = None
 
                     if use_pipe:
                         while self.process.poll() is None:
@@ -718,7 +718,7 @@ class SubprocessWorker:
 
                             if time.time() - self.last_started_time >= timeout:
                                 interrupt_process(self.process)
-                                timed_out = True
+                                timed_out = timeout
                                 # Drain the pipe
                                 while pipe.poll(0.1):
                                     pipe.recv()
@@ -741,11 +741,11 @@ class SubprocessWorker:
                             for file_event in pickle.load(f):
                                 self.process_event(file_event)
 
-                    if returncode != 0 or timed_out:
+                    if returncode != 0 or timed_out is not None:
                         self.out_file.seek(self.last_out_pos)
                         output = self.out_file.read()
-                        if timed_out:
-                            message = "Timed out"
+                        if timed_out is not None:
+                            message = f"Timed out in {timed_out}s"
                         elif returncode >= 0:
                             message = f"Test process exitted with code {returncode}"
                         else:

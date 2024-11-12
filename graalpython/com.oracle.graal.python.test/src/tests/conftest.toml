@@ -64,3 +64,10 @@ selector = [
     # These test would work on JVM too, but they are prohibitively slow due to a large amount of subprocesses
     "test_patched_pip.py",
 ]
+
+[[test_rules]]
+per_test_timeout = 1200
+selector = [
+    "test_venv.py",
+    "test_patched_pip.py",
+]
