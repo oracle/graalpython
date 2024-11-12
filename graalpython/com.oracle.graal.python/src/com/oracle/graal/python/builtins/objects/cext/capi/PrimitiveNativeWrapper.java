@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -255,6 +255,11 @@ public final class PrimitiveNativeWrapper extends PythonAbstractObjectNativeWrap
                     @Bind("$node") Node inliningTarget,
                     @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
         if (!isNative()) {
+            if (isBool()) {
+                assert (PythonContext.get(inliningTarget).getCApiContext().getCachedBooleanPrimitiveNativeWrapper(value != 0) == this);
+                setNativePointer(firstToNativeNode.execute(inliningTarget, this, true /* immortal */));
+                return;
+            }
             // small int values are cached and will be immortal
             boolean immortal = isIntLike() && CApiGuards.isSmallLong(value);
             // if this wrapper wraps a small int value, this wrapper is one of the cached primitive

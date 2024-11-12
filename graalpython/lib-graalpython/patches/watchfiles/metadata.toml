@@ -1,4 +1,0 @@
-[[rules]]
-version = '== 0.21.0'
-patch = 'watchfiles-0.21.0.patch'
-license = 'MIT'

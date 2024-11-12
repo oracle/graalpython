@@ -1,1 +1,2 @@
-*graalpython.lib-python.3.test.test_listcomps.TestMain.test_main
+DocTestCase.test.test_listcomps.__test__.doctests
+test.test_listcomps.TestMain.test_main

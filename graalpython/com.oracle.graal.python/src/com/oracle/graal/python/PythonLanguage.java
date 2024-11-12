@@ -183,20 +183,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int MICRO = 7;
     public static final int RELEASE_LEVEL_ALPHA = 0xA;
     public static final int RELEASE_LEVEL_BETA = 0xB;
-    public static final int RELEASE_LEVEL_GAMMA = 0xC;
+    public static final int RELEASE_LEVEL_CANDIDATE = 0xC;
     public static final int RELEASE_LEVEL_FINAL = 0xF;
-    public static final int RELEASE_LEVEL = RELEASE_LEVEL_ALPHA;
+    public static final int RELEASE_LEVEL;
     public static final TruffleString RELEASE_LEVEL_STRING;
     public static final String FROZEN_FILENAME_PREFIX = "<frozen ";
     public static final String FROZEN_FILENAME_SUFFIX = ">";
 
     /**
      * GraalVM version. Unfortunately, we cannot just use {@link Version#getCurrent} as it relies on
-     * a GraalVM build, but we may run from Jar files directly during development. We generate the
-     * version during the build that are checked against these constants.
+     * a GraalVM build, but we may run outside GraalVM. We generate the version during the build
+     * that are checked against these constants.
      */
     public static final int GRAALVM_MAJOR;
     public static final int GRAALVM_MINOR;
+    public static final int GRAALVM_MICRO;
     public static final String DEV_TAG;
 
     /**
@@ -207,21 +208,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private static final int VERSION_BASE = '!';
 
     static {
-        switch (RELEASE_LEVEL) {
-            case RELEASE_LEVEL_ALPHA:
-                RELEASE_LEVEL_STRING = tsLiteral("alpha");
-                break;
-            case RELEASE_LEVEL_BETA:
-                RELEASE_LEVEL_STRING = tsLiteral("beta");
-                break;
-            case RELEASE_LEVEL_GAMMA:
-                RELEASE_LEVEL_STRING = tsLiteral("rc");
-                break;
-            case RELEASE_LEVEL_FINAL:
-            default:
-                RELEASE_LEVEL_STRING = tsLiteral("final");
-        }
-
         // The resource file is built by mx from "graalpy-versions" project using mx substitutions.
         // The actual values of the versions are computed by mx helper functions py_version_short,
         // graal_version_short, and dev_tag defined in mx_graalpython.py
@@ -238,7 +224,22 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
             GRAALVM_MAJOR = is.read() - VERSION_BASE;
             GRAALVM_MINOR = is.read() - VERSION_BASE;
-            is.read(); // skip GraalVM micro version
+            GRAALVM_MICRO = is.read() - VERSION_BASE;
+            RELEASE_LEVEL = is.read() - VERSION_BASE;
+            switch (RELEASE_LEVEL) {
+                case RELEASE_LEVEL_ALPHA:
+                    RELEASE_LEVEL_STRING = tsLiteral("alpha");
+                    break;
+                case RELEASE_LEVEL_BETA:
+                    RELEASE_LEVEL_STRING = tsLiteral("beta");
+                    break;
+                case RELEASE_LEVEL_CANDIDATE:
+                    RELEASE_LEVEL_STRING = tsLiteral("candidate");
+                    break;
+                case RELEASE_LEVEL_FINAL:
+                default:
+                    RELEASE_LEVEL_STRING = tsLiteral("final");
+            }
             // see mx.graalpython/mx_graalpython.py:dev_tag
             byte[] rev = new byte[3 /* 'dev' */ + 10 /* revision */];
             if (is.read(rev) == rev.length) {
@@ -254,7 +255,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int VERSION_HEX = MAJOR << 24 |
                     MINOR << 16 |
                     MICRO << 8 |
-                    RELEASE_LEVEL_ALPHA << 4 |
+                    RELEASE_LEVEL << 4 |
                     RELEASE_SERIAL;
     public static final String VERSION = MAJOR + "." + MINOR + "." + MICRO;
     // Rarely updated version of the C API, we should take it from the imported CPython version

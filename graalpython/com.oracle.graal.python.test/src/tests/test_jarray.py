@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,9 +38,8 @@
 # SOFTWARE.
 
 import platform
-import unittest
-
 import sys
+import unittest
 
 # The platform.system() == 'Java' is to make it possible to run with Jython
 if (platform.system() == 'Java' or sys.implementation.name == "graalpy") and \
@@ -50,7 +49,7 @@ if (platform.system() == 'Java' or sys.implementation.name == "graalpy") and \
     import jarray
 
 
-    class AbstractJArrayTest:
+    class AbstractJArrayTest(unittest.TestCase):
         type = None
         default_value = None
         instance = None

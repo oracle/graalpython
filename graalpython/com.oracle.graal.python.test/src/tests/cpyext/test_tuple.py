@@ -41,8 +41,6 @@ import unittest
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, CPyExtType, \
     is_native_object
 
-__dir__ = __file__.rpartition("/")[0]
-
 
 def _reference_getslice(args):
     t = args[0]

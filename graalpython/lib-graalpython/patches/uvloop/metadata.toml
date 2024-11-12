@@ -1,3 +1,0 @@
-[[rules]]
-patch = 'uvloop.patch'
-license = 'MIT'

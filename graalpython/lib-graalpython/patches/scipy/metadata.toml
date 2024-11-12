@@ -1,5 +1,0 @@
-[[rules]]
-version = '== 1.10.1'
-patch = 'scipy-1.10.1.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'

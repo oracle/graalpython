@@ -41,8 +41,6 @@ import sys
 
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
 
-__dir__ = __file__.rpartition("/")[0]
-
 
 def _reference_new_list(args):
     n = args[0]

@@ -40,10 +40,9 @@
 import itertools
 import struct
 import sys
+import unittest
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtType, unhandled_error_compare_with_message, unhandled_error_compare
-
-__dir__ = __file__.rpartition("/")[0]
 
 indices = (-2, 2, 10)
 # indices = (-2, 0, 1, 2, 10)
@@ -443,7 +442,7 @@ class TestPyMemoryView(CPyExtTestCase):
     )
 
 
-class TestObject(object):
+class TestObject(unittest.TestCase):
     def test_memoryview_fromobject_multidim(self):
         TestType = CPyExtType(
             "TestMemoryViewMultidim",

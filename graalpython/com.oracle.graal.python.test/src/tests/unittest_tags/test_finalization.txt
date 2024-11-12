@@ -1,5 +1,5 @@
-*graalpython.lib-python.3.test.test_finalization.LegacyFinalizationTest.test_legacy
-*graalpython.lib-python.3.test.test_finalization.LegacyFinalizationTest.test_legacy_resurrect
-*graalpython.lib-python.3.test.test_finalization.LegacyFinalizationTest.test_legacy_self_cycle
-*graalpython.lib-python.3.test.test_finalization.SimpleFinalizationTest.test_non_gc
-*graalpython.lib-python.3.test.test_finalization.SimpleFinalizationTest.test_non_gc_resurrect
+test.test_finalization.LegacyFinalizationTest.test_legacy
+test.test_finalization.LegacyFinalizationTest.test_legacy_resurrect
+test.test_finalization.LegacyFinalizationTest.test_legacy_self_cycle
+test.test_finalization.SimpleFinalizationTest.test_non_gc
+test.test_finalization.SimpleFinalizationTest.test_non_gc_resurrect

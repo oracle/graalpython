@@ -1,4 +1,4 @@
-# pylint: disable=anomalous-backslash-in-string
+# pylint: disable=anomalous-backslash-in-string,line-too-long
 suite = {
     # --------------------------------------------------------------------------------------------------------------
     #
@@ -13,7 +13,7 @@ suite = {
     "graalpython:pythonVersion": "3.11.7",
     "release": False,
     "groupId": "org.graalvm.python",
-    "url": "http://www.graalvm.org/",
+    "url": "http://www.graalvm.org/python",
 
     "developer": {
         "name": "GraalVM Development",
@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "54826272bd922cb3222de4decd5fc8f69621c4df",
+                "version": "4d4b61da33e08109d3eef7cf899247ed150abab0",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "54826272bd922cb3222de4decd5fc8f69621c4df",
+                "version": "4d4b61da33e08109d3eef7cf899247ed150abab0",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "54826272bd922cb3222de4decd5fc8f69621c4df",
+                "version": "4d4b61da33e08109d3eef7cf899247ed150abab0",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "54826272bd922cb3222de4decd5fc8f69621c4df",
+                "version": "4d4b61da33e08109d3eef7cf899247ed150abab0",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -472,6 +472,7 @@ suite = {
                 "java.management",
                 "jdk.management",
                 "jdk.unsupported",
+                "java.logging",
             ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
@@ -658,7 +659,7 @@ suite = {
             "max_jobs": "1",
             "ninja_targets": ["all"],
             "cmakeConfig": {
-                "GRAALPY_VER": "<py_ver:binary><graal_ver:binary><dev_tag:none>",
+                "GRAALPY_VER": "<py_ver:binary><graal_ver:binary><release_level:binary><dev_tag:none>",
             },
             "results": [
                 "graalpy_versions"
@@ -943,7 +944,7 @@ suite = {
             "distDependencies": [
                 "sdk:POLYGLOT",
             ],
-            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact provides convenience APIs to make embedding GraalPy with Python packages easier.",
+            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This artifact provides convenience APIs to embed GraalPy into Java applications. Use this dependency if you install additional Python packages with the Maven or Gradle plugins for GraalPy.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-embedding",
@@ -966,7 +967,7 @@ suite = {
             "distDependencies": [
                 "sdk:POLYGLOT",
             ],
-            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact contains utilities for tools that want to integrate GraalPy packages into the build process of Java applications.",
+            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This artifact contains utilities for tools that want to integrate GraalPy packages into the build process of Java applications.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-embedding-tools",
@@ -1019,7 +1020,7 @@ suite = {
                 "sdk:MAVEN_DOWNLOADER",
                 "sdk:NATIVEIMAGE",
             ],
-            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact provides a command-line launcher for GraalPy.",
+            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This artifact provides a command-line launcher for GraalPy.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-launcher",
@@ -1092,7 +1093,7 @@ suite = {
                 "java.base",
             ],
             "compress": True,
-            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact includes the GraalPy standard library.",
+            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This artifact includes the GraalPy standard library. It is not recommended to depend on the artifact directly. Instead, use \'org.graalvm.polyglot:python\' or \'org.graalvm.polyglot:python-community\' to ensure all dependencies are pulled in correctly.",
             "maven": {
                 "artifactId": "python-resources",
                 "groupId": "org.graalvm.python",
@@ -1150,7 +1151,7 @@ suite = {
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
             },
-            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This artifact includes the core language runtime without standard libraries.",
+            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This artifact includes the core language runtime without standard libraries. It is not recommended to depend on the artifact directly. Instead, use \'org.graalvm.polyglot:python\' or \'org.graalvm.polyglot:python-community\' to ensure all dependencies are pulled in correctly.",
             "maven": {
                 "artifactId": "python-language",
                 "groupId": "org.graalvm.python",
@@ -1171,7 +1172,7 @@ suite = {
                 "GRAALPYTHON_RESOURCES",
                 "truffle:TRUFFLE_RUNTIME",
             ],
-            "description": "GraalPy, an implementation of the Python language in Java, optimized for Graal. This is a meta POM that pulls in GraalPy and the community edition of Truffle.",
+            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This POM dependency pulls in GraalPy dependencies and Truffle Community Edition.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-community",

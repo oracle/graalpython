@@ -40,17 +40,17 @@
 import json
 import os
 import shutil
-import sys
 import subprocess
+import sys
 import tempfile
+import time
 import unittest
-import pathlib
-import util
+
+from tests.standalone import util
 
 is_enabled = 'ENABLE_JBANG_INTEGRATION_UNITTESTS' in os.environ and os.environ['ENABLE_JBANG_INTEGRATION_UNITTESTS'] == "true"
 MAVEN_REPO_LOCAL_URL = os.environ.get('org.graalvm.maven.downloader.repository')
 GRAAL_VERSION = os.environ.get('org.graalvm.maven.downloader.version')
-CATALOG_ALIAS = "tested_catalog"
 
 # whole folder will be deleted after the tests finished
 WORK_DIR = os.path.join(tempfile.gettempdir(),tempfile.mkdtemp())
@@ -71,16 +71,17 @@ def run_cmd(cmd, env=ENV, cwd=None):
 
 class TestJBangIntegration(unittest.TestCase):
 
-    def setUpClass(self):
+    @classmethod
+    def setUpClass(cls):
         if not is_enabled:
             return
-        self.ensureProxy()
-        self.ensureLocalMavenRepo()
-        self.clearCache()
-        self.catalog_file = self.getCatalogFile()
-        self.registerCatalog(self.catalog_file)
+        cls.ensureProxy()
+        cls.ensureLocalMavenRepo()
+        cls.clearCache()
+        cls.catalog_file = cls.getCatalogFile()
 
-    def tearDownClass(self):
+    @classmethod
+    def tearDownClass(cls):
         if not is_enabled:
             return
         try:
@@ -97,7 +98,8 @@ class TestJBangIntegration(unittest.TestCase):
         except Exception as e:
             print(f"The test run correctly but problem during removing workdir: {e}")
 
-    def ensureProxy(self):
+    @staticmethod
+    def ensureProxy():
         java_tools = os.environ.get('JAVA_TOOL_OPTIONS')
         if java_tools is None:
             java_tools = ""
@@ -114,15 +116,18 @@ class TestJBangIntegration(unittest.TestCase):
         if len(java_tools) > 0:
             os.environ['JAVA_TOOL_OPTIONS'] = java_tools
 
-    def ensureLocalMavenRepo(self):
+    @staticmethod
+    def ensureLocalMavenRepo():
         if MAVEN_REPO_LOCAL_URL is None:
-            self.fail("'org.graalvm.maven.downloader.repository' is not defined")
+            raise RuntimeError("'org.graalvm.maven.downloader.repository' is not defined")
 
-    def clearCache(self):
+    @staticmethod
+    def clearCache():
         command = [JBANG_CMD, "cache", "--verbose", "clear"]
-        out, result = run_cmd(command)
+        run_cmd(command)
 
-    def getCatalogFile(self):
+    @staticmethod
+    def getCatalogFile():
         catalog_dir = os.path.dirname(os.path.abspath(__file__))
         for _ in range(5):
             catalog_dir = os.path.dirname(catalog_dir)
@@ -161,16 +166,6 @@ class TestJBangIntegration(unittest.TestCase):
         else:
             self.fail(f"Not found any dependecies in: {file}")
 
-    def registerCatalog(self, catalog_file):
-        # we need to be sure that the current dir is not dir, where is the catalog defined
-        command = [JBANG_CMD, "catalog", "remove", "--verbose", CATALOG_ALIAS]
-        out, result = run_cmd(command, cwd=WORK_DIR)
-
-        command = [JBANG_CMD, "catalog", "add", "--verbose", "--name", CATALOG_ALIAS, catalog_file]
-        out, result = run_cmd(command, cwd=WORK_DIR)
-        if result != 0:
-            self.fail(f"Problem during registering catalog: {out}")
-
     def prepare_hello_example(self, work_dir):
         hello_java_file = os.path.join(work_dir, "hello.java")
         self.prepare_template(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../../graalpy-jbang/examples/hello.java"), hello_java_file)
@@ -179,6 +174,21 @@ class TestJBangIntegration(unittest.TestCase):
     def prepare_template(self, template, target):
         shutil.copyfile(template, target)
         self.addLocalMavenRepo(target)
+
+    @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
+    def test_register_catalog(self):
+        alias = "graalpy_test_catalog_" + str(int(time.time()))
+
+        # jbang checks catalog file sanity when adding
+        command = [JBANG_CMD, "catalog", "add", "--verbose", "--name", alias, self.catalog_file]
+        out, result = run_cmd(command, cwd=WORK_DIR)
+        if result != 0:
+            self.fail(f"Problem during registering catalog")
+
+        command = [JBANG_CMD, "catalog", "remove", "--verbose", alias]
+        out, result = run_cmd(command, cwd=WORK_DIR)
+        if result != 0:
+            self.fail(f"Problem during removing catalog")
 
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     def test_catalog(self):
@@ -199,7 +209,7 @@ class TestJBangIntegration(unittest.TestCase):
         test_file = "graalpy_test.java"
         work_dir = self.tmpdir
 
-        command = [JBANG_CMD, "--verbose", "init", f"--template={template_name}@{CATALOG_ALIAS}" , test_file]
+        command = [JBANG_CMD, "--verbose", "init", f"--template={template_name}@{self.catalog_file}" , test_file]
         out, result = run_cmd(command, cwd=work_dir)
         self.assertTrue(result == 0, f"Creating template {template_name} failed")
 
@@ -222,7 +232,7 @@ class TestJBangIntegration(unittest.TestCase):
         test_file = "graalpy_test.java"
         work_dir = self.tmpdir
 
-        command = [JBANG_CMD, "--verbose", "init", f"--template={template_name}@{CATALOG_ALIAS}" , test_file]
+        command = [JBANG_CMD, "--verbose", "init", f"--template={template_name}@{self.catalog_file}" , test_file]
         out, result = run_cmd(command, cwd=work_dir)
         self.assertTrue(result == 0, f"Creating template {template_name} failed")
 
@@ -243,7 +253,7 @@ class TestJBangIntegration(unittest.TestCase):
         test_file = "graalpy_test_local_repo.java"
         work_dir = self.tmpdir
 
-        command = [JBANG_CMD, "--verbose", "init", f"--template={template_name}@{CATALOG_ALIAS}", f"-Dpath_to_local_repo={MAVEN_REPO_LOCAL_URL}", test_file]
+        command = [JBANG_CMD, "--verbose", "init", f"--template={template_name}@{self.catalog_file}", f"-Dpath_to_local_repo={MAVEN_REPO_LOCAL_URL}", test_file]
         out, result = run_cmd(command, cwd=work_dir)
         self.assertTrue(result == 0, f"Creating template {template_name} failed")
 
@@ -279,9 +289,9 @@ class TestJBangIntegration(unittest.TestCase):
 
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     def test_external_dir(self):
-        work_dir = self.tmpdir        
+        work_dir = self.tmpdir
         hello_java_file = self.prepare_hello_example(work_dir)
-        
+
         # patch hello.java file to use external dir for resources
         resources_dir = os.path.join(work_dir, "python-resources")
         src_dir = os.path.join(resources_dir, "src")
@@ -291,7 +301,7 @@ class TestJBangIntegration(unittest.TestCase):
 from termcolor import colored
 def hello():
     print(print(colored('hello java', 'red', attrs=['reverse', 'blink'])))
-                             """)        
+                             """)
         util.replace_in_file(hello_java_file,
                 "//PIP termcolor==2.2",
                 f"//PIP termcolor==2.2\n//PYTHON_RESOURCES_DIRECTORY {resources_dir}")
@@ -319,7 +329,7 @@ def hello():
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}")
         self.assertTrue("Successfully installed ujson" in out, f"Expected text:\nSuccessfully installed ujson")
         self.assertFalse("Successfully installed termcolor" in out, f"Did not expect text:\nSuccessfully installed termcolor")
-        self.assertTrue("hello java" in out, f"Expected text:\nhello java\nbut in stdout was:\n{out}")        
+        self.assertTrue("hello java" in out, f"Expected text:\nhello java\nbut in stdout was:\n{out}")
 
         # remove ujson from PIP comment
         util.replace_in_file(hello_java_file,
@@ -332,7 +342,7 @@ def hello():
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}")
         self.assertTrue("Uninstalling ujson" in out, f"Expected text:\nUninstalling ujson")
         self.assertFalse("Successfully installed termcolor" in out, f"Did not expect text:\nSuccessfully installed termcolor")
-        self.assertTrue("hello java" in out, f"Expected text:\nhello java\nbut in stdout was:\n{out}")        
+        self.assertTrue("hello java" in out, f"Expected text:\nhello java\nbut in stdout was:\n{out}")
 
         # add ujson in additional PIP comment
         util.replace_in_file(hello_java_file,
@@ -345,7 +355,7 @@ def hello():
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}")
         self.assertTrue("Successfully installed ujson" in out, f"Expected text:\nSuccessfully installed ujson")
         self.assertFalse("Successfully installed termcolor" in out, f"Did not expect text:\nSuccessfully installed termcolor")
-        self.assertTrue("hello java" in out, f"Expected text:\nhello java\nbut in stdout was:\n{out}") 
+        self.assertTrue("hello java" in out, f"Expected text:\nhello java\nbut in stdout was:\n{out}")
 
         if not 'win32' in sys.platform:
             command = [JBANG_CMD, "--verbose", "--native", hello_java_file, tested_code]
@@ -404,6 +414,3 @@ def hello():
         out, result = run_cmd(command, cwd=work_dir)
         self.assertTrue(result == 1, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}")
         self.assertTrue("only one //PYTHON_RESOURCES_DIRECTORY comment is allowed" in out, f"Expected text:\nonly one //PYTHON_RESOURCES_DIRECTORY comment is allowed")
-
-
-unittest.skip_deselected_test_functions(globals())

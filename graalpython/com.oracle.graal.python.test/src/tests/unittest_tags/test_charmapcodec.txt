@@ -1,4 +1,4 @@
-*graalpython.lib-python.3.test.test_charmapcodec.CharmapCodecTest.test_constructorx
-*graalpython.lib-python.3.test.test_charmapcodec.CharmapCodecTest.test_constructory
-*graalpython.lib-python.3.test.test_charmapcodec.CharmapCodecTest.test_encodex
-*graalpython.lib-python.3.test.test_charmapcodec.CharmapCodecTest.test_maptoundefined
+test.test_charmapcodec.CharmapCodecTest.test_constructorx
+test.test_charmapcodec.CharmapCodecTest.test_constructory
+test.test_charmapcodec.CharmapCodecTest.test_encodex
+test.test_charmapcodec.CharmapCodecTest.test_maptoundefined

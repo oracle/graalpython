@@ -143,6 +143,8 @@ public final class TopLevelExceptionHandler extends RootNode {
                 assert pythonContext.getThreadState(lang).getCurrentException() == null;
                 try {
                     return run(frame);
+                } catch (PythonExitException e) {
+                    throw e;
                 } catch (AbstractTruffleException e) {
                     assert !PArguments.isPythonFrame(frame);
                     if (e instanceof PException pe && pe.getEscapedException() instanceof PBaseException managedException && getContext().isChildContext() && isSystemExit(managedException)) {

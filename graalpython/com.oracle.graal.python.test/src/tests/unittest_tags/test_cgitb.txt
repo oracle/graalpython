@@ -1,6 +1,6 @@
-*graalpython.lib-python.3.test.test_cgitb.TestCgitb.test_blanks
-*graalpython.lib-python.3.test.test_cgitb.TestCgitb.test_fonts
-*graalpython.lib-python.3.test.test_cgitb.TestCgitb.test_html
-*graalpython.lib-python.3.test.test_cgitb.TestCgitb.test_syshook_no_logdir_default_format
-*graalpython.lib-python.3.test.test_cgitb.TestCgitb.test_syshook_no_logdir_text_format
-*graalpython.lib-python.3.test.test_cgitb.TestCgitb.test_text
+test.test_cgitb.TestCgitb.test_blanks
+test.test_cgitb.TestCgitb.test_fonts
+test.test_cgitb.TestCgitb.test_html
+test.test_cgitb.TestCgitb.test_syshook_no_logdir_default_format
+test.test_cgitb.TestCgitb.test_syshook_no_logdir_text_format
+test.test_cgitb.TestCgitb.test_text

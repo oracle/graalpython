@@ -1,7 +1,0 @@
-[[rules]]
-version = '== 7.4.0'
-# Important: This patch esentially breaks the package, it's not upstreamable. The package relies on bytecode parsing
-# to do some otherwise impossible syntax shortcuts. Since it's esentially a type-checker, we just disable the overrides
-# checking altogether
-patch = 'overrides-7.4.0.patch'
-license = 'Apache-2.0'

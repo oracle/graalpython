@@ -37,10 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import types
+import unittest
 
 from . import CPyExtType, CPyExtTestCase, unhandled_error_compare, CPyExtFunction, assert_raises
-
-__dir__ = __file__.rpartition("/")[0]
 
 
 def _reference_classmethod(args):
@@ -49,7 +48,7 @@ def _reference_classmethod(args):
     raise TypeError
 
 
-class TestMethod(object):
+class TestMethod(unittest.TestCase):
 
     def test_methods(self):
         TestMethods = CPyExtType(

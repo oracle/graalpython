@@ -144,20 +144,25 @@ def test_code_copy():
 
 
 def test_module_code():
-    m = __import__('package.moduleA')
-    with open(m.__file__, 'r') as MODULE:
-        source = MODULE.read()
-        code = compile(source, m.__file__, 'exec')
-        assert code.co_argcount == 0
-        assert code.co_kwonlyargcount == 0
-        assert code.co_nlocals == 0
-        assert {'PACKAGE DOC', 'after importing moduleY'}.issubset(set(code.co_consts))
-        assert set(code.co_varnames) == set()
-        assert code.co_filename.endswith("__init__.py")
-        assert code.co_name.startswith("<module")
-        assert code.co_firstlineno == 1
-        assert code.co_freevars == tuple()
-        assert code.co_cellvars == tuple()
+    import sys, os
+    sys.path.insert(0, os.path.dirname(__file__))
+    try:
+        m = __import__('package.moduleA')
+        with open(m.__file__, 'r') as MODULE:
+            source = MODULE.read()
+            code = compile(source, m.__file__, 'exec')
+            assert code.co_argcount == 0
+            assert code.co_kwonlyargcount == 0
+            assert code.co_nlocals == 0
+            assert {'PACKAGE DOC', 'after importing moduleY'}.issubset(set(code.co_consts))
+            assert set(code.co_varnames) == set()
+            assert code.co_filename.endswith("__init__.py")
+            assert code.co_name.startswith("<module")
+            assert code.co_firstlineno == 1
+            assert code.co_freevars == tuple()
+            assert code.co_cellvars == tuple()
+    finally:
+        del sys.path[0]
 
 
 def test_function_code_consts():

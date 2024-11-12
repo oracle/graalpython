@@ -1,1 +1,1 @@
-*graalpython.lib-python.3.test.test_stringprep.StringprepTests.test
+test.test_stringprep.StringprepTests.test

@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,10 +36,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import unittest
 
 from . import CPyExtType, assert_raises
-
-__dir__ = __file__.rpartition("/")[0]
 
 
 def _reference_classmethod(args):
@@ -83,7 +82,7 @@ def _get_c_type(ptype):
         return "unsigned " + ptype[1:].lower()
     return ptype.lower()
 
-class TestMethod(object):
+class TestMethod(unittest.TestCase):
 
     def test_member(self):
         TestMember = CPyExtType(

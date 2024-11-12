@@ -1,2 +1,2 @@
-*graalpython.lib-python.3.test.test_audit.AuditTest.test_syslog
-*graalpython.lib-python.3.test.test_audit.AuditTest.test_winreg
+test.test_audit.AuditTest.test_syslog
+test.test_audit.AuditTest.test_winreg

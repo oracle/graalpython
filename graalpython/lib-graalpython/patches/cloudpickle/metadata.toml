@@ -1,4 +1,0 @@
-[[rules]]
-version = '== 2.2.1'
-patch = 'cloudpickle-2.2.1.patch'
-license = 'BSD-3-Clause'

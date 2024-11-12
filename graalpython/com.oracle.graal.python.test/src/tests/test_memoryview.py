@@ -1,10 +1,12 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 
 import sys
-import pytest
+
+from tests.util import assert_raises
+
 
 def test_subscript():
     v = memoryview(b'abcefg')
@@ -176,12 +178,11 @@ def test_read_after_resize():
     m = memoryview(b)
     assert m[1] == ord('2')
     b.clear()
-    with pytest.raises(IndexError):
-        print(m[1])
-    with pytest.raises(IndexError):
+    assert_raises(IndexError, lambda: m[1])
+    assert_raises(IndexError, lambda: m.tobytes())
+    def assign():
         m[1] = 3
-    with pytest.raises(IndexError):
-        print(m.tobytes())
+    assert_raises(IndexError, assign)
 
 def test_mmap():
     import mmap

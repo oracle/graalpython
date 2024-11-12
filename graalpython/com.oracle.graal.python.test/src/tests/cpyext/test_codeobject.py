@@ -42,8 +42,6 @@ import types
 
 from . import CPyExtTestCase, CPyExtFunction
 
-__dir__ = __file__.rpartition("/")[0]
-
 
 def example_generator():
     # Some random code to make sure we excercise the bytecode index translation

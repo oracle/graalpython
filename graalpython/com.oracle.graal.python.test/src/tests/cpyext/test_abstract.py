@@ -39,14 +39,11 @@
 
 import array
 import collections
-import sys
 import mmap
+import sys
+import unittest
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtType, unhandled_error_compare
-
-__dir__ = __file__.rpartition("/")[0]
-
-from .test_modsupport import MySeq
 
 
 def _safe_check(v, type_check):
@@ -426,7 +423,7 @@ def _size_and_check_args():
             (DictSubclassWithSequenceMethods(),),
         )
         
-class TestAbstractWithNative(object):
+class TestAbstractWithNative(unittest.TestCase):
     def test_sequence_check(self):
         TestSequenceCheck = CPyExtType("TestSequenceCheck",
                              """

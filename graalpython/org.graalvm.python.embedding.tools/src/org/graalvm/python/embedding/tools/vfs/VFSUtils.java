@@ -405,24 +405,26 @@ public final class VFSUtils {
             trim(packages);
         }
 
-        checkLauncher(venvDirectory, launcherPath, log);
-
-        var tag = venvDirectory.resolve("contents");
         List<String> installedPackages = new ArrayList<>();
+        var tag = venvDirectory.resolve("contents");
 
-        if (Files.isReadable(tag)) {
-            List<String> lines = null;
-            try {
-                lines = Files.readAllLines(tag);
-            } catch (IOException e) {
-                throw new IOException(String.format("failed to read tag file %s", tag), e);
-            }
-            if (lines.isEmpty() || !graalPyVersion.equals(lines.get(0))) {
-                log.info(String.format("Stale GraalPy venv, updating to %s", graalPyVersion));
-                delete(venvDirectory);
-            } else {
-                for (int i = 1; i < lines.size(); i++) {
-                    installedPackages.add(lines.get(i));
+        if (Files.exists(venvDirectory)) {
+            checkLauncher(venvDirectory, launcherPath, log);
+
+            if (Files.isReadable(tag)) {
+                List<String> lines = null;
+                try {
+                    lines = Files.readAllLines(tag);
+                } catch (IOException e) {
+                    throw new IOException(String.format("failed to read tag file %s", tag), e);
+                }
+                if (lines.isEmpty() || !graalPyVersion.equals(lines.get(0))) {
+                    log.info(String.format("Stale GraalPy venv, updating to %s", graalPyVersion));
+                    delete(venvDirectory);
+                } else {
+                    for (int i = 1; i < lines.size(); i++) {
+                        installedPackages.add(lines.get(i));
+                    }
                 }
             }
         }

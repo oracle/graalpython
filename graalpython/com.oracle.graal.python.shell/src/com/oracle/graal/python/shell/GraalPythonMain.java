@@ -60,7 +60,7 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
-public class GraalPythonMain extends AbstractLanguageLauncher {
+public final class GraalPythonMain extends AbstractLanguageLauncher {
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name") != null && System.getProperty("os.name").toLowerCase().contains("windows");
 

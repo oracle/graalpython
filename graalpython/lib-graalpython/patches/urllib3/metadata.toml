@@ -1,8 +1,0 @@
-[[rules]]
-# urllib3 has a check that requires that the ssl implementation's name starts with "OpenSSL", we need to patch it out
-patch = 'urllib3-2.patch'
-license = 'MIT'
-subdir = 'src'
-# Older versions worked fine before the check was added. Newer versions turned it into a warning
-version = '>= 2, < 2.0.3'
-install-priority = 0

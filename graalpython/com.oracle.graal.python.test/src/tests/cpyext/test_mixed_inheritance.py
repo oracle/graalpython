@@ -37,14 +37,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
+import unittest
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, GRAALPYTHON, unhandled_error_compare
-
-__dir__ = __file__.rpartition("/")[0]
+from . import CPyExtType
 
 
-class TestMixedInheritanceDict:
+class TestMixedInheritanceDict(unittest.TestCase):
     def test_base_type(self):
         _A = CPyExtType("_A",
                         '''static PyObject* _A_new(PyTypeObject* cls, PyObject* a, PyObject* b) {

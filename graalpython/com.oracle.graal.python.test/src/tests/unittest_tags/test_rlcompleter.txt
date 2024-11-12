@@ -1,7 +1,7 @@
-*graalpython.lib-python.3.test.test_rlcompleter.TestRlcompleter.test_complete
-*graalpython.lib-python.3.test.test_rlcompleter.TestRlcompleter.test_duplicate_globals
-*graalpython.lib-python.3.test.test_rlcompleter.TestRlcompleter.test_excessive_getattr
-*graalpython.lib-python.3.test.test_rlcompleter.TestRlcompleter.test_global_matches
-*graalpython.lib-python.3.test.test_rlcompleter.TestRlcompleter.test_namespace
-*graalpython.lib-python.3.test.test_rlcompleter.TestRlcompleter.test_property_method_not_called
-*graalpython.lib-python.3.test.test_rlcompleter.TestRlcompleter.test_uncreated_attr
+test.test_rlcompleter.TestRlcompleter.test_complete
+test.test_rlcompleter.TestRlcompleter.test_duplicate_globals
+test.test_rlcompleter.TestRlcompleter.test_excessive_getattr
+test.test_rlcompleter.TestRlcompleter.test_global_matches
+test.test_rlcompleter.TestRlcompleter.test_namespace
+test.test_rlcompleter.TestRlcompleter.test_property_method_not_called
+test.test_rlcompleter.TestRlcompleter.test_uncreated_attr
