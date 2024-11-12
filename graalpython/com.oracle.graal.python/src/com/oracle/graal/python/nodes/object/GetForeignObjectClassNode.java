@@ -181,7 +181,8 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
 
     // Special naming rules:
     // Foreign...Instantiable...AbstractClass -> Foreign......Class
-    // Foreign...List...Iterable -> Foreign...List... (since all Python lists are iterables)
+    // Foreign...List...Iterable -> Foreign...List... (since all Python lists are iterable)
+    // Foreign...Dict...Iterable -> Foreign...Dict... (since all Python dicts are iterable)
     @TruffleBoundary
     private PythonManagedClass resolvePolyglotForeignClass(int traits) {
         PythonBuiltinClass base = getContext().lookupType(PythonBuiltinClassType.ForeignObject);
@@ -189,9 +190,12 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
             return base;
         }
 
-        // For foreign array+iterable, ignore the iterable trait completely, foreign arrays inherit
-        // from the Python list class and all lists are iterables (they have __iter__)
-        if (Trait.ARRAY.isSet(traits) && Trait.ITERABLE.isSet(traits)) {
+        /*
+         * For foreign array/hash+iterable, ignore the iterable trait completely, foreign
+         * arrays/hashes inherit from the Python list/dict class and all lists/dicts are iterables
+         * (they have __iter__)
+         */
+        if ((Trait.ARRAY.isSet(traits) || Trait.HASH.isSet(traits)) && Trait.ITERABLE.isSet(traits)) {
             return classForTraits(traits - Trait.ITERABLE.bit);
         }
 

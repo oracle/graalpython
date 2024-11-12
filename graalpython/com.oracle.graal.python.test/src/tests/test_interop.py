@@ -146,7 +146,7 @@ class InteropTests(unittest.TestCase):
         self.assertEqual(t(True), polyglot.ForeignBoolean)
         self.assertEqual(t(BaseException()), polyglot.ForeignException)
         self.assertEqual(t(lambda: None), polyglot.ForeignExecutable)
-        self.assertEqual(t({}), polyglot.ForeignDictIterable) # TODO
+        self.assertEqual(t({}), polyglot.ForeignDict)
         # ForeignInstantiable
         self.assertEqual(t((e for e in [1])), polyglot.ForeignIteratorIterable)
         self.assertEqual(t(iter([1])), polyglot.ForeignIteratorIterable)
