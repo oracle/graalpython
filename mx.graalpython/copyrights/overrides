@@ -292,6 +292,7 @@ graalpython/com.oracle.graal.python.cext/src/bytesobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/call.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/capsule.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/codeobject.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/ceval.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/complexobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/datetime.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/dictobject.c,python.copyright
