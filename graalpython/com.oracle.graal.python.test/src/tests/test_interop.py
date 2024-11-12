@@ -701,6 +701,16 @@ class InteropTests(unittest.TestCase):
         my_lr2 = MyLogRecord(Level.FINEST, message)
         assert my_lr2.getLevel() == Level.WARNING
 
+    def test_super(self):
+        from java.util import ArrayList
+        l = ArrayList()
+        l.extend([5, 6, 7])
+        l.remove(7) # Python list.remove
+        assert l == [5, 6]
+
+        super(list, l).remove(0) # ArrayList#remove(int index)
+        assert l == [6]
+
     def test_java_array(self):
         import java
         il = java.type("int[]")(20)

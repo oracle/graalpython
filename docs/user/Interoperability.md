@@ -89,6 +89,20 @@ h |= {3: 6} # {1: 2, 3: 6}
 h == {1: 2, 3: 6} # True
 ```
 
+In case of a method defined both in Python and on the foreign object, the Python method wins.
+To call the foreign method instead, use `super(type_owning_the_python_method, foreign_object).method(*args)`:
+
+```python
+from java.util import ArrayList
+l = ArrayList()
+l.extend([5, 6, 7])
+l.remove(7) # Python list.remove
+assert l == [5, 6]
+
+super(list, l).remove(0) # ArrayList#remove(int index)
+assert l == [6]
+```
+
 See [this section](#interop-types-to-python) for more interop traits and how they map to Python types.
 
 ## Interacting with other dynamic languages from Python scripts

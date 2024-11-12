@@ -280,8 +280,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     @ImportStatic(PythonOptions.class)
-    abstract static class ForeignGetattrNode extends Node {
-        abstract Object execute(Node inliningTarget, Object object, Object name);
+    public abstract static class ForeignGetattrNode extends Node {
+        public abstract Object execute(Node inliningTarget, Object object, Object name);
 
         @Specialization
         static Object doIt(Node inliningTarget, Object object, Object memberObj,
@@ -292,7 +292,13 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode.Lazy raiseNode) {
             gil.release(true);
             try {
-                String member = castToString.execute(memberObj);
+                String member;
+                try {
+                    member = castToString.execute(memberObj);
+                } catch (CannotCastException e) {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, memberObj);
+                }
+
                 if (read.isMemberReadable(object, member)) {
                     return toPythonNode.executeConvert(read.readMember(object, member));
                 } else if (PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.EmulateJython)) {
@@ -308,13 +314,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         }
                     }
                 }
-            } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, memberObj);
             } catch (UnknownIdentifierException | UnsupportedMessageException | ArityException ignore) {
             } finally {
                 gil.acquire();
             }
-            throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, memberObj);
+            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, memberObj);
         }
     }
 
