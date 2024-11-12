@@ -800,7 +800,6 @@ PyUnstable_Code_NewWithPosOnlyArgs;PyCodeObject*;int|int|int|int|int|int|PyObjec
 PyUnstable_Code_SetExtra;int;PyObject*|Py_ssize_t|void*
 PyVectorcall_Call;PyObject*;PyObject*|PyObject*|PyObject*
 PyVectorcall_Function;vectorcallfunc;PyObject*
-PyVectorcall_NARGS;Py_ssize_t;size_t
 PyWeakref_GetObject;PyObject*;PyObject*
 PyWeakref_NewProxy;PyObject*;PyObject*|PyObject*
 PyWeakref_NewRef;PyObject*;PyObject*|PyObject*
@@ -902,10 +901,14 @@ _PyCodec_EncodeText;PyObject*;PyObject*|const char*|const char*
 _PyCodec_Lookup;PyObject*;const char*
 _PyCodec_LookupTextEncoding;PyObject*;const char*|const char*
 _PyContext_NewHamtForTests;PyObject*;void
+_PyCrossInterpreterData_Clear;void;PyInterpreterState*|_PyCrossInterpreterData*
+_PyCrossInterpreterData_Init;void;_PyCrossInterpreterData*|PyInterpreterState*|void*|PyObject*|xid_newobjectfunc
+_PyCrossInterpreterData_InitWithSize;int;_PyCrossInterpreterData*|PyInterpreterState*|const size_t|PyObject*|xid_newobjectfunc
 _PyCrossInterpreterData_Lookup;crossinterpdatafunc;PyObject*
 _PyCrossInterpreterData_NewObject;PyObject*;_PyCrossInterpreterData*
 _PyCrossInterpreterData_RegisterClass;int;PyTypeObject*|crossinterpdatafunc
-_PyCrossInterpreterData_Release;void;_PyCrossInterpreterData*
+_PyCrossInterpreterData_Release;int;_PyCrossInterpreterData*
+_PyCrossInterpreterData_UnregisterClass;int;PyTypeObject*
 _PyDeadline_Get;_PyTime_t;_PyTime_t
 _PyDeadline_Init;_PyTime_t;_PyTime_t
 _PyDebugAllocatorStats;void;FILE*|const char*|int|size_t

@@ -180,6 +180,7 @@ public enum ArgDescriptor {
     CONST_CHAR_PTR_LIST("const char**"),
     CONST_PY_BUFFER("const Py_buffer*"),
     CONST_PY_SSIZE_T("const Py_ssize_t"),
+    CONST_SIZE_T("const size_t"),
     CONST_PY_SSIZE_T_PTR("const Py_ssize_t*"),
     CONST_PY_UCS4("const Py_UCS4"),
     CONST_PY_UNICODE("const Py_UNICODE*"),
@@ -345,6 +346,7 @@ public enum ArgDescriptor {
     func_intvoidptr("int (*)(void*)"),
     func_objvoid("PyObject*(*)(void)"),
     func_objcharsizevoidptr("PyObject*(*)(const char*, Py_ssize_t, void*)"),
+    xid_newobjectfunc(ArgBehavior.Pointer, "xid_newobjectfunc"),
 
     IterResult(ArgBehavior.PyObject, "void*", CheckIterNextResultNodeGen::create, CheckIterNextResultNodeGen.getUncached(), true),
     InquiryResult(ArgBehavior.Int32, "int", CheckInquiryResultNodeGen::create, CheckInquiryResultNodeGen.getUncached()),
