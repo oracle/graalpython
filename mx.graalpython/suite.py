@@ -1268,6 +1268,8 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON",
                 "GRAALPYTHON-LAUNCHER",
+                # We run the benchmarks with Python home served from resources
+                "GRAALPYTHON_RESOURCES",
                 "sdk:POLYGLOT",
             ],
             "testDistribution": True,
