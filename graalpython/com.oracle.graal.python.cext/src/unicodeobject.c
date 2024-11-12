@@ -1877,7 +1877,6 @@ unicode_char(Py_UCS4 ch)
     assert(_PyUnicode_CheckConsistency(unicode, 1));
     return unicode;
 }
-#endif // GraalPy change
 
 PyObject *
 PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size)
@@ -3684,6 +3683,7 @@ PyUnicode_AsUTF8(PyObject *unicode)
     return PyUnicode_AsUTF8AndSize(unicode, NULL);
 }
 
+#if 0 // GraalPy change
 /*
 PyUnicode_GetSize() has been deprecated since Python 3.3
 because it returned length of Py_UNICODE.
