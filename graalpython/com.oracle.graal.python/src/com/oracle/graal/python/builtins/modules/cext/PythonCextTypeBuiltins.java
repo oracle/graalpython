@@ -103,6 +103,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -127,7 +128,6 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
@@ -222,12 +222,14 @@ public final class PythonCextTypeBuiltins {
 
         @TruffleBoundary
         @Specialization(guards = "isNoValue(mroTuple)")
-        int doIt(PythonNativeClass clazz, TruffleString name, @SuppressWarnings("unused") PNone mroTuple) {
-            CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption(clazz, false);
+        static int doIt(PythonAbstractNativeObject clazz, TruffleString name, @SuppressWarnings("unused") PNone mroTuple,
+                        @Bind("this") Node inliningTarget) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            CyclicAssumption nativeClassStableAssumption = context.getNativeClassStableAssumption(clazz, false);
             if (nativeClassStableAssumption != null) {
                 nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name.toJavaStringUncached() + "\") (without MRO) called");
             }
-            SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz), getLanguage());
+            SpecialMethodSlot.reinitializeSpecialMethodSlots(clazz, context.getLanguage());
             // TODO: this is called from two places: at the end of PyType_Ready, and theoretically
             // could be called from:
             //
@@ -243,22 +245,22 @@ public final class PythonCextTypeBuiltins {
 
         @TruffleBoundary
         @Specialization
-        int doIt(PythonNativeClass clazz, TruffleString name, PTuple mroTuple,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedExactClassProfile profile) {
-            CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption(clazz, false);
+        static int doIt(PythonAbstractNativeObject clazz, TruffleString name, PTuple mroTuple,
+                        @Bind("this") Node inliningTarget) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            CyclicAssumption nativeClassStableAssumption = context.getNativeClassStableAssumption(clazz, false);
             if (nativeClassStableAssumption != null) {
                 nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name.toJavaStringUncached() + "\") called");
             }
-            SequenceStorage sequenceStorage = profile.profile(inliningTarget, mroTuple.getSequenceStorage());
+            SequenceStorage sequenceStorage = mroTuple.getSequenceStorage();
             if (sequenceStorage instanceof MroSequenceStorage) {
                 ((MroSequenceStorage) sequenceStorage).lookupChanged();
             } else {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("invalid MRO object for native type \"" + name.toJavaStringUncached() + "\"");
             }
-            SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz), getLanguage());
-            TpSlots.updateAllSlots(clazz);
+            SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz), context.getLanguage());
+            clazz.setTpSlots(TpSlots.fromNative(clazz, context));
             return 0;
         }
     }
