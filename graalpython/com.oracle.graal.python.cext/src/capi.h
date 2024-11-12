@@ -311,7 +311,7 @@ PY_TRUFFLE_TYPE(Arraytype,                       "array",                      &
 PY_TRUFFLE_TYPE(mmap_object_type,                "mmap.mmap",                  &PyType_Type, 0) \
 PY_TRUFFLE_TYPE(PyArrayIter_Type,                "arrayiterator",              &PyType_Type, sizeof(arrayiterobject)) \
 PY_TRUFFLE_TYPE(PyAsyncGen_Type,                 "async_generator",            &PyType_Type, sizeof(PyAsyncGenObject)) \
-PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyLong_Type,       "int",                        &PyType_Type, offsetof(PyLongObject, ob_digit), sizeof(PyObject *)) \
+PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyLong_Type,       "int",                        &PyType_Type, offsetof(PyLongObject, long_value.ob_digit), sizeof(PyObject *)) \
 PY_TRUFFLE_TYPE(PyBool_Type,                     "bool",                       &PyType_Type, sizeof(struct _longobject)) \
 PY_TRUFFLE_TYPE(PyByteArray_Type,                "bytearray",                  &PyType_Type, sizeof(PyByteArrayObject)) \
 PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyBytes_Type,      "bytes",                      &PyType_Type, PyBytesObject_SIZE, sizeof(char)) \

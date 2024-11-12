@@ -428,6 +428,7 @@ _PyFunction_Vectorcall(PyObject *func, PyObject* const* stack,
         return _PyEval_Vector(tstate, f, f->func_globals, stack, nargs, kwnames);
     }
 }
+#endif // GraalPy change
 
 /* --- More complex call functions -------------------------------- */
 
@@ -437,6 +438,7 @@ PyObject *
 PyEval_CallObjectWithKeywords(PyObject *callable,
                               PyObject *args, PyObject *kwargs)
 {
+#if 0 // GraalPy change
     PyThreadState *tstate = _PyThreadState_GET();
 #ifdef Py_DEBUG
     /* PyEval_CallObjectWithKeywords() must not be called with an exception
@@ -463,8 +465,10 @@ PyEval_CallObjectWithKeywords(PyObject *callable,
     else {
         return _PyObject_Call(tstate, callable, args, kwargs);
     }
-}
+#else // GraalPy change
+    return PyObject_Call(callable, args, kwargs);
 #endif // GraalPy change
+}
 
 
 PyObject *

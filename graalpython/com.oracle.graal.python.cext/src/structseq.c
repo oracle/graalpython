@@ -596,7 +596,6 @@ _PyStructSequence_FiniType(PyTypeObject *type)
     assert(Py_REFCNT(type) == 0);
     assert(type->tp_name == NULL);
 }
-#endif // GraalPy change
 
 PyTypeObject *
 _PyStructSequence_NewType(PyStructSequence_Desc *desc, unsigned long tp_flags)
@@ -650,6 +649,7 @@ _PyStructSequence_NewType(PyStructSequence_Desc *desc, unsigned long tp_flags)
     return type;
 }
 
+#endif // GraalPy change
 
 PyTypeObject *
 PyStructSequence_NewType(PyStructSequence_Desc *desc)

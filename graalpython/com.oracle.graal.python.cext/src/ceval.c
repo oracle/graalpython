@@ -47,22 +47,6 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-/* GraalPy change
-PyObject* PyEval_CallObjectWithKeywords(PyObject *func, PyObject *args, PyObject *kwargs) {
-    return PyObject_Call(func, args, kwargs);
-}
-
-void PyEval_InitThreads() {
-    // Nothing to do
-}
-
-int PyEval_ThreadsInitialized() {
-    return 1;
-}
-
-void PyThread_free_lock(PyThread_type_lock lock) {
-}
-*/
 
 #if 0 // GraalPy change
 
@@ -2868,4 +2852,20 @@ int Py_EnterRecursiveCall(const char *where)
 void Py_LeaveRecursiveCall(void)
 {
     _Py_LeaveRecursiveCall();
+}
+
+// GraalPy change: taken from cpython/Python/ceval_gil.c
+void
+PyEval_InitThreads(void)
+{
+    /* Do nothing: kept for backward compatibility */
+}
+
+// GraalPy change: different implmentation compare to cpython/Python/ceval_gil.c
+int PyEval_ThreadsInitialized() {
+    return 1;
+}
+
+// GraalPy change: different implmentation compare to Python/thread_pthread.h
+void PyThread_free_lock(PyThread_type_lock lock) {
 }

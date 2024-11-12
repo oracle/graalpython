@@ -22,6 +22,7 @@ extern "C" {
 #if 0 // GraalPy change
 #include "pycore_runtime.h"       // _PyRuntime
 #endif
+#include "pycore_typeobject.h"      // struct types_runtime_state
 
 #define _PyObject_IMMORTAL_INIT(type) \
     { \

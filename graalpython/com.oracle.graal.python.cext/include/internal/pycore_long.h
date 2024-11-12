@@ -15,6 +15,8 @@ extern "C" {
 
 #include "pycore_global_objects.h"  // _PY_NSMALLNEGINTS
 
+#include <stdbool.h>              // bool
+
 /* other API */
 
 /* GraalVM change
@@ -83,6 +85,7 @@ PyAPI_FUNC(char*) _PyLong_FormatBytesWriter(
 #define SIGN_NEGATIVE 2
 #define NON_SIZE_BITS 3
 
+#if 0 // GraalPy change
 /* The functions _PyLong_IsCompact and _PyLong_CompactValue are defined
  * in Include/cpython/longobject.h, since they need to be inline.
  *
@@ -124,13 +127,18 @@ _PyLong_IsZero(const PyLongObject *op)
 {
     return (op->long_value.lv_tag & SIGN_MASK) == SIGN_ZERO;
 }
+#endif // GraalPy change
 
 static inline bool
 _PyLong_IsNegative(const PyLongObject *op)
 {
+#if 0 // GraalPy change
     return (op->long_value.lv_tag & SIGN_MASK) == SIGN_NEGATIVE;
+#endif // GraalPy change
+    return _PyLong_Sign((PyObject *) op) < 0;
 }
 
+#if 0 // GraalPy change
 static inline bool
 _PyLong_IsPositive(const PyLongObject *op)
 {
@@ -216,6 +224,7 @@ _PyLong_FlipSign(PyLongObject *op) {
 
 #define _PyLong_FALSE_TAG TAG_FROM_SIGN_AND_SIZE(0, 0)
 #define _PyLong_TRUE_TAG TAG_FROM_SIGN_AND_SIZE(1, 1)
+#endif // GraalPy change
 
 #ifdef __cplusplus
 }
