@@ -43,11 +43,13 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GRAALPY_OBJECT_GC_DEL;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_NO_OP_CLEAR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_NO_OP_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_DEALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_FREE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TYPE_GENERIC_ALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBTYPE_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CConstants.PYLONG_BITS_IN_DIGIT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
@@ -106,7 +108,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ResolveHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
@@ -142,7 +144,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -898,33 +899,33 @@ public abstract class CExtNodes {
      */
     @TruffleBoundary
     public static Object lookupNativeMemberInMRO(PythonManagedClass cls, @SuppressWarnings("unused") CFields nativeMemberName, HiddenAttr managedMemberName) {
-        if (cls instanceof PythonClass) {
-            NativeCAPISymbol symbol = null;
-            // We need to point to PyType_GenericAlloc or PyObject_GC_Del
-            if (managedMemberName == HiddenAttr.ALLOC) {
-                symbol = FUN_PY_TYPE_GENERIC_ALLOC;
-            } else if (managedMemberName == HiddenAttr.FREE) {
-                /*
-                 * See 'typeobject.c: inherit_slots': A bit of magic to plug in the correct default
-                 * tp_free function when a derived class adds gc, didn't define tp_free, and the
-                 * base uses the default non-gc tp_free.
-                 */
-                if ((GetTypeFlagsNode.executeUncached(cls) & TypeFlags.HAVE_GC) != 0) {
-                    symbol = FUN_GRAALPY_OBJECT_GC_DEL;
-                } else {
-                    symbol = FUN_PY_OBJECT_FREE;
-                }
-            } else if (managedMemberName == HiddenAttr.CLEAR) {
-                // This will need to be subtype_clear when we implement native GC
-                symbol = FUN_NO_OP_CLEAR;
+        NativeCAPISymbol symbol = null;
+        // We need to point to PyType_GenericAlloc or PyObject_GC_Del
+        if (managedMemberName == HiddenAttr.ALLOC) {
+            symbol = FUN_PY_TYPE_GENERIC_ALLOC;
+        } else if (managedMemberName == HiddenAttr.FREE) {
+            /*
+             * See 'typeobject.c: inherit_slots': A bit of magic to plug in the correct default
+             * tp_free function when a derived class adds gc, didn't define tp_free, and the base
+             * uses the default non-gc tp_free.
+             */
+            if ((GetTypeFlagsNode.executeUncached(cls) & TypeFlags.HAVE_GC) != 0) {
+                symbol = FUN_GRAALPY_OBJECT_GC_DEL;
+            } else {
+                symbol = FUN_PY_OBJECT_FREE;
             }
-            if (symbol != null) {
-                Object func = HiddenAttr.ReadNode.executeUncached(cls, managedMemberName, null);
-                if (func != null) {
-                    return func;
-                }
-                return CApiContext.getNativeSymbol(null, symbol);
+        } else if (managedMemberName == HiddenAttr.TRAVERSE) {
+            symbol = cls instanceof PythonBuiltinClass ? FUN_NO_OP_TRAVERSE : FUN_SUBTYPE_TRAVERSE;
+        } else if (managedMemberName == HiddenAttr.CLEAR) {
+            // This will need to be subtype_clear when we implement native GC
+            symbol = FUN_NO_OP_CLEAR;
+        }
+        if (symbol != null) {
+            Object func = HiddenAttr.ReadNode.executeUncached(cls, managedMemberName, null);
+            if (func != null) {
+                return func;
             }
+            return CApiContext.getNativeSymbol(null, symbol);
         }
         MroSequenceStorage mroStorage = GetMroStorageNode.executeUncached(cls);
         int n = mroStorage.length();
@@ -1189,7 +1190,7 @@ public abstract class CExtNodes {
                         @Cached(inline = false) CApiTransitions.ToPythonWrapperNode toPythonWrapperNode,
                         @Cached InlinedBranchProfile isWrapperProfile,
                         @Cached InlinedBranchProfile isNativeObject,
-                        @Cached UpdateRefNode updateRefNode,
+                        @Cached UpdateStrongRefNode updateRefNode,
                         @Cached(inline = false) CStructAccess.ReadI64Node readRefcount,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeRefcount,
                         @Cached(inline = false) PCallCapiFunction callDealloc) {
@@ -1295,7 +1296,7 @@ public abstract class CExtNodes {
         @Specialization
         static Object resolveLongCached(Node inliningTarget, long pointer,
                         @Exclusive @Cached ResolveHandleNode resolveHandleNode,
-                        @Exclusive @Cached UpdateRefNode updateRefNode) {
+                        @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             Object lookup = CApiTransitions.lookupNative(pointer);
             if (lookup != null) {
                 if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
@@ -1313,7 +1314,7 @@ public abstract class CExtNodes {
         static Object resolveGeneric(Node inliningTarget, Object pointerObject,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Exclusive @Cached ResolveHandleNode resolveHandleNode,
-                        @Exclusive @Cached UpdateRefNode updateRefNode) {
+                        @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             if (lib.isPointer(pointerObject)) {
                 Object lookup;
                 long pointer;

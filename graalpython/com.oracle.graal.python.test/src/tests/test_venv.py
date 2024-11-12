@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,20 +42,22 @@ import shutil
 import subprocess
 import sys
 import tempfile
-
+import unittest
 
 BINDIR = 'bin' if sys.platform != 'win32' else 'Scripts'
 EXESUF = '' if sys.platform != 'win32' else '.exe'
 
 
-class VenvTest():
-    def setUpClass(self):
-        self.env_dir = os.path.realpath(tempfile.mkdtemp())
-        self.env_dir2 = os.path.realpath(tempfile.mkdtemp())
+class VenvTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.env_dir = os.path.realpath(tempfile.mkdtemp())
+        cls.env_dir2 = os.path.realpath(tempfile.mkdtemp())
 
-    def tearDownClass(self):
-        shutil.rmtree(self.env_dir)
-        shutil.rmtree(self.env_dir2)
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.env_dir)
+        shutil.rmtree(cls.env_dir2)
 
     def test_venv_launcher(self):
         if sys.platform != "win32":

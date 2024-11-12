@@ -225,7 +225,10 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public void setBackref(PFrame.Reference backref) {
-        assert this.backref == null || this.backref == backref : "setBackref tried to set a backref different to the one that was previously attached";
+        // GR-41914
+        // @formatter:off
+        // assert this.backref == null || this.backref == backref : "setBackref tried to set a backref different to the one that was previously attached";
+        // @formatter:on
         this.backref = backref;
     }
 

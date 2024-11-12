@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,7 @@ ENV = dict(os.environ)
 ENV['PYTHONPATH'] = str(DIR.parent.parent)
 ARGS = []
 if sys.implementation.name == 'graalpy':
-    ARGS = ['--python.EnableDebuggingBuiltins']
+    ARGS = ['--experimental-options', '--python.EnableDebuggingBuiltins']
 COMMAND = [sys.executable, *ARGS, str(MODULE_PATH)]
 
 

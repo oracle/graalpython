@@ -1,1 +1,8 @@
-*graalpython.lib-python.3.test.test_descrtut.TestMain.test_main
+DocTestCase.test.test_descrtut.__test__.tut1
+DocTestCase.test.test_descrtut.__test__.tut2
+DocTestCase.test.test_descrtut.__test__.tut4
+DocTestCase.test.test_descrtut.__test__.tut5
+DocTestCase.test.test_descrtut.__test__.tut6
+DocTestCase.test.test_descrtut.__test__.tut7
+DocTestCase.test.test_descrtut.__test__.tut8
+test.test_descrtut.TestMain.test_main

@@ -1,1 +1,2 @@
-*graalpython.lib-python.3.test.test_metaclass.TestMain.test_main
+DocTestCase.test.test_metaclass.__test__.doctests
+test.test_metaclass.TestMain.test_main

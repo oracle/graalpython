@@ -1,3 +1,0 @@
-[[rules]]
-# Newer version depends nh3 which is built with maturin, which is currently broken
-version = '< 42'

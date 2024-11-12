@@ -38,8 +38,9 @@
 # SOFTWARE.
 
 import sys
+import platform
 
-if sys.platform != 'win32' and (sys.implementation.name != 'graalpy' or __graalpython__.posix_module_backend() != 'java'):
+if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() != 'aarch64')) and (sys.implementation.name != 'graalpy' or __graalpython__.posix_module_backend() != 'java'):
     import os
     import re
     import select

@@ -1,9 +1,0 @@
-[[rules]]
-version = '== 1.17.1'
-patch = 'onnxruntime-1.17.1.patch'
-license = 'MIT'
-dist-type = 'sdist'
-
-[[add-sources]]
-version = '1.17.1'
-url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.17.1.tar.gz'

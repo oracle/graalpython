@@ -1,1 +1,1 @@
-*graalpython.lib-python.3.test.test___all__.AllTest.test_all
+test.test___all__.AllTest.test_all

@@ -1,5 +1,5 @@
-*graalpython.lib-python.3.test.test_smtpnet.SmtpSSLTest.test_connect
-*graalpython.lib-python.3.test.test_smtpnet.SmtpSSLTest.test_connect_default_port
-*graalpython.lib-python.3.test.test_smtpnet.SmtpSSLTest.test_connect_using_sslcontext
-*graalpython.lib-python.3.test.test_smtpnet.SmtpSSLTest.test_connect_using_sslcontext_verified
-*graalpython.lib-python.3.test.test_smtpnet.SmtpTest.test_connect_starttls
+test.test_smtpnet.SmtpSSLTest.test_connect
+test.test_smtpnet.SmtpSSLTest.test_connect_default_port
+test.test_smtpnet.SmtpSSLTest.test_connect_using_sslcontext
+test.test_smtpnet.SmtpSSLTest.test_connect_using_sslcontext_verified
+test.test_smtpnet.SmtpTest.test_connect_starttls

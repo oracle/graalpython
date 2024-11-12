@@ -1,4 +1,4 @@
-*graalpython.lib-python.3.test.test_zipfile64.OtherTests.testMoreThan64kFiles
-*graalpython.lib-python.3.test.test_zipfile64.OtherTests.testMoreThan64kFilesAppend
-*graalpython.lib-python.3.test.test_zipfile64.TestsWithSourceFile.testDeflated
-*graalpython.lib-python.3.test.test_zipfile64.TestsWithSourceFile.testStored
+test.test_zipfile64.OtherTests.testMoreThan64kFiles
+test.test_zipfile64.OtherTests.testMoreThan64kFilesAppend
+test.test_zipfile64.TestsWithSourceFile.testDeflated
+test.test_zipfile64.TestsWithSourceFile.testStored

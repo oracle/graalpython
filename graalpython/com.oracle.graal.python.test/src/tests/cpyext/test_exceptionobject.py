@@ -38,11 +38,9 @@
 # SOFTWARE.
 
 import sys
+import unittest
 
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction
-
-__dir__ = __file__.rpartition("/")[0]
-
 
 try:
     raise TypeError
@@ -51,7 +49,7 @@ except TypeError as e:
     exception_with_traceback = e
 
 
-class TestExceptionobject(object):
+class TestExceptionobject(unittest.TestCase):
     def test_exc_info(self):
         TestExcInfo = CPyExtType("TestExcInfo",
                              """
@@ -226,7 +224,7 @@ class TestExceptionobjectFunctions(CPyExtTestCase):
     )
 
 
-class TestExceptionObjectAccessors(object):
+class TestExceptionObjectAccessors(unittest.TestCase):
     def test_PyException_GetCause(self):
         TestGetCause = CPyExtType("TestGetCause",
                              """

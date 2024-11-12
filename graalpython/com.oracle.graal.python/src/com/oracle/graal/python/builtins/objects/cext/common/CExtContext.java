@@ -309,7 +309,7 @@ public abstract class CExtContext {
                 String message = "Loading C extension module %s from '%s'. Support for the Python C API is considered experimental.";
                 if (!runViaLauncher) {
                     message += " See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions/#embedding-limitations for the limitations. " +
-                                    "You can suppress this warning by setting the context option 'python.WarnExperimentalFeatures' to 'false'";
+                                    "You can suppress this warning by setting the context option 'python.WarnExperimentalFeatures' to 'false'.";
                 }
                 getLogger().warning(message.formatted(spec.name, spec.path));
             }

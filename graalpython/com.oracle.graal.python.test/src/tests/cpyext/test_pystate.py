@@ -40,8 +40,6 @@ import sys
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtType
 
-__dir__ = __file__.rpartition("/")[0]
-
 
 class TestPystate(CPyExtTestCase):
     test_PyThreadState_GetDict = CPyExtFunction(

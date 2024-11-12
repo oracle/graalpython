@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,11 +43,12 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import java.text.Normalizer;
 import java.util.List;
 
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
+import org.graalvm.shadowed.com.ibm.icu.text.Normalizer2;
+import org.graalvm.shadowed.com.ibm.icu.util.VersionInfo;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -64,7 +65,9 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -78,90 +81,10 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
     }
 
     public static String getUnicodeVersion() {
-
-        // Preliminary Unicode 11 data obtained from
-        // <https://www.unicode.org/Public/11.0.0/ucd/DerivedAge-11.0.0d13.txt>.
-        if (Character.getType('\u0560') != Character.UNASSIGNED) {
-            return "11.0.0";    // 11.0, June 2018.
-        }
-
-        if (Character.getType('\u0860') != Character.UNASSIGNED) {
-            return "10.0.0";    // 10.0, June 2017.
-        }
-
-        if (Character.getType('\u08b6') != Character.UNASSIGNED) {
-            return "9.0.0";     // 9.0, June 2016.
-        }
-
-        if (Character.getType('\u08b3') != Character.UNASSIGNED) {
-            return "8.0.0";     // 8.0, June 2015.
-        }
-
-        if (Character.getType('\u037f') != Character.UNASSIGNED) {
-            return "7.0.0";     // 7.0, June 2014.
-        }
-
-        if (Character.getType('\u061c') != Character.UNASSIGNED) {
-            return "6.3.0";     // 6.3, September 2013.
-        }
-
-        if (Character.getType('\u20ba') != Character.UNASSIGNED) {
-            return "6.2.0";     // 6.2, September 2012.
-        }
-
-        if (Character.getType('\u058f') != Character.UNASSIGNED) {
-            return "6.1.0";     // 6.1, January 2012.
-        }
-
-        if (Character.getType('\u0526') != Character.UNASSIGNED) {
-            return "6.0.0";     // 6.0, October 2010.
-        }
-
-        if (Character.getType('\u0524') != Character.UNASSIGNED) {
-            return "5.2.0";     // 5.2, October 2009.
-        }
-
-        if (Character.getType('\u0370') != Character.UNASSIGNED) {
-            return "5.1.0";     // 5.1, March 2008.
-        }
-
-        if (Character.getType('\u0242') != Character.UNASSIGNED) {
-            return "5.0.0";     // 5.0, July 2006.
-        }
-
-        if (Character.getType('\u0237') != Character.UNASSIGNED) {
-            return "4.1.0";     // 4.1, March 2005.
-        }
-
-        if (Character.getType('\u0221') != Character.UNASSIGNED) {
-            return "4.0.0";     // 4.0, April 2003.
-        }
-
-        if (Character.getType('\u0220') != Character.UNASSIGNED) {
-            return "3.2.0";     // 3.2, March 2002.
-        }
-
-        if (Character.getType('\u03f4') != Character.UNASSIGNED) {
-            return "3.1.0";     // 3.1, March 2001.
-        }
-
-        if (Character.getType('\u01f6') != Character.UNASSIGNED) {
-            return "3.0.0";     // 3.0, September 1999.
-        }
-
-        if (Character.getType('\u20ac') != Character.UNASSIGNED) {
-            return "2.1.0";     // 2.1, May 1998.
-        }
-
-        if (Character.getType('\u0591') != Character.UNASSIGNED) {
-            return "2.0.0";     // 2.0, July 1996.
-        }
-
-        if (Character.getType('\u0000') != Character.UNASSIGNED) {
-            return "1.1.0";     // 1.1, June 1993.
-        }
-
-        return "1.0.0";         // 1.0
+        VersionInfo version = UCharacter.getUnicodeVersion();
+        return Integer.toString(version.getMajor()) + '.' +
+                        version.getMinor() + '.' +
+                        version.getMicro();
     }
 
     /**
@@ -186,39 +109,44 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("unidata_version", getUnicodeVersion());
     }
 
+    static final int NORMALIZER_FORM_COUNT = 4;
+
+    @TruffleBoundary
+    static Normalizer2 getNormalizer(TruffleString form) {
+        return switch (form.toJavaStringUncached()) {
+            case "NFC" -> Normalizer2.getNFCInstance();
+            case "NFKC" -> Normalizer2.getNFKCInstance();
+            case "NFD" -> Normalizer2.getNFDInstance();
+            case "NFKD" -> Normalizer2.getNFKDInstance();
+            default -> null;
+        };
+    }
+
     // unicodedata.normalize(form, unistr)
     @Builtin(name = "normalize", minNumOfPositionalArgs = 2, parameterNames = {"form", "unistr"})
     @ArgumentClinic(name = "form", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "unistr", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
+    @ImportStatic(UnicodeDataModuleBuiltins.class)
     public abstract static class NormalizeNode extends PythonBinaryClinicBuiltinNode {
-        @TruffleBoundary
-        protected Normalizer.Form getForm(TruffleString form) {
-            try {
-                return Normalizer.Form.valueOf(form.toJavaStringUncached());
-            } catch (IllegalArgumentException e) {
-                return null;
-            }
-        }
-
-        @Specialization(guards = {"stringEquals(form, cachedForm, equalNode)"}, limit = "4")
+        @Specialization(guards = {"cachedNormalizer != null", "stringEquals(form, cachedForm, equalNode)"}, limit = "NORMALIZER_FORM_COUNT")
         static TruffleString normalize(@SuppressWarnings("unused") TruffleString form, TruffleString unistr,
-                        @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("form") TruffleString cachedForm,
-                        @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm,
+                        @Cached("getNormalizer(cachedForm)") Normalizer2 cachedNormalizer,
                         @SuppressWarnings("unused") @Cached TruffleString.EqualNode equalNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            if (cachedNormForm == null) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
-            }
-            return fromJavaStringNode.execute(normalize(toJavaStringNode.execute(unistr), cachedNormForm), TS_ENCODING);
+                        @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+            return fromJavaStringNode.execute(normalize(toJavaStringNode.execute(unistr), cachedNormalizer), TS_ENCODING);
+        }
+
+        @Specialization(guards = "getNormalizer(form) == null")
+        TruffleString invalidForm(@SuppressWarnings("unused") TruffleString form, @SuppressWarnings("unused") TruffleString unistr) {
+            throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
         }
 
         @TruffleBoundary
-        private static String normalize(String str, Normalizer.Form normForm) {
-            return Normalizer.normalize(str, normForm);
+        private static String normalize(String str, Normalizer2 normalizer) {
+            return normalizer.normalize(str);
         }
 
         @Override
@@ -232,26 +160,20 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "form", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "unistr", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
+    @ImportStatic(UnicodeDataModuleBuiltins.class)
     public abstract static class IsNormalizedNode extends PythonBinaryClinicBuiltinNode {
-        @TruffleBoundary
-        protected Normalizer.Form getForm(TruffleString form) {
-            try {
-                return Normalizer.Form.valueOf(form.toJavaStringUncached());
-            } catch (IllegalArgumentException e) {
-                return null;
-            }
-        }
-
-        @Specialization(guards = {"stringEquals(form, cachedForm, equalNode)"}, limit = "4")
+        @Specialization(guards = {"cachedNormalizer != null", "stringEquals(form, cachedForm, equalNode)"}, limit = "NORMALIZER_FORM_COUNT")
         @TruffleBoundary
         boolean isNormalized(@SuppressWarnings("unused") TruffleString form, TruffleString unistr,
                         @SuppressWarnings("unused") @Cached("form") TruffleString cachedForm,
-                        @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm,
+                        @Cached("getNormalizer(cachedForm)") Normalizer2 cachedNormalizer,
                         @SuppressWarnings("unused") @Cached TruffleString.EqualNode equalNode) {
-            if (cachedNormForm == null) {
-                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
-            }
-            return Normalizer.isNormalized(unistr.toJavaStringUncached(), cachedNormForm);
+            return cachedNormalizer.isNormalized(unistr.toJavaStringUncached());
+        }
+
+        @Specialization(guards = "getNormalizer(form) == null")
+        TruffleString invalidForm(@SuppressWarnings("unused") TruffleString form, @SuppressWarnings("unused") TruffleString unistr) {
+            throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
         }
 
         @Override

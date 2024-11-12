@@ -41,8 +41,6 @@ import unittest
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, CPyExtType, \
     is_native_object
 
-__dir__ = __file__.rpartition("/")[0]
-
 
 def _reference_from_string_n(args):
     arg_str = args[0]

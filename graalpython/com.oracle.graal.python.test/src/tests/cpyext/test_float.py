@@ -37,11 +37,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import math
+import unittest
 
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, \
     is_native_object, RUNS_ON_LLVM
-
-__dir__ = __file__.rpartition("/")[0]
 
 
 def _float_compare(x, y):
@@ -90,7 +89,6 @@ NativeFloatSubclass = CPyExtType(
 
 
 class TestPyFloat(CPyExtTestCase):
-
     test_PyFloat_AsDouble = CPyExtFunctionOutVars(
         lambda args: True,
         lambda: (
@@ -194,7 +192,7 @@ class TestPyFloat(CPyExtTestCase):
     )
 
 
-class TestPyOSDouble:
+class TestPyOSDouble(unittest.TestCase):
     def test_PyOS_double_to_string(self):
         TestPyOS_Double_To_String = CPyExtType(
             "TestPyOS_Double_To_String",
@@ -236,7 +234,7 @@ class TestPyOSDouble:
         assert tester.PyOS_string_to_double_test('150.604459') == float(150.604459)
 
 
-class TestNativeFloatSubclass:
+class TestNativeFloatSubclass(unittest.TestCase):
     def test_create(self):
         f = NativeFloatSubclass(1.0)
         assert is_native_object(f)

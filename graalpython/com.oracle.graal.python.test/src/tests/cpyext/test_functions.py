@@ -37,12 +37,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import array
+import os
 import sys
+import unittest
 
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtHeapType, RUNS_ON_LLVM
 
-__dir__ = __file__.rpartition("/")[0]
+DIR = os.path.dirname(__file__)
 
 
 class CallableIter:
@@ -317,7 +318,7 @@ class TestPyObject(CPyExtTestCase):
 
     if not RUNS_ON_LLVM:
         __PyObject_AsFileDescriptor_FD0 = open(1, buffering=0, mode="wb")
-        __PyObject_AsFileDescriptor_FD1 = open("%s/As_FileDescriptor_Testfile" % __dir__, buffering=0, mode="wb")
+        __PyObject_AsFileDescriptor_FD1 = open("%s/As_FileDescriptor_Testfile" % DIR, buffering=0, mode="wb")
         test_PyObject_AsFileDescriptor = CPyExtFunction(
             lambda arg: arg if isinstance(arg, int) else arg.fileno(),
             lambda: (
@@ -561,7 +562,7 @@ class TestPyObject(CPyExtTestCase):
     # test PyMethodDef is same
     # test calling m_meth
 
-class TestPyCFunction:
+class TestPyCFunction(unittest.TestCase):
     def test_PyMethodDef(self):
         TestPyMethodDef = CPyExtType(
             "TestPyMethodDef",

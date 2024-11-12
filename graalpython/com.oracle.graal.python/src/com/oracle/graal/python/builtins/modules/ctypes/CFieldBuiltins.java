@@ -161,7 +161,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
             cDataSetNode.execute(frame, dst, self.proto, self.setfunc, value, self.index, self.size, dst.b_ptr.withOffset(self.offset));
         }
 
-        @Specialization(guards = "!isNoValue(value)")
+        @Specialization(guards = "isNoValue(value)")
         @InliningCutoff
         static void doit(CFieldObject self, Object inst, Object value,
                         @Cached PRaiseNode raiseNode) {

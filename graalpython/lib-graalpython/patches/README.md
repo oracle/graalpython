@@ -1,15 +1,12 @@
-This directory contains patches applied by pip when installing packages. There is a directory for each package that
-contains patches and optionally a configuration file that can specify rules for matching patches to package versions and
-can also influence pip version selection mechanism.
-
-Configuration files are named `metadata.toml` and can contain the following:
+This directory contains patches applied by pip when installing packages. There is a `metadata.toml` configuration file that specifies rules for patching and
+can also influence pip version selection mechanism. It can contain the following:
 
 ```toml
-# The file defines an array of tables (dicts) named `patches`. The patch selection process iterates it and picks the
-# first patch one that matches in version and dist type.
+# The file defines a dict whose keys are package names. The sub-key 'rules' specifies a list of patching rules.
+# The patch selection process iterates it and picks the first patch one that matches in version and dist type.
 # The next entry will apply to a wheel foo-1.0.0
-[[rules]]
-# Optional. Relative path to a patch file. May be omitted when the entry just specifies `install-priority`
+[[foo.rules]]
+# Optional. Relative path to a patch file. May be omitted
 patch = 'foo-1.0.0.patch'
 # Required if 'patch' is specified. SPDX license expression for the package (allows parentheses, 'AND', 'OR', 'WITH').
 # Allowed licenses are enumerated in mx.graalpython/verify_patches.py
@@ -33,8 +30,8 @@ subdir = 'src'
 # priority to 0, the version will not be shown in the suggestion list we display when we didn't find an applicable patch
 install-priority = 1
 
-# The next entry will apply to all other artifacts of foo
-[[patches]]
+# The next entry will apply to all other versions of foo that didn't get matched by the previous rule
+[[foo.rules]]
 patch = 'foo.patch'
 license = 'MIT'
 ```

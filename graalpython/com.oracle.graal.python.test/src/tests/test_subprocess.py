@@ -15,7 +15,8 @@ def test_os_pipe():
 
 
 class TestSubprocess(unittest.TestCase):
-    def setUpClass(self):
+    @classmethod
+    def setUpClass(cls):
         global subprocess, io, sys
         import subprocess, io, sys
 

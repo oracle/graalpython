@@ -2,6 +2,9 @@ import sys
 import unittest
 from test.support import check_sanitizer, warnings_helper
 
+# GraalPy change:
+if sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java':
+    raise unittest.SkipTest("Not supported on Java posix backend")
 
 try:
     if check_sanitizer(address=True, memory=True):

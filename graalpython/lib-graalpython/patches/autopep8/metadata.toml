@@ -1,3 +1,0 @@
-[[rules]]
-patch = 'autopep8.patch'
-license = 'MIT'

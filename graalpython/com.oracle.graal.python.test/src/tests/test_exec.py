@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,6 +36,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import unittest
+
 
 # The basis for this file before inclusion and extension here is
 # Copyright (c) 2017, The PyPy Project
@@ -70,7 +72,7 @@ def raises(exc, func, *args):
         assert False
 
 
-class ExecTests:
+class ExecTests(unittest.TestCase):
     def test_string(self):
         g = {}
         l = {}

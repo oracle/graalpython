@@ -1,4 +1,4 @@
-*graalpython.lib-python.3.test.test__locale._LocaleTests.test_float_parsing
-*graalpython.lib-python.3.test.test__locale._LocaleTests.test_lc_numeric_basic
-*graalpython.lib-python.3.test.test__locale._LocaleTests.test_lc_numeric_localeconv
-*graalpython.lib-python.3.test.test__locale._LocaleTests.test_lc_numeric_nl_langinfo
+test.test__locale._LocaleTests.test_float_parsing
+test.test__locale._LocaleTests.test_lc_numeric_basic
+test.test__locale._LocaleTests.test_lc_numeric_localeconv
+test.test__locale._LocaleTests.test_lc_numeric_nl_langinfo

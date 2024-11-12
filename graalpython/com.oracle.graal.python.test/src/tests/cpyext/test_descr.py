@@ -36,9 +36,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import unittest
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare 
-__dir__ = __file__.rpartition("/")[0]
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare
 
 
 def _reference_classmethod(args):
@@ -46,7 +46,7 @@ def _reference_classmethod(args):
         return classmethod(args[0])()
     raise TypeError
 
-class TestDescrObject(object):
+class TestDescrObject(unittest.TestCase):
 
     def test_new_classmethod(self):
 

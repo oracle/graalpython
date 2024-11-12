@@ -87,6 +87,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -180,69 +181,41 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TranslateNode extends BytesNodes.BaseTranslateNode {
 
-        @Specialization(guards = {"isNoValue(delete)", "checkExactNode.execute(this, self)"})
-        static PBytes translate(PBytes self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete,
-                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckExactNode checkExactNode) {
-            return self;
-        }
-
-        @Specialization(guards = {"isNoValue(delete)", "!checkExactNode.execute(this, self)"})
-        static PBytes translate(Object self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete,
-                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckExactNode checkExactNode,
-                        @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createBytes(toBytesNode.execute(null, self));
-        }
-
-        @Specialization(guards = "!isNone(table)")
-        static Object translate(VirtualFrame frame, Object self, Object table, @SuppressWarnings("unused") PNone delete,
+        @Specialization
+        static Object translate(VirtualFrame frame, Object self, Object table, Object delete,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyBytesCheckExactNode checkExactNode,
-                        @Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
-                        @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            byte[] bTable = toBytesNode.execute(frame, table);
-            checkLengthOfTable(inliningTarget, bTable, isLenTable256Profile, raiseNode);
-            byte[] bSelf = toBytesNode.execute(null, self);
-
-            Result result = translate(bSelf, bTable);
-            if (result.changed || !checkExactNode.execute(inliningTarget, self)) {
-                return factory.createBytes(result.array);
+                        @Cached InlinedConditionProfile isLenTable256Profile,
+                        @Cached InlinedBranchProfile hasTable,
+                        @Cached InlinedBranchProfile hasDelete,
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PyBytesCheckExactNode checkExactNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            byte[] bTable = null;
+            if (table != PNone.NONE) {
+                hasTable.enter(inliningTarget);
+                bTable = toBytesNode.execute(frame, table);
+                checkLengthOfTable(inliningTarget, bTable, isLenTable256Profile, raiseNode);
             }
-            return self;
-        }
-
-        @Specialization(guards = "isNone(table)")
-        static Object delete(VirtualFrame frame, Object self, @SuppressWarnings("unused") PNone table, Object delete,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyBytesCheckExactNode checkExactNode,
-                        @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            byte[] bSelf = toBytesNode.execute(null, self);
-            byte[] bDelete = toBytesNode.execute(frame, delete);
-
-            Result result = delete(bSelf, bDelete);
-            if (result.changed || !checkExactNode.execute(inliningTarget, self)) {
-                return factory.createBytes(result.array);
+            byte[] bDelete = null;
+            if (delete != PNone.NO_VALUE) {
+                hasDelete.enter(inliningTarget);
+                bDelete = toBytesNode.execute(frame, delete);
             }
-            return self;
-        }
-
-        @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
-        static Object translateAndDelete(VirtualFrame frame, Object self, Object table, Object delete,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyBytesCheckExactNode checkExactNode,
-                        @Shared("profile") @Cached InlinedConditionProfile isLenTable256Profile,
-                        @Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            byte[] bTable = toBytesNode.execute(frame, table);
-            checkLengthOfTable(inliningTarget, bTable, isLenTable256Profile, raiseNode);
-            byte[] bDelete = toBytesNode.execute(frame, delete);
             byte[] bSelf = toBytesNode.execute(null, self);
 
-            Result result = translateAndDelete(bSelf, bTable, bDelete);
+            Result result;
+            if (bTable != null && bDelete != null) {
+                result = translateAndDelete(bSelf, bTable, bDelete);
+            } else if (bTable != null) {
+                result = translate(bSelf, bTable);
+            } else if (bDelete != null) {
+                result = delete(bSelf, bDelete);
+            } else if (!checkExactNode.execute(inliningTarget, self)) {
+                return factory.createBytes(bSelf);
+            } else {
+                return self;
+            }
             if (result.changed || !checkExactNode.execute(inliningTarget, self)) {
                 return factory.createBytes(result.array);
             }

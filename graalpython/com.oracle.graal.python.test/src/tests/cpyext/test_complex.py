@@ -37,10 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import operator
+import unittest
 
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType, is_native_object
-
-__dir__ = __file__.rpartition("/")[0]
 
 
 def _float_compare(x, y):
@@ -202,7 +201,7 @@ class TestPyComplex(CPyExtTestCase):
     )
 
 
-class TestNativeComplex:
+class TestNativeComplex(unittest.TestCase):
     def test_builtins_on_subclass(self):
         for t in [NativeComplexSubclass, ManagedNativeComplexSubclass]:
             c = t(2, 3)
