@@ -4,8 +4,8 @@
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import sys
 
-import seq_tests
-from compare import CompareTest
+from tests import seq_tests
+from tests.compare import CompareTest
 
 
 class TupleTest(seq_tests.CommonTest):

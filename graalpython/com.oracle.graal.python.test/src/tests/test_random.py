@@ -3,14 +3,13 @@
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 
-import unittest
 import random
 import time
+import unittest
 
 
-class TestBasicOps:
-    def __init__(self):
-        super().__init__()
+class TestBasicOps(unittest.TestCase):
+    def setUp(self):
         self.gen = random.Random()
 
     def randomlist(self, n):
@@ -136,11 +135,6 @@ class TestBasicOps:
         self.assertRaises(TypeError, self.gen.sample, dict.fromkeys('abcdef'), 2)
 
     def test_choices(self):
-        import sys
-        return # TODO: re-enable once we update again
-        if sys.version_info.minor < 7:
-            return
-
         choices = self.gen.choices
         data = ['red', 'green', 'blue', 'yellow']
         str_data = 'abcd'

@@ -170,7 +170,8 @@ def get_attribute(obj, name):
     else:
         return attribute
 
-verbose = 1              # Flag set to 0 by regrtest.py
+# GraalPy change: not verbose by default
+verbose = 0              # Flag set to 0 by regrtest.py
 use_resources = None     # Flag set to [] by regrtest.py
 max_memuse = 0           # Disable bigmem tests (they will still be run with
                          # small sizes, to make sure they work.)

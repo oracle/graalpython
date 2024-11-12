@@ -39,8 +39,6 @@
 
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType
 
-__dir__ = __file__.rpartition("/")[0]
-
 
 class TestCeval(CPyExtTestCase):
     test_Py_EnterLeaveRecursiveCall = CPyExtFunction(

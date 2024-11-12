@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,7 +39,6 @@
 
 import os
 import select
-import sys
 import tempfile
 import unittest
 
@@ -89,9 +88,13 @@ class SelectTests(unittest.TestCase):
 
         os.close(os.open(TEST_FILENAME_FULL_PATH, os.O_WRONLY | os.O_CREAT))
         with open(TEST_FILENAME_FULL_PATH, 'r') as f:
-            stdout_fd = sys.__stdout__.fileno()
-            # stdout is not ready for reading, but the file should be,
-            # we should get back both objects and in the right order
-            fds = [F(f.fileno()), F(stdout_fd), F(f.fileno())]
-            res = select.select(fds, [], [], 1)
-            assert res == ([fds[0], fds[2]], [], [])
+            r_pipe, w_pipe = os.pipe()
+            try:
+                # the pipe is not ready for reading, but the file should be,
+                # we should get back both objects and in the right order
+                fds = [F(f.fileno()), F(r_pipe), F(f.fileno())]
+                res = select.select(fds, [], [], 1)
+                assert res == ([fds[0], fds[2]], [], [])
+            finally:
+                os.close(r_pipe)
+                os.close(w_pipe)

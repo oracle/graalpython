@@ -38,11 +38,11 @@
 # SOFTWARE.
 
 import sys
+import unittest
 from unittest import skipIf
 
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, assert_raises
 
-__dir__ = __file__.rpartition("/")[0]
 is_windows = sys.platform == "win32"
 
 
@@ -83,7 +83,7 @@ class AttroClass(object):
             return object.__getattribute__(self, key)
 
 
-class TestObject(object):
+class TestObject(unittest.TestCase):
     def test_add(self):
         TestAdd = CPyExtType("TestAdd",
                              """
@@ -1431,7 +1431,7 @@ class TestObject(object):
         obj.clear_value()
         assert value == (1, 2, 3, "hello", "world", dummy)
 
-    @skipIf(is_windows) # GR-52900
+    @skipIf(is_windows, reason="GR-52900")
     def test_async_slots(self):
         import asyncio, types, functools
         TestTpAsync = CPyExtType("TestTpAsync",
@@ -1617,7 +1617,7 @@ class TestObjectFunctions(CPyExtTestCase):
     )
 
 
-class TestPickleNative:
+class TestPickleNative(unittest.TestCase):
     def test_pickle_native(self):
         import pickle
         TestPicklable = CPyExtType("TestPicklable", "")

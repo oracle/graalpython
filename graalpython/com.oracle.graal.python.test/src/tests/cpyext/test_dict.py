@@ -39,8 +39,6 @@
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare
 
-__dir__ = __file__.rpartition("/")[0]
-
 
 def _reference_get_item(args):
     try:

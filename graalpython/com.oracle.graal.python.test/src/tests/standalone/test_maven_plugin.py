@@ -38,11 +38,13 @@
 # SOFTWARE.
 
 import os
-import tempfile
-import unittest
 import shutil
 import sys
+import tempfile
+import unittest
+
 from tests.standalone import util
+
 
 class MavenPluginTest(util.PolyglotAppTestBase):
 
@@ -109,7 +111,8 @@ class MavenPluginTest(util.PolyglotAppTestBase):
 
             # import struct from python file triggers extract of native extension files in VirtualFileSystem
             hello_src = os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs", "src", "hello.py")
-            contents = open(hello_src, 'r').read()
+            with open(hello_src) as f:
+                contents = f.read()
             with open(hello_src, 'w') as f:
                 f.write("import struct\n" + contents)
 
@@ -354,5 +357,3 @@ class MavenPluginTest(util.PolyglotAppTestBase):
             cmd = mvnw_cmd + ["process-resources"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
-
-unittest.skip_deselected_test_functions(globals())

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -7,10 +7,10 @@ Tests common to list and UserList.UserList
 """
 
 import sys
-import os
 from functools import cmp_to_key
-import seq_tests
-#from test import support
+
+from tests import seq_tests
+
 
 class CommonTest(seq_tests.CommonTest):
 

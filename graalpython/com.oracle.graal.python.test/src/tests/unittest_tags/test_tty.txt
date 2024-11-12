@@ -1,2 +1,2 @@
-*graalpython.lib-python.3.test.test_tty.TestTty.test_setcbreak
-*graalpython.lib-python.3.test.test_tty.TestTty.test_setraw
+test.test_tty.TestTty.test_setcbreak
+test.test_tty.TestTty.test_setraw

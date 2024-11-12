@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,12 +37,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
+import unittest
 import weakref
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, GRAALPYTHON, unhandled_error_compare, assert_raises
-
-__dir__ = __file__.rpartition("/")[0]
+from . import CPyExtType, assert_raises
 
 TestWeakRefHelper = CPyExtType(
     'TestWeakRefHelper',
@@ -63,7 +61,7 @@ TestWeakRefHelper = CPyExtType(
 )
 helper = TestWeakRefHelper()
 
-class TestWeakRef(object):
+class TestWeakRef(unittest.TestCase):
     
     def test_simple(self):
         class Foo:

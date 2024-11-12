@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 def test_module_with():
-    import annotations.withannotations as m
+    import tests.annotations.withannotations as m
     a = m.__annotations__
 
     assert int == a['j']
@@ -46,7 +46,7 @@ def test_module_with():
 
 
 def test_function_withouth():
-    import annotations.annotatedFunctions as m
+    import tests.annotations.annotatedFunctions as m
 
     assert len(m.noAnnotation1.__annotations__) == 0
     assert len(m.noAnnotation2.__annotations__) == 0
@@ -54,7 +54,7 @@ def test_function_withouth():
     assert len(m.noAnnotation4.__annotations__) == 0
     
 def test_function_with():
-    import annotations.annotatedFunctions as m
+    import tests.annotations.annotatedFunctions as m
 
     assert len(m.withAnnotation1.__annotations__) == 1
     assert int == m.withAnnotation1.__annotations__['j']
@@ -71,26 +71,26 @@ def test_function_with():
     assert len(m.withAnnotation3.__annotations__) == 3
 
 def test_wrongTypeInFunction():
-    import annotations.annotatedFunctions as m
+    import tests.annotations.annotatedFunctions as m
 
     assert m.wrongTypeInside() == 0
     assert len(m.wrongTypeInside.__annotations__) == 0
 
 
 def test_decoratedMethod():
-    import annotations.annotatedClasses as m
+    import tests.annotations.annotatedClasses as m
     
     assert len(m.DecoratedMethodClass.method.__annotations__) == 1, "__annotations__ attribute was not found"
     assert int == m.DecoratedMethodClass.method.__annotations__['index']
 
 def test_decoratedClassMethod():
-    import annotations.annotatedClasses as m
+    import tests.annotations.annotatedClasses as m
 
     assert len(m.ClsWithClassMethod.method.__annotations__) == 1, "__annotations__ attribute was not found"
     assert str == m.ClsWithClassMethod.method.__annotations__['string']
 
 def test_addAnnotation():
-    import annotations.annotatedFunctions as m
+    import tests.annotations.annotatedFunctions as m
 
     assert hasattr(m.addAnnotation, '__annotations__')
     assert len(m.addAnnotation.__annotations__) == 1
@@ -100,7 +100,7 @@ def test_addAnnotation():
     assert 10 == m.addAnnotation.__annotations__['myKey']
 
 def test_annotatedAssignments():
-    import annotations.annotatedAssignments as m
+    import tests.annotations.annotatedAssignments as m
 
     assert m.slice_no_assign_count == 4
     assert m.slice_assign_count == 4

@@ -36,6 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import unittest
 
 from tests.cpyext import CPyExtType, CPyExtHeapType, assert_raises
 
@@ -87,7 +88,7 @@ class NativeSubtypeWithAddedDict(NativeTypeWithoutDict):
     pass
 
 
-class TestObjectDict:
+class TestObjectDict(unittest.TestCase):
     @staticmethod
     def assert_has_no_dict(obj):
         assert_raises(AttributeError, setattr, obj, 'foo', 1)

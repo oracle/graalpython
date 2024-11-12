@@ -2635,6 +2635,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object value = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
         PArguments.setException(PArguments.getGeneratorFrame(arguments), mutableData.localException);
+        if (mutableData.localException instanceof PException pe) {
+            /*
+             * The frame reference is only valid for this particular resumption of the generator, so
+             * we need to materialize the frame to make sure the traceback will still be valid in
+             * the next resumption.
+             */
+            pe.markEscaped();
+        }
         // See PBytecodeGeneratorRootNode#execute
         if (localFrame != virtualFrame) {
             copyStackSlotsToGeneratorFrame(virtualFrame, localFrame, stackTop);

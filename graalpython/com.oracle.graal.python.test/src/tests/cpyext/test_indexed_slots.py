@@ -38,7 +38,6 @@
 # SOFTWARE.
 
 from . import CPyExtTestCase, CPyExtHeapType
-__dir__ = __file__.rpartition("/")[0]
 
 
 class BaseWithSlots:

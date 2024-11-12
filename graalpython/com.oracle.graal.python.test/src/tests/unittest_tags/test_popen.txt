@@ -1,5 +1,5 @@
-*graalpython.lib-python.3.test.test_popen.PopenTest.test_contextmanager
-*graalpython.lib-python.3.test.test_popen.PopenTest.test_iterating
-*graalpython.lib-python.3.test.test_popen.PopenTest.test_keywords
-*graalpython.lib-python.3.test.test_popen.PopenTest.test_popen
-*graalpython.lib-python.3.test.test_popen.PopenTest.test_return_code
+test.test_popen.PopenTest.test_contextmanager
+test.test_popen.PopenTest.test_iterating
+test.test_popen.PopenTest.test_keywords
+test.test_popen.PopenTest.test_popen
+test.test_popen.PopenTest.test_return_code

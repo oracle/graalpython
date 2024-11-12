@@ -38,11 +38,11 @@
 # SOFTWARE.
 
 import os
+import shutil
 import subprocess
 import sys
 import unittest
 import urllib.parse
-import shutil
 
 MAVEN_VERSION = "3.9.8"
 GLOBAL_MVN_CMD = [shutil.which('mvn'), "--batch-mode"]
@@ -55,75 +55,76 @@ is_maven_plugin_test_enabled = 'ENABLE_MAVEN_PLUGIN_UNITTESTS' in os.environ and
 is_gradle_plugin_test_enabled = 'ENABLE_GRADLE_PLUGIN_UNITTESTS' in os.environ and os.environ['ENABLE_GRADLE_PLUGIN_UNITTESTS'] == "true"
 
 class PolyglotAppTestBase(unittest.TestCase):
-    def setUpClass(self):
+    @classmethod
+    def setUpClass(cls):
         if not is_maven_plugin_test_enabled and not is_gradle_plugin_test_enabled:
             return
 
-        self.env = os.environ.copy()
-        self.env["PYLAUNCHER_DEBUG"] = "1"
+        cls.env = os.environ.copy()
+        cls.env["PYLAUNCHER_DEBUG"] = "1"
 
-        self.archetypeGroupId = "org.graalvm.python"
-        self.archetypeArtifactId = "graalpy-archetype-polyglot-app"
-        self.pluginArtifactId = "graalpy-maven-plugin"
-        self.graalvmVersion = get_graalvm_version()
+        cls.archetypeGroupId = "org.graalvm.python"
+        cls.archetypeArtifactId = "graalpy-archetype-polyglot-app"
+        cls.pluginArtifactId = "graalpy-maven-plugin"
+        cls.graalvmVersion = get_graalvm_version()
 
         for custom_repo in os.environ.get("MAVEN_REPO_OVERRIDE", "").split(","):
             url = urllib.parse.urlparse(custom_repo)
             if url.scheme == "file":
                 jar = os.path.join(
                     url.path,
-                    self.archetypeGroupId.replace(".", os.path.sep),
-                    self.archetypeArtifactId,
-                    self.graalvmVersion,
-                    f"{self.archetypeArtifactId}-{self.graalvmVersion}.jar",
+                    cls.archetypeGroupId.replace(".", os.path.sep),
+                    cls.archetypeArtifactId,
+                    cls.graalvmVersion,
+                    f"{cls.archetypeArtifactId}-{cls.graalvmVersion}.jar",
                 )
                 pom = os.path.join(
                     url.path,
-                    self.archetypeGroupId.replace(".", os.path.sep),
-                    self.archetypeArtifactId,
-                    self.graalvmVersion,
-                    f"{self.archetypeArtifactId}-{self.graalvmVersion}.pom",
+                    cls.archetypeGroupId.replace(".", os.path.sep),
+                    cls.archetypeArtifactId,
+                    cls.graalvmVersion,
+                    f"{cls.archetypeArtifactId}-{cls.graalvmVersion}.pom",
                 )
                 cmd = GLOBAL_MVN_CMD + [
                     "install:install-file",
                     f"-Dfile={jar}",
-                    f"-DgroupId={self.archetypeGroupId}",
-                    f"-DartifactId={self.archetypeArtifactId}",
-                    f"-Dversion={self.graalvmVersion}",
+                    f"-DgroupId={cls.archetypeGroupId}",
+                    f"-DartifactId={cls.archetypeArtifactId}",
+                    f"-Dversion={cls.graalvmVersion}",
                     "-Dpackaging=jar",
                     f"-DpomFile={pom}",
                     "-DcreateChecksum=true",
                 ]
-                out, return_code = run_cmd(cmd, self.env)
+                out, return_code = run_cmd(cmd, cls.env)
                 assert return_code == 0
 
                 jar = os.path.join(
                     url.path,
-                    self.archetypeGroupId.replace(".", os.path.sep),
-                    self.pluginArtifactId,
-                    self.graalvmVersion,
-                    f"{self.pluginArtifactId}-{self.graalvmVersion}.jar",
+                    cls.archetypeGroupId.replace(".", os.path.sep),
+                    cls.pluginArtifactId,
+                    cls.graalvmVersion,
+                    f"{cls.pluginArtifactId}-{cls.graalvmVersion}.jar",
                 )
 
                 pom = os.path.join(
                     url.path,
-                    self.archetypeGroupId.replace(".", os.path.sep),
-                    self.pluginArtifactId,
-                    self.graalvmVersion,
-                    f"{self.pluginArtifactId}-{self.graalvmVersion}.pom",
+                    cls.archetypeGroupId.replace(".", os.path.sep),
+                    cls.pluginArtifactId,
+                    cls.graalvmVersion,
+                    f"{cls.pluginArtifactId}-{cls.graalvmVersion}.pom",
                 )
 
                 cmd = GLOBAL_MVN_CMD + [
                     "install:install-file",
                     f"-Dfile={jar}",
-                    f"-DgroupId={self.archetypeGroupId}",
-                    f"-DartifactId={self.pluginArtifactId}",
-                    f"-Dversion={self.graalvmVersion}",
+                    f"-DgroupId={cls.archetypeGroupId}",
+                    f"-DartifactId={cls.pluginArtifactId}",
+                    f"-Dversion={cls.graalvmVersion}",
                     "-Dpackaging=jar",
                     f"-DpomFile={pom}",
                     "-DcreateChecksum=true",
                 ]
-                out, return_code = run_cmd(cmd, self.env)
+                out, return_code = run_cmd(cmd, cls.env)
                 assert return_code == 0
                 break
 

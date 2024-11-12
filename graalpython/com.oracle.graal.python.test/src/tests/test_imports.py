@@ -38,9 +38,10 @@
 # SOFTWARE.
 
 import sys
+import os
 from posix import *
 
-sys.path.append(sys._getframe().f_code.co_filename.rpartition("/")[0])
+sys.path.insert(0, os.path.dirname(__file__))
 
 
 def test_relative_import():

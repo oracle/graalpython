@@ -1,7 +1,7 @@
-*graalpython.lib-python.3.test.test_augassign.AugAssignTest.testBasic
-*graalpython.lib-python.3.test.test_augassign.AugAssignTest.testCustomMethods1
-*graalpython.lib-python.3.test.test_augassign.AugAssignTest.testCustomMethods2
-*graalpython.lib-python.3.test.test_augassign.AugAssignTest.testInDict
-*graalpython.lib-python.3.test.test_augassign.AugAssignTest.testInList
-*graalpython.lib-python.3.test.test_augassign.AugAssignTest.testSequences
-*graalpython.lib-python.3.test.test_augassign.AugAssignTest.test_with_unpacking
+test.test_augassign.AugAssignTest.testBasic
+test.test_augassign.AugAssignTest.testCustomMethods1
+test.test_augassign.AugAssignTest.testCustomMethods2
+test.test_augassign.AugAssignTest.testInDict
+test.test_augassign.AugAssignTest.testInList
+test.test_augassign.AugAssignTest.testSequences
+test.test_augassign.AugAssignTest.test_with_unpacking

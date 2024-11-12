@@ -1,7 +1,7 @@
-*graalpython.lib-python.3.test.test_profile.ProfileTest.test_calling_conventions
-*graalpython.lib-python.3.test.test_profile.ProfileTest.test_cprofile
-*graalpython.lib-python.3.test.test_profile.ProfileTest.test_output_file_when_changing_directory
-*graalpython.lib-python.3.test.test_profile.ProfileTest.test_run
-*graalpython.lib-python.3.test.test_profile.ProfileTest.test_run_profile_as_module
-*graalpython.lib-python.3.test.test_profile.ProfileTest.test_runctx
-*graalpython.lib-python.3.test.test_profile.TestMain.test_main
+test.test_profile.ProfileTest.test_calling_conventions
+test.test_profile.ProfileTest.test_cprofile
+test.test_profile.ProfileTest.test_output_file_when_changing_directory
+test.test_profile.ProfileTest.test_run
+test.test_profile.ProfileTest.test_run_profile_as_module
+test.test_profile.ProfileTest.test_runctx
+test.test_profile.TestMain.test_main

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -74,7 +74,6 @@ class ChecksumTests(unittest.TestCase):
         self.assertEqual(binascii.crc32(b'spam'), zlib.crc32(b'spam'))
         self.assertEqual(binascii.crc32(b'spam', 0x80000000), zlib.crc32(b'spam', 0x80000000))
 
-    @unittest.skipIf(sys.version_info.minor < 8)
     def test_index(self):
         self.assertEqual(zlib.crc32(b'ahoj', MyIndexObject(10)), 3299199656)
         self.assertEqual(zlib.adler32(b'ahoj', MyIndexObject(10)), 69992876)
