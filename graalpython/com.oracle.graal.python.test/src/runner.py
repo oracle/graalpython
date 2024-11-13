@@ -45,6 +45,7 @@ import math
 import multiprocessing
 import os
 import pickle
+import platform
 import re
 import shlex
 import signal
@@ -69,6 +70,13 @@ DIR = Path(__file__).parent.resolve()
 UNIT_TEST_ROOT = (DIR / 'tests').resolve()
 TAGGED_TEST_ROOT = (DIR.parent.parent / 'lib-python' / '3' / 'test').resolve()
 IS_GRAALPY = sys.implementation.name == 'graalpy'
+
+PLATFORM_KEYS = {sys.platform, platform.machine(), sys.implementation.name}
+if IS_GRAALPY:
+    # noinspection PyUnresolvedReferences
+    PLATFORM_KEYS.add('native_image' if __graalpython__.is_native else 'jvm')
+
+CURRENT_PLATFORM_KEYS = frozenset({f'{sys.platform}-{platform.machine()}'})
 
 
 class Logger:
@@ -433,16 +441,37 @@ class TestRunner:
             by_file[result.test_id.test_file].append(result)
         for test_file, results in by_file.items():
             test_file = configure_test_file(test_file)
-            tag_file = test_file.get_tag_file()
-            if not tag_file:
-                log(f"WARNNING: no tag directory for test file {test_file}")
-                continue
-            tags = {result.test_id.test_name for result in results if result.status == TestStatus.SUCCESS}
-            if append:
-                tags |= {test.test_name for test in read_tags(test_file)}
-            with open(tag_file, 'w') as f:
-                for test_name in sorted(tags):
-                    f.write(f'{test_name}\n')
+            new_tags = [
+                Tag(result.test_id, keys=CURRENT_PLATFORM_KEYS)
+                for result in results if result.status == TestStatus.SUCCESS
+            ]
+            tags = merge_tags(read_tags(test_file), new_tags, append=append)
+            write_tags(test_file, tags)
+
+
+def merge_tags(original: typing.Iterable['Tag'], new: typing.Iterable['Tag'], append: bool) -> set['Tag']:
+    original_by_name = {t.test_id.test_name: t.keys for t in original}
+    merged = {}
+    for tag in new:
+        if existing_keys := original_by_name.get(tag.test_id.test_name):
+            merged[tag.test_id.test_name] = tag.with_merged_keys(existing_keys)
+        else:
+            merged[tag.test_id.test_name] = tag
+    if append:
+        for test_name, tag in original_by_name.items():
+            if test_name not in merged:
+                merged[test_name] = tag
+    return set(merged.values())
+
+
+def write_tags(test_file: 'TestFile', tags: typing.Iterable['Tag']):
+    tag_file = test_file.get_tag_file()
+    if not tag_file:
+        log(f"WARNING: no tag directory for test file {test_file}")
+        return
+    with open(tag_file, 'w') as f:
+        for tag in sorted(tags, key=lambda t: t.test_id.test_name):
+            f.write(f'{tag}\n')
 
 
 def interrupt_process(process: subprocess.Popen):
@@ -778,6 +807,10 @@ class SubprocessWorker:
                         raise RuntimeError("Worker is not making progress")
 
 
+def platform_keys_match(items: typing.Iterable[str]):
+    return any(all(key in PLATFORM_KEYS for key in item.split('-')) for item in items)
+
+
 @dataclass
 class TestFileConfig:
     serial: bool = False
@@ -787,15 +820,11 @@ class TestFileConfig:
 
     @classmethod
     def from_dict(cls, config: dict):
-        exclude_keys = {sys.platform}
-        if IS_GRAALPY:
-            # noinspection PyUnresolvedReferences
-            exclude_keys.add('native_image' if __graalpython__.is_native else 'jvm')
         return cls(
             serial=config.get('serial', cls.serial),
             partial_splits=config.get('partial_splits_individual_tests', cls.partial_splits),
             per_test_timeout=config.get('per_test_timeout', cls.per_test_timeout),
-            exclude=bool(set(config.get('exclude_on', set())) & exclude_keys),
+            exclude=platform_keys_match(config.get('exclude_on', ())),
         )
 
     def combine(self, other: 'TestFileConfig'):
@@ -925,7 +954,7 @@ class Test:
 
 
 def filter_tree(test_file: TestFile, test_suite: unittest.TestSuite, specifiers: list[TestSpecifier],
-                tags: list[TestId] | None):
+                tagged_ids: list[TestId] | None):
     keep_tests = []
     collected_tests = []
     for test in test_suite:
@@ -933,14 +962,14 @@ def filter_tree(test_file: TestFile, test_suite: unittest.TestSuite, specifiers:
         if exception := getattr(test, '_exception', None):
             raise exception
         if hasattr(test, '__iter__'):
-            sub_collected = filter_tree(test_file, test, specifiers, tags)
+            sub_collected = filter_tree(test_file, test, specifiers, tagged_ids)
             if sub_collected:
                 keep_tests.append(test)
                 collected_tests += sub_collected
         else:
             test_id = TestId.from_test_case(test_file.path, test)
             if any(s.match(test_id) for s in specifiers):
-                if tags is None or test_id in tags:
+                if tagged_ids is None or test_id in tagged_ids:
                     keep_tests.append(test)
                     collected_tests.append(Test(test_id, test_file))
     test_suite._tests = keep_tests
@@ -991,10 +1020,10 @@ def collect_module(test_file: TestFile, specifiers: list[TestSpecifier], use_tag
     sys.path.insert(0, str(config.rootdir))
     try:
         loader = TopLevelFunctionLoader() if config.run_top_level_functions else unittest.TestLoader()
-        tags = None
+        tagged_ids = None
         if use_tags and config.tags_dir:
-            tags = read_tags(test_file)
-            if not tags:
+            tagged_ids = [tag.test_id for tag in read_tags(test_file) if platform_keys_match(tag.keys)]
+            if not tagged_ids:
                 return None
         test_module = test_path_to_module(test_file)
         try:
@@ -1002,7 +1031,7 @@ def collect_module(test_file: TestFile, specifiers: list[TestSpecifier], use_tag
         except unittest.SkipTest as e:
             log(f"Test file {test_file} skipped: {e}")
             return
-        collected_tests = filter_tree(test_file, test_suite, specifiers, tags)
+        collected_tests = filter_tree(test_file, test_suite, specifiers, tagged_ids)
         if partial and test_file.test_config.partial_splits:
             selected, total = partial
             collected_tests = collected_tests[selected::total]
@@ -1066,15 +1095,33 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
     return to_run
 
 
-def read_tags(test_file: TestFile) -> list[TestId]:
+@dataclass(frozen=True)
+class Tag:
+    test_id: TestId
+    keys: frozenset[str]
+
+    def with_merged_keys(self, keys: typing.AbstractSet[str]) -> 'Tag':
+        return Tag(self.test_id, self.keys | keys)
+
+    def __str__(self):
+        return f'{self.test_id.test_name} @ {",".join(sorted(self.keys))}'
+
+
+def read_tags(test_file: TestFile) -> list[Tag]:
     tag_file = test_file.get_tag_file()
     tags = []
     if tag_file.exists():
         with open(tag_file) as f:
             for line in f:
-                test = line.strip()
-                tags.append(TestId(test_file.path, test))
-        return tags
+                test, _, keys = line.partition('@')
+                test = test.strip()
+                keys = keys.strip()
+                if not keys:
+                    log(f'WARNING: invalid tag {test}: missing platform keys')
+                tags.append(Tag(
+                    TestId(test_file.path, test),
+                    frozenset(keys.split(',')),
+                ))
     return tags
 
 
