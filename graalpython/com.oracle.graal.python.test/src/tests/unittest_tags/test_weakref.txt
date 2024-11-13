@@ -32,10 +32,6 @@ test.test_weakref.ReferencesTestCase.test_basic_ref @ darwin-arm64,darwin-x86_64
 test.test_weakref.ReferencesTestCase.test_callback_different_classes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_callback_gcs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_callback_in_cycle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.ReferencesTestCase.test_callback_in_cycle_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.ReferencesTestCase.test_callback_in_cycle_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.ReferencesTestCase.test_callback_in_cycle_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.ReferencesTestCase.test_callback_in_cycle_4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_callback_in_cycle_resurrection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_callback_reachable_one_way @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_callbacks_on_callback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

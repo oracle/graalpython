@@ -13,5 +13,4 @@ test.test_decorators.TestDecorators.test_memoize @ darwin-arm64,darwin-x86_64,li
 test.test_decorators.TestDecorators.test_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_decorators.TestDecorators.test_single @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_decorators.TestDecorators.test_staticmethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_decorators.TestDecorators.test_staticmethod_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_decorators.TestDecorators.test_wrapped_classmethod_inside_classmethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -9,11 +9,9 @@ test.test_hmac.ConstructorTestCase.test_with_sha256_module @ darwin-arm64,darwin
 test.test_hmac.ConstructorTestCase.test_with_str_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hmac.ConstructorTestCase.test_withmodule @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hmac.ConstructorTestCase.test_withtext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hmac.CopyTestCase.test_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hmac.CopyTestCase.test_attributes_old @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hmac.CopyTestCase.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hmac.CopyTestCase.test_equality_new @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hmac.CopyTestCase.test_realcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hmac.CopyTestCase.test_realcopy_hmac @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hmac.CopyTestCase.test_realcopy_old @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hmac.SanityTestCase.test_exercise_all_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

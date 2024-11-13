@@ -28,11 +28,9 @@ test.test_typing.AnnotatedTests.test_specialize @ darwin-arm64,darwin-x86_64,lin
 test.test_typing.AnnotatedTests.test_subst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.AnnotatedTests.test_too_few_type_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.AnyTests.test_any_instance_type_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.AnyTests.test_any_subclass_type_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.AnyTests.test_any_works_with_alias @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.AnyTests.test_can_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.AnyTests.test_cannot_instantiate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.AnyTests.test_cannot_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.AnyTests.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.AnyTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.AssertNeverTests.test_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -128,7 +126,6 @@ test.test_typing.FinalDecoratorTests.test_final_unmodified @ darwin-arm64,darwin
 test.test_typing.FinalTests.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.FinalTests.test_cannot_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.FinalTests.test_cannot_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.FinalTests.test_final_unmodified @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.FinalTests.test_no_isinstance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.FinalTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.ForwardRefTests.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -163,7 +160,6 @@ test.test_typing.ForwardRefTests.test_or @ darwin-arm64,darwin-x86_64,linux-aarc
 test.test_typing.ForwardRefTests.test_special_forms_forward @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.ForwardRefTests.test_syntax_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.ForwardRefTests.test_tuple_forward @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.ForwardRefTests.test_type_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.ForwardRefTests.test_union_forward @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.ForwardRefTests.test_union_forward_recursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.GenericAliasSubstitutionTests.test_one_parameter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -244,10 +240,8 @@ test.test_typing.GetTypeHintTests.test_get_type_hints_wrapped_decoratored_func @
 test.test_typing.GetTypeHintTests.test_previous_behavior @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.GetTypeHintTests.test_respect_no_type_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.GetTypeHintTests.test_top_level_class_var @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.GetUtilitiesTestCase.test_forward_ref_and_final @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.GetUtilitiesTestCase.test_get_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.GetUtilitiesTestCase.test_get_origin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.GetUtilitiesTestCase.test_top_level_class_var @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.IOTests.test_binaryio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.IOTests.test_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.IOTests.test_io_submodule @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -284,7 +278,6 @@ test.test_typing.NamedTupleTests.test_generic @ darwin-arm64,darwin-x86_64,linux
 test.test_typing.NamedTupleTests.test_multiple_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NamedTupleTests.test_namedtuple_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NamedTupleTests.test_namedtuple_keyword_usage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NamedTupleTests.test_namedtuple_pyversion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NamedTupleTests.test_namedtuple_special_keyword_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NamedTupleTests.test_non_generic_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NeverTests.test_cannot_instantiate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -312,21 +305,12 @@ test.test_typing.NewTypePythonTests.test_or @ darwin-arm64,darwin-x86_64,linux-a
 test.test_typing.NewTypePythonTests.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NewTypePythonTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NewTypePythonTests.test_special_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeTests.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeTests.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeTests.test_missing__name__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeTests.test_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeTests.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeTests.test_special_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NoReturnTests.test_cannot_instantiate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NoReturnTests.test_cannot_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NoReturnTests.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NoReturnTests.test_get_origin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NoReturnTests.test_get_type_hints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NoReturnTests.test_instance_type_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NoReturnTests.test_noreturn_instance_type_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NoReturnTests.test_noreturn_subclass_type_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NoReturnTests.test_not_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NoReturnTests.test_not_generic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NoReturnTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -347,7 +331,6 @@ test.test_typing.ParamSpecTests.test_args_kwargs @ darwin-arm64,darwin-x86_64,li
 test.test_typing.ParamSpecTests.test_bad_var_substitution @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.ParamSpecTests.test_basic_plain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.ParamSpecTests.test_multiple_paramspecs_in_user_generics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.ParamSpecTests.test_no_paramspec_in__parameters__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.ParamSpecTests.test_paramspec_gets_copied @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.ParamSpecTests.test_paramspec_in_nested_generics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.ParamSpecTests.test_stringized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

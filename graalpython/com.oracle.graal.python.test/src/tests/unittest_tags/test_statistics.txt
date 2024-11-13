@@ -65,10 +65,6 @@ test.test_statistics.ExactRatioTest.test_int @ darwin-arm64,darwin-x86_64,linux-
 test.test_statistics.FailNegTest.test_error_msg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.FailNegTest.test_negatives_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.FailNegTest.test_pass_through @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_statistics.FindLteqTest.test_invalid_input_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_statistics.FindLteqTest.test_locate_successfully @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_statistics.FindRteqTest.test_invalid_input_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_statistics.FindRteqTest.test_locate_successfully @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.GlobalsTest.test_check_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.GlobalsTest.test_meta @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.IsFiniteTest.test_finite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -250,7 +246,6 @@ test.test_statistics.TestNormalDistC.test_inv_cdf @ darwin-arm64,darwin-x86_64,l
 test.test_statistics.TestNormalDistC.test_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistC.test_pdf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistC.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_statistics.TestNormalDistC.test_pickle_and_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistC.test_properties @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistC.test_quantiles @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistC.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -269,7 +264,6 @@ test.test_statistics.TestNormalDistPython.test_instantiation_and_attributes @ da
 test.test_statistics.TestNormalDistPython.test_inv_cdf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistPython.test_pdf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistPython.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_statistics.TestNormalDistPython.test_pickle_and_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistPython.test_properties @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistPython.test_quantiles @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistPython.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -351,7 +345,6 @@ test.test_statistics.TestSum.test_floats @ darwin-arm64,darwin-x86_64,linux-aarc
 test.test_statistics.TestSum.test_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestSum.test_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestSum.test_mixed_sum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_statistics.TestSum.test_start_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestSum.test_strings_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestVariance.test_accuracy_bug_20499 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestVariance.test_bad_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -63,15 +63,12 @@ test.test_re.ReTests.test_bug_931848 @ darwin-arm64,darwin-x86_64,linux-aarch64,
 test.test_re.ReTests.test_bug_gh106052 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_bug_gh91616 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_bytes_str_mixing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_re.ReTests.test_case_helpers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_category @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_character_set_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_comments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_compile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_constants @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_copying @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_re.ReTests.test_dealloc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_re.ReTests.test_debug_flag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_dollar_matches_twice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_empty_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_enum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -130,7 +127,6 @@ test.test_re.ReTests.test_re_split @ darwin-arm64,darwin-x86_64,linux-aarch64,li
 test.test_re.ReTests.test_re_subn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_repeat_minmax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_repeat_minmax_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_re.ReTests.test_repeat_minmax_overflow_maxrepeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_scanner @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_scoped_flags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_search_coverage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

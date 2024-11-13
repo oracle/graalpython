@@ -112,7 +112,6 @@ test.test_itertools.TestGC.test_starmap @ darwin-arm64,darwin-x86_64,linux-aarch
 test.test_itertools.TestGC.test_takewhile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_itertools.TestGC.test_zip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_itertools.TestGC.test_zip_longest @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_itertools.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_itertools.TestPurePythonRoughEquivalents.test_islice_recipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_itertools.TestVariousIteratorArgs.test_accumulate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_itertools.TestVariousIteratorArgs.test_chain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

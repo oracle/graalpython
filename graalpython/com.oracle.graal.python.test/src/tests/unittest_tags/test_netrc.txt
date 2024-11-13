@@ -7,16 +7,9 @@ test.test_netrc.NetrcTestCase.test_comment_at_end_of_machine_line_pass_has_hash 
 test.test_netrc.NetrcTestCase.test_comment_before_machine_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_netrc.NetrcTestCase.test_comment_before_machine_line_hash_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_netrc.NetrcTestCase.test_comment_before_machine_line_no_space @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_netrc.NetrcTestCase.test_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_netrc.NetrcTestCase.test_file_not_found_explicit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_netrc.NetrcTestCase.test_file_not_found_in_home @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_netrc.NetrcTestCase.test_home_not_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_netrc.NetrcTestCase.test_invalid_tokens @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_netrc.NetrcTestCase.test_macros @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_netrc.NetrcTestCase.test_optional_tokens @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_netrc.NetrcTestCase.test_password_with_internal_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_netrc.NetrcTestCase.test_password_with_leading_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_netrc.NetrcTestCase.test_password_with_trailing_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_netrc.NetrcTestCase.test_security @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_netrc.NetrcTestCase.test_token_value_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_netrc.NetrcTestCase.test_token_value_internal_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -319,7 +319,6 @@ test.test_email.test__header_value_parser.TestParser.test_get_unstructured_ew_wi
 test.test_email.test__header_value_parser.TestParser.test_get_unstructured_ew_with_internal_ws @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_email.test__header_value_parser.TestParser.test_get_unstructured_ew_without_leading_whitespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_email.test__header_value_parser.TestParser.test_get_unstructured_ew_without_trailing_whitespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_email.test__header_value_parser.TestParser.test_get_unstructured_invaild_ew @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_email.test__header_value_parser.TestParser.test_get_unstructured_invalid_base64_character @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_email.test__header_value_parser.TestParser.test_get_unstructured_invalid_base64_character_and_bad_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_email.test__header_value_parser.TestParser.test_get_unstructured_invalid_base64_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

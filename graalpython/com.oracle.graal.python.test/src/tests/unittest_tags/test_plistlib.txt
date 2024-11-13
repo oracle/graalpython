@@ -52,8 +52,5 @@ test.test_plistlib.TestPlistlib.test_uid_pickle @ darwin-arm64,darwin-x86_64,lin
 test.test_plistlib.TestPlistlib.test_uid_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_plistlib.TestPlistlib.test_xml_encodings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_plistlib.TestPlistlib.test_xml_plist_with_entity_decl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_plistlib.TestPlistlibDeprecated.test_bytes_deprecated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_plistlib.TestPlistlibDeprecated.test_dataobject_deprecated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_plistlib.TestPlistlibDeprecated.test_io_deprecated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_plistlib.TestPlutil.test_lint_status @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_plistlib.TestPlutil.test_octal_and_hex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

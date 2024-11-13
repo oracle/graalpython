@@ -24,4 +24,3 @@ test.test_pkgutil.PkgutilTests.test_unreadable_dir_on_syspath @ darwin-arm64,dar
 test.test_pkgutil.PkgutilTests.test_walk_packages_raises_on_string_or_bytes_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pkgutil.PkgutilTests.test_walkpackages_filesys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pkgutil.PkgutilTests.test_walkpackages_zipfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pkgutil.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

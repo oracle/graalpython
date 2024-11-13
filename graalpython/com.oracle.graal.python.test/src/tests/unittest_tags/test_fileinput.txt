@@ -1,8 +1,4 @@
 test.test_fileinput.BufferSizesTests.test_buffer_sizes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_fileinput.FileInputTests.test__getitem__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_fileinput.FileInputTests.test__getitem___deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_fileinput.FileInputTests.test__getitem__eof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_fileinput.FileInputTests.test__getitem__invalid_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileinput.FileInputTests.test_close_on_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileinput.FileInputTests.test_context_manager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileinput.FileInputTests.test_detached_stdin_binary_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -17,7 +13,6 @@ test.test_fileinput.FileInputTests.test_inplace_encoding_errors @ darwin-arm64,d
 test.test_fileinput.FileInputTests.test_invalid_opening_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileinput.FileInputTests.test_iteration_buffering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileinput.FileInputTests.test_nextfile_oserror_deleting_backup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_fileinput.FileInputTests.test_opening_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileinput.FileInputTests.test_pathlib_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileinput.FileInputTests.test_pathlib_file_inplace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileinput.FileInputTests.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

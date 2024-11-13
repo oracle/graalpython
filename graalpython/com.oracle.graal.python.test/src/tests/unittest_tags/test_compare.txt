@@ -14,10 +14,3 @@ test.test_compare.ComparisonSimpleTest.test_ne_defaults_to_not_eq @ darwin-arm64
 test.test_compare.ComparisonSimpleTest.test_ne_high_priority @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compare.ComparisonSimpleTest.test_ne_low_priority @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compare.ComparisonSimpleTest.test_other_delegation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_compare.ComparisonTest.test_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_compare.ComparisonTest.test_id_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_compare.ComparisonTest.test_issue_1393 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_compare.ComparisonTest.test_ne_defaults_to_not_eq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_compare.ComparisonTest.test_ne_high_priority @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_compare.ComparisonTest.test_ne_low_priority @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_compare.ComparisonTest.test_other_delegation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -20,6 +20,5 @@ test.test_cmd_line.CmdLineTest.test_stdin_readline @ darwin-arm64,darwin-x86_64,
 test.test_cmd_line.CmdLineTest.test_unbuffered_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmd_line.CmdLineTest.test_unbuffered_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmd_line.CmdLineTest.test_unmached_quote @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_cmd_line.CmdLineTest.test_usage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmd_line.CmdLineTest.test_verbose @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmd_line.IgnoreEnvironmentTest.test_ignore_PYTHONPATH @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

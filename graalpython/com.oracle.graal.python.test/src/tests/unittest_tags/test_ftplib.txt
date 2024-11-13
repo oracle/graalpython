@@ -41,7 +41,6 @@ test.test_ftplib.TestIPv6Environment.test_af @ darwin-arm64,darwin-x86_64,linux-
 test.test_ftplib.TestIPv6Environment.test_makepasv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ftplib.TestIPv6Environment.test_makeport @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ftplib.TestIPv6Environment.test_transfer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ftplib.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ftplib.TestTLS_FTPClass.test_auth_issued_twice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ftplib.TestTLS_FTPClass.test_ccc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ftplib.TestTLS_FTPClass.test_check_hostname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

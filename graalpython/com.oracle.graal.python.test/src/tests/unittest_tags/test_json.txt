@@ -2,11 +2,8 @@ DocTestCase.json @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 DocTestCase.json.encoder.JSONEncoder.encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.TestCTest.test_cjson @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.TestPyTest.test_pyjson @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_json.__init__.TestCTest.test_cjson @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_json.__init__.TestPyTest.test_pyjson @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_decode.TestCDecode.test_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_decode.TestCDecode.test_decoder_optimizations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_json.test_decode.TestCDecode.test_deprecated_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_decode.TestCDecode.test_empty_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_decode.TestCDecode.test_extra_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_decode.TestCDecode.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -19,7 +16,6 @@ test.test_json.test_decode.TestCDecode.test_object_pairs_hook @ darwin-arm64,dar
 test.test_json.test_decode.TestCDecode.test_string_with_utf8_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_decode.TestPyDecode.test_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_decode.TestPyDecode.test_decoder_optimizations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_json.test_decode.TestPyDecode.test_deprecated_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_decode.TestPyDecode.test_empty_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_decode.TestPyDecode.test_extra_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_decode.TestPyDecode.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

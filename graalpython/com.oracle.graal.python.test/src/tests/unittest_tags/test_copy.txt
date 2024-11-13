@@ -47,7 +47,6 @@ test.test_copy.TestCopy.test_deepcopy_keepalive @ darwin-arm64,darwin-x86_64,lin
 test.test_copy.TestCopy.test_deepcopy_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_list_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_memo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_copy.TestCopy.test_deepcopy_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_reduce @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_reduce_ex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_reflexive_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

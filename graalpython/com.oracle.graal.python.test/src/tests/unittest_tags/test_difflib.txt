@@ -31,7 +31,6 @@ test.test_difflib.TestJunkAPIs.test_is_character_junk_true @ darwin-arm64,darwin
 test.test_difflib.TestJunkAPIs.test_is_line_junk_REDOS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_difflib.TestJunkAPIs.test_is_line_junk_false @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_difflib.TestJunkAPIs.test_is_line_junk_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_difflib.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_difflib.TestOutputFormat.test_no_trailing_tab_on_empty_filedate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_difflib.TestOutputFormat.test_range_format_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_difflib.TestOutputFormat.test_range_format_unified @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

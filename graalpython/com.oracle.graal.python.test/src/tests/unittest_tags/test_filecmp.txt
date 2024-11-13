@@ -7,4 +7,3 @@ test.test_filecmp.DirCompareTestCase.test_report_partial_closure @ darwin-arm64,
 test.test_filecmp.FileCompareTestCase.test_cache_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_filecmp.FileCompareTestCase.test_different @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_filecmp.FileCompareTestCase.test_matching @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_filecmp.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

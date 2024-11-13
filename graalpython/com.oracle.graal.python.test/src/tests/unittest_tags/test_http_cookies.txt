@@ -25,4 +25,3 @@ test.test_http_cookies.MorselTests.test_setdefault @ darwin-arm64,darwin-x86_64,
 test.test_http_cookies.MorselTests.test_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_http_cookies.MorselTests.test_setter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_http_cookies.MorselTests.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_http_cookies.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

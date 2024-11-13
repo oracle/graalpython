@@ -53,7 +53,6 @@ test.test_gzip.TestGzip.test_write_incompatible_type @ darwin-arm64,darwin-x86_6
 test.test_gzip.TestGzip.test_write_memoryview @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestGzip.test_write_read_with_pathlike_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestGzip.test_zero_padded_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_gzip.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestOpen.test_bad_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestOpen.test_binary_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestOpen.test_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

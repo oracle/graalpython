@@ -132,7 +132,6 @@ test.test_descr.OperatorsTest.test_lists @ darwin-arm64,darwin-x86_64,linux-aarc
 test.test_descr.OperatorsTest.test_spam_dicts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.OperatorsTest.test_spam_lists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.OperatorsTest.test_wrap_lenfunc_bad_cast @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_descr.PTypesLongInitTest.test_pytype_long_ready @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.PicklingTests.test_issue24097 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.PicklingTests.test_pickle_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.PicklingTests.test_reduce @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

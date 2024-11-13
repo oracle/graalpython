@@ -282,7 +282,6 @@ test.test_subprocess.ProcessTestCaseNoPoll.test_universal_newlines_communicate_s
 test.test_subprocess.ProcessTestCaseNoPoll.test_wait @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCaseNoPoll.test_wait_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCaseNoPoll.test_writes_before_communicate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_subprocess.RunFuncTestCase.test__use_vfork @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.RunFuncTestCase.test_capture_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.RunFuncTestCase.test_capture_stderr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.RunFuncTestCase.test_capture_stdout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

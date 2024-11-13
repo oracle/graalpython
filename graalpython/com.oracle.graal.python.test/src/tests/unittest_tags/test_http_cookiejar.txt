@@ -75,4 +75,3 @@ test.test_http_cookiejar.LWPCookieTests.test_netscape_misc @ darwin-arm64,darwin
 test.test_http_cookiejar.LWPCookieTests.test_rejection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_http_cookiejar.LWPCookieTests.test_session_cookies @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_http_cookiejar.LWPCookieTests.test_url_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_http_cookiejar.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -10,7 +10,6 @@ test.test_unicodedata.UnicodeFunctionsTest.test_east_asian_width_9_0_changes @ d
 test.test_unicodedata.UnicodeFunctionsTest.test_issue10254 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicodedata.UnicodeFunctionsTest.test_issue29456 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicodedata.UnicodeFunctionsTest.test_mirrored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unicodedata.UnicodeFunctionsTest.test_normalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicodedata.UnicodeFunctionsTest.test_numeric @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicodedata.UnicodeFunctionsTest.test_pr29 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicodedata.UnicodeMiscTest.test_bug_1704793 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,3 +1,2 @@
 DocTestCase.test.test_unpack.__test__.doctests @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unpack.TestCornerCases.test_extended_oparg_not_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unpack.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

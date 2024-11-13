@@ -24,16 +24,6 @@ test.test_smtplib.DebuggingServerTests.test_issue43124_escape_options @ darwin-a
 test.test_smtplib.DebuggingServerTests.test_issue43124_putcmd_escapes_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_smtplib.DefaultArgumentsTests.testSendMessage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_smtplib.DefaultArgumentsTests.testSendMessageWithMailOptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtplib.GeneralTests.testBasic1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtplib.GeneralTests.testBasic2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtplib.GeneralTests.testLocalHostName @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtplib.GeneralTests.testQuoteData @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtplib.GeneralTests.testSourceAddress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtplib.GeneralTests.testTimeoutDefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtplib.GeneralTests.testTimeoutNone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtplib.GeneralTests.testTimeoutValue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtplib.GeneralTests.test_debuglevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtplib.GeneralTests.test_debuglevel_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_smtplib.LMTPGeneralTests.testBasic1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_smtplib.LMTPGeneralTests.testBasic2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_smtplib.LMTPGeneralTests.testLocalHostName @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

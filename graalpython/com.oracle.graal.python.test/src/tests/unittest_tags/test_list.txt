@@ -38,7 +38,6 @@ test.test_list.ListTest.test_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64
 test.test_list.ListTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_preallocation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_list.ListTest.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

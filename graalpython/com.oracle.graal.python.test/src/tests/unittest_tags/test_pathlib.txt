@@ -6,7 +6,6 @@ test.test_pathlib.NTFlavourTest.test_splitroot @ darwin-arm64,darwin-x86_64,linu
 test.test_pathlib.PathTest.test_absolute_common @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pathlib.PathTest.test_chmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pathlib.PathTest.test_chmod_follow_symlinks_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pathlib.PathTest.test_class_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pathlib.PathTest.test_complex_symlinks_absolute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pathlib.PathTest.test_complex_symlinks_relative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pathlib.PathTest.test_complex_symlinks_relative_dot_dot @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

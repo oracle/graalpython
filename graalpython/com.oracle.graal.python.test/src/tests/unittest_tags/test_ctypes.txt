@@ -54,7 +54,6 @@ ctypes.test.test_bytes.BytesTest.test_c_wchar @ darwin-arm64,darwin-x86_64,linux
 ctypes.test.test_bytes.BytesTest.test_c_wchar_p @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_bytes.BytesTest.test_struct @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_bytes.BytesTest.test_struct_W @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_byteswap.Test.test_X @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_byteswap.Test.test_endian_double @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_byteswap.Test.test_endian_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_byteswap.Test.test_endian_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -63,13 +62,10 @@ ctypes.test.test_byteswap.Test.test_endian_other @ darwin-arm64,darwin-x86_64,li
 ctypes.test.test_byteswap.Test.test_endian_short @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_byteswap.Test.test_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_byteswap.Test.test_struct_field_alignment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_byteswap.Test.test_struct_fields_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_byteswap.Test.test_struct_fields_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_byteswap.Test.test_struct_fields_unsupported_byte_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_byteswap.Test.test_unaligned_native_struct_fields @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_byteswap.Test.test_unaligned_nonnative_struct_fields @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_byteswap.Test.test_union_fields_unsupported_byte_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_callbacks.Callbacks.test_char_p @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_callbacks.Callbacks.test_issue12483 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_callbacks.Callbacks.test_unsupported_restype_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_callbacks.Callbacks.test_unsupported_restype_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -80,7 +76,6 @@ ctypes.test.test_callbacks.SampleCallbacksTestCase.test_issue_8959_a @ darwin-ar
 ctypes.test.test_callbacks.SampleCallbacksTestCase.test_issue_8959_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_callbacks.StdcallCallbacks.test_byte @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_callbacks.StdcallCallbacks.test_char @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_callbacks.StdcallCallbacks.test_char_p @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_callbacks.StdcallCallbacks.test_double @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_callbacks.StdcallCallbacks.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_callbacks.StdcallCallbacks.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -176,7 +171,6 @@ ctypes.test.test_internals.ObjectsTestCase.test_ptr_struct @ darwin-arm64,darwin
 ctypes.test.test_internals.ObjectsTestCase.test_simple_struct @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_internals.ObjectsTestCase.test_xxx @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_keeprefs.ArrayTestCase.test_cint_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_keeprefs.DeletePointerTestCase.test_X @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_keeprefs.PointerTestCase.test_p_cint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_keeprefs.SimpleTestCase.test_ccharp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_keeprefs.SimpleTestCase.test_cint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -202,7 +196,6 @@ ctypes.test.test_memfunctions.MemFunctionsTest.test_memset @ darwin-arm64,darwin
 ctypes.test.test_memfunctions.MemFunctionsTest.test_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_memfunctions.MemFunctionsTest.test_string_at @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_memfunctions.MemFunctionsTest.test_wstring_at @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_numbers.NumberTestCase.test_bool_from_address @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_numbers.NumberTestCase.test_bool_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_numbers.NumberTestCase.test_byref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_numbers.NumberTestCase.test_char_from_address @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -214,11 +207,9 @@ ctypes.test.test_numbers.NumberTestCase.test_from_param @ darwin-arm64,darwin-x8
 ctypes.test.test_numbers.NumberTestCase.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_numbers.NumberTestCase.test_int_from_address @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_numbers.NumberTestCase.test_integers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_numbers.NumberTestCase.test_perf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_numbers.NumberTestCase.test_signed_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_numbers.NumberTestCase.test_sizes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_numbers.NumberTestCase.test_typeerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_numbers.NumberTestCase.test_valid_ranges @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_objects.TestCase.test @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_parameters.SimpleTypesTestCase.test_abstract @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_parameters.SimpleTypesTestCase.test_array_pointers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -289,11 +280,6 @@ ctypes.test.test_strings.StringArrayTestCase.test_c_buffer_raw @ darwin-arm64,da
 ctypes.test.test_strings.StringArrayTestCase.test_c_buffer_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_strings.StringArrayTestCase.test_param_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_strings.StringArrayTestCase.test_param_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_strings.StringTestCase.test_basic_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_strings.StringTestCase.test_initialized_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_strings.StringTestCase.test_perf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_strings.StringTestCase.test_sized_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_strings.StringTestCase.test_toolong @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_strings.WStringArrayTestCase.test_nonbmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_strings.WStringTestCase.test_basic_wstrings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_strings.WStringTestCase.test_toolong @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -322,7 +308,6 @@ ctypes.test.test_structures.StructureTestCase.test_methods @ darwin-arm64,darwin
 ctypes.test.test_structures.StructureTestCase.test_packed_c_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_structures.StructureTestCase.test_struct_alignment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_structures.StructureTestCase.test_structures_with_wchar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_structures.StructureTestCase.test_subclass_creation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_structures.StructureTestCase.test_union_by_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_structures.StructureTestCase.test_unions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_structures.TestRecursiveStructure.test_contains_itself @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

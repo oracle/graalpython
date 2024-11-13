@@ -9,4 +9,3 @@ unittest.loader.ModuleSkipped.test.test_tools.test_pdeps @ darwin-arm64,darwin-x
 unittest.loader.ModuleSkipped.test.test_tools.test_pindent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.loader.ModuleSkipped.test.test_tools.test_reindent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.loader.ModuleSkipped.test.test_tools.test_sundry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.loader.ModuleSkipped.test.test_tools.test_unparse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

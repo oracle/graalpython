@@ -1,14 +1,3 @@
-test.test_unicode.CAPITest.test_asucs4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unicode.CAPITest.test_asutf8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unicode.CAPITest.test_asutf8andsize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unicode.CAPITest.test_aswidechar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unicode.CAPITest.test_aswidecharstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unicode.CAPITest.test_copycharacters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unicode.CAPITest.test_encode_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unicode.CAPITest.test_findchar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unicode.CAPITest.test_from_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unicode.CAPITest.test_pep393_utf8_caching_bug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unicode.CAPITest.test_transform_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicode.StringModuleTest.test_formatter_field_name_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicode.StringModuleTest.test_formatter_parser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicode.StringModuleTest.test_str_subclass_attr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -102,7 +91,6 @@ test.test_unicode.UnicodeTest.test_mul @ darwin-arm64,darwin-x86_64,linux-aarch6
 test.test_unicode.UnicodeTest.test_none_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicode.UnicodeTest.test_partition @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicode.UnicodeTest.test_pickle_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unicode.UnicodeTest.test_printing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicode.UnicodeTest.test_raiseMemError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicode.UnicodeTest.test_removeprefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicode.UnicodeTest.test_removesuffix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

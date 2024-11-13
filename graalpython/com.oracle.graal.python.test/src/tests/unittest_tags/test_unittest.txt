@@ -210,7 +210,6 @@ unittest.test.test_discovery.TestDiscovery.test_discover_with_init_modules_that_
 unittest.test.test_discovery.TestDiscovery.test_discover_with_module_that_raises_SkipTest_on_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_discovery.TestDiscovery.test_discover_with_modules_that_fail_to_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_discovery.TestDiscovery.test_discovery_failed_discovery @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.test.test_discovery.TestDiscovery.test_discovery_from_dotted_namespace_packages @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_discovery.TestDiscovery.test_discovery_from_dotted_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_discovery.TestDiscovery.test_discovery_from_dotted_path_builtin_modules @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_discovery.TestDiscovery.test_find_tests @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -360,16 +359,6 @@ unittest.test.test_result.Test_OldTestResult.testOldTestResultClass @ darwin-arm
 unittest.test.test_result.Test_OldTestResult.testOldTestTesultSetup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_result.Test_TestResult.testFailFast @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_result.Test_TestResult.testFailFastSetByRunner @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.test.test_result.Test_TestResult.testGetDescriptionWithMultiLineDocstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.test.test_result.Test_TestResult.testGetDescriptionWithOneLineDocstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.test.test_result.Test_TestResult.testGetDescriptionWithoutDocstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.test.test_result.Test_TestResult.testGetDuplicatedNestedSubTestDescriptionWithoutDocstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.test.test_result.Test_TestResult.testGetNestedSubTestDescriptionWithoutDocstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.test.test_result.Test_TestResult.testGetSubTestDescriptionForFalsyValues @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.test.test_result.Test_TestResult.testGetSubTestDescriptionWithMultiLineDocstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.test.test_result.Test_TestResult.testGetSubTestDescriptionWithOneLineDocstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.test.test_result.Test_TestResult.testGetSubTestDescriptionWithoutDocstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.test.test_result.Test_TestResult.testGetSubTestDescriptionWithoutDocstringAndParams @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_result.Test_TestResult.testStackFrameTrimming @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_result.Test_TestResult.test_addError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_result.Test_TestResult.test_addError_locals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

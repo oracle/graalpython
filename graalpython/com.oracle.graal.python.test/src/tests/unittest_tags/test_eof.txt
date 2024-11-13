@@ -1,4 +1,3 @@
-test.test_eof.EOFTestCase.test_EOFC @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_eof.EOFTestCase.test_EOFS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_eof.EOFTestCase.test_EOFS_with_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_eof.EOFTestCase.test_EOF_single_quote @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

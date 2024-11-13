@@ -33,4 +33,3 @@ test.test_wsgiref.UtilityTests.testHopByHop @ darwin-arm64,darwin-x86_64,linux-a
 test.test_wsgiref.UtilityTests.testNormalizedShifts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_wsgiref.UtilityTests.testReqURIs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_wsgiref.UtilityTests.testSimpleShifts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_wsgiref.UtilityTests.test_filewrapper_getitem_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,9 +1,6 @@
 test.test_sysconfig.MakefileTests.test_get_makefile_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sysconfig.MakefileTests.test_parse_makefile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sysconfig.TestSysConfig.test_EXT_SUFFIX_in_vars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_sysconfig.TestSysConfig.test_SO_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_sysconfig.TestSysConfig.test_SO_in_vars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_sysconfig.TestSysConfig.test_SO_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sysconfig.TestSysConfig.test_get_config_h_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sysconfig.TestSysConfig.test_get_config_vars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sysconfig.TestSysConfig.test_get_default_scheme @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

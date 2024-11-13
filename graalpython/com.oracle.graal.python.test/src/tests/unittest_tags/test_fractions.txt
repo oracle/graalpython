@@ -31,4 +31,3 @@ test.test_fractions.FractionTest.test_as_integer_ratio @ darwin-arm64,darwin-x86
 test.test_fractions.FractionTest.test_copy_deepcopy_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fractions.FractionTest.test_int_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fractions.FractionTest.test_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_fractions.GcdTest.testMisc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

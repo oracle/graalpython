@@ -14,7 +14,6 @@ test.test_ensurepip.TestBootstrap.test_pip_environment_variables_removed @ darwi
 test.test_ensurepip.TestBootstrappingMainFunction.test_basic_bootstrapping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ensurepip.TestBootstrappingMainFunction.test_bootstrap_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ensurepip.TestBootstrappingMainFunction.test_bootstrapping_error_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ensurepip.TestEnsurePipVersion.test_returns_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ensurepip.TestPackages.test_get_packages_no_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ensurepip.TestPackages.test_get_packages_with_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ensurepip.TestPackages.test_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

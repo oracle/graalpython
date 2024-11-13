@@ -31,7 +31,6 @@ test.test_userlist.UserListTest.test_mixedadd @ darwin-arm64,darwin-x86_64,linux
 test.test_userlist.UserListTest.test_mixedcmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_userlist.UserListTest.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_radd_specials @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

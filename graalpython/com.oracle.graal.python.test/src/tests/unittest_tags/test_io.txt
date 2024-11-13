@@ -261,7 +261,6 @@ test.test_io.CTextIOWrapperTest.test_default_encoding @ darwin-arm64,darwin-x86_
 test.test_io.CTextIOWrapperTest.test_del__CHUNK_SIZE_SystemError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.CTextIOWrapperTest.test_destructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.CTextIOWrapperTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_io.CTextIOWrapperTest.test_device_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.CTextIOWrapperTest.test_encoded_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.CTextIOWrapperTest.test_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.CTextIOWrapperTest.test_encoding_errors_reading @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -561,7 +560,6 @@ test.test_io.PyTextIOWrapperTest.test_create_at_shutdown_without_encoding @ darw
 test.test_io.PyTextIOWrapperTest.test_default_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_destructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_io.PyTextIOWrapperTest.test_device_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_encoded_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_encoding_errors_reading @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

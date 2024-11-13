@@ -1,5 +1,4 @@
 test.test_regrtest.ArgsTestCase.test_crashed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_regrtest.ArgsTestCase.test_findleaks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ArgsTestCase.test_huntrleaks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ArgsTestCase.test_huntrleaks_fd_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ArgsTestCase.test_huntrleaks_mp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -20,7 +19,6 @@ test.test_regrtest.ParseArgsTestCase.test_fromfile @ darwin-arm64,darwin-x86_64,
 test.test_regrtest.ParseArgsTestCase.test_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_help @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_huntrleaks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_regrtest.ParseArgsTestCase.test_ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_long_option__partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_memlimit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -46,13 +44,10 @@ test.test_regrtest.ParseArgsTestCase.test_unknown_option @ darwin-arm64,darwin-x
 test.test_regrtest.ParseArgsTestCase.test_unrecognized_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_use @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_verbose @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_regrtest.ParseArgsTestCase.test_verbose2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_verbose3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ParseArgsTestCase.test_wait @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_regrtest.ParseArgsTestCase.test_worker_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ProgramsTestCase.test_pcbuild_rt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.ProgramsTestCase.test_tools_buildbot_test @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_regrtest.ProgramsTestCase.test_tools_script_run_tests @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.TestUtils.test_format_duration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.TestUtils.test_format_resources @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_regrtest.TestUtils.test_get_signal_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

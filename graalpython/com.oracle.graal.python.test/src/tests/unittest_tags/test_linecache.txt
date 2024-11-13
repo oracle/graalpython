@@ -1,5 +1,3 @@
-test.test_linecache.BadUnicode.test_getline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_linecache.BadUnicode.test_getlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_linecache.BadUnicode_NoDeclaration.test_getline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_linecache.BadUnicode_NoDeclaration.test_getlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_linecache.BadUnicode_WithDeclaration.test_getline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -94,4 +94,3 @@ test.test_bz2.OpenTest.test_implicit_binary_modes @ darwin-arm64,darwin-x86_64,l
 test.test_bz2.OpenTest.test_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_bz2.OpenTest.test_text_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_bz2.OpenTest.test_x_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_bz2.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

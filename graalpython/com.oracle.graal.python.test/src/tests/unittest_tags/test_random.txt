@@ -6,8 +6,6 @@ test.test_random.MersenneTwister_TestBasicOps.test_bug_1727780 @ darwin-arm64,da
 test.test_random.MersenneTwister_TestBasicOps.test_bug_27706 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.MersenneTwister_TestBasicOps.test_bug_31478 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.MersenneTwister_TestBasicOps.test_bug_31482 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_random.MersenneTwister_TestBasicOps.test_bug_41052 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_random.MersenneTwister_TestBasicOps.test_bug_42008 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.MersenneTwister_TestBasicOps.test_bug_9025 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.MersenneTwister_TestBasicOps.test_choice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.MersenneTwister_TestBasicOps.test_choice_with_numpy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -18,7 +16,6 @@ test.test_random.MersenneTwister_TestBasicOps.test_choices_negative_total @ darw
 test.test_random.MersenneTwister_TestBasicOps.test_choices_subnormal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.MersenneTwister_TestBasicOps.test_choices_with_all_zero_weights @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.MersenneTwister_TestBasicOps.test_gauss @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_random.MersenneTwister_TestBasicOps.test_genrandbits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.MersenneTwister_TestBasicOps.test_getrandbits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.MersenneTwister_TestBasicOps.test_guaranteed_stable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.MersenneTwister_TestBasicOps.test_long_seed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -47,15 +44,12 @@ test.test_random.MersenneTwister_TestBasicOps.test_seedargs @ darwin-arm64,darwi
 test.test_random.MersenneTwister_TestBasicOps.test_setstate_first_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.MersenneTwister_TestBasicOps.test_setstate_middle_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.MersenneTwister_TestBasicOps.test_shuffle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_random.MersenneTwister_TestBasicOps.test_shuffle_random_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.MersenneTwister_TestBasicOps.test_strong_reference_implementation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_53_bits_per_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_autoseed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_bigrand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_bigrand_ranges @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_bug_1727780 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_random.SystemRandom_TestBasicOps.test_bug_41052 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_random.SystemRandom_TestBasicOps.test_bug_42008 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_bug_9025 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_choice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_choice_with_numpy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -65,7 +59,6 @@ test.test_random.SystemRandom_TestBasicOps.test_choices_negative_total @ darwin-
 test.test_random.SystemRandom_TestBasicOps.test_choices_subnormal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_choices_with_all_zero_weights @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_gauss @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_random.SystemRandom_TestBasicOps.test_genrandbits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_getrandbits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_mu_sigma_default_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -88,7 +81,6 @@ test.test_random.SystemRandom_TestBasicOps.test_seed_no_mutate_bug_44018 @ darwi
 test.test_random.SystemRandom_TestBasicOps.test_seed_when_randomness_source_not_found @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_seedargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_shuffle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_random.SystemRandom_TestBasicOps.test_shuffle_random_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.TestDistributions.test_avg_std @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.TestDistributions.test_betavariate_return_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.TestDistributions.test_constant @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,5 +1,4 @@
 test.test_float.FormatFunctionsTestCase.test_getformat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_float.FormatFunctionsTestCase.test_setformat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_float.FormatTestCase.test_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_float.FormatTestCase.test_format_testfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_float.FormatTestCase.test_issue35560 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -50,5 +49,3 @@ test.test_float.RoundTestCase.test_matches_float_format @ darwin-arm64,darwin-x8
 test.test_float.RoundTestCase.test_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_float.RoundTestCase.test_previous_round_bugs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_float.RoundTestCase.test_small_n @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_float.UnknownFormatTestCase.test_double_specials_dont_unpack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_float.UnknownFormatTestCase.test_float_specials_dont_unpack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

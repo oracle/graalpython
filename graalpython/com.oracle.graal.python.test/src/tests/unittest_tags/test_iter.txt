@@ -52,4 +52,3 @@ test.test_iter.TestCase.test_stop_sequence @ darwin-arm64,darwin-x86_64,linux-aa
 test.test_iter.TestCase.test_unicode_join_endcase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_unpack_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_writelines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_iter.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

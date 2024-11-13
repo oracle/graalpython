@@ -44,7 +44,6 @@ test.test_ssl.ContextTests.test_load_verify_locations @ darwin-arm64,darwin-x86_
 test.test_ssl.ContextTests.test_min_max_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ContextTests.test_num_tickest @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ContextTests.test_options @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ssl.ContextTests.test_protocol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ContextTests.test_python_ciphers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ContextTests.test_security_level @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ContextTests.test_set_default_verify_paths @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -141,7 +140,6 @@ test.test_ssl.ThreadedTests.test_recv_zero @ darwin-arm64,darwin-x86_64,linux-aa
 test.test_ssl.ThreadedTests.test_rude_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ThreadedTests.test_selected_alpn_protocol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ThreadedTests.test_selected_alpn_protocol_if_server_uses_alpn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ssl.ThreadedTests.test_selected_npn_protocol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ThreadedTests.test_sendfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ThreadedTests.test_server_accept @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ThreadedTests.test_shared_ciphers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

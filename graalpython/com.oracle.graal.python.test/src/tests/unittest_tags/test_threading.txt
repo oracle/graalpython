@@ -72,7 +72,6 @@ test.test_threading.EventTests.test_at_fork_reinit @ darwin-arm64,darwin-x86_64,
 test.test_threading.EventTests.test_is_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_threading.EventTests.test_notify @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_threading.EventTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_threading.EventTests.test_reset_internal_locks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_threading.EventTests.test_set_and_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_threading.EventTests.test_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_threading.ExceptHookTests.test_custom_excepthook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,6 +1,5 @@
 test.test_pulldom.PullDOMTestCase.test_expandItem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pulldom.PullDOMTestCase.test_external_ges_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pulldom.PullDOMTestCase.test_getitem_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pulldom.PullDOMTestCase.test_parse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pulldom.PullDOMTestCase.test_parse_semantics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pulldom.SAX2DOMTestCase.testSAX2DOM @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -13,7 +13,6 @@ test.test_context.ContextTest.test_context_run_7 @ darwin-arm64,darwin-x86_64,li
 test.test_context.ContextTest.test_context_subclassing_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_context.ContextTest.test_context_threads_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_context.ContextTest.test_context_typerrors_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_context.ContextTest.test_contextvar_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_context.HamtTest.test_hamt_basics_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_context.HamtTest.test_hamt_basics_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_context.HamtTest.test_hamt_basics_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

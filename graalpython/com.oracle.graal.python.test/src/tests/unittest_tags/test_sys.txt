@@ -43,13 +43,9 @@ test.test_sys.SysModuleTest.test_module_names @ darwin-arm64,darwin-x86_64,linux
 test.test_sys.SysModuleTest.test_no_duplicates_in_meta_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sys.SysModuleTest.test_orig_argv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sys.SysModuleTest.test_posix_locale_surrogateescape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_sys.SysModuleTest.test_recursionlimit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_sys.SysModuleTest.test_recursionlimit_fatalerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sys.SysModuleTest.test_recursionlimit_recovery @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sys.SysModuleTest.test_refcount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_sys.SysModuleTest.test_setcheckinterval @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sys.SysModuleTest.test_setrecursionlimit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_sys.SysModuleTest.test_setrecursionlimit_recursion_depth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sys.SysModuleTest.test_setrecursionlimit_to_depth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sys.SysModuleTest.test_stdlib_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sys.SysModuleTest.test_switchinterval @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

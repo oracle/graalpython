@@ -31,7 +31,6 @@ test.test_httplib.BasicTest.test_partial_reads_past_end @ darwin-arm64,darwin-x8
 test.test_httplib.BasicTest.test_putrequest_override_domain_validation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_httplib.BasicTest.test_putrequest_override_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_httplib.BasicTest.test_putrequest_override_host_validation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_httplib.BasicTest.test_putrequest_override_validation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_httplib.BasicTest.test_read1_bound_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_httplib.BasicTest.test_read1_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_httplib.BasicTest.test_read_head @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -11,5 +11,4 @@ test.test_timeout.TCPTimeoutTestCase.testRecvTimeout @ darwin-arm64,darwin-x86_6
 test.test_timeout.TCPTimeoutTestCase.testSend @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_timeout.TCPTimeoutTestCase.testSendall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_timeout.TCPTimeoutTestCase.testSendto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_timeout.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_timeout.UDPTimeoutTestCase.testRecvfromTimeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

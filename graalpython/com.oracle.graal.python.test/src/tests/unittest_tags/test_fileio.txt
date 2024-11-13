@@ -91,4 +91,3 @@ test.test_fileio.PyOtherFileTests.testUnicodeOpen @ darwin-arm64,darwin-x86_64,l
 test.test_fileio.PyOtherFileTests.testUtf8BytesOpen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.PyOtherFileTests.testWarnings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.PyOtherFileTests.test_open_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_fileio.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

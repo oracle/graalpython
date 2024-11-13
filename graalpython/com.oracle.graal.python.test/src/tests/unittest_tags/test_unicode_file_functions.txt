@@ -1,4 +1,3 @@
-test.test_unicode_file_functions.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicode_file_functions.UnicodeFileTests.test_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicode_file_functions.UnicodeFileTests.test_failures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicode_file_functions.UnicodeFileTests.test_listdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

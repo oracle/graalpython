@@ -82,13 +82,11 @@ test.test_ast.AST_Tests.test_field_attr_writable @ darwin-arm64,darwin-x86_64,li
 test.test_ast.AST_Tests.test_from_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_invalid_constant @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_invalid_identifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ast.AST_Tests.test_invalid_identitifer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_invalid_sum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_isinstance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_issue18374_binop_col_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_issue31592 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_issue39579_dotted_name_end_col_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ast.AST_Tests.test_issue40614_feature_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_no_fields @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_nodeclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

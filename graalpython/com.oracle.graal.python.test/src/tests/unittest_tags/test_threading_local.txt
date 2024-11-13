@@ -9,7 +9,6 @@ test.test_threading_local.PyThreadingLocalTest.test_local_refs @ darwin-arm64,da
 test.test_threading_local.PyThreadingLocalTest.test_threading_local @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_threading_local.PyThreadingLocalTest.test_threading_local_clear_race @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_threading_local.PyThreadingLocalTest.test_threading_local_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_threading_local.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_threading_local.ThreadLocalTest.test_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_threading_local.ThreadLocalTest.test_cycle_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_threading_local.ThreadLocalTest.test_derived @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

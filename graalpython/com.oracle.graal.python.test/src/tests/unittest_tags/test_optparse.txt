@@ -70,7 +70,6 @@ test.test_optparse.TestHelp.test_help_title_formatter @ darwin-arm64,darwin-x86_
 test.test_optparse.TestHelp.test_help_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_optparse.TestHelp.test_help_unicode_description @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_optparse.TestHelp.test_wrap_columns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_optparse.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_optparse.TestMatchAbbrev.test_match_abbrev @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_optparse.TestMatchAbbrev.test_match_abbrev_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_optparse.TestMultipleArgs.test_nargs_invalid_float_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

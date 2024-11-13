@@ -4,4 +4,3 @@ test.test_profile.ProfileTest.test_output_file_when_changing_directory @ darwin-
 test.test_profile.ProfileTest.test_run @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_profile.ProfileTest.test_run_profile_as_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_profile.ProfileTest.test_runctx @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_profile.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

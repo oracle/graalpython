@@ -21,7 +21,6 @@ test.test_bool.BoolTest.test_math @ darwin-arm64,darwin-x86_64,linux-aarch64,lin
 test.test_bool.BoolTest.test_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_bool.BoolTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_bool.BoolTest.test_picklevalues @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_bool.BoolTest.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_bool.BoolTest.test_real_and_imag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_bool.BoolTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_bool.BoolTest.test_sane_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -29,4 +28,3 @@ test.test_bool.BoolTest.test_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linu
 test.test_bool.BoolTest.test_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_bool.BoolTest.test_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_bool.BoolTest.test_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_bool.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

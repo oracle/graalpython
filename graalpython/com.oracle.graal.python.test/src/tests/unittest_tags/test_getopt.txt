@@ -4,6 +4,5 @@ test.test_getopt.GetoptTests.test_do_shorts @ darwin-arm64,darwin-x86_64,linux-a
 test.test_getopt.GetoptTests.test_getopt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_getopt.GetoptTests.test_gnu_getopt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_getopt.GetoptTests.test_issue4629 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_getopt.GetoptTests.test_libref_examples @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_getopt.GetoptTests.test_long_has_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_getopt.GetoptTests.test_short_has_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

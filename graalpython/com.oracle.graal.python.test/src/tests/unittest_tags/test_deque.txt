@@ -36,7 +36,6 @@ test.test_deque.TestBasic.test_maxlen_zero @ darwin-arm64,darwin-x86_64,linux-aa
 test.test_deque.TestBasic.test_mul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_deque.TestBasic.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_deque.TestBasic.test_pickle_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_deque.TestBasic.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_deque.TestBasic.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_deque.TestBasic.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_deque.TestBasic.test_reverse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -47,7 +46,6 @@ test.test_deque.TestBasic.test_roundtrip_iter_init @ darwin-arm64,darwin-x86_64,
 test.test_deque.TestBasic.test_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_deque.TestBasic.test_sizeof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_deque.TestBasic.test_underflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_deque.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_deque.TestSequence.test_addmul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_deque.TestSequence.test_bigrepeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_deque.TestSequence.test_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

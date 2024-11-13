@@ -46,7 +46,6 @@ test.test_mailbox.TestBabyl.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch
 test.test_mailbox.TestBabyl.test_set_item @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestBabyl.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestBabyl.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mailbox.TestBabylMessage.test_all_eMM_attribues_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestBabylMessage.test_all_eMM_attributes_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestBabylMessage.test_become_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestBabylMessage.test_explain_to @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -106,7 +105,6 @@ test.test_mailbox.TestMH.test_sequences @ darwin-arm64,darwin-x86_64,linux-aarch
 test.test_mailbox.TestMH.test_set_item @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMH.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMH.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mailbox.TestMHMessage.test_all_eMM_attribues_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMHMessage.test_all_eMM_attributes_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMHMessage.test_become_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMHMessage.test_explain_to @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -168,7 +166,6 @@ test.test_mailbox.TestMMDF.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch6
 test.test_mailbox.TestMMDF.test_set_item @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMMDF.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMMDF.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mailbox.TestMMDFMessage.test_all_eMM_attribues_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMMDFMessage.test_all_eMM_attributes_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMMDFMessage.test_become_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMMDFMessage.test_explain_to @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -241,7 +238,6 @@ test.test_mailbox.TestMaildir.test_set_MM @ darwin-arm64,darwin-x86_64,linux-aar
 test.test_mailbox.TestMaildir.test_set_item @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMaildir.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMaildir.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mailbox.TestMaildirMessage.test_all_eMM_attribues_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMaildirMessage.test_all_eMM_attributes_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMaildirMessage.test_become_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMaildirMessage.test_date @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -310,7 +306,6 @@ test.test_mailbox.TestMbox.test_set_item @ darwin-arm64,darwin-x86_64,linux-aarc
 test.test_mailbox.TestMbox.test_terminating_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMbox.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMbox.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mailbox.TestMboxMessage.test_all_eMM_attribues_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMboxMessage.test_all_eMM_attributes_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMboxMessage.test_become_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMboxMessage.test_explain_to @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -323,7 +318,6 @@ test.test_mailbox.TestMboxMessage.test_initialize_with_file @ darwin-arm64,darwi
 test.test_mailbox.TestMboxMessage.test_initialize_with_nothing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMboxMessage.test_initialize_with_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMboxMessage.test_initialize_with_unixfrom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mailbox.TestMessage.test_all_eMM_attribues_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMessage.test_all_eMM_attributes_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMessage.test_become_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMessage.test_explain_to @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -25,7 +25,6 @@ test.test_htmlparser.HTMLParserTestCase.test_broken_invalid_end_tag @ darwin-arm
 test.test_htmlparser.HTMLParserTestCase.test_buffer_artefacts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_htmlparser.HTMLParserTestCase.test_cdata_content @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_htmlparser.HTMLParserTestCase.test_cdata_with_closing_tags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_htmlparser.HTMLParserTestCase.test_comma_between_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_htmlparser.HTMLParserTestCase.test_comments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_htmlparser.HTMLParserTestCase.test_condcoms @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_htmlparser.HTMLParserTestCase.test_convert_charrefs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -44,7 +43,4 @@ test.test_htmlparser.HTMLParserTestCase.test_starttag_end_boundary @ darwin-arm6
 test.test_htmlparser.HTMLParserTestCase.test_starttag_junk_chars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_htmlparser.HTMLParserTestCase.test_tolerant_parsing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_htmlparser.HTMLParserTestCase.test_unclosed_entityref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_htmlparser.HTMLParserTestCase.test_unescape_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_htmlparser.HTMLParserTestCase.test_valid_doctypes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_htmlparser.HTMLParserTestCase.test_weird_chars_in_unquoted_attribute_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_htmlparser.HTMLParserTestCase.test_with_unquoted_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
