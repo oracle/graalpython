@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.pegparser.ParserCallbacks;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -72,7 +72,7 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public class RaisePythonExceptionErrorCallback implements ErrorCallback {
+public class ParserCallbacksImpl implements ParserCallbacks {
 
     private static final TruffleString DEFAULT_FILENAME = tsLiteral("<string>");
 
@@ -80,12 +80,12 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
     private final boolean withJavaStackTrace;
     private List<DeprecationWarning> deprecationWarnings;
 
-    public RaisePythonExceptionErrorCallback(Supplier<Source> sourceSupplier, boolean withJavaStackTrace) {
+    public ParserCallbacksImpl(Supplier<Source> sourceSupplier, boolean withJavaStackTrace) {
         this.sourceSupplier = sourceSupplier;
         this.withJavaStackTrace = withJavaStackTrace;
     }
 
-    public RaisePythonExceptionErrorCallback(Source source, boolean withJavaStackTrace) {
+    public ParserCallbacksImpl(Source source, boolean withJavaStackTrace) {
         this(() -> source, withJavaStackTrace);
     }
 
@@ -124,7 +124,7 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
         throw raiseSyntaxError(errorType, sourceRange, toTruffleStringUncached(message), sourceSupplier.get(), withJavaStackTrace);
     }
 
-    public static PException raiseSyntaxError(ErrorCallback.ErrorType errorType, SourceRange sourceRange, TruffleString message, Source source, boolean withJavaStackTrace) {
+    public static PException raiseSyntaxError(ParserCallbacks.ErrorType errorType, SourceRange sourceRange, TruffleString message, Source source, boolean withJavaStackTrace) {
         Node location = new Node() {
             @Override
             public boolean isAdoptable() {

@@ -59,14 +59,14 @@ import org.junit.Rule;
 import org.junit.rules.TestName;
 
 import com.oracle.graal.python.pegparser.AbstractParser.Flags;
-import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.ParserCallbacks;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
-import com.oracle.graal.python.pegparser.test.TestErrorCallbackImpl.ParserErrorWrapperException;
+import com.oracle.graal.python.pegparser.test.TestParserCallbacksImpl.ParserErrorWrapperException;
 import com.oracle.graal.python.pegparser.test.sst.SSTTreePrinterVisitor;
 
 public class ParserTestBase {
@@ -81,7 +81,7 @@ public class ParserTestBase {
 
     private static final boolean REGENERATE_TREE = false;
 
-    protected TestErrorCallbackImpl errorCallback = new TestErrorCallbackImpl();
+    protected TestParserCallbacksImpl errorCallback = new TestParserCallbacksImpl();
 
     @Rule public TestName name = new TestName();
 
@@ -107,7 +107,7 @@ public class ParserTestBase {
         return (ModTy) parser.parse();
     }
 
-    private TestErrorCallbackImpl.Error expectError(String source, InputType inputType, EnumSet<FutureFeature> futureFeatures) {
+    private TestParserCallbacksImpl.Error expectError(String source, InputType inputType, EnumSet<FutureFeature> futureFeatures) {
         return assertThrows(ParserErrorWrapperException.class, () -> {
             ModTy node = parse(source, getFileName(), inputType);
             if (node != null) {
@@ -117,13 +117,13 @@ public class ParserTestBase {
     }
 
     public void checkSyntaxError(String source) {
-        TestErrorCallbackImpl.Error error = expectError(source, InputType.FILE, EMPTY_FUTURE);
-        assertSame("Expected SyntaxError", error.type(), ErrorCallback.ErrorType.Syntax);
+        TestParserCallbacksImpl.Error error = expectError(source, InputType.FILE, EMPTY_FUTURE);
+        assertSame("Expected SyntaxError", error.type(), ParserCallbacks.ErrorType.Syntax);
     }
 
     public void checkSyntaxErrorMessageContains(String source, String expectedMessage) {
-        TestErrorCallbackImpl.Error error = expectError(source, InputType.FILE, EMPTY_FUTURE);
-        assertSame("Expected SyntaxError not " + error.type(), error.type(), ErrorCallback.ErrorType.Syntax);
+        TestParserCallbacksImpl.Error error = expectError(source, InputType.FILE, EMPTY_FUTURE);
+        assertSame("Expected SyntaxError not " + error.type(), error.type(), ParserCallbacks.ErrorType.Syntax);
         assertTrue("The expected message:\n\"" + expectedMessage + "\"\nwas not found in\n\"" + error.message() + "\"", error.message().contains(expectedMessage));
     }
 
@@ -140,8 +140,8 @@ public class ParserTestBase {
     }
 
     public void checkSyntaxErrorMessage(String source, String expectedMessage, InputType inputType, EnumSet<FutureFeature> futureFeatures) {
-        TestErrorCallbackImpl.Error error = expectError(source, inputType, futureFeatures);
-        assertSame("Expected SyntaxError not " + error.type(), error.type(), ErrorCallback.ErrorType.Syntax);
+        TestParserCallbacksImpl.Error error = expectError(source, inputType, futureFeatures);
+        assertSame("Expected SyntaxError not " + error.type(), error.type(), ParserCallbacks.ErrorType.Syntax);
         assertEquals(expectedMessage, error.message());
     }
 
@@ -155,13 +155,13 @@ public class ParserTestBase {
     }
 
     public void checkIndentationError(String source) {
-        TestErrorCallbackImpl.Error error = expectError(source, InputType.FILE, EMPTY_FUTURE);
-        assertSame("Expected IndentationError", error.type(), ErrorCallback.ErrorType.Indentation);
+        TestParserCallbacksImpl.Error error = expectError(source, InputType.FILE, EMPTY_FUTURE);
+        assertSame("Expected IndentationError", error.type(), ParserCallbacks.ErrorType.Indentation);
     }
 
     public void checkIndentationErrorMessage(String source, String expectedMessage) {
-        TestErrorCallbackImpl.Error error = expectError(source, InputType.FILE, EMPTY_FUTURE);
-        assertSame("Expected IndentationError not " + error.type(), error.type(), ErrorCallback.ErrorType.Indentation);
+        TestParserCallbacksImpl.Error error = expectError(source, InputType.FILE, EMPTY_FUTURE);
+        assertSame("Expected IndentationError not " + error.type(), error.type(), ParserCallbacks.ErrorType.Indentation);
         assertEquals(expectedMessage, error.message());
     }
 

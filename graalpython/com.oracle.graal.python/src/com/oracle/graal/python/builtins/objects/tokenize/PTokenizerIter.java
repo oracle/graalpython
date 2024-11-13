@@ -46,8 +46,8 @@ import java.util.EnumSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
-import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.compiler.ParserCallbacksImpl;
+import com.oracle.graal.python.pegparser.ParserCallbacks;
 import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
@@ -63,7 +63,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PTokenizerIter extends PythonBuiltinObject {
 
-    private final RaisePythonExceptionErrorCallback errorCallback;
+    private final ParserCallbacksImpl parserCallbacks;
     final Tokenizer tokenizer;
     private int lastLineNo = -1;
     private TruffleString lastLine;
@@ -73,12 +73,12 @@ public final class PTokenizerIter extends PythonBuiltinObject {
     @TruffleBoundary
     public PTokenizerIter(Object cls, Shape instanceShape, Supplier<int[]> inputSupplier, boolean extraTokens) {
         super(cls, instanceShape);
-        errorCallback = new RaisePythonExceptionErrorCallback(this::getSource, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(null)));
+        parserCallbacks = new ParserCallbacksImpl(this::getSource, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(null)));
         EnumSet<Flag> flags = EnumSet.of(Flag.EXEC_INPUT);
         if (extraTokens) {
             flags.add(Flag.EXTRA_TOKENS);
         }
-        tokenizer = Tokenizer.fromReadline(errorCallback, flags, inputSupplier);
+        tokenizer = Tokenizer.fromReadline(parserCallbacks, flags, inputSupplier);
     }
 
     boolean isDone() {
@@ -88,7 +88,7 @@ public final class PTokenizerIter extends PythonBuiltinObject {
     @TruffleBoundary
     Token getNextToken() {
         Token token = tokenizer.next();
-        errorCallback.triggerAndClearDeprecationWarnings();
+        parserCallbacks.triggerAndClearDeprecationWarnings();
         if (token.type == Kind.ERRORTOKEN) {
             reportTokenizerError();
         }
@@ -118,7 +118,7 @@ public final class PTokenizerIter extends PythonBuiltinObject {
     }
 
     private void reportTokenizerError() {
-        ErrorCallback.ErrorType errorType = ErrorCallback.ErrorType.Syntax;
+        ParserCallbacks.ErrorType errorType = ParserCallbacks.ErrorType.Syntax;
         String msg;
         int colOffset = Math.max(0, tokenizer.getCodePointsInputLength() - tokenizer.getLineStartIndex() - 1);
         switch (tokenizer.getDone()) {
@@ -129,15 +129,15 @@ public final class PTokenizerIter extends PythonBuiltinObject {
                 msg = "unexpected EOF in multi-line statement";
                 break;
             case DEDENT_INVALID:
-                errorType = ErrorCallback.ErrorType.Indentation;
+                errorType = ParserCallbacks.ErrorType.Indentation;
                 msg = "unindent does not match any outer indentation level";
                 break;
             case TABS_SPACES_INCONSISTENT:
-                errorType = ErrorCallback.ErrorType.Tab;
+                errorType = ParserCallbacks.ErrorType.Tab;
                 msg = "inconsistent use of tabs and spaces in indentation";
                 break;
             case TOO_DEEP_INDENTATION:
-                errorType = ErrorCallback.ErrorType.Indentation;
+                errorType = ParserCallbacks.ErrorType.Indentation;
                 msg = "too many levels of indentation";
                 break;
             case LINE_CONTINUATION_ERROR:
@@ -147,7 +147,7 @@ public final class PTokenizerIter extends PythonBuiltinObject {
                 msg = "unknown tokenization error";
                 break;
         }
-        throw errorCallback.raiseSyntaxError(errorType, new SourceRange(tokenizer.getCurrentLineNumber(), colOffset, -1, -1), msg);
+        throw parserCallbacks.raiseSyntaxError(errorType, new SourceRange(tokenizer.getCurrentLineNumber(), colOffset, -1, -1), msg);
     }
 
     private Source getSource() {

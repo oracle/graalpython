@@ -52,7 +52,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Supplier;
 
-import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
+import com.oracle.graal.python.pegparser.ParserCallbacks.ErrorType;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
@@ -115,7 +115,7 @@ public abstract class AbstractParser {
     private int currentPos; // position of the mark
     private final ArrayList<Token> tokens;
     private final Tokenizer tokenizer;
-    final ErrorCallback errorCb;
+    final ParserCallbacks callbacks;
     protected final NodeFactory factory;
     private final InputType startRule;
 
@@ -146,12 +146,12 @@ public abstract class AbstractParser {
 
     protected abstract SSTNode runParser(InputType inputType);
 
-    AbstractParser(String source, SourceRange sourceRange, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
+    AbstractParser(String source, SourceRange sourceRange, ParserCallbacks callbacks, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
         this.currentPos = 0;
         this.tokens = new ArrayList<>();
-        this.tokenizer = Tokenizer.fromString(errorCb, source, getTokenizerFlags(startRule, flags), sourceRange);
+        this.tokenizer = Tokenizer.fromString(callbacks, source, getTokenizerFlags(startRule, flags), sourceRange);
         this.factory = new NodeFactory();
-        this.errorCb = errorCb;
+        this.callbacks = callbacks;
         this.reservedKeywords = getReservedKeywords();
         this.softKeywords = getSoftKeywords();
         this.startRule = startRule;
@@ -869,7 +869,7 @@ public abstract class AbstractParser {
      */
     public boolean checkBarryAsFlufl(Token token) {
         if (flags.contains(Flags.BARRY_AS_BDFL) && !getText(token).equals("<>")) {
-            throw errorCb.onError(ErrorType.Generic, token.sourceRange, BARRY_AS_BDFL);
+            throw callbacks.onError(ErrorType.Generic, token.sourceRange, BARRY_AS_BDFL);
         }
         if (!flags.contains(Flags.BARRY_AS_BDFL) && !getText(token).equals("!=")) {
             // no explicit error message here, the parser will just fail to match the input
@@ -1320,7 +1320,7 @@ public abstract class AbstractParser {
      */
     RuntimeException raiseSyntaxError(String msg, Object... arguments) {
         Token errorToken = peekToken();
-        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
+        throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
     }
 
     /**
@@ -1328,35 +1328,35 @@ public abstract class AbstractParser {
      */
     RuntimeException raiseSyntaxErrorOnNextToken(String msg) {
         Token errorToken = peekToken();
-        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg);
+        throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, errorToken.sourceRange, msg);
     }
 
     /**
      * RAISE_ERROR_KNOWN_LOCATION the first param is a token, where error begins
      */
     RuntimeException raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... arguments) {
-        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
+        throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_LOCATION
      */
-    RuntimeException raiseErrorKnownLocation(ErrorCallback.ErrorType typeError, SourceRange where, String msg, Object... argument) {
+    RuntimeException raiseErrorKnownLocation(ParserCallbacks.ErrorType typeError, SourceRange where, String msg, Object... argument) {
         errorIndicator = true;
-        throw errorCb.onError(typeError, where, msg, argument);
+        throw callbacks.onError(typeError, where, msg, argument);
     }
 
     /**
      * RAISE_ERROR_KNOWN_LOCATION the first param is node, where error begins
      */
     RuntimeException raiseSyntaxErrorKnownLocation(SSTNode where, String msg, Object... arguments) {
-        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, where.getSourceRange(), msg, arguments);
+        throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, where.getSourceRange(), msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_LOCATION
      */
-    RuntimeException raiseErrorKnownLocation(ErrorCallback.ErrorType errorType, SSTNode where, String msg, Object... arguments) {
+    RuntimeException raiseErrorKnownLocation(ParserCallbacks.ErrorType errorType, SSTNode where, String msg, Object... arguments) {
         throw raiseErrorKnownLocation(errorType, where.getSourceRange(), msg, arguments);
     }
 
@@ -1364,42 +1364,42 @@ public abstract class AbstractParser {
      * RAISE_ERROR_KNOWN_RANGE
      */
     RuntimeException raiseSyntaxErrorKnownRange(Token startToken, SSTNode endNode, String msg, Object... arguments) {
-        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startToken.sourceRange.withEnd(endNode.getSourceRange()), msg, arguments);
+        throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, startToken.sourceRange.withEnd(endNode.getSourceRange()), msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_RANGE
      */
     RuntimeException raiseSyntaxErrorKnownRange(Token startToken, Token endToken, String msg, Object... arguments) {
-        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startToken.sourceRange.withEnd(endToken.sourceRange), msg, arguments);
+        throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, startToken.sourceRange.withEnd(endToken.sourceRange), msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_RANGE
      */
     RuntimeException raiseSyntaxErrorKnownRange(SSTNode startNode, SSTNode endNode, String msg, Object... arguments) {
-        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startNode.getSourceRange().withEnd(endNode.getSourceRange()), msg, arguments);
+        throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, startNode.getSourceRange().withEnd(endNode.getSourceRange()), msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_RANGE
      */
     RuntimeException raiseSyntaxErrorKnownRange(SSTNode startNode, Token endToken, String msg, Object... arguments) {
-        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startNode.getSourceRange().withEnd(endToken.sourceRange), msg, arguments);
+        throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, startNode.getSourceRange().withEnd(endToken.sourceRange), msg, arguments);
     }
 
     /**
      * RAISE_SYNTAX_ERROR_STARTING_FROM
      */
     RuntimeException raiseSyntaxErrorStartingFrom(Token where, String msg, Object... arguments) {
-        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.sourceRange), msg, arguments);
+        throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.sourceRange), msg, arguments);
     }
 
     /**
      * RAISE_SYNTAX_ERROR_STARTING_FROM
      */
     RuntimeException raiseSyntaxErrorStartingFrom(SSTNode where, String msg, Object... arguments) {
-        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.getSourceRange()), msg, arguments);
+        throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.getSourceRange()), msg, arguments);
     }
 
     /**
@@ -1419,7 +1419,7 @@ public abstract class AbstractParser {
      */
     RuntimeException raiseIndentationError(String msg, Object... arguments) {
         Token errorToken = peekToken();
-        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Indentation, errorToken.sourceRange, msg, arguments);
+        throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Indentation, errorToken.sourceRange, msg, arguments);
     }
 
     /**
@@ -1431,7 +1431,7 @@ public abstract class AbstractParser {
         int errorLineno = tokenizer.getParensLineNumberStack()[nestingLevel - 1];
         int errorCol = tokenizer.getParensColumnsStack()[nestingLevel - 1];
         // TODO unknown source offsets
-        throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,
+        throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax,
                         new SourceRange(errorLineno, errorCol, errorLineno, -1),
                         "'%c' was never closed", tokenizer.getParensStack()[nestingLevel - 1]);
     }
@@ -1441,9 +1441,9 @@ public abstract class AbstractParser {
      */
     RuntimeException tokenizerError(Token token) {
         if (token.type == ERRORTOKEN && tokenizer.getDone() == Tokenizer.StatusCode.SYNTAX_ERROR) {
-            throw raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, token.getSourceRange(), (String) token.extraData);
+            throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, token.getSourceRange(), (String) token.extraData);
         }
-        ErrorCallback.ErrorType errorType = ErrorCallback.ErrorType.Syntax;
+        ParserCallbacks.ErrorType errorType = ParserCallbacks.ErrorType.Syntax;
         String msg;
         int colOffset = -1;
         switch (tokenizer.getDone()) {
@@ -1459,11 +1459,11 @@ public abstract class AbstractParser {
             case DEDENT_INVALID:
                 throw raiseIndentationError("unindent does not match any outer indentation level");
             case TABS_SPACES_INCONSISTENT:
-                errorType = ErrorCallback.ErrorType.Tab;
+                errorType = ParserCallbacks.ErrorType.Tab;
                 msg = "inconsistent use of tabs and spaces in indentation";
                 break;
             case TOO_DEEP_INDENTATION:
-                errorType = ErrorCallback.ErrorType.Indentation;
+                errorType = ParserCallbacks.ErrorType.Indentation;
                 msg = "too many levels of indentation";
                 break;
             case LINE_CONTINUATION_ERROR:
