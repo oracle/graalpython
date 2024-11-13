@@ -1208,6 +1208,8 @@ def main():
                         help="Show durations of N slowest tests (-1 to show all)")
     parser.add_argument('--mx-report',
                         help="Produce a json report file in format expected by mx_gate.make_test_report")
+    parser.add_argument('--untag-unmatched', action='store_true',
+                        help="Remove tests that were not collected from tags. Useful for pruning removed tests")
     parser.add_argument(
         '--subprocess-args',
         type=shlex.split,
@@ -1285,6 +1287,20 @@ def main():
 
     if not tests:
         sys.exit("No tests matched\n")
+
+    if args.untag_unmatched:
+        for test_suite in tests:
+            test_file = test_suite.test_file
+            tags = read_tags(test_file)
+            if tags:
+                filtered_tags = []
+                for tag in tags:
+                    if not any(tag.test_id.test_name == test.test_id.test_name for test in test_suite.collected_tests):
+                        log(f"Removing tag for {test_file}::{tag.test_id.test_name}")
+                    else:
+                        filtered_tags.append(tag)
+                write_tags(test_file, filtered_tags)
+        return
 
     runner_args = dict(
         failfast=args.failfast,
