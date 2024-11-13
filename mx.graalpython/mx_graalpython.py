@@ -1035,8 +1035,10 @@ def _hpy_test_root():
 
 
 def graalpytest(args):
+    # help is delegated to the runner, it will fake the mx-specific options as well
     parser = ArgumentParser(prog='mx graalpytest', add_help=False)
     parser.add_argument('--python')
+    parser.add_argument('--svm', action='store_true')
     args, unknown_args = parser.parse_known_args(args)
 
     env = extend_os_env(
@@ -1053,10 +1055,13 @@ def graalpytest(args):
             runner_args.append(arg)
     # if we got a binary path it's most likely CPython, so don't add graalpython args
     is_graalpy = False
-    if not args.python:
+    python_binary = args.python
+    if not python_binary:
         is_graalpy = True
         python_args += ["--experimental-options=true", "--python.EnableDebuggingBuiltins"]
-    elif 'graalpy' in os.path.basename(args.python) or 'mxbuild' in args.python:
+        if args.svm:
+            python_binary = graalpy_standalone_native()
+    elif 'graalpy' in os.path.basename(python_binary) or 'mxbuild' in python_binary:
         is_graalpy = True
         gp_args = ["--vm.ea", "--vm.esa", "--experimental-options=true", "--python.EnableDebuggingBuiltins"]
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
@@ -1068,8 +1073,8 @@ def graalpytest(args):
         pythonpath = [os.path.join(_dev_pythonhome(), 'lib-python', '3')]
         pythonpath += [p for p in env.get('PYTHONPATH', '').split(os.pathsep) if p]
         env['PYTHONPATH'] = os.pathsep.join(pythonpath)
-    if args.python:
-        return mx.run([args.python] + cmd_args, nonZeroIsFatal=True, env=env)
+    if python_binary:
+        return mx.run([python_binary, *cmd_args], nonZeroIsFatal=True, env=env)
     else:
         return full_python(cmd_args, env=env)
 

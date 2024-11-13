@@ -1182,6 +1182,7 @@ def main():
     if is_mx_graalpytest:
         # mx graalpytest takes this option, but it forwards --help here, so pretend we take it
         parser.add_argument('--python', help="Run tests with given Python binary")
+        parser.add_argument('--svm', action='store_true', help="Use SVM standalone")
     parser.add_argument('-t', '--tagged', action='store_true',
                         help="Interpret test file names relative to tagged test directory")
     parser.add_argument('-n', '--num-processes', type=int,
