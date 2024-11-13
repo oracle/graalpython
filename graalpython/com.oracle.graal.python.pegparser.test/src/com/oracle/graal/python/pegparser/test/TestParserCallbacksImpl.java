@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,39 +38,75 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.pegparser;
+package com.oracle.graal.python.pegparser.test;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.oracle.graal.python.pegparser.ParserCallbacks;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
-public interface ErrorCallback {
-    enum ErrorType {
-        Generic,
-        Indentation,
-        Tab,
-        Encoding,
-        Value,
-        Syntax,
-        System
+public class TestParserCallbacksImpl implements ParserCallbacks {
+
+    private final List<Error> warnings = new ArrayList<>(0);
+
+    public List<Error> getWarnings() {
+        return warnings;
     }
 
-    enum WarningType {
-        Deprecation,
-        Syntax
+    public boolean hasWarnings() {
+        return !warnings.isEmpty();
     }
 
-    void safePointPoll();
-
-    RuntimeException reportIncompleteSource(int line);
-
-    RuntimeException onError(ErrorType errorType, SourceRange sourceRange, String message);
-
-    void onWarning(WarningType warningType, SourceRange sourceRange, String message);
-
-    default RuntimeException onError(ErrorType errorType, SourceRange sourceRange, String message, Object... arguments) {
-        throw onError(errorType, sourceRange, String.format(message, arguments));
+    @Override
+    public void safePointPoll() {
     }
 
-    default void onWarning(WarningType warningType, SourceRange sourceRange, String message, Object... arguments) {
-        onWarning(warningType, sourceRange, String.format(message, arguments));
+    @Override
+    public RuntimeException onError(ErrorType errorType, SourceRange sourceRange, String message) {
+        throw new ParserErrorWrapperException(new Error(errorType, sourceRange, message));
     }
+
+    @Override
+    public void onWarning(WarningType warningType, SourceRange sourceRange, String message) {
+        warnings.add(new Error(ErrorType.Syntax, sourceRange, message));
+    }
+
+    @Override
+    public RuntimeException reportIncompleteSource(int line) {
+        throw new IncompleteSourceException(line);
+    }
+
+    @SuppressWarnings("serial")
+    public static final class ParserErrorWrapperException extends RuntimeException {
+        private final Error error;
+
+        ParserErrorWrapperException(Error error) {
+            super(error.toString());
+            this.error = error;
+        }
+
+        Error getError() {
+            return error;
+        }
+    }
+
+    public static final class IncompleteSourceException extends RuntimeException {
+
+        private static final long serialVersionUID = 3614789104004878690L;
+
+        public final int line;
+
+        IncompleteSourceException(int line) {
+            this.line = line;
+        }
+    }
+
+    public record Error(ErrorType type, SourceRange sourceRange, String message) {
+        @Override
+        public String toString() {
+            return String.format("%s[%d:%d-%d:%d]:%s", type.name(), sourceRange.startLine, sourceRange.startColumn, sourceRange.endLine, sourceRange.endColumn, message);
+        }
+    }
+
 }

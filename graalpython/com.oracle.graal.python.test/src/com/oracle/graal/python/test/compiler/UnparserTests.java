@@ -46,9 +46,9 @@ import org.junit.Test;
 
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.Unparser;
-import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.ParserCallbacks;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -56,6 +56,7 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.test.PythonTests;
+import com.oracle.graal.python.test.compiler.CompilerTests.TestParserCallbacksImpl;
 
 public class UnparserTests extends PythonTests {
 
@@ -92,8 +93,8 @@ public class UnparserTests extends PythonTests {
     }
 
     private static void checkRoundTrip(String source) {
-        ErrorCallback errorCallback = new CompilerTests.TestErrorCallbackImpl();
-        Parser parser = Compiler.createParser(source, errorCallback, InputType.EVAL, false);
+        ParserCallbacks parserCallbacks = new TestParserCallbacksImpl();
+        Parser parser = Compiler.createParser(source, parserCallbacks, InputType.EVAL, false);
         ModTy.Expression result = (ModTy.Expression) parser.parse();
         assertEquals(source, unparse(result.body));
     }

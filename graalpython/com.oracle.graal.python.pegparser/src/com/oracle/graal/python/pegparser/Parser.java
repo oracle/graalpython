@@ -731,12 +731,12 @@ public final class Parser extends AbstractParser {
     private static final int _TMP_367_ID = 1610;
     private static final int _TMP_368_ID = 1611;
 
-    public Parser(String source, SourceRange sourceRange, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
-        super(source, sourceRange, errorCb, startRule, flags, featureVersion);
+    public Parser(String source, SourceRange sourceRange, ParserCallbacks parserCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
+        super(source, sourceRange, parserCb, startRule, flags, featureVersion);
     }
 
-    public Parser(String source, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
-        super(source, null, errorCb, startRule, flags, featureVersion);
+    public Parser(String source, ParserCallbacks parserCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
+        super(source, null, parserCb, startRule, flags, featureVersion);
     }
 
     // file: statements? $
@@ -15730,7 +15730,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_312_rule(false)
             )
             {
-                _res = this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, a, "':' expected after dictionary key");
+                _res = this.raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, a, "':' expected after dictionary key");
                 return (ExprTy)_res;
             }
             reset(_mark);

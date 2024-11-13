@@ -106,8 +106,8 @@ import com.oracle.graal.python.compiler.FormatOptions;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.OpCodesConstants;
+import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.QuickeningTypes;
-import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.compiler.UnaryOpsConstants;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNodeGen;
@@ -507,7 +507,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private final Source source;
     private SourceSection sourceSection;
     // For deferred deprecation warnings
-    private final RaisePythonExceptionErrorCallback parserErrorCallback;
+    private final ParserCallbacksImpl parserCallbacks;
 
     @CompilationFinal(dimensions = 1) final byte[] bytecode;
     @CompilationFinal(dimensions = 1) private final Object[] consts;
@@ -632,10 +632,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @TruffleBoundary
-    public static PBytecodeRootNode create(PythonLanguage language, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
+    public static PBytecodeRootNode create(PythonLanguage language, CodeUnit co, Source source, ParserCallbacksImpl parserCallbacks) {
         FrameInfo frameInfo = new FrameInfo();
         FrameDescriptor fd = makeFrameDescriptor(co, frameInfo);
-        PBytecodeRootNode rootNode = new PBytecodeRootNode(language, fd, makeSignature(co), co, source, parserErrorCallback);
+        PBytecodeRootNode rootNode = new PBytecodeRootNode(language, fd, makeSignature(co), co, source, parserCallbacks);
         PythonContext context = PythonContext.get(rootNode);
         if (context != null && context.getOption(PythonOptions.EagerlyMaterializeInstrumentationNodes)) {
             rootNode.adoptChildren();
@@ -646,7 +646,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @TruffleBoundary
-    private PBytecodeRootNode(PythonLanguage language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, RaisePythonExceptionErrorCallback parserErrorCallback) {
+    private PBytecodeRootNode(PythonLanguage language, FrameDescriptor fd, Signature sign, CodeUnit co, Source source, ParserCallbacksImpl parserCallbacks) {
         super(language, fd);
         assert source != null;
         this.celloffset = co.varnames.length;
@@ -655,7 +655,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.bcioffset = stackoffset + co.stacksize;
         this.source = source;
         this.internal = source.isInternal();
-        this.parserErrorCallback = parserErrorCallback;
+        this.parserCallbacks = parserCallbacks;
         this.signature = sign;
         this.bytecode = PythonUtils.arrayCopyOf(co.code, co.code.length);
         this.adoptedNodes = new Node[co.code.length];
@@ -5899,12 +5899,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     protected RootNode cloneUninitialized() {
-        return new PBytecodeRootNode(PythonLanguage.get(this), getFrameDescriptor(), getSignature(), co, source, parserErrorCallback);
+        return new PBytecodeRootNode(PythonLanguage.get(this), getFrameDescriptor(), getSignature(), co, source, parserCallbacks);
     }
 
     public void triggerDeferredDeprecationWarnings() {
-        if (parserErrorCallback != null) {
-            parserErrorCallback.triggerDeprecationWarnings();
+        if (parserCallbacks != null) {
+            parserCallbacks.triggerDeprecationWarnings();
         }
     }
 

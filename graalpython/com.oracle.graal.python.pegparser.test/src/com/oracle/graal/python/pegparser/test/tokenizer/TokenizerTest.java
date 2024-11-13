@@ -57,7 +57,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-import com.oracle.graal.python.pegparser.test.TestErrorCallbackImpl;
+import com.oracle.graal.python.pegparser.test.TestParserCallbacksImpl;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 
@@ -364,7 +364,7 @@ public class TokenizerTest {
         try {
             tokenizer.next();
             fail("Expected Tokenizer to report incomplete source");
-        } catch (TestErrorCallbackImpl.IncompleteSourceException e) {
+        } catch (TestParserCallbacksImpl.IncompleteSourceException e) {
             assertEquals(1, e.line);
         }
         tokenizer.reportIncompleteSourceIfInteractive = false;
@@ -377,7 +377,7 @@ public class TokenizerTest {
         try {
             tokenizer.next();
             fail("Expected Tokenizer to report incomplete source");
-        } catch (TestErrorCallbackImpl.IncompleteSourceException e) {
+        } catch (TestParserCallbacksImpl.IncompleteSourceException e) {
             assertEquals(2, e.line);
         }
     }
@@ -624,7 +624,7 @@ public class TokenizerTest {
     }
 
     private static Tokenizer createTokenizer(String code, boolean interactive) {
-        return Tokenizer.fromString(new TestErrorCallbackImpl(), code, EnumSet.of(interactive ? Tokenizer.Flag.INTERACTIVE : Tokenizer.Flag.EXEC_INPUT, Tokenizer.Flag.TYPE_COMMENT), null);
+        return Tokenizer.fromString(new TestParserCallbacksImpl(), code, EnumSet.of(interactive ? Tokenizer.Flag.INTERACTIVE : Tokenizer.Flag.EXEC_INPUT, Tokenizer.Flag.TYPE_COMMENT), null);
     }
 
     private static Tokenizer createTokenizer(String code) {

@@ -48,7 +48,7 @@ import java.util.Map;
 
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 
-import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
+import com.oracle.graal.python.pegparser.ParserCallbacks.WarningType;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
 import com.oracle.graal.python.pegparser.tokenizer.CodePoints.Builder;
@@ -145,7 +145,7 @@ final class StringParser {
             }
 
             if (s == end) {
-                throw parser.errorCb.onError(ErrorCallback.ErrorType.Value, token.sourceRange, TRAILING_S_IN_STR, "\\");
+                throw parser.callbacks.onError(ParserCallbacks.ErrorType.Value, token.sourceRange, TRAILING_S_IN_STR, "\\");
             }
 
             chr = codePoints[s++];
@@ -225,7 +225,7 @@ final class StringParser {
                         }
                     }
                     /* invalid hexadecimal digits */
-                    throw parser.errorCb.onError(ErrorCallback.ErrorType.Value, token.sourceRange, INVALID_ESCAPE_AT, "\\x", s - 2 - (end - len));
+                    throw parser.callbacks.onError(ParserCallbacks.ErrorType.Value, token.sourceRange, INVALID_ESCAPE_AT, "\\x", s - 2 - (end - len));
                 default:
                     if (!wasInvalidEscapeWarning) {
                         wasInvalidEscapeWarning = true;
@@ -257,7 +257,7 @@ final class StringParser {
                 sb.appendCodePoints(codePoints, substringStart, backslashIndex - substringStart);
             }
             if (backslashIndex + 1 < end) {
-                substringStart = processEscapeSequence(token.sourceRange, parser.errorCb, codePoints, backslashIndex + 1, end, sb);
+                substringStart = processEscapeSequence(token.sourceRange, parser.callbacks, codePoints, backslashIndex + 1, end, sb);
                 if (substringStart == backslashIndex + 1) {
                     sb.appendCodePoint('\\');
                     if (!emittedDeprecationWarning) {
@@ -277,7 +277,7 @@ final class StringParser {
         return sb.build();
     }
 
-    private static int processEscapeSequence(SourceRange sourceRange, ErrorCallback errorCallback, int[] codePoints, int startIndex, int end, CodePoints.Builder sb) {
+    private static int processEscapeSequence(SourceRange sourceRange, ParserCallbacks parserCallbacks, int[] codePoints, int startIndex, int end, CodePoints.Builder sb) {
         int cp = codePoints[startIndex];
         int i = startIndex + 1;
         return switch (cp) {
@@ -340,7 +340,7 @@ final class StringParser {
             }
             // Hex Unicode: u????
             case 'u' -> {
-                int code = getHexValue(codePoints, sourceRange, i, end, 4, errorCallback);
+                int code = getHexValue(codePoints, sourceRange, i, end, 4, parserCallbacks);
                 if (code < 0) {
                     yield startIndex;
                 }
@@ -349,17 +349,17 @@ final class StringParser {
             }
             // Hex Unicode: U????????
             case 'U' -> {
-                int code = getHexValue(codePoints, sourceRange, i, end, 8, errorCallback);
+                int code = getHexValue(codePoints, sourceRange, i, end, 8, parserCallbacks);
                 if (Character.isValidCodePoint(code)) {
                     sb.appendCodePoint(code);
                 } else {
-                    throw errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, String.format(UNICODE_ERROR + ILLEGAL_CHARACTER, i, i + 9));
+                    throw parserCallbacks.onError(ParserCallbacks.ErrorType.Encoding, sourceRange, String.format(UNICODE_ERROR + ILLEGAL_CHARACTER, i, i + 9));
                 }
                 yield i + 8;
             }
             // Hex Unicode: x??
             case 'x' -> {
-                int code = getHexValue(codePoints, sourceRange, i, end, 2, errorCallback);
+                int code = getHexValue(codePoints, sourceRange, i, end, 2, parserCallbacks);
                 if (code < 0) {
                     yield startIndex;
                 }
@@ -367,7 +367,7 @@ final class StringParser {
                 yield i + 2;
             }
             case 'N' -> {
-                i = doCharacterName(codePoints, sourceRange, sb, i, end, errorCallback);
+                i = doCharacterName(codePoints, sourceRange, sb, i, end, parserCallbacks);
                 if (i < 0) {
                     yield startIndex;
                 }
@@ -378,7 +378,7 @@ final class StringParser {
         };
     }
 
-    private static int getHexValue(int[] codePoints, SourceRange sourceRange, int start, int end, int len, ErrorCallback errorCb) {
+    private static int getHexValue(int[] codePoints, SourceRange sourceRange, int start, int end, int len, ParserCallbacks errorCb) {
         int digit;
         int result = 0;
         for (int index = start; index < (start + len); index++) {
@@ -397,7 +397,7 @@ final class StringParser {
         return result;
     }
 
-    private static int createTruncatedError(SourceRange sourceRange, int startIndex, int endIndex, int len, ErrorCallback errorCb) {
+    private static int createTruncatedError(SourceRange sourceRange, int startIndex, int endIndex, int len, ParserCallbacks errorCb) {
         String truncatedMessage = null;
         switch (len) {
             case 2:
@@ -410,7 +410,7 @@ final class StringParser {
                 truncatedMessage = TRUNCATED_UXXXXXXXX_ERROR;
                 break;
         }
-        throw errorCb.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + truncatedMessage, startIndex, endIndex);
+        throw errorCb.onError(ParserCallbacks.ErrorType.Encoding, sourceRange, UNICODE_ERROR + truncatedMessage, startIndex, endIndex);
     }
 
     /**
@@ -422,24 +422,24 @@ final class StringParser {
      * @param end end of the input
      * @return offset after the close brace or {@code -1} if an error was signaled
      */
-    private static int doCharacterName(int[] codePoints, SourceRange sourceRange, CodePoints.Builder sb, int offset, int end, ErrorCallback errorCallback) {
+    private static int doCharacterName(int[] codePoints, SourceRange sourceRange, CodePoints.Builder sb, int offset, int end, ParserCallbacks parserCallbacks) {
         if (offset >= end) {
-            throw errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+            throw parserCallbacks.onError(ParserCallbacks.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
         }
         int ch = codePoints[offset];
         if (ch != '{') {
-            throw errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+            throw parserCallbacks.onError(ParserCallbacks.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
         }
         int closeIndex = indexOf(codePoints, offset + 1, end, '}');
         if (closeIndex == -1) {
-            throw errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+            throw parserCallbacks.onError(ParserCallbacks.ErrorType.Encoding, sourceRange, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
         }
         String charName = new String(codePoints, offset + 1, closeIndex - offset - 1).toUpperCase();
         int cp = getCodePoint(charName);
         if (cp >= 0) {
             sb.appendCodePoint(cp);
         } else {
-            throw errorCallback.onError(ErrorCallback.ErrorType.Encoding, sourceRange, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
+            throw parserCallbacks.onError(ParserCallbacks.ErrorType.Encoding, sourceRange, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
         }
         return closeIndex + 1;
     }
@@ -522,9 +522,9 @@ final class StringParser {
             category = WarningType.Deprecation;
         }
         if (octal) {
-            parser.errorCb.onWarning(category, token.sourceRange, INVALID_OCTAL_ESCAPE, c, codePoints[firstInvalidEscape + 1], codePoints[firstInvalidEscape + 2]);
+            parser.callbacks.onWarning(category, token.sourceRange, INVALID_OCTAL_ESCAPE, c, codePoints[firstInvalidEscape + 1], codePoints[firstInvalidEscape + 2]);
         } else {
-            parser.errorCb.onWarning(category, token.sourceRange, INVALID_ESCAPE, c);
+            parser.callbacks.onWarning(category, token.sourceRange, INVALID_ESCAPE, c);
         }
     }
 

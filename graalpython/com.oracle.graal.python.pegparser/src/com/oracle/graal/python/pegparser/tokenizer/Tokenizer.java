@@ -19,8 +19,8 @@ import java.util.function.Supplier;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 
-import com.oracle.graal.python.pegparser.ErrorCallback;
-import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
+import com.oracle.graal.python.pegparser.ParserCallbacks;
+import com.oracle.graal.python.pegparser.ParserCallbacks.WarningType;
 import com.oracle.graal.python.pegparser.tokenizer.Token.Kind;
 
 /**
@@ -91,7 +91,7 @@ public class Tokenizer {
         INTERACTIVE_STOP                // E_INTERACT_STOP
     }
 
-    private final ErrorCallback errorCallback;
+    private final ParserCallbacks parserCallbacks;
 
     // tok_new initialization is taken care of here
     private final boolean execInput;
@@ -168,8 +168,8 @@ public class Tokenizer {
     private CodePoints tokenMetadata;
     // error_ret
 
-    private Tokenizer(ErrorCallback errorCallback, int[] codePointsInput, EnumSet<Flag> flags, SourceRange inputSourceRange, Supplier<int[]> inputSupplier) {
-        this.errorCallback = errorCallback;
+    private Tokenizer(ParserCallbacks parserCallbacks, int[] codePointsInput, EnumSet<Flag> flags, SourceRange inputSourceRange, Supplier<int[]> inputSupplier) {
+        this.parserCallbacks = parserCallbacks;
         this.codePointsInput = codePointsInput;
         this.codePointsInputLength = codePointsInput.length;
         this.execInput = flags.contains(Flag.EXEC_INPUT);
@@ -193,7 +193,7 @@ public class Tokenizer {
      * Copy constructor used to look ahead if there is a 'def' after 'async'.
      */
     private Tokenizer(Tokenizer t) {
-        errorCallback = t.errorCallback;
+        parserCallbacks = t.parserCallbacks;
         execInput = t.execInput;
         codePointsInput = t.codePointsInput;
         codePointsInputLength = t.codePointsInputLength;
@@ -390,13 +390,13 @@ public class Tokenizer {
      * Equivalent of {@code PyTokenizer_FromString} and {@code decode_str}. The encoding of the
      * input is automatically detected using BOM and/or coding spec comment.
      */
-    public static Tokenizer fromBytes(ErrorCallback errorCallback, byte[] code, EnumSet<Flag> flags) {
+    public static Tokenizer fromBytes(ParserCallbacks parserCallbacks, byte[] code, EnumSet<Flag> flags) {
         // we do not translate newlines or add a missing final newline. we deal
         // with those in the call to get the next character
         int sourceStart = getSourceStart(code);
         Charset fileEncoding = detectEncoding(sourceStart, code);
         int[] codePointsInput = charsToCodePoints(fileEncoding.decode(ByteBuffer.wrap(code, sourceStart, code.length)).array());
-        return new Tokenizer(errorCallback, codePointsInput, flags, null, null);
+        return new Tokenizer(parserCallbacks, codePointsInput, flags, null, null);
     }
 
     private static int[] charsToCodePoints(char[] chars) {
@@ -445,15 +445,15 @@ public class Tokenizer {
      * Equivalent of {@code PyTokenizer_FromUTF8}. No charset decoding is performed, BOM or coding
      * spec comment are ignored,
      */
-    public static Tokenizer fromString(ErrorCallback errorCallback, String code, EnumSet<Flag> flags, SourceRange inputSourceRange) {
-        return new Tokenizer(errorCallback, charsToCodePoints(code.toCharArray()), flags, inputSourceRange, null);
+    public static Tokenizer fromString(ParserCallbacks parserCallbacks, String code, EnumSet<Flag> flags, SourceRange inputSourceRange) {
+        return new Tokenizer(parserCallbacks, charsToCodePoints(code.toCharArray()), flags, inputSourceRange, null);
     }
 
     /**
      * Equivalent of {@code _PyTokenizer_FromReadline}.
      */
-    public static Tokenizer fromReadline(ErrorCallback errorCallback, EnumSet<Flag> flags, Supplier<int[]> inputSupplier) {
-        return new Tokenizer(errorCallback, new int[0], flags, null, inputSupplier);
+    public static Tokenizer fromReadline(ParserCallbacks parserCallbacks, EnumSet<Flag> flags, Supplier<int[]> inputSupplier) {
+        return new Tokenizer(parserCallbacks, new int[0], flags, null, inputSupplier);
     }
 
     // PyTokenizer_FromFile
@@ -485,7 +485,7 @@ public class Tokenizer {
                     readNewline = true;
                 }
                 if ((nextCharIndex & 1023) == 0) {
-                    errorCallback.safePointPoll();
+                    parserCallbacks.safePointPoll();
                 }
                 return c;
             } else {
@@ -502,7 +502,7 @@ public class Tokenizer {
                 }
                 if (interactive) {
                     if (reportIncompleteSourceIfInteractive) {
-                        throw errorCallback.reportIncompleteSource(currentLineNumber);
+                        throw parserCallbacks.reportIncompleteSource(currentLineNumber);
                     }
                     done = StatusCode.INTERACTIVE_STOP;
                     return EOF;
@@ -580,7 +580,7 @@ public class Tokenizer {
     }
 
     private void parserWarn(String warning) {
-        errorCallback.onWarning(WarningType.Syntax, getCurrentTokenRange(false), warning);
+        parserCallbacks.onWarning(WarningType.Syntax, getCurrentTokenRange(false), warning);
     }
 
     /**
@@ -1952,7 +1952,7 @@ public class Tokenizer {
         SourceRange sourceRange = new SourceRange(
                         currentLineNumber, nextCharIndex - lineStartIndex,
                         currentLineNumber, nextCharIndex - lineStartIndex);
-        errorCallback.onWarning(WarningType.Deprecation, sourceRange, "invalid escape sequence '\\%c'", nextChar);
+        parserCallbacks.onWarning(WarningType.Deprecation, sourceRange, "invalid escape sequence '\\%c'", nextChar);
     }
 
     private boolean insideFstring() {

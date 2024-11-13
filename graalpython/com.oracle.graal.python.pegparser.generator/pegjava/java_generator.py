@@ -197,7 +197,7 @@ ACTION_MAPPINGS = {
     'CHECK_VERSION ( stmt_ty , 6 , "Variable annotation syntax is" , _PyAST_AnnAssign ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , c , 1 , EXTRA ) )': (1, 'checkVersion(6, "Variable annotation syntax is", factory.createAnnAssignment(setExprContext(a, ExprContextTy.Store), b, (ExprTy) c, true, $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 6 , "Variable annotations syntax is" , _PyAST_AnnAssign ( a , b , c , 0 , EXTRA ) )': (1, 'checkVersion(6, "Variable annotations syntax is", factory.createAnnAssignment(a, b, (ExprTy) c, false, $RANGE))'),
     'CHECK_VERSION ( comprehension_ty , 6 , "Async comprehensions are" , _PyAST_comprehension ( a , b , c , 1 , p -> arena ) )': (1, 'checkVersion(6, "Async comprehensions are", factory.createComprehension(a, b, c, true, $RANGE))'),
-    'RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , a -> end_lineno , - 1 , "\':\' expected after dictionary key" )' : (1, 'this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, a, "\':\' expected after dictionary key")'),
+    'RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , a -> end_lineno , - 1 , "\':\' expected after dictionary key" )' : (1, 'this.raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, a, "\':\' expected after dictionary key")'),
     'RAISE_SYNTAX_ERROR_INVALID_TARGET ( DEL_TARGETS , a )': (1, 'this.raiseSyntaxErrorInvalidTarget(TargetsType.DEL_TARGETS,a)'),
     'RAISE_SYNTAX_ERROR_INVALID_TARGET ( FOR_TARGETS , a )': (1, 'this.raiseSyntaxErrorInvalidTarget(TargetsType.FOR_TARGETS,a)'),
     'RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a )': (2, 'this.raiseSyntaxErrorInvalidTarget(TargetsType.STAR_TARGETS,a)'),
@@ -945,14 +945,14 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(f"private static final int {rulename.upper()}_ID = {i};{comment}")
         self.print()
         # Java needs a constructor
-        self.print("public %s(String source, SourceRange sourceRange, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
+        self.print("public %s(String source, SourceRange sourceRange, ParserCallbacks parserCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
         with self.indent():
-            self.print("super(source, sourceRange, errorCb, startRule, flags, featureVersion);")
+            self.print("super(source, sourceRange, parserCb, startRule, flags, featureVersion);")
         self.print("}")
         self.print()
-        self.print("public %s(String source, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
+        self.print("public %s(String source, ParserCallbacks parserCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
         with self.indent():
-            self.print("super(source, null, errorCb, startRule, flags, featureVersion);")
+            self.print("super(source, null, parserCb, startRule, flags, featureVersion);")
         self.print("}")
         # we don't need the C declarations, so straight to the rule functions as in c_generator
         for rulename, rule in list(self.all_rules.items()):
