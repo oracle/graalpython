@@ -1,16 +1,16 @@
-test.test_exception_hierarchy.AttributesTest.test_blockingioerror
-test.test_exception_hierarchy.AttributesTest.test_errno_translation
-test.test_exception_hierarchy.AttributesTest.test_posix_error
-test.test_exception_hierarchy.AttributesTest.test_windows_error
-test.test_exception_hierarchy.ExplicitSubclassingTest.test_errno_mapping
-test.test_exception_hierarchy.ExplicitSubclassingTest.test_init_kwdargs
-test.test_exception_hierarchy.ExplicitSubclassingTest.test_init_new_overridden
-test.test_exception_hierarchy.ExplicitSubclassingTest.test_init_overridden
-test.test_exception_hierarchy.ExplicitSubclassingTest.test_init_standalone
-test.test_exception_hierarchy.ExplicitSubclassingTest.test_new_kwdargs
-test.test_exception_hierarchy.ExplicitSubclassingTest.test_new_overridden
-test.test_exception_hierarchy.HierarchyTest.test_builtin_errors
-test.test_exception_hierarchy.HierarchyTest.test_errno_mapping
-test.test_exception_hierarchy.HierarchyTest.test_select_error
-test.test_exception_hierarchy.HierarchyTest.test_socket_errors
-test.test_exception_hierarchy.HierarchyTest.test_try_except
+test.test_exception_hierarchy.AttributesTest.test_blockingioerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.AttributesTest.test_errno_translation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.AttributesTest.test_posix_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.AttributesTest.test_windows_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.ExplicitSubclassingTest.test_errno_mapping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.ExplicitSubclassingTest.test_init_kwdargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.ExplicitSubclassingTest.test_init_new_overridden @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.ExplicitSubclassingTest.test_init_overridden @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.ExplicitSubclassingTest.test_init_standalone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.ExplicitSubclassingTest.test_new_kwdargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.ExplicitSubclassingTest.test_new_overridden @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.HierarchyTest.test_builtin_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.HierarchyTest.test_errno_mapping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.HierarchyTest.test_select_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.HierarchyTest.test_socket_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exception_hierarchy.HierarchyTest.test_try_except @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

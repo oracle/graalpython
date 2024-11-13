@@ -1,232 +1,232 @@
-test.test_shutil.PublicAPITests.test_module_all_attribute
-test.test_shutil.TermsizeTests.test_bad_environ
-test.test_shutil.TermsizeTests.test_does_not_crash
-test.test_shutil.TermsizeTests.test_fallback
-test.test_shutil.TermsizeTests.test_os_environ_first
-test.test_shutil.TermsizeTests.test_stty_match
-test.test_shutil.TestArchives.test_make_archive
-test.test_shutil.TestArchives.test_make_archive_cwd
-test.test_shutil.TestArchives.test_make_archive_owner_group
-test.test_shutil.TestArchives.test_make_tarball
-test.test_shutil.TestArchives.test_make_tarfile_in_curdir
-test.test_shutil.TestArchives.test_make_tarfile_rootdir_nodir
-test.test_shutil.TestArchives.test_make_zipfile
-test.test_shutil.TestArchives.test_make_zipfile_in_curdir
-test.test_shutil.TestArchives.test_make_zipfile_rootdir_nodir
-test.test_shutil.TestArchives.test_register_archive_format
-test.test_shutil.TestArchives.test_tarfile_root_owner
-test.test_shutil.TestArchives.test_tarfile_vs_tar
-test.test_shutil.TestArchives.test_unpack_archive_bztar
-test.test_shutil.TestArchives.test_unpack_archive_gztar
-test.test_shutil.TestArchives.test_unpack_archive_tar
-test.test_shutil.TestArchives.test_unpack_archive_xztar
-test.test_shutil.TestArchives.test_unpack_archive_zip
-test.test_shutil.TestArchives.test_unpack_registry
-test.test_shutil.TestArchives.test_unzip_zipfile
-test.test_shutil.TestArchives.test_zipfile_vs_zip
-test.test_shutil.TestCopy.test_copy
-test.test_shutil.TestCopy.test_copy2
-test.test_shutil.TestCopy.test_copy2_dir
-test.test_shutil.TestCopy.test_copy2_symlinks
-test.test_shutil.TestCopy.test_copy2_xattr
-test.test_shutil.TestCopy.test_copy_dir
-test.test_shutil.TestCopy.test_copy_return_value
-test.test_shutil.TestCopy.test_copy_symlinks
-test.test_shutil.TestCopy.test_copyfile_copy_dir
-test.test_shutil.TestCopy.test_copyfile_named_pipe
-test.test_shutil.TestCopy.test_copyfile_nonexistent_dir
-test.test_shutil.TestCopy.test_copyfile_return_value
-test.test_shutil.TestCopy.test_copyfile_same_file
-test.test_shutil.TestCopy.test_copyfile_symlinks
-test.test_shutil.TestCopy.test_copymode_follow_symlinks
-test.test_shutil.TestCopy.test_copymode_symlink_to_symlink
-test.test_shutil.TestCopy.test_copymode_symlink_to_symlink_wo_lchmod
-test.test_shutil.TestCopy.test_copystat_handles_harmless_chflags_errors
-test.test_shutil.TestCopy.test_copystat_symlinks
-test.test_shutil.TestCopy.test_copyxattr
-test.test_shutil.TestCopy.test_copyxattr_symlinks
-test.test_shutil.TestCopy.test_dont_copy_file_onto_link_to_itself
-test.test_shutil.TestCopy.test_dont_copy_file_onto_symlink_to_itself
-test.test_shutil.TestCopyFile.test_move_dir_caseinsensitive
-test.test_shutil.TestCopyFile.test_w_dest_close_fails
-test.test_shutil.TestCopyFile.test_w_dest_open_fails
-test.test_shutil.TestCopyFile.test_w_source_close_fails
-test.test_shutil.TestCopyFile.test_w_source_open_fails
-test.test_shutil.TestCopyFileObj.test_content
-test.test_shutil.TestCopyFileObj.test_file_not_closed
-test.test_shutil.TestCopyFileObj.test_file_offset
-test.test_shutil.TestCopyFileObj.test_win_impl
-test.test_shutil.TestCopyTree.test_copytree_arg_types_of_ignore
-test.test_shutil.TestCopyTree.test_copytree_custom_copy_function
-test.test_shutil.TestCopyTree.test_copytree_dangling_symlinks
-test.test_shutil.TestCopyTree.test_copytree_dirs_exist_ok
-test.test_shutil.TestCopyTree.test_copytree_named_pipe
-test.test_shutil.TestCopyTree.test_copytree_retains_permissions
-test.test_shutil.TestCopyTree.test_copytree_return_value
-test.test_shutil.TestCopyTree.test_copytree_simple
-test.test_shutil.TestCopyTree.test_copytree_special_func
-test.test_shutil.TestCopyTree.test_copytree_subdirectory
-test.test_shutil.TestCopyTree.test_copytree_symlink_dir
-test.test_shutil.TestCopyTree.test_copytree_symlinks
-test.test_shutil.TestCopyTree.test_copytree_winerror
-test.test_shutil.TestCopyTree.test_copytree_with_exclude
-test.test_shutil.TestGetTerminalSize.test_bad_environ
-test.test_shutil.TestGetTerminalSize.test_does_not_crash
-test.test_shutil.TestGetTerminalSize.test_fallback
-test.test_shutil.TestGetTerminalSize.test_os_environ_first
-test.test_shutil.TestGetTerminalSize.test_stty_match
-test.test_shutil.TestMisc.test_chown
-test.test_shutil.TestMisc.test_disk_usage
-test.test_shutil.TestMove.test_destinsrc_false_negative
-test.test_shutil.TestMove.test_destinsrc_false_positive
-test.test_shutil.TestMove.test_dont_move_dir_in_itself
-test.test_shutil.TestMove.test_existing_file_inside_dest_dir
-test.test_shutil.TestMove.test_move_as_rename_return_value
-test.test_shutil.TestMove.test_move_dangling_symlink
-test.test_shutil.TestMove.test_move_dir
-test.test_shutil.TestMove.test_move_dir_altsep_to_dir
-test.test_shutil.TestMove.test_move_dir_caseinsensitive
-test.test_shutil.TestMove.test_move_dir_other_fs
-test.test_shutil.TestMove.test_move_dir_permission_denied
-test.test_shutil.TestMove.test_move_dir_sep_to_dir
-test.test_shutil.TestMove.test_move_dir_special_function
-test.test_shutil.TestMove.test_move_dir_symlink
-test.test_shutil.TestMove.test_move_dir_to_dir
-test.test_shutil.TestMove.test_move_dir_to_dir_other_fs
-test.test_shutil.TestMove.test_move_file
-test.test_shutil.TestMove.test_move_file_other_fs
-test.test_shutil.TestMove.test_move_file_special_function
-test.test_shutil.TestMove.test_move_file_symlink
-test.test_shutil.TestMove.test_move_file_symlink_to_dir
-test.test_shutil.TestMove.test_move_file_to_dir
-test.test_shutil.TestMove.test_move_file_to_dir_other_fs
-test.test_shutil.TestMove.test_move_file_to_dir_pathlike_dst
-test.test_shutil.TestMove.test_move_file_to_dir_pathlike_src
-test.test_shutil.TestMove.test_move_return_value
-test.test_shutil.TestRmTree.test_on_error
-test.test_shutil.TestRmTree.test_rmtree_does_not_choke_on_failing_lstat
-test.test_shutil.TestRmTree.test_rmtree_dont_delete_file
-test.test_shutil.TestRmTree.test_rmtree_errors
-test.test_shutil.TestRmTree.test_rmtree_fails_on_junctions
-test.test_shutil.TestRmTree.test_rmtree_fails_on_symlink
-test.test_shutil.TestRmTree.test_rmtree_on_junction
-test.test_shutil.TestRmTree.test_rmtree_on_symlink
-test.test_shutil.TestRmTree.test_rmtree_uses_safe_fd_version_if_available
-test.test_shutil.TestRmTree.test_rmtree_with_dir_fd
-test.test_shutil.TestRmTree.test_rmtree_with_dir_fd_unsupported
-test.test_shutil.TestRmTree.test_rmtree_works_on_bytes
-test.test_shutil.TestRmTree.test_rmtree_works_on_junctions
-test.test_shutil.TestRmTree.test_rmtree_works_on_symlinks
-test.test_shutil.TestShutil.test_chown
-test.test_shutil.TestShutil.test_copy
-test.test_shutil.TestShutil.test_copy2
-test.test_shutil.TestShutil.test_copy2_symlinks
-test.test_shutil.TestShutil.test_copy2_xattr
-test.test_shutil.TestShutil.test_copy_return_value
-test.test_shutil.TestShutil.test_copy_symlinks
-test.test_shutil.TestShutil.test_copyfile_named_pipe
-test.test_shutil.TestShutil.test_copyfile_return_value
-test.test_shutil.TestShutil.test_copyfile_same_file
-test.test_shutil.TestShutil.test_copyfile_symlinks
-test.test_shutil.TestShutil.test_copymode_follow_symlinks
-test.test_shutil.TestShutil.test_copymode_symlink_to_symlink
-test.test_shutil.TestShutil.test_copymode_symlink_to_symlink_wo_lchmod
-test.test_shutil.TestShutil.test_copystat_handles_harmless_chflags_errors
-test.test_shutil.TestShutil.test_copystat_symlinks
-test.test_shutil.TestShutil.test_copytree_arg_types_of_ignore
-test.test_shutil.TestShutil.test_copytree_custom_copy_function
-test.test_shutil.TestShutil.test_copytree_dangling_symlinks
-test.test_shutil.TestShutil.test_copytree_dirs_exist_ok
-test.test_shutil.TestShutil.test_copytree_named_pipe
-test.test_shutil.TestShutil.test_copytree_retains_permissions
-test.test_shutil.TestShutil.test_copytree_return_value
-test.test_shutil.TestShutil.test_copytree_simple
-test.test_shutil.TestShutil.test_copytree_special_func
-test.test_shutil.TestShutil.test_copytree_subdirectory
-test.test_shutil.TestShutil.test_copytree_symlink_dir
-test.test_shutil.TestShutil.test_copytree_symlinks
-test.test_shutil.TestShutil.test_copytree_winerror
-test.test_shutil.TestShutil.test_copytree_with_exclude
-test.test_shutil.TestShutil.test_copyxattr
-test.test_shutil.TestShutil.test_copyxattr_symlinks
-test.test_shutil.TestShutil.test_disk_usage
-test.test_shutil.TestShutil.test_dont_copy_file_onto_link_to_itself
-test.test_shutil.TestShutil.test_dont_copy_file_onto_symlink_to_itself
-test.test_shutil.TestShutil.test_make_archive
-test.test_shutil.TestShutil.test_make_archive_cwd
-test.test_shutil.TestShutil.test_make_archive_owner_group
-test.test_shutil.TestShutil.test_make_tarball
-test.test_shutil.TestShutil.test_make_tarfile_in_curdir
-test.test_shutil.TestShutil.test_make_zipfile
-test.test_shutil.TestShutil.test_make_zipfile_in_curdir
-test.test_shutil.TestShutil.test_on_error
-test.test_shutil.TestShutil.test_register_archive_format
-test.test_shutil.TestShutil.test_rmtree_does_not_choke_on_failing_lstat
-test.test_shutil.TestShutil.test_rmtree_dont_delete_file
-test.test_shutil.TestShutil.test_rmtree_errors
-test.test_shutil.TestShutil.test_rmtree_fails_on_junctions
-test.test_shutil.TestShutil.test_rmtree_fails_on_symlink
-test.test_shutil.TestShutil.test_rmtree_on_junction
-test.test_shutil.TestShutil.test_rmtree_on_symlink
-test.test_shutil.TestShutil.test_rmtree_uses_safe_fd_version_if_available
-test.test_shutil.TestShutil.test_rmtree_works_on_bytes
-test.test_shutil.TestShutil.test_rmtree_works_on_junctions
-test.test_shutil.TestShutil.test_rmtree_works_on_symlinks
-test.test_shutil.TestShutil.test_tarfile_root_owner
-test.test_shutil.TestShutil.test_tarfile_vs_tar
-test.test_shutil.TestShutil.test_unpack_archive_bztar
-test.test_shutil.TestShutil.test_unpack_archive_gztar
-test.test_shutil.TestShutil.test_unpack_archive_tar
-test.test_shutil.TestShutil.test_unpack_archive_xztar
-test.test_shutil.TestShutil.test_unpack_archive_zip
-test.test_shutil.TestShutil.test_unpack_registry
-test.test_shutil.TestShutil.test_unzip_zipfile
-test.test_shutil.TestShutil.test_zipfile_vs_zip
-test.test_shutil.TestWhich.test_absolute_cmd
-test.test_shutil.TestWhich.test_basic
-test.test_shutil.TestWhich.test_cwd
-test.test_shutil.TestWhich.test_empty_path
-test.test_shutil.TestWhich.test_empty_path_no_PATH
-test.test_shutil.TestWhich.test_environ_path
-test.test_shutil.TestWhich.test_environ_path_cwd
-test.test_shutil.TestWhich.test_environ_path_empty
-test.test_shutil.TestWhich.test_environ_path_missing
-test.test_shutil.TestWhich.test_non_matching_mode
-test.test_shutil.TestWhich.test_nonexistent_file
-test.test_shutil.TestWhich.test_pathext
-test.test_shutil.TestWhich.test_pathext_checking
-test.test_shutil.TestWhich.test_pathext_with_empty_str
-test.test_shutil.TestWhich.test_relative_cmd
-test.test_shutil.TestWhich.test_relative_path
-test.test_shutil.TestWhichBytes.test_absolute_cmd
-test.test_shutil.TestWhichBytes.test_basic
-test.test_shutil.TestWhichBytes.test_cwd
-test.test_shutil.TestWhichBytes.test_empty_path
-test.test_shutil.TestWhichBytes.test_empty_path_no_PATH
-test.test_shutil.TestWhichBytes.test_environ_path
-test.test_shutil.TestWhichBytes.test_environ_path_cwd
-test.test_shutil.TestWhichBytes.test_environ_path_empty
-test.test_shutil.TestWhichBytes.test_environ_path_missing
-test.test_shutil.TestWhichBytes.test_non_matching_mode
-test.test_shutil.TestWhichBytes.test_nonexistent_file
-test.test_shutil.TestWhichBytes.test_pathext
-test.test_shutil.TestWhichBytes.test_pathext_checking
-test.test_shutil.TestWhichBytes.test_pathext_with_empty_str
-test.test_shutil.TestWhichBytes.test_relative_cmd
-test.test_shutil.TestWhichBytes.test_relative_path
-test.test_shutil.TestZeroCopyMACOS.test_non_existent_src
-test.test_shutil.TestZeroCopySendfile.test_big_chunk
-test.test_shutil.TestZeroCopySendfile.test_blocksize_arg
-test.test_shutil.TestZeroCopySendfile.test_cant_get_size
-test.test_shutil.TestZeroCopySendfile.test_empty_file
-test.test_shutil.TestZeroCopySendfile.test_exception_on_first_call
-test.test_shutil.TestZeroCopySendfile.test_exception_on_second_call
-test.test_shutil.TestZeroCopySendfile.test_file2file_not_supported
-test.test_shutil.TestZeroCopySendfile.test_filesystem_full
-test.test_shutil.TestZeroCopySendfile.test_non_existent_src
-test.test_shutil.TestZeroCopySendfile.test_non_regular_file_dst
-test.test_shutil.TestZeroCopySendfile.test_non_regular_file_src
-test.test_shutil.TestZeroCopySendfile.test_regular_copy
-test.test_shutil.TestZeroCopySendfile.test_same_file
-test.test_shutil.TestZeroCopySendfile.test_small_chunks
-test.test_shutil.TestZeroCopySendfile.test_unhandled_exception
+test.test_shutil.PublicAPITests.test_module_all_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TermsizeTests.test_bad_environ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TermsizeTests.test_does_not_crash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TermsizeTests.test_fallback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TermsizeTests.test_os_environ_first @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TermsizeTests.test_stty_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_make_archive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_make_archive_cwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_make_archive_owner_group @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_make_tarball @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_make_tarfile_in_curdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_make_tarfile_rootdir_nodir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_make_zipfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_make_zipfile_in_curdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_make_zipfile_rootdir_nodir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_register_archive_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_tarfile_root_owner @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_tarfile_vs_tar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_unpack_archive_bztar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_unpack_archive_gztar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_unpack_archive_tar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_unpack_archive_xztar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_unpack_archive_zip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_unpack_registry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_unzip_zipfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestArchives.test_zipfile_vs_zip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copy2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copy2_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copy2_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copy2_xattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copy_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copy_return_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copy_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copyfile_copy_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copyfile_named_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copyfile_nonexistent_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copyfile_return_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copyfile_same_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copyfile_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copymode_follow_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copymode_symlink_to_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copymode_symlink_to_symlink_wo_lchmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copystat_handles_harmless_chflags_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copystat_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copyxattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copyxattr_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_dont_copy_file_onto_link_to_itself @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_dont_copy_file_onto_symlink_to_itself @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyFile.test_move_dir_caseinsensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyFile.test_w_dest_close_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyFile.test_w_dest_open_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyFile.test_w_source_close_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyFile.test_w_source_open_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyFileObj.test_content @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyFileObj.test_file_not_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyFileObj.test_file_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyFileObj.test_win_impl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_arg_types_of_ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_custom_copy_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_dangling_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_dirs_exist_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_named_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_retains_permissions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_return_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_special_func @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_subdirectory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_symlink_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_winerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyTree.test_copytree_with_exclude @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestGetTerminalSize.test_bad_environ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestGetTerminalSize.test_does_not_crash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestGetTerminalSize.test_fallback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestGetTerminalSize.test_os_environ_first @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestGetTerminalSize.test_stty_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMisc.test_chown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMisc.test_disk_usage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_destinsrc_false_negative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_destinsrc_false_positive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_dont_move_dir_in_itself @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_existing_file_inside_dest_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_as_rename_return_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_dangling_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_dir_altsep_to_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_dir_caseinsensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_dir_other_fs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_dir_permission_denied @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_dir_sep_to_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_dir_special_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_dir_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_dir_to_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_dir_to_dir_other_fs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_file_other_fs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_file_special_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_file_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_file_symlink_to_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_file_to_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_file_to_dir_other_fs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_file_to_dir_pathlike_dst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_file_to_dir_pathlike_src @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestMove.test_move_return_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_on_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_rmtree_does_not_choke_on_failing_lstat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_rmtree_dont_delete_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_rmtree_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_rmtree_fails_on_junctions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_rmtree_fails_on_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_rmtree_on_junction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_rmtree_on_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_rmtree_uses_safe_fd_version_if_available @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_rmtree_with_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_rmtree_with_dir_fd_unsupported @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_rmtree_works_on_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_rmtree_works_on_junctions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestRmTree.test_rmtree_works_on_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_chown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copy2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copy2_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copy2_xattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copy_return_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copy_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copyfile_named_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copyfile_return_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copyfile_same_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copyfile_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copymode_follow_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copymode_symlink_to_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copymode_symlink_to_symlink_wo_lchmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copystat_handles_harmless_chflags_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copystat_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_arg_types_of_ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_custom_copy_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_dangling_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_dirs_exist_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_named_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_retains_permissions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_return_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_special_func @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_subdirectory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_symlink_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_winerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copytree_with_exclude @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copyxattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_copyxattr_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_disk_usage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_dont_copy_file_onto_link_to_itself @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_dont_copy_file_onto_symlink_to_itself @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_make_archive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_make_archive_cwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_make_archive_owner_group @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_make_tarball @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_make_tarfile_in_curdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_make_zipfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_make_zipfile_in_curdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_on_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_register_archive_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_rmtree_does_not_choke_on_failing_lstat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_rmtree_dont_delete_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_rmtree_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_rmtree_fails_on_junctions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_rmtree_fails_on_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_rmtree_on_junction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_rmtree_on_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_rmtree_uses_safe_fd_version_if_available @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_rmtree_works_on_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_rmtree_works_on_junctions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_rmtree_works_on_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_tarfile_root_owner @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_tarfile_vs_tar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_unpack_archive_bztar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_unpack_archive_gztar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_unpack_archive_tar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_unpack_archive_xztar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_unpack_archive_zip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_unpack_registry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_unzip_zipfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestShutil.test_zipfile_vs_zip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_absolute_cmd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_cwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_empty_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_empty_path_no_PATH @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_environ_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_environ_path_cwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_environ_path_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_environ_path_missing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_non_matching_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_nonexistent_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_pathext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_pathext_checking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_pathext_with_empty_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_relative_cmd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhich.test_relative_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_absolute_cmd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_cwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_empty_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_empty_path_no_PATH @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_environ_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_environ_path_cwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_environ_path_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_environ_path_missing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_non_matching_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_nonexistent_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_pathext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_pathext_checking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_pathext_with_empty_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_relative_cmd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestWhichBytes.test_relative_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopyMACOS.test_non_existent_src @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_big_chunk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_blocksize_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_cant_get_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_empty_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_exception_on_first_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_exception_on_second_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_file2file_not_supported @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_filesystem_full @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_non_existent_src @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_non_regular_file_dst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_non_regular_file_src @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_regular_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_same_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_small_chunks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestZeroCopySendfile.test_unhandled_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

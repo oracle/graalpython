@@ -1,13 +1,13 @@
-test.test_tomllib.test_data.TestData.test_invalid
-test.test_tomllib.test_data.TestData.test_valid
-test.test_tomllib.test_error.TestError.test_invalid_char_quotes
-test.test_tomllib.test_error.TestError.test_invalid_parse_float
-test.test_tomllib.test_error.TestError.test_line_and_col
-test.test_tomllib.test_error.TestError.test_missing_value
-test.test_tomllib.test_error.TestError.test_module_name
-test.test_tomllib.test_misc.TestMiscellaneous.test_deepcopy
-test.test_tomllib.test_misc.TestMiscellaneous.test_incorrect_load
-test.test_tomllib.test_misc.TestMiscellaneous.test_inline_array_recursion_limit
-test.test_tomllib.test_misc.TestMiscellaneous.test_inline_table_recursion_limit
-test.test_tomllib.test_misc.TestMiscellaneous.test_load
-test.test_tomllib.test_misc.TestMiscellaneous.test_parse_float
+test.test_tomllib.test_data.TestData.test_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tomllib.test_data.TestData.test_valid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tomllib.test_error.TestError.test_invalid_char_quotes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tomllib.test_error.TestError.test_invalid_parse_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tomllib.test_error.TestError.test_line_and_col @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tomllib.test_error.TestError.test_missing_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tomllib.test_error.TestError.test_module_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tomllib.test_misc.TestMiscellaneous.test_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tomllib.test_misc.TestMiscellaneous.test_incorrect_load @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tomllib.test_misc.TestMiscellaneous.test_inline_array_recursion_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tomllib.test_misc.TestMiscellaneous.test_inline_table_recursion_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tomllib.test_misc.TestMiscellaneous.test_load @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tomllib.test_misc.TestMiscellaneous.test_parse_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

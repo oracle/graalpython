@@ -1,7 +1,7 @@
-test.test_fcntl.TestFcntl.test_fcntl_64_bit
-test.test_fcntl.TestFcntl.test_fcntl_bad_file_overflow
-test.test_fcntl.TestFcntl.test_fcntl_f_pipesize
-test.test_fcntl.TestFcntl.test_flock
-test.test_fcntl.TestFcntl.test_flock_overflow
-test.test_fcntl.TestFcntl.test_lockf_exclusive
-test.test_fcntl.TestFcntl.test_lockf_share
+test.test_fcntl.TestFcntl.test_fcntl_64_bit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fcntl.TestFcntl.test_fcntl_bad_file_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fcntl.TestFcntl.test_fcntl_f_pipesize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fcntl.TestFcntl.test_flock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fcntl.TestFcntl.test_flock_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fcntl.TestFcntl.test_lockf_exclusive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fcntl.TestFcntl.test_lockf_share @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

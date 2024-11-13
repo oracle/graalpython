@@ -1,4 +1,4 @@
-test.test_bufio.CBufferSizeTest.test_nullpat
-test.test_bufio.CBufferSizeTest.test_primepat
-test.test_bufio.PyBufferSizeTest.test_nullpat
-test.test_bufio.PyBufferSizeTest.test_primepat
+test.test_bufio.CBufferSizeTest.test_nullpat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bufio.CBufferSizeTest.test_primepat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bufio.PyBufferSizeTest.test_nullpat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bufio.PyBufferSizeTest.test_primepat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

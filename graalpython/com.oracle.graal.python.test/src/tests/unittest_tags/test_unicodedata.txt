@@ -1,22 +1,22 @@
-test.test_unicodedata.NormalizationTest.test_bug_834676
-test.test_unicodedata.NormalizationTest.test_edge_cases
-test.test_unicodedata.UnicodeFunctionsTest.test_category
-test.test_unicodedata.UnicodeFunctionsTest.test_combining
-test.test_unicodedata.UnicodeFunctionsTest.test_decimal
-test.test_unicodedata.UnicodeFunctionsTest.test_decomposition
-test.test_unicodedata.UnicodeFunctionsTest.test_digit
-test.test_unicodedata.UnicodeFunctionsTest.test_east_asian_width
-test.test_unicodedata.UnicodeFunctionsTest.test_east_asian_width_9_0_changes
-test.test_unicodedata.UnicodeFunctionsTest.test_issue10254
-test.test_unicodedata.UnicodeFunctionsTest.test_issue29456
-test.test_unicodedata.UnicodeFunctionsTest.test_mirrored
-test.test_unicodedata.UnicodeFunctionsTest.test_normalize
-test.test_unicodedata.UnicodeFunctionsTest.test_numeric
-test.test_unicodedata.UnicodeFunctionsTest.test_pr29
-test.test_unicodedata.UnicodeMiscTest.test_bug_1704793
-test.test_unicodedata.UnicodeMiscTest.test_bug_4971
-test.test_unicodedata.UnicodeMiscTest.test_bug_5828
-test.test_unicodedata.UnicodeMiscTest.test_decimal_numeric_consistent
-test.test_unicodedata.UnicodeMiscTest.test_digit_numeric_consistent
-test.test_unicodedata.UnicodeMiscTest.test_disallow_instantiation
-test.test_unicodedata.UnicodeMiscTest.test_ucd_510
+test.test_unicodedata.NormalizationTest.test_bug_834676 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.NormalizationTest.test_edge_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeFunctionsTest.test_category @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeFunctionsTest.test_combining @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeFunctionsTest.test_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeFunctionsTest.test_decomposition @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeFunctionsTest.test_digit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeFunctionsTest.test_east_asian_width @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeFunctionsTest.test_east_asian_width_9_0_changes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeFunctionsTest.test_issue10254 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeFunctionsTest.test_issue29456 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeFunctionsTest.test_mirrored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeFunctionsTest.test_normalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeFunctionsTest.test_numeric @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeFunctionsTest.test_pr29 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeMiscTest.test_bug_1704793 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeMiscTest.test_bug_4971 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeMiscTest.test_bug_5828 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeMiscTest.test_decimal_numeric_consistent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeMiscTest.test_digit_numeric_consistent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeMiscTest.test_disallow_instantiation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.UnicodeMiscTest.test_ucd_510 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

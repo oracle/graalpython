@@ -1,33 +1,33 @@
-test.test_buffer.TestBufferProtocol.test_issue_7385
-test.test_buffer.TestBufferProtocol.test_memoryview_array
-test.test_buffer.TestBufferProtocol.test_memoryview_cast
-test.test_buffer.TestBufferProtocol.test_memoryview_cast_zero_shape
-test.test_buffer.TestBufferProtocol.test_memoryview_cast_zero_strides
-test.test_buffer.TestBufferProtocol.test_memoryview_check_released
-test.test_buffer.TestBufferProtocol.test_memoryview_compare_multidim_zero_shape
-test.test_buffer.TestBufferProtocol.test_memoryview_compare_zero_shape
-test.test_buffer.TestBufferProtocol.test_memoryview_getbuffer_undefined
-test.test_buffer.TestBufferProtocol.test_memoryview_index
-test.test_buffer.TestBufferProtocol.test_memoryview_redirect
-test.test_buffer.TestBufferProtocol.test_memoryview_repr
-test.test_buffer.TestBufferProtocol.test_memoryview_sequence
-test.test_buffer.TestBufferProtocol.test_memoryview_serializing
-test.test_buffer.TestBufferProtocol.test_memoryview_sizeof
-test.test_buffer.TestBufferProtocol.test_memoryview_tolist
-test.test_buffer.TestBufferProtocol.test_ndarray_cmp_contig
-test.test_buffer.TestBufferProtocol.test_ndarray_fortran
-test.test_buffer.TestBufferProtocol.test_ndarray_hash
-test.test_buffer.TestBufferProtocol.test_ndarray_index_invalid
-test.test_buffer.TestBufferProtocol.test_ndarray_index_null_strides
-test.test_buffer.TestBufferProtocol.test_ndarray_index_scalar
-test.test_buffer.TestBufferProtocol.test_ndarray_linked_list
-test.test_buffer.TestBufferProtocol.test_ndarray_memoryview_from_buffer
-test.test_buffer.TestBufferProtocol.test_ndarray_offset
-test.test_buffer.TestBufferProtocol.test_ndarray_random_invalid
-test.test_buffer.TestBufferProtocol.test_ndarray_re_export
-test.test_buffer.TestBufferProtocol.test_ndarray_slice_zero_shape
-test.test_buffer.TestBufferProtocol.test_ndarray_tolist_null_strides
-test.test_buffer.TestBufferProtocol.test_ndarray_zero_shape
-test.test_buffer.TestBufferProtocol.test_ndarray_zero_strides
-test.test_buffer.TestBufferProtocol.test_py_buffer_to_contiguous
-test.test_buffer.TestBufferProtocol.test_pybuffer_size_from_format
+test.test_buffer.TestBufferProtocol.test_issue_7385 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_cast @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_cast_zero_shape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_cast_zero_strides @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_check_released @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_compare_multidim_zero_shape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_compare_zero_shape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_getbuffer_undefined @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_redirect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_sequence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_serializing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_sizeof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_tolist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_cmp_contig @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_fortran @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_index_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_index_null_strides @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_index_scalar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_linked_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_memoryview_from_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_random_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_re_export @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_slice_zero_shape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_tolist_null_strides @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_zero_shape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_zero_strides @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_py_buffer_to_contiguous @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_pybuffer_size_from_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,175 +1,175 @@
-test.test_sax.BytesXmlgenTest.test_1463026_1
-test.test_sax.BytesXmlgenTest.test_1463026_1_empty
-test.test_sax.BytesXmlgenTest.test_1463026_2
-test.test_sax.BytesXmlgenTest.test_1463026_2_empty
-test.test_sax.BytesXmlgenTest.test_1463026_3
-test.test_sax.BytesXmlgenTest.test_1463026_3_empty
-test.test_sax.BytesXmlgenTest.test_5027_1
-test.test_sax.BytesXmlgenTest.test_5027_2
-test.test_sax.BytesXmlgenTest.test_no_close_file
-test.test_sax.BytesXmlgenTest.test_xmlgen_attr_escape
-test.test_sax.BytesXmlgenTest.test_xmlgen_basic
-test.test_sax.BytesXmlgenTest.test_xmlgen_basic_empty
-test.test_sax.BytesXmlgenTest.test_xmlgen_content
-test.test_sax.BytesXmlgenTest.test_xmlgen_content_empty
-test.test_sax.BytesXmlgenTest.test_xmlgen_content_escape
-test.test_sax.BytesXmlgenTest.test_xmlgen_fragment
-test.test_sax.BytesXmlgenTest.test_xmlgen_ignorable
-test.test_sax.BytesXmlgenTest.test_xmlgen_ignorable_empty
-test.test_sax.BytesXmlgenTest.test_xmlgen_ns
-test.test_sax.BytesXmlgenTest.test_xmlgen_ns_empty
-test.test_sax.BytesXmlgenTest.test_xmlgen_pi
-test.test_sax.BytesXmlgenTest.test_xmlgen_unencodable
-test.test_sax.CDATAHandlerTest.test_handlers
-test.test_sax.ErrorReportingTest.test_expat_incomplete
-test.test_sax.ErrorReportingTest.test_expat_inpsource_location
-test.test_sax.ErrorReportingTest.test_sax_parse_exception_str
-test.test_sax.ExpatReaderTest.test_expat_attrs_empty
-test.test_sax.ExpatReaderTest.test_expat_attrs_wattr
-test.test_sax.ExpatReaderTest.test_expat_binary_file
-test.test_sax.ExpatReaderTest.test_expat_binary_file_bytes_name
-test.test_sax.ExpatReaderTest.test_expat_binary_file_int_name
-test.test_sax.ExpatReaderTest.test_expat_binary_file_nonascii
-test.test_sax.ExpatReaderTest.test_expat_dtdhandler
-test.test_sax.ExpatReaderTest.test_expat_entityresolver_default
-test.test_sax.ExpatReaderTest.test_expat_entityresolver_enabled
-test.test_sax.ExpatReaderTest.test_expat_external_dtd_default
-test.test_sax.ExpatReaderTest.test_expat_external_dtd_enabled
-test.test_sax.ExpatReaderTest.test_expat_incremental
-test.test_sax.ExpatReaderTest.test_expat_incremental_reset
-test.test_sax.ExpatReaderTest.test_expat_inpsource_byte_stream
-test.test_sax.ExpatReaderTest.test_expat_inpsource_character_stream
-test.test_sax.ExpatReaderTest.test_expat_inpsource_filename
-test.test_sax.ExpatReaderTest.test_expat_inpsource_sysid
-test.test_sax.ExpatReaderTest.test_expat_inpsource_sysid_nonascii
-test.test_sax.ExpatReaderTest.test_expat_locator_noinfo
-test.test_sax.ExpatReaderTest.test_expat_locator_withinfo
-test.test_sax.ExpatReaderTest.test_expat_locator_withinfo_nonascii
-test.test_sax.ExpatReaderTest.test_expat_nsattrs_empty
-test.test_sax.ExpatReaderTest.test_expat_nsattrs_wattr
-test.test_sax.ExpatReaderTest.test_expat_text_file
-test.test_sax.LexicalHandlerTest.test_handlers
-test.test_sax.MakeParserTest.test_make_parser2
-test.test_sax.MakeParserTest.test_make_parser3
-test.test_sax.MakeParserTest.test_make_parser4
-test.test_sax.MakeParserTest.test_make_parser5
-test.test_sax.ParseTest.test_parseString_text
-test.test_sax.ParseTest.test_parse_close_source
-test.test_sax.ParseTest.test_parse_path_object
-test.test_sax.PrepareInputSourceTest.test_binary_file
-test.test_sax.PrepareInputSourceTest.test_byte_stream
-test.test_sax.PrepareInputSourceTest.test_character_stream
-test.test_sax.PrepareInputSourceTest.test_path_objects
-test.test_sax.PrepareInputSourceTest.test_string
-test.test_sax.PrepareInputSourceTest.test_system_id
-test.test_sax.PrepareInputSourceTest.test_text_file
-test.test_sax.SaxutilsTest.test_double_quoteattr
-test.test_sax.SaxutilsTest.test_escape_all
-test.test_sax.SaxutilsTest.test_escape_basic
-test.test_sax.SaxutilsTest.test_escape_extra
-test.test_sax.SaxutilsTest.test_make_parser
-test.test_sax.SaxutilsTest.test_quoteattr_basic
-test.test_sax.SaxutilsTest.test_single_double_quoteattr
-test.test_sax.SaxutilsTest.test_single_quoteattr
-test.test_sax.SaxutilsTest.test_unescape_all
-test.test_sax.SaxutilsTest.test_unescape_amp_extra
-test.test_sax.SaxutilsTest.test_unescape_basic
-test.test_sax.SaxutilsTest.test_unescape_extra
-test.test_sax.StreamReaderWriterXmlgenTest.test_1463026_1
-test.test_sax.StreamReaderWriterXmlgenTest.test_1463026_1_empty
-test.test_sax.StreamReaderWriterXmlgenTest.test_1463026_2
-test.test_sax.StreamReaderWriterXmlgenTest.test_1463026_2_empty
-test.test_sax.StreamReaderWriterXmlgenTest.test_1463026_3
-test.test_sax.StreamReaderWriterXmlgenTest.test_1463026_3_empty
-test.test_sax.StreamReaderWriterXmlgenTest.test_5027_1
-test.test_sax.StreamReaderWriterXmlgenTest.test_5027_2
-test.test_sax.StreamReaderWriterXmlgenTest.test_no_close_file
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_attr_escape
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_basic
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_basic_empty
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_content
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_content_empty
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_content_escape
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_encoding
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_encoding_bytes
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_fragment
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_ignorable
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_ignorable_empty
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_ns
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_ns_empty
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_pi
-test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_unencodable
-test.test_sax.StreamWriterXmlgenTest.test_1463026_1
-test.test_sax.StreamWriterXmlgenTest.test_1463026_1_empty
-test.test_sax.StreamWriterXmlgenTest.test_1463026_2
-test.test_sax.StreamWriterXmlgenTest.test_1463026_2_empty
-test.test_sax.StreamWriterXmlgenTest.test_1463026_3
-test.test_sax.StreamWriterXmlgenTest.test_1463026_3_empty
-test.test_sax.StreamWriterXmlgenTest.test_5027_1
-test.test_sax.StreamWriterXmlgenTest.test_5027_2
-test.test_sax.StreamWriterXmlgenTest.test_no_close_file
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_attr_escape
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_basic
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_basic_empty
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_content
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_content_empty
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_content_escape
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_encoding
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_encoding_bytes
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_fragment
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_ignorable
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_ignorable_empty
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_ns
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_ns_empty
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_pi
-test.test_sax.StreamWriterXmlgenTest.test_xmlgen_unencodable
-test.test_sax.StringXmlgenTest.test_1463026_1
-test.test_sax.StringXmlgenTest.test_1463026_1_empty
-test.test_sax.StringXmlgenTest.test_1463026_2
-test.test_sax.StringXmlgenTest.test_1463026_2_empty
-test.test_sax.StringXmlgenTest.test_1463026_3
-test.test_sax.StringXmlgenTest.test_1463026_3_empty
-test.test_sax.StringXmlgenTest.test_5027_1
-test.test_sax.StringXmlgenTest.test_5027_2
-test.test_sax.StringXmlgenTest.test_no_close_file
-test.test_sax.StringXmlgenTest.test_xmlgen_attr_escape
-test.test_sax.StringXmlgenTest.test_xmlgen_basic
-test.test_sax.StringXmlgenTest.test_xmlgen_basic_empty
-test.test_sax.StringXmlgenTest.test_xmlgen_content
-test.test_sax.StringXmlgenTest.test_xmlgen_content_empty
-test.test_sax.StringXmlgenTest.test_xmlgen_content_escape
-test.test_sax.StringXmlgenTest.test_xmlgen_encoding
-test.test_sax.StringXmlgenTest.test_xmlgen_encoding_bytes
-test.test_sax.StringXmlgenTest.test_xmlgen_fragment
-test.test_sax.StringXmlgenTest.test_xmlgen_ignorable
-test.test_sax.StringXmlgenTest.test_xmlgen_ignorable_empty
-test.test_sax.StringXmlgenTest.test_xmlgen_ns
-test.test_sax.StringXmlgenTest.test_xmlgen_ns_empty
-test.test_sax.StringXmlgenTest.test_xmlgen_pi
-test.test_sax.WriterXmlgenTest.test_1463026_1
-test.test_sax.WriterXmlgenTest.test_1463026_1_empty
-test.test_sax.WriterXmlgenTest.test_1463026_2
-test.test_sax.WriterXmlgenTest.test_1463026_2_empty
-test.test_sax.WriterXmlgenTest.test_1463026_3
-test.test_sax.WriterXmlgenTest.test_1463026_3_empty
-test.test_sax.WriterXmlgenTest.test_5027_1
-test.test_sax.WriterXmlgenTest.test_5027_2
-test.test_sax.WriterXmlgenTest.test_no_close_file
-test.test_sax.WriterXmlgenTest.test_xmlgen_attr_escape
-test.test_sax.WriterXmlgenTest.test_xmlgen_basic
-test.test_sax.WriterXmlgenTest.test_xmlgen_basic_empty
-test.test_sax.WriterXmlgenTest.test_xmlgen_content
-test.test_sax.WriterXmlgenTest.test_xmlgen_content_empty
-test.test_sax.WriterXmlgenTest.test_xmlgen_content_escape
-test.test_sax.WriterXmlgenTest.test_xmlgen_fragment
-test.test_sax.WriterXmlgenTest.test_xmlgen_ignorable
-test.test_sax.WriterXmlgenTest.test_xmlgen_ignorable_empty
-test.test_sax.WriterXmlgenTest.test_xmlgen_ns
-test.test_sax.WriterXmlgenTest.test_xmlgen_ns_empty
-test.test_sax.WriterXmlgenTest.test_xmlgen_pi
-test.test_sax.WriterXmlgenTest.test_xmlgen_unencodable
-test.test_sax.XMLFilterBaseTest.test_filter_basic
-test.test_sax.XmlReaderTest.test_attrs_empty
-test.test_sax.XmlReaderTest.test_attrs_wattr
-test.test_sax.XmlReaderTest.test_nsattrs_empty
-test.test_sax.XmlReaderTest.test_nsattrs_wattr
+test.test_sax.BytesXmlgenTest.test_1463026_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_1463026_1_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_1463026_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_1463026_2_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_1463026_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_1463026_3_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_5027_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_5027_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_no_close_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_xmlgen_attr_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_xmlgen_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_xmlgen_basic_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_xmlgen_content @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_xmlgen_content_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_xmlgen_content_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_xmlgen_fragment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_xmlgen_ignorable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_xmlgen_ignorable_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_xmlgen_ns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_xmlgen_ns_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_xmlgen_pi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.BytesXmlgenTest.test_xmlgen_unencodable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.CDATAHandlerTest.test_handlers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ErrorReportingTest.test_expat_incomplete @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ErrorReportingTest.test_expat_inpsource_location @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ErrorReportingTest.test_sax_parse_exception_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_attrs_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_attrs_wattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_binary_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_binary_file_bytes_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_binary_file_int_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_binary_file_nonascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_dtdhandler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_entityresolver_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_entityresolver_enabled @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_external_dtd_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_external_dtd_enabled @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_incremental @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_incremental_reset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_inpsource_byte_stream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_inpsource_character_stream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_inpsource_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_inpsource_sysid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_inpsource_sysid_nonascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_locator_noinfo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_locator_withinfo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_locator_withinfo_nonascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_nsattrs_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_nsattrs_wattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ExpatReaderTest.test_expat_text_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.LexicalHandlerTest.test_handlers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.MakeParserTest.test_make_parser2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.MakeParserTest.test_make_parser3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.MakeParserTest.test_make_parser4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.MakeParserTest.test_make_parser5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ParseTest.test_parseString_text @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ParseTest.test_parse_close_source @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.ParseTest.test_parse_path_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.PrepareInputSourceTest.test_binary_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.PrepareInputSourceTest.test_byte_stream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.PrepareInputSourceTest.test_character_stream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.PrepareInputSourceTest.test_path_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.PrepareInputSourceTest.test_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.PrepareInputSourceTest.test_system_id @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.PrepareInputSourceTest.test_text_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.SaxutilsTest.test_double_quoteattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.SaxutilsTest.test_escape_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.SaxutilsTest.test_escape_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.SaxutilsTest.test_escape_extra @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.SaxutilsTest.test_make_parser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.SaxutilsTest.test_quoteattr_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.SaxutilsTest.test_single_double_quoteattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.SaxutilsTest.test_single_quoteattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.SaxutilsTest.test_unescape_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.SaxutilsTest.test_unescape_amp_extra @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.SaxutilsTest.test_unescape_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.SaxutilsTest.test_unescape_extra @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_1463026_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_1463026_1_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_1463026_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_1463026_2_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_1463026_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_1463026_3_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_5027_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_5027_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_no_close_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_attr_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_basic_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_content @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_content_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_content_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_encoding_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_fragment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_ignorable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_ignorable_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_ns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_ns_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_pi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_unencodable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_1463026_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_1463026_1_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_1463026_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_1463026_2_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_1463026_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_1463026_3_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_5027_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_5027_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_no_close_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_attr_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_basic_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_content @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_content_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_content_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_encoding_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_fragment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_ignorable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_ignorable_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_ns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_ns_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_pi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StreamWriterXmlgenTest.test_xmlgen_unencodable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_1463026_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_1463026_1_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_1463026_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_1463026_2_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_1463026_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_1463026_3_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_5027_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_5027_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_no_close_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_attr_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_basic_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_content @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_content_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_content_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_encoding_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_fragment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_ignorable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_ignorable_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_ns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_ns_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.StringXmlgenTest.test_xmlgen_pi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_1463026_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_1463026_1_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_1463026_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_1463026_2_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_1463026_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_1463026_3_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_5027_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_5027_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_no_close_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_xmlgen_attr_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_xmlgen_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_xmlgen_basic_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_xmlgen_content @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_xmlgen_content_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_xmlgen_content_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_xmlgen_fragment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_xmlgen_ignorable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_xmlgen_ignorable_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_xmlgen_ns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_xmlgen_ns_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_xmlgen_pi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.WriterXmlgenTest.test_xmlgen_unencodable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.XMLFilterBaseTest.test_filter_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.XmlReaderTest.test_attrs_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.XmlReaderTest.test_attrs_wattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.XmlReaderTest.test_nsattrs_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sax.XmlReaderTest.test_nsattrs_wattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

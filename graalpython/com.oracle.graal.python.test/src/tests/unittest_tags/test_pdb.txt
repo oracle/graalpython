@@ -1,19 +1,19 @@
-DocTestCase.test.test_pdb.test_list_commands
-DocTestCase.test.test_pdb.test_next_until_return_at_return_event
-DocTestCase.test.test_pdb.test_pdb_alias_command
-DocTestCase.test.test_pdb.test_pdb_breakpoint_commands
-DocTestCase.test.test_pdb.test_pdb_breakpoints_preserved_across_interactive_sessions
-DocTestCase.test.test_pdb.test_pdb_continue_in_bottomframe
-DocTestCase.test.test_pdb.test_pdb_display_command
-DocTestCase.test.test_pdb.test_pdb_displayhook
-DocTestCase.test.test_pdb.test_pdb_issue_20766
-DocTestCase.test.test_pdb.test_pdb_issue_43318
-DocTestCase.test.test_pdb.test_pdb_issue_gh_101673
-DocTestCase.test.test_pdb.test_pdb_issue_gh_103225
-DocTestCase.test.test_pdb.test_pdb_issue_gh_65052
-DocTestCase.test.test_pdb.test_pdb_issue_gh_91742
-DocTestCase.test.test_pdb.test_pdb_pp_repr_exc
-DocTestCase.test.test_pdb.test_pdb_run_with_code_object
-DocTestCase.test.test_pdb.test_pdb_skip_modules
-DocTestCase.test.test_pdb.test_pdb_skip_modules_with_callback
-DocTestCase.test.test_pdb.test_pdb_whatis_command
+DocTestCase.test.test_pdb.test_list_commands @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_next_until_return_at_return_event @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_alias_command @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_breakpoint_commands @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_breakpoints_preserved_across_interactive_sessions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_continue_in_bottomframe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_display_command @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_displayhook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_issue_20766 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_issue_43318 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_issue_gh_101673 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_issue_gh_103225 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_issue_gh_65052 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_issue_gh_91742 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_pp_repr_exc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_run_with_code_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_skip_modules @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_skip_modules_with_callback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_whatis_command @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

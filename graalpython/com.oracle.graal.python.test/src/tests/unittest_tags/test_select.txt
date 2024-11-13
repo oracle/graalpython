@@ -1,5 +1,5 @@
-test.test_select.SelectTestCase.test_errno
-test.test_select.SelectTestCase.test_error_conditions
-test.test_select.SelectTestCase.test_returned_list_identity
-test.test_select.SelectTestCase.test_select
-test.test_select.SelectTestCase.test_select_mutated
+test.test_select.SelectTestCase.test_errno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_select.SelectTestCase.test_error_conditions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_select.SelectTestCase.test_returned_list_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_select.SelectTestCase.test_select @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_select.SelectTestCase.test_select_mutated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

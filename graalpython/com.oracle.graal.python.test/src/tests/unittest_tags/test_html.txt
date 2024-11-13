@@ -1,2 +1,2 @@
-test.test_html.HtmlTests.test_escape
-test.test_html.HtmlTests.test_unescape
+test.test_html.HtmlTests.test_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_html.HtmlTests.test_unescape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

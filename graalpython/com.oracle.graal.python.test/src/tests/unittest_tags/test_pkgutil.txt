@@ -1,27 +1,27 @@
-test.test_pkgutil.ExtendPathTests.test_iter_importers
-test.test_pkgutil.ExtendPathTests.test_mixed_namespace
-test.test_pkgutil.ExtendPathTests.test_simple
-test.test_pkgutil.ImportlibMigrationTests.test_find_loader_avoids_emulation
-test.test_pkgutil.ImportlibMigrationTests.test_find_loader_missing_module
-test.test_pkgutil.ImportlibMigrationTests.test_get_importer_avoids_emulation
-test.test_pkgutil.ImportlibMigrationTests.test_get_loader_None_in_sys_modules
-test.test_pkgutil.ImportlibMigrationTests.test_get_loader_avoids_emulation
-test.test_pkgutil.ImportlibMigrationTests.test_get_loader_handles_missing_loader_attribute
-test.test_pkgutil.ImportlibMigrationTests.test_get_loader_handles_missing_spec_attribute
-test.test_pkgutil.ImportlibMigrationTests.test_get_loader_handles_spec_attribute_none
-test.test_pkgutil.ImportlibMigrationTests.test_importer_deprecated
-test.test_pkgutil.ImportlibMigrationTests.test_issue44061
-test.test_pkgutil.ImportlibMigrationTests.test_iter_importers_avoids_emulation
-test.test_pkgutil.ImportlibMigrationTests.test_loader_deprecated
-test.test_pkgutil.NestedNamespacePackageTest.test_nested
-test.test_pkgutil.PkgutilPEP302Tests.test_alreadyloaded
-test.test_pkgutil.PkgutilPEP302Tests.test_getdata_pep302
-test.test_pkgutil.PkgutilTests.test_getdata_filesys
-test.test_pkgutil.PkgutilTests.test_getdata_zipfile
-test.test_pkgutil.PkgutilTests.test_issue44061_iter_modules
-test.test_pkgutil.PkgutilTests.test_name_resolution
-test.test_pkgutil.PkgutilTests.test_unreadable_dir_on_syspath
-test.test_pkgutil.PkgutilTests.test_walk_packages_raises_on_string_or_bytes_input
-test.test_pkgutil.PkgutilTests.test_walkpackages_filesys
-test.test_pkgutil.PkgutilTests.test_walkpackages_zipfile
-test.test_pkgutil.TestMain.test_main
+test.test_pkgutil.ExtendPathTests.test_iter_importers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ExtendPathTests.test_mixed_namespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ExtendPathTests.test_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ImportlibMigrationTests.test_find_loader_avoids_emulation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ImportlibMigrationTests.test_find_loader_missing_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ImportlibMigrationTests.test_get_importer_avoids_emulation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ImportlibMigrationTests.test_get_loader_None_in_sys_modules @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ImportlibMigrationTests.test_get_loader_avoids_emulation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ImportlibMigrationTests.test_get_loader_handles_missing_loader_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ImportlibMigrationTests.test_get_loader_handles_missing_spec_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ImportlibMigrationTests.test_get_loader_handles_spec_attribute_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ImportlibMigrationTests.test_importer_deprecated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ImportlibMigrationTests.test_issue44061 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ImportlibMigrationTests.test_iter_importers_avoids_emulation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.ImportlibMigrationTests.test_loader_deprecated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.NestedNamespacePackageTest.test_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.PkgutilPEP302Tests.test_alreadyloaded @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.PkgutilPEP302Tests.test_getdata_pep302 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.PkgutilTests.test_getdata_filesys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.PkgutilTests.test_getdata_zipfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.PkgutilTests.test_issue44061_iter_modules @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.PkgutilTests.test_name_resolution @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.PkgutilTests.test_unreadable_dir_on_syspath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.PkgutilTests.test_walk_packages_raises_on_string_or_bytes_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.PkgutilTests.test_walkpackages_filesys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.PkgutilTests.test_walkpackages_zipfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pkgutil.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

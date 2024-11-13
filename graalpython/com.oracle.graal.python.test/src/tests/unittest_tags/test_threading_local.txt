@@ -1,22 +1,22 @@
-DocTestCase._threading_local
-test.test_threading_local.PyThreadingLocalTest.test_arguments
-test.test_threading_local.PyThreadingLocalTest.test_cycle_collection
-test.test_threading_local.PyThreadingLocalTest.test_derived
-test.test_threading_local.PyThreadingLocalTest.test_derived_cycle_dealloc
-test.test_threading_local.PyThreadingLocalTest.test_dict_attribute
-test.test_threading_local.PyThreadingLocalTest.test_dict_attribute_subclass
-test.test_threading_local.PyThreadingLocalTest.test_local_refs
-test.test_threading_local.PyThreadingLocalTest.test_threading_local
-test.test_threading_local.PyThreadingLocalTest.test_threading_local_clear_race
-test.test_threading_local.PyThreadingLocalTest.test_threading_local_subclass
-test.test_threading_local.TestMain.test_main
-test.test_threading_local.ThreadLocalTest.test_arguments
-test.test_threading_local.ThreadLocalTest.test_cycle_collection
-test.test_threading_local.ThreadLocalTest.test_derived
-test.test_threading_local.ThreadLocalTest.test_derived_cycle_dealloc
-test.test_threading_local.ThreadLocalTest.test_dict_attribute
-test.test_threading_local.ThreadLocalTest.test_dict_attribute_subclass
-test.test_threading_local.ThreadLocalTest.test_local_refs
-test.test_threading_local.ThreadLocalTest.test_threading_local
-test.test_threading_local.ThreadLocalTest.test_threading_local_clear_race
-test.test_threading_local.ThreadLocalTest.test_threading_local_subclass
+DocTestCase._threading_local @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.PyThreadingLocalTest.test_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.PyThreadingLocalTest.test_cycle_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.PyThreadingLocalTest.test_derived @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.PyThreadingLocalTest.test_derived_cycle_dealloc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.PyThreadingLocalTest.test_dict_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.PyThreadingLocalTest.test_dict_attribute_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.PyThreadingLocalTest.test_local_refs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.PyThreadingLocalTest.test_threading_local @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.PyThreadingLocalTest.test_threading_local_clear_race @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.PyThreadingLocalTest.test_threading_local_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.ThreadLocalTest.test_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.ThreadLocalTest.test_cycle_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.ThreadLocalTest.test_derived @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.ThreadLocalTest.test_derived_cycle_dealloc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.ThreadLocalTest.test_dict_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.ThreadLocalTest.test_dict_attribute_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.ThreadLocalTest.test_local_refs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.ThreadLocalTest.test_threading_local @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.ThreadLocalTest.test_threading_local_clear_race @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_threading_local.ThreadLocalTest.test_threading_local_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

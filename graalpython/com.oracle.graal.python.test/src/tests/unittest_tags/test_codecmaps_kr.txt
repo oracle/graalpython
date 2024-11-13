@@ -1,9 +1,9 @@
-test.test_codecmaps_kr.TestCP949Map.test_errorhandle
-test.test_codecmaps_kr.TestCP949Map.test_mapping_file
-test.test_codecmaps_kr.TestCP949Map.test_mapping_supplemental
-test.test_codecmaps_kr.TestEUCKRMap.test_errorhandle
-test.test_codecmaps_kr.TestEUCKRMap.test_mapping_file
-test.test_codecmaps_kr.TestEUCKRMap.test_mapping_supplemental
-test.test_codecmaps_kr.TestJOHABMap.test_errorhandle
-test.test_codecmaps_kr.TestJOHABMap.test_mapping_file
-test.test_codecmaps_kr.TestJOHABMap.test_mapping_supplemental
+test.test_codecmaps_kr.TestCP949Map.test_errorhandle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecmaps_kr.TestCP949Map.test_mapping_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecmaps_kr.TestCP949Map.test_mapping_supplemental @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecmaps_kr.TestEUCKRMap.test_errorhandle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecmaps_kr.TestEUCKRMap.test_mapping_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecmaps_kr.TestEUCKRMap.test_mapping_supplemental @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecmaps_kr.TestJOHABMap.test_errorhandle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecmaps_kr.TestJOHABMap.test_mapping_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecmaps_kr.TestJOHABMap.test_mapping_supplemental @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

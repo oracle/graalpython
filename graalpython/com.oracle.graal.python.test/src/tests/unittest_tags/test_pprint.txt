@@ -1,43 +1,43 @@
-test.test_pprint.QueryTestCase.test_basic
-test.test_pprint.QueryTestCase.test_basic_line_wrap
-test.test_pprint.QueryTestCase.test_bytearray_wrap
-test.test_pprint.QueryTestCase.test_bytes_wrap
-test.test_pprint.QueryTestCase.test_chainmap
-test.test_pprint.QueryTestCase.test_compact
-test.test_pprint.QueryTestCase.test_compact_width
-test.test_pprint.QueryTestCase.test_container_repr_override_called
-test.test_pprint.QueryTestCase.test_counter
-test.test_pprint.QueryTestCase.test_cyclic_dataclass
-test.test_pprint.QueryTestCase.test_dataclass_with_repr
-test.test_pprint.QueryTestCase.test_default_dict
-test.test_pprint.QueryTestCase.test_depth
-test.test_pprint.QueryTestCase.test_deque
-test.test_pprint.QueryTestCase.test_empty_dataclass
-test.test_pprint.QueryTestCase.test_empty_simple_namespace
-test.test_pprint.QueryTestCase.test_init
-test.test_pprint.QueryTestCase.test_integer
-test.test_pprint.QueryTestCase.test_knotted
-test.test_pprint.QueryTestCase.test_larger_dataclass
-test.test_pprint.QueryTestCase.test_mapping_proxy
-test.test_pprint.QueryTestCase.test_nested_indentations
-test.test_pprint.QueryTestCase.test_ordered_dict
-test.test_pprint.QueryTestCase.test_recursive_dataclass
-test.test_pprint.QueryTestCase.test_same_as_repr
-test.test_pprint.QueryTestCase.test_set_of_sets_reprs
-test.test_pprint.QueryTestCase.test_set_reprs
-test.test_pprint.QueryTestCase.test_simple_namespace
-test.test_pprint.QueryTestCase.test_simple_namespace_subclass
-test.test_pprint.QueryTestCase.test_small_dataclass
-test.test_pprint.QueryTestCase.test_small_simple_namespace
-test.test_pprint.QueryTestCase.test_sort_dict
-test.test_pprint.QueryTestCase.test_sort_orderable_and_unorderable_values
-test.test_pprint.QueryTestCase.test_sort_unorderable_values
-test.test_pprint.QueryTestCase.test_sorted_dict
-test.test_pprint.QueryTestCase.test_stdout_is_None
-test.test_pprint.QueryTestCase.test_str_wrap
-test.test_pprint.QueryTestCase.test_subclassing
-test.test_pprint.QueryTestCase.test_unreadable
-test.test_pprint.QueryTestCase.test_user_dict
-test.test_pprint.QueryTestCase.test_user_list
-test.test_pprint.QueryTestCase.test_user_string
-test.test_pprint.QueryTestCase.test_width
+test.test_pprint.QueryTestCase.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_basic_line_wrap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_bytearray_wrap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_bytes_wrap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_chainmap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_compact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_compact_width @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_container_repr_override_called @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_counter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_cyclic_dataclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_dataclass_with_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_default_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_depth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_deque @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_empty_dataclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_empty_simple_namespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_integer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_knotted @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_larger_dataclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_mapping_proxy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_nested_indentations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_ordered_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_recursive_dataclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_same_as_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_set_of_sets_reprs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_set_reprs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_simple_namespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_simple_namespace_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_small_dataclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_small_simple_namespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_sort_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_sort_orderable_and_unorderable_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_sort_unorderable_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_sorted_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_stdout_is_None @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_str_wrap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_subclassing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_unreadable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_user_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_user_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_user_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_width @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

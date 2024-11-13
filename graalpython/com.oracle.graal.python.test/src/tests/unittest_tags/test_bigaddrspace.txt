@@ -1,7 +1,7 @@
-test.test_bigaddrspace.BytesTest.test_concat
-test.test_bigaddrspace.BytesTest.test_optimized_concat
-test.test_bigaddrspace.BytesTest.test_repeat
-test.test_bigaddrspace.StrTest.test_concat
-test.test_bigaddrspace.StrTest.test_optimized_concat
-test.test_bigaddrspace.StrTest.test_repeat
-test.test_bigaddrspace.TestMain.test_main
+test.test_bigaddrspace.BytesTest.test_concat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigaddrspace.BytesTest.test_optimized_concat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigaddrspace.BytesTest.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigaddrspace.StrTest.test_concat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigaddrspace.StrTest.test_optimized_concat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigaddrspace.StrTest.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigaddrspace.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

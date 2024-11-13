@@ -1,71 +1,71 @@
-test.test_urlparse.DeprecationTest.test_Quoter_deprecation
-test.test_urlparse.DeprecationTest.test_splitattr_deprecation
-test.test_urlparse.DeprecationTest.test_splithost_deprecation
-test.test_urlparse.DeprecationTest.test_splitnport_deprecation
-test.test_urlparse.DeprecationTest.test_splitpasswd_deprecation
-test.test_urlparse.DeprecationTest.test_splitport_deprecation
-test.test_urlparse.DeprecationTest.test_splitquery_deprecation
-test.test_urlparse.DeprecationTest.test_splittag_deprecation
-test.test_urlparse.DeprecationTest.test_splittype_deprecation
-test.test_urlparse.DeprecationTest.test_splituser_deprecation
-test.test_urlparse.DeprecationTest.test_splitvalue_deprecation
-test.test_urlparse.DeprecationTest.test_to_bytes_deprecation
-test.test_urlparse.UrlParseTestCase.test_Quoter_repr
-test.test_urlparse.UrlParseTestCase.test_RFC1808
-test.test_urlparse.UrlParseTestCase.test_RFC2368
-test.test_urlparse.UrlParseTestCase.test_RFC2396
-test.test_urlparse.UrlParseTestCase.test_RFC2732
-test.test_urlparse.UrlParseTestCase.test_RFC3986
-test.test_urlparse.UrlParseTestCase.test_all
-test.test_urlparse.UrlParseTestCase.test_anyscheme
-test.test_urlparse.UrlParseTestCase.test_attributes_bad_port
-test.test_urlparse.UrlParseTestCase.test_attributes_bad_scheme
-test.test_urlparse.UrlParseTestCase.test_attributes_without_netloc
-test.test_urlparse.UrlParseTestCase.test_clear_cache_for_code_coverage
-test.test_urlparse.UrlParseTestCase.test_default_scheme
-test.test_urlparse.UrlParseTestCase.test_http_roundtrips
-test.test_urlparse.UrlParseTestCase.test_invalid_bracketed_hosts
-test.test_urlparse.UrlParseTestCase.test_issue14072
-test.test_urlparse.UrlParseTestCase.test_mixed_types_rejected
-test.test_urlparse.UrlParseTestCase.test_noslash
-test.test_urlparse.UrlParseTestCase.test_parse_fragments
-test.test_urlparse.UrlParseTestCase.test_parse_qs_encoding
-test.test_urlparse.UrlParseTestCase.test_parse_qs_separator
-test.test_urlparse.UrlParseTestCase.test_parse_qsl_encoding
-test.test_urlparse.UrlParseTestCase.test_parse_qsl_max_num_fields
-test.test_urlparse.UrlParseTestCase.test_parse_qsl_separator
-test.test_urlparse.UrlParseTestCase.test_port_casting_failure_message
-test.test_urlparse.UrlParseTestCase.test_portseparator
-test.test_urlparse.UrlParseTestCase.test_qs
-test.test_urlparse.UrlParseTestCase.test_qsl
-test.test_urlparse.UrlParseTestCase.test_quote_errors
-test.test_urlparse.UrlParseTestCase.test_quote_from_bytes
-test.test_urlparse.UrlParseTestCase.test_result_pairs
-test.test_urlparse.UrlParseTestCase.test_roundtrips
-test.test_urlparse.UrlParseTestCase.test_splitting_bracketed_hosts
-test.test_urlparse.UrlParseTestCase.test_telurl_params
-test.test_urlparse.UrlParseTestCase.test_unparse_parse
-test.test_urlparse.UrlParseTestCase.test_unquote_to_bytes
-test.test_urlparse.UrlParseTestCase.test_urldefrag
-test.test_urlparse.UrlParseTestCase.test_urlencode_quote_via
-test.test_urlparse.UrlParseTestCase.test_urlencode_sequences
-test.test_urlparse.UrlParseTestCase.test_urljoins
-test.test_urlparse.UrlParseTestCase.test_urllib_parse_getattr_failure
-test.test_urlparse.UrlParseTestCase.test_urlsplit_attributes
-test.test_urlparse.UrlParseTestCase.test_urlsplit_remove_unsafe_bytes
-test.test_urlparse.UrlParseTestCase.test_urlsplit_scoped_IPv6
-test.test_urlparse.UrlParseTestCase.test_urlsplit_strip_url
-test.test_urlparse.UrlParseTestCase.test_usingsys
-test.test_urlparse.UrlParseTestCase.test_withoutscheme
-test.test_urlparse.Utility_Tests.test_splitattr
-test.test_urlparse.Utility_Tests.test_splithost
-test.test_urlparse.Utility_Tests.test_splitnport
-test.test_urlparse.Utility_Tests.test_splitpasswd
-test.test_urlparse.Utility_Tests.test_splitport
-test.test_urlparse.Utility_Tests.test_splitquery
-test.test_urlparse.Utility_Tests.test_splittag
-test.test_urlparse.Utility_Tests.test_splittype
-test.test_urlparse.Utility_Tests.test_splituser
-test.test_urlparse.Utility_Tests.test_splitvalue
-test.test_urlparse.Utility_Tests.test_to_bytes
-test.test_urlparse.Utility_Tests.test_unwrap
+test.test_urlparse.DeprecationTest.test_Quoter_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.DeprecationTest.test_splitattr_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.DeprecationTest.test_splithost_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.DeprecationTest.test_splitnport_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.DeprecationTest.test_splitpasswd_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.DeprecationTest.test_splitport_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.DeprecationTest.test_splitquery_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.DeprecationTest.test_splittag_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.DeprecationTest.test_splittype_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.DeprecationTest.test_splituser_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.DeprecationTest.test_splitvalue_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.DeprecationTest.test_to_bytes_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_Quoter_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_RFC1808 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_RFC2368 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_RFC2396 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_RFC2732 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_RFC3986 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_anyscheme @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_attributes_bad_port @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_attributes_bad_scheme @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_attributes_without_netloc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_clear_cache_for_code_coverage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_default_scheme @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_http_roundtrips @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_invalid_bracketed_hosts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_issue14072 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_mixed_types_rejected @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_noslash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_parse_fragments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_parse_qs_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_parse_qs_separator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_parse_qsl_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_parse_qsl_max_num_fields @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_parse_qsl_separator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_port_casting_failure_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_portseparator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_qs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_qsl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_quote_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_quote_from_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_result_pairs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_roundtrips @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_splitting_bracketed_hosts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_telurl_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_unparse_parse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_unquote_to_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_urldefrag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_urlencode_quote_via @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_urlencode_sequences @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_urljoins @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_urllib_parse_getattr_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_urlsplit_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_urlsplit_remove_unsafe_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_urlsplit_scoped_IPv6 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_urlsplit_strip_url @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_usingsys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_withoutscheme @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.Utility_Tests.test_splitattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.Utility_Tests.test_splithost @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.Utility_Tests.test_splitnport @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.Utility_Tests.test_splitpasswd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.Utility_Tests.test_splitport @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.Utility_Tests.test_splitquery @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.Utility_Tests.test_splittag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.Utility_Tests.test_splittype @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.Utility_Tests.test_splituser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.Utility_Tests.test_splitvalue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.Utility_Tests.test_to_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urlparse.Utility_Tests.test_unwrap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

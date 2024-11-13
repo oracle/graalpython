@@ -1,71 +1,71 @@
-test.test_calendar.CalendarTestCase.test_days
-test.test_calendar.CalendarTestCase.test_enumerate_weekdays
-test.test_calendar.CalendarTestCase.test_illegal_weekday_reported
-test.test_calendar.CalendarTestCase.test_isleap
-test.test_calendar.CalendarTestCase.test_itermonthdays
-test.test_calendar.CalendarTestCase.test_itermonthdays2
-test.test_calendar.CalendarTestCase.test_itermonthdays3
-test.test_calendar.CalendarTestCase.test_itermonthdays4
-test.test_calendar.CalendarTestCase.test_iterweekdays
-test.test_calendar.CalendarTestCase.test_locale_calendar_formatweekday
-test.test_calendar.CalendarTestCase.test_locale_calendars
-test.test_calendar.CalendarTestCase.test_locale_html_calendar_custom_css_class_month_name
-test.test_calendar.CalendarTestCase.test_locale_html_calendar_custom_css_class_weekday
-test.test_calendar.CalendarTestCase.test_months
-test.test_calendar.CalendarTestCase.test_setfirstweekday
-test.test_calendar.CommandLineTestCase.test_help
-test.test_calendar.CommandLineTestCase.test_html_output_current_year
-test.test_calendar.CommandLineTestCase.test_html_output_year_css
-test.test_calendar.CommandLineTestCase.test_html_output_year_encoding
-test.test_calendar.CommandLineTestCase.test_illegal_arguments
-test.test_calendar.CommandLineTestCase.test_option_encoding
-test.test_calendar.CommandLineTestCase.test_option_lines
-test.test_calendar.CommandLineTestCase.test_option_locale
-test.test_calendar.CommandLineTestCase.test_option_months
-test.test_calendar.CommandLineTestCase.test_option_spacing
-test.test_calendar.CommandLineTestCase.test_option_type
-test.test_calendar.CommandLineTestCase.test_option_width
-test.test_calendar.CommandLineTestCase.test_output_current_year
-test.test_calendar.CommandLineTestCase.test_output_month
-test.test_calendar.CommandLineTestCase.test_output_year
-test.test_calendar.LeapdaysTestCase.test_no_leapdays
-test.test_calendar.LeapdaysTestCase.test_no_leapdays_upper_boundary
-test.test_calendar.LeapdaysTestCase.test_no_range
-test.test_calendar.LeapdaysTestCase.test_one_leapday_lower_boundary
-test.test_calendar.LeapdaysTestCase.test_several_leapyears_in_range
-test.test_calendar.MiscTestCase.test__all__
-test.test_calendar.MondayTestCase.test_april
-test.test_calendar.MondayTestCase.test_december
-test.test_calendar.MondayTestCase.test_february
-test.test_calendar.MonthRangeTestCase.test_december
-test.test_calendar.MonthRangeTestCase.test_february_leap
-test.test_calendar.MonthRangeTestCase.test_february_nonleap
-test.test_calendar.MonthRangeTestCase.test_illegal_month_reported
-test.test_calendar.MonthRangeTestCase.test_january
-test.test_calendar.MonthRangeTestCase.test_thirteenth_month
-test.test_calendar.MonthRangeTestCase.test_zeroth_month
-test.test_calendar.OutputTestCase.test_format
-test.test_calendar.OutputTestCase.test_formatmonth
-test.test_calendar.OutputTestCase.test_formatmonthname_with_year
-test.test_calendar.OutputTestCase.test_formatmonthname_without_year
-test.test_calendar.OutputTestCase.test_formatweekheader_long
-test.test_calendar.OutputTestCase.test_formatweekheader_short
-test.test_calendar.OutputTestCase.test_output
-test.test_calendar.OutputTestCase.test_output_htmlcalendar_encoding_ascii
-test.test_calendar.OutputTestCase.test_output_htmlcalendar_encoding_utf8
-test.test_calendar.OutputTestCase.test_output_textcalendar
-test.test_calendar.OutputTestCase.test_prmonth
-test.test_calendar.OutputTestCase.test_prweek
-test.test_calendar.OutputTestCase.test_pryear
-test.test_calendar.OutputTestCase.test_yeardatescalendar
-test.test_calendar.OutputTestCase.test_yeardayscalendar
-test.test_calendar.SundayTestCase.test_april
-test.test_calendar.SundayTestCase.test_december
-test.test_calendar.SundayTestCase.test_february
-test.test_calendar.TestSubClassingCase.test_format_year
-test.test_calendar.TestSubClassingCase.test_format_year_head
-test.test_calendar.TestSubClassingCase.test_formatmonth
-test.test_calendar.TestSubClassingCase.test_formatmonthname
-test.test_calendar.TestSubClassingCase.test_formatweek
-test.test_calendar.TestSubClassingCase.test_formatweek_head
-test.test_calendar.TimegmTestCase.test_timegm
+test.test_calendar.CalendarTestCase.test_days @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_enumerate_weekdays @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_illegal_weekday_reported @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_isleap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_itermonthdays @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_itermonthdays2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_itermonthdays3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_itermonthdays4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_iterweekdays @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_locale_calendar_formatweekday @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_locale_calendars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_locale_html_calendar_custom_css_class_month_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_locale_html_calendar_custom_css_class_weekday @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_months @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CalendarTestCase.test_setfirstweekday @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_help @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_html_output_current_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_html_output_year_css @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_html_output_year_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_illegal_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_option_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_option_lines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_option_locale @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_option_months @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_option_spacing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_option_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_option_width @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_output_current_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_output_month @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.CommandLineTestCase.test_output_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.LeapdaysTestCase.test_no_leapdays @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.LeapdaysTestCase.test_no_leapdays_upper_boundary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.LeapdaysTestCase.test_no_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.LeapdaysTestCase.test_one_leapday_lower_boundary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.LeapdaysTestCase.test_several_leapyears_in_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.MiscTestCase.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.MondayTestCase.test_april @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.MondayTestCase.test_december @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.MondayTestCase.test_february @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.MonthRangeTestCase.test_december @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.MonthRangeTestCase.test_february_leap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.MonthRangeTestCase.test_february_nonleap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.MonthRangeTestCase.test_illegal_month_reported @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.MonthRangeTestCase.test_january @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.MonthRangeTestCase.test_thirteenth_month @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.MonthRangeTestCase.test_zeroth_month @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_formatmonth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_formatmonthname_with_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_formatmonthname_without_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_formatweekheader_long @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_formatweekheader_short @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_output_htmlcalendar_encoding_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_output_htmlcalendar_encoding_utf8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_output_textcalendar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_prmonth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_prweek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_pryear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_yeardatescalendar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.OutputTestCase.test_yeardayscalendar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.SundayTestCase.test_april @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.SundayTestCase.test_december @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.SundayTestCase.test_february @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.TestSubClassingCase.test_format_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.TestSubClassingCase.test_format_year_head @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.TestSubClassingCase.test_formatmonth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.TestSubClassingCase.test_formatmonthname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.TestSubClassingCase.test_formatweek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.TestSubClassingCase.test_formatweek_head @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_calendar.TimegmTestCase.test_timegm @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,36 +1,36 @@
-test.test_abc.test_factory.<locals>.TestABC.test_ABC_has___slots__
-test.test_abc.test_factory.<locals>.TestABC.test_ABC_helper
-test.test_abc.test_factory.<locals>.TestABC.test_abstractclassmethod_basics
-test.test_abc.test_factory.<locals>.TestABC.test_abstractmethod_basics
-test.test_abc.test_factory.<locals>.TestABC.test_abstractmethod_integration
-test.test_abc.test_factory.<locals>.TestABC.test_abstractproperty_basics
-test.test_abc.test_factory.<locals>.TestABC.test_abstractstaticmethod_basics
-test.test_abc.test_factory.<locals>.TestABC.test_all_new_methods_are_called
-test.test_abc.test_factory.<locals>.TestABC.test_customdescriptors_with_abstractmethod
-test.test_abc.test_factory.<locals>.TestABC.test_descriptors_with_abstractmethod
-test.test_abc.test_factory.<locals>.TestABC.test_isinstance_invalidation
-test.test_abc.test_factory.<locals>.TestABC.test_issubclass_bad_arguments
-test.test_abc.test_factory.<locals>.TestABC.test_metaclass_abc
-test.test_abc.test_factory.<locals>.TestABC.test_object_new_with_many_abstractmethods
-test.test_abc.test_factory.<locals>.TestABC.test_object_new_with_one_abstractmethod
-test.test_abc.test_factory.<locals>.TestABC.test_register_as_class_deco
-test.test_abc.test_factory.<locals>.TestABC.test_register_non_class
-test.test_abc.test_factory.<locals>.TestABC.test_registration_basics
-test.test_abc.test_factory.<locals>.TestABC.test_registration_builtins
-test.test_abc.test_factory.<locals>.TestABC.test_registration_edge_cases
-test.test_abc.test_factory.<locals>.TestABC.test_registration_transitiveness
-test.test_abc.test_factory.<locals>.TestABC.test_subclasshook
-test.test_abc.test_factory.<locals>.TestABC.test_tricky_new_works
-test.test_abc.test_factory.<locals>.TestABC.test_update_as_decorator
-test.test_abc.test_factory.<locals>.TestABC.test_update_del
-test.test_abc.test_factory.<locals>.TestABC.test_update_del_implementation
-test.test_abc.test_factory.<locals>.TestABC.test_update_implementation
-test.test_abc.test_factory.<locals>.TestABC.test_update_layered_implementation
-test.test_abc.test_factory.<locals>.TestABC.test_update_multi_inheritance
-test.test_abc.test_factory.<locals>.TestABC.test_update_new_abstractmethods
-test.test_abc.test_factory.<locals>.TestABC.test_update_non_abc
-test.test_abc.test_factory.<locals>.TestABCWithInitSubclass.test_positional_only_and_kwonlyargs_with_init_subclass
-test.test_abc.test_factory.<locals>.TestABCWithInitSubclass.test_works_with_init_subclass
-test.test_abc.test_factory.<locals>.TestLegacyAPI.test_abstractclassmethod_basics
-test.test_abc.test_factory.<locals>.TestLegacyAPI.test_abstractproperty_basics
-test.test_abc.test_factory.<locals>.TestLegacyAPI.test_abstractstaticmethod_basics
+test.test_abc.test_factory.<locals>.TestABC.test_ABC_has___slots__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_ABC_helper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_abstractclassmethod_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_abstractmethod_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_abstractmethod_integration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_abstractproperty_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_abstractstaticmethod_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_all_new_methods_are_called @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_customdescriptors_with_abstractmethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_descriptors_with_abstractmethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_isinstance_invalidation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_issubclass_bad_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_metaclass_abc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_object_new_with_many_abstractmethods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_object_new_with_one_abstractmethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_register_as_class_deco @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_register_non_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_registration_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_registration_builtins @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_registration_edge_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_registration_transitiveness @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_subclasshook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_tricky_new_works @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_update_as_decorator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_update_del @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_update_del_implementation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_update_implementation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_update_layered_implementation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_update_multi_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_update_new_abstractmethods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABC.test_update_non_abc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABCWithInitSubclass.test_positional_only_and_kwonlyargs_with_init_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestABCWithInitSubclass.test_works_with_init_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestLegacyAPI.test_abstractclassmethod_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestLegacyAPI.test_abstractproperty_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abc.test_factory.<locals>.TestLegacyAPI.test_abstractstaticmethod_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

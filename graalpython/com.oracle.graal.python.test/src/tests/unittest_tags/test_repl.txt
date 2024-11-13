@@ -1,2 +1,2 @@
-test.test_repl.TestInteractiveInterpreter.test_multiline_string_parsing
-test.test_repl.TestInteractiveInterpreter.test_no_memory
+test.test_repl.TestInteractiveInterpreter.test_multiline_string_parsing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_repl.TestInteractiveInterpreter.test_no_memory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

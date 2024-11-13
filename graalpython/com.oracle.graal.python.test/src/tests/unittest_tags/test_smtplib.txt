@@ -1,92 +1,92 @@
-test.test_smtplib.BadHELOServerTests.testFailingHELO
-test.test_smtplib.DebuggingServerTests.testBasic
-test.test_smtplib.DebuggingServerTests.testELHO
-test.test_smtplib.DebuggingServerTests.testEXPNNotImplemented
-test.test_smtplib.DebuggingServerTests.testHELP
-test.test_smtplib.DebuggingServerTests.testNOOP
-test.test_smtplib.DebuggingServerTests.testRSET
-test.test_smtplib.DebuggingServerTests.testSecondHELO
-test.test_smtplib.DebuggingServerTests.testSend
-test.test_smtplib.DebuggingServerTests.testSendBinary
-test.test_smtplib.DebuggingServerTests.testSendMessage
-test.test_smtplib.DebuggingServerTests.testSendMessageMultipleResentRaises
-test.test_smtplib.DebuggingServerTests.testSendMessageResent
-test.test_smtplib.DebuggingServerTests.testSendMessageWithAddresses
-test.test_smtplib.DebuggingServerTests.testSendMessageWithMultipleFrom
-test.test_smtplib.DebuggingServerTests.testSendMessageWithSomeAddresses
-test.test_smtplib.DebuggingServerTests.testSendMessageWithSpecifiedAddresses
-test.test_smtplib.DebuggingServerTests.testSendNeedingDotQuote
-test.test_smtplib.DebuggingServerTests.testSendNullSender
-test.test_smtplib.DebuggingServerTests.testSourceAddress
-test.test_smtplib.DebuggingServerTests.testVRFY
-test.test_smtplib.DebuggingServerTests.test_issue43124_escape_localhostname
-test.test_smtplib.DebuggingServerTests.test_issue43124_escape_options
-test.test_smtplib.DebuggingServerTests.test_issue43124_putcmd_escapes_newline
-test.test_smtplib.DefaultArgumentsTests.testSendMessage
-test.test_smtplib.DefaultArgumentsTests.testSendMessageWithMailOptions
-test.test_smtplib.GeneralTests.testBasic1
-test.test_smtplib.GeneralTests.testBasic2
-test.test_smtplib.GeneralTests.testLocalHostName
-test.test_smtplib.GeneralTests.testQuoteData
-test.test_smtplib.GeneralTests.testSourceAddress
-test.test_smtplib.GeneralTests.testTimeoutDefault
-test.test_smtplib.GeneralTests.testTimeoutNone
-test.test_smtplib.GeneralTests.testTimeoutValue
-test.test_smtplib.GeneralTests.test_debuglevel
-test.test_smtplib.GeneralTests.test_debuglevel_2
-test.test_smtplib.LMTPGeneralTests.testBasic1
-test.test_smtplib.LMTPGeneralTests.testBasic2
-test.test_smtplib.LMTPGeneralTests.testLocalHostName
-test.test_smtplib.LMTPGeneralTests.testQuoteData
-test.test_smtplib.LMTPGeneralTests.testSourceAddress
-test.test_smtplib.LMTPGeneralTests.testTimeoutDefault
-test.test_smtplib.LMTPGeneralTests.testTimeoutNone
-test.test_smtplib.LMTPGeneralTests.testTimeoutValue
-test.test_smtplib.LMTPGeneralTests.testTimeoutZero
-test.test_smtplib.LMTPGeneralTests.testUnixDomainSocketTimeoutDefault
-test.test_smtplib.LMTPGeneralTests.test_debuglevel
-test.test_smtplib.LMTPGeneralTests.test_debuglevel_2
-test.test_smtplib.NonConnectingTests.testNonnumericPort
-test.test_smtplib.NonConnectingTests.testNotConnected
-test.test_smtplib.NonConnectingTests.testSockAttributeExists
-test.test_smtplib.SMTPAUTHInitialResponseSimTests.testAUTH_PLAIN_initial_response_auth
-test.test_smtplib.SMTPAUTHInitialResponseSimTests.testAUTH_PLAIN_initial_response_login
-test.test_smtplib.SMTPGeneralTests.testBasic1
-test.test_smtplib.SMTPGeneralTests.testBasic2
-test.test_smtplib.SMTPGeneralTests.testLocalHostName
-test.test_smtplib.SMTPGeneralTests.testQuoteData
-test.test_smtplib.SMTPGeneralTests.testSourceAddress
-test.test_smtplib.SMTPGeneralTests.testTimeoutDefault
-test.test_smtplib.SMTPGeneralTests.testTimeoutNone
-test.test_smtplib.SMTPGeneralTests.testTimeoutValue
-test.test_smtplib.SMTPGeneralTests.testTimeoutZero
-test.test_smtplib.SMTPGeneralTests.test_debuglevel
-test.test_smtplib.SMTPGeneralTests.test_debuglevel_2
-test.test_smtplib.SMTPSimTests.testAUTH_BUGGY
-test.test_smtplib.SMTPSimTests.testAUTH_CRAM_MD5
-test.test_smtplib.SMTPSimTests.testAUTH_LOGIN
-test.test_smtplib.SMTPSimTests.testAUTH_LOGIN_initial_response_notok
-test.test_smtplib.SMTPSimTests.testAUTH_LOGIN_initial_response_ok
-test.test_smtplib.SMTPSimTests.testAUTH_PLAIN
-test.test_smtplib.SMTPSimTests.testAUTH_multiple
-test.test_smtplib.SMTPSimTests.testBasic
-test.test_smtplib.SMTPSimTests.testEHLO
-test.test_smtplib.SMTPSimTests.testEXPN
-test.test_smtplib.SMTPSimTests.testVRFY
-test.test_smtplib.SMTPSimTests.test_421_from_data_cmd
-test.test_smtplib.SMTPSimTests.test_421_from_mail_cmd
-test.test_smtplib.SMTPSimTests.test_421_from_rcpt_cmd
-test.test_smtplib.SMTPSimTests.test__rest_from_mail_cmd
-test.test_smtplib.SMTPSimTests.test_auth_function
-test.test_smtplib.SMTPSimTests.test_name_field_not_included_in_envelop_addresses
-test.test_smtplib.SMTPSimTests.test_quit_resets_greeting
-test.test_smtplib.SMTPSimTests.test_send_message_error_on_non_ascii_addrs_if_no_smtputf8
-test.test_smtplib.SMTPSimTests.test_send_unicode_without_SMTPUTF8
-test.test_smtplib.SMTPSimTests.test_smtputf8_NotSupportedError_if_no_server_support
-test.test_smtplib.SMTPSimTests.test_with_statement
-test.test_smtplib.SMTPSimTests.test_with_statement_QUIT_failure
-test.test_smtplib.SMTPUTF8SimTests.test_send_message_uses_smtputf8_if_addrs_non_ascii
-test.test_smtplib.SMTPUTF8SimTests.test_send_unicode_with_SMTPUTF8_via_low_level_API
-test.test_smtplib.SMTPUTF8SimTests.test_send_unicode_with_SMTPUTF8_via_sendmail
-test.test_smtplib.SMTPUTF8SimTests.test_test_server_supports_extensions
-test.test_smtplib.TooLongLineTests.testLineTooLong
+test.test_smtplib.BadHELOServerTests.testFailingHELO @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testBasic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testELHO @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testEXPNNotImplemented @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testHELP @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testNOOP @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testRSET @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testSecondHELO @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testSend @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testSendBinary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testSendMessage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testSendMessageMultipleResentRaises @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testSendMessageResent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testSendMessageWithAddresses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testSendMessageWithMultipleFrom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testSendMessageWithSomeAddresses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testSendMessageWithSpecifiedAddresses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testSendNeedingDotQuote @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testSendNullSender @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testSourceAddress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.testVRFY @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.test_issue43124_escape_localhostname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.test_issue43124_escape_options @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DebuggingServerTests.test_issue43124_putcmd_escapes_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DefaultArgumentsTests.testSendMessage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.DefaultArgumentsTests.testSendMessageWithMailOptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.GeneralTests.testBasic1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.GeneralTests.testBasic2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.GeneralTests.testLocalHostName @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.GeneralTests.testQuoteData @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.GeneralTests.testSourceAddress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.GeneralTests.testTimeoutDefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.GeneralTests.testTimeoutNone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.GeneralTests.testTimeoutValue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.GeneralTests.test_debuglevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.GeneralTests.test_debuglevel_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.LMTPGeneralTests.testBasic1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.LMTPGeneralTests.testBasic2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.LMTPGeneralTests.testLocalHostName @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.LMTPGeneralTests.testQuoteData @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.LMTPGeneralTests.testSourceAddress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.LMTPGeneralTests.testTimeoutDefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.LMTPGeneralTests.testTimeoutNone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.LMTPGeneralTests.testTimeoutValue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.LMTPGeneralTests.testTimeoutZero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.LMTPGeneralTests.testUnixDomainSocketTimeoutDefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.LMTPGeneralTests.test_debuglevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.LMTPGeneralTests.test_debuglevel_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.NonConnectingTests.testNonnumericPort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.NonConnectingTests.testNotConnected @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.NonConnectingTests.testSockAttributeExists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPAUTHInitialResponseSimTests.testAUTH_PLAIN_initial_response_auth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPAUTHInitialResponseSimTests.testAUTH_PLAIN_initial_response_login @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPGeneralTests.testBasic1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPGeneralTests.testBasic2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPGeneralTests.testLocalHostName @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPGeneralTests.testQuoteData @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPGeneralTests.testSourceAddress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPGeneralTests.testTimeoutDefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPGeneralTests.testTimeoutNone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPGeneralTests.testTimeoutValue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPGeneralTests.testTimeoutZero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPGeneralTests.test_debuglevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPGeneralTests.test_debuglevel_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.testAUTH_BUGGY @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.testAUTH_CRAM_MD5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.testAUTH_LOGIN @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.testAUTH_LOGIN_initial_response_notok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.testAUTH_LOGIN_initial_response_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.testAUTH_PLAIN @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.testAUTH_multiple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.testBasic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.testEHLO @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.testEXPN @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.testVRFY @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.test_421_from_data_cmd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.test_421_from_mail_cmd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.test_421_from_rcpt_cmd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.test__rest_from_mail_cmd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.test_auth_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.test_name_field_not_included_in_envelop_addresses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.test_quit_resets_greeting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.test_send_message_error_on_non_ascii_addrs_if_no_smtputf8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.test_send_unicode_without_SMTPUTF8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.test_smtputf8_NotSupportedError_if_no_server_support @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.test_with_statement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPSimTests.test_with_statement_QUIT_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPUTF8SimTests.test_send_message_uses_smtputf8_if_addrs_non_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPUTF8SimTests.test_send_unicode_with_SMTPUTF8_via_low_level_API @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPUTF8SimTests.test_send_unicode_with_SMTPUTF8_via_sendmail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.SMTPUTF8SimTests.test_test_server_supports_extensions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_smtplib.TooLongLineTests.testLineTooLong @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,9 +1,9 @@
-test.test_mailcap.FindmatchTest.test_findmatch
-test.test_mailcap.FindmatchTest.test_test
-test.test_mailcap.FindmatchTest.test_unsafe_mailcap_input
-test.test_mailcap.GetcapsTest.test_mock_getcaps
-test.test_mailcap.GetcapsTest.test_system_mailcap
-test.test_mailcap.HelperFunctionTest.test_listmailcapfiles
-test.test_mailcap.HelperFunctionTest.test_lookup
-test.test_mailcap.HelperFunctionTest.test_readmailcapfile
-test.test_mailcap.HelperFunctionTest.test_subst
+test.test_mailcap.FindmatchTest.test_findmatch @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mailcap.FindmatchTest.test_test @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mailcap.FindmatchTest.test_unsafe_mailcap_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mailcap.GetcapsTest.test_mock_getcaps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mailcap.GetcapsTest.test_system_mailcap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mailcap.HelperFunctionTest.test_listmailcapfiles @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mailcap.HelperFunctionTest.test_lookup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mailcap.HelperFunctionTest.test_readmailcapfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mailcap.HelperFunctionTest.test_subst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

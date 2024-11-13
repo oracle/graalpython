@@ -1,1 +1,1 @@
-test.test_type_cache.TypeCacheTests.test_tp_version_tag_unique
+test.test_type_cache.TypeCacheTests.test_tp_version_tag_unique @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

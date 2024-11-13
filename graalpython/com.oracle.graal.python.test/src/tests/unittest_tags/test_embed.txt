@@ -1,70 +1,70 @@
-test.test_embed.AuditingTests.test_audit
-test.test_embed.AuditingTests.test_audit_run_command
-test.test_embed.AuditingTests.test_audit_run_file
-test.test_embed.AuditingTests.test_audit_run_interactivehook
-test.test_embed.AuditingTests.test_audit_run_startup
-test.test_embed.AuditingTests.test_audit_run_stdin
-test.test_embed.AuditingTests.test_audit_subinterpreter
-test.test_embed.AuditingTests.test_get_incomplete_frame
-test.test_embed.AuditingTests.test_open_code_hook
-test.test_embed.EmbeddingTests.test_bpo20891
-test.test_embed.EmbeddingTests.test_finalize_structseq
-test.test_embed.EmbeddingTests.test_forced_io_encoding
-test.test_embed.EmbeddingTests.test_initialize_pymain
-test.test_embed.EmbeddingTests.test_initialize_twice
-test.test_embed.EmbeddingTests.test_pre_initialization_api
-test.test_embed.EmbeddingTests.test_pre_initialization_sys_options
-test.test_embed.EmbeddingTests.test_quickened_static_code_gets_unquickened_at_Py_FINALIZE
-test.test_embed.EmbeddingTests.test_repeated_init_and_inittab
-test.test_embed.EmbeddingTests.test_run_main
-test.test_embed.EmbeddingTests.test_run_main_loop
-test.test_embed.EmbeddingTests.test_simple_initialization_api
-test.test_embed.EmbeddingTests.test_subinterps_different_ids
-test.test_embed.EmbeddingTests.test_subinterps_distinct_state
-test.test_embed.EmbeddingTests.test_subinterps_main
-test.test_embed.EmbeddingTests.test_ucnhash_capi_reset
-test.test_embed.InitConfigTests.test_get_argc_argv
-test.test_embed.InitConfigTests.test_getpath_abspath_win32
-test.test_embed.InitConfigTests.test_global_pathconfig
-test.test_embed.InitConfigTests.test_init_compat_config
-test.test_embed.InitConfigTests.test_init_compat_env
-test.test_embed.InitConfigTests.test_init_default_config
-test.test_embed.InitConfigTests.test_init_dev_mode
-test.test_embed.InitConfigTests.test_init_dont_configure_locale
-test.test_embed.InitConfigTests.test_init_dont_parse_argv
-test.test_embed.InitConfigTests.test_init_env_dev_mode
-test.test_embed.InitConfigTests.test_init_env_dev_mode_alloc
-test.test_embed.InitConfigTests.test_init_from_config
-test.test_embed.InitConfigTests.test_init_global_config
-test.test_embed.InitConfigTests.test_init_is_python_build_with_home
-test.test_embed.InitConfigTests.test_init_isolated_config
-test.test_embed.InitConfigTests.test_init_isolated_flag
-test.test_embed.InitConfigTests.test_init_main
-test.test_embed.InitConfigTests.test_init_parse_argv
-test.test_embed.InitConfigTests.test_init_pybuilddir
-test.test_embed.InitConfigTests.test_init_pybuilddir_win32
-test.test_embed.InitConfigTests.test_init_python_config
-test.test_embed.InitConfigTests.test_init_python_env
-test.test_embed.InitConfigTests.test_init_pyvenv_cfg
-test.test_embed.InitConfigTests.test_init_read_set
-test.test_embed.InitConfigTests.test_init_run_main
-test.test_embed.InitConfigTests.test_init_set_config
-test.test_embed.InitConfigTests.test_init_setpath
-test.test_embed.InitConfigTests.test_init_setpath_config
-test.test_embed.InitConfigTests.test_init_setpythonhome
-test.test_embed.InitConfigTests.test_init_sys_add
-test.test_embed.InitConfigTests.test_init_use_frozen_modules
-test.test_embed.InitConfigTests.test_init_warnoptions
-test.test_embed.InitConfigTests.test_preinit_compat_config
-test.test_embed.InitConfigTests.test_preinit_dont_parse_argv
-test.test_embed.InitConfigTests.test_preinit_isolated1
-test.test_embed.InitConfigTests.test_preinit_isolated2
-test.test_embed.InitConfigTests.test_preinit_isolated_config
-test.test_embed.InitConfigTests.test_preinit_parse_argv
-test.test_embed.InitConfigTests.test_preinit_python_config
-test.test_embed.MiscTests.test_frozenmain
-test.test_embed.MiscTests.test_no_memleak
-test.test_embed.MiscTests.test_unicode_id_init
-test.test_embed.StdPrinterTests.test_disallow_instantiation
-test.test_embed.StdPrinterTests.test_methods
-test.test_embed.StdPrinterTests.test_write
+test.test_embed.AuditingTests.test_audit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.AuditingTests.test_audit_run_command @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.AuditingTests.test_audit_run_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.AuditingTests.test_audit_run_interactivehook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.AuditingTests.test_audit_run_startup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.AuditingTests.test_audit_run_stdin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.AuditingTests.test_audit_subinterpreter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.AuditingTests.test_get_incomplete_frame @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.AuditingTests.test_open_code_hook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_bpo20891 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_finalize_structseq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_forced_io_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_initialize_pymain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_initialize_twice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_pre_initialization_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_pre_initialization_sys_options @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_quickened_static_code_gets_unquickened_at_Py_FINALIZE @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_repeated_init_and_inittab @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_run_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_run_main_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_simple_initialization_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_subinterps_different_ids @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_subinterps_distinct_state @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_subinterps_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.EmbeddingTests.test_ucnhash_capi_reset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_get_argc_argv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_getpath_abspath_win32 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_global_pathconfig @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_compat_config @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_compat_env @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_default_config @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_dev_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_dont_configure_locale @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_dont_parse_argv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_env_dev_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_env_dev_mode_alloc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_from_config @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_global_config @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_is_python_build_with_home @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_isolated_config @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_isolated_flag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_parse_argv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_pybuilddir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_pybuilddir_win32 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_python_config @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_python_env @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_pyvenv_cfg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_read_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_run_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_set_config @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_setpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_setpath_config @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_setpythonhome @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_sys_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_use_frozen_modules @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_init_warnoptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_preinit_compat_config @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_preinit_dont_parse_argv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_preinit_isolated1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_preinit_isolated2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_preinit_isolated_config @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_preinit_parse_argv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.InitConfigTests.test_preinit_python_config @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.MiscTests.test_frozenmain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.MiscTests.test_no_memleak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.MiscTests.test_unicode_id_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.StdPrinterTests.test_disallow_instantiation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.StdPrinterTests.test_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_embed.StdPrinterTests.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

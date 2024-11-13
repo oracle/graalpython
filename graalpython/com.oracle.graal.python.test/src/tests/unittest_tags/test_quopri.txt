@@ -1,11 +1,11 @@
-test.test_quopri.QuopriTestCase.test_decode
-test.test_quopri.QuopriTestCase.test_decode_header
-test.test_quopri.QuopriTestCase.test_decodestring
-test.test_quopri.QuopriTestCase.test_decodestring_double_equals
-test.test_quopri.QuopriTestCase.test_embedded_ws
-test.test_quopri.QuopriTestCase.test_encode
-test.test_quopri.QuopriTestCase.test_encode_header
-test.test_quopri.QuopriTestCase.test_encodestring
-test.test_quopri.QuopriTestCase.test_idempotent_string
-test.test_quopri.QuopriTestCase.test_scriptdecode
-test.test_quopri.QuopriTestCase.test_scriptencode
+test.test_quopri.QuopriTestCase.test_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_quopri.QuopriTestCase.test_decode_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_quopri.QuopriTestCase.test_decodestring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_quopri.QuopriTestCase.test_decodestring_double_equals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_quopri.QuopriTestCase.test_embedded_ws @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_quopri.QuopriTestCase.test_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_quopri.QuopriTestCase.test_encode_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_quopri.QuopriTestCase.test_encodestring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_quopri.QuopriTestCase.test_idempotent_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_quopri.QuopriTestCase.test_scriptdecode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_quopri.QuopriTestCase.test_scriptencode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

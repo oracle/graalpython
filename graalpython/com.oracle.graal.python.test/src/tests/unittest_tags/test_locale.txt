@@ -1,59 +1,59 @@
-test.test_locale.NormalizeTest.test_c
-test.test_locale.NormalizeTest.test_devanagari_modifier
-test.test_locale.NormalizeTest.test_empty
-test.test_locale.NormalizeTest.test_english
-test.test_locale.NormalizeTest.test_euc_encoding
-test.test_locale.NormalizeTest.test_euro_modifier
-test.test_locale.NormalizeTest.test_hyphenated_encoding
-test.test_locale.NormalizeTest.test_japanese
-test.test_locale.NormalizeTest.test_latin_modifier
-test.test_locale.NormalizeTest.test_locale_alias
-test.test_locale.NormalizeTest.test_valencia_modifier
-test.test_locale.TestCDelocalizeTest.test_atof
-test.test_locale.TestCDelocalizeTest.test_atoi
-test.test_locale.TestCDelocalizeTest.test_delocalize
-test.test_locale.TestCLocalize.test_localize
-test.test_locale.TestCNumberFormatting.test_grouping
-test.test_locale.TestCNumberFormatting.test_grouping_and_padding
-test.test_locale.TestEnUSDelocalize.test_atof
-test.test_locale.TestEnUSDelocalize.test_atoi
-test.test_locale.TestEnUSDelocalize.test_delocalize
-test.test_locale.TestEnUSLocalize.test_localize
-test.test_locale.TestEnUSNumberFormatting.test_complex_formatting
-test.test_locale.TestEnUSNumberFormatting.test_currency
-test.test_locale.TestEnUSNumberFormatting.test_format_deprecation
-test.test_locale.TestEnUSNumberFormatting.test_grouping
-test.test_locale.TestEnUSNumberFormatting.test_grouping_and_padding
-test.test_locale.TestEnUSNumberFormatting.test_integer_grouping
-test.test_locale.TestEnUSNumberFormatting.test_integer_grouping_and_padding
-test.test_locale.TestEnUSNumberFormatting.test_padding
-test.test_locale.TestEnUSNumberFormatting.test_simple
-test.test_locale.TestFormatPatternArg.test_onlyOnePattern
-test.test_locale.TestFrFRNumberFormatting.test_currency
-test.test_locale.TestFrFRNumberFormatting.test_decimal_point
-test.test_locale.TestFrFRNumberFormatting.test_grouping
-test.test_locale.TestFrFRNumberFormatting.test_grouping_and_padding
-test.test_locale.TestFrFRNumberFormatting.test_integer_grouping
-test.test_locale.TestFrFRNumberFormatting.test_integer_grouping_and_padding
-test.test_locale.TestLocaleFormatString.test_mapping
-test.test_locale.TestLocaleFormatString.test_percent_escape
-test.test_locale.TestMiscellaneous.test_defaults_UTF8
-test.test_locale.TestMiscellaneous.test_getencoding
-test.test_locale.TestMiscellaneous.test_getpreferredencoding
-test.test_locale.TestMiscellaneous.test_getsetlocale_issue1813
-test.test_locale.TestMiscellaneous.test_invalid_iterable_in_localetuple
-test.test_locale.TestMiscellaneous.test_invalid_locale_format_in_localetuple
-test.test_locale.TestMiscellaneous.test_setlocale_category
-test.test_locale.TestMiscellaneous.test_strcoll_3303
-test.test_locale.TestNumberFormatting.test_complex_formatting
-test.test_locale.TestNumberFormatting.test_format_deprecation
-test.test_locale.TestNumberFormatting.test_grouping
-test.test_locale.TestNumberFormatting.test_grouping_and_padding
-test.test_locale.TestNumberFormatting.test_integer_grouping
-test.test_locale.TestNumberFormatting.test_integer_grouping_and_padding
-test.test_locale.TestNumberFormatting.test_padding
-test.test_locale.TestNumberFormatting.test_simple
-test.test_locale.TestfrFRDelocalizeTest.test_atof
-test.test_locale.TestfrFRDelocalizeTest.test_atoi
-test.test_locale.TestfrFRDelocalizeTest.test_delocalize
-test.test_locale.TestfrFRLocalize.test_localize
+test.test_locale.NormalizeTest.test_c @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.NormalizeTest.test_devanagari_modifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.NormalizeTest.test_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.NormalizeTest.test_english @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.NormalizeTest.test_euc_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.NormalizeTest.test_euro_modifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.NormalizeTest.test_hyphenated_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.NormalizeTest.test_japanese @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.NormalizeTest.test_latin_modifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.NormalizeTest.test_locale_alias @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.NormalizeTest.test_valencia_modifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestCDelocalizeTest.test_atof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestCDelocalizeTest.test_atoi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestCDelocalizeTest.test_delocalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestCLocalize.test_localize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestCNumberFormatting.test_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestCNumberFormatting.test_grouping_and_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestEnUSDelocalize.test_atof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestEnUSDelocalize.test_atoi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestEnUSDelocalize.test_delocalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestEnUSLocalize.test_localize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestEnUSNumberFormatting.test_complex_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestEnUSNumberFormatting.test_currency @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestEnUSNumberFormatting.test_format_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestEnUSNumberFormatting.test_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestEnUSNumberFormatting.test_grouping_and_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestEnUSNumberFormatting.test_integer_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestEnUSNumberFormatting.test_integer_grouping_and_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestEnUSNumberFormatting.test_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestEnUSNumberFormatting.test_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestFormatPatternArg.test_onlyOnePattern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestFrFRNumberFormatting.test_currency @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestFrFRNumberFormatting.test_decimal_point @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestFrFRNumberFormatting.test_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestFrFRNumberFormatting.test_grouping_and_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestFrFRNumberFormatting.test_integer_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestFrFRNumberFormatting.test_integer_grouping_and_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestLocaleFormatString.test_mapping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestLocaleFormatString.test_percent_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestMiscellaneous.test_defaults_UTF8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestMiscellaneous.test_getencoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestMiscellaneous.test_getpreferredencoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestMiscellaneous.test_getsetlocale_issue1813 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestMiscellaneous.test_invalid_iterable_in_localetuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestMiscellaneous.test_invalid_locale_format_in_localetuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestMiscellaneous.test_setlocale_category @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestMiscellaneous.test_strcoll_3303 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestNumberFormatting.test_complex_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestNumberFormatting.test_format_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestNumberFormatting.test_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestNumberFormatting.test_grouping_and_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestNumberFormatting.test_integer_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestNumberFormatting.test_integer_grouping_and_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestNumberFormatting.test_padding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestNumberFormatting.test_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestfrFRDelocalizeTest.test_atof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestfrFRDelocalizeTest.test_atoi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestfrFRDelocalizeTest.test_delocalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_locale.TestfrFRLocalize.test_localize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,215 +1,215 @@
-test.test_logging.BasicConfigTest.test_critical
-test.test_logging.BasicConfigTest.test_datefmt
-test.test_logging.BasicConfigTest.test_debug
-test.test_logging.BasicConfigTest.test_encoding
-test.test_logging.BasicConfigTest.test_encoding_errors
-test.test_logging.BasicConfigTest.test_encoding_errors_default
-test.test_logging.BasicConfigTest.test_encoding_errors_none
-test.test_logging.BasicConfigTest.test_error
-test.test_logging.BasicConfigTest.test_filemode
-test.test_logging.BasicConfigTest.test_filename
-test.test_logging.BasicConfigTest.test_force
-test.test_logging.BasicConfigTest.test_format
-test.test_logging.BasicConfigTest.test_handlers
-test.test_logging.BasicConfigTest.test_incompatible
-test.test_logging.BasicConfigTest.test_info
-test.test_logging.BasicConfigTest.test_level
-test.test_logging.BasicConfigTest.test_log
-test.test_logging.BasicConfigTest.test_no_kwargs
-test.test_logging.BasicConfigTest.test_stream
-test.test_logging.BasicConfigTest.test_strformatstyle
-test.test_logging.BasicConfigTest.test_stringtemplatestyle
-test.test_logging.BasicConfigTest.test_style
-test.test_logging.BasicConfigTest.test_warning
-test.test_logging.BasicFilterTest.test_callable_filter
-test.test_logging.BasicFilterTest.test_empty_filter
-test.test_logging.BasicFilterTest.test_filter
-test.test_logging.BufferingFormatterTest.test_custom
-test.test_logging.BufferingFormatterTest.test_default
-test.test_logging.BuiltinLevelsTest.test_flat
-test.test_logging.BuiltinLevelsTest.test_issue27935
-test.test_logging.BuiltinLevelsTest.test_nested_explicit
-test.test_logging.BuiltinLevelsTest.test_nested_inherited
-test.test_logging.BuiltinLevelsTest.test_nested_with_virtual_parent
-test.test_logging.BuiltinLevelsTest.test_regression_22386
-test.test_logging.BuiltinLevelsTest.test_regression_29220
-test.test_logging.ChildLoggerTest.test_child_loggers
-test.test_logging.ConfigDictTest.test_90195
-test.test_logging.ConfigDictTest.test_baseconfig
-test.test_logging.ConfigDictTest.test_config0_ok
-test.test_logging.ConfigDictTest.test_config11_ok
-test.test_logging.ConfigDictTest.test_config12_failure
-test.test_logging.ConfigDictTest.test_config13_failure
-test.test_logging.ConfigDictTest.test_config14_ok
-test.test_logging.ConfigDictTest.test_config15_ok
-test.test_logging.ConfigDictTest.test_config17_ok
-test.test_logging.ConfigDictTest.test_config1_ok
-test.test_logging.ConfigDictTest.test_config2_failure
-test.test_logging.ConfigDictTest.test_config2a_failure
-test.test_logging.ConfigDictTest.test_config2b_failure
-test.test_logging.ConfigDictTest.test_config3_failure
-test.test_logging.ConfigDictTest.test_config4_ok
-test.test_logging.ConfigDictTest.test_config4a_ok
-test.test_logging.ConfigDictTest.test_config5_ok
-test.test_logging.ConfigDictTest.test_config6_failure
-test.test_logging.ConfigDictTest.test_config7_ok
-test.test_logging.ConfigDictTest.test_config_10_ok
-test.test_logging.ConfigDictTest.test_config_8_ok
-test.test_logging.ConfigDictTest.test_config_8a_ok
-test.test_logging.ConfigDictTest.test_config_9_ok
-test.test_logging.ConfigDictTest.test_config_callable_filter_works
-test.test_logging.ConfigDictTest.test_config_filter_method_works
-test.test_logging.ConfigDictTest.test_config_filter_works
-test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate
-test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate2
-test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate2_with_wrong_fmt
-test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate3
-test.test_logging.ConfigDictTest.test_custom_formatter_function_with_validate
-test.test_logging.ConfigDictTest.test_invalid_type_raises
-test.test_logging.ConfigDictTest.test_namedtuple
-test.test_logging.ConfigDictTest.test_out_of_order
-test.test_logging.ConfigDictTest.test_out_of_order_with_dollar_style
-test.test_logging.ConfigFileTest.test_config0_ok
-test.test_logging.ConfigFileTest.test_config0_using_cp_ok
-test.test_logging.ConfigFileTest.test_config1_ok
-test.test_logging.ConfigFileTest.test_config2_failure
-test.test_logging.ConfigFileTest.test_config3_failure
-test.test_logging.ConfigFileTest.test_config4_ok
-test.test_logging.ConfigFileTest.test_config5_ok
-test.test_logging.ConfigFileTest.test_config6_ok
-test.test_logging.ConfigFileTest.test_config7_ok
-test.test_logging.ConfigFileTest.test_config8_ok
-test.test_logging.ConfigFileTest.test_config_set_handler_names
-test.test_logging.ConfigFileTest.test_defaults_do_no_interpolation
-test.test_logging.ConfigFileTest.test_exception_if_confg_file_is_empty
-test.test_logging.ConfigFileTest.test_exception_if_confg_file_is_invalid
-test.test_logging.ConfigFileTest.test_exception_if_config_file_does_not_exist
-test.test_logging.ConfigFileTest.test_logger_disabling
-test.test_logging.CustomLevelsAndFiltersTest.test_handler_filter
-test.test_logging.CustomLevelsAndFiltersTest.test_logger_filter
-test.test_logging.CustomLevelsAndFiltersTest.test_specific_filters
-test.test_logging.DatagramHandlerTest.test_output
-test.test_logging.EncodingTest.test_encoding_cyrillic_unicode
-test.test_logging.EncodingTest.test_encoding_plain_file
-test.test_logging.ExceptionTest.test_formatting
-test.test_logging.FileHandlerTest.test_delay
-test.test_logging.FileHandlerTest.test_emit_after_closing_in_write_mode
-test.test_logging.FormatterTest.test_braces
-test.test_logging.FormatterTest.test_default_msec_format_none
-test.test_logging.FormatterTest.test_defaults_parameter
-test.test_logging.FormatterTest.test_dollars
-test.test_logging.FormatterTest.test_format_validate
-test.test_logging.FormatterTest.test_invalid_style
-test.test_logging.FormatterTest.test_issue_89047
-test.test_logging.FormatterTest.test_percent
-test.test_logging.FormatterTest.test_time
-test.test_logging.HTTPHandlerTest.test_output
-test.test_logging.HandlerTest.test_builtin_handlers
-test.test_logging.HandlerTest.test_name
-test.test_logging.HandlerTest.test_path_objects
-test.test_logging.HandlerTest.test_post_fork_child_no_deadlock
-test.test_logging.HandlerTest.test_race
-test.test_logging.IPv6SysLogHandlerTest.test_output
-test.test_logging.IPv6SysLogHandlerTest.test_udp_reconnection
-test.test_logging.LastResortTest.test_last_resort
-test.test_logging.LogRecordFactoryTest.test_logrecord_class
-test.test_logging.LogRecordTest.test_dict_arg
-test.test_logging.LogRecordTest.test_multiprocessing
-test.test_logging.LogRecordTest.test_optional
-test.test_logging.LogRecordTest.test_str_rep
-test.test_logging.LoggerAdapterTest.test_critical
-test.test_logging.LoggerAdapterTest.test_exception
-test.test_logging.LoggerAdapterTest.test_exception_excinfo
-test.test_logging.LoggerAdapterTest.test_has_handlers
-test.test_logging.LoggerAdapterTest.test_is_enabled_for
-test.test_logging.LoggerAdapterTest.test_nested
-test.test_logging.LoggerTest.test_caching
-test.test_logging.LoggerTest.test_exception
-test.test_logging.LoggerTest.test_find_caller_with_stack_info
-test.test_logging.LoggerTest.test_find_caller_with_stacklevel
-test.test_logging.LoggerTest.test_has_handlers
-test.test_logging.LoggerTest.test_has_handlers_no_propagate
-test.test_logging.LoggerTest.test_invalid_names
-test.test_logging.LoggerTest.test_is_enabled_for
-test.test_logging.LoggerTest.test_is_enabled_for_disabled_logger
-test.test_logging.LoggerTest.test_log_invalid_level_no_raise
-test.test_logging.LoggerTest.test_log_invalid_level_with_raise
-test.test_logging.LoggerTest.test_make_record_with_extra_no_overwrite
-test.test_logging.LoggerTest.test_make_record_with_extra_overwrite
-test.test_logging.LoggerTest.test_pickling
-test.test_logging.LoggerTest.test_root_logger_aliases
-test.test_logging.LoggerTest.test_set_invalid_level
-test.test_logging.ManagerTest.test_manager_loggerclass
-test.test_logging.ManagerTest.test_set_log_record_factory
-test.test_logging.MemoryHandlerTest.test_flush
-test.test_logging.MemoryHandlerTest.test_flush_on_close
-test.test_logging.MemoryHandlerTest.test_race_between_set_target_and_flush
-test.test_logging.MemoryTest.test_persistent_loggers
-test.test_logging.MiscTestCase.test__all__
-test.test_logging.ModuleLevelMiscTest.test_critical
-test.test_logging.ModuleLevelMiscTest.test_debug
-test.test_logging.ModuleLevelMiscTest.test_disable
-test.test_logging.ModuleLevelMiscTest.test_error
-test.test_logging.ModuleLevelMiscTest.test_get_level_names_mapping
-test.test_logging.ModuleLevelMiscTest.test_info
-test.test_logging.ModuleLevelMiscTest.test_log
-test.test_logging.ModuleLevelMiscTest.test_recursion_error
-test.test_logging.ModuleLevelMiscTest.test_set_logger_class
-test.test_logging.ModuleLevelMiscTest.test_subclass_logger_cache
-test.test_logging.ModuleLevelMiscTest.test_warning
-test.test_logging.NTEventLogHandlerTest.test_basic
-test.test_logging.QueueHandlerTest.test_formatting
-test.test_logging.QueueHandlerTest.test_queue_handler
-test.test_logging.QueueHandlerTest.test_queue_listener
-test.test_logging.QueueHandlerTest.test_queue_listener_with_StreamHandler
-test.test_logging.QueueHandlerTest.test_queue_listener_with_multiple_handlers
-test.test_logging.QueueListenerTest.test_calls_task_done_after_stop
-test.test_logging.QueueListenerTest.test_handle_called_with_mp_queue
-test.test_logging.QueueListenerTest.test_handle_called_with_queue_queue
-test.test_logging.QueueListenerTest.test_no_messages_in_queue_after_stop
-test.test_logging.RotatingFileHandlerTest.test_file_created
-test.test_logging.RotatingFileHandlerTest.test_namer_rotator_inheritance
-test.test_logging.RotatingFileHandlerTest.test_rollover_filenames
-test.test_logging.RotatingFileHandlerTest.test_rotator
-test.test_logging.RotatingFileHandlerTest.test_should_not_rollover
-test.test_logging.RotatingFileHandlerTest.test_should_rollover
-test.test_logging.SMTPHandlerTest.test_basic
-test.test_logging.ShutdownTest.test_no_failure
-test.test_logging.ShutdownTest.test_with_ioerror_in_acquire
-test.test_logging.ShutdownTest.test_with_ioerror_in_close
-test.test_logging.ShutdownTest.test_with_ioerror_in_flush
-test.test_logging.ShutdownTest.test_with_other_error_in_acquire_with_raise
-test.test_logging.ShutdownTest.test_with_other_error_in_acquire_without_raise
-test.test_logging.ShutdownTest.test_with_other_error_in_close_with_raise
-test.test_logging.ShutdownTest.test_with_other_error_in_close_without_raise
-test.test_logging.ShutdownTest.test_with_other_error_in_flush_with_raise
-test.test_logging.ShutdownTest.test_with_other_error_in_flush_without_raise
-test.test_logging.ShutdownTest.test_with_valueerror_in_acquire
-test.test_logging.ShutdownTest.test_with_valueerror_in_close
-test.test_logging.ShutdownTest.test_with_valueerror_in_flush
-test.test_logging.SocketHandlerTest.test_noserver
-test.test_logging.SocketHandlerTest.test_output
-test.test_logging.StreamHandlerTest.test_can_represent_stream_with_int_name
-test.test_logging.StreamHandlerTest.test_error_handling
-test.test_logging.StreamHandlerTest.test_stream_setting
-test.test_logging.SysLogHandlerTest.test_output
-test.test_logging.SysLogHandlerTest.test_udp_reconnection
-test.test_logging.TimedRotatingFileHandlerTest.test_compute_files_to_delete
-test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_D
-test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_H
-test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_M
-test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_MIDNIGHT
-test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_S
-test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_W0
-test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_daily_attime
-test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_weekly_attime
-test.test_logging.TimedRotatingFileHandlerTest.test_invalid
-test.test_logging.TimedRotatingFileHandlerTest.test_rollover
-test.test_logging.TimedRotatingFileHandlerTest.test_should_not_rollover
-test.test_logging.UnixDatagramHandlerTest.test_output
-test.test_logging.UnixSocketHandlerTest.test_noserver
-test.test_logging.UnixSocketHandlerTest.test_output
-test.test_logging.UnixSysLogHandlerTest.test_output
-test.test_logging.UnixSysLogHandlerTest.test_udp_reconnection
-test.test_logging.WarningsTest.test_warnings
-test.test_logging.WarningsTest.test_warnings_no_handlers
+test.test_logging.BasicConfigTest.test_critical @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_datefmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_debug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_encoding_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_encoding_errors_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_encoding_errors_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_filemode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_force @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_handlers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_incompatible @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_info @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_level @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_log @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_no_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_stream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_strformatstyle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_stringtemplatestyle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_style @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicConfigTest.test_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicFilterTest.test_callable_filter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicFilterTest.test_empty_filter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BasicFilterTest.test_filter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BufferingFormatterTest.test_custom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BufferingFormatterTest.test_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BuiltinLevelsTest.test_flat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BuiltinLevelsTest.test_issue27935 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BuiltinLevelsTest.test_nested_explicit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BuiltinLevelsTest.test_nested_inherited @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BuiltinLevelsTest.test_nested_with_virtual_parent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BuiltinLevelsTest.test_regression_22386 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.BuiltinLevelsTest.test_regression_29220 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ChildLoggerTest.test_child_loggers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_90195 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_baseconfig @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config0_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config11_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config12_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config13_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config14_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config15_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config17_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config1_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config2_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config2a_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config2b_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config3_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config4_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config4a_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config5_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config6_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config7_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config_10_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config_8_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config_8a_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config_9_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config_callable_filter_works @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config_filter_method_works @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_config_filter_works @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate2_with_wrong_fmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_custom_formatter_function_with_validate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_invalid_type_raises @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_namedtuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_out_of_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_out_of_order_with_dollar_style @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_config0_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_config0_using_cp_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_config1_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_config2_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_config3_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_config4_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_config5_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_config6_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_config7_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_config8_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_config_set_handler_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_defaults_do_no_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_exception_if_confg_file_is_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_exception_if_confg_file_is_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_exception_if_config_file_does_not_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigFileTest.test_logger_disabling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.CustomLevelsAndFiltersTest.test_handler_filter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.CustomLevelsAndFiltersTest.test_logger_filter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.CustomLevelsAndFiltersTest.test_specific_filters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.DatagramHandlerTest.test_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.EncodingTest.test_encoding_cyrillic_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.EncodingTest.test_encoding_plain_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ExceptionTest.test_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.FileHandlerTest.test_delay @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.FileHandlerTest.test_emit_after_closing_in_write_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.FormatterTest.test_braces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.FormatterTest.test_default_msec_format_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.FormatterTest.test_defaults_parameter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.FormatterTest.test_dollars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.FormatterTest.test_format_validate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.FormatterTest.test_invalid_style @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.FormatterTest.test_issue_89047 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.FormatterTest.test_percent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.FormatterTest.test_time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.HTTPHandlerTest.test_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.HandlerTest.test_builtin_handlers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.HandlerTest.test_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.HandlerTest.test_path_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.HandlerTest.test_post_fork_child_no_deadlock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.HandlerTest.test_race @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.IPv6SysLogHandlerTest.test_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.IPv6SysLogHandlerTest.test_udp_reconnection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LastResortTest.test_last_resort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LogRecordFactoryTest.test_logrecord_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LogRecordTest.test_dict_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LogRecordTest.test_multiprocessing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LogRecordTest.test_optional @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LogRecordTest.test_str_rep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerAdapterTest.test_critical @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerAdapterTest.test_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerAdapterTest.test_exception_excinfo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerAdapterTest.test_has_handlers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerAdapterTest.test_is_enabled_for @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerAdapterTest.test_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_caching @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_find_caller_with_stack_info @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_find_caller_with_stacklevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_has_handlers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_has_handlers_no_propagate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_invalid_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_is_enabled_for @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_is_enabled_for_disabled_logger @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_log_invalid_level_no_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_log_invalid_level_with_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_make_record_with_extra_no_overwrite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_make_record_with_extra_overwrite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_root_logger_aliases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.LoggerTest.test_set_invalid_level @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ManagerTest.test_manager_loggerclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ManagerTest.test_set_log_record_factory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.MemoryHandlerTest.test_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.MemoryHandlerTest.test_flush_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.MemoryHandlerTest.test_race_between_set_target_and_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.MemoryTest.test_persistent_loggers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.MiscTestCase.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ModuleLevelMiscTest.test_critical @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ModuleLevelMiscTest.test_debug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ModuleLevelMiscTest.test_disable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ModuleLevelMiscTest.test_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ModuleLevelMiscTest.test_get_level_names_mapping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ModuleLevelMiscTest.test_info @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ModuleLevelMiscTest.test_log @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ModuleLevelMiscTest.test_recursion_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ModuleLevelMiscTest.test_set_logger_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ModuleLevelMiscTest.test_subclass_logger_cache @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ModuleLevelMiscTest.test_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.NTEventLogHandlerTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.QueueHandlerTest.test_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.QueueHandlerTest.test_queue_handler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.QueueHandlerTest.test_queue_listener @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.QueueHandlerTest.test_queue_listener_with_StreamHandler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.QueueHandlerTest.test_queue_listener_with_multiple_handlers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.QueueListenerTest.test_calls_task_done_after_stop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.QueueListenerTest.test_handle_called_with_mp_queue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.QueueListenerTest.test_handle_called_with_queue_queue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.QueueListenerTest.test_no_messages_in_queue_after_stop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.RotatingFileHandlerTest.test_file_created @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.RotatingFileHandlerTest.test_namer_rotator_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.RotatingFileHandlerTest.test_rollover_filenames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.RotatingFileHandlerTest.test_rotator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.RotatingFileHandlerTest.test_should_not_rollover @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.RotatingFileHandlerTest.test_should_rollover @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.SMTPHandlerTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ShutdownTest.test_no_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ShutdownTest.test_with_ioerror_in_acquire @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ShutdownTest.test_with_ioerror_in_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ShutdownTest.test_with_ioerror_in_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ShutdownTest.test_with_other_error_in_acquire_with_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ShutdownTest.test_with_other_error_in_acquire_without_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ShutdownTest.test_with_other_error_in_close_with_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ShutdownTest.test_with_other_error_in_close_without_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ShutdownTest.test_with_other_error_in_flush_with_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ShutdownTest.test_with_other_error_in_flush_without_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ShutdownTest.test_with_valueerror_in_acquire @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ShutdownTest.test_with_valueerror_in_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ShutdownTest.test_with_valueerror_in_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.SocketHandlerTest.test_noserver @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.SocketHandlerTest.test_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.StreamHandlerTest.test_can_represent_stream_with_int_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.StreamHandlerTest.test_error_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.StreamHandlerTest.test_stream_setting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.SysLogHandlerTest.test_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.SysLogHandlerTest.test_udp_reconnection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.TimedRotatingFileHandlerTest.test_compute_files_to_delete @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_D @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_H @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_M @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_MIDNIGHT @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_S @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_W0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_daily_attime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_weekly_attime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.TimedRotatingFileHandlerTest.test_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.TimedRotatingFileHandlerTest.test_rollover @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.TimedRotatingFileHandlerTest.test_should_not_rollover @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.UnixDatagramHandlerTest.test_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.UnixSocketHandlerTest.test_noserver @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.UnixSocketHandlerTest.test_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.UnixSysLogHandlerTest.test_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.UnixSysLogHandlerTest.test_udp_reconnection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.WarningsTest.test_warnings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.WarningsTest.test_warnings_no_handlers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

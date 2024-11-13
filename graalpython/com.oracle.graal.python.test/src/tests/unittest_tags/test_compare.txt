@@ -1,23 +1,23 @@
-test.test_compare.ComparisonFullTest.test_bytes
-test.test_compare.ComparisonFullTest.test_comp_classes_different
-test.test_compare.ComparisonFullTest.test_comp_classes_same
-test.test_compare.ComparisonFullTest.test_mappings
-test.test_compare.ComparisonFullTest.test_numbers
-test.test_compare.ComparisonFullTest.test_objects
-test.test_compare.ComparisonFullTest.test_sequences
-test.test_compare.ComparisonFullTest.test_sets
-test.test_compare.ComparisonFullTest.test_str_subclass
-test.test_compare.ComparisonSimpleTest.test_comparisons
-test.test_compare.ComparisonSimpleTest.test_id_comparisons
-test.test_compare.ComparisonSimpleTest.test_issue_1393
-test.test_compare.ComparisonSimpleTest.test_ne_defaults_to_not_eq
-test.test_compare.ComparisonSimpleTest.test_ne_high_priority
-test.test_compare.ComparisonSimpleTest.test_ne_low_priority
-test.test_compare.ComparisonSimpleTest.test_other_delegation
-test.test_compare.ComparisonTest.test_comparisons
-test.test_compare.ComparisonTest.test_id_comparisons
-test.test_compare.ComparisonTest.test_issue_1393
-test.test_compare.ComparisonTest.test_ne_defaults_to_not_eq
-test.test_compare.ComparisonTest.test_ne_high_priority
-test.test_compare.ComparisonTest.test_ne_low_priority
-test.test_compare.ComparisonTest.test_other_delegation
+test.test_compare.ComparisonFullTest.test_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonFullTest.test_comp_classes_different @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonFullTest.test_comp_classes_same @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonFullTest.test_mappings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonFullTest.test_numbers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonFullTest.test_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonFullTest.test_sequences @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonFullTest.test_sets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonFullTest.test_str_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_id_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_issue_1393 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_ne_defaults_to_not_eq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_ne_high_priority @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_ne_low_priority @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonSimpleTest.test_other_delegation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonTest.test_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonTest.test_id_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonTest.test_issue_1393 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonTest.test_ne_defaults_to_not_eq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonTest.test_ne_high_priority @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonTest.test_ne_low_priority @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compare.ComparisonTest.test_other_delegation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

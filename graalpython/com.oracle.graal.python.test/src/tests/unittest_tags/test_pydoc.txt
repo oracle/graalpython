@@ -1,69 +1,69 @@
-test.test_pydoc.PydocDocTest.test__future__imports
-test.test_pydoc.PydocDocTest.test_allmethods
-test.test_pydoc.PydocDocTest.test_builtin_no_child
-test.test_pydoc.PydocDocTest.test_builtin_on_metaclasses
-test.test_pydoc.PydocDocTest.test_builtin_with_child
-test.test_pydoc.PydocDocTest.test_builtin_with_grandchild
-test.test_pydoc.PydocDocTest.test_builtin_with_more_than_four_children
-test.test_pydoc.PydocDocTest.test_fail_help_cli
-test.test_pydoc.PydocDocTest.test_fail_help_output_redirect
-test.test_pydoc.PydocDocTest.test_getpager_with_stdin_none
-test.test_pydoc.PydocDocTest.test_input_strip
-test.test_pydoc.PydocDocTest.test_is_package_when_is_package
-test.test_pydoc.PydocDocTest.test_is_package_when_not_package
-test.test_pydoc.PydocDocTest.test_issue8225
-test.test_pydoc.PydocDocTest.test_mixed_case_module_names_are_lower_cased
-test.test_pydoc.PydocDocTest.test_namedtuple_fields
-test.test_pydoc.PydocDocTest.test_namedtuple_public_underscore
-test.test_pydoc.PydocDocTest.test_non_str_name
-test.test_pydoc.PydocDocTest.test_not_ascii
-test.test_pydoc.PydocDocTest.test_not_here
-test.test_pydoc.PydocDocTest.test_splitdoc_with_description
-test.test_pydoc.PydocDocTest.test_stripid
-test.test_pydoc.PydocDocTest.test_synopsis
-test.test_pydoc.PydocDocTest.test_synopsis_sourceless
-test.test_pydoc.PydocDocTest.test_synopsis_sourceless_empty_doc
-test.test_pydoc.PydocDocTest.test_text_enum_member_with_value_zero
-test.test_pydoc.PydocImportTest.test_apropos_empty_doc
-test.test_pydoc.PydocImportTest.test_apropos_with_bad_package
-test.test_pydoc.PydocImportTest.test_apropos_with_unreadable_dir
-test.test_pydoc.PydocImportTest.test_badimport
-test.test_pydoc.PydocImportTest.test_importfile
-test.test_pydoc.PydocImportTest.test_modules
-test.test_pydoc.PydocImportTest.test_modules_search
-test.test_pydoc.PydocImportTest.test_modules_search_builtin
-test.test_pydoc.PydocImportTest.test_url_search_package_error
-test.test_pydoc.PydocServerTest.test_server
-test.test_pydoc.PydocUrlHandlerTest.test_content_type_err
-test.test_pydoc.PydocUrlHandlerTest.test_url_requests
-test.test_pydoc.PydocWithMetaClasses.test_buggy_dir
-test.test_pydoc.PydocWithMetaClasses.test_resolve_false
-test.test_pydoc.PydocWithMetaClasses.test_virtualClassAttributeWithOneMeta
-test.test_pydoc.PydocWithMetaClasses.test_virtualClassAttributeWithTwoMeta
-test.test_pydoc.TestDescriptions.test_async_annotation
-test.test_pydoc.TestDescriptions.test_async_generator_annotation
-test.test_pydoc.TestDescriptions.test_bound_builtin_method
-test.test_pydoc.TestDescriptions.test_bound_python_method
-test.test_pydoc.TestDescriptions.test_builtin
-test.test_pydoc.TestDescriptions.test_class
-test.test_pydoc.TestDescriptions.test_custom_data_descriptor
-test.test_pydoc.TestDescriptions.test_dict_attr_descriptor
-test.test_pydoc.TestDescriptions.test_field_order_for_named_tuples
-test.test_pydoc.TestDescriptions.test_generic_alias
-test.test_pydoc.TestDescriptions.test_getset_descriptor
-test.test_pydoc.TestDescriptions.test_html_for_https_links
-test.test_pydoc.TestDescriptions.test_member_descriptor
-test.test_pydoc.TestDescriptions.test_module
-test.test_pydoc.TestDescriptions.test_namedtuple_field_descriptor
-test.test_pydoc.TestDescriptions.test_property
-test.test_pydoc.TestDescriptions.test_slot_descriptor
-test.test_pydoc.TestDescriptions.test_special_form
-test.test_pydoc.TestDescriptions.test_staticmethod
-test.test_pydoc.TestDescriptions.test_structseq_member_descriptor
-test.test_pydoc.TestDescriptions.test_typing_pydoc
-test.test_pydoc.TestDescriptions.test_unbound_python_method
-test.test_pydoc.TestHelper.test_keywords
-test.test_pydoc.TestInternalUtilities.test_sys_path_adjustment_adds_missing_curdir
-test.test_pydoc.TestInternalUtilities.test_sys_path_adjustment_protects_pydoc_dir
-test.test_pydoc.TestInternalUtilities.test_sys_path_adjustment_removes_argv0_dir
-test.test_pydoc.TestInternalUtilities.test_sys_path_adjustment_when_curdir_already_included
+test.test_pydoc.PydocDocTest.test__future__imports @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_allmethods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_builtin_no_child @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_builtin_on_metaclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_builtin_with_child @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_builtin_with_grandchild @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_builtin_with_more_than_four_children @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_fail_help_cli @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_fail_help_output_redirect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_getpager_with_stdin_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_input_strip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_is_package_when_is_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_is_package_when_not_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_issue8225 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_mixed_case_module_names_are_lower_cased @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_namedtuple_fields @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_namedtuple_public_underscore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_non_str_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_not_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_not_here @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_splitdoc_with_description @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_stripid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_synopsis @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_synopsis_sourceless @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_synopsis_sourceless_empty_doc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocDocTest.test_text_enum_member_with_value_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocImportTest.test_apropos_empty_doc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocImportTest.test_apropos_with_bad_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocImportTest.test_apropos_with_unreadable_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocImportTest.test_badimport @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocImportTest.test_importfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocImportTest.test_modules @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocImportTest.test_modules_search @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocImportTest.test_modules_search_builtin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocImportTest.test_url_search_package_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocServerTest.test_server @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocUrlHandlerTest.test_content_type_err @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocUrlHandlerTest.test_url_requests @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocWithMetaClasses.test_buggy_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocWithMetaClasses.test_resolve_false @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocWithMetaClasses.test_virtualClassAttributeWithOneMeta @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.PydocWithMetaClasses.test_virtualClassAttributeWithTwoMeta @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_async_annotation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_async_generator_annotation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_bound_builtin_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_bound_python_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_builtin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_custom_data_descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_dict_attr_descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_field_order_for_named_tuples @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_generic_alias @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_getset_descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_html_for_https_links @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_member_descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_namedtuple_field_descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_property @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_slot_descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_special_form @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_staticmethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_structseq_member_descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_typing_pydoc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_unbound_python_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestHelper.test_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestInternalUtilities.test_sys_path_adjustment_adds_missing_curdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestInternalUtilities.test_sys_path_adjustment_protects_pydoc_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestInternalUtilities.test_sys_path_adjustment_removes_argv0_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestInternalUtilities.test_sys_path_adjustment_when_curdir_already_included @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

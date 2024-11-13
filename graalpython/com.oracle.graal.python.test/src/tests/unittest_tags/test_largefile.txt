@@ -1,14 +1,14 @@
-test.test_largefile.CLargeFileTest.test_large_read
-test.test_largefile.CLargeFileTest.test_lseek
-test.test_largefile.CLargeFileTest.test_osstat
-test.test_largefile.CLargeFileTest.test_seek_read
-test.test_largefile.CLargeFileTest.test_seekable
-test.test_largefile.CLargeFileTest.test_truncate
-test.test_largefile.PyLargeFileTest.test_large_read
-test.test_largefile.PyLargeFileTest.test_lseek
-test.test_largefile.PyLargeFileTest.test_osstat
-test.test_largefile.PyLargeFileTest.test_seek_read
-test.test_largefile.PyLargeFileTest.test_seekable
-test.test_largefile.PyLargeFileTest.test_truncate
-test.test_largefile.TestCopyfile.test_it
-test.test_largefile.TestSocketSendfile.test_it
+test.test_largefile.CLargeFileTest.test_large_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_largefile.CLargeFileTest.test_lseek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_largefile.CLargeFileTest.test_osstat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_largefile.CLargeFileTest.test_seek_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_largefile.CLargeFileTest.test_seekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_largefile.CLargeFileTest.test_truncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_largefile.PyLargeFileTest.test_large_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_largefile.PyLargeFileTest.test_lseek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_largefile.PyLargeFileTest.test_osstat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_largefile.PyLargeFileTest.test_seek_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_largefile.PyLargeFileTest.test_seekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_largefile.PyLargeFileTest.test_truncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_largefile.TestCopyfile.test_it @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_largefile.TestSocketSendfile.test_it @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

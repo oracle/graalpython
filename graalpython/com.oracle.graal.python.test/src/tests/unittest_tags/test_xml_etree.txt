@@ -1,182 +1,182 @@
-test.test_xml_etree.BadElementPathTest.test_find_with_error
-test.test_xml_etree.BadElementPathTest.test_find_with_mutating
-test.test_xml_etree.BadElementPathTest.test_findall_with_error
-test.test_xml_etree.BadElementPathTest.test_findall_with_mutating
-test.test_xml_etree.BadElementPathTest.test_findtext_with_error
-test.test_xml_etree.BadElementPathTest.test_findtext_with_falsey_text_attribute
-test.test_xml_etree.BadElementPathTest.test_findtext_with_mutating
-test.test_xml_etree.BadElementPathTest.test_findtext_with_none_text_attribute
-test.test_xml_etree.BadElementTest.test_ass_subscr
-test.test_xml_etree.BadElementTest.test_element_get_tail
-test.test_xml_etree.BadElementTest.test_element_get_text
-test.test_xml_etree.BadElementTest.test_extend_mutable_list
-test.test_xml_etree.BadElementTest.test_extend_mutable_list2
-test.test_xml_etree.BadElementTest.test_recursive_repr
-test.test_xml_etree.BadElementTest.test_remove_with_mutating
-test.test_xml_etree.BadElementTest.test_subscr
-test.test_xml_etree.BadElementTest.test_treebuilder_end
-test.test_xml_etree.BadElementTest.test_treebuilder_start
-test.test_xml_etree.BasicElementTest.test___copy__
-test.test_xml_etree.BasicElementTest.test___deepcopy__
-test.test_xml_etree.BasicElementTest.test___init__
-test.test_xml_etree.BasicElementTest.test_augmentation_type_errors
-test.test_xml_etree.BasicElementTest.test_copy
-test.test_xml_etree.BasicElementTest.test_get_keyword_args
-test.test_xml_etree.BasicElementTest.test_pickle
-test.test_xml_etree.BasicElementTest.test_pickle_issue18997
-test.test_xml_etree.BasicElementTest.test_weakref
-test.test_xml_etree.BugsTest.test_39495_treebuilder_start
-test.test_xml_etree.BugsTest.test_bug_1534630
-test.test_xml_etree.BugsTest.test_bug_200708_close
-test.test_xml_etree.BugsTest.test_bug_200708_newline
-test.test_xml_etree.BugsTest.test_bug_200709_default_namespace
-test.test_xml_etree.BugsTest.test_bug_200709_element_comment
-test.test_xml_etree.BugsTest.test_bug_200709_element_insert
-test.test_xml_etree.BugsTest.test_bug_200709_iter_comment
-test.test_xml_etree.BugsTest.test_bug_200709_register_namespace
-test.test_xml_etree.BugsTest.test_bug_xmltoolkit21
-test.test_xml_etree.BugsTest.test_bug_xmltoolkit25
-test.test_xml_etree.BugsTest.test_bug_xmltoolkit28
-test.test_xml_etree.BugsTest.test_bug_xmltoolkit39
-test.test_xml_etree.BugsTest.test_bug_xmltoolkit54
-test.test_xml_etree.BugsTest.test_bug_xmltoolkit55
-test.test_xml_etree.BugsTest.test_bug_xmltoolkit60
-test.test_xml_etree.BugsTest.test_bug_xmltoolkit62
-test.test_xml_etree.BugsTest.test_bug_xmltoolkit63
-test.test_xml_etree.BugsTest.test_bug_xmltoolkitX1
-test.test_xml_etree.BugsTest.test_expat224_utf8_bug
-test.test_xml_etree.BugsTest.test_expat224_utf8_bug_file
-test.test_xml_etree.BugsTest.test_issue10777
-test.test_xml_etree.BugsTest.test_issue6233
-test.test_xml_etree.BugsTest.test_issue6565
-test.test_xml_etree.BugsTest.test_lost_elem
-test.test_xml_etree.BugsTest.test_lost_tail
-test.test_xml_etree.BugsTest.test_lost_text
-test.test_xml_etree.C14NTest.test_c14n_exclusion
-test.test_xml_etree.C14NTest.test_simple_roundtrip
-test.test_xml_etree.C14NTest.test_xml_c14n2
-test.test_xml_etree.ElementFindTest.test_bad_find
-test.test_xml_etree.ElementFindTest.test_find_simple
-test.test_xml_etree.ElementFindTest.test_find_through_ElementTree
-test.test_xml_etree.ElementFindTest.test_find_xpath
-test.test_xml_etree.ElementFindTest.test_findall
-test.test_xml_etree.ElementFindTest.test_findall_different_nsmaps
-test.test_xml_etree.ElementFindTest.test_findall_wildcard
-test.test_xml_etree.ElementFindTest.test_test_find_with_ns
-test.test_xml_etree.ElementIterTest.test_basic
-test.test_xml_etree.ElementIterTest.test_copy
-test.test_xml_etree.ElementIterTest.test_corners
-test.test_xml_etree.ElementIterTest.test_iter_by_tag
-test.test_xml_etree.ElementIterTest.test_pickle
-test.test_xml_etree.ElementSlicingTest.test_delslice
-test.test_xml_etree.ElementSlicingTest.test_getslice_negative_steps
-test.test_xml_etree.ElementSlicingTest.test_getslice_range
-test.test_xml_etree.ElementSlicingTest.test_getslice_single_index
-test.test_xml_etree.ElementSlicingTest.test_getslice_steps
-test.test_xml_etree.ElementSlicingTest.test_setslice_range
-test.test_xml_etree.ElementSlicingTest.test_setslice_single_index
-test.test_xml_etree.ElementTreeTest.test_attlist_default
-test.test_xml_etree.ElementTreeTest.test_attrib
-test.test_xml_etree.ElementTreeTest.test_cdata
-test.test_xml_etree.ElementTreeTest.test_children
-test.test_xml_etree.ElementTreeTest.test_copy
-test.test_xml_etree.ElementTreeTest.test_custom_builder
-test.test_xml_etree.ElementTreeTest.test_custom_builder_only_end_ns
-test.test_xml_etree.ElementTreeTest.test_doctype_public
-test.test_xml_etree.ElementTreeTest.test_dump_attribute_order
-test.test_xml_etree.ElementTreeTest.test_entity
-test.test_xml_etree.ElementTreeTest.test_file_init
-test.test_xml_etree.ElementTreeTest.test_html_empty_elems_serialization
-test.test_xml_etree.ElementTreeTest.test_indent
-test.test_xml_etree.ElementTreeTest.test_indent_level
-test.test_xml_etree.ElementTreeTest.test_indent_space
-test.test_xml_etree.ElementTreeTest.test_indent_space_caching
-test.test_xml_etree.ElementTreeTest.test_initialize_parser_without_target
-test.test_xml_etree.ElementTreeTest.test_interface
-test.test_xml_etree.ElementTreeTest.test_issue18347
-test.test_xml_etree.ElementTreeTest.test_iterparse
-test.test_xml_etree.ElementTreeTest.test_makeelement
-test.test_xml_etree.ElementTreeTest.test_methods
-test.test_xml_etree.ElementTreeTest.test_namespace
-test.test_xml_etree.ElementTreeTest.test_parsefile
-test.test_xml_etree.ElementTreeTest.test_parseliteral
-test.test_xml_etree.ElementTreeTest.test_path_cache
-test.test_xml_etree.ElementTreeTest.test_processinginstruction
-test.test_xml_etree.ElementTreeTest.test_qname
-test.test_xml_etree.ElementTreeTest.test_set_attribute
-test.test_xml_etree.ElementTreeTest.test_tostring_default_namespace
-test.test_xml_etree.ElementTreeTest.test_tostring_default_namespace_different_namespace
-test.test_xml_etree.ElementTreeTest.test_tostring_default_namespace_original_no_namespace
-test.test_xml_etree.ElementTreeTest.test_tostring_no_xml_declaration
-test.test_xml_etree.ElementTreeTest.test_tostring_xml_declaration
-test.test_xml_etree.ElementTreeTest.test_tostring_xml_declaration_cases
-test.test_xml_etree.ElementTreeTest.test_tostring_xml_declaration_unicode_encoding
-test.test_xml_etree.ElementTreeTest.test_tostringlist_default_namespace
-test.test_xml_etree.ElementTreeTest.test_tostringlist_xml_declaration
-test.test_xml_etree.ElementTreeTest.test_tree_write_attribute_order
-test.test_xml_etree.ElementTreeTest.test_writefile
-test.test_xml_etree.ElementTreeTest.test_writestring
-test.test_xml_etree.ElementTreeTest.test_xpath_tokenizer
-test.test_xml_etree.ElementTreeTypeTest.test_Element_subclass_constructor
-test.test_xml_etree.ElementTreeTypeTest.test_Element_subclass_find
-test.test_xml_etree.ElementTreeTypeTest.test_Element_subclass_new_method
-test.test_xml_etree.ElementTreeTypeTest.test_Element_subclass_trivial
-test.test_xml_etree.ElementTreeTypeTest.test_istype
-test.test_xml_etree.IOTest.test_read_from_bytesio
-test.test_xml_etree.IOTest.test_read_from_stringio
-test.test_xml_etree.IOTest.test_read_from_user_binary_reader
-test.test_xml_etree.IOTest.test_read_from_user_text_reader
-test.test_xml_etree.IOTest.test_short_empty_elements
-test.test_xml_etree.IOTest.test_tostringlist_invariant
-test.test_xml_etree.IOTest.test_write_to_binary_file
-test.test_xml_etree.IOTest.test_write_to_binary_file_with_encoding
-test.test_xml_etree.IOTest.test_write_to_bytesio
-test.test_xml_etree.IOTest.test_write_to_filename
-test.test_xml_etree.IOTest.test_write_to_filename_as_unicode
-test.test_xml_etree.IOTest.test_write_to_filename_with_encoding
-test.test_xml_etree.IOTest.test_write_to_stringio
-test.test_xml_etree.IOTest.test_write_to_text_file
-test.test_xml_etree.IOTest.test_write_to_user_binary_writer
-test.test_xml_etree.IOTest.test_write_to_user_text_writer
-test.test_xml_etree.KeywordArgsTest.test_issue14818
-test.test_xml_etree.ModuleTest.test_all
-test.test_xml_etree.ModuleTest.test_sanity
-test.test_xml_etree.NamespaceParseTest.test_find_with_namespace
-test.test_xml_etree.NoAcceleratorTest.test_correct_import_pyET
-test.test_xml_etree.ParseErrorTest.test_error_code
-test.test_xml_etree.ParseErrorTest.test_error_position
-test.test_xml_etree.ParseErrorTest.test_subclass
-test.test_xml_etree.TreeBuilderTest.test_builder_lookup_errors
-test.test_xml_etree.TreeBuilderTest.test_doctype
-test.test_xml_etree.TreeBuilderTest.test_dummy_builder
-test.test_xml_etree.TreeBuilderTest.test_element_factory
-test.test_xml_etree.TreeBuilderTest.test_element_factory_pure_python_subclass
-test.test_xml_etree.TreeBuilderTest.test_element_factory_subclass
-test.test_xml_etree.TreeBuilderTest.test_late_tail
-test.test_xml_etree.TreeBuilderTest.test_late_tail_mix_pi_comments
-test.test_xml_etree.TreeBuilderTest.test_subclass
-test.test_xml_etree.TreeBuilderTest.test_subclass_comment_pi
-test.test_xml_etree.TreeBuilderTest.test_treebuilder_comment
-test.test_xml_etree.TreeBuilderTest.test_treebuilder_elementfactory_none
-test.test_xml_etree.TreeBuilderTest.test_treebuilder_pi
-test.test_xml_etree.XIncludeTest.test_xinclude
-test.test_xml_etree.XIncludeTest.test_xinclude_default
-test.test_xml_etree.XIncludeTest.test_xinclude_failures
-test.test_xml_etree.XIncludeTest.test_xinclude_repeated
-test.test_xml_etree.XMLParserTest.test_constructor_args
-test.test_xml_etree.XMLParserTest.test_doctype_warning
-test.test_xml_etree.XMLParserTest.test_inherited_doctype
-test.test_xml_etree.XMLParserTest.test_parse_string
-test.test_xml_etree.XMLParserTest.test_subclass
-test.test_xml_etree.XMLParserTest.test_subclass_doctype
-test.test_xml_etree.XMLPullParserTest.test_events
-test.test_xml_etree.XMLPullParserTest.test_events_comment
-test.test_xml_etree.XMLPullParserTest.test_events_pi
-test.test_xml_etree.XMLPullParserTest.test_events_sequence
-test.test_xml_etree.XMLPullParserTest.test_feed_while_iterating
-test.test_xml_etree.XMLPullParserTest.test_ns_events
-test.test_xml_etree.XMLPullParserTest.test_ns_events_start
-test.test_xml_etree.XMLPullParserTest.test_ns_events_start_end
-test.test_xml_etree.XMLPullParserTest.test_simple_xml
-test.test_xml_etree.XMLPullParserTest.test_simple_xml_with_ns
-test.test_xml_etree.XMLPullParserTest.test_unknown_event
+test.test_xml_etree.BadElementPathTest.test_find_with_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementPathTest.test_find_with_mutating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementPathTest.test_findall_with_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementPathTest.test_findall_with_mutating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementPathTest.test_findtext_with_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementPathTest.test_findtext_with_falsey_text_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementPathTest.test_findtext_with_mutating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementPathTest.test_findtext_with_none_text_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementTest.test_ass_subscr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementTest.test_element_get_tail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementTest.test_element_get_text @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementTest.test_extend_mutable_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementTest.test_extend_mutable_list2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementTest.test_recursive_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementTest.test_remove_with_mutating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementTest.test_subscr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementTest.test_treebuilder_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BadElementTest.test_treebuilder_start @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BasicElementTest.test___copy__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BasicElementTest.test___deepcopy__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BasicElementTest.test___init__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BasicElementTest.test_augmentation_type_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BasicElementTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BasicElementTest.test_get_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BasicElementTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BasicElementTest.test_pickle_issue18997 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BasicElementTest.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_39495_treebuilder_start @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_1534630 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_200708_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_200708_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_200709_default_namespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_200709_element_comment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_200709_element_insert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_200709_iter_comment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_200709_register_namespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_xmltoolkit21 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_xmltoolkit25 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_xmltoolkit28 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_xmltoolkit39 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_xmltoolkit54 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_xmltoolkit55 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_xmltoolkit60 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_xmltoolkit62 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_xmltoolkit63 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_bug_xmltoolkitX1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_expat224_utf8_bug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_expat224_utf8_bug_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_issue10777 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_issue6233 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_issue6565 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_lost_elem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_lost_tail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BugsTest.test_lost_text @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.C14NTest.test_c14n_exclusion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.C14NTest.test_simple_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.C14NTest.test_xml_c14n2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementFindTest.test_bad_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementFindTest.test_find_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementFindTest.test_find_through_ElementTree @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementFindTest.test_find_xpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementFindTest.test_findall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementFindTest.test_findall_different_nsmaps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementFindTest.test_findall_wildcard @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementFindTest.test_test_find_with_ns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementIterTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementIterTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementIterTest.test_corners @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementIterTest.test_iter_by_tag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementIterTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementSlicingTest.test_delslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementSlicingTest.test_getslice_negative_steps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementSlicingTest.test_getslice_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementSlicingTest.test_getslice_single_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementSlicingTest.test_getslice_steps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementSlicingTest.test_setslice_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementSlicingTest.test_setslice_single_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_attlist_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_attrib @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_cdata @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_children @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_custom_builder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_custom_builder_only_end_ns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_doctype_public @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_dump_attribute_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_entity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_file_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_html_empty_elems_serialization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_indent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_indent_level @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_indent_space @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_indent_space_caching @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_initialize_parser_without_target @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_interface @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_issue18347 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_iterparse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_makeelement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_namespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_parsefile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_parseliteral @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_path_cache @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_processinginstruction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_qname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_set_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_tostring_default_namespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_tostring_default_namespace_different_namespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_tostring_default_namespace_original_no_namespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_tostring_no_xml_declaration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_tostring_xml_declaration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_tostring_xml_declaration_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_tostring_xml_declaration_unicode_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_tostringlist_default_namespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_tostringlist_xml_declaration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_tree_write_attribute_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_writefile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_writestring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTest.test_xpath_tokenizer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTypeTest.test_Element_subclass_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTypeTest.test_Element_subclass_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTypeTest.test_Element_subclass_new_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTypeTest.test_Element_subclass_trivial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ElementTreeTypeTest.test_istype @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_read_from_bytesio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_read_from_stringio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_read_from_user_binary_reader @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_read_from_user_text_reader @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_short_empty_elements @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_tostringlist_invariant @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_write_to_binary_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_write_to_binary_file_with_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_write_to_bytesio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_write_to_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_write_to_filename_as_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_write_to_filename_with_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_write_to_stringio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_write_to_text_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_write_to_user_binary_writer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.IOTest.test_write_to_user_text_writer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.KeywordArgsTest.test_issue14818 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ModuleTest.test_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ModuleTest.test_sanity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.NamespaceParseTest.test_find_with_namespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.NoAcceleratorTest.test_correct_import_pyET @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ParseErrorTest.test_error_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ParseErrorTest.test_error_position @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.ParseErrorTest.test_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.TreeBuilderTest.test_builder_lookup_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.TreeBuilderTest.test_doctype @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.TreeBuilderTest.test_dummy_builder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.TreeBuilderTest.test_element_factory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.TreeBuilderTest.test_element_factory_pure_python_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.TreeBuilderTest.test_element_factory_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.TreeBuilderTest.test_late_tail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.TreeBuilderTest.test_late_tail_mix_pi_comments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.TreeBuilderTest.test_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.TreeBuilderTest.test_subclass_comment_pi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.TreeBuilderTest.test_treebuilder_comment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.TreeBuilderTest.test_treebuilder_elementfactory_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.TreeBuilderTest.test_treebuilder_pi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XIncludeTest.test_xinclude @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XIncludeTest.test_xinclude_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XIncludeTest.test_xinclude_failures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XIncludeTest.test_xinclude_repeated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLParserTest.test_constructor_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLParserTest.test_doctype_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLParserTest.test_inherited_doctype @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLParserTest.test_parse_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLParserTest.test_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLParserTest.test_subclass_doctype @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLPullParserTest.test_events @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLPullParserTest.test_events_comment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLPullParserTest.test_events_pi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLPullParserTest.test_events_sequence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLPullParserTest.test_feed_while_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLPullParserTest.test_ns_events @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLPullParserTest.test_ns_events_start @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLPullParserTest.test_ns_events_start_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLPullParserTest.test_simple_xml @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLPullParserTest.test_simple_xml_with_ns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.XMLPullParserTest.test_unknown_event @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

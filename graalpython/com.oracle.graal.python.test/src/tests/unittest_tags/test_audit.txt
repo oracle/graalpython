@@ -1,2 +1,2 @@
-test.test_audit.AuditTest.test_syslog
-test.test_audit.AuditTest.test_winreg
+test.test_audit.AuditTest.test_syslog @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_audit.AuditTest.test_winreg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,39 +1,39 @@
-test.test_pyexpat.BufferTextTest.test1
-test.test_pyexpat.BufferTextTest.test2
-test.test_pyexpat.BufferTextTest.test3
-test.test_pyexpat.BufferTextTest.test4
-test.test_pyexpat.BufferTextTest.test5
-test.test_pyexpat.BufferTextTest.test6
-test.test_pyexpat.BufferTextTest.test7
-test.test_pyexpat.BufferTextTest.test_buffering_enabled
-test.test_pyexpat.BufferTextTest.test_default_to_disabled
-test.test_pyexpat.ChardataBufferTest.test_1000_bytes
-test.test_pyexpat.ChardataBufferTest.test_1025_bytes
-test.test_pyexpat.ChardataBufferTest.test_change_size_1
-test.test_pyexpat.ChardataBufferTest.test_change_size_2
-test.test_pyexpat.ChardataBufferTest.test_disabling_buffer
-test.test_pyexpat.ChardataBufferTest.test_unchanged_size
-test.test_pyexpat.ChardataBufferTest.test_wrong_size
-test.test_pyexpat.ErrorMessageTest.test_codes
-test.test_pyexpat.ErrorMessageTest.test_expaterror
-test.test_pyexpat.ForeignDTDTests.test_ignore_use_foreign_dtd
-test.test_pyexpat.ForeignDTDTests.test_use_foreign_dtd
-test.test_pyexpat.HandlerExceptionTest.test_exception
-test.test_pyexpat.InterningTest.test
-test.test_pyexpat.InterningTest.test_issue9402
-test.test_pyexpat.MalformedInputTest.test1
-test.test_pyexpat.MalformedInputTest.test2
-test.test_pyexpat.NamespaceSeparatorTest.test_illegal
-test.test_pyexpat.NamespaceSeparatorTest.test_legal
-test.test_pyexpat.NamespaceSeparatorTest.test_zero_length
-test.test_pyexpat.ParseTest.test_parse_again
-test.test_pyexpat.ParseTest.test_parse_bytes
-test.test_pyexpat.ParseTest.test_parse_file
-test.test_pyexpat.ParseTest.test_parse_str
-test.test_pyexpat.PositionTest.test
-test.test_pyexpat.SetAttributeTest.test_buffer_text
-test.test_pyexpat.SetAttributeTest.test_invalid_attributes
-test.test_pyexpat.SetAttributeTest.test_namespace_prefixes
-test.test_pyexpat.SetAttributeTest.test_ordered_attributes
-test.test_pyexpat.SetAttributeTest.test_specified_attributes
-test.test_pyexpat.sf1296433Test.test_parse_only_xml_data
+test.test_pyexpat.BufferTextTest.test1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.BufferTextTest.test2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.BufferTextTest.test3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.BufferTextTest.test4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.BufferTextTest.test5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.BufferTextTest.test6 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.BufferTextTest.test7 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.BufferTextTest.test_buffering_enabled @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.BufferTextTest.test_default_to_disabled @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ChardataBufferTest.test_1000_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ChardataBufferTest.test_1025_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ChardataBufferTest.test_change_size_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ChardataBufferTest.test_change_size_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ChardataBufferTest.test_disabling_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ChardataBufferTest.test_unchanged_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ChardataBufferTest.test_wrong_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ErrorMessageTest.test_codes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ErrorMessageTest.test_expaterror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ForeignDTDTests.test_ignore_use_foreign_dtd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ForeignDTDTests.test_use_foreign_dtd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.HandlerExceptionTest.test_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.InterningTest.test @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.InterningTest.test_issue9402 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.MalformedInputTest.test1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.MalformedInputTest.test2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.NamespaceSeparatorTest.test_illegal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.NamespaceSeparatorTest.test_legal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.NamespaceSeparatorTest.test_zero_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ParseTest.test_parse_again @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ParseTest.test_parse_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ParseTest.test_parse_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.ParseTest.test_parse_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.PositionTest.test @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.SetAttributeTest.test_buffer_text @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.SetAttributeTest.test_invalid_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.SetAttributeTest.test_namespace_prefixes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.SetAttributeTest.test_ordered_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.SetAttributeTest.test_specified_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyexpat.sf1296433Test.test_parse_only_xml_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

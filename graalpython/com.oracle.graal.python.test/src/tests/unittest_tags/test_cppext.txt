@@ -1,2 +1,2 @@
-test.test_cppext.__init__.TestCPPExt.test_build_cpp03
-test.test_cppext.__init__.TestCPPExt.test_build_cpp11
+test.test_cppext.__init__.TestCPPExt.test_build_cpp03 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cppext.__init__.TestCPPExt.test_build_cpp11 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

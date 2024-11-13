@@ -1,6 +1,6 @@
-test.test_resource.ResourceTest.test_freebsd_contants
-test.test_resource.ResourceTest.test_getrusage
-test.test_resource.ResourceTest.test_linux_constants
-test.test_resource.ResourceTest.test_pagesize
-test.test_resource.ResourceTest.test_prlimit
-test.test_resource.ResourceTest.test_prlimit_refcount
+test.test_resource.ResourceTest.test_freebsd_contants @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_resource.ResourceTest.test_getrusage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_resource.ResourceTest.test_linux_constants @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_resource.ResourceTest.test_pagesize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_resource.ResourceTest.test_prlimit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_resource.ResourceTest.test_prlimit_refcount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,22 +1,22 @@
-test.test_property.PropertySubclassTests.test_docstring_copy
-test.test_property.PropertySubclassTests.test_property_new_getter_new_docstring
-test.test_property.PropertySubclassTests.test_property_setter_copies_getter_docstring
-test.test_property.PropertySubclassTests.test_slots_docstring_copy_exception
-test.test_property.PropertyTests.test_property___isabstractmethod__descriptor
-test.test_property.PropertyTests.test_property_builtin_doc_writable
-test.test_property.PropertyTests.test_property_decorator_baseclass
-test.test_property.PropertyTests.test_property_decorator_baseclass_doc
-test.test_property.PropertyTests.test_property_decorator_doc
-test.test_property.PropertyTests.test_property_decorator_doc_writable
-test.test_property.PropertyTests.test_property_decorator_subclass
-test.test_property.PropertyTests.test_property_decorator_subclass_doc
-test.test_property.PropertyTests.test_property_getter_doc_override
-test.test_property.PropertyTests.test_property_set_name_incorrect_args
-test.test_property.PropertyTests.test_property_setname_on_property_subclass
-test.test_property.PropertyTests.test_refleaks_in___init__
-test.test_property.PropertyUnreachableAttributeNoName.test_del_property
-test.test_property.PropertyUnreachableAttributeNoName.test_get_property
-test.test_property.PropertyUnreachableAttributeNoName.test_set_property
-test.test_property.PropertyUnreachableAttributeWithName.test_del_property
-test.test_property.PropertyUnreachableAttributeWithName.test_get_property
-test.test_property.PropertyUnreachableAttributeWithName.test_set_property
+test.test_property.PropertySubclassTests.test_docstring_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertySubclassTests.test_property_new_getter_new_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertySubclassTests.test_property_setter_copies_getter_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertySubclassTests.test_slots_docstring_copy_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyTests.test_property___isabstractmethod__descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyTests.test_property_builtin_doc_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyTests.test_property_decorator_baseclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyTests.test_property_decorator_baseclass_doc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyTests.test_property_decorator_doc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyTests.test_property_decorator_doc_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyTests.test_property_decorator_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyTests.test_property_decorator_subclass_doc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyTests.test_property_getter_doc_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyTests.test_property_set_name_incorrect_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyTests.test_property_setname_on_property_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyTests.test_refleaks_in___init__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyUnreachableAttributeNoName.test_del_property @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyUnreachableAttributeNoName.test_get_property @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyUnreachableAttributeNoName.test_set_property @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyUnreachableAttributeWithName.test_del_property @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyUnreachableAttributeWithName.test_get_property @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_property.PropertyUnreachableAttributeWithName.test_set_property @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

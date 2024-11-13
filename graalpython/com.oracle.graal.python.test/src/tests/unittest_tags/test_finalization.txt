@@ -1,5 +1,5 @@
-test.test_finalization.LegacyFinalizationTest.test_legacy
-test.test_finalization.LegacyFinalizationTest.test_legacy_resurrect
-test.test_finalization.LegacyFinalizationTest.test_legacy_self_cycle
-test.test_finalization.SimpleFinalizationTest.test_non_gc
-test.test_finalization.SimpleFinalizationTest.test_non_gc_resurrect
+test.test_finalization.LegacyFinalizationTest.test_legacy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_finalization.LegacyFinalizationTest.test_legacy_resurrect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_finalization.LegacyFinalizationTest.test_legacy_self_cycle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_finalization.SimpleFinalizationTest.test_non_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_finalization.SimpleFinalizationTest.test_non_gc_resurrect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

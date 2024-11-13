@@ -1,57 +1,57 @@
-test.test_userstring.UserStringTest.test___contains__
-test.test_userstring.UserStringTest.test_additional_rsplit
-test.test_userstring.UserStringTest.test_additional_split
-test.test_userstring.UserStringTest.test_capitalize
-test.test_userstring.UserStringTest.test_center
-test.test_userstring.UserStringTest.test_count
-test.test_userstring.UserStringTest.test_encode_default_args
-test.test_userstring.UserStringTest.test_encode_explicit_none_args
-test.test_userstring.UserStringTest.test_endswith
-test.test_userstring.UserStringTest.test_expandtabs
-test.test_userstring.UserStringTest.test_extended_getslice
-test.test_userstring.UserStringTest.test_find
-test.test_userstring.UserStringTest.test_find_etc_raise_correct_error_messages
-test.test_userstring.UserStringTest.test_find_periodic_pattern
-test.test_userstring.UserStringTest.test_find_shift_table_overflow
-test.test_userstring.UserStringTest.test_fixtype
-test.test_userstring.UserStringTest.test_floatformatting
-test.test_userstring.UserStringTest.test_formatting
-test.test_userstring.UserStringTest.test_formatting_c_limits
-test.test_userstring.UserStringTest.test_hash
-test.test_userstring.UserStringTest.test_index
-test.test_userstring.UserStringTest.test_inplace_rewrites
-test.test_userstring.UserStringTest.test_isalnum
-test.test_userstring.UserStringTest.test_isalpha
-test.test_userstring.UserStringTest.test_isascii
-test.test_userstring.UserStringTest.test_isdigit
-test.test_userstring.UserStringTest.test_islower
-test.test_userstring.UserStringTest.test_isspace
-test.test_userstring.UserStringTest.test_istitle
-test.test_userstring.UserStringTest.test_isupper
-test.test_userstring.UserStringTest.test_join
-test.test_userstring.UserStringTest.test_ljust
-test.test_userstring.UserStringTest.test_lower
-test.test_userstring.UserStringTest.test_mul
-test.test_userstring.UserStringTest.test_none_arguments
-test.test_userstring.UserStringTest.test_partition
-test.test_userstring.UserStringTest.test_removeprefix
-test.test_userstring.UserStringTest.test_removesuffix
-test.test_userstring.UserStringTest.test_replace
-test.test_userstring.UserStringTest.test_replace_overflow
-test.test_userstring.UserStringTest.test_rfind
-test.test_userstring.UserStringTest.test_rindex
-test.test_userstring.UserStringTest.test_rjust
-test.test_userstring.UserStringTest.test_rmod
-test.test_userstring.UserStringTest.test_rpartition
-test.test_userstring.UserStringTest.test_rsplit
-test.test_userstring.UserStringTest.test_slice
-test.test_userstring.UserStringTest.test_split
-test.test_userstring.UserStringTest.test_splitlines
-test.test_userstring.UserStringTest.test_startswith
-test.test_userstring.UserStringTest.test_strip
-test.test_userstring.UserStringTest.test_strip_whitespace
-test.test_userstring.UserStringTest.test_subscript
-test.test_userstring.UserStringTest.test_swapcase
-test.test_userstring.UserStringTest.test_title
-test.test_userstring.UserStringTest.test_upper
-test.test_userstring.UserStringTest.test_zfill
+test.test_userstring.UserStringTest.test___contains__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_additional_rsplit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_additional_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_capitalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_center @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_encode_default_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_encode_explicit_none_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_endswith @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_expandtabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_extended_getslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_find_etc_raise_correct_error_messages @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_find_periodic_pattern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_find_shift_table_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_fixtype @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_floatformatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_formatting_c_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_inplace_rewrites @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_isalnum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_isalpha @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_isascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_isdigit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_islower @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_isspace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_istitle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_isupper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_ljust @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_lower @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_mul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_none_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_partition @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_removeprefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_removesuffix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_replace_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_rfind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_rindex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_rjust @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_rmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_rpartition @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_rsplit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_splitlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_startswith @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_strip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_strip_whitespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_swapcase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_title @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_upper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_userstring.UserStringTest.test_zfill @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

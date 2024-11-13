@@ -1,34 +1,34 @@
-test.test_fractions.FractionTest.testApproximateCos1
-test.test_fractions.FractionTest.testApproximatePi
-test.test_fractions.FractionTest.testArithmetic
-test.test_fractions.FractionTest.testBigComplexComparisons
-test.test_fractions.FractionTest.testBigFloatComparisons
-test.test_fractions.FractionTest.testBoolGuarateesBoolReturn
-test.test_fractions.FractionTest.testComparisons
-test.test_fractions.FractionTest.testComparisonsDummyFloat
-test.test_fractions.FractionTest.testComparisonsDummyRational
-test.test_fractions.FractionTest.testConversions
-test.test_fractions.FractionTest.testFromDecimal
-test.test_fractions.FractionTest.testFromFloat
-test.test_fractions.FractionTest.testFromString
-test.test_fractions.FractionTest.testHash
-test.test_fractions.FractionTest.testImmutable
-test.test_fractions.FractionTest.testInit
-test.test_fractions.FractionTest.testInitFromDecimal
-test.test_fractions.FractionTest.testInitFromFloat
-test.test_fractions.FractionTest.testIntGuaranteesIntReturn
-test.test_fractions.FractionTest.testLargeArithmetic
-test.test_fractions.FractionTest.testLimitDenominator
-test.test_fractions.FractionTest.testMixedArithmetic
-test.test_fractions.FractionTest.testMixedEqual
-test.test_fractions.FractionTest.testMixedLess
-test.test_fractions.FractionTest.testMixedLessEqual
-test.test_fractions.FractionTest.testMixingWithDecimal
-test.test_fractions.FractionTest.testRound
-test.test_fractions.FractionTest.testStringification
-test.test_fractions.FractionTest.testSupportsInt
-test.test_fractions.FractionTest.test_as_integer_ratio
-test.test_fractions.FractionTest.test_copy_deepcopy_pickle
-test.test_fractions.FractionTest.test_int_subclass
-test.test_fractions.FractionTest.test_slots
-test.test_fractions.GcdTest.testMisc
+test.test_fractions.FractionTest.testApproximateCos1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testApproximatePi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testArithmetic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testBigComplexComparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testBigFloatComparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testBoolGuarateesBoolReturn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testComparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testComparisonsDummyFloat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testComparisonsDummyRational @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testConversions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testFromDecimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testFromFloat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testFromString @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testHash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testImmutable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testInit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testInitFromDecimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testInitFromFloat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testIntGuaranteesIntReturn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testLargeArithmetic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testLimitDenominator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testMixedArithmetic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testMixedEqual @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testMixedLess @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testMixedLessEqual @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testMixingWithDecimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testRound @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testStringification @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.testSupportsInt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.test_as_integer_ratio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.test_copy_deepcopy_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.test_int_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.FractionTest.test_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fractions.GcdTest.testMisc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,8 +1,8 @@
-test.test_crypt.CryptTestCase.test_blowfish_rounds
-test.test_crypt.CryptTestCase.test_crypt
-test.test_crypt.CryptTestCase.test_invalid_rounds
-test.test_crypt.CryptTestCase.test_methods
-test.test_crypt.CryptTestCase.test_salt
-test.test_crypt.CryptTestCase.test_saltedcrypt
-test.test_crypt.CryptTestCase.test_sha2_rounds
-test.test_crypt.TestWhyCryptDidNotImport.test_import_failure_message
+test.test_crypt.CryptTestCase.test_blowfish_rounds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_crypt.CryptTestCase.test_crypt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_crypt.CryptTestCase.test_invalid_rounds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_crypt.CryptTestCase.test_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_crypt.CryptTestCase.test_salt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_crypt.CryptTestCase.test_saltedcrypt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_crypt.CryptTestCase.test_sha2_rounds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_crypt.TestWhyCryptDidNotImport.test_import_failure_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

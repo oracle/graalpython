@@ -1,17 +1,17 @@
-test.test_subclassinit.Test.test_errors
-test.test_subclassinit.Test.test_errors_changed_pep487
-test.test_subclassinit.Test.test_init_subclass
-test.test_subclassinit.Test.test_init_subclass_diamond
-test.test_subclassinit.Test.test_init_subclass_dict
-test.test_subclassinit.Test.test_init_subclass_error
-test.test_subclassinit.Test.test_init_subclass_kwargs
-test.test_subclassinit.Test.test_init_subclass_skipped
-test.test_subclassinit.Test.test_init_subclass_wrong
-test.test_subclassinit.Test.test_set_name
-test.test_subclassinit.Test.test_set_name_error
-test.test_subclassinit.Test.test_set_name_init_subclass
-test.test_subclassinit.Test.test_set_name_lookup
-test.test_subclassinit.Test.test_set_name_metaclass
-test.test_subclassinit.Test.test_set_name_modifying_dict
-test.test_subclassinit.Test.test_set_name_wrong
-test.test_subclassinit.Test.test_type
+test.test_subclassinit.Test.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_errors_changed_pep487 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_init_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_init_subclass_diamond @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_init_subclass_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_init_subclass_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_init_subclass_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_init_subclass_skipped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_init_subclass_wrong @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_set_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_set_name_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_set_name_init_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_set_name_lookup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_set_name_metaclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_set_name_modifying_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_set_name_wrong @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subclassinit.Test.test_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

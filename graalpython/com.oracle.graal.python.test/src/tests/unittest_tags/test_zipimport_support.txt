@@ -1,4 +1,4 @@
-test.test_zipimport_support.ZipSupportTests.test_doctest_issue4197
-test.test_zipimport_support.ZipSupportTests.test_doctest_main_issue4197
-test.test_zipimport_support.ZipSupportTests.test_inspect_getsource_issue4223
-test.test_zipimport_support.ZipSupportTests.test_pdb_issue4201
+test.test_zipimport_support.ZipSupportTests.test_doctest_issue4197 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipimport_support.ZipSupportTests.test_doctest_main_issue4197 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipimport_support.ZipSupportTests.test_inspect_getsource_issue4223 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipimport_support.ZipSupportTests.test_pdb_issue4201 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

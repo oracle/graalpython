@@ -1,567 +1,567 @@
-DocTestCase.decimal
-DocTestCase.decimal.Context.abs
-DocTestCase.decimal.Context.add
-DocTestCase.decimal.Context.canonical
-DocTestCase.decimal.Context.compare
-DocTestCase.decimal.Context.compare_signal
-DocTestCase.decimal.Context.compare_total
-DocTestCase.decimal.Context.copy_abs
-DocTestCase.decimal.Context.copy_decimal
-DocTestCase.decimal.Context.copy_negate
-DocTestCase.decimal.Context.copy_sign
-DocTestCase.decimal.Context.create_decimal_from_float
-DocTestCase.decimal.Context.divide
-DocTestCase.decimal.Context.divide_int
-DocTestCase.decimal.Context.divmod
-DocTestCase.decimal.Context.exp
-DocTestCase.decimal.Context.fma
-DocTestCase.decimal.Context.is_canonical
-DocTestCase.decimal.Context.is_finite
-DocTestCase.decimal.Context.is_infinite
-DocTestCase.decimal.Context.is_nan
-DocTestCase.decimal.Context.is_normal
-DocTestCase.decimal.Context.is_qnan
-DocTestCase.decimal.Context.is_signed
-DocTestCase.decimal.Context.is_snan
-DocTestCase.decimal.Context.is_subnormal
-DocTestCase.decimal.Context.is_zero
-DocTestCase.decimal.Context.ln
-DocTestCase.decimal.Context.log10
-DocTestCase.decimal.Context.logb
-DocTestCase.decimal.Context.logical_and
-DocTestCase.decimal.Context.logical_invert
-DocTestCase.decimal.Context.logical_or
-DocTestCase.decimal.Context.logical_xor
-DocTestCase.decimal.Context.max
-DocTestCase.decimal.Context.max_mag
-DocTestCase.decimal.Context.min
-DocTestCase.decimal.Context.min_mag
-DocTestCase.decimal.Context.minus
-DocTestCase.decimal.Context.multiply
-DocTestCase.decimal.Context.next_minus
-DocTestCase.decimal.Context.next_plus
-DocTestCase.decimal.Context.next_toward
-DocTestCase.decimal.Context.normalize
-DocTestCase.decimal.Context.number_class
-DocTestCase.decimal.Context.plus
-DocTestCase.decimal.Context.power
-DocTestCase.decimal.Context.quantize
-DocTestCase.decimal.Context.radix
-DocTestCase.decimal.Context.remainder
-DocTestCase.decimal.Context.remainder_near
-DocTestCase.decimal.Context.rotate
-DocTestCase.decimal.Context.same_quantum
-DocTestCase.decimal.Context.scaleb
-DocTestCase.decimal.Context.shift
-DocTestCase.decimal.Context.sqrt
-DocTestCase.decimal.Context.subtract
-DocTestCase.decimal.Context.to_eng_string
-DocTestCase.decimal.Context.to_integral_exact
-DocTestCase.decimal.Context.to_integral_value
-DocTestCase.decimal.Decimal.__new__
-DocTestCase.decimal.Decimal.__round__
-DocTestCase.decimal.Decimal.as_integer_ratio
-DocTestCase.decimal.Decimal.from_float
-DocTestCase.decimal.localcontext
-test.test_decimal.CArithmeticOperatorsTest.test_addition
-test.test_decimal.CArithmeticOperatorsTest.test_copy_sign
-test.test_decimal.CArithmeticOperatorsTest.test_division
-test.test_decimal.CArithmeticOperatorsTest.test_floor_div_module
-test.test_decimal.CArithmeticOperatorsTest.test_floor_division
-test.test_decimal.CArithmeticOperatorsTest.test_module
-test.test_decimal.CArithmeticOperatorsTest.test_multiplication
-test.test_decimal.CArithmeticOperatorsTest.test_nan_comparisons
-test.test_decimal.CArithmeticOperatorsTest.test_powering
-test.test_decimal.CArithmeticOperatorsTest.test_subtraction
-test.test_decimal.CArithmeticOperatorsTest.test_unary_operators
-test.test_decimal.CContextAPItests.test__clamp
-test.test_decimal.CContextAPItests.test_abs
-test.test_decimal.CContextAPItests.test_add
-test.test_decimal.CContextAPItests.test_compare
-test.test_decimal.CContextAPItests.test_compare_signal
-test.test_decimal.CContextAPItests.test_compare_total
-test.test_decimal.CContextAPItests.test_compare_total_mag
-test.test_decimal.CContextAPItests.test_copy
-test.test_decimal.CContextAPItests.test_copy_abs
-test.test_decimal.CContextAPItests.test_copy_decimal
-test.test_decimal.CContextAPItests.test_copy_negate
-test.test_decimal.CContextAPItests.test_copy_sign
-test.test_decimal.CContextAPItests.test_divide
-test.test_decimal.CContextAPItests.test_divide_int
-test.test_decimal.CContextAPItests.test_divmod
-test.test_decimal.CContextAPItests.test_equality_with_other_types
-test.test_decimal.CContextAPItests.test_exp
-test.test_decimal.CContextAPItests.test_fma
-test.test_decimal.CContextAPItests.test_from_legacy_strings
-test.test_decimal.CContextAPItests.test_is_finite
-test.test_decimal.CContextAPItests.test_is_infinite
-test.test_decimal.CContextAPItests.test_is_nan
-test.test_decimal.CContextAPItests.test_is_normal
-test.test_decimal.CContextAPItests.test_is_qnan
-test.test_decimal.CContextAPItests.test_is_signed
-test.test_decimal.CContextAPItests.test_is_snan
-test.test_decimal.CContextAPItests.test_is_subnormal
-test.test_decimal.CContextAPItests.test_is_zero
-test.test_decimal.CContextAPItests.test_ln
-test.test_decimal.CContextAPItests.test_log10
-test.test_decimal.CContextAPItests.test_logb
-test.test_decimal.CContextAPItests.test_logical_and
-test.test_decimal.CContextAPItests.test_logical_invert
-test.test_decimal.CContextAPItests.test_logical_or
-test.test_decimal.CContextAPItests.test_logical_xor
-test.test_decimal.CContextAPItests.test_max
-test.test_decimal.CContextAPItests.test_max_mag
-test.test_decimal.CContextAPItests.test_min
-test.test_decimal.CContextAPItests.test_min_mag
-test.test_decimal.CContextAPItests.test_minus
-test.test_decimal.CContextAPItests.test_multiply
-test.test_decimal.CContextAPItests.test_next_minus
-test.test_decimal.CContextAPItests.test_next_plus
-test.test_decimal.CContextAPItests.test_next_toward
-test.test_decimal.CContextAPItests.test_none_args
-test.test_decimal.CContextAPItests.test_normalize
-test.test_decimal.CContextAPItests.test_number_class
-test.test_decimal.CContextAPItests.test_pickle
-test.test_decimal.CContextAPItests.test_plus
-test.test_decimal.CContextAPItests.test_power
-test.test_decimal.CContextAPItests.test_quantize
-test.test_decimal.CContextAPItests.test_remainder
-test.test_decimal.CContextAPItests.test_remainder_near
-test.test_decimal.CContextAPItests.test_rotate
-test.test_decimal.CContextAPItests.test_same_quantum
-test.test_decimal.CContextAPItests.test_scaleb
-test.test_decimal.CContextAPItests.test_shift
-test.test_decimal.CContextAPItests.test_sqrt
-test.test_decimal.CContextAPItests.test_subtract
-test.test_decimal.CContextAPItests.test_to_eng_string
-test.test_decimal.CContextAPItests.test_to_integral_exact
-test.test_decimal.CContextAPItests.test_to_integral_value
-test.test_decimal.CContextAPItests.test_to_sci_string
-test.test_decimal.CContextFlags.test_flag_comparisons
-test.test_decimal.CContextFlags.test_flags_irrelevant
-test.test_decimal.CContextFlags.test_float_comparison
-test.test_decimal.CContextFlags.test_float_operation
-test.test_decimal.CContextFlags.test_float_operation_default
-test.test_decimal.CContextInputValidation.test_invalid_context
-test.test_decimal.CContextSubclassing.test_context_subclassing
-test.test_decimal.CContextWithStatement.test_local_context_kwargs_does_not_overwrite_existing_argument
-test.test_decimal.CContextWithStatement.test_localcontext
-test.test_decimal.CContextWithStatement.test_localcontext_kwargs
-test.test_decimal.CContextWithStatement.test_localcontextarg
-test.test_decimal.CContextWithStatement.test_nested_with_statements
-test.test_decimal.CContextWithStatement.test_with_statements_gc1
-test.test_decimal.CContextWithStatement.test_with_statements_gc2
-test.test_decimal.CContextWithStatement.test_with_statements_gc3
-test.test_decimal.CCoverage.test_adjusted
-test.test_decimal.CCoverage.test_canonical
-test.test_decimal.CCoverage.test_context_repr
-test.test_decimal.CCoverage.test_copy
-test.test_decimal.CCoverage.test_create_decimal
-test.test_decimal.CCoverage.test_divmod
-test.test_decimal.CCoverage.test_implicit_context
-test.test_decimal.CCoverage.test_int
-test.test_decimal.CCoverage.test_power
-test.test_decimal.CCoverage.test_quantize
-test.test_decimal.CCoverage.test_radix
-test.test_decimal.CCoverage.test_rop
-test.test_decimal.CCoverage.test_round
-test.test_decimal.CExplicitConstructionTest.test_explicit_context_create_decimal
-test.test_decimal.CExplicitConstructionTest.test_explicit_context_create_from_float
-test.test_decimal.CExplicitConstructionTest.test_explicit_empty
-test.test_decimal.CExplicitConstructionTest.test_explicit_from_Decimal
-test.test_decimal.CExplicitConstructionTest.test_explicit_from_None
-test.test_decimal.CExplicitConstructionTest.test_explicit_from_bool
-test.test_decimal.CExplicitConstructionTest.test_explicit_from_float
-test.test_decimal.CExplicitConstructionTest.test_explicit_from_int
-test.test_decimal.CExplicitConstructionTest.test_explicit_from_list
-test.test_decimal.CExplicitConstructionTest.test_explicit_from_string
-test.test_decimal.CExplicitConstructionTest.test_explicit_from_tuples
-test.test_decimal.CExplicitConstructionTest.test_from_legacy_strings
-test.test_decimal.CExplicitConstructionTest.test_unicode_digits
-test.test_decimal.CFormatTest.test_decimal_from_float_argument_type
-test.test_decimal.CFormatTest.test_formatting
-test.test_decimal.CFormatTest.test_n_format
-test.test_decimal.CFormatTest.test_negative_zero_bad_format
-test.test_decimal.CFormatTest.test_negative_zero_format_directed_rounding
-test.test_decimal.CFormatTest.test_wide_char_separator_decimal_point
-test.test_decimal.CFunctionality.test_c_context
-test.test_decimal.CFunctionality.test_c_ieee_context
-test.test_decimal.CFunctionality.test_constants
-test.test_decimal.CImplicitConstructionTest.test_implicit_from_Decimal
-test.test_decimal.CImplicitConstructionTest.test_implicit_from_None
-test.test_decimal.CImplicitConstructionTest.test_implicit_from_float
-test.test_decimal.CImplicitConstructionTest.test_implicit_from_int
-test.test_decimal.CImplicitConstructionTest.test_implicit_from_string
-test.test_decimal.CImplicitConstructionTest.test_rop
-test.test_decimal.CPythonAPItests.test_abc
-test.test_decimal.CPythonAPItests.test_complex
-test.test_decimal.CPythonAPItests.test_create_decimal_from_float
-test.test_decimal.CPythonAPItests.test_exception_hierarchy
-test.test_decimal.CPythonAPItests.test_from_float
-test.test_decimal.CPythonAPItests.test_int
-test.test_decimal.CPythonAPItests.test_named_parameters
-test.test_decimal.CPythonAPItests.test_pickle
-test.test_decimal.CPythonAPItests.test_quantize
-test.test_decimal.CPythonAPItests.test_small_ints
-test.test_decimal.CPythonAPItests.test_trunc
-test.test_decimal.CSpecialContexts.test_context_templates
-test.test_decimal.CSpecialContexts.test_default_context
-test.test_decimal.CThreadingTest.test_threading
-test.test_decimal.CUsabilityTest.test_as_integer_ratio
-test.test_decimal.CUsabilityTest.test_as_nonzero
-test.test_decimal.CUsabilityTest.test_as_tuple
-test.test_decimal.CUsabilityTest.test_comparison_operators
-test.test_decimal.CUsabilityTest.test_conversions_from_int
-test.test_decimal.CUsabilityTest.test_copy_and_deepcopy_methods
-test.test_decimal.CUsabilityTest.test_decimal_complex_comparison
-test.test_decimal.CUsabilityTest.test_decimal_float_comparison
-test.test_decimal.CUsabilityTest.test_decimal_fraction_comparison
-test.test_decimal.CUsabilityTest.test_eval_round_trip
-test.test_decimal.CUsabilityTest.test_hash_method
-test.test_decimal.CUsabilityTest.test_hash_method_nan
-test.test_decimal.CUsabilityTest.test_implicit_context
-test.test_decimal.CUsabilityTest.test_min_and_max_methods
-test.test_decimal.CUsabilityTest.test_nan_to_float
-test.test_decimal.CUsabilityTest.test_none_args
-test.test_decimal.CUsabilityTest.test_snan_to_float
-test.test_decimal.CUsabilityTest.test_subclassing
-test.test_decimal.CUsabilityTest.test_tonum_methods
-test.test_decimal.CUsabilityTest.test_tostring_methods
-test.test_decimal.CWhitebox.test_bignum
-test.test_decimal.CWhitebox.test_c_context_errors
-test.test_decimal.CWhitebox.test_c_context_errors_extra
-test.test_decimal.CWhitebox.test_c_context_repr
-test.test_decimal.CWhitebox.test_c_context_templates
-test.test_decimal.CWhitebox.test_c_format
-test.test_decimal.CWhitebox.test_c_funcs
-test.test_decimal.CWhitebox.test_c_input_restriction
-test.test_decimal.CWhitebox.test_c_integral
-test.test_decimal.CWhitebox.test_c_round
-test.test_decimal.CWhitebox.test_c_signal_dict
-test.test_decimal.CWhitebox.test_c_signaldict_segfault
-test.test_decimal.CWhitebox.test_c_valid_context
-test.test_decimal.CWhitebox.test_c_valid_context_extra
-test.test_decimal.CWhitebox.test_exact_conversion
-test.test_decimal.CWhitebox.test_from_tuple
-test.test_decimal.CWhitebox.test_internal_use_of_overridden_methods
-test.test_decimal.CWhitebox.test_invalid_construction
-test.test_decimal.CWhitebox.test_invalid_override
-test.test_decimal.CWhitebox.test_maxcontext_exact_arith
-test.test_decimal.CWhitebox.test_rounding_strings_interned
-test.test_decimal.CWhitebox.test_sizeof
-test.test_decimal.CWhitebox.test_va_args_exceptions
-test.test_decimal.CheckAttributes.test_context_attributes
-test.test_decimal.CheckAttributes.test_decimal_attributes
-test.test_decimal.CheckAttributes.test_module_attributes
-test.test_decimal.PyArithmeticOperatorsTest.test_addition
-test.test_decimal.PyArithmeticOperatorsTest.test_copy_sign
-test.test_decimal.PyArithmeticOperatorsTest.test_division
-test.test_decimal.PyArithmeticOperatorsTest.test_floor_div_module
-test.test_decimal.PyArithmeticOperatorsTest.test_floor_division
-test.test_decimal.PyArithmeticOperatorsTest.test_module
-test.test_decimal.PyArithmeticOperatorsTest.test_multiplication
-test.test_decimal.PyArithmeticOperatorsTest.test_nan_comparisons
-test.test_decimal.PyArithmeticOperatorsTest.test_powering
-test.test_decimal.PyArithmeticOperatorsTest.test_subtraction
-test.test_decimal.PyArithmeticOperatorsTest.test_unary_operators
-test.test_decimal.PyContextAPItests.test__clamp
-test.test_decimal.PyContextAPItests.test_abs
-test.test_decimal.PyContextAPItests.test_add
-test.test_decimal.PyContextAPItests.test_compare
-test.test_decimal.PyContextAPItests.test_compare_signal
-test.test_decimal.PyContextAPItests.test_compare_total
-test.test_decimal.PyContextAPItests.test_compare_total_mag
-test.test_decimal.PyContextAPItests.test_copy
-test.test_decimal.PyContextAPItests.test_copy_abs
-test.test_decimal.PyContextAPItests.test_copy_decimal
-test.test_decimal.PyContextAPItests.test_copy_negate
-test.test_decimal.PyContextAPItests.test_copy_sign
-test.test_decimal.PyContextAPItests.test_divide
-test.test_decimal.PyContextAPItests.test_divide_int
-test.test_decimal.PyContextAPItests.test_divmod
-test.test_decimal.PyContextAPItests.test_equality_with_other_types
-test.test_decimal.PyContextAPItests.test_exp
-test.test_decimal.PyContextAPItests.test_fma
-test.test_decimal.PyContextAPItests.test_from_legacy_strings
-test.test_decimal.PyContextAPItests.test_is_finite
-test.test_decimal.PyContextAPItests.test_is_infinite
-test.test_decimal.PyContextAPItests.test_is_nan
-test.test_decimal.PyContextAPItests.test_is_normal
-test.test_decimal.PyContextAPItests.test_is_qnan
-test.test_decimal.PyContextAPItests.test_is_signed
-test.test_decimal.PyContextAPItests.test_is_snan
-test.test_decimal.PyContextAPItests.test_is_subnormal
-test.test_decimal.PyContextAPItests.test_is_zero
-test.test_decimal.PyContextAPItests.test_ln
-test.test_decimal.PyContextAPItests.test_log10
-test.test_decimal.PyContextAPItests.test_logb
-test.test_decimal.PyContextAPItests.test_logical_and
-test.test_decimal.PyContextAPItests.test_logical_invert
-test.test_decimal.PyContextAPItests.test_logical_or
-test.test_decimal.PyContextAPItests.test_logical_xor
-test.test_decimal.PyContextAPItests.test_max
-test.test_decimal.PyContextAPItests.test_max_mag
-test.test_decimal.PyContextAPItests.test_min
-test.test_decimal.PyContextAPItests.test_min_mag
-test.test_decimal.PyContextAPItests.test_minus
-test.test_decimal.PyContextAPItests.test_multiply
-test.test_decimal.PyContextAPItests.test_next_minus
-test.test_decimal.PyContextAPItests.test_next_plus
-test.test_decimal.PyContextAPItests.test_next_toward
-test.test_decimal.PyContextAPItests.test_none_args
-test.test_decimal.PyContextAPItests.test_normalize
-test.test_decimal.PyContextAPItests.test_number_class
-test.test_decimal.PyContextAPItests.test_pickle
-test.test_decimal.PyContextAPItests.test_plus
-test.test_decimal.PyContextAPItests.test_power
-test.test_decimal.PyContextAPItests.test_quantize
-test.test_decimal.PyContextAPItests.test_remainder
-test.test_decimal.PyContextAPItests.test_remainder_near
-test.test_decimal.PyContextAPItests.test_rotate
-test.test_decimal.PyContextAPItests.test_same_quantum
-test.test_decimal.PyContextAPItests.test_scaleb
-test.test_decimal.PyContextAPItests.test_shift
-test.test_decimal.PyContextAPItests.test_sqrt
-test.test_decimal.PyContextAPItests.test_subtract
-test.test_decimal.PyContextAPItests.test_to_eng_string
-test.test_decimal.PyContextAPItests.test_to_integral_exact
-test.test_decimal.PyContextAPItests.test_to_integral_value
-test.test_decimal.PyContextAPItests.test_to_sci_string
-test.test_decimal.PyContextFlags.test_flag_comparisons
-test.test_decimal.PyContextFlags.test_flags_irrelevant
-test.test_decimal.PyContextFlags.test_float_comparison
-test.test_decimal.PyContextFlags.test_float_operation
-test.test_decimal.PyContextFlags.test_float_operation_default
-test.test_decimal.PyContextInputValidation.test_invalid_context
-test.test_decimal.PyContextSubclassing.test_context_subclassing
-test.test_decimal.PyContextWithStatement.test_local_context_kwargs_does_not_overwrite_existing_argument
-test.test_decimal.PyContextWithStatement.test_localcontext
-test.test_decimal.PyContextWithStatement.test_localcontext_kwargs
-test.test_decimal.PyContextWithStatement.test_localcontextarg
-test.test_decimal.PyContextWithStatement.test_nested_with_statements
-test.test_decimal.PyContextWithStatement.test_with_statements_gc1
-test.test_decimal.PyContextWithStatement.test_with_statements_gc2
-test.test_decimal.PyContextWithStatement.test_with_statements_gc3
-test.test_decimal.PyCoverage.test_adjusted
-test.test_decimal.PyCoverage.test_canonical
-test.test_decimal.PyCoverage.test_context_repr
-test.test_decimal.PyCoverage.test_copy
-test.test_decimal.PyCoverage.test_create_decimal
-test.test_decimal.PyCoverage.test_divmod
-test.test_decimal.PyCoverage.test_implicit_context
-test.test_decimal.PyCoverage.test_int
-test.test_decimal.PyCoverage.test_power
-test.test_decimal.PyCoverage.test_quantize
-test.test_decimal.PyCoverage.test_radix
-test.test_decimal.PyCoverage.test_rop
-test.test_decimal.PyCoverage.test_round
-test.test_decimal.PyExplicitConstructionTest.test_explicit_context_create_decimal
-test.test_decimal.PyExplicitConstructionTest.test_explicit_context_create_from_float
-test.test_decimal.PyExplicitConstructionTest.test_explicit_empty
-test.test_decimal.PyExplicitConstructionTest.test_explicit_from_Decimal
-test.test_decimal.PyExplicitConstructionTest.test_explicit_from_None
-test.test_decimal.PyExplicitConstructionTest.test_explicit_from_bool
-test.test_decimal.PyExplicitConstructionTest.test_explicit_from_float
-test.test_decimal.PyExplicitConstructionTest.test_explicit_from_int
-test.test_decimal.PyExplicitConstructionTest.test_explicit_from_list
-test.test_decimal.PyExplicitConstructionTest.test_explicit_from_string
-test.test_decimal.PyExplicitConstructionTest.test_explicit_from_tuples
-test.test_decimal.PyExplicitConstructionTest.test_from_legacy_strings
-test.test_decimal.PyExplicitConstructionTest.test_unicode_digits
-test.test_decimal.PyFormatTest.test_decimal_from_float_argument_type
-test.test_decimal.PyFormatTest.test_formatting
-test.test_decimal.PyFormatTest.test_n_format
-test.test_decimal.PyFormatTest.test_negative_zero_bad_format
-test.test_decimal.PyFormatTest.test_negative_zero_format_directed_rounding
-test.test_decimal.PyFormatTest.test_wide_char_separator_decimal_point
-test.test_decimal.PyFunctionality.test_py_alternate_formatting
-test.test_decimal.PyIBMTestCases.test_abs
-test.test_decimal.PyIBMTestCases.test_add
-test.test_decimal.PyIBMTestCases.test_and
-test.test_decimal.PyIBMTestCases.test_base
-test.test_decimal.PyIBMTestCases.test_clamp
-test.test_decimal.PyIBMTestCases.test_class
-test.test_decimal.PyIBMTestCases.test_compare
-test.test_decimal.PyIBMTestCases.test_comparetotal
-test.test_decimal.PyIBMTestCases.test_comparetotmag
-test.test_decimal.PyIBMTestCases.test_copy
-test.test_decimal.PyIBMTestCases.test_copyabs
-test.test_decimal.PyIBMTestCases.test_copynegate
-test.test_decimal.PyIBMTestCases.test_copysign
-test.test_decimal.PyIBMTestCases.test_ddAbs
-test.test_decimal.PyIBMTestCases.test_ddAdd
-test.test_decimal.PyIBMTestCases.test_ddAnd
-test.test_decimal.PyIBMTestCases.test_ddBase
-test.test_decimal.PyIBMTestCases.test_ddCanonical
-test.test_decimal.PyIBMTestCases.test_ddClass
-test.test_decimal.PyIBMTestCases.test_ddCompare
-test.test_decimal.PyIBMTestCases.test_ddCompareSig
-test.test_decimal.PyIBMTestCases.test_ddCompareTotal
-test.test_decimal.PyIBMTestCases.test_ddCompareTotalMag
-test.test_decimal.PyIBMTestCases.test_ddCopy
-test.test_decimal.PyIBMTestCases.test_ddCopyAbs
-test.test_decimal.PyIBMTestCases.test_ddCopyNegate
-test.test_decimal.PyIBMTestCases.test_ddCopySign
-test.test_decimal.PyIBMTestCases.test_ddDivide
-test.test_decimal.PyIBMTestCases.test_ddDivideInt
-test.test_decimal.PyIBMTestCases.test_ddEncode
-test.test_decimal.PyIBMTestCases.test_ddFMA
-test.test_decimal.PyIBMTestCases.test_ddInvert
-test.test_decimal.PyIBMTestCases.test_ddLogB
-test.test_decimal.PyIBMTestCases.test_ddMax
-test.test_decimal.PyIBMTestCases.test_ddMaxMag
-test.test_decimal.PyIBMTestCases.test_ddMin
-test.test_decimal.PyIBMTestCases.test_ddMinMag
-test.test_decimal.PyIBMTestCases.test_ddMinus
-test.test_decimal.PyIBMTestCases.test_ddMultiply
-test.test_decimal.PyIBMTestCases.test_ddNextMinus
-test.test_decimal.PyIBMTestCases.test_ddNextPlus
-test.test_decimal.PyIBMTestCases.test_ddNextToward
-test.test_decimal.PyIBMTestCases.test_ddOr
-test.test_decimal.PyIBMTestCases.test_ddPlus
-test.test_decimal.PyIBMTestCases.test_ddQuantize
-test.test_decimal.PyIBMTestCases.test_ddReduce
-test.test_decimal.PyIBMTestCases.test_ddRemainder
-test.test_decimal.PyIBMTestCases.test_ddRemainderNear
-test.test_decimal.PyIBMTestCases.test_ddRotate
-test.test_decimal.PyIBMTestCases.test_ddSameQuantum
-test.test_decimal.PyIBMTestCases.test_ddScaleB
-test.test_decimal.PyIBMTestCases.test_ddShift
-test.test_decimal.PyIBMTestCases.test_ddSubtract
-test.test_decimal.PyIBMTestCases.test_ddToIntegral
-test.test_decimal.PyIBMTestCases.test_ddXor
-test.test_decimal.PyIBMTestCases.test_decDouble
-test.test_decimal.PyIBMTestCases.test_decQuad
-test.test_decimal.PyIBMTestCases.test_decSingle
-test.test_decimal.PyIBMTestCases.test_divide
-test.test_decimal.PyIBMTestCases.test_divideint
-test.test_decimal.PyIBMTestCases.test_dqAbs
-test.test_decimal.PyIBMTestCases.test_dqAdd
-test.test_decimal.PyIBMTestCases.test_dqAnd
-test.test_decimal.PyIBMTestCases.test_dqBase
-test.test_decimal.PyIBMTestCases.test_dqCanonical
-test.test_decimal.PyIBMTestCases.test_dqClass
-test.test_decimal.PyIBMTestCases.test_dqCompare
-test.test_decimal.PyIBMTestCases.test_dqCompareSig
-test.test_decimal.PyIBMTestCases.test_dqCompareTotal
-test.test_decimal.PyIBMTestCases.test_dqCompareTotalMag
-test.test_decimal.PyIBMTestCases.test_dqCopy
-test.test_decimal.PyIBMTestCases.test_dqCopyAbs
-test.test_decimal.PyIBMTestCases.test_dqCopyNegate
-test.test_decimal.PyIBMTestCases.test_dqCopySign
-test.test_decimal.PyIBMTestCases.test_dqDivide
-test.test_decimal.PyIBMTestCases.test_dqDivideInt
-test.test_decimal.PyIBMTestCases.test_dqEncode
-test.test_decimal.PyIBMTestCases.test_dqFMA
-test.test_decimal.PyIBMTestCases.test_dqInvert
-test.test_decimal.PyIBMTestCases.test_dqLogB
-test.test_decimal.PyIBMTestCases.test_dqMax
-test.test_decimal.PyIBMTestCases.test_dqMaxMag
-test.test_decimal.PyIBMTestCases.test_dqMin
-test.test_decimal.PyIBMTestCases.test_dqMinMag
-test.test_decimal.PyIBMTestCases.test_dqMinus
-test.test_decimal.PyIBMTestCases.test_dqMultiply
-test.test_decimal.PyIBMTestCases.test_dqNextMinus
-test.test_decimal.PyIBMTestCases.test_dqNextPlus
-test.test_decimal.PyIBMTestCases.test_dqNextToward
-test.test_decimal.PyIBMTestCases.test_dqOr
-test.test_decimal.PyIBMTestCases.test_dqPlus
-test.test_decimal.PyIBMTestCases.test_dqQuantize
-test.test_decimal.PyIBMTestCases.test_dqReduce
-test.test_decimal.PyIBMTestCases.test_dqRemainder
-test.test_decimal.PyIBMTestCases.test_dqRemainderNear
-test.test_decimal.PyIBMTestCases.test_dqRotate
-test.test_decimal.PyIBMTestCases.test_dqSameQuantum
-test.test_decimal.PyIBMTestCases.test_dqScaleB
-test.test_decimal.PyIBMTestCases.test_dqShift
-test.test_decimal.PyIBMTestCases.test_dqSubtract
-test.test_decimal.PyIBMTestCases.test_dqToIntegral
-test.test_decimal.PyIBMTestCases.test_dqXor
-test.test_decimal.PyIBMTestCases.test_dsBase
-test.test_decimal.PyIBMTestCases.test_dsEncode
-test.test_decimal.PyIBMTestCases.test_exp
-test.test_decimal.PyIBMTestCases.test_extra
-test.test_decimal.PyIBMTestCases.test_fma
-test.test_decimal.PyIBMTestCases.test_inexact
-test.test_decimal.PyIBMTestCases.test_invert
-test.test_decimal.PyIBMTestCases.test_ln
-test.test_decimal.PyIBMTestCases.test_log10
-test.test_decimal.PyIBMTestCases.test_logb
-test.test_decimal.PyIBMTestCases.test_max
-test.test_decimal.PyIBMTestCases.test_maxmag
-test.test_decimal.PyIBMTestCases.test_min
-test.test_decimal.PyIBMTestCases.test_minmag
-test.test_decimal.PyIBMTestCases.test_minus
-test.test_decimal.PyIBMTestCases.test_multiply
-test.test_decimal.PyIBMTestCases.test_nextminus
-test.test_decimal.PyIBMTestCases.test_nextplus
-test.test_decimal.PyIBMTestCases.test_nexttoward
-test.test_decimal.PyIBMTestCases.test_or
-test.test_decimal.PyIBMTestCases.test_plus
-test.test_decimal.PyIBMTestCases.test_power
-test.test_decimal.PyIBMTestCases.test_powersqrt
-test.test_decimal.PyIBMTestCases.test_quantize
-test.test_decimal.PyIBMTestCases.test_randomBound32
-test.test_decimal.PyIBMTestCases.test_randoms
-test.test_decimal.PyIBMTestCases.test_reduce
-test.test_decimal.PyIBMTestCases.test_remainder
-test.test_decimal.PyIBMTestCases.test_remainderNear
-test.test_decimal.PyIBMTestCases.test_rescale
-test.test_decimal.PyIBMTestCases.test_rotate
-test.test_decimal.PyIBMTestCases.test_rounding
-test.test_decimal.PyIBMTestCases.test_samequantum
-test.test_decimal.PyIBMTestCases.test_scaleb
-test.test_decimal.PyIBMTestCases.test_shift
-test.test_decimal.PyIBMTestCases.test_squareroot
-test.test_decimal.PyIBMTestCases.test_subtract
-test.test_decimal.PyIBMTestCases.test_testall
-test.test_decimal.PyIBMTestCases.test_tointegral
-test.test_decimal.PyIBMTestCases.test_tointegralx
-test.test_decimal.PyIBMTestCases.test_xor
-test.test_decimal.PyImplicitConstructionTest.test_implicit_from_Decimal
-test.test_decimal.PyImplicitConstructionTest.test_implicit_from_None
-test.test_decimal.PyImplicitConstructionTest.test_implicit_from_float
-test.test_decimal.PyImplicitConstructionTest.test_implicit_from_int
-test.test_decimal.PyImplicitConstructionTest.test_implicit_from_string
-test.test_decimal.PyImplicitConstructionTest.test_rop
-test.test_decimal.PyPythonAPItests.test_abc
-test.test_decimal.PyPythonAPItests.test_complex
-test.test_decimal.PyPythonAPItests.test_create_decimal_from_float
-test.test_decimal.PyPythonAPItests.test_exception_hierarchy
-test.test_decimal.PyPythonAPItests.test_from_float
-test.test_decimal.PyPythonAPItests.test_int
-test.test_decimal.PyPythonAPItests.test_named_parameters
-test.test_decimal.PyPythonAPItests.test_pickle
-test.test_decimal.PyPythonAPItests.test_quantize
-test.test_decimal.PyPythonAPItests.test_small_ints
-test.test_decimal.PyPythonAPItests.test_trunc
-test.test_decimal.PySpecialContexts.test_context_templates
-test.test_decimal.PySpecialContexts.test_default_context
-test.test_decimal.PyThreadingTest.test_threading
-test.test_decimal.PyUsabilityTest.test_as_integer_ratio
-test.test_decimal.PyUsabilityTest.test_as_nonzero
-test.test_decimal.PyUsabilityTest.test_as_tuple
-test.test_decimal.PyUsabilityTest.test_comparison_operators
-test.test_decimal.PyUsabilityTest.test_conversions_from_int
-test.test_decimal.PyUsabilityTest.test_copy_and_deepcopy_methods
-test.test_decimal.PyUsabilityTest.test_decimal_complex_comparison
-test.test_decimal.PyUsabilityTest.test_decimal_float_comparison
-test.test_decimal.PyUsabilityTest.test_decimal_fraction_comparison
-test.test_decimal.PyUsabilityTest.test_eval_round_trip
-test.test_decimal.PyUsabilityTest.test_hash_method
-test.test_decimal.PyUsabilityTest.test_hash_method_nan
-test.test_decimal.PyUsabilityTest.test_implicit_context
-test.test_decimal.PyUsabilityTest.test_min_and_max_methods
-test.test_decimal.PyUsabilityTest.test_nan_to_float
-test.test_decimal.PyUsabilityTest.test_none_args
-test.test_decimal.PyUsabilityTest.test_snan_to_float
-test.test_decimal.PyUsabilityTest.test_subclassing
-test.test_decimal.PyUsabilityTest.test_tonum_methods
-test.test_decimal.PyUsabilityTest.test_tostring_methods
-test.test_decimal.PyWhitebox.test_py__round
-test.test_decimal.PyWhitebox.test_py_decimal_id
-test.test_decimal.PyWhitebox.test_py_exact_power
-test.test_decimal.PyWhitebox.test_py_immutability_operations
-test.test_decimal.PyWhitebox.test_py_rescale
-test.test_decimal.SignatureTest.test_inspect_module
-test.test_decimal.SignatureTest.test_inspect_types
+DocTestCase.decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.abs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.canonical @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.compare_signal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.compare_total @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.copy_abs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.copy_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.copy_negate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.copy_sign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.create_decimal_from_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.divide @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.divide_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.divmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.exp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.fma @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.is_canonical @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.is_finite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.is_infinite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.is_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.is_normal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.is_qnan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.is_signed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.is_snan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.is_subnormal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.is_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.ln @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.log10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.logb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.logical_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.logical_invert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.logical_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.logical_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.max @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.max_mag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.min @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.min_mag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.minus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.multiply @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.next_minus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.next_plus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.next_toward @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.normalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.number_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.plus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.power @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.quantize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.radix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.remainder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.remainder_near @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.rotate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.same_quantum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.scaleb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.shift @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.sqrt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.subtract @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.to_eng_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.to_integral_exact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Context.to_integral_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Decimal.__new__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Decimal.__round__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Decimal.as_integer_ratio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.Decimal.from_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.decimal.localcontext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CArithmeticOperatorsTest.test_addition @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CArithmeticOperatorsTest.test_copy_sign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CArithmeticOperatorsTest.test_division @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CArithmeticOperatorsTest.test_floor_div_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CArithmeticOperatorsTest.test_floor_division @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CArithmeticOperatorsTest.test_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CArithmeticOperatorsTest.test_multiplication @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CArithmeticOperatorsTest.test_nan_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CArithmeticOperatorsTest.test_powering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CArithmeticOperatorsTest.test_subtraction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CArithmeticOperatorsTest.test_unary_operators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test__clamp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_abs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_compare_signal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_compare_total @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_compare_total_mag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_copy_abs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_copy_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_copy_negate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_copy_sign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_divide @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_divide_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_divmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_equality_with_other_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_exp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_fma @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_from_legacy_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_is_finite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_is_infinite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_is_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_is_normal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_is_qnan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_is_signed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_is_snan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_is_subnormal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_is_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_ln @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_log10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_logb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_logical_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_logical_invert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_logical_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_logical_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_max @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_max_mag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_min @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_min_mag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_minus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_multiply @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_next_minus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_next_plus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_next_toward @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_none_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_normalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_number_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_plus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_power @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_quantize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_remainder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_remainder_near @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_rotate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_same_quantum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_scaleb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_shift @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_sqrt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_subtract @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_to_eng_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_to_integral_exact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_to_integral_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextAPItests.test_to_sci_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextFlags.test_flag_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextFlags.test_flags_irrelevant @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextFlags.test_float_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextFlags.test_float_operation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextFlags.test_float_operation_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextInputValidation.test_invalid_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextSubclassing.test_context_subclassing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextWithStatement.test_local_context_kwargs_does_not_overwrite_existing_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextWithStatement.test_localcontext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextWithStatement.test_localcontext_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextWithStatement.test_localcontextarg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextWithStatement.test_nested_with_statements @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextWithStatement.test_with_statements_gc1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextWithStatement.test_with_statements_gc2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CContextWithStatement.test_with_statements_gc3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CCoverage.test_adjusted @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CCoverage.test_canonical @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CCoverage.test_context_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CCoverage.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CCoverage.test_create_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CCoverage.test_divmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CCoverage.test_implicit_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CCoverage.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CCoverage.test_power @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CCoverage.test_quantize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CCoverage.test_radix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CCoverage.test_rop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CCoverage.test_round @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CExplicitConstructionTest.test_explicit_context_create_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CExplicitConstructionTest.test_explicit_context_create_from_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CExplicitConstructionTest.test_explicit_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CExplicitConstructionTest.test_explicit_from_Decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CExplicitConstructionTest.test_explicit_from_None @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CExplicitConstructionTest.test_explicit_from_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CExplicitConstructionTest.test_explicit_from_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CExplicitConstructionTest.test_explicit_from_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CExplicitConstructionTest.test_explicit_from_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CExplicitConstructionTest.test_explicit_from_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CExplicitConstructionTest.test_explicit_from_tuples @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CExplicitConstructionTest.test_from_legacy_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CExplicitConstructionTest.test_unicode_digits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CFormatTest.test_decimal_from_float_argument_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CFormatTest.test_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CFormatTest.test_n_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CFormatTest.test_negative_zero_bad_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CFormatTest.test_negative_zero_format_directed_rounding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CFormatTest.test_wide_char_separator_decimal_point @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CFunctionality.test_c_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CFunctionality.test_c_ieee_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CFunctionality.test_constants @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CImplicitConstructionTest.test_implicit_from_Decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CImplicitConstructionTest.test_implicit_from_None @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CImplicitConstructionTest.test_implicit_from_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CImplicitConstructionTest.test_implicit_from_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CImplicitConstructionTest.test_implicit_from_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CImplicitConstructionTest.test_rop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CPythonAPItests.test_abc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CPythonAPItests.test_complex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CPythonAPItests.test_create_decimal_from_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CPythonAPItests.test_exception_hierarchy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CPythonAPItests.test_from_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CPythonAPItests.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CPythonAPItests.test_named_parameters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CPythonAPItests.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CPythonAPItests.test_quantize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CPythonAPItests.test_small_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CPythonAPItests.test_trunc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CSpecialContexts.test_context_templates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CSpecialContexts.test_default_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CThreadingTest.test_threading @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_as_integer_ratio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_as_nonzero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_as_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_comparison_operators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_conversions_from_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_copy_and_deepcopy_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_decimal_complex_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_decimal_float_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_decimal_fraction_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_eval_round_trip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_hash_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_hash_method_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_implicit_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_min_and_max_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_nan_to_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_none_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_snan_to_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_subclassing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_tonum_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CUsabilityTest.test_tostring_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_bignum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_c_context_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_c_context_errors_extra @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_c_context_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_c_context_templates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_c_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_c_funcs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_c_input_restriction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_c_integral @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_c_round @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_c_signal_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_c_signaldict_segfault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_c_valid_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_c_valid_context_extra @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_exact_conversion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_from_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_internal_use_of_overridden_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_invalid_construction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_invalid_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_maxcontext_exact_arith @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_rounding_strings_interned @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_sizeof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CWhitebox.test_va_args_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CheckAttributes.test_context_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CheckAttributes.test_decimal_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.CheckAttributes.test_module_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyArithmeticOperatorsTest.test_addition @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyArithmeticOperatorsTest.test_copy_sign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyArithmeticOperatorsTest.test_division @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyArithmeticOperatorsTest.test_floor_div_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyArithmeticOperatorsTest.test_floor_division @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyArithmeticOperatorsTest.test_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyArithmeticOperatorsTest.test_multiplication @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyArithmeticOperatorsTest.test_nan_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyArithmeticOperatorsTest.test_powering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyArithmeticOperatorsTest.test_subtraction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyArithmeticOperatorsTest.test_unary_operators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test__clamp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_abs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_compare_signal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_compare_total @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_compare_total_mag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_copy_abs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_copy_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_copy_negate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_copy_sign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_divide @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_divide_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_divmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_equality_with_other_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_exp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_fma @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_from_legacy_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_is_finite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_is_infinite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_is_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_is_normal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_is_qnan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_is_signed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_is_snan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_is_subnormal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_is_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_ln @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_log10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_logb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_logical_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_logical_invert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_logical_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_logical_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_max @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_max_mag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_min @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_min_mag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_minus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_multiply @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_next_minus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_next_plus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_next_toward @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_none_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_normalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_number_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_plus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_power @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_quantize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_remainder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_remainder_near @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_rotate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_same_quantum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_scaleb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_shift @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_sqrt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_subtract @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_to_eng_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_to_integral_exact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_to_integral_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextAPItests.test_to_sci_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextFlags.test_flag_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextFlags.test_flags_irrelevant @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextFlags.test_float_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextFlags.test_float_operation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextFlags.test_float_operation_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextInputValidation.test_invalid_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextSubclassing.test_context_subclassing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextWithStatement.test_local_context_kwargs_does_not_overwrite_existing_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextWithStatement.test_localcontext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextWithStatement.test_localcontext_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextWithStatement.test_localcontextarg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextWithStatement.test_nested_with_statements @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextWithStatement.test_with_statements_gc1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextWithStatement.test_with_statements_gc2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyContextWithStatement.test_with_statements_gc3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyCoverage.test_adjusted @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyCoverage.test_canonical @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyCoverage.test_context_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyCoverage.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyCoverage.test_create_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyCoverage.test_divmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyCoverage.test_implicit_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyCoverage.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyCoverage.test_power @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyCoverage.test_quantize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyCoverage.test_radix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyCoverage.test_rop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyCoverage.test_round @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyExplicitConstructionTest.test_explicit_context_create_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyExplicitConstructionTest.test_explicit_context_create_from_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyExplicitConstructionTest.test_explicit_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyExplicitConstructionTest.test_explicit_from_Decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyExplicitConstructionTest.test_explicit_from_None @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyExplicitConstructionTest.test_explicit_from_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyExplicitConstructionTest.test_explicit_from_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyExplicitConstructionTest.test_explicit_from_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyExplicitConstructionTest.test_explicit_from_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyExplicitConstructionTest.test_explicit_from_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyExplicitConstructionTest.test_explicit_from_tuples @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyExplicitConstructionTest.test_from_legacy_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyExplicitConstructionTest.test_unicode_digits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyFormatTest.test_decimal_from_float_argument_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyFormatTest.test_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyFormatTest.test_n_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyFormatTest.test_negative_zero_bad_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyFormatTest.test_negative_zero_format_directed_rounding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyFormatTest.test_wide_char_separator_decimal_point @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyFunctionality.test_py_alternate_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_abs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_base @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_clamp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_comparetotal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_comparetotmag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_copyabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_copynegate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_copysign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddAbs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddAdd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddAnd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddBase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddCanonical @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddClass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddCompare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddCompareSig @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddCompareTotal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddCompareTotalMag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddCopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddCopyAbs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddCopyNegate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddCopySign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddDivide @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddDivideInt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddEncode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddFMA @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddInvert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddLogB @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddMax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddMaxMag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddMin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddMinMag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddMinus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddMultiply @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddNextMinus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddNextPlus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddNextToward @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddOr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddPlus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddQuantize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddReduce @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddRemainder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddRemainderNear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddRotate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddSameQuantum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddScaleB @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddShift @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddSubtract @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddToIntegral @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ddXor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_decDouble @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_decQuad @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_decSingle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_divide @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_divideint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqAbs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqAdd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqAnd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqBase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqCanonical @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqClass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqCompare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqCompareSig @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqCompareTotal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqCompareTotalMag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqCopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqCopyAbs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqCopyNegate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqCopySign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqDivide @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqDivideInt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqEncode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqFMA @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqInvert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqLogB @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqMax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqMaxMag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqMin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqMinMag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqMinus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqMultiply @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqNextMinus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqNextPlus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqNextToward @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqOr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqPlus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqQuantize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqReduce @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqRemainder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqRemainderNear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqRotate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqSameQuantum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqScaleB @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqShift @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqSubtract @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqToIntegral @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dqXor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dsBase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_dsEncode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_exp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_extra @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_fma @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_inexact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_invert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_ln @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_log10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_logb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_max @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_maxmag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_min @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_minmag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_minus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_multiply @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_nextminus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_nextplus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_nexttoward @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_plus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_power @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_powersqrt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_quantize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_randomBound32 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_randoms @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_reduce @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_remainder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_remainderNear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_rescale @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_rotate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_rounding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_samequantum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_scaleb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_shift @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_squareroot @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_subtract @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_testall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_tointegral @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_tointegralx @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyIBMTestCases.test_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyImplicitConstructionTest.test_implicit_from_Decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyImplicitConstructionTest.test_implicit_from_None @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyImplicitConstructionTest.test_implicit_from_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyImplicitConstructionTest.test_implicit_from_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyImplicitConstructionTest.test_implicit_from_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyImplicitConstructionTest.test_rop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyPythonAPItests.test_abc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyPythonAPItests.test_complex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyPythonAPItests.test_create_decimal_from_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyPythonAPItests.test_exception_hierarchy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyPythonAPItests.test_from_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyPythonAPItests.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyPythonAPItests.test_named_parameters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyPythonAPItests.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyPythonAPItests.test_quantize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyPythonAPItests.test_small_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyPythonAPItests.test_trunc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PySpecialContexts.test_context_templates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PySpecialContexts.test_default_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyThreadingTest.test_threading @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_as_integer_ratio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_as_nonzero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_as_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_comparison_operators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_conversions_from_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_copy_and_deepcopy_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_decimal_complex_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_decimal_float_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_decimal_fraction_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_eval_round_trip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_hash_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_hash_method_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_implicit_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_min_and_max_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_nan_to_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_none_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_snan_to_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_subclassing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_tonum_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyUsabilityTest.test_tostring_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyWhitebox.test_py__round @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyWhitebox.test_py_decimal_id @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyWhitebox.test_py_exact_power @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyWhitebox.test_py_immutability_operations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.PyWhitebox.test_py_rescale @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.SignatureTest.test_inspect_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_decimal.SignatureTest.test_inspect_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

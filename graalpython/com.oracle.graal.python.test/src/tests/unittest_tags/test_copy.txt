@@ -1,73 +1,73 @@
-test.test_copy.TestCopy.test_copy_atomic
-test.test_copy.TestCopy.test_copy_basic
-test.test_copy.TestCopy.test_copy_bytearray
-test.test_copy.TestCopy.test_copy_cant
-test.test_copy.TestCopy.test_copy_copy
-test.test_copy.TestCopy.test_copy_dict
-test.test_copy.TestCopy.test_copy_frozenset
-test.test_copy.TestCopy.test_copy_function
-test.test_copy.TestCopy.test_copy_inst_copy
-test.test_copy.TestCopy.test_copy_inst_getinitargs
-test.test_copy.TestCopy.test_copy_inst_getnewargs
-test.test_copy.TestCopy.test_copy_inst_getnewargs_ex
-test.test_copy.TestCopy.test_copy_inst_getstate
-test.test_copy.TestCopy.test_copy_inst_getstate_setstate
-test.test_copy.TestCopy.test_copy_inst_setstate
-test.test_copy.TestCopy.test_copy_inst_vanilla
-test.test_copy.TestCopy.test_copy_list
-test.test_copy.TestCopy.test_copy_list_subclass
-test.test_copy.TestCopy.test_copy_reduce
-test.test_copy.TestCopy.test_copy_reduce_ex
-test.test_copy.TestCopy.test_copy_registry
-test.test_copy.TestCopy.test_copy_set
-test.test_copy.TestCopy.test_copy_slots
-test.test_copy.TestCopy.test_copy_tuple
-test.test_copy.TestCopy.test_copy_tuple_subclass
-test.test_copy.TestCopy.test_copy_weakref
-test.test_copy.TestCopy.test_deepcopy_atomic
-test.test_copy.TestCopy.test_deepcopy_basic
-test.test_copy.TestCopy.test_deepcopy_bound_method
-test.test_copy.TestCopy.test_deepcopy_cant
-test.test_copy.TestCopy.test_deepcopy_deepcopy
-test.test_copy.TestCopy.test_deepcopy_dict
-test.test_copy.TestCopy.test_deepcopy_dict_subclass
-test.test_copy.TestCopy.test_deepcopy_dont_memo_immutable
-test.test_copy.TestCopy.test_deepcopy_empty_tuple
-test.test_copy.TestCopy.test_deepcopy_function
-test.test_copy.TestCopy.test_deepcopy_inst_deepcopy
-test.test_copy.TestCopy.test_deepcopy_inst_getinitargs
-test.test_copy.TestCopy.test_deepcopy_inst_getnewargs
-test.test_copy.TestCopy.test_deepcopy_inst_getnewargs_ex
-test.test_copy.TestCopy.test_deepcopy_inst_getstate
-test.test_copy.TestCopy.test_deepcopy_inst_getstate_setstate
-test.test_copy.TestCopy.test_deepcopy_inst_setstate
-test.test_copy.TestCopy.test_deepcopy_inst_vanilla
-test.test_copy.TestCopy.test_deepcopy_issubclass
-test.test_copy.TestCopy.test_deepcopy_keepalive
-test.test_copy.TestCopy.test_deepcopy_list
-test.test_copy.TestCopy.test_deepcopy_list_subclass
-test.test_copy.TestCopy.test_deepcopy_memo
-test.test_copy.TestCopy.test_deepcopy_range
-test.test_copy.TestCopy.test_deepcopy_reduce
-test.test_copy.TestCopy.test_deepcopy_reduce_ex
-test.test_copy.TestCopy.test_deepcopy_reflexive_dict
-test.test_copy.TestCopy.test_deepcopy_reflexive_inst
-test.test_copy.TestCopy.test_deepcopy_reflexive_list
-test.test_copy.TestCopy.test_deepcopy_reflexive_tuple
-test.test_copy.TestCopy.test_deepcopy_registry
-test.test_copy.TestCopy.test_deepcopy_slots
-test.test_copy.TestCopy.test_deepcopy_tuple
-test.test_copy.TestCopy.test_deepcopy_tuple_of_immutables
-test.test_copy.TestCopy.test_deepcopy_tuple_subclass
-test.test_copy.TestCopy.test_deepcopy_weakref
-test.test_copy.TestCopy.test_exceptions
-test.test_copy.TestCopy.test_getstate_exc
-test.test_copy.TestCopy.test_reconstruct_nostate
-test.test_copy.TestCopy.test_reconstruct_reflexive
-test.test_copy.TestCopy.test_reconstruct_state
-test.test_copy.TestCopy.test_reconstruct_state_setstate
-test.test_copy.TestCopy.test_reconstruct_string
-test.test_copy.TestCopy.test_reduce_4tuple
-test.test_copy.TestCopy.test_reduce_5tuple
-test.test_copy.TestCopy.test_reduce_6tuple
-test.test_copy.TestCopy.test_reduce_6tuple_none
+test.test_copy.TestCopy.test_copy_atomic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_bytearray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_cant @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_frozenset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_inst_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_inst_getinitargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_inst_getnewargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_inst_getnewargs_ex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_inst_getstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_inst_getstate_setstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_inst_setstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_inst_vanilla @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_list_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_reduce @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_reduce_ex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_registry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_tuple_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_copy_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_atomic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_bound_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_cant @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_dict_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_dont_memo_immutable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_empty_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_inst_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_inst_getinitargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_inst_getnewargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_inst_getnewargs_ex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_inst_getstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_inst_getstate_setstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_inst_setstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_inst_vanilla @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_issubclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_keepalive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_list_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_memo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_reduce @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_reduce_ex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_reflexive_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_reflexive_inst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_reflexive_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_reflexive_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_registry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_tuple_of_immutables @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_tuple_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_deepcopy_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_getstate_exc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_reconstruct_nostate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_reconstruct_reflexive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_reconstruct_state @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_reconstruct_state_setstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_reconstruct_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_reduce_4tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_reduce_5tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_reduce_6tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copy.TestCopy.test_reduce_6tuple_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,4 +1,4 @@
-test.test_urllib_response.TestResponse.test_addclosehook
-test.test_urllib_response.TestResponse.test_addinfo
-test.test_urllib_response.TestResponse.test_addinfourl
-test.test_urllib_response.TestResponse.test_with
+test.test_urllib_response.TestResponse.test_addclosehook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib_response.TestResponse.test_addinfo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib_response.TestResponse.test_addinfourl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib_response.TestResponse.test_with @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

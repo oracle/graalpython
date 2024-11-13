@@ -1,10 +1,10 @@
-test.test_defaultdict.TestDefaultDict.test_basic
-test.test_defaultdict.TestDefaultDict.test_callable_arg
-test.test_defaultdict.TestDefaultDict.test_copy
-test.test_defaultdict.TestDefaultDict.test_deep_copy
-test.test_defaultdict.TestDefaultDict.test_keyerror_without_factory
-test.test_defaultdict.TestDefaultDict.test_missing
-test.test_defaultdict.TestDefaultDict.test_pickling
-test.test_defaultdict.TestDefaultDict.test_repr
-test.test_defaultdict.TestDefaultDict.test_shallow_copy
-test.test_defaultdict.TestDefaultDict.test_union
+test.test_defaultdict.TestDefaultDict.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_defaultdict.TestDefaultDict.test_callable_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_defaultdict.TestDefaultDict.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_defaultdict.TestDefaultDict.test_deep_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_defaultdict.TestDefaultDict.test_keyerror_without_factory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_defaultdict.TestDefaultDict.test_missing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_defaultdict.TestDefaultDict.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_defaultdict.TestDefaultDict.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_defaultdict.TestDefaultDict.test_shallow_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_defaultdict.TestDefaultDict.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

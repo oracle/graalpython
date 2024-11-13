@@ -1,21 +1,21 @@
-test.test_bisect.TestBisectPython.test_backcompatibility
-test.test_bisect.TestBisectPython.test_insort
-test.test_bisect.TestBisectPython.test_insort_keynotNone
-test.test_bisect.TestBisectPython.test_keyword_args
-test.test_bisect.TestBisectPython.test_large_pyrange
-test.test_bisect.TestBisectPython.test_large_range
-test.test_bisect.TestBisectPython.test_lookups_with_key_function
-test.test_bisect.TestBisectPython.test_negative_lo
-test.test_bisect.TestBisectPython.test_optionalSlicing
-test.test_bisect.TestBisectPython.test_precomputed
-test.test_bisect.TestBisectPython.test_random
-test.test_bisect.TestDocExamplePython.test_colors
-test.test_bisect.TestDocExamplePython.test_grades
-test.test_bisect.TestErrorHandlingPython.test_arg_parsing
-test.test_bisect.TestErrorHandlingPython.test_cmp_err
-test.test_bisect.TestErrorHandlingPython.test_get_only
-test.test_bisect.TestErrorHandlingPython.test_len_only
-test.test_bisect.TestErrorHandlingPython.test_non_sequence
-test.test_bisect.TestInsortPython.test_backcompatibility
-test.test_bisect.TestInsortPython.test_listDerived
-test.test_bisect.TestInsortPython.test_vsBuiltinSort
+test.test_bisect.TestBisectPython.test_backcompatibility @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestBisectPython.test_insort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestBisectPython.test_insort_keynotNone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestBisectPython.test_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestBisectPython.test_large_pyrange @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestBisectPython.test_large_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestBisectPython.test_lookups_with_key_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestBisectPython.test_negative_lo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestBisectPython.test_optionalSlicing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestBisectPython.test_precomputed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestBisectPython.test_random @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestDocExamplePython.test_colors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestDocExamplePython.test_grades @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestErrorHandlingPython.test_arg_parsing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestErrorHandlingPython.test_cmp_err @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestErrorHandlingPython.test_get_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestErrorHandlingPython.test_len_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestErrorHandlingPython.test_non_sequence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestInsortPython.test_backcompatibility @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestInsortPython.test_listDerived @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bisect.TestInsortPython.test_vsBuiltinSort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

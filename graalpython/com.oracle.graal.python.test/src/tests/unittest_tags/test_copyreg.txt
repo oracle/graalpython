@@ -1,6 +1,6 @@
-test.test_copyreg.CopyRegTestCase.test_bool
-test.test_copyreg.CopyRegTestCase.test_class
-test.test_copyreg.CopyRegTestCase.test_extension_registry
-test.test_copyreg.CopyRegTestCase.test_noncallable_constructor
-test.test_copyreg.CopyRegTestCase.test_noncallable_reduce
-test.test_copyreg.CopyRegTestCase.test_slotnames
+test.test_copyreg.CopyRegTestCase.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copyreg.CopyRegTestCase.test_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copyreg.CopyRegTestCase.test_extension_registry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copyreg.CopyRegTestCase.test_noncallable_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copyreg.CopyRegTestCase.test_noncallable_reduce @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_copyreg.CopyRegTestCase.test_slotnames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

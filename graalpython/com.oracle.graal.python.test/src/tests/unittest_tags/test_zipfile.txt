@@ -1,283 +1,283 @@
-test.test_zipfile.Bzip2BadCrcTests.test_read_with_bad_crc
-test.test_zipfile.Bzip2BadCrcTests.test_testzip_with_bad_crc
-test.test_zipfile.Bzip2TestZip64InSmallFiles.test_basic
-test.test_zipfile.Bzip2TestZip64InSmallFiles.test_too_many_files
-test.test_zipfile.Bzip2TestZip64InSmallFiles.test_too_many_files_append
-test.test_zipfile.Bzip2TestsWithRandomBinaryFiles.test_open
-test.test_zipfile.Bzip2TestsWithRandomBinaryFiles.test_random_open
-test.test_zipfile.Bzip2TestsWithRandomBinaryFiles.test_read
-test.test_zipfile.Bzip2TestsWithSourceFile.test_basic
-test.test_zipfile.Bzip2TestsWithSourceFile.test_compresslevel_basic
-test.test_zipfile.Bzip2TestsWithSourceFile.test_iterlines
-test.test_zipfile.Bzip2TestsWithSourceFile.test_low_compression
-test.test_zipfile.Bzip2TestsWithSourceFile.test_open
-test.test_zipfile.Bzip2TestsWithSourceFile.test_open_with_pathlike
-test.test_zipfile.Bzip2TestsWithSourceFile.test_per_file_compresslevel
-test.test_zipfile.Bzip2TestsWithSourceFile.test_random_open
-test.test_zipfile.Bzip2TestsWithSourceFile.test_read1
-test.test_zipfile.Bzip2TestsWithSourceFile.test_read1_10
-test.test_zipfile.Bzip2TestsWithSourceFile.test_read_return_size
-test.test_zipfile.Bzip2TestsWithSourceFile.test_readline
-test.test_zipfile.Bzip2TestsWithSourceFile.test_readline_read
-test.test_zipfile.Bzip2TestsWithSourceFile.test_readlines
-test.test_zipfile.Bzip2TestsWithSourceFile.test_repr
-test.test_zipfile.Bzip2TestsWithSourceFile.test_truncated_zipfile
-test.test_zipfile.Bzip2TestsWithSourceFile.test_writestr_compression
-test.test_zipfile.Bzip2TestsWithSourceFile.test_writestr_compresslevel
-test.test_zipfile.Bzip2TestsWithSourceFile.test_writing_errors
-test.test_zipfile.Bzip2WriterTests.test_close_after_close
-test.test_zipfile.Bzip2WriterTests.test_issue44439
-test.test_zipfile.Bzip2WriterTests.test_write_after_close
-test.test_zipfile.CommandLineTest.test_bad_use
-test.test_zipfile.CommandLineTest.test_create_command
-test.test_zipfile.CommandLineTest.test_extract_command
-test.test_zipfile.CommandLineTest.test_list_command
-test.test_zipfile.CommandLineTest.test_test_command
-test.test_zipfile.DecryptionTests.test_bad_password
-test.test_zipfile.DecryptionTests.test_good_password
-test.test_zipfile.DecryptionTests.test_no_password
-test.test_zipfile.DecryptionTests.test_seek_tell
-test.test_zipfile.DecryptionTests.test_unicode_password
-test.test_zipfile.DeflateBadCrcTests.test_read_with_bad_crc
-test.test_zipfile.DeflateBadCrcTests.test_testzip_with_bad_crc
-test.test_zipfile.DeflateTestZip64InSmallFiles.test_basic
-test.test_zipfile.DeflateTestZip64InSmallFiles.test_too_many_files
-test.test_zipfile.DeflateTestZip64InSmallFiles.test_too_many_files_append
-test.test_zipfile.DeflateTestsWithRandomBinaryFiles.test_open
-test.test_zipfile.DeflateTestsWithRandomBinaryFiles.test_random_open
-test.test_zipfile.DeflateTestsWithRandomBinaryFiles.test_read
-test.test_zipfile.DeflateTestsWithSourceFile.test_basic
-test.test_zipfile.DeflateTestsWithSourceFile.test_compresslevel_basic
-test.test_zipfile.DeflateTestsWithSourceFile.test_iterlines
-test.test_zipfile.DeflateTestsWithSourceFile.test_low_compression
-test.test_zipfile.DeflateTestsWithSourceFile.test_open
-test.test_zipfile.DeflateTestsWithSourceFile.test_open_with_pathlike
-test.test_zipfile.DeflateTestsWithSourceFile.test_per_file_compression
-test.test_zipfile.DeflateTestsWithSourceFile.test_per_file_compresslevel
-test.test_zipfile.DeflateTestsWithSourceFile.test_random_open
-test.test_zipfile.DeflateTestsWithSourceFile.test_read1
-test.test_zipfile.DeflateTestsWithSourceFile.test_read1_10
-test.test_zipfile.DeflateTestsWithSourceFile.test_read_return_size
-test.test_zipfile.DeflateTestsWithSourceFile.test_readline
-test.test_zipfile.DeflateTestsWithSourceFile.test_readline_read
-test.test_zipfile.DeflateTestsWithSourceFile.test_readlines
-test.test_zipfile.DeflateTestsWithSourceFile.test_repr
-test.test_zipfile.DeflateTestsWithSourceFile.test_truncated_zipfile
-test.test_zipfile.DeflateTestsWithSourceFile.test_writestr_compression
-test.test_zipfile.DeflateTestsWithSourceFile.test_writestr_compresslevel
-test.test_zipfile.DeflateTestsWithSourceFile.test_writing_errors
-test.test_zipfile.DeflateWriterTests.test_close_after_close
-test.test_zipfile.DeflateWriterTests.test_issue44439
-test.test_zipfile.DeflateWriterTests.test_write_after_close
-test.test_zipfile.EncodedMetadataTests.test_cli_with_metadata_encoding
-test.test_zipfile.EncodedMetadataTests.test_cli_with_metadata_encoding_extract
-test.test_zipfile.EncodedMetadataTests.test_read_after_append
-test.test_zipfile.EncodedMetadataTests.test_read_with_incorrect_metadata_encoding
-test.test_zipfile.EncodedMetadataTests.test_read_with_metadata_encoding
-test.test_zipfile.EncodedMetadataTests.test_read_with_unsuitable_metadata_encoding
-test.test_zipfile.EncodedMetadataTests.test_read_without_metadata_encoding
-test.test_zipfile.EncodedMetadataTests.test_write_with_metadata_encoding
-test.test_zipfile.ExtractTests.test_extract
-test.test_zipfile.ExtractTests.test_extract_all
-test.test_zipfile.ExtractTests.test_extract_all_with_target
-test.test_zipfile.ExtractTests.test_extract_all_with_target_pathlike
-test.test_zipfile.ExtractTests.test_extract_hackers_arcnames_common_cases
-test.test_zipfile.ExtractTests.test_extract_hackers_arcnames_posix_only
-test.test_zipfile.ExtractTests.test_extract_hackers_arcnames_windows_only
-test.test_zipfile.ExtractTests.test_extract_with_target
-test.test_zipfile.ExtractTests.test_extract_with_target_pathlike
-test.test_zipfile.ExtractTests.test_sanitize_windows_name
-test.test_zipfile.LzmaBadCrcTests.test_read_with_bad_crc
-test.test_zipfile.LzmaBadCrcTests.test_testzip_with_bad_crc
-test.test_zipfile.LzmaTestZip64InSmallFiles.test_basic
-test.test_zipfile.LzmaTestZip64InSmallFiles.test_too_many_files
-test.test_zipfile.LzmaTestZip64InSmallFiles.test_too_many_files_append
-test.test_zipfile.LzmaTestsWithRandomBinaryFiles.test_open
-test.test_zipfile.LzmaTestsWithRandomBinaryFiles.test_random_open
-test.test_zipfile.LzmaTestsWithRandomBinaryFiles.test_read
-test.test_zipfile.LzmaTestsWithSourceFile.test_basic
-test.test_zipfile.LzmaTestsWithSourceFile.test_compresslevel_basic
-test.test_zipfile.LzmaTestsWithSourceFile.test_iterlines
-test.test_zipfile.LzmaTestsWithSourceFile.test_low_compression
-test.test_zipfile.LzmaTestsWithSourceFile.test_open
-test.test_zipfile.LzmaTestsWithSourceFile.test_open_with_pathlike
-test.test_zipfile.LzmaTestsWithSourceFile.test_per_file_compresslevel
-test.test_zipfile.LzmaTestsWithSourceFile.test_random_open
-test.test_zipfile.LzmaTestsWithSourceFile.test_read1
-test.test_zipfile.LzmaTestsWithSourceFile.test_read1_10
-test.test_zipfile.LzmaTestsWithSourceFile.test_read_return_size
-test.test_zipfile.LzmaTestsWithSourceFile.test_readline
-test.test_zipfile.LzmaTestsWithSourceFile.test_readline_read
-test.test_zipfile.LzmaTestsWithSourceFile.test_readlines
-test.test_zipfile.LzmaTestsWithSourceFile.test_repr
-test.test_zipfile.LzmaTestsWithSourceFile.test_truncated_zipfile
-test.test_zipfile.LzmaTestsWithSourceFile.test_writestr_compression
-test.test_zipfile.LzmaTestsWithSourceFile.test_writestr_compresslevel
-test.test_zipfile.LzmaTestsWithSourceFile.test_writing_errors
-test.test_zipfile.LzmaWriterTests.test_close_after_close
-test.test_zipfile.LzmaWriterTests.test_issue44439
-test.test_zipfile.LzmaWriterTests.test_write_after_close
-test.test_zipfile.OtherTests.test_bad_compression_mode
-test.test_zipfile.OtherTests.test_bad_constructor_mode
-test.test_zipfile.OtherTests.test_bad_open_mode
-test.test_zipfile.OtherTests.test_change_comment_in_empty_archive
-test.test_zipfile.OtherTests.test_change_comment_in_nonempty_archive
-test.test_zipfile.OtherTests.test_close
-test.test_zipfile.OtherTests.test_close_erroneous_file
-test.test_zipfile.OtherTests.test_close_on_exception
-test.test_zipfile.OtherTests.test_closed_zip_raises_ValueError
-test.test_zipfile.OtherTests.test_comments
-test.test_zipfile.OtherTests.test_create_empty_zipinfo_default_attributes
-test.test_zipfile.OtherTests.test_create_empty_zipinfo_repr
-test.test_zipfile.OtherTests.test_create_non_existent_file_for_append
-test.test_zipfile.OtherTests.test_create_zipinfo_before_1980
-test.test_zipfile.OtherTests.test_damaged_zipfile
-test.test_zipfile.OtherTests.test_decompress_without_3rd_party_library
-test.test_zipfile.OtherTests.test_empty_file_raises_BadZipFile
-test.test_zipfile.OtherTests.test_empty_zipfile
-test.test_zipfile.OtherTests.test_exclusive_create_zip_file
-test.test_zipfile.OtherTests.test_is_zip_erroneous_file
-test.test_zipfile.OtherTests.test_is_zip_valid_file
-test.test_zipfile.OtherTests.test_negative_central_directory_offset_raises_BadZipFile
-test.test_zipfile.OtherTests.test_non_existent_file_raises_OSError
-test.test_zipfile.OtherTests.test_null_byte_in_filename
-test.test_zipfile.OtherTests.test_open_conflicting_handles
-test.test_zipfile.OtherTests.test_open_empty_file
-test.test_zipfile.OtherTests.test_open_non_existent_item
-test.test_zipfile.OtherTests.test_open_via_zip_info
-test.test_zipfile.OtherTests.test_read0
-test.test_zipfile.OtherTests.test_read_after_write_unicode_filenames
-test.test_zipfile.OtherTests.test_read_unicode_filenames
-test.test_zipfile.OtherTests.test_seek_tell
-test.test_zipfile.OtherTests.test_struct_sizes
-test.test_zipfile.OtherTests.test_unicode_comment
-test.test_zipfile.OtherTests.test_unsupported_compression
-test.test_zipfile.OtherTests.test_unsupported_version
-test.test_zipfile.OtherTests.test_write_unicode_filenames
-test.test_zipfile.OtherTests.test_writestr_extended_local_header_issue1202
-test.test_zipfile.OtherTests.test_zipfile_with_short_extra_field
-test.test_zipfile.PyZipFileTests.test_write_non_pyfile
-test.test_zipfile.PyZipFileTests.test_write_pathlike
-test.test_zipfile.PyZipFileTests.test_write_pyfile
-test.test_zipfile.PyZipFileTests.test_write_pyfile_bad_syntax
-test.test_zipfile.PyZipFileTests.test_write_python_directory
-test.test_zipfile.PyZipFileTests.test_write_python_directory_filtered
-test.test_zipfile.PyZipFileTests.test_write_python_package
-test.test_zipfile.PyZipFileTests.test_write_with_optimization
-test.test_zipfile.StoredBadCrcTests.test_read_with_bad_crc
-test.test_zipfile.StoredBadCrcTests.test_testzip_with_bad_crc
-test.test_zipfile.StoredTestZip64InSmallFiles.test_absolute_arcnames
-test.test_zipfile.StoredTestZip64InSmallFiles.test_append
-test.test_zipfile.StoredTestZip64InSmallFiles.test_bad_zip64_extra
-test.test_zipfile.StoredTestZip64InSmallFiles.test_basic
-test.test_zipfile.StoredTestZip64InSmallFiles.test_force_zip64
-test.test_zipfile.StoredTestZip64InSmallFiles.test_generated_valid_zip64_extra
-test.test_zipfile.StoredTestZip64InSmallFiles.test_large_file_exception
-test.test_zipfile.StoredTestZip64InSmallFiles.test_too_many_files
-test.test_zipfile.StoredTestZip64InSmallFiles.test_too_many_files_append
-test.test_zipfile.StoredTestZip64InSmallFiles.test_unseekable_zip_known_filesize
-test.test_zipfile.StoredTestZip64InSmallFiles.test_unseekable_zip_unknown_filesize
-test.test_zipfile.StoredTestZip64InSmallFiles.test_zip64_required_not_allowed_fail
-test.test_zipfile.StoredTestsWithRandomBinaryFiles.test_open
-test.test_zipfile.StoredTestsWithRandomBinaryFiles.test_random_open
-test.test_zipfile.StoredTestsWithRandomBinaryFiles.test_read
-test.test_zipfile.StoredTestsWithSourceFile.test_absolute_arcnames
-test.test_zipfile.StoredTestsWithSourceFile.test_add_file_after_2107
-test.test_zipfile.StoredTestsWithSourceFile.test_add_file_before_1980
-test.test_zipfile.StoredTestsWithSourceFile.test_append_to_concatenated_zip_file
-test.test_zipfile.StoredTestsWithSourceFile.test_append_to_non_zip_file
-test.test_zipfile.StoredTestsWithSourceFile.test_append_to_zip_file
-test.test_zipfile.StoredTestsWithSourceFile.test_basic
-test.test_zipfile.StoredTestsWithSourceFile.test_compresslevel_basic
-test.test_zipfile.StoredTestsWithSourceFile.test_ignores_newline_at_end
-test.test_zipfile.StoredTestsWithSourceFile.test_ignores_stuff_appended_past_comments
-test.test_zipfile.StoredTestsWithSourceFile.test_io_on_closed_zipextfile
-test.test_zipfile.StoredTestsWithSourceFile.test_iterlines
-test.test_zipfile.StoredTestsWithSourceFile.test_open
-test.test_zipfile.StoredTestsWithSourceFile.test_open_with_pathlike
-test.test_zipfile.StoredTestsWithSourceFile.test_per_file_compresslevel
-test.test_zipfile.StoredTestsWithSourceFile.test_random_open
-test.test_zipfile.StoredTestsWithSourceFile.test_read1
-test.test_zipfile.StoredTestsWithSourceFile.test_read1_10
-test.test_zipfile.StoredTestsWithSourceFile.test_read_concatenated_zip_file
-test.test_zipfile.StoredTestsWithSourceFile.test_read_return_size
-test.test_zipfile.StoredTestsWithSourceFile.test_readline
-test.test_zipfile.StoredTestsWithSourceFile.test_readline_read
-test.test_zipfile.StoredTestsWithSourceFile.test_readlines
-test.test_zipfile.StoredTestsWithSourceFile.test_repr
-test.test_zipfile.StoredTestsWithSourceFile.test_truncated_zipfile
-test.test_zipfile.StoredTestsWithSourceFile.test_write_default_name
-test.test_zipfile.StoredTestsWithSourceFile.test_write_to_readonly
-test.test_zipfile.StoredTestsWithSourceFile.test_writestr_compression
-test.test_zipfile.StoredTestsWithSourceFile.test_writestr_compresslevel
-test.test_zipfile.StoredTestsWithSourceFile.test_writestr_permissions
-test.test_zipfile.StoredTestsWithSourceFile.test_writing_errors
-test.test_zipfile.StoredWriterTests.test_close_after_close
-test.test_zipfile.StoredWriterTests.test_issue44439
-test.test_zipfile.StoredWriterTests.test_write_after_close
-test.test_zipfile.StripExtraTests.test_multiples
-test.test_zipfile.StripExtraTests.test_no_data
-test.test_zipfile.StripExtraTests.test_too_short
-test.test_zipfile.StripExtraTests.test_with_data
-test.test_zipfile.TestExecutablePrependedZip.test_execute_zip2
-test.test_zipfile.TestExecutablePrependedZip.test_execute_zip64
-test.test_zipfile.TestExecutablePrependedZip.test_read_zip64_with_exe_prepended
-test.test_zipfile.TestExecutablePrependedZip.test_read_zip_with_exe_prepended
-test.test_zipfile.TestPath.test_dir_parent
-test.test_zipfile.TestPath.test_encoding_warnings
-test.test_zipfile.TestPath.test_extract_orig_with_implied_dirs
-test.test_zipfile.TestPath.test_filename
-test.test_zipfile.TestPath.test_implied_dirs_performance
-test.test_zipfile.TestPath.test_inheritance
-test.test_zipfile.TestPath.test_is_file_missing
-test.test_zipfile.TestPath.test_iterdir_and_types
-test.test_zipfile.TestPath.test_iterdir_on_file
-test.test_zipfile.TestPath.test_joinpath
-test.test_zipfile.TestPath.test_joinpath_constant_time
-test.test_zipfile.TestPath.test_joinpath_multiple
-test.test_zipfile.TestPath.test_missing_dir_parent
-test.test_zipfile.TestPath.test_mutability
-test.test_zipfile.TestPath.test_open
-test.test_zipfile.TestPath.test_open_binary_invalid_args
-test.test_zipfile.TestPath.test_open_encoding_errors
-test.test_zipfile.TestPath.test_open_encoding_utf16
-test.test_zipfile.TestPath.test_open_extant_directory
-test.test_zipfile.TestPath.test_open_missing_directory
-test.test_zipfile.TestPath.test_open_write
-test.test_zipfile.TestPath.test_parent
-test.test_zipfile.TestPath.test_pathlike_construction
-test.test_zipfile.TestPath.test_read
-test.test_zipfile.TestPath.test_read_does_not_close
-test.test_zipfile.TestPath.test_root_name
-test.test_zipfile.TestPath.test_root_parent
-test.test_zipfile.TestPath.test_root_unnamed
-test.test_zipfile.TestPath.test_stem
-test.test_zipfile.TestPath.test_subclass
-test.test_zipfile.TestPath.test_subdir_is_dir
-test.test_zipfile.TestPath.test_suffix
-test.test_zipfile.TestPath.test_suffix_no_filename
-test.test_zipfile.TestPath.test_suffixes
-test.test_zipfile.TestPath.test_traverse_pathlike
-test.test_zipfile.TestPath.test_traverse_simplediv
-test.test_zipfile.TestPath.test_traverse_truediv
-test.test_zipfile.TestWithDirectory.test_bug_6050
-test.test_zipfile.TestWithDirectory.test_create_directory_with_write
-test.test_zipfile.TestWithDirectory.test_extract_dir
-test.test_zipfile.TestWithDirectory.test_mkdir
-test.test_zipfile.TestWithDirectory.test_write_dir
-test.test_zipfile.TestWithDirectory.test_writestr_dir
-test.test_zipfile.TestsWithMultipleOpens.test_different_file
-test.test_zipfile.TestsWithMultipleOpens.test_interleaved
-test.test_zipfile.TestsWithMultipleOpens.test_read_after_close
-test.test_zipfile.TestsWithMultipleOpens.test_read_after_write
-test.test_zipfile.TestsWithMultipleOpens.test_same_file
-test.test_zipfile.TestsWithMultipleOpens.test_write_after_read
-test.test_zipfile.TestsWithMultipleOpens.test_write_while_reading
-test.test_zipfile.UnseekableTests.test_open_write
-test.test_zipfile.UnseekableTests.test_write
-test.test_zipfile.UnseekableTests.test_writestr
-test.test_zipfile.ZipInfoTests.test_from_dir
-test.test_zipfile.ZipInfoTests.test_from_file
-test.test_zipfile.ZipInfoTests.test_from_file_bytes
-test.test_zipfile.ZipInfoTests.test_from_file_fileno
-test.test_zipfile.ZipInfoTests.test_from_file_pathlike
+test.test_zipfile.Bzip2BadCrcTests.test_read_with_bad_crc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2BadCrcTests.test_testzip_with_bad_crc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestZip64InSmallFiles.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestZip64InSmallFiles.test_too_many_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestZip64InSmallFiles.test_too_many_files_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithRandomBinaryFiles.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithRandomBinaryFiles.test_random_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithRandomBinaryFiles.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_compresslevel_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_iterlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_low_compression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_open_with_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_per_file_compresslevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_random_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_read1_10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_read_return_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_readline_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_truncated_zipfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_writestr_compression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_writestr_compresslevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2TestsWithSourceFile.test_writing_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2WriterTests.test_close_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2WriterTests.test_issue44439 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.Bzip2WriterTests.test_write_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.CommandLineTest.test_bad_use @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.CommandLineTest.test_create_command @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.CommandLineTest.test_extract_command @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.CommandLineTest.test_list_command @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.CommandLineTest.test_test_command @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DecryptionTests.test_bad_password @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DecryptionTests.test_good_password @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DecryptionTests.test_no_password @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DecryptionTests.test_seek_tell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DecryptionTests.test_unicode_password @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateBadCrcTests.test_read_with_bad_crc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateBadCrcTests.test_testzip_with_bad_crc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestZip64InSmallFiles.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestZip64InSmallFiles.test_too_many_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestZip64InSmallFiles.test_too_many_files_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithRandomBinaryFiles.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithRandomBinaryFiles.test_random_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithRandomBinaryFiles.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_compresslevel_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_iterlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_low_compression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_open_with_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_per_file_compression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_per_file_compresslevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_random_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_read1_10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_read_return_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_readline_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_truncated_zipfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_writestr_compression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_writestr_compresslevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateTestsWithSourceFile.test_writing_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateWriterTests.test_close_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateWriterTests.test_issue44439 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.DeflateWriterTests.test_write_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.EncodedMetadataTests.test_cli_with_metadata_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.EncodedMetadataTests.test_cli_with_metadata_encoding_extract @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.EncodedMetadataTests.test_read_after_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.EncodedMetadataTests.test_read_with_incorrect_metadata_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.EncodedMetadataTests.test_read_with_metadata_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.EncodedMetadataTests.test_read_with_unsuitable_metadata_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.EncodedMetadataTests.test_read_without_metadata_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.EncodedMetadataTests.test_write_with_metadata_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ExtractTests.test_extract @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ExtractTests.test_extract_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ExtractTests.test_extract_all_with_target @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ExtractTests.test_extract_all_with_target_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ExtractTests.test_extract_hackers_arcnames_common_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ExtractTests.test_extract_hackers_arcnames_posix_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ExtractTests.test_extract_hackers_arcnames_windows_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ExtractTests.test_extract_with_target @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ExtractTests.test_extract_with_target_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ExtractTests.test_sanitize_windows_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaBadCrcTests.test_read_with_bad_crc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaBadCrcTests.test_testzip_with_bad_crc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestZip64InSmallFiles.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestZip64InSmallFiles.test_too_many_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestZip64InSmallFiles.test_too_many_files_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithRandomBinaryFiles.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithRandomBinaryFiles.test_random_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithRandomBinaryFiles.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_compresslevel_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_iterlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_low_compression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_open_with_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_per_file_compresslevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_random_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_read1_10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_read_return_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_readline_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_truncated_zipfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_writestr_compression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_writestr_compresslevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaTestsWithSourceFile.test_writing_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaWriterTests.test_close_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaWriterTests.test_issue44439 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.LzmaWriterTests.test_write_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_bad_compression_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_bad_constructor_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_bad_open_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_change_comment_in_empty_archive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_change_comment_in_nonempty_archive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_close_erroneous_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_close_on_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_closed_zip_raises_ValueError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_comments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_create_empty_zipinfo_default_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_create_empty_zipinfo_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_create_non_existent_file_for_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_create_zipinfo_before_1980 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_damaged_zipfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_decompress_without_3rd_party_library @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_empty_file_raises_BadZipFile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_empty_zipfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_exclusive_create_zip_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_is_zip_erroneous_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_is_zip_valid_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_negative_central_directory_offset_raises_BadZipFile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_non_existent_file_raises_OSError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_null_byte_in_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_open_conflicting_handles @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_open_empty_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_open_non_existent_item @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_open_via_zip_info @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_read0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_read_after_write_unicode_filenames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_read_unicode_filenames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_seek_tell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_struct_sizes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_unicode_comment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_unsupported_compression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_unsupported_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_write_unicode_filenames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_writestr_extended_local_header_issue1202 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.OtherTests.test_zipfile_with_short_extra_field @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.PyZipFileTests.test_write_non_pyfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.PyZipFileTests.test_write_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.PyZipFileTests.test_write_pyfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.PyZipFileTests.test_write_pyfile_bad_syntax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.PyZipFileTests.test_write_python_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.PyZipFileTests.test_write_python_directory_filtered @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.PyZipFileTests.test_write_python_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.PyZipFileTests.test_write_with_optimization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredBadCrcTests.test_read_with_bad_crc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredBadCrcTests.test_testzip_with_bad_crc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestZip64InSmallFiles.test_absolute_arcnames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestZip64InSmallFiles.test_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestZip64InSmallFiles.test_bad_zip64_extra @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestZip64InSmallFiles.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestZip64InSmallFiles.test_force_zip64 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestZip64InSmallFiles.test_generated_valid_zip64_extra @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestZip64InSmallFiles.test_large_file_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestZip64InSmallFiles.test_too_many_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestZip64InSmallFiles.test_too_many_files_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestZip64InSmallFiles.test_unseekable_zip_known_filesize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestZip64InSmallFiles.test_unseekable_zip_unknown_filesize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestZip64InSmallFiles.test_zip64_required_not_allowed_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithRandomBinaryFiles.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithRandomBinaryFiles.test_random_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithRandomBinaryFiles.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_absolute_arcnames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_add_file_after_2107 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_add_file_before_1980 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_append_to_concatenated_zip_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_append_to_non_zip_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_append_to_zip_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_compresslevel_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_ignores_newline_at_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_ignores_stuff_appended_past_comments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_io_on_closed_zipextfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_iterlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_open_with_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_per_file_compresslevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_random_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_read1_10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_read_concatenated_zip_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_read_return_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_readline_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_truncated_zipfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_write_default_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_write_to_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_writestr_compression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_writestr_compresslevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_writestr_permissions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_writing_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredWriterTests.test_close_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredWriterTests.test_issue44439 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredWriterTests.test_write_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StripExtraTests.test_multiples @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StripExtraTests.test_no_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StripExtraTests.test_too_short @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StripExtraTests.test_with_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestExecutablePrependedZip.test_execute_zip2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestExecutablePrependedZip.test_execute_zip64 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestExecutablePrependedZip.test_read_zip64_with_exe_prepended @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestExecutablePrependedZip.test_read_zip_with_exe_prepended @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_dir_parent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_encoding_warnings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_extract_orig_with_implied_dirs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_implied_dirs_performance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_is_file_missing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_iterdir_and_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_iterdir_on_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_joinpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_joinpath_constant_time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_joinpath_multiple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_missing_dir_parent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_mutability @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_open_binary_invalid_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_open_encoding_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_open_encoding_utf16 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_open_extant_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_open_missing_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_open_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_parent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_pathlike_construction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_read_does_not_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_root_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_root_parent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_root_unnamed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_stem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_subdir_is_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_suffix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_suffix_no_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_suffixes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_traverse_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_traverse_simplediv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestPath.test_traverse_truediv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestWithDirectory.test_bug_6050 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestWithDirectory.test_create_directory_with_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestWithDirectory.test_extract_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestWithDirectory.test_mkdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestWithDirectory.test_write_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestWithDirectory.test_writestr_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestsWithMultipleOpens.test_different_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestsWithMultipleOpens.test_interleaved @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestsWithMultipleOpens.test_read_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestsWithMultipleOpens.test_read_after_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestsWithMultipleOpens.test_same_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestsWithMultipleOpens.test_write_after_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestsWithMultipleOpens.test_write_while_reading @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.UnseekableTests.test_open_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.UnseekableTests.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.UnseekableTests.test_writestr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ZipInfoTests.test_from_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ZipInfoTests.test_from_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ZipInfoTests.test_from_file_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ZipInfoTests.test_from_file_fileno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.ZipInfoTests.test_from_file_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,168 +1,168 @@
-test.test_traceback.CExcReportingTests.test_KeyboardInterrupt_at_first_line_of_frame
-test.test_traceback.CExcReportingTests.test_cause
-test.test_traceback.CExcReportingTests.test_cause_and_context
-test.test_traceback.CExcReportingTests.test_cause_recursive
-test.test_traceback.CExcReportingTests.test_context
-test.test_traceback.CExcReportingTests.test_context_suppression
-test.test_traceback.CExcReportingTests.test_exception_bad__str__
-test.test_traceback.CExcReportingTests.test_exception_group_basic
-test.test_traceback.CExcReportingTests.test_exception_group_cause
-test.test_traceback.CExcReportingTests.test_exception_group_context_with_context
-test.test_traceback.CExcReportingTests.test_exception_group_depth_limit
-test.test_traceback.CExcReportingTests.test_exception_group_nested
-test.test_traceback.CExcReportingTests.test_exception_group_width_limit
-test.test_traceback.CExcReportingTests.test_exception_group_with_multiple_notes
-test.test_traceback.CExcReportingTests.test_exception_group_with_notes
-test.test_traceback.CExcReportingTests.test_exception_modulename
-test.test_traceback.CExcReportingTests.test_exception_modulename_not_unicode
-test.test_traceback.CExcReportingTests.test_exception_qualname
-test.test_traceback.CExcReportingTests.test_exception_with_invalid_notes
-test.test_traceback.CExcReportingTests.test_exception_with_multiple_notes
-test.test_traceback.CExcReportingTests.test_exception_with_note
-test.test_traceback.CExcReportingTests.test_message_none
-test.test_traceback.CExcReportingTests.test_simple
-test.test_traceback.CExcReportingTests.test_syntax_error_no_lineno
-test.test_traceback.CExcReportingTests.test_syntax_error_offset_at_eol
-test.test_traceback.CExcReportingTests.test_syntax_error_various_offsets
-test.test_traceback.CPythonTracebackErrorCaretTests.test_basic_caret
-test.test_traceback.CPythonTracebackErrorCaretTests.test_byte_offset_multiline
-test.test_traceback.CPythonTracebackErrorCaretTests.test_byte_offset_wide_chars_subscript
-test.test_traceback.CPythonTracebackErrorCaretTests.test_byte_offset_with_emojis_term_highlight
-test.test_traceback.CPythonTracebackErrorCaretTests.test_byte_offset_with_wide_characters_middle
-test.test_traceback.CPythonTracebackErrorCaretTests.test_byte_offset_with_wide_characters_term_highlight
-test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_exception_group
-test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_binary_operators
-test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_binary_operators_two_char
-test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_binary_operators_with_spaces_and_parenthesis
-test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_binary_operators_with_unicode
-test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_subscript
-test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_subscript_unicode
-test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_subscript_with_spaces_and_parenthesis
-test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_in_type_annotation
-test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_multiline_expression
-test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_multiline_expression_bin_op
-test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_multiline_expression_syntax_error
-test.test_traceback.CPythonTracebackErrorCaretTests.test_decorator_application_lineno_correct
-test.test_traceback.CPythonTracebackErrorCaretTests.test_line_with_unicode
-test.test_traceback.CPythonTracebackErrorCaretTests.test_multiline_method_call_a
-test.test_traceback.CPythonTracebackErrorCaretTests.test_multiline_method_call_b
-test.test_traceback.CPythonTracebackErrorCaretTests.test_multiline_method_call_c
-test.test_traceback.CPythonTracebackErrorCaretTests.test_secondary_caret_not_elided
-test.test_traceback.CPythonTracebackErrorCaretTests.test_specialization_variations
-test.test_traceback.CPythonTracebackErrorCaretTests.test_traceback_specialization_with_syntax_error
-test.test_traceback.CPythonTracebackErrorCaretTests.test_traceback_very_long_line
-test.test_traceback.CPythonTracebackErrorCaretTests.test_wide_characters_unicode_with_problematic_byte_offset
-test.test_traceback.LimitTests.test_extract_stack
-test.test_traceback.LimitTests.test_extract_tb
-test.test_traceback.LimitTests.test_format_exception
-test.test_traceback.MiscTest.test_all
-test.test_traceback.MiscTracebackCases.test_extract_stack
-test.test_traceback.PyExcReportingTests.test_cause
-test.test_traceback.PyExcReportingTests.test_cause_and_context
-test.test_traceback.PyExcReportingTests.test_cause_recursive
-test.test_traceback.PyExcReportingTests.test_context
-test.test_traceback.PyExcReportingTests.test_context_suppression
-test.test_traceback.PyExcReportingTests.test_exception_bad__str__
-test.test_traceback.PyExcReportingTests.test_exception_group_basic
-test.test_traceback.PyExcReportingTests.test_exception_group_cause
-test.test_traceback.PyExcReportingTests.test_exception_group_context_with_context
-test.test_traceback.PyExcReportingTests.test_exception_group_depth_limit
-test.test_traceback.PyExcReportingTests.test_exception_group_nested
-test.test_traceback.PyExcReportingTests.test_exception_group_width_limit
-test.test_traceback.PyExcReportingTests.test_exception_group_with_multiple_notes
-test.test_traceback.PyExcReportingTests.test_exception_group_with_notes
-test.test_traceback.PyExcReportingTests.test_exception_modulename
-test.test_traceback.PyExcReportingTests.test_exception_modulename_not_unicode
-test.test_traceback.PyExcReportingTests.test_exception_qualname
-test.test_traceback.PyExcReportingTests.test_exception_with_invalid_notes
-test.test_traceback.PyExcReportingTests.test_exception_with_multiple_notes
-test.test_traceback.PyExcReportingTests.test_exception_with_note
-test.test_traceback.PyExcReportingTests.test_message_none
-test.test_traceback.PyExcReportingTests.test_simple
-test.test_traceback.PyExcReportingTests.test_syntax_error_no_lineno
-test.test_traceback.PyExcReportingTests.test_syntax_error_offset_at_eol
-test.test_traceback.PyExcReportingTests.test_syntax_error_various_offsets
-test.test_traceback.TestFrame.test_basics
-test.test_traceback.TestFrame.test_explicit_line
-test.test_traceback.TestFrame.test_lazy_lines
-test.test_traceback.TestFrame.test_len
-test.test_traceback.TestFrame.test_no_line
-test.test_traceback.TestStack.test_custom_format_frame
-test.test_traceback.TestStack.test_dropping_frames
-test.test_traceback.TestStack.test_extract_stack
-test.test_traceback.TestStack.test_extract_stack_limit
-test.test_traceback.TestStack.test_extract_stack_lookup_lines
-test.test_traceback.TestStack.test_extract_stackup_deferred_lookup_lines
-test.test_traceback.TestStack.test_format_locals
-test.test_traceback.TestStack.test_format_smoke
-test.test_traceback.TestStack.test_from_list
-test.test_traceback.TestStack.test_from_list_edited_stack
-test.test_traceback.TestStack.test_locals
-test.test_traceback.TestStack.test_no_locals
-test.test_traceback.TestStack.test_walk_stack
-test.test_traceback.TestStack.test_walk_tb
-test.test_traceback.TestTracebackException.test_cause
-test.test_traceback.TestTracebackException.test_compact_no_cause
-test.test_traceback.TestTracebackException.test_compact_with_cause
-test.test_traceback.TestTracebackException.test_comparison_basic
-test.test_traceback.TestTracebackException.test_comparison_equivalent_exceptions_are_equal
-test.test_traceback.TestTracebackException.test_comparison_params_variations
-test.test_traceback.TestTracebackException.test_context
-test.test_traceback.TestTracebackException.test_from_exception
-test.test_traceback.TestTracebackException.test_limit
-test.test_traceback.TestTracebackException.test_locals
-test.test_traceback.TestTracebackException.test_long_context_chain
-test.test_traceback.TestTracebackException.test_lookup_lines
-test.test_traceback.TestTracebackException.test_no_locals
-test.test_traceback.TestTracebackException.test_no_refs_to_exception_and_traceback_objects
-test.test_traceback.TestTracebackException.test_print
-test.test_traceback.TestTracebackException.test_smoke
-test.test_traceback.TestTracebackException.test_traceback_header
-test.test_traceback.TestTracebackException.test_unhashable
-test.test_traceback.TestTracebackException_ExceptionGroups.test_comparison
-test.test_traceback.TestTracebackException_ExceptionGroups.test_exception_group_construction
-test.test_traceback.TestTracebackException_ExceptionGroups.test_exception_group_format
-test.test_traceback.TestTracebackException_ExceptionGroups.test_exception_group_format_exception_only
-test.test_traceback.TestTracebackException_ExceptionGroups.test_max_group_depth
-test.test_traceback.TestTracebackException_ExceptionGroups.test_max_group_width
-test.test_traceback.TracebackCases.test_base_exception
-test.test_traceback.TracebackCases.test_caret
-test.test_traceback.TracebackCases.test_encoded_file
-test.test_traceback.TracebackCases.test_exception_is_None
-test.test_traceback.TracebackCases.test_format_exception_exc
-test.test_traceback.TracebackCases.test_format_exception_only_bad__str__
-test.test_traceback.TracebackCases.test_format_exception_only_exc
-test.test_traceback.TracebackCases.test_no_caret_with_no_debug_ranges_flag
-test.test_traceback.TracebackCases.test_nocaret
-test.test_traceback.TracebackCases.test_print_exception
-test.test_traceback.TracebackCases.test_print_exception_exc
-test.test_traceback.TracebackCases.test_print_traceback_at_exit
-test.test_traceback.TracebackCases.test_recursion_error_during_traceback
-test.test_traceback.TracebackCases.test_signatures
-test.test_traceback.TracebackErrorLocationCaretTests.test_basic_caret
-test.test_traceback.TracebackErrorLocationCaretTests.test_byte_offset_multiline
-test.test_traceback.TracebackErrorLocationCaretTests.test_caret_exception_group
-test.test_traceback.TracebackErrorLocationCaretTests.test_caret_for_binary_operators
-test.test_traceback.TracebackErrorLocationCaretTests.test_caret_for_binary_operators_two_char
-test.test_traceback.TracebackErrorLocationCaretTests.test_caret_for_binary_operators_with_spaces_and_parenthesis
-test.test_traceback.TracebackErrorLocationCaretTests.test_caret_for_subscript
-test.test_traceback.TracebackErrorLocationCaretTests.test_caret_for_subscript_with_spaces_and_parenthesis
-test.test_traceback.TracebackErrorLocationCaretTests.test_caret_in_type_annotation
-test.test_traceback.TracebackErrorLocationCaretTests.test_caret_multiline_expression
-test.test_traceback.TracebackErrorLocationCaretTests.test_caret_multiline_expression_bin_op
-test.test_traceback.TracebackErrorLocationCaretTests.test_decorator_application_lineno_correct
-test.test_traceback.TracebackErrorLocationCaretTests.test_secondary_caret_not_elided
-test.test_traceback.TracebackErrorLocationCaretTests.test_specialization_variations
-test.test_traceback.TracebackErrorLocationCaretTests.test_traceback_specialization_with_syntax_error
-test.test_traceback.TracebackErrorLocationCaretTests.test_traceback_very_long_line
-test.test_traceback.TracebackFormatTests.test_exception_group_deep_recursion_capi
-test.test_traceback.TracebackFormatTests.test_exception_group_deep_recursion_traceback
-test.test_traceback.TracebackFormatTests.test_format_stack
-test.test_traceback.TracebackFormatTests.test_print_exception_bad_type_capi
-test.test_traceback.TracebackFormatTests.test_print_exception_bad_type_python
-test.test_traceback.TracebackFormatTests.test_print_stack
-test.test_traceback.TracebackFormatTests.test_recursive_traceback_cpython_internal
-test.test_traceback.TracebackFormatTests.test_stack_format
-test.test_traceback.TracebackFormatTests.test_traceback_format
-test.test_traceback.TracebackFormatTests.test_traceback_format_with_cleared_frames
-test.test_traceback.TracebackFormatTests.test_unhashable
+test.test_traceback.CExcReportingTests.test_KeyboardInterrupt_at_first_line_of_frame @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_cause @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_cause_and_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_cause_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_context_suppression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_bad__str__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_group_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_group_cause @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_group_context_with_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_group_depth_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_group_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_group_width_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_group_with_multiple_notes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_group_with_notes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_modulename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_modulename_not_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_qualname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_with_invalid_notes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_with_multiple_notes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_exception_with_note @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_message_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_syntax_error_no_lineno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_syntax_error_offset_at_eol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CExcReportingTests.test_syntax_error_various_offsets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_basic_caret @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_byte_offset_multiline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_byte_offset_wide_chars_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_byte_offset_with_emojis_term_highlight @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_byte_offset_with_wide_characters_middle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_byte_offset_with_wide_characters_term_highlight @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_exception_group @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_binary_operators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_binary_operators_two_char @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_binary_operators_with_spaces_and_parenthesis @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_binary_operators_with_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_subscript_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_for_subscript_with_spaces_and_parenthesis @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_in_type_annotation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_multiline_expression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_multiline_expression_bin_op @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_caret_multiline_expression_syntax_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_decorator_application_lineno_correct @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_line_with_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_multiline_method_call_a @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_multiline_method_call_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_multiline_method_call_c @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_secondary_caret_not_elided @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_specialization_variations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_traceback_specialization_with_syntax_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_traceback_very_long_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.CPythonTracebackErrorCaretTests.test_wide_characters_unicode_with_problematic_byte_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.LimitTests.test_extract_stack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.LimitTests.test_extract_tb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.LimitTests.test_format_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.MiscTest.test_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.MiscTracebackCases.test_extract_stack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_cause @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_cause_and_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_cause_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_context_suppression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_bad__str__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_group_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_group_cause @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_group_context_with_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_group_depth_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_group_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_group_width_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_group_with_multiple_notes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_group_with_notes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_modulename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_modulename_not_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_qualname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_with_invalid_notes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_with_multiple_notes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_exception_with_note @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_message_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_syntax_error_no_lineno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_syntax_error_offset_at_eol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.PyExcReportingTests.test_syntax_error_various_offsets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestFrame.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestFrame.test_explicit_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestFrame.test_lazy_lines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestFrame.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestFrame.test_no_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_custom_format_frame @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_dropping_frames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_extract_stack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_extract_stack_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_extract_stack_lookup_lines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_extract_stackup_deferred_lookup_lines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_format_locals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_format_smoke @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_from_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_from_list_edited_stack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_locals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_no_locals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_walk_stack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestStack.test_walk_tb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_cause @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_compact_no_cause @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_compact_with_cause @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_comparison_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_comparison_equivalent_exceptions_are_equal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_comparison_params_variations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_from_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_locals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_long_context_chain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_lookup_lines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_no_locals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_no_refs_to_exception_and_traceback_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_smoke @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_traceback_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException.test_unhashable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException_ExceptionGroups.test_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException_ExceptionGroups.test_exception_group_construction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException_ExceptionGroups.test_exception_group_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException_ExceptionGroups.test_exception_group_format_exception_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException_ExceptionGroups.test_max_group_depth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TestTracebackException_ExceptionGroups.test_max_group_width @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_base_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_caret @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_encoded_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_exception_is_None @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_format_exception_exc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_format_exception_only_bad__str__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_format_exception_only_exc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_no_caret_with_no_debug_ranges_flag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_nocaret @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_print_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_print_exception_exc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_print_traceback_at_exit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_recursion_error_during_traceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackCases.test_signatures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_basic_caret @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_byte_offset_multiline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_caret_exception_group @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_caret_for_binary_operators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_caret_for_binary_operators_two_char @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_caret_for_binary_operators_with_spaces_and_parenthesis @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_caret_for_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_caret_for_subscript_with_spaces_and_parenthesis @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_caret_in_type_annotation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_caret_multiline_expression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_caret_multiline_expression_bin_op @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_decorator_application_lineno_correct @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_secondary_caret_not_elided @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_specialization_variations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_traceback_specialization_with_syntax_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackErrorLocationCaretTests.test_traceback_very_long_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackFormatTests.test_exception_group_deep_recursion_capi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackFormatTests.test_exception_group_deep_recursion_traceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackFormatTests.test_format_stack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackFormatTests.test_print_exception_bad_type_capi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackFormatTests.test_print_exception_bad_type_python @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackFormatTests.test_print_stack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackFormatTests.test_recursive_traceback_cpython_internal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackFormatTests.test_stack_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackFormatTests.test_traceback_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackFormatTests.test_traceback_format_with_cleared_frames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_traceback.TracebackFormatTests.test_unhashable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

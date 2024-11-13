@@ -1,161 +1,161 @@
-test.test_bigmem.BytearrayTest.test_capitalize
-test.test_bigmem.BytearrayTest.test_center
-test.test_bigmem.BytearrayTest.test_compare
-test.test_bigmem.BytearrayTest.test_concat
-test.test_bigmem.BytearrayTest.test_contains
-test.test_bigmem.BytearrayTest.test_count
-test.test_bigmem.BytearrayTest.test_decode
-test.test_bigmem.BytearrayTest.test_endswith
-test.test_bigmem.BytearrayTest.test_expandtabs
-test.test_bigmem.BytearrayTest.test_find
-test.test_bigmem.BytearrayTest.test_index
-test.test_bigmem.BytearrayTest.test_isalnum
-test.test_bigmem.BytearrayTest.test_isalpha
-test.test_bigmem.BytearrayTest.test_isdigit
-test.test_bigmem.BytearrayTest.test_islower
-test.test_bigmem.BytearrayTest.test_isspace
-test.test_bigmem.BytearrayTest.test_istitle
-test.test_bigmem.BytearrayTest.test_isupper
-test.test_bigmem.BytearrayTest.test_join
-test.test_bigmem.BytearrayTest.test_ljust
-test.test_bigmem.BytearrayTest.test_lower
-test.test_bigmem.BytearrayTest.test_lstrip
-test.test_bigmem.BytearrayTest.test_repeat
-test.test_bigmem.BytearrayTest.test_replace
-test.test_bigmem.BytearrayTest.test_rfind
-test.test_bigmem.BytearrayTest.test_rindex
-test.test_bigmem.BytearrayTest.test_rjust
-test.test_bigmem.BytearrayTest.test_rstrip
-test.test_bigmem.BytearrayTest.test_slice_and_getitem
-test.test_bigmem.BytearrayTest.test_split_small
-test.test_bigmem.BytearrayTest.test_splitlines
-test.test_bigmem.BytearrayTest.test_startswith
-test.test_bigmem.BytearrayTest.test_strip
-test.test_bigmem.BytearrayTest.test_swapcase
-test.test_bigmem.BytearrayTest.test_title
-test.test_bigmem.BytearrayTest.test_translate
-test.test_bigmem.BytearrayTest.test_upper
-test.test_bigmem.BytearrayTest.test_zfill
-test.test_bigmem.BytesTest.test_capitalize
-test.test_bigmem.BytesTest.test_center
-test.test_bigmem.BytesTest.test_compare
-test.test_bigmem.BytesTest.test_concat
-test.test_bigmem.BytesTest.test_contains
-test.test_bigmem.BytesTest.test_count
-test.test_bigmem.BytesTest.test_decode
-test.test_bigmem.BytesTest.test_endswith
-test.test_bigmem.BytesTest.test_expandtabs
-test.test_bigmem.BytesTest.test_find
-test.test_bigmem.BytesTest.test_hash
-test.test_bigmem.BytesTest.test_index
-test.test_bigmem.BytesTest.test_isalnum
-test.test_bigmem.BytesTest.test_isalpha
-test.test_bigmem.BytesTest.test_isdigit
-test.test_bigmem.BytesTest.test_islower
-test.test_bigmem.BytesTest.test_isspace
-test.test_bigmem.BytesTest.test_istitle
-test.test_bigmem.BytesTest.test_isupper
-test.test_bigmem.BytesTest.test_join
-test.test_bigmem.BytesTest.test_ljust
-test.test_bigmem.BytesTest.test_lower
-test.test_bigmem.BytesTest.test_repeat
-test.test_bigmem.BytesTest.test_replace
-test.test_bigmem.BytesTest.test_rfind
-test.test_bigmem.BytesTest.test_rindex
-test.test_bigmem.BytesTest.test_rjust
-test.test_bigmem.BytesTest.test_slice_and_getitem
-test.test_bigmem.BytesTest.test_split_large
-test.test_bigmem.BytesTest.test_split_small
-test.test_bigmem.BytesTest.test_splitlines
-test.test_bigmem.BytesTest.test_startswith
-test.test_bigmem.BytesTest.test_strip
-test.test_bigmem.BytesTest.test_swapcase
-test.test_bigmem.BytesTest.test_title
-test.test_bigmem.BytesTest.test_translate
-test.test_bigmem.BytesTest.test_upper
-test.test_bigmem.BytesTest.test_zfill
-test.test_bigmem.DictTest.test_dict
-test.test_bigmem.ListTest.test_append
-test.test_bigmem.ListTest.test_compare
-test.test_bigmem.ListTest.test_concat_large
-test.test_bigmem.ListTest.test_concat_small
-test.test_bigmem.ListTest.test_contains
-test.test_bigmem.ListTest.test_count
-test.test_bigmem.ListTest.test_extend_large
-test.test_bigmem.ListTest.test_extend_small
-test.test_bigmem.ListTest.test_hash
-test.test_bigmem.ListTest.test_index
-test.test_bigmem.ListTest.test_index_and_slice
-test.test_bigmem.ListTest.test_inplace_concat_large
-test.test_bigmem.ListTest.test_inplace_concat_small
-test.test_bigmem.ListTest.test_inplace_repeat_large
-test.test_bigmem.ListTest.test_inplace_repeat_small
-test.test_bigmem.ListTest.test_insert
-test.test_bigmem.ListTest.test_pop
-test.test_bigmem.ListTest.test_remove
-test.test_bigmem.ListTest.test_repeat_large
-test.test_bigmem.ListTest.test_repeat_small
-test.test_bigmem.ListTest.test_repr_large
-test.test_bigmem.ListTest.test_repr_small
-test.test_bigmem.ListTest.test_reverse
-test.test_bigmem.ListTest.test_sort
-test.test_bigmem.StrTest.test_capitalize
-test.test_bigmem.StrTest.test_center
-test.test_bigmem.StrTest.test_compare
-test.test_bigmem.StrTest.test_concat
-test.test_bigmem.StrTest.test_contains
-test.test_bigmem.StrTest.test_count
-test.test_bigmem.StrTest.test_encode
-test.test_bigmem.StrTest.test_encode_ascii
-test.test_bigmem.StrTest.test_encode_raw_unicode_escape
-test.test_bigmem.StrTest.test_encode_utf32
-test.test_bigmem.StrTest.test_encode_utf7
-test.test_bigmem.StrTest.test_endswith
-test.test_bigmem.StrTest.test_expandtabs
-test.test_bigmem.StrTest.test_find
-test.test_bigmem.StrTest.test_format
-test.test_bigmem.StrTest.test_index
-test.test_bigmem.StrTest.test_isalnum
-test.test_bigmem.StrTest.test_isalpha
-test.test_bigmem.StrTest.test_isdigit
-test.test_bigmem.StrTest.test_islower
-test.test_bigmem.StrTest.test_isspace
-test.test_bigmem.StrTest.test_istitle
-test.test_bigmem.StrTest.test_isupper
-test.test_bigmem.StrTest.test_join
-test.test_bigmem.StrTest.test_ljust
-test.test_bigmem.StrTest.test_lower
-test.test_bigmem.StrTest.test_lstrip
-test.test_bigmem.StrTest.test_repeat
-test.test_bigmem.StrTest.test_replace
-test.test_bigmem.StrTest.test_repr_large
-test.test_bigmem.StrTest.test_repr_small
-test.test_bigmem.StrTest.test_rfind
-test.test_bigmem.StrTest.test_rindex
-test.test_bigmem.StrTest.test_rjust
-test.test_bigmem.StrTest.test_rstrip
-test.test_bigmem.StrTest.test_split_large
-test.test_bigmem.StrTest.test_split_small
-test.test_bigmem.StrTest.test_splitlines
-test.test_bigmem.StrTest.test_startswith
-test.test_bigmem.StrTest.test_strip
-test.test_bigmem.StrTest.test_swapcase
-test.test_bigmem.StrTest.test_title
-test.test_bigmem.StrTest.test_translate
-test.test_bigmem.StrTest.test_unicode_repr
-test.test_bigmem.StrTest.test_unicode_repr_wide
-test.test_bigmem.StrTest.test_upper
-test.test_bigmem.StrTest.test_zfill
-test.test_bigmem.TupleTest.test_compare
-test.test_bigmem.TupleTest.test_concat_large
-test.test_bigmem.TupleTest.test_concat_small
-test.test_bigmem.TupleTest.test_contains
-test.test_bigmem.TupleTest.test_from_2G_generator
-test.test_bigmem.TupleTest.test_from_almost_2G_generator
-test.test_bigmem.TupleTest.test_hash
-test.test_bigmem.TupleTest.test_index_and_slice
-test.test_bigmem.TupleTest.test_repeat_large
-test.test_bigmem.TupleTest.test_repeat_large_2
-test.test_bigmem.TupleTest.test_repeat_small
-test.test_bigmem.TupleTest.test_repr_large
-test.test_bigmem.TupleTest.test_repr_small
+test.test_bigmem.BytearrayTest.test_capitalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_center @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_concat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_endswith @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_expandtabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_isalnum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_isalpha @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_isdigit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_islower @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_isspace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_istitle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_isupper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_ljust @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_lower @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_lstrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_rfind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_rindex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_rjust @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_rstrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_slice_and_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_split_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_splitlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_startswith @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_strip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_swapcase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_title @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_translate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_upper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytearrayTest.test_zfill @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_capitalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_center @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_concat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_endswith @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_expandtabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_isalnum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_isalpha @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_isdigit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_islower @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_isspace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_istitle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_isupper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_ljust @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_lower @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_rfind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_rindex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_rjust @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_slice_and_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_split_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_split_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_splitlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_startswith @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_strip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_swapcase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_title @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_translate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_upper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.BytesTest.test_zfill @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.DictTest.test_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_concat_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_concat_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_extend_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_extend_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_index_and_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_inplace_concat_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_inplace_concat_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_inplace_repeat_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_inplace_repeat_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_insert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_repeat_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_repeat_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_repr_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_repr_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_reverse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.ListTest.test_sort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_capitalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_center @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_concat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_encode_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_encode_raw_unicode_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_encode_utf32 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_encode_utf7 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_endswith @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_expandtabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_isalnum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_isalpha @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_isdigit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_islower @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_isspace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_istitle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_isupper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_ljust @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_lower @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_lstrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_repr_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_repr_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_rfind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_rindex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_rjust @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_rstrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_split_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_split_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_splitlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_startswith @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_strip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_swapcase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_title @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_translate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_unicode_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_unicode_repr_wide @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_upper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.StrTest.test_zfill @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.TupleTest.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.TupleTest.test_concat_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.TupleTest.test_concat_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.TupleTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.TupleTest.test_from_2G_generator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.TupleTest.test_from_almost_2G_generator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.TupleTest.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.TupleTest.test_index_and_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.TupleTest.test_repeat_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.TupleTest.test_repeat_large_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.TupleTest.test_repeat_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.TupleTest.test_repr_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bigmem.TupleTest.test_repr_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

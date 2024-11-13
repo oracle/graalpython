@@ -1,22 +1,22 @@
-test.test_mimetypes.MimeTypesTestCase.test_case_sensitivity
-test.test_mimetypes.MimeTypesTestCase.test_data_urls
-test.test_mimetypes.MimeTypesTestCase.test_default_data
-test.test_mimetypes.MimeTypesTestCase.test_encoding
-test.test_mimetypes.MimeTypesTestCase.test_file_parsing
-test.test_mimetypes.MimeTypesTestCase.test_filename_with_url_delimiters
-test.test_mimetypes.MimeTypesTestCase.test_guess_all_types
-test.test_mimetypes.MimeTypesTestCase.test_guess_known_extensions
-test.test_mimetypes.MimeTypesTestCase.test_init_reinitializes
-test.test_mimetypes.MimeTypesTestCase.test_init_stability
-test.test_mimetypes.MimeTypesTestCase.test_keywords_args_api
-test.test_mimetypes.MimeTypesTestCase.test_non_standard_types
-test.test_mimetypes.MimeTypesTestCase.test_path_like_ob
-test.test_mimetypes.MimeTypesTestCase.test_preferred_extension
-test.test_mimetypes.MimeTypesTestCase.test_read_mime_types
-test.test_mimetypes.MimetypesCliTestCase.test_guess_extension
-test.test_mimetypes.MimetypesCliTestCase.test_guess_type
-test.test_mimetypes.MimetypesCliTestCase.test_help_option
-test.test_mimetypes.MimetypesCliTestCase.test_invalid_option
-test.test_mimetypes.MiscTestCase.test__all__
-test.test_mimetypes.Win32MimeTypesTestCase.test_registry_accelerator
-test.test_mimetypes.Win32MimeTypesTestCase.test_registry_parsing
+test.test_mimetypes.MimeTypesTestCase.test_case_sensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_data_urls @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_default_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_file_parsing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_filename_with_url_delimiters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_guess_all_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_guess_known_extensions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_init_reinitializes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_init_stability @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_keywords_args_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_non_standard_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_path_like_ob @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_preferred_extension @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimeTypesTestCase.test_read_mime_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimetypesCliTestCase.test_guess_extension @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimetypesCliTestCase.test_guess_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimetypesCliTestCase.test_help_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MimetypesCliTestCase.test_invalid_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.MiscTestCase.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.Win32MimeTypesTestCase.test_registry_accelerator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mimetypes.Win32MimeTypesTestCase.test_registry_parsing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

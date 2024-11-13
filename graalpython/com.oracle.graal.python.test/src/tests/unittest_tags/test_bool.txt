@@ -1,32 +1,32 @@
-test.test_bool.BoolTest.test_blocked
-test.test_bool.BoolTest.test_bool_called_at_least_once
-test.test_bool.BoolTest.test_bool_new
-test.test_bool.BoolTest.test_boolean
-test.test_bool.BoolTest.test_callable
-test.test_bool.BoolTest.test_complex
-test.test_bool.BoolTest.test_contains
-test.test_bool.BoolTest.test_convert
-test.test_bool.BoolTest.test_convert_to_bool
-test.test_bool.BoolTest.test_fileclosed
-test.test_bool.BoolTest.test_float
-test.test_bool.BoolTest.test_format
-test.test_bool.BoolTest.test_from_bytes
-test.test_bool.BoolTest.test_hasattr
-test.test_bool.BoolTest.test_int
-test.test_bool.BoolTest.test_isinstance
-test.test_bool.BoolTest.test_issubclass
-test.test_bool.BoolTest.test_keyword_args
-test.test_bool.BoolTest.test_marshal
-test.test_bool.BoolTest.test_math
-test.test_bool.BoolTest.test_operator
-test.test_bool.BoolTest.test_pickle
-test.test_bool.BoolTest.test_picklevalues
-test.test_bool.BoolTest.test_print
-test.test_bool.BoolTest.test_real_and_imag
-test.test_bool.BoolTest.test_repr
-test.test_bool.BoolTest.test_sane_len
-test.test_bool.BoolTest.test_str
-test.test_bool.BoolTest.test_string
-test.test_bool.BoolTest.test_subclass
-test.test_bool.BoolTest.test_types
-test.test_bool.TestMain.test_main
+test.test_bool.BoolTest.test_blocked @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_bool_called_at_least_once @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_bool_new @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_boolean @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_callable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_complex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_convert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_convert_to_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_fileclosed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_from_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_hasattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_isinstance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_issubclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_marshal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_math @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_picklevalues @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_real_and_imag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_sane_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.BoolTest.test_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bool.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

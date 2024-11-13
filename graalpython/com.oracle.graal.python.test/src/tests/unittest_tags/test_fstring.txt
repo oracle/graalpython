@@ -1,66 +1,66 @@
-test.test_fstring.TestCase.test__format__lookup
-test.test_fstring.TestCase.test_arguments
-test.test_fstring.TestCase.test_assignment
-test.test_fstring.TestCase.test_ast
-test.test_fstring.TestCase.test_ast_compile_time_concat
-test.test_fstring.TestCase.test_ast_line_numbers
-test.test_fstring.TestCase.test_ast_line_numbers_duplicate_expression
-test.test_fstring.TestCase.test_ast_line_numbers_multiple_formattedvalues
-test.test_fstring.TestCase.test_ast_line_numbers_nested
-test.test_fstring.TestCase.test_ast_numbers_fstring_with_formatting
-test.test_fstring.TestCase.test_backslash_char
-test.test_fstring.TestCase.test_backslashes_in_string_part
-test.test_fstring.TestCase.test_call
-test.test_fstring.TestCase.test_closure
-test.test_fstring.TestCase.test_comments
-test.test_fstring.TestCase.test_compile_time_concat
-test.test_fstring.TestCase.test_compile_time_concat_errors
-test.test_fstring.TestCase.test_conversions
-test.test_fstring.TestCase.test_debug_conversion
-test.test_fstring.TestCase.test_del
-test.test_fstring.TestCase.test_dict
-test.test_fstring.TestCase.test_docstring
-test.test_fstring.TestCase.test_double_braces
-test.test_fstring.TestCase.test_empty_format_specifier
-test.test_fstring.TestCase.test_equal_equal
-test.test_fstring.TestCase.test_errors
-test.test_fstring.TestCase.test_expressions_with_triple_quoted_strings
-test.test_fstring.TestCase.test_filename_in_syntaxerror
-test.test_fstring.TestCase.test_format_specifier_expressions
-test.test_fstring.TestCase.test_global
-test.test_fstring.TestCase.test_if_conditional
-test.test_fstring.TestCase.test_invalid_string_prefixes
-test.test_fstring.TestCase.test_invalid_syntax_error_message
-test.test_fstring.TestCase.test_lambda
-test.test_fstring.TestCase.test_leading_trailing_spaces
-test.test_fstring.TestCase.test_literal
-test.test_fstring.TestCase.test_literal_eval
-test.test_fstring.TestCase.test_locals
-test.test_fstring.TestCase.test_loop
-test.test_fstring.TestCase.test_many_expressions
-test.test_fstring.TestCase.test_misformed_unicode_character_name
-test.test_fstring.TestCase.test_mismatched_braces
-test.test_fstring.TestCase.test_mismatched_parens
-test.test_fstring.TestCase.test_missing_expression
-test.test_fstring.TestCase.test_missing_format_spec
-test.test_fstring.TestCase.test_missing_variable
-test.test_fstring.TestCase.test_multiple_vars
-test.test_fstring.TestCase.test_nested_fstrings
-test.test_fstring.TestCase.test_newlines_before_syntax_error
-test.test_fstring.TestCase.test_newlines_in_expressions
-test.test_fstring.TestCase.test_no_backslashes_in_expression_part
-test.test_fstring.TestCase.test_no_escapes_for_braces
-test.test_fstring.TestCase.test_not_equal
-test.test_fstring.TestCase.test_parens_in_expressions
-test.test_fstring.TestCase.test_shadowed_global
-test.test_fstring.TestCase.test_side_effect_order
-test.test_fstring.TestCase.test_str_format_differences
-test.test_fstring.TestCase.test_syntax_error_for_starred_expressions
-test.test_fstring.TestCase.test_unterminated_string
-test.test_fstring.TestCase.test_walrus
-test.test_fstring.TestCase.test_with_a_commas_and_an_underscore_in_format_specifier
-test.test_fstring.TestCase.test_with_an_underscore_and_a_comma_in_format_specifier
-test.test_fstring.TestCase.test_with_two_commas_in_format_specifier
-test.test_fstring.TestCase.test_with_two_underscore_in_format_specifier
-test.test_fstring.TestCase.test_yield
-test.test_fstring.TestCase.test_yield_send
+test.test_fstring.TestCase.test__format__lookup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_assignment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_ast @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_ast_compile_time_concat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_ast_line_numbers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_ast_line_numbers_duplicate_expression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_ast_line_numbers_multiple_formattedvalues @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_ast_line_numbers_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_ast_numbers_fstring_with_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_backslash_char @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_backslashes_in_string_part @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_closure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_comments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_compile_time_concat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_compile_time_concat_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_conversions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_debug_conversion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_del @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_double_braces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_empty_format_specifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_equal_equal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_expressions_with_triple_quoted_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_filename_in_syntaxerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_format_specifier_expressions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_global @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_if_conditional @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_invalid_string_prefixes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_invalid_syntax_error_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_lambda @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_leading_trailing_spaces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_literal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_literal_eval @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_locals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_many_expressions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_misformed_unicode_character_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_mismatched_braces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_mismatched_parens @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_missing_expression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_missing_format_spec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_missing_variable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_multiple_vars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_nested_fstrings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_newlines_before_syntax_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_newlines_in_expressions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_no_backslashes_in_expression_part @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_no_escapes_for_braces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_not_equal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_parens_in_expressions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_shadowed_global @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_side_effect_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_str_format_differences @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_syntax_error_for_starred_expressions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_unterminated_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_walrus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_with_a_commas_and_an_underscore_in_format_specifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_with_an_underscore_and_a_comma_in_format_specifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_with_two_commas_in_format_specifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_with_two_underscore_in_format_specifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_yield @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fstring.TestCase.test_yield_send @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

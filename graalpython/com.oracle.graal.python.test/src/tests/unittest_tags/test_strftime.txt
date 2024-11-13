@@ -1,4 +1,4 @@
-test.test_strftime.StrftimeTest.test_strftime
-test.test_strftime.Y1900Tests.test_y_1900
-test.test_strftime.Y1900Tests.test_y_after_1900
-test.test_strftime.Y1900Tests.test_y_before_1900
+test.test_strftime.StrftimeTest.test_strftime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strftime.Y1900Tests.test_y_1900 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strftime.Y1900Tests.test_y_after_1900 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strftime.Y1900Tests.test_y_before_1900 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,1 +1,1 @@
-test.test_sundry.TestUntestedModules.test_untested_modules_can_be_imported
+test.test_sundry.TestUntestedModules.test_untested_modules_can_be_imported @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

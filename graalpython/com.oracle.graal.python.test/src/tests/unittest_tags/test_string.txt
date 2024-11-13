@@ -1,38 +1,38 @@
-test.test_string.ModuleTest.test_attrs
-test.test_string.ModuleTest.test_auto_numbering
-test.test_string.ModuleTest.test_basic_formatter
-test.test_string.ModuleTest.test_capwords
-test.test_string.ModuleTest.test_check_unused_args
-test.test_string.ModuleTest.test_conversion_specifiers
-test.test_string.ModuleTest.test_format_keyword_arguments
-test.test_string.ModuleTest.test_index_lookup
-test.test_string.ModuleTest.test_name_lookup
-test.test_string.ModuleTest.test_override_convert_field
-test.test_string.ModuleTest.test_override_format_field
-test.test_string.ModuleTest.test_override_get_value
-test.test_string.ModuleTest.test_override_parse
-test.test_string.ModuleTest.test_vformat_recursion_limit
-test.test_string.TestTemplate.test_SafeTemplate
-test.test_string.TestTemplate.test_braced_override
-test.test_string.TestTemplate.test_braced_override_safe
-test.test_string.TestTemplate.test_delimiter_override
-test.test_string.TestTemplate.test_escapes
-test.test_string.TestTemplate.test_flags_override
-test.test_string.TestTemplate.test_get_identifiers
-test.test_string.TestTemplate.test_idpattern_override
-test.test_string.TestTemplate.test_idpattern_override_inside_outside
-test.test_string.TestTemplate.test_idpattern_override_inside_outside_invalid_unbraced
-test.test_string.TestTemplate.test_invalid_placeholders
-test.test_string.TestTemplate.test_invalid_with_no_lines
-test.test_string.TestTemplate.test_is_valid
-test.test_string.TestTemplate.test_keyword_arguments
-test.test_string.TestTemplate.test_keyword_arguments_safe
-test.test_string.TestTemplate.test_pattern_override
-test.test_string.TestTemplate.test_percents
-test.test_string.TestTemplate.test_regular_templates
-test.test_string.TestTemplate.test_regular_templates_with_braces
-test.test_string.TestTemplate.test_regular_templates_with_non_letters
-test.test_string.TestTemplate.test_regular_templates_with_upper_case
-test.test_string.TestTemplate.test_stringification
-test.test_string.TestTemplate.test_tupleargs
-test.test_string.TestTemplate.test_unicode_values
+test.test_string.ModuleTest.test_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.ModuleTest.test_auto_numbering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.ModuleTest.test_basic_formatter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.ModuleTest.test_capwords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.ModuleTest.test_check_unused_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.ModuleTest.test_conversion_specifiers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.ModuleTest.test_format_keyword_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.ModuleTest.test_index_lookup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.ModuleTest.test_name_lookup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.ModuleTest.test_override_convert_field @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.ModuleTest.test_override_format_field @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.ModuleTest.test_override_get_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.ModuleTest.test_override_parse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.ModuleTest.test_vformat_recursion_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_SafeTemplate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_braced_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_braced_override_safe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_delimiter_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_escapes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_flags_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_get_identifiers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_idpattern_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_idpattern_override_inside_outside @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_idpattern_override_inside_outside_invalid_unbraced @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_invalid_placeholders @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_invalid_with_no_lines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_is_valid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_keyword_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_keyword_arguments_safe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_pattern_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_percents @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_regular_templates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_regular_templates_with_braces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_regular_templates_with_non_letters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_regular_templates_with_upper_case @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_stringification @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_tupleargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string.TestTemplate.test_unicode_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

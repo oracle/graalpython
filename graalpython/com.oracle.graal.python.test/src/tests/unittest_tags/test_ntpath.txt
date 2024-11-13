@@ -1,74 +1,74 @@
-test.test_ntpath.NtCommonTest.test_abspath
-test.test_ntpath.NtCommonTest.test_abspath_issue3426
-test.test_ntpath.NtCommonTest.test_commonprefix
-test.test_ntpath.NtCommonTest.test_exists
-test.test_ntpath.NtCommonTest.test_exists_fd
-test.test_ntpath.NtCommonTest.test_expandvars
-test.test_ntpath.NtCommonTest.test_expandvars_nonascii
-test.test_ntpath.NtCommonTest.test_filetime
-test.test_ntpath.NtCommonTest.test_getsize
-test.test_ntpath.NtCommonTest.test_import
-test.test_ntpath.NtCommonTest.test_isdir
-test.test_ntpath.NtCommonTest.test_isfile
-test.test_ntpath.NtCommonTest.test_join_errors
-test.test_ntpath.NtCommonTest.test_no_argument
-test.test_ntpath.NtCommonTest.test_nonascii_abspath
-test.test_ntpath.NtCommonTest.test_normcase
-test.test_ntpath.NtCommonTest.test_normpath_issue106242
-test.test_ntpath.NtCommonTest.test_normpath_issue5827
-test.test_ntpath.NtCommonTest.test_realpath
-test.test_ntpath.NtCommonTest.test_relpath_errors
-test.test_ntpath.NtCommonTest.test_samefile
-test.test_ntpath.NtCommonTest.test_samefile_on_link
-test.test_ntpath.NtCommonTest.test_samefile_on_symlink
-test.test_ntpath.NtCommonTest.test_sameopenfile
-test.test_ntpath.NtCommonTest.test_samestat
-test.test_ntpath.NtCommonTest.test_samestat_on_link
-test.test_ntpath.NtCommonTest.test_samestat_on_symlink
-test.test_ntpath.NtCommonTest.test_splitdrive
-test.test_ntpath.PathLikeTests.test_path_abspath
-test.test_ntpath.PathLikeTests.test_path_basename
-test.test_ntpath.PathLikeTests.test_path_commonpath
-test.test_ntpath.PathLikeTests.test_path_dirname
-test.test_ntpath.PathLikeTests.test_path_expanduser
-test.test_ntpath.PathLikeTests.test_path_expandvars
-test.test_ntpath.PathLikeTests.test_path_isabs
-test.test_ntpath.PathLikeTests.test_path_isdir
-test.test_ntpath.PathLikeTests.test_path_islink
-test.test_ntpath.PathLikeTests.test_path_ismount
-test.test_ntpath.PathLikeTests.test_path_join
-test.test_ntpath.PathLikeTests.test_path_lexists
-test.test_ntpath.PathLikeTests.test_path_normcase
-test.test_ntpath.PathLikeTests.test_path_normpath
-test.test_ntpath.PathLikeTests.test_path_realpath
-test.test_ntpath.PathLikeTests.test_path_relpath
-test.test_ntpath.PathLikeTests.test_path_split
-test.test_ntpath.PathLikeTests.test_path_splitdrive
-test.test_ntpath.PathLikeTests.test_path_splitext
-test.test_ntpath.TestNtpath.test_abspath
-test.test_ntpath.TestNtpath.test_commonpath
-test.test_ntpath.TestNtpath.test_commonprefix
-test.test_ntpath.TestNtpath.test_expanduser
-test.test_ntpath.TestNtpath.test_expandvars
-test.test_ntpath.TestNtpath.test_expandvars_nonascii
-test.test_ntpath.TestNtpath.test_isabs
-test.test_ntpath.TestNtpath.test_ismount
-test.test_ntpath.TestNtpath.test_join
-test.test_ntpath.TestNtpath.test_normpath
-test.test_ntpath.TestNtpath.test_nt_helpers
-test.test_ntpath.TestNtpath.test_realpath_basic
-test.test_ntpath.TestNtpath.test_realpath_broken_symlinks
-test.test_ntpath.TestNtpath.test_realpath_curdir
-test.test_ntpath.TestNtpath.test_realpath_cwd
-test.test_ntpath.TestNtpath.test_realpath_nul
-test.test_ntpath.TestNtpath.test_realpath_pardir
-test.test_ntpath.TestNtpath.test_realpath_relative
-test.test_ntpath.TestNtpath.test_realpath_strict
-test.test_ntpath.TestNtpath.test_realpath_symlink_loops
-test.test_ntpath.TestNtpath.test_realpath_symlink_loops_strict
-test.test_ntpath.TestNtpath.test_realpath_symlink_prefix
-test.test_ntpath.TestNtpath.test_relpath
-test.test_ntpath.TestNtpath.test_sameopenfile
-test.test_ntpath.TestNtpath.test_split
-test.test_ntpath.TestNtpath.test_splitdrive
-test.test_ntpath.TestNtpath.test_splitext
+test.test_ntpath.NtCommonTest.test_abspath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_abspath_issue3426 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_commonprefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_exists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_exists_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_expandvars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_expandvars_nonascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_filetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_getsize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_isdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_isfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_join_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_no_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_nonascii_abspath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_normcase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_normpath_issue106242 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_normpath_issue5827 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_realpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_relpath_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_samefile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_samefile_on_link @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_samefile_on_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_sameopenfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_samestat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_samestat_on_link @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_samestat_on_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.NtCommonTest.test_splitdrive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_abspath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_basename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_commonpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_dirname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_expanduser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_expandvars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_isabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_isdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_islink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_ismount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_lexists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_normcase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_normpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_realpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_relpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_splitdrive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_splitext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_abspath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_commonpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_commonprefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_expanduser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_expandvars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_expandvars_nonascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_isabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_ismount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_normpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_nt_helpers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_realpath_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_realpath_broken_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_realpath_curdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_realpath_cwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_realpath_nul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_realpath_pardir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_realpath_relative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_realpath_strict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_realpath_symlink_loops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_realpath_symlink_loops_strict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_realpath_symlink_prefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_relpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_sameopenfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_splitdrive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ntpath.TestNtpath.test_splitext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

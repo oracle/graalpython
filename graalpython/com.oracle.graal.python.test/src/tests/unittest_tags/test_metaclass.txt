@@ -1,2 +1,2 @@
-DocTestCase.test.test_metaclass.__test__.doctests
-test.test_metaclass.TestMain.test_main
+DocTestCase.test.test_metaclass.__test__.doctests @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_metaclass.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

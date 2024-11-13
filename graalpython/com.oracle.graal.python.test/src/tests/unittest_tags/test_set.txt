@@ -1,563 +1,563 @@
-test.test_set.TestBasicOpsBytes.test_copy
-test.test_set.TestBasicOpsBytes.test_empty_difference
-test.test_set.TestBasicOpsBytes.test_empty_difference_rev
-test.test_set.TestBasicOpsBytes.test_empty_intersection
-test.test_set.TestBasicOpsBytes.test_empty_isdisjoint
-test.test_set.TestBasicOpsBytes.test_empty_symmetric_difference
-test.test_set.TestBasicOpsBytes.test_empty_union
-test.test_set.TestBasicOpsBytes.test_equivalent_equality
-test.test_set.TestBasicOpsBytes.test_intersection_empty
-test.test_set.TestBasicOpsBytes.test_isdisjoint_empty
-test.test_set.TestBasicOpsBytes.test_issue_37219
-test.test_set.TestBasicOpsBytes.test_iteration
-test.test_set.TestBasicOpsBytes.test_length
-test.test_set.TestBasicOpsBytes.test_pickling
-test.test_set.TestBasicOpsBytes.test_print
-test.test_set.TestBasicOpsBytes.test_repr
-test.test_set.TestBasicOpsBytes.test_self_difference
-test.test_set.TestBasicOpsBytes.test_self_equality
-test.test_set.TestBasicOpsBytes.test_self_intersection
-test.test_set.TestBasicOpsBytes.test_self_isdisjoint
-test.test_set.TestBasicOpsBytes.test_self_symmetric_difference
-test.test_set.TestBasicOpsBytes.test_self_union
-test.test_set.TestBasicOpsBytes.test_union_empty
-test.test_set.TestBasicOpsEmpty.test_copy
-test.test_set.TestBasicOpsEmpty.test_empty_difference
-test.test_set.TestBasicOpsEmpty.test_empty_difference_rev
-test.test_set.TestBasicOpsEmpty.test_empty_intersection
-test.test_set.TestBasicOpsEmpty.test_empty_isdisjoint
-test.test_set.TestBasicOpsEmpty.test_empty_symmetric_difference
-test.test_set.TestBasicOpsEmpty.test_empty_union
-test.test_set.TestBasicOpsEmpty.test_equivalent_equality
-test.test_set.TestBasicOpsEmpty.test_intersection_empty
-test.test_set.TestBasicOpsEmpty.test_isdisjoint_empty
-test.test_set.TestBasicOpsEmpty.test_issue_37219
-test.test_set.TestBasicOpsEmpty.test_iteration
-test.test_set.TestBasicOpsEmpty.test_length
-test.test_set.TestBasicOpsEmpty.test_pickling
-test.test_set.TestBasicOpsEmpty.test_print
-test.test_set.TestBasicOpsEmpty.test_repr
-test.test_set.TestBasicOpsEmpty.test_self_difference
-test.test_set.TestBasicOpsEmpty.test_self_equality
-test.test_set.TestBasicOpsEmpty.test_self_intersection
-test.test_set.TestBasicOpsEmpty.test_self_isdisjoint
-test.test_set.TestBasicOpsEmpty.test_self_symmetric_difference
-test.test_set.TestBasicOpsEmpty.test_self_union
-test.test_set.TestBasicOpsEmpty.test_union_empty
-test.test_set.TestBasicOpsMixedStringBytes.test_copy
-test.test_set.TestBasicOpsMixedStringBytes.test_empty_difference
-test.test_set.TestBasicOpsMixedStringBytes.test_empty_difference_rev
-test.test_set.TestBasicOpsMixedStringBytes.test_empty_intersection
-test.test_set.TestBasicOpsMixedStringBytes.test_empty_isdisjoint
-test.test_set.TestBasicOpsMixedStringBytes.test_empty_symmetric_difference
-test.test_set.TestBasicOpsMixedStringBytes.test_empty_union
-test.test_set.TestBasicOpsMixedStringBytes.test_equivalent_equality
-test.test_set.TestBasicOpsMixedStringBytes.test_intersection_empty
-test.test_set.TestBasicOpsMixedStringBytes.test_isdisjoint_empty
-test.test_set.TestBasicOpsMixedStringBytes.test_issue_37219
-test.test_set.TestBasicOpsMixedStringBytes.test_iteration
-test.test_set.TestBasicOpsMixedStringBytes.test_length
-test.test_set.TestBasicOpsMixedStringBytes.test_pickling
-test.test_set.TestBasicOpsMixedStringBytes.test_print
-test.test_set.TestBasicOpsMixedStringBytes.test_repr
-test.test_set.TestBasicOpsMixedStringBytes.test_self_difference
-test.test_set.TestBasicOpsMixedStringBytes.test_self_equality
-test.test_set.TestBasicOpsMixedStringBytes.test_self_intersection
-test.test_set.TestBasicOpsMixedStringBytes.test_self_isdisjoint
-test.test_set.TestBasicOpsMixedStringBytes.test_self_symmetric_difference
-test.test_set.TestBasicOpsMixedStringBytes.test_self_union
-test.test_set.TestBasicOpsMixedStringBytes.test_union_empty
-test.test_set.TestBasicOpsSingleton.test_copy
-test.test_set.TestBasicOpsSingleton.test_empty_difference
-test.test_set.TestBasicOpsSingleton.test_empty_difference_rev
-test.test_set.TestBasicOpsSingleton.test_empty_intersection
-test.test_set.TestBasicOpsSingleton.test_empty_isdisjoint
-test.test_set.TestBasicOpsSingleton.test_empty_symmetric_difference
-test.test_set.TestBasicOpsSingleton.test_empty_union
-test.test_set.TestBasicOpsSingleton.test_equivalent_equality
-test.test_set.TestBasicOpsSingleton.test_in
-test.test_set.TestBasicOpsSingleton.test_intersection_empty
-test.test_set.TestBasicOpsSingleton.test_isdisjoint_empty
-test.test_set.TestBasicOpsSingleton.test_issue_37219
-test.test_set.TestBasicOpsSingleton.test_iteration
-test.test_set.TestBasicOpsSingleton.test_length
-test.test_set.TestBasicOpsSingleton.test_not_in
-test.test_set.TestBasicOpsSingleton.test_pickling
-test.test_set.TestBasicOpsSingleton.test_print
-test.test_set.TestBasicOpsSingleton.test_repr
-test.test_set.TestBasicOpsSingleton.test_self_difference
-test.test_set.TestBasicOpsSingleton.test_self_equality
-test.test_set.TestBasicOpsSingleton.test_self_intersection
-test.test_set.TestBasicOpsSingleton.test_self_isdisjoint
-test.test_set.TestBasicOpsSingleton.test_self_symmetric_difference
-test.test_set.TestBasicOpsSingleton.test_self_union
-test.test_set.TestBasicOpsSingleton.test_union_empty
-test.test_set.TestBasicOpsString.test_copy
-test.test_set.TestBasicOpsString.test_empty_difference
-test.test_set.TestBasicOpsString.test_empty_difference_rev
-test.test_set.TestBasicOpsString.test_empty_intersection
-test.test_set.TestBasicOpsString.test_empty_isdisjoint
-test.test_set.TestBasicOpsString.test_empty_symmetric_difference
-test.test_set.TestBasicOpsString.test_empty_union
-test.test_set.TestBasicOpsString.test_equivalent_equality
-test.test_set.TestBasicOpsString.test_intersection_empty
-test.test_set.TestBasicOpsString.test_isdisjoint_empty
-test.test_set.TestBasicOpsString.test_issue_37219
-test.test_set.TestBasicOpsString.test_iteration
-test.test_set.TestBasicOpsString.test_length
-test.test_set.TestBasicOpsString.test_pickling
-test.test_set.TestBasicOpsString.test_print
-test.test_set.TestBasicOpsString.test_repr
-test.test_set.TestBasicOpsString.test_self_difference
-test.test_set.TestBasicOpsString.test_self_equality
-test.test_set.TestBasicOpsString.test_self_intersection
-test.test_set.TestBasicOpsString.test_self_isdisjoint
-test.test_set.TestBasicOpsString.test_self_symmetric_difference
-test.test_set.TestBasicOpsString.test_self_union
-test.test_set.TestBasicOpsString.test_union_empty
-test.test_set.TestBasicOpsTriple.test_copy
-test.test_set.TestBasicOpsTriple.test_empty_difference
-test.test_set.TestBasicOpsTriple.test_empty_difference_rev
-test.test_set.TestBasicOpsTriple.test_empty_intersection
-test.test_set.TestBasicOpsTriple.test_empty_isdisjoint
-test.test_set.TestBasicOpsTriple.test_empty_symmetric_difference
-test.test_set.TestBasicOpsTriple.test_empty_union
-test.test_set.TestBasicOpsTriple.test_equivalent_equality
-test.test_set.TestBasicOpsTriple.test_intersection_empty
-test.test_set.TestBasicOpsTriple.test_isdisjoint_empty
-test.test_set.TestBasicOpsTriple.test_issue_37219
-test.test_set.TestBasicOpsTriple.test_iteration
-test.test_set.TestBasicOpsTriple.test_length
-test.test_set.TestBasicOpsTriple.test_pickling
-test.test_set.TestBasicOpsTriple.test_print
-test.test_set.TestBasicOpsTriple.test_repr
-test.test_set.TestBasicOpsTriple.test_self_difference
-test.test_set.TestBasicOpsTriple.test_self_equality
-test.test_set.TestBasicOpsTriple.test_self_intersection
-test.test_set.TestBasicOpsTriple.test_self_isdisjoint
-test.test_set.TestBasicOpsTriple.test_self_symmetric_difference
-test.test_set.TestBasicOpsTriple.test_self_union
-test.test_set.TestBasicOpsTriple.test_union_empty
-test.test_set.TestBasicOpsTuple.test_copy
-test.test_set.TestBasicOpsTuple.test_empty_difference
-test.test_set.TestBasicOpsTuple.test_empty_difference_rev
-test.test_set.TestBasicOpsTuple.test_empty_intersection
-test.test_set.TestBasicOpsTuple.test_empty_isdisjoint
-test.test_set.TestBasicOpsTuple.test_empty_symmetric_difference
-test.test_set.TestBasicOpsTuple.test_empty_union
-test.test_set.TestBasicOpsTuple.test_equivalent_equality
-test.test_set.TestBasicOpsTuple.test_in
-test.test_set.TestBasicOpsTuple.test_intersection_empty
-test.test_set.TestBasicOpsTuple.test_isdisjoint_empty
-test.test_set.TestBasicOpsTuple.test_issue_37219
-test.test_set.TestBasicOpsTuple.test_iteration
-test.test_set.TestBasicOpsTuple.test_length
-test.test_set.TestBasicOpsTuple.test_not_in
-test.test_set.TestBasicOpsTuple.test_pickling
-test.test_set.TestBasicOpsTuple.test_print
-test.test_set.TestBasicOpsTuple.test_repr
-test.test_set.TestBasicOpsTuple.test_self_difference
-test.test_set.TestBasicOpsTuple.test_self_equality
-test.test_set.TestBasicOpsTuple.test_self_intersection
-test.test_set.TestBasicOpsTuple.test_self_isdisjoint
-test.test_set.TestBasicOpsTuple.test_self_symmetric_difference
-test.test_set.TestBasicOpsTuple.test_self_union
-test.test_set.TestBasicOpsTuple.test_union_empty
-test.test_set.TestBinaryOps.test_eq
-test.test_set.TestBinaryOps.test_intersection_non_overlap
-test.test_set.TestBinaryOps.test_intersection_overlap
-test.test_set.TestBinaryOps.test_intersection_subset
-test.test_set.TestBinaryOps.test_intersection_superset
-test.test_set.TestBinaryOps.test_isdisjoint_non_overlap
-test.test_set.TestBinaryOps.test_isdisjoint_overlap
-test.test_set.TestBinaryOps.test_isdisjoint_subset
-test.test_set.TestBinaryOps.test_isdisjoint_superset
-test.test_set.TestBinaryOps.test_sym_difference_non_overlap
-test.test_set.TestBinaryOps.test_sym_difference_overlap
-test.test_set.TestBinaryOps.test_sym_difference_subset
-test.test_set.TestBinaryOps.test_sym_difference_superset
-test.test_set.TestBinaryOps.test_union_non_overlap
-test.test_set.TestBinaryOps.test_union_overlap
-test.test_set.TestBinaryOps.test_union_subset
-test.test_set.TestBinaryOps.test_union_superset
-test.test_set.TestBinaryOpsMutating_Set_Set.test_iteration_with_mutation
-test.test_set.TestBinaryOpsMutating_Set_Set.test_or_with_mutation
-test.test_set.TestCopyingEmpty.test_copy
-test.test_set.TestCopyingEmpty.test_deep_copy
-test.test_set.TestCopyingNested.test_copy
-test.test_set.TestCopyingNested.test_deep_copy
-test.test_set.TestCopyingSingleton.test_copy
-test.test_set.TestCopyingSingleton.test_deep_copy
-test.test_set.TestCopyingTriple.test_copy
-test.test_set.TestCopyingTriple.test_deep_copy
-test.test_set.TestCopyingTuple.test_copy
-test.test_set.TestCopyingTuple.test_deep_copy
-test.test_set.TestExceptionPropagation.test_changingSizeWhileIterating
-test.test_set.TestExceptionPropagation.test_instanceWithException
-test.test_set.TestExceptionPropagation.test_instancesWithoutException
-test.test_set.TestFrozenSet.test_and
-test.test_set.TestFrozenSet.test_badcmp
-test.test_set.TestFrozenSet.test_constructor_identity
-test.test_set.TestFrozenSet.test_container_iterator
-test.test_set.TestFrozenSet.test_contains
-test.test_set.TestFrozenSet.test_copy
-test.test_set.TestFrozenSet.test_cyclical_print
-test.test_set.TestFrozenSet.test_cyclical_repr
-test.test_set.TestFrozenSet.test_deepcopy
-test.test_set.TestFrozenSet.test_difference
-test.test_set.TestFrozenSet.test_do_not_rehash_dict_keys
-test.test_set.TestFrozenSet.test_equality
-test.test_set.TestFrozenSet.test_free_after_iterating
-test.test_set.TestFrozenSet.test_frozen_as_dictkey
-test.test_set.TestFrozenSet.test_gc
-test.test_set.TestFrozenSet.test_hash
-test.test_set.TestFrozenSet.test_hash_caching
-test.test_set.TestFrozenSet.test_hash_effectiveness
-test.test_set.TestFrozenSet.test_init
-test.test_set.TestFrozenSet.test_intersection
-test.test_set.TestFrozenSet.test_isdisjoint
-test.test_set.TestFrozenSet.test_iterator_pickling
-test.test_set.TestFrozenSet.test_len
-test.test_set.TestFrozenSet.test_new_or_init
-test.test_set.TestFrozenSet.test_or
-test.test_set.TestFrozenSet.test_pickling
-test.test_set.TestFrozenSet.test_setOfFrozensets
-test.test_set.TestFrozenSet.test_singleton_empty_frozenset
-test.test_set.TestFrozenSet.test_sub
-test.test_set.TestFrozenSet.test_sub_and_super
-test.test_set.TestFrozenSet.test_subclass_with_custom_hash
-test.test_set.TestFrozenSet.test_symmetric_difference
-test.test_set.TestFrozenSet.test_union
-test.test_set.TestFrozenSet.test_uniquification
-test.test_set.TestFrozenSet.test_xor
-test.test_set.TestFrozenSetSubclass.test_and
-test.test_set.TestFrozenSetSubclass.test_badcmp
-test.test_set.TestFrozenSetSubclass.test_constructor_identity
-test.test_set.TestFrozenSetSubclass.test_container_iterator
-test.test_set.TestFrozenSetSubclass.test_contains
-test.test_set.TestFrozenSetSubclass.test_copy
-test.test_set.TestFrozenSetSubclass.test_cyclical_print
-test.test_set.TestFrozenSetSubclass.test_cyclical_repr
-test.test_set.TestFrozenSetSubclass.test_deepcopy
-test.test_set.TestFrozenSetSubclass.test_difference
-test.test_set.TestFrozenSetSubclass.test_do_not_rehash_dict_keys
-test.test_set.TestFrozenSetSubclass.test_equality
-test.test_set.TestFrozenSetSubclass.test_free_after_iterating
-test.test_set.TestFrozenSetSubclass.test_frozen_as_dictkey
-test.test_set.TestFrozenSetSubclass.test_gc
-test.test_set.TestFrozenSetSubclass.test_hash
-test.test_set.TestFrozenSetSubclass.test_hash_caching
-test.test_set.TestFrozenSetSubclass.test_hash_effectiveness
-test.test_set.TestFrozenSetSubclass.test_init
-test.test_set.TestFrozenSetSubclass.test_intersection
-test.test_set.TestFrozenSetSubclass.test_isdisjoint
-test.test_set.TestFrozenSetSubclass.test_iterator_pickling
-test.test_set.TestFrozenSetSubclass.test_len
-test.test_set.TestFrozenSetSubclass.test_nested_empty_constructor
-test.test_set.TestFrozenSetSubclass.test_new_or_init
-test.test_set.TestFrozenSetSubclass.test_or
-test.test_set.TestFrozenSetSubclass.test_pickling
-test.test_set.TestFrozenSetSubclass.test_setOfFrozensets
-test.test_set.TestFrozenSetSubclass.test_singleton_empty_frozenset
-test.test_set.TestFrozenSetSubclass.test_sub
-test.test_set.TestFrozenSetSubclass.test_sub_and_super
-test.test_set.TestFrozenSetSubclass.test_subclass_with_custom_hash
-test.test_set.TestFrozenSetSubclass.test_symmetric_difference
-test.test_set.TestFrozenSetSubclass.test_union
-test.test_set.TestFrozenSetSubclass.test_uniquification
-test.test_set.TestFrozenSetSubclass.test_xor
-test.test_set.TestGraphs.test_cube
-test.test_set.TestGraphs.test_cuboctahedron
-test.test_set.TestIdentities.test_binopsVsSubsets
-test.test_set.TestIdentities.test_commutativity
-test.test_set.TestIdentities.test_exclusion
-test.test_set.TestIdentities.test_summations
-test.test_set.TestMutate.test_add_absent
-test.test_set.TestMutate.test_add_present
-test.test_set.TestMutate.test_add_until_full
-test.test_set.TestMutate.test_clear
-test.test_set.TestMutate.test_discard_absent
-test.test_set.TestMutate.test_discard_present
-test.test_set.TestMutate.test_pop
-test.test_set.TestMutate.test_remove_absent
-test.test_set.TestMutate.test_remove_present
-test.test_set.TestMutate.test_remove_until_empty
-test.test_set.TestMutate.test_update_empty_tuple
-test.test_set.TestMutate.test_update_unit_tuple_non_overlap
-test.test_set.TestMutate.test_update_unit_tuple_overlap
-test.test_set.TestOnlySetsDict.test_difference
-test.test_set.TestOnlySetsDict.test_difference_update
-test.test_set.TestOnlySetsDict.test_difference_update_operator
-test.test_set.TestOnlySetsDict.test_eq_ne
-test.test_set.TestOnlySetsDict.test_ge_gt_le_lt
-test.test_set.TestOnlySetsDict.test_intersection
-test.test_set.TestOnlySetsDict.test_intersection_update
-test.test_set.TestOnlySetsDict.test_intersection_update_operator
-test.test_set.TestOnlySetsDict.test_sym_difference
-test.test_set.TestOnlySetsDict.test_sym_difference_update
-test.test_set.TestOnlySetsDict.test_sym_difference_update_operator
-test.test_set.TestOnlySetsDict.test_union
-test.test_set.TestOnlySetsDict.test_update
-test.test_set.TestOnlySetsDict.test_update_operator
-test.test_set.TestOnlySetsGenerator.test_difference
-test.test_set.TestOnlySetsGenerator.test_difference_update
-test.test_set.TestOnlySetsGenerator.test_difference_update_operator
-test.test_set.TestOnlySetsGenerator.test_eq_ne
-test.test_set.TestOnlySetsGenerator.test_ge_gt_le_lt
-test.test_set.TestOnlySetsGenerator.test_intersection
-test.test_set.TestOnlySetsGenerator.test_intersection_update
-test.test_set.TestOnlySetsGenerator.test_intersection_update_operator
-test.test_set.TestOnlySetsGenerator.test_sym_difference
-test.test_set.TestOnlySetsGenerator.test_sym_difference_update
-test.test_set.TestOnlySetsGenerator.test_sym_difference_update_operator
-test.test_set.TestOnlySetsGenerator.test_union
-test.test_set.TestOnlySetsGenerator.test_update
-test.test_set.TestOnlySetsGenerator.test_update_operator
-test.test_set.TestOnlySetsNumeric.test_difference
-test.test_set.TestOnlySetsNumeric.test_difference_update
-test.test_set.TestOnlySetsNumeric.test_difference_update_operator
-test.test_set.TestOnlySetsNumeric.test_eq_ne
-test.test_set.TestOnlySetsNumeric.test_ge_gt_le_lt
-test.test_set.TestOnlySetsNumeric.test_intersection
-test.test_set.TestOnlySetsNumeric.test_intersection_update
-test.test_set.TestOnlySetsNumeric.test_intersection_update_operator
-test.test_set.TestOnlySetsNumeric.test_sym_difference
-test.test_set.TestOnlySetsNumeric.test_sym_difference_update
-test.test_set.TestOnlySetsNumeric.test_sym_difference_update_operator
-test.test_set.TestOnlySetsNumeric.test_union
-test.test_set.TestOnlySetsNumeric.test_update
-test.test_set.TestOnlySetsNumeric.test_update_operator
-test.test_set.TestOnlySetsOperator.test_difference
-test.test_set.TestOnlySetsOperator.test_difference_update
-test.test_set.TestOnlySetsOperator.test_difference_update_operator
-test.test_set.TestOnlySetsOperator.test_eq_ne
-test.test_set.TestOnlySetsOperator.test_ge_gt_le_lt
-test.test_set.TestOnlySetsOperator.test_intersection
-test.test_set.TestOnlySetsOperator.test_intersection_update
-test.test_set.TestOnlySetsOperator.test_intersection_update_operator
-test.test_set.TestOnlySetsOperator.test_sym_difference
-test.test_set.TestOnlySetsOperator.test_sym_difference_update
-test.test_set.TestOnlySetsOperator.test_sym_difference_update_operator
-test.test_set.TestOnlySetsOperator.test_union
-test.test_set.TestOnlySetsOperator.test_update
-test.test_set.TestOnlySetsOperator.test_update_operator
-test.test_set.TestOnlySetsString.test_difference
-test.test_set.TestOnlySetsString.test_difference_update
-test.test_set.TestOnlySetsString.test_difference_update_operator
-test.test_set.TestOnlySetsString.test_eq_ne
-test.test_set.TestOnlySetsString.test_ge_gt_le_lt
-test.test_set.TestOnlySetsString.test_intersection
-test.test_set.TestOnlySetsString.test_intersection_update
-test.test_set.TestOnlySetsString.test_intersection_update_operator
-test.test_set.TestOnlySetsString.test_sym_difference
-test.test_set.TestOnlySetsString.test_sym_difference_update
-test.test_set.TestOnlySetsString.test_sym_difference_update_operator
-test.test_set.TestOnlySetsString.test_union
-test.test_set.TestOnlySetsString.test_update
-test.test_set.TestOnlySetsString.test_update_operator
-test.test_set.TestOnlySetsTuple.test_difference
-test.test_set.TestOnlySetsTuple.test_difference_update
-test.test_set.TestOnlySetsTuple.test_difference_update_operator
-test.test_set.TestOnlySetsTuple.test_eq_ne
-test.test_set.TestOnlySetsTuple.test_ge_gt_le_lt
-test.test_set.TestOnlySetsTuple.test_intersection
-test.test_set.TestOnlySetsTuple.test_intersection_update
-test.test_set.TestOnlySetsTuple.test_intersection_update_operator
-test.test_set.TestOnlySetsTuple.test_sym_difference
-test.test_set.TestOnlySetsTuple.test_sym_difference_update
-test.test_set.TestOnlySetsTuple.test_sym_difference_update_operator
-test.test_set.TestOnlySetsTuple.test_union
-test.test_set.TestOnlySetsTuple.test_update
-test.test_set.TestOnlySetsTuple.test_update_operator
-test.test_set.TestSet.test_add
-test.test_set.TestSet.test_and
-test.test_set.TestSet.test_badcmp
-test.test_set.TestSet.test_c_api
-test.test_set.TestSet.test_clear
-test.test_set.TestSet.test_constructor_identity
-test.test_set.TestSet.test_container_iterator
-test.test_set.TestSet.test_contains
-test.test_set.TestSet.test_copy
-test.test_set.TestSet.test_cyclical_print
-test.test_set.TestSet.test_cyclical_repr
-test.test_set.TestSet.test_deepcopy
-test.test_set.TestSet.test_difference
-test.test_set.TestSet.test_difference_update
-test.test_set.TestSet.test_discard
-test.test_set.TestSet.test_do_not_rehash_dict_keys
-test.test_set.TestSet.test_equality
-test.test_set.TestSet.test_free_after_iterating
-test.test_set.TestSet.test_gc
-test.test_set.TestSet.test_hash
-test.test_set.TestSet.test_iand
-test.test_set.TestSet.test_init
-test.test_set.TestSet.test_inplace_on_self
-test.test_set.TestSet.test_intersection
-test.test_set.TestSet.test_intersection_update
-test.test_set.TestSet.test_ior
-test.test_set.TestSet.test_isdisjoint
-test.test_set.TestSet.test_isub
-test.test_set.TestSet.test_iterator_pickling
-test.test_set.TestSet.test_ixor
-test.test_set.TestSet.test_len
-test.test_set.TestSet.test_new_or_init
-test.test_set.TestSet.test_or
-test.test_set.TestSet.test_pickling
-test.test_set.TestSet.test_pop
-test.test_set.TestSet.test_remove
-test.test_set.TestSet.test_remove_keyerror_set
-test.test_set.TestSet.test_remove_keyerror_unpacking
-test.test_set.TestSet.test_rich_compare
-test.test_set.TestSet.test_setOfFrozensets
-test.test_set.TestSet.test_set_literal
-test.test_set.TestSet.test_set_literal_evaluation_order
-test.test_set.TestSet.test_set_literal_insertion_order
-test.test_set.TestSet.test_sub
-test.test_set.TestSet.test_sub_and_super
-test.test_set.TestSet.test_subclass_with_custom_hash
-test.test_set.TestSet.test_symmetric_difference
-test.test_set.TestSet.test_symmetric_difference_update
-test.test_set.TestSet.test_union
-test.test_set.TestSet.test_uniquification
-test.test_set.TestSet.test_update
-test.test_set.TestSet.test_weakref
-test.test_set.TestSet.test_xor
-test.test_set.TestSetOfSets.test_constructor
-test.test_set.TestSetSubclass.test_add
-test.test_set.TestSetSubclass.test_and
-test.test_set.TestSetSubclass.test_badcmp
-test.test_set.TestSetSubclass.test_c_api
-test.test_set.TestSetSubclass.test_clear
-test.test_set.TestSetSubclass.test_constructor_identity
-test.test_set.TestSetSubclass.test_container_iterator
-test.test_set.TestSetSubclass.test_contains
-test.test_set.TestSetSubclass.test_copy
-test.test_set.TestSetSubclass.test_cyclical_print
-test.test_set.TestSetSubclass.test_cyclical_repr
-test.test_set.TestSetSubclass.test_deepcopy
-test.test_set.TestSetSubclass.test_difference
-test.test_set.TestSetSubclass.test_difference_update
-test.test_set.TestSetSubclass.test_discard
-test.test_set.TestSetSubclass.test_do_not_rehash_dict_keys
-test.test_set.TestSetSubclass.test_equality
-test.test_set.TestSetSubclass.test_free_after_iterating
-test.test_set.TestSetSubclass.test_gc
-test.test_set.TestSetSubclass.test_hash
-test.test_set.TestSetSubclass.test_iand
-test.test_set.TestSetSubclass.test_init
-test.test_set.TestSetSubclass.test_inplace_on_self
-test.test_set.TestSetSubclass.test_intersection
-test.test_set.TestSetSubclass.test_intersection_update
-test.test_set.TestSetSubclass.test_ior
-test.test_set.TestSetSubclass.test_isdisjoint
-test.test_set.TestSetSubclass.test_isub
-test.test_set.TestSetSubclass.test_iterator_pickling
-test.test_set.TestSetSubclass.test_ixor
-test.test_set.TestSetSubclass.test_len
-test.test_set.TestSetSubclass.test_new_or_init
-test.test_set.TestSetSubclass.test_or
-test.test_set.TestSetSubclass.test_pickling
-test.test_set.TestSetSubclass.test_pop
-test.test_set.TestSetSubclass.test_remove
-test.test_set.TestSetSubclass.test_remove_keyerror_set
-test.test_set.TestSetSubclass.test_remove_keyerror_unpacking
-test.test_set.TestSetSubclass.test_rich_compare
-test.test_set.TestSetSubclass.test_setOfFrozensets
-test.test_set.TestSetSubclass.test_set_literal
-test.test_set.TestSetSubclass.test_set_literal_evaluation_order
-test.test_set.TestSetSubclass.test_set_literal_insertion_order
-test.test_set.TestSetSubclass.test_sub
-test.test_set.TestSetSubclass.test_sub_and_super
-test.test_set.TestSetSubclass.test_subclass_with_custom_hash
-test.test_set.TestSetSubclass.test_symmetric_difference
-test.test_set.TestSetSubclass.test_symmetric_difference_update
-test.test_set.TestSetSubclass.test_union
-test.test_set.TestSetSubclass.test_uniquification
-test.test_set.TestSetSubclass.test_update
-test.test_set.TestSetSubclass.test_weakref
-test.test_set.TestSetSubclass.test_xor
-test.test_set.TestSetSubclassWithKeywordArgs.test_add
-test.test_set.TestSetSubclassWithKeywordArgs.test_and
-test.test_set.TestSetSubclassWithKeywordArgs.test_badcmp
-test.test_set.TestSetSubclassWithKeywordArgs.test_c_api
-test.test_set.TestSetSubclassWithKeywordArgs.test_clear
-test.test_set.TestSetSubclassWithKeywordArgs.test_constructor_identity
-test.test_set.TestSetSubclassWithKeywordArgs.test_container_iterator
-test.test_set.TestSetSubclassWithKeywordArgs.test_contains
-test.test_set.TestSetSubclassWithKeywordArgs.test_copy
-test.test_set.TestSetSubclassWithKeywordArgs.test_cyclical_print
-test.test_set.TestSetSubclassWithKeywordArgs.test_cyclical_repr
-test.test_set.TestSetSubclassWithKeywordArgs.test_deepcopy
-test.test_set.TestSetSubclassWithKeywordArgs.test_difference
-test.test_set.TestSetSubclassWithKeywordArgs.test_difference_update
-test.test_set.TestSetSubclassWithKeywordArgs.test_discard
-test.test_set.TestSetSubclassWithKeywordArgs.test_do_not_rehash_dict_keys
-test.test_set.TestSetSubclassWithKeywordArgs.test_equality
-test.test_set.TestSetSubclassWithKeywordArgs.test_free_after_iterating
-test.test_set.TestSetSubclassWithKeywordArgs.test_gc
-test.test_set.TestSetSubclassWithKeywordArgs.test_hash
-test.test_set.TestSetSubclassWithKeywordArgs.test_iand
-test.test_set.TestSetSubclassWithKeywordArgs.test_init
-test.test_set.TestSetSubclassWithKeywordArgs.test_inplace_on_self
-test.test_set.TestSetSubclassWithKeywordArgs.test_intersection
-test.test_set.TestSetSubclassWithKeywordArgs.test_intersection_update
-test.test_set.TestSetSubclassWithKeywordArgs.test_ior
-test.test_set.TestSetSubclassWithKeywordArgs.test_isdisjoint
-test.test_set.TestSetSubclassWithKeywordArgs.test_isub
-test.test_set.TestSetSubclassWithKeywordArgs.test_iterator_pickling
-test.test_set.TestSetSubclassWithKeywordArgs.test_ixor
-test.test_set.TestSetSubclassWithKeywordArgs.test_keywords_in_subclass
-test.test_set.TestSetSubclassWithKeywordArgs.test_len
-test.test_set.TestSetSubclassWithKeywordArgs.test_new_or_init
-test.test_set.TestSetSubclassWithKeywordArgs.test_or
-test.test_set.TestSetSubclassWithKeywordArgs.test_pickling
-test.test_set.TestSetSubclassWithKeywordArgs.test_pop
-test.test_set.TestSetSubclassWithKeywordArgs.test_remove
-test.test_set.TestSetSubclassWithKeywordArgs.test_remove_keyerror_set
-test.test_set.TestSetSubclassWithKeywordArgs.test_remove_keyerror_unpacking
-test.test_set.TestSetSubclassWithKeywordArgs.test_rich_compare
-test.test_set.TestSetSubclassWithKeywordArgs.test_setOfFrozensets
-test.test_set.TestSetSubclassWithKeywordArgs.test_set_literal
-test.test_set.TestSetSubclassWithKeywordArgs.test_set_literal_evaluation_order
-test.test_set.TestSetSubclassWithKeywordArgs.test_set_literal_insertion_order
-test.test_set.TestSetSubclassWithKeywordArgs.test_sub
-test.test_set.TestSetSubclassWithKeywordArgs.test_sub_and_super
-test.test_set.TestSetSubclassWithKeywordArgs.test_subclass_with_custom_hash
-test.test_set.TestSetSubclassWithKeywordArgs.test_symmetric_difference
-test.test_set.TestSetSubclassWithKeywordArgs.test_symmetric_difference_update
-test.test_set.TestSetSubclassWithKeywordArgs.test_union
-test.test_set.TestSetSubclassWithKeywordArgs.test_uniquification
-test.test_set.TestSetSubclassWithKeywordArgs.test_update
-test.test_set.TestSetSubclassWithKeywordArgs.test_weakref
-test.test_set.TestSetSubclassWithKeywordArgs.test_xor
-test.test_set.TestSubsetEmptyNonEmpty.test_issubset
-test.test_set.TestSubsetEqualEmpty.test_issubset
-test.test_set.TestSubsetEqualNonEmpty.test_issubset
-test.test_set.TestSubsetNonOverlap.test_issubset
-test.test_set.TestSubsetPartial.test_issubset
-test.test_set.TestUpdateOps.test_difference_method_call
-test.test_set.TestUpdateOps.test_difference_non_overlap
-test.test_set.TestUpdateOps.test_difference_overlap
-test.test_set.TestUpdateOps.test_difference_subset
-test.test_set.TestUpdateOps.test_difference_superset
-test.test_set.TestUpdateOps.test_intersection_method_call
-test.test_set.TestUpdateOps.test_intersection_non_overlap
-test.test_set.TestUpdateOps.test_intersection_overlap
-test.test_set.TestUpdateOps.test_intersection_subset
-test.test_set.TestUpdateOps.test_intersection_superset
-test.test_set.TestUpdateOps.test_sym_difference_method_call
-test.test_set.TestUpdateOps.test_sym_difference_non_overlap
-test.test_set.TestUpdateOps.test_sym_difference_overlap
-test.test_set.TestUpdateOps.test_sym_difference_subset
-test.test_set.TestUpdateOps.test_sym_difference_superset
-test.test_set.TestUpdateOps.test_union_method_call
-test.test_set.TestUpdateOps.test_union_non_overlap
-test.test_set.TestUpdateOps.test_union_overlap
-test.test_set.TestUpdateOps.test_union_subset
-test.test_set.TestUpdateOps.test_union_superset
-test.test_set.TestVariousIteratorArgs.test_constructor
-test.test_set.TestVariousIteratorArgs.test_inline_methods
-test.test_set.TestVariousIteratorArgs.test_inplace_methods
-test.test_set.TestWeirdBugs.test_8420_set_merge
-test.test_set.TestWeirdBugs.test_iter_and_mutate
-test.test_set.TestWeirdBugs.test_merge_and_mutate
+test.test_set.TestBasicOpsBytes.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_empty_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_empty_difference_rev @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_empty_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_empty_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_empty_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_empty_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_equivalent_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_intersection_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_isdisjoint_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_issue_37219 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_self_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_self_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_self_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_self_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_self_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_self_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsBytes.test_union_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_empty_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_empty_difference_rev @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_empty_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_empty_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_empty_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_empty_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_equivalent_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_intersection_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_isdisjoint_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_issue_37219 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_self_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_self_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_self_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_self_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_self_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_self_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsEmpty.test_union_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_empty_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_empty_difference_rev @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_empty_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_empty_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_empty_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_empty_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_equivalent_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_intersection_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_isdisjoint_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_issue_37219 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_self_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_self_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_self_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_self_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_self_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_self_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsMixedStringBytes.test_union_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_empty_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_empty_difference_rev @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_empty_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_empty_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_empty_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_empty_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_equivalent_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_in @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_intersection_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_isdisjoint_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_issue_37219 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_not_in @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_self_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_self_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_self_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_self_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_self_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_self_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsSingleton.test_union_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_empty_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_empty_difference_rev @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_empty_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_empty_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_empty_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_empty_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_equivalent_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_intersection_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_isdisjoint_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_issue_37219 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_self_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_self_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_self_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_self_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_self_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_self_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsString.test_union_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_empty_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_empty_difference_rev @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_empty_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_empty_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_empty_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_empty_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_equivalent_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_intersection_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_isdisjoint_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_issue_37219 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_self_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_self_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_self_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_self_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_self_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_self_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTriple.test_union_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_empty_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_empty_difference_rev @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_empty_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_empty_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_empty_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_empty_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_equivalent_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_in @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_intersection_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_isdisjoint_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_issue_37219 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_not_in @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_self_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_self_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_self_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_self_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_self_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_self_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBasicOpsTuple.test_union_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_eq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_intersection_non_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_intersection_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_intersection_subset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_intersection_superset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_isdisjoint_non_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_isdisjoint_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_isdisjoint_subset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_isdisjoint_superset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_sym_difference_non_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_sym_difference_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_sym_difference_subset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_sym_difference_superset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_union_non_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_union_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_union_subset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOps.test_union_superset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOpsMutating_Set_Set.test_iteration_with_mutation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestBinaryOpsMutating_Set_Set.test_or_with_mutation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestCopyingEmpty.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestCopyingEmpty.test_deep_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestCopyingNested.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestCopyingNested.test_deep_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestCopyingSingleton.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestCopyingSingleton.test_deep_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestCopyingTriple.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestCopyingTriple.test_deep_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestCopyingTuple.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestCopyingTuple.test_deep_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestExceptionPropagation.test_changingSizeWhileIterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestExceptionPropagation.test_instanceWithException @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestExceptionPropagation.test_instancesWithoutException @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_badcmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_constructor_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_container_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_cyclical_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_cyclical_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_do_not_rehash_dict_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_frozen_as_dictkey @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_hash_caching @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_hash_effectiveness @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_iterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_new_or_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_setOfFrozensets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_singleton_empty_frozenset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_sub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_sub_and_super @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_subclass_with_custom_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_uniquification @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSet.test_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_badcmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_constructor_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_container_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_cyclical_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_cyclical_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_do_not_rehash_dict_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_frozen_as_dictkey @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_hash_caching @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_hash_effectiveness @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_iterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_nested_empty_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_new_or_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_setOfFrozensets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_singleton_empty_frozenset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_sub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_sub_and_super @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_subclass_with_custom_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_uniquification @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestFrozenSetSubclass.test_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestGraphs.test_cube @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestGraphs.test_cuboctahedron @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestIdentities.test_binopsVsSubsets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestIdentities.test_commutativity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestIdentities.test_exclusion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestIdentities.test_summations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestMutate.test_add_absent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestMutate.test_add_present @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestMutate.test_add_until_full @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestMutate.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestMutate.test_discard_absent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestMutate.test_discard_present @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestMutate.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestMutate.test_remove_absent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestMutate.test_remove_present @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestMutate.test_remove_until_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestMutate.test_update_empty_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestMutate.test_update_unit_tuple_non_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestMutate.test_update_unit_tuple_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_difference_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_eq_ne @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_ge_gt_le_lt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_intersection_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_intersection_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_sym_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_sym_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_sym_difference_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsDict.test_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_difference_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_eq_ne @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_ge_gt_le_lt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_intersection_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_intersection_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_sym_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_sym_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_sym_difference_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsGenerator.test_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_difference_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_eq_ne @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_ge_gt_le_lt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_intersection_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_intersection_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_sym_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_sym_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_sym_difference_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsNumeric.test_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_difference_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_eq_ne @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_ge_gt_le_lt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_intersection_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_intersection_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_sym_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_sym_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_sym_difference_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsOperator.test_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_difference_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_eq_ne @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_ge_gt_le_lt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_intersection_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_intersection_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_sym_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_sym_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_sym_difference_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsString.test_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_difference_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_eq_ne @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_ge_gt_le_lt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_intersection_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_intersection_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_sym_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_sym_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_sym_difference_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestOnlySetsTuple.test_update_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_badcmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_c_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_constructor_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_container_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_cyclical_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_cyclical_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_discard @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_do_not_rehash_dict_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_iand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_inplace_on_self @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_intersection_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_ior @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_isub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_iterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_ixor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_new_or_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_remove_keyerror_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_remove_keyerror_unpacking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_rich_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_setOfFrozensets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_set_literal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_set_literal_evaluation_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_set_literal_insertion_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_sub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_sub_and_super @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_subclass_with_custom_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_symmetric_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_uniquification @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSet.test_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetOfSets.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_badcmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_c_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_constructor_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_container_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_cyclical_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_cyclical_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_discard @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_do_not_rehash_dict_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_iand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_inplace_on_self @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_intersection_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_ior @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_isub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_iterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_ixor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_new_or_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_remove_keyerror_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_remove_keyerror_unpacking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_rich_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_setOfFrozensets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_set_literal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_set_literal_evaluation_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_set_literal_insertion_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_sub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_sub_and_super @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_subclass_with_custom_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_symmetric_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_uniquification @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclass.test_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_badcmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_c_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_constructor_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_container_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_cyclical_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_cyclical_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_discard @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_do_not_rehash_dict_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_iand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_inplace_on_self @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_intersection_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_ior @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_isub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_iterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_ixor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_keywords_in_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_new_or_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_remove_keyerror_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_remove_keyerror_unpacking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_rich_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_setOfFrozensets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_set_literal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_set_literal_evaluation_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_set_literal_insertion_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_sub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_sub_and_super @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_subclass_with_custom_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_symmetric_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_uniquification @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSetSubclassWithKeywordArgs.test_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSubsetEmptyNonEmpty.test_issubset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSubsetEqualEmpty.test_issubset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSubsetEqualNonEmpty.test_issubset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSubsetNonOverlap.test_issubset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestSubsetPartial.test_issubset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_difference_method_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_difference_non_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_difference_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_difference_subset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_difference_superset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_intersection_method_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_intersection_non_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_intersection_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_intersection_subset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_intersection_superset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_sym_difference_method_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_sym_difference_non_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_sym_difference_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_sym_difference_subset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_sym_difference_superset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_union_method_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_union_non_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_union_overlap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_union_subset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestUpdateOps.test_union_superset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestVariousIteratorArgs.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestVariousIteratorArgs.test_inline_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestVariousIteratorArgs.test_inplace_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestWeirdBugs.test_8420_set_merge @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestWeirdBugs.test_iter_and_mutate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_set.TestWeirdBugs.test_merge_and_mutate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

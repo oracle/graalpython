@@ -1,253 +1,253 @@
-test.test_shelve.TestAsciiFileShelve.test_bool
-test.test_shelve.TestAsciiFileShelve.test_constructor
-test.test_shelve.TestAsciiFileShelve.test_get
-test.test_shelve.TestAsciiFileShelve.test_getitem
-test.test_shelve.TestAsciiFileShelve.test_items
-test.test_shelve.TestAsciiFileShelve.test_keys
-test.test_shelve.TestAsciiFileShelve.test_len
-test.test_shelve.TestAsciiFileShelve.test_pop
-test.test_shelve.TestAsciiFileShelve.test_popitem
-test.test_shelve.TestAsciiFileShelve.test_read
-test.test_shelve.TestAsciiFileShelve.test_setdefault
-test.test_shelve.TestAsciiFileShelve.test_update
-test.test_shelve.TestAsciiFileShelve.test_values
-test.test_shelve.TestAsciiFileShelve.test_write
-test.test_shelve.TestAsciiMemShelve.test_bool
-test.test_shelve.TestAsciiMemShelve.test_constructor
-test.test_shelve.TestAsciiMemShelve.test_get
-test.test_shelve.TestAsciiMemShelve.test_getitem
-test.test_shelve.TestAsciiMemShelve.test_items
-test.test_shelve.TestAsciiMemShelve.test_keys
-test.test_shelve.TestAsciiMemShelve.test_len
-test.test_shelve.TestAsciiMemShelve.test_pop
-test.test_shelve.TestAsciiMemShelve.test_popitem
-test.test_shelve.TestAsciiMemShelve.test_read
-test.test_shelve.TestAsciiMemShelve.test_setdefault
-test.test_shelve.TestAsciiMemShelve.test_update
-test.test_shelve.TestAsciiMemShelve.test_values
-test.test_shelve.TestAsciiMemShelve.test_write
-test.test_shelve.TestBinaryFileShelve.test_bool
-test.test_shelve.TestBinaryFileShelve.test_constructor
-test.test_shelve.TestBinaryFileShelve.test_get
-test.test_shelve.TestBinaryFileShelve.test_getitem
-test.test_shelve.TestBinaryFileShelve.test_items
-test.test_shelve.TestBinaryFileShelve.test_keys
-test.test_shelve.TestBinaryFileShelve.test_len
-test.test_shelve.TestBinaryFileShelve.test_pop
-test.test_shelve.TestBinaryFileShelve.test_popitem
-test.test_shelve.TestBinaryFileShelve.test_read
-test.test_shelve.TestBinaryFileShelve.test_setdefault
-test.test_shelve.TestBinaryFileShelve.test_update
-test.test_shelve.TestBinaryFileShelve.test_values
-test.test_shelve.TestBinaryFileShelve.test_write
-test.test_shelve.TestBinaryMemShelve.test_bool
-test.test_shelve.TestBinaryMemShelve.test_constructor
-test.test_shelve.TestBinaryMemShelve.test_get
-test.test_shelve.TestBinaryMemShelve.test_getitem
-test.test_shelve.TestBinaryMemShelve.test_items
-test.test_shelve.TestBinaryMemShelve.test_keys
-test.test_shelve.TestBinaryMemShelve.test_len
-test.test_shelve.TestBinaryMemShelve.test_pop
-test.test_shelve.TestBinaryMemShelve.test_popitem
-test.test_shelve.TestBinaryMemShelve.test_read
-test.test_shelve.TestBinaryMemShelve.test_setdefault
-test.test_shelve.TestBinaryMemShelve.test_update
-test.test_shelve.TestBinaryMemShelve.test_values
-test.test_shelve.TestBinaryMemShelve.test_write
-test.test_shelve.TestCase.test_ascii_file_shelf
-test.test_shelve.TestCase.test_binary_file_shelf
-test.test_shelve.TestCase.test_bytes_path_file_shelf
-test.test_shelve.TestCase.test_close
-test.test_shelve.TestCase.test_default_protocol
-test.test_shelve.TestCase.test_in_memory_shelf
-test.test_shelve.TestCase.test_keyencoding
-test.test_shelve.TestCase.test_mutable_entry
-test.test_shelve.TestCase.test_open_template
-test.test_shelve.TestCase.test_pathlib_bytes_path_file_shelf
-test.test_shelve.TestCase.test_pathlib_path_file_shelf
-test.test_shelve.TestCase.test_proto2_file_shelf
-test.test_shelve.TestCase.test_with
-test.test_shelve.TestCase.test_writeback_also_writes_immediately
-test.test_shelve.TestMain.test_main
-test.test_shelve.TestProto0File_dumbShelve.test_bool
-test.test_shelve.TestProto0File_dumbShelve.test_constructor
-test.test_shelve.TestProto0File_dumbShelve.test_get
-test.test_shelve.TestProto0File_dumbShelve.test_getitem
-test.test_shelve.TestProto0File_dumbShelve.test_items
-test.test_shelve.TestProto0File_dumbShelve.test_keys
-test.test_shelve.TestProto0File_dumbShelve.test_len
-test.test_shelve.TestProto0File_dumbShelve.test_pop
-test.test_shelve.TestProto0File_dumbShelve.test_popitem
-test.test_shelve.TestProto0File_dumbShelve.test_read
-test.test_shelve.TestProto0File_dumbShelve.test_setdefault
-test.test_shelve.TestProto0File_dumbShelve.test_update
-test.test_shelve.TestProto0File_dumbShelve.test_values
-test.test_shelve.TestProto0File_dumbShelve.test_write
-test.test_shelve.TestProto0MemShelve.test_bool
-test.test_shelve.TestProto0MemShelve.test_constructor
-test.test_shelve.TestProto0MemShelve.test_get
-test.test_shelve.TestProto0MemShelve.test_getitem
-test.test_shelve.TestProto0MemShelve.test_items
-test.test_shelve.TestProto0MemShelve.test_keys
-test.test_shelve.TestProto0MemShelve.test_len
-test.test_shelve.TestProto0MemShelve.test_pop
-test.test_shelve.TestProto0MemShelve.test_popitem
-test.test_shelve.TestProto0MemShelve.test_read
-test.test_shelve.TestProto0MemShelve.test_setdefault
-test.test_shelve.TestProto0MemShelve.test_update
-test.test_shelve.TestProto0MemShelve.test_values
-test.test_shelve.TestProto0MemShelve.test_write
-test.test_shelve.TestProto1File_dumbShelve.test_bool
-test.test_shelve.TestProto1File_dumbShelve.test_constructor
-test.test_shelve.TestProto1File_dumbShelve.test_get
-test.test_shelve.TestProto1File_dumbShelve.test_getitem
-test.test_shelve.TestProto1File_dumbShelve.test_items
-test.test_shelve.TestProto1File_dumbShelve.test_keys
-test.test_shelve.TestProto1File_dumbShelve.test_len
-test.test_shelve.TestProto1File_dumbShelve.test_pop
-test.test_shelve.TestProto1File_dumbShelve.test_popitem
-test.test_shelve.TestProto1File_dumbShelve.test_read
-test.test_shelve.TestProto1File_dumbShelve.test_setdefault
-test.test_shelve.TestProto1File_dumbShelve.test_update
-test.test_shelve.TestProto1File_dumbShelve.test_values
-test.test_shelve.TestProto1File_dumbShelve.test_write
-test.test_shelve.TestProto1MemShelve.test_bool
-test.test_shelve.TestProto1MemShelve.test_constructor
-test.test_shelve.TestProto1MemShelve.test_get
-test.test_shelve.TestProto1MemShelve.test_getitem
-test.test_shelve.TestProto1MemShelve.test_items
-test.test_shelve.TestProto1MemShelve.test_keys
-test.test_shelve.TestProto1MemShelve.test_len
-test.test_shelve.TestProto1MemShelve.test_pop
-test.test_shelve.TestProto1MemShelve.test_popitem
-test.test_shelve.TestProto1MemShelve.test_read
-test.test_shelve.TestProto1MemShelve.test_setdefault
-test.test_shelve.TestProto1MemShelve.test_update
-test.test_shelve.TestProto1MemShelve.test_values
-test.test_shelve.TestProto1MemShelve.test_write
-test.test_shelve.TestProto2FileShelve.test_bool
-test.test_shelve.TestProto2FileShelve.test_constructor
-test.test_shelve.TestProto2FileShelve.test_get
-test.test_shelve.TestProto2FileShelve.test_getitem
-test.test_shelve.TestProto2FileShelve.test_items
-test.test_shelve.TestProto2FileShelve.test_keys
-test.test_shelve.TestProto2FileShelve.test_len
-test.test_shelve.TestProto2FileShelve.test_pop
-test.test_shelve.TestProto2FileShelve.test_popitem
-test.test_shelve.TestProto2FileShelve.test_read
-test.test_shelve.TestProto2FileShelve.test_setdefault
-test.test_shelve.TestProto2FileShelve.test_update
-test.test_shelve.TestProto2FileShelve.test_values
-test.test_shelve.TestProto2FileShelve.test_write
-test.test_shelve.TestProto2File_dumbShelve.test_bool
-test.test_shelve.TestProto2File_dumbShelve.test_constructor
-test.test_shelve.TestProto2File_dumbShelve.test_get
-test.test_shelve.TestProto2File_dumbShelve.test_getitem
-test.test_shelve.TestProto2File_dumbShelve.test_items
-test.test_shelve.TestProto2File_dumbShelve.test_keys
-test.test_shelve.TestProto2File_dumbShelve.test_len
-test.test_shelve.TestProto2File_dumbShelve.test_pop
-test.test_shelve.TestProto2File_dumbShelve.test_popitem
-test.test_shelve.TestProto2File_dumbShelve.test_read
-test.test_shelve.TestProto2File_dumbShelve.test_setdefault
-test.test_shelve.TestProto2File_dumbShelve.test_update
-test.test_shelve.TestProto2File_dumbShelve.test_values
-test.test_shelve.TestProto2File_dumbShelve.test_write
-test.test_shelve.TestProto2MemShelve.test_bool
-test.test_shelve.TestProto2MemShelve.test_constructor
-test.test_shelve.TestProto2MemShelve.test_get
-test.test_shelve.TestProto2MemShelve.test_getitem
-test.test_shelve.TestProto2MemShelve.test_items
-test.test_shelve.TestProto2MemShelve.test_keys
-test.test_shelve.TestProto2MemShelve.test_len
-test.test_shelve.TestProto2MemShelve.test_pop
-test.test_shelve.TestProto2MemShelve.test_popitem
-test.test_shelve.TestProto2MemShelve.test_read
-test.test_shelve.TestProto2MemShelve.test_setdefault
-test.test_shelve.TestProto2MemShelve.test_update
-test.test_shelve.TestProto2MemShelve.test_values
-test.test_shelve.TestProto2MemShelve.test_write
-test.test_shelve.TestProto3File_dumbShelve.test_bool
-test.test_shelve.TestProto3File_dumbShelve.test_constructor
-test.test_shelve.TestProto3File_dumbShelve.test_get
-test.test_shelve.TestProto3File_dumbShelve.test_getitem
-test.test_shelve.TestProto3File_dumbShelve.test_items
-test.test_shelve.TestProto3File_dumbShelve.test_keys
-test.test_shelve.TestProto3File_dumbShelve.test_len
-test.test_shelve.TestProto3File_dumbShelve.test_pop
-test.test_shelve.TestProto3File_dumbShelve.test_popitem
-test.test_shelve.TestProto3File_dumbShelve.test_read
-test.test_shelve.TestProto3File_dumbShelve.test_setdefault
-test.test_shelve.TestProto3File_dumbShelve.test_update
-test.test_shelve.TestProto3File_dumbShelve.test_values
-test.test_shelve.TestProto3File_dumbShelve.test_write
-test.test_shelve.TestProto3MemShelve.test_bool
-test.test_shelve.TestProto3MemShelve.test_constructor
-test.test_shelve.TestProto3MemShelve.test_get
-test.test_shelve.TestProto3MemShelve.test_getitem
-test.test_shelve.TestProto3MemShelve.test_items
-test.test_shelve.TestProto3MemShelve.test_keys
-test.test_shelve.TestProto3MemShelve.test_len
-test.test_shelve.TestProto3MemShelve.test_pop
-test.test_shelve.TestProto3MemShelve.test_popitem
-test.test_shelve.TestProto3MemShelve.test_read
-test.test_shelve.TestProto3MemShelve.test_setdefault
-test.test_shelve.TestProto3MemShelve.test_update
-test.test_shelve.TestProto3MemShelve.test_values
-test.test_shelve.TestProto3MemShelve.test_write
-test.test_shelve.TestProto4File_dumbShelve.test_bool
-test.test_shelve.TestProto4File_dumbShelve.test_constructor
-test.test_shelve.TestProto4File_dumbShelve.test_get
-test.test_shelve.TestProto4File_dumbShelve.test_getitem
-test.test_shelve.TestProto4File_dumbShelve.test_items
-test.test_shelve.TestProto4File_dumbShelve.test_keys
-test.test_shelve.TestProto4File_dumbShelve.test_len
-test.test_shelve.TestProto4File_dumbShelve.test_pop
-test.test_shelve.TestProto4File_dumbShelve.test_popitem
-test.test_shelve.TestProto4File_dumbShelve.test_read
-test.test_shelve.TestProto4File_dumbShelve.test_setdefault
-test.test_shelve.TestProto4File_dumbShelve.test_update
-test.test_shelve.TestProto4File_dumbShelve.test_values
-test.test_shelve.TestProto4File_dumbShelve.test_write
-test.test_shelve.TestProto4MemShelve.test_bool
-test.test_shelve.TestProto4MemShelve.test_constructor
-test.test_shelve.TestProto4MemShelve.test_get
-test.test_shelve.TestProto4MemShelve.test_getitem
-test.test_shelve.TestProto4MemShelve.test_items
-test.test_shelve.TestProto4MemShelve.test_keys
-test.test_shelve.TestProto4MemShelve.test_len
-test.test_shelve.TestProto4MemShelve.test_pop
-test.test_shelve.TestProto4MemShelve.test_popitem
-test.test_shelve.TestProto4MemShelve.test_read
-test.test_shelve.TestProto4MemShelve.test_setdefault
-test.test_shelve.TestProto4MemShelve.test_update
-test.test_shelve.TestProto4MemShelve.test_values
-test.test_shelve.TestProto4MemShelve.test_write
-test.test_shelve.TestProto5File_dumbShelve.test_bool
-test.test_shelve.TestProto5File_dumbShelve.test_constructor
-test.test_shelve.TestProto5File_dumbShelve.test_get
-test.test_shelve.TestProto5File_dumbShelve.test_getitem
-test.test_shelve.TestProto5File_dumbShelve.test_items
-test.test_shelve.TestProto5File_dumbShelve.test_keys
-test.test_shelve.TestProto5File_dumbShelve.test_len
-test.test_shelve.TestProto5File_dumbShelve.test_pop
-test.test_shelve.TestProto5File_dumbShelve.test_popitem
-test.test_shelve.TestProto5File_dumbShelve.test_read
-test.test_shelve.TestProto5File_dumbShelve.test_setdefault
-test.test_shelve.TestProto5File_dumbShelve.test_update
-test.test_shelve.TestProto5File_dumbShelve.test_values
-test.test_shelve.TestProto5File_dumbShelve.test_write
-test.test_shelve.TestProto5MemShelve.test_bool
-test.test_shelve.TestProto5MemShelve.test_constructor
-test.test_shelve.TestProto5MemShelve.test_get
-test.test_shelve.TestProto5MemShelve.test_getitem
-test.test_shelve.TestProto5MemShelve.test_items
-test.test_shelve.TestProto5MemShelve.test_keys
-test.test_shelve.TestProto5MemShelve.test_len
-test.test_shelve.TestProto5MemShelve.test_pop
-test.test_shelve.TestProto5MemShelve.test_popitem
-test.test_shelve.TestProto5MemShelve.test_read
-test.test_shelve.TestProto5MemShelve.test_setdefault
-test.test_shelve.TestProto5MemShelve.test_update
-test.test_shelve.TestProto5MemShelve.test_values
-test.test_shelve.TestProto5MemShelve.test_write
+test.test_shelve.TestAsciiFileShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiFileShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiFileShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiFileShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiFileShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiFileShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiFileShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiFileShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiFileShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiFileShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiFileShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiFileShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiFileShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiFileShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestAsciiMemShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryFileShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestBinaryMemShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_ascii_file_shelf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_binary_file_shelf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_bytes_path_file_shelf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_default_protocol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_in_memory_shelf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_keyencoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_mutable_entry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_open_template @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_pathlib_bytes_path_file_shelf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_pathlib_path_file_shelf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_proto2_file_shelf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_with @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestCase.test_writeback_also_writes_immediately @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0File_dumbShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto0MemShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1File_dumbShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto1MemShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2FileShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2File_dumbShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto2MemShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3File_dumbShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto3MemShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4File_dumbShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto4MemShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5File_dumbShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shelve.TestProto5MemShelve.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,15 +1,15 @@
-test.test_pipes.SimplePipeTests.testBadAppendOptions
-test.test_pipes.SimplePipeTests.testBadOpenMode
-test.test_pipes.SimplePipeTests.testBadPrependOptions
-test.test_pipes.SimplePipeTests.testClone
-test.test_pipes.SimplePipeTests.testEmptyPipeline1
-test.test_pipes.SimplePipeTests.testEmptyPipeline2
-test.test_pipes.SimplePipeTests.testEmptyPipeline3
-test.test_pipes.SimplePipeTests.testReadOpenSink
-test.test_pipes.SimplePipeTests.testRepr
-test.test_pipes.SimplePipeTests.testSetDebug
-test.test_pipes.SimplePipeTests.testSimplePipe1
-test.test_pipes.SimplePipeTests.testSimplePipe2
-test.test_pipes.SimplePipeTests.testSimplePipe3
-test.test_pipes.SimplePipeTests.testWriteOpenSource
-test.test_pipes.TestMain.test_main
+test.test_pipes.SimplePipeTests.testBadAppendOptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.SimplePipeTests.testBadOpenMode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.SimplePipeTests.testBadPrependOptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.SimplePipeTests.testClone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.SimplePipeTests.testEmptyPipeline1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.SimplePipeTests.testEmptyPipeline2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.SimplePipeTests.testEmptyPipeline3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.SimplePipeTests.testReadOpenSink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.SimplePipeTests.testRepr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.SimplePipeTests.testSetDebug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.SimplePipeTests.testSimplePipe1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.SimplePipeTests.testSimplePipe2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.SimplePipeTests.testSimplePipe3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.SimplePipeTests.testWriteOpenSource @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pipes.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

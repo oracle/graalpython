@@ -1,6 +1,6 @@
-test.test_codeop.CodeopTests.test_filename
-test.test_codeop.CodeopTests.test_invalid
-test.test_codeop.CodeopTests.test_invalid_exec
-test.test_codeop.CodeopTests.test_syntax_errors
-test.test_codeop.CodeopTests.test_valid
-test.test_codeop.CodeopTests.test_warning
+test.test_codeop.CodeopTests.test_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeop.CodeopTests.test_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeop.CodeopTests.test_invalid_exec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeop.CodeopTests.test_syntax_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeop.CodeopTests.test_valid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeop.CodeopTests.test_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

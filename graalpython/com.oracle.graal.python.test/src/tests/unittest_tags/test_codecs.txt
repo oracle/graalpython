@@ -1,204 +1,204 @@
-test.test_codecs.ASCIITest.test_decode
-test.test_codecs.ASCIITest.test_decode_error
-test.test_codecs.ASCIITest.test_encode
-test.test_codecs.ASCIITest.test_encode_error
-test.test_codecs.ASCIITest.test_encode_surrogateescape_error
-test.test_codecs.BasicUnicodeTest.test_basics_capi
-test.test_codecs.BasicUnicodeTest.test_encoding_map_type_initialized
-test.test_codecs.CharmapTest.test_decode_with_int2int_map
-test.test_codecs.CharmapTest.test_decode_with_int2str_map
-test.test_codecs.CharmapTest.test_decode_with_string_map
-test.test_codecs.CodePageTest.test_code_page_decode_flags
-test.test_codecs.CodePageTest.test_code_page_name
-test.test_codecs.CodePageTest.test_cp1252
-test.test_codecs.CodePageTest.test_cp932
-test.test_codecs.CodePageTest.test_cp_utf7
-test.test_codecs.CodePageTest.test_incremental
-test.test_codecs.CodePageTest.test_invalid_code_page
-test.test_codecs.CodePageTest.test_large_input
-test.test_codecs.CodePageTest.test_large_utf8_input
-test.test_codecs.CodePageTest.test_mbcs_alias
-test.test_codecs.CodePageTest.test_multibyte_encoding
-test.test_codecs.CodecNameNormalizationTest.test_codecs_lookup
-test.test_codecs.CodecNameNormalizationTest.test_encodings_normalize_encoding
-test.test_codecs.CodecsModuleTest.test_all
-test.test_codecs.CodecsModuleTest.test_decode
-test.test_codecs.CodecsModuleTest.test_encode
-test.test_codecs.CodecsModuleTest.test_file_closes_if_lookup_error_raised
-test.test_codecs.CodecsModuleTest.test_getdecoder
-test.test_codecs.CodecsModuleTest.test_getencoder
-test.test_codecs.CodecsModuleTest.test_getreader
-test.test_codecs.CodecsModuleTest.test_getwriter
-test.test_codecs.CodecsModuleTest.test_lookup
-test.test_codecs.CodecsModuleTest.test_lookup_issue1813
-test.test_codecs.CodecsModuleTest.test_open
-test.test_codecs.CodecsModuleTest.test_register
-test.test_codecs.CodecsModuleTest.test_undefined
-test.test_codecs.CodecsModuleTest.test_unregister
-test.test_codecs.EncodedFileTest.test_basic
-test.test_codecs.EscapeDecodeTest.test_empty
-test.test_codecs.EscapeDecodeTest.test_errors
-test.test_codecs.EscapeDecodeTest.test_raw
-test.test_codecs.EscapeEncodeTest.test_escape_encode
-test.test_codecs.ExceptionChainingTest.test_init_override_is_not_wrapped
-test.test_codecs.ExceptionChainingTest.test_instance_attribute_is_not_wrapped
-test.test_codecs.ExceptionChainingTest.test_multiple_args_is_not_wrapped
-test.test_codecs.ExceptionChainingTest.test_new_override_is_not_wrapped
-test.test_codecs.ExceptionChainingTest.test_non_str_arg_is_not_wrapped
-test.test_codecs.ExceptionChainingTest.test_unflagged_non_text_codec_handling
-test.test_codecs.IDNACodecTest.test_builtin_decode
-test.test_codecs.IDNACodecTest.test_builtin_decode_length_limit
-test.test_codecs.IDNACodecTest.test_builtin_encode
-test.test_codecs.IDNACodecTest.test_errors
-test.test_codecs.IDNACodecTest.test_incremental_decode
-test.test_codecs.IDNACodecTest.test_incremental_encode
-test.test_codecs.IDNACodecTest.test_stream
-test.test_codecs.Latin1Test.test_decode
-test.test_codecs.Latin1Test.test_encode
-test.test_codecs.Latin1Test.test_encode_errors
-test.test_codecs.Latin1Test.test_encode_surrogateescape_error
-test.test_codecs.LocaleCodecTest.test_decode_strict
-test.test_codecs.LocaleCodecTest.test_decode_surrogateescape
-test.test_codecs.LocaleCodecTest.test_decode_surrogatepass
-test.test_codecs.LocaleCodecTest.test_decode_unsupported_error_handler
-test.test_codecs.LocaleCodecTest.test_encode_strict
-test.test_codecs.LocaleCodecTest.test_encode_surrogateescape
-test.test_codecs.LocaleCodecTest.test_encode_surrogatepass
-test.test_codecs.LocaleCodecTest.test_encode_unsupported_error_handler
-test.test_codecs.NameprepTest.test_nameprep
-test.test_codecs.PunycodeTest.test_decode
-test.test_codecs.PunycodeTest.test_decode_invalid
-test.test_codecs.PunycodeTest.test_encode
-test.test_codecs.RawUnicodeEscapeTest.test_bug1098990_a
-test.test_codecs.RawUnicodeEscapeTest.test_bug1098990_b
-test.test_codecs.RawUnicodeEscapeTest.test_bug1175396
-test.test_codecs.RawUnicodeEscapeTest.test_empty
-test.test_codecs.RawUnicodeEscapeTest.test_escape_encode
-test.test_codecs.RawUnicodeEscapeTest.test_mixed_readline_and_read
-test.test_codecs.RawUnicodeEscapeTest.test_raw_encode
-test.test_codecs.RawUnicodeEscapeTest.test_readlinequeue
-test.test_codecs.Rot13Test.test_decode
-test.test_codecs.Rot13Test.test_encode
-test.test_codecs.Rot13Test.test_incremental_decode
-test.test_codecs.Rot13Test.test_incremental_encode
-test.test_codecs.Rot13UtilTest.test_rot13_func
-test.test_codecs.StreamReaderTest.test_copy
-test.test_codecs.StreamReaderTest.test_pickle
-test.test_codecs.StreamReaderTest.test_readlines
-test.test_codecs.StreamReaderWriterTest.test_copy
-test.test_codecs.StreamReaderWriterTest.test_pickle
-test.test_codecs.StreamRecoderTest.test_seeking_read
-test.test_codecs.StreamRecoderTest.test_seeking_write
-test.test_codecs.StreamWriterTest.test_copy
-test.test_codecs.StreamWriterTest.test_pickle
-test.test_codecs.SurrogateEscapeTest.test_ascii
-test.test_codecs.SurrogateEscapeTest.test_charmap
-test.test_codecs.SurrogateEscapeTest.test_latin1
-test.test_codecs.SurrogateEscapeTest.test_utf8
-test.test_codecs.TransformCodecTest.test_aliases
-test.test_codecs.TransformCodecTest.test_quopri_stateless
-test.test_codecs.TransformCodecTest.test_uu_invalid
-test.test_codecs.UTF16BETest.test_bug1098990_a
-test.test_codecs.UTF16BETest.test_bug1098990_b
-test.test_codecs.UTF16BETest.test_bug1175396
-test.test_codecs.UTF16BETest.test_mixed_readline_and_read
-test.test_codecs.UTF16BETest.test_nonbmp
-test.test_codecs.UTF16BETest.test_partial
-test.test_codecs.UTF16BETest.test_readline
-test.test_codecs.UTF16BETest.test_readlinequeue
-test.test_codecs.UTF16ExTest.test_bad_args
-test.test_codecs.UTF16LETest.test_bug1098990_a
-test.test_codecs.UTF16LETest.test_bug1098990_b
-test.test_codecs.UTF16LETest.test_bug1175396
-test.test_codecs.UTF16LETest.test_mixed_readline_and_read
-test.test_codecs.UTF16LETest.test_nonbmp
-test.test_codecs.UTF16LETest.test_partial
-test.test_codecs.UTF16LETest.test_readline
-test.test_codecs.UTF16LETest.test_readlinequeue
-test.test_codecs.UTF16Test.test_bug1098990_a
-test.test_codecs.UTF16Test.test_bug1098990_b
-test.test_codecs.UTF16Test.test_bug1175396
-test.test_codecs.UTF16Test.test_bug691291
-test.test_codecs.UTF16Test.test_errors
-test.test_codecs.UTF16Test.test_handlers
-test.test_codecs.UTF16Test.test_mixed_readline_and_read
-test.test_codecs.UTF16Test.test_partial
-test.test_codecs.UTF16Test.test_readline
-test.test_codecs.UTF16Test.test_readlinequeue
-test.test_codecs.UTF32BETest.test_bug1098990_a
-test.test_codecs.UTF32BETest.test_bug1098990_b
-test.test_codecs.UTF32BETest.test_bug1175396
-test.test_codecs.UTF32BETest.test_errors
-test.test_codecs.UTF32BETest.test_issue8941
-test.test_codecs.UTF32BETest.test_mixed_readline_and_read
-test.test_codecs.UTF32BETest.test_partial
-test.test_codecs.UTF32BETest.test_readline
-test.test_codecs.UTF32BETest.test_readlinequeue
-test.test_codecs.UTF32BETest.test_simple
-test.test_codecs.UTF32LETest.test_bug1098990_a
-test.test_codecs.UTF32LETest.test_bug1098990_b
-test.test_codecs.UTF32LETest.test_bug1175396
-test.test_codecs.UTF32LETest.test_errors
-test.test_codecs.UTF32LETest.test_issue8941
-test.test_codecs.UTF32LETest.test_mixed_readline_and_read
-test.test_codecs.UTF32LETest.test_partial
-test.test_codecs.UTF32LETest.test_readline
-test.test_codecs.UTF32LETest.test_readlinequeue
-test.test_codecs.UTF32LETest.test_simple
-test.test_codecs.UTF32Test.test_badbom
-test.test_codecs.UTF32Test.test_bug1098990_a
-test.test_codecs.UTF32Test.test_bug1098990_b
-test.test_codecs.UTF32Test.test_bug1175396
-test.test_codecs.UTF32Test.test_errors
-test.test_codecs.UTF32Test.test_handlers
-test.test_codecs.UTF32Test.test_issue8941
-test.test_codecs.UTF32Test.test_mixed_readline_and_read
-test.test_codecs.UTF32Test.test_partial
-test.test_codecs.UTF32Test.test_readline
-test.test_codecs.UTF32Test.test_readlinequeue
-test.test_codecs.UTF7Test.test_ascii
-test.test_codecs.UTF7Test.test_bug1098990_a
-test.test_codecs.UTF7Test.test_bug1098990_b
-test.test_codecs.UTF7Test.test_bug1175396
-test.test_codecs.UTF7Test.test_mixed_readline_and_read
-test.test_codecs.UTF7Test.test_readlinequeue
-test.test_codecs.UTF8SigTest.test_bom
-test.test_codecs.UTF8SigTest.test_bug1098990_a
-test.test_codecs.UTF8SigTest.test_bug1098990_b
-test.test_codecs.UTF8SigTest.test_bug1175396
-test.test_codecs.UTF8SigTest.test_bug1601501
-test.test_codecs.UTF8SigTest.test_decode_error
-test.test_codecs.UTF8SigTest.test_decoder_state
-test.test_codecs.UTF8SigTest.test_incremental_errors
-test.test_codecs.UTF8SigTest.test_incremental_surrogatepass
-test.test_codecs.UTF8SigTest.test_mixed_readline_and_read
-test.test_codecs.UTF8SigTest.test_partial
-test.test_codecs.UTF8SigTest.test_readline
-test.test_codecs.UTF8SigTest.test_readlinequeue
-test.test_codecs.UTF8SigTest.test_stream_bare
-test.test_codecs.UTF8SigTest.test_stream_bom
-test.test_codecs.UTF8Test.test_bug1098990_a
-test.test_codecs.UTF8Test.test_bug1098990_b
-test.test_codecs.UTF8Test.test_bug1175396
-test.test_codecs.UTF8Test.test_decode_error
-test.test_codecs.UTF8Test.test_decoder_state
-test.test_codecs.UTF8Test.test_incremental_errors
-test.test_codecs.UTF8Test.test_incremental_surrogatepass
-test.test_codecs.UTF8Test.test_mixed_readline_and_read
-test.test_codecs.UTF8Test.test_partial
-test.test_codecs.UTF8Test.test_readline
-test.test_codecs.UTF8Test.test_readlinequeue
-test.test_codecs.UnicodeEscapeTest.test_bug1098990_a
-test.test_codecs.UnicodeEscapeTest.test_bug1098990_b
-test.test_codecs.UnicodeEscapeTest.test_bug1175396
-test.test_codecs.UnicodeEscapeTest.test_empty
-test.test_codecs.UnicodeEscapeTest.test_escape_encode
-test.test_codecs.UnicodeEscapeTest.test_incremental_surrogatepass
-test.test_codecs.UnicodeEscapeTest.test_mixed_readline_and_read
-test.test_codecs.UnicodeEscapeTest.test_partial
-test.test_codecs.UnicodeEscapeTest.test_raw_decode
-test.test_codecs.UnicodeEscapeTest.test_raw_encode
-test.test_codecs.UnicodeEscapeTest.test_readline
-test.test_codecs.UnicodeEscapeTest.test_readlinequeue
-test.test_codecs.WithStmtTest.test_encodedfile
-test.test_codecs.WithStmtTest.test_streamreaderwriter
+test.test_codecs.ASCIITest.test_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.ASCIITest.test_decode_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.ASCIITest.test_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.ASCIITest.test_encode_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.ASCIITest.test_encode_surrogateescape_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.BasicUnicodeTest.test_basics_capi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.BasicUnicodeTest.test_encoding_map_type_initialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CharmapTest.test_decode_with_int2int_map @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CharmapTest.test_decode_with_int2str_map @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CharmapTest.test_decode_with_string_map @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodePageTest.test_code_page_decode_flags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodePageTest.test_code_page_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodePageTest.test_cp1252 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodePageTest.test_cp932 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodePageTest.test_cp_utf7 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodePageTest.test_incremental @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodePageTest.test_invalid_code_page @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodePageTest.test_large_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodePageTest.test_large_utf8_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodePageTest.test_mbcs_alias @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodePageTest.test_multibyte_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecNameNormalizationTest.test_codecs_lookup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecNameNormalizationTest.test_encodings_normalize_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_file_closes_if_lookup_error_raised @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_getdecoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_getencoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_getreader @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_getwriter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_lookup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_lookup_issue1813 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_register @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_undefined @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.CodecsModuleTest.test_unregister @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.EncodedFileTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.EscapeDecodeTest.test_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.EscapeDecodeTest.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.EscapeDecodeTest.test_raw @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.EscapeEncodeTest.test_escape_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.ExceptionChainingTest.test_init_override_is_not_wrapped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.ExceptionChainingTest.test_instance_attribute_is_not_wrapped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.ExceptionChainingTest.test_multiple_args_is_not_wrapped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.ExceptionChainingTest.test_new_override_is_not_wrapped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.ExceptionChainingTest.test_non_str_arg_is_not_wrapped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.ExceptionChainingTest.test_unflagged_non_text_codec_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.IDNACodecTest.test_builtin_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.IDNACodecTest.test_builtin_decode_length_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.IDNACodecTest.test_builtin_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.IDNACodecTest.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.IDNACodecTest.test_incremental_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.IDNACodecTest.test_incremental_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.IDNACodecTest.test_stream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.Latin1Test.test_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.Latin1Test.test_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.Latin1Test.test_encode_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.Latin1Test.test_encode_surrogateescape_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.LocaleCodecTest.test_decode_strict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.LocaleCodecTest.test_decode_surrogateescape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.LocaleCodecTest.test_decode_surrogatepass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.LocaleCodecTest.test_decode_unsupported_error_handler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.LocaleCodecTest.test_encode_strict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.LocaleCodecTest.test_encode_surrogateescape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.LocaleCodecTest.test_encode_surrogatepass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.LocaleCodecTest.test_encode_unsupported_error_handler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.NameprepTest.test_nameprep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.PunycodeTest.test_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.PunycodeTest.test_decode_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.PunycodeTest.test_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.RawUnicodeEscapeTest.test_bug1098990_a @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.RawUnicodeEscapeTest.test_bug1098990_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.RawUnicodeEscapeTest.test_bug1175396 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.RawUnicodeEscapeTest.test_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.RawUnicodeEscapeTest.test_escape_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.RawUnicodeEscapeTest.test_mixed_readline_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.RawUnicodeEscapeTest.test_raw_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.RawUnicodeEscapeTest.test_readlinequeue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.Rot13Test.test_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.Rot13Test.test_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.Rot13Test.test_incremental_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.Rot13Test.test_incremental_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.Rot13UtilTest.test_rot13_func @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.StreamReaderTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.StreamReaderTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.StreamReaderTest.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.StreamReaderWriterTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.StreamReaderWriterTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.StreamRecoderTest.test_seeking_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.StreamRecoderTest.test_seeking_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.StreamWriterTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.StreamWriterTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.SurrogateEscapeTest.test_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.SurrogateEscapeTest.test_charmap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.SurrogateEscapeTest.test_latin1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.SurrogateEscapeTest.test_utf8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.TransformCodecTest.test_aliases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.TransformCodecTest.test_quopri_stateless @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.TransformCodecTest.test_uu_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16BETest.test_bug1098990_a @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16BETest.test_bug1098990_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16BETest.test_bug1175396 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16BETest.test_mixed_readline_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16BETest.test_nonbmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16BETest.test_partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16BETest.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16BETest.test_readlinequeue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16ExTest.test_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16LETest.test_bug1098990_a @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16LETest.test_bug1098990_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16LETest.test_bug1175396 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16LETest.test_mixed_readline_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16LETest.test_nonbmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16LETest.test_partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16LETest.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16LETest.test_readlinequeue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16Test.test_bug1098990_a @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16Test.test_bug1098990_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16Test.test_bug1175396 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16Test.test_bug691291 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16Test.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16Test.test_handlers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16Test.test_mixed_readline_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16Test.test_partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16Test.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF16Test.test_readlinequeue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32BETest.test_bug1098990_a @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32BETest.test_bug1098990_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32BETest.test_bug1175396 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32BETest.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32BETest.test_issue8941 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32BETest.test_mixed_readline_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32BETest.test_partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32BETest.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32BETest.test_readlinequeue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32BETest.test_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32LETest.test_bug1098990_a @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32LETest.test_bug1098990_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32LETest.test_bug1175396 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32LETest.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32LETest.test_issue8941 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32LETest.test_mixed_readline_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32LETest.test_partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32LETest.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32LETest.test_readlinequeue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32LETest.test_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32Test.test_badbom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32Test.test_bug1098990_a @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32Test.test_bug1098990_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32Test.test_bug1175396 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32Test.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32Test.test_handlers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32Test.test_issue8941 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32Test.test_mixed_readline_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32Test.test_partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32Test.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF32Test.test_readlinequeue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF7Test.test_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF7Test.test_bug1098990_a @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF7Test.test_bug1098990_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF7Test.test_bug1175396 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF7Test.test_mixed_readline_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF7Test.test_readlinequeue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_bug1098990_a @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_bug1098990_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_bug1175396 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_bug1601501 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_decode_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_decoder_state @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_incremental_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_incremental_surrogatepass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_mixed_readline_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_readlinequeue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_stream_bare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8SigTest.test_stream_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8Test.test_bug1098990_a @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8Test.test_bug1098990_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8Test.test_bug1175396 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8Test.test_decode_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8Test.test_decoder_state @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8Test.test_incremental_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8Test.test_incremental_surrogatepass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8Test.test_mixed_readline_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8Test.test_partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8Test.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UTF8Test.test_readlinequeue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UnicodeEscapeTest.test_bug1098990_a @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UnicodeEscapeTest.test_bug1098990_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UnicodeEscapeTest.test_bug1175396 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UnicodeEscapeTest.test_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UnicodeEscapeTest.test_escape_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UnicodeEscapeTest.test_incremental_surrogatepass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UnicodeEscapeTest.test_mixed_readline_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UnicodeEscapeTest.test_partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UnicodeEscapeTest.test_raw_decode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UnicodeEscapeTest.test_raw_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UnicodeEscapeTest.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.UnicodeEscapeTest.test_readlinequeue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.WithStmtTest.test_encodedfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecs.WithStmtTest.test_streamreaderwriter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

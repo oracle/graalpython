@@ -1,65 +1,65 @@
-test.test_gzip.TestCommandLine.test_compress_fast_best_are_exclusive
-test.test_gzip.TestCommandLine.test_compress_infile_outfile
-test.test_gzip.TestCommandLine.test_compress_infile_outfile_default
-test.test_gzip.TestCommandLine.test_compress_stdin_outfile
-test.test_gzip.TestCommandLine.test_decompress_cannot_have_flags_compression
-test.test_gzip.TestCommandLine.test_decompress_infile_outfile
-test.test_gzip.TestCommandLine.test_decompress_infile_outfile_error
-test.test_gzip.TestCommandLine.test_decompress_stdin_stdout
-test.test_gzip.TestGzip.test_1647484
-test.test_gzip.TestGzip.test_append
-test.test_gzip.TestGzip.test_bad_gzip_file
-test.test_gzip.TestGzip.test_buffered_reader
-test.test_gzip.TestGzip.test_bytes_filename
-test.test_gzip.TestGzip.test_compress
-test.test_gzip.TestGzip.test_compress_correct_level
-test.test_gzip.TestGzip.test_compress_mtime
-test.test_gzip.TestGzip.test_compresslevel_metadata
-test.test_gzip.TestGzip.test_decompress
-test.test_gzip.TestGzip.test_decompress_limited
-test.test_gzip.TestGzip.test_decompress_missing_trailer
-test.test_gzip.TestGzip.test_decompress_truncated_trailer
-test.test_gzip.TestGzip.test_exclusive_write
-test.test_gzip.TestGzip.test_fileobj_from_fdopen
-test.test_gzip.TestGzip.test_fileobj_mode
-test.test_gzip.TestGzip.test_gzip_BadGzipFile_exception
-test.test_gzip.TestGzip.test_io_on_closed_object
-test.test_gzip.TestGzip.test_issue44439
-test.test_gzip.TestGzip.test_many_append
-test.test_gzip.TestGzip.test_metadata
-test.test_gzip.TestGzip.test_metadata_ascii_name
-test.test_gzip.TestGzip.test_mode
-test.test_gzip.TestGzip.test_mtime
-test.test_gzip.TestGzip.test_non_seekable_file
-test.test_gzip.TestGzip.test_paddedfile_getattr
-test.test_gzip.TestGzip.test_peek
-test.test_gzip.TestGzip.test_prepend_error
-test.test_gzip.TestGzip.test_read
-test.test_gzip.TestGzip.test_read1
-test.test_gzip.TestGzip.test_read_large
-test.test_gzip.TestGzip.test_read_truncated
-test.test_gzip.TestGzip.test_read_with_extra
-test.test_gzip.TestGzip.test_readline
-test.test_gzip.TestGzip.test_readlines
-test.test_gzip.TestGzip.test_seek_read
-test.test_gzip.TestGzip.test_seek_whence
-test.test_gzip.TestGzip.test_seek_write
-test.test_gzip.TestGzip.test_textio_readlines
-test.test_gzip.TestGzip.test_with_open
-test.test_gzip.TestGzip.test_write
-test.test_gzip.TestGzip.test_write_array
-test.test_gzip.TestGzip.test_write_bytearray
-test.test_gzip.TestGzip.test_write_incompatible_type
-test.test_gzip.TestGzip.test_write_memoryview
-test.test_gzip.TestGzip.test_write_read_with_pathlike_file
-test.test_gzip.TestGzip.test_zero_padded_file
-test.test_gzip.TestMain.test_main
-test.test_gzip.TestOpen.test_bad_params
-test.test_gzip.TestOpen.test_binary_modes
-test.test_gzip.TestOpen.test_encoding
-test.test_gzip.TestOpen.test_encoding_error_handler
-test.test_gzip.TestOpen.test_fileobj
-test.test_gzip.TestOpen.test_implicit_binary_modes
-test.test_gzip.TestOpen.test_newline
-test.test_gzip.TestOpen.test_pathlike_file
-test.test_gzip.TestOpen.test_text_modes
+test.test_gzip.TestCommandLine.test_compress_fast_best_are_exclusive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestCommandLine.test_compress_infile_outfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestCommandLine.test_compress_infile_outfile_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestCommandLine.test_compress_stdin_outfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestCommandLine.test_decompress_cannot_have_flags_compression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestCommandLine.test_decompress_infile_outfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestCommandLine.test_decompress_infile_outfile_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestCommandLine.test_decompress_stdin_stdout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_1647484 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_bad_gzip_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_buffered_reader @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_bytes_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_compress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_compress_correct_level @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_compress_mtime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_compresslevel_metadata @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_decompress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_decompress_limited @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_decompress_missing_trailer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_decompress_truncated_trailer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_exclusive_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_fileobj_from_fdopen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_fileobj_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_gzip_BadGzipFile_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_io_on_closed_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_issue44439 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_many_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_metadata @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_metadata_ascii_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_mtime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_non_seekable_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_paddedfile_getattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_peek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_prepend_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_read_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_read_truncated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_read_with_extra @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_seek_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_seek_whence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_seek_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_textio_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_with_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_write_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_write_bytearray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_write_incompatible_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_write_memoryview @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_write_read_with_pathlike_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestGzip.test_zero_padded_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestMain.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestOpen.test_bad_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestOpen.test_binary_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestOpen.test_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestOpen.test_encoding_error_handler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestOpen.test_fileobj @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestOpen.test_implicit_binary_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestOpen.test_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestOpen.test_pathlike_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gzip.TestOpen.test_text_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,153 +1,153 @@
-test.test_re.DebugTests.test_atomic_group
-test.test_re.DebugTests.test_debug_flag
-test.test_re.DebugTests.test_possesive_repeat
-test.test_re.DebugTests.test_possesive_repeat_one
-test.test_re.ExternalTests.test_re_benchmarks
-test.test_re.ExternalTests.test_re_tests
-test.test_re.ImplementationTest.test_case_helpers
-test.test_re.ImplementationTest.test_dealloc
-test.test_re.ImplementationTest.test_disallow_instantiation
-test.test_re.ImplementationTest.test_immutable
-test.test_re.ImplementationTest.test_overlap_table
-test.test_re.ImplementationTest.test_repeat_minmax_overflow_maxrepeat
-test.test_re.ImplementationTest.test_signedness
-test.test_re.PatternReprTests.test_bytes
-test.test_re.PatternReprTests.test_flags_repr
-test.test_re.PatternReprTests.test_inline_flags
-test.test_re.PatternReprTests.test_locale
-test.test_re.PatternReprTests.test_long_pattern
-test.test_re.PatternReprTests.test_multiple_flags
-test.test_re.PatternReprTests.test_quotes
-test.test_re.PatternReprTests.test_single_flag
-test.test_re.PatternReprTests.test_unicode_flag
-test.test_re.PatternReprTests.test_unknown_flags
-test.test_re.PatternReprTests.test_without_flags
-test.test_re.ReTests.test_ASSERT_NOT_mark_bug
-test.test_re.ReTests.test_MARK_PUSH_macro_bug
-test.test_re.ReTests.test_MIN_REPEAT_ONE_mark_bug
-test.test_re.ReTests.test_MIN_UNTIL_mark_bug
-test.test_re.ReTests.test_REPEAT_ONE_mark_bug
-test.test_re.ReTests.test_anyall
-test.test_re.ReTests.test_ascii_and_unicode_flag
-test.test_re.ReTests.test_atomic_grouping
-test.test_re.ReTests.test_backref_group_name_in_exception
-test.test_re.ReTests.test_basic_re_sub
-test.test_re.ReTests.test_big_codesize
-test.test_re.ReTests.test_bigcharset
-test.test_re.ReTests.test_branching
-test.test_re.ReTests.test_bug_113254
-test.test_re.ReTests.test_bug_114660
-test.test_re.ReTests.test_bug_117612
-test.test_re.ReTests.test_bug_1661
-test.test_re.ReTests.test_bug_16688
-test.test_re.ReTests.test_bug_20998
-test.test_re.ReTests.test_bug_2537
-test.test_re.ReTests.test_bug_29444
-test.test_re.ReTests.test_bug_34294
-test.test_re.ReTests.test_bug_3629
-test.test_re.ReTests.test_bug_418626
-test.test_re.ReTests.test_bug_448951
-test.test_re.ReTests.test_bug_449000
-test.test_re.ReTests.test_bug_449964
-test.test_re.ReTests.test_bug_527371
-test.test_re.ReTests.test_bug_581080
-test.test_re.ReTests.test_bug_612074
-test.test_re.ReTests.test_bug_6509
-test.test_re.ReTests.test_bug_6561
-test.test_re.ReTests.test_bug_725106
-test.test_re.ReTests.test_bug_725149
-test.test_re.ReTests.test_bug_764548
-test.test_re.ReTests.test_bug_817234
-test.test_re.ReTests.test_bug_926075
-test.test_re.ReTests.test_bug_931848
-test.test_re.ReTests.test_bug_gh106052
-test.test_re.ReTests.test_bug_gh91616
-test.test_re.ReTests.test_bytes_str_mixing
-test.test_re.ReTests.test_case_helpers
-test.test_re.ReTests.test_category
-test.test_re.ReTests.test_character_set_errors
-test.test_re.ReTests.test_comments
-test.test_re.ReTests.test_compile
-test.test_re.ReTests.test_constants
-test.test_re.ReTests.test_copying
-test.test_re.ReTests.test_dealloc
-test.test_re.ReTests.test_debug_flag
-test.test_re.ReTests.test_dollar_matches_twice
-test.test_re.ReTests.test_empty_array
-test.test_re.ReTests.test_enum
-test.test_re.ReTests.test_error
-test.test_re.ReTests.test_expand
-test.test_re.ReTests.test_findall_atomic_grouping
-test.test_re.ReTests.test_findall_possessive_quantifiers
-test.test_re.ReTests.test_finditer
-test.test_re.ReTests.test_flags
-test.test_re.ReTests.test_fullmatch_atomic_grouping
-test.test_re.ReTests.test_fullmatch_possessive_quantifiers
-test.test_re.ReTests.test_getattr
-test.test_re.ReTests.test_group
-test.test_re.ReTests.test_group_name_in_exception
-test.test_re.ReTests.test_groupdict
-test.test_re.ReTests.test_ignore_case
-test.test_re.ReTests.test_ignore_case_range
-test.test_re.ReTests.test_ignore_case_set
-test.test_re.ReTests.test_ignore_spaces
-test.test_re.ReTests.test_inline_flags
-test.test_re.ReTests.test_issue17998
-test.test_re.ReTests.test_keep_buffer
-test.test_re.ReTests.test_keyword_parameters
-test.test_re.ReTests.test_large_search
-test.test_re.ReTests.test_large_subn
-test.test_re.ReTests.test_locale_flag
-test.test_re.ReTests.test_lookahead
-test.test_re.ReTests.test_lookbehind
-test.test_re.ReTests.test_match_getitem
-test.test_re.ReTests.test_match_repr
-test.test_re.ReTests.test_misc_errors
-test.test_re.ReTests.test_multiple_repeat
-test.test_re.ReTests.test_named_unicode_escapes
-test.test_re.ReTests.test_not_literal
-test.test_re.ReTests.test_nothing_to_repeat
-test.test_re.ReTests.test_other_escapes
-test.test_re.ReTests.test_pattern_compare
-test.test_re.ReTests.test_pattern_compare_bytes
-test.test_re.ReTests.test_pickling
-test.test_re.ReTests.test_possible_set_operations
-test.test_re.ReTests.test_qualified_re_split
-test.test_re.ReTests.test_qualified_re_sub
-test.test_re.ReTests.test_re_escape
-test.test_re.ReTests.test_re_escape_bytes
-test.test_re.ReTests.test_re_escape_non_ascii
-test.test_re.ReTests.test_re_escape_non_ascii_bytes
-test.test_re.ReTests.test_re_findall
-test.test_re.ReTests.test_re_fullmatch
-test.test_re.ReTests.test_re_groupref
-test.test_re.ReTests.test_re_groupref_exists
-test.test_re.ReTests.test_re_groupref_exists_errors
-test.test_re.ReTests.test_re_groupref_exists_validation_bug
-test.test_re.ReTests.test_re_groupref_overflow
-test.test_re.ReTests.test_re_match
-test.test_re.ReTests.test_re_split
-test.test_re.ReTests.test_re_subn
-test.test_re.ReTests.test_repeat_minmax
-test.test_re.ReTests.test_repeat_minmax_overflow
-test.test_re.ReTests.test_repeat_minmax_overflow_maxrepeat
-test.test_re.ReTests.test_scanner
-test.test_re.ReTests.test_scoped_flags
-test.test_re.ReTests.test_search_coverage
-test.test_re.ReTests.test_search_dot_unicode
-test.test_re.ReTests.test_search_star_plus
-test.test_re.ReTests.test_special_escapes
-test.test_re.ReTests.test_sre_byte_class_literals
-test.test_re.ReTests.test_sre_byte_literals
-test.test_re.ReTests.test_sre_character_class_literals
-test.test_re.ReTests.test_sre_character_literals
-test.test_re.ReTests.test_stack_overflow
-test.test_re.ReTests.test_string_boundaries
-test.test_re.ReTests.test_sub_template_numeric_escape
-test.test_re.ReTests.test_symbolic_groups
-test.test_re.ReTests.test_symbolic_groups_errors
-test.test_re.ReTests.test_symbolic_refs
-test.test_re.ReTests.test_symbolic_refs_errors
-test.test_re.ReTests.test_unlimited_zero_width_repeat
-test.test_re.ReTests.test_weakref
-test.test_re.ReTests.test_zerowidth
+test.test_re.DebugTests.test_atomic_group @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.DebugTests.test_debug_flag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.DebugTests.test_possesive_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.DebugTests.test_possesive_repeat_one @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ExternalTests.test_re_benchmarks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ExternalTests.test_re_tests @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ImplementationTest.test_case_helpers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ImplementationTest.test_dealloc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ImplementationTest.test_disallow_instantiation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ImplementationTest.test_immutable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ImplementationTest.test_overlap_table @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ImplementationTest.test_repeat_minmax_overflow_maxrepeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ImplementationTest.test_signedness @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.PatternReprTests.test_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.PatternReprTests.test_flags_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.PatternReprTests.test_inline_flags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.PatternReprTests.test_locale @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.PatternReprTests.test_long_pattern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.PatternReprTests.test_multiple_flags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.PatternReprTests.test_quotes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.PatternReprTests.test_single_flag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.PatternReprTests.test_unicode_flag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.PatternReprTests.test_unknown_flags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.PatternReprTests.test_without_flags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_ASSERT_NOT_mark_bug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_MARK_PUSH_macro_bug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_MIN_REPEAT_ONE_mark_bug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_MIN_UNTIL_mark_bug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_REPEAT_ONE_mark_bug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_anyall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_ascii_and_unicode_flag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_atomic_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_backref_group_name_in_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_basic_re_sub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_big_codesize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bigcharset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_branching @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_113254 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_114660 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_117612 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_1661 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_16688 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_20998 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_2537 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_29444 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_34294 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_3629 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_418626 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_448951 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_449000 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_449964 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_527371 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_581080 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_612074 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_6509 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_6561 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_725106 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_725149 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_764548 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_817234 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_926075 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_931848 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_gh106052 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bug_gh91616 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_bytes_str_mixing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_case_helpers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_category @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_character_set_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_comments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_compile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_constants @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_copying @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_dealloc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_debug_flag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_dollar_matches_twice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_empty_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_enum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_expand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_findall_atomic_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_findall_possessive_quantifiers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_finditer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_flags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_fullmatch_atomic_grouping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_fullmatch_possessive_quantifiers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_getattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_group @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_group_name_in_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_groupdict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_ignore_case @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_ignore_case_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_ignore_case_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_ignore_spaces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_inline_flags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_issue17998 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_keep_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_keyword_parameters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_large_search @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_large_subn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_locale_flag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_lookahead @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_lookbehind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_match_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_match_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_misc_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_multiple_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_named_unicode_escapes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_not_literal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_nothing_to_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_other_escapes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_pattern_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_pattern_compare_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_possible_set_operations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_qualified_re_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_qualified_re_sub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_escape_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_escape_non_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_escape_non_ascii_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_findall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_fullmatch @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_groupref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_groupref_exists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_groupref_exists_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_groupref_exists_validation_bug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_groupref_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_re_subn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_repeat_minmax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_repeat_minmax_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_repeat_minmax_overflow_maxrepeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_scanner @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_scoped_flags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_search_coverage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_search_dot_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_search_star_plus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_special_escapes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_sre_byte_class_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_sre_byte_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_sre_character_class_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_sre_character_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_stack_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_string_boundaries @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_sub_template_numeric_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_symbolic_groups @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_symbolic_groups_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_symbolic_refs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_symbolic_refs_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_unlimited_zero_width_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_zerowidth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

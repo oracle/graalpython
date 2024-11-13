@@ -1,19 +1,19 @@
-test.test_tabnanny.TestCheck.test_correct_directory
-test.test_tabnanny.TestCheck.test_correct_directory_verbose
-test.test_tabnanny.TestCheck.test_correct_file
-test.test_tabnanny.TestCheck.test_errored_directory
-test.test_tabnanny.TestCheck.test_when_nannynag_error
-test.test_tabnanny.TestCheck.test_when_nannynag_error_verbose
-test.test_tabnanny.TestCheck.test_when_no_file
-test.test_tabnanny.TestCheck.test_when_tokenize_tokenerror
-test.test_tabnanny.TestCheck.test_when_wrong_indented
-test.test_tabnanny.TestCommandLine.test_double_verbose_mode
-test.test_tabnanny.TestCommandLine.test_quiet_flag
-test.test_tabnanny.TestCommandLine.test_verbose_mode
-test.test_tabnanny.TestCommandLine.test_with_error_free_file
-test.test_tabnanny.TestCommandLine.test_with_errored_file
-test.test_tabnanny.TestErrPrint.test_errprint
-test.test_tabnanny.TestFormatWitnesses.test_format_witnesses
-test.test_tabnanny.TestNannyNag.test_all_methods
-test.test_tabnanny.TestProcessTokens.test_with_correct_code
-test.test_tabnanny.TestProcessTokens.test_with_errored_codes_samples
+test.test_tabnanny.TestCheck.test_correct_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestCheck.test_correct_directory_verbose @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestCheck.test_correct_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestCheck.test_errored_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestCheck.test_when_nannynag_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestCheck.test_when_nannynag_error_verbose @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestCheck.test_when_no_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestCheck.test_when_tokenize_tokenerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestCheck.test_when_wrong_indented @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestCommandLine.test_double_verbose_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestCommandLine.test_quiet_flag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestCommandLine.test_verbose_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestCommandLine.test_with_error_free_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestCommandLine.test_with_errored_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestErrPrint.test_errprint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestFormatWitnesses.test_format_witnesses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestNannyNag.test_all_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestProcessTokens.test_with_correct_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tabnanny.TestProcessTokens.test_with_errored_codes_samples @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

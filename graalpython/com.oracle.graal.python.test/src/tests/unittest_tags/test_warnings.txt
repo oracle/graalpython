@@ -1,119 +1,119 @@
-test.test_warnings.__init__.BootstrapTest.test_issue_8766
-test.test_warnings.__init__.CCatchWarningTests.test_catch_warnings_defaults
-test.test_warnings.__init__.CCatchWarningTests.test_catch_warnings_recording
-test.test_warnings.__init__.CCatchWarningTests.test_catch_warnings_reentry_guard
-test.test_warnings.__init__.CCatchWarningTests.test_catch_warnings_restore
-test.test_warnings.__init__.CCatchWarningTests.test_check_warnings
-test.test_warnings.__init__.CCatchWarningTests.test_record_override_showwarning_before
-test.test_warnings.__init__.CCatchWarningTests.test_record_override_showwarning_inside
-test.test_warnings.__init__.CEnvironmentVariableTests.test_comma_separated_warnings
-test.test_warnings.__init__.CEnvironmentVariableTests.test_conflicting_envvar_and_command_line
-test.test_warnings.__init__.CEnvironmentVariableTests.test_default_filter_configuration
-test.test_warnings.__init__.CEnvironmentVariableTests.test_envvar_and_command_line
-test.test_warnings.__init__.CEnvironmentVariableTests.test_nonascii
-test.test_warnings.__init__.CEnvironmentVariableTests.test_single_warning
-test.test_warnings.__init__.CFilterTests.test_always
-test.test_warnings.__init__.CFilterTests.test_always_after_default
-test.test_warnings.__init__.CFilterTests.test_append_duplicate
-test.test_warnings.__init__.CFilterTests.test_catchwarnings_with_simplefilter_error
-test.test_warnings.__init__.CFilterTests.test_catchwarnings_with_simplefilter_ignore
-test.test_warnings.__init__.CFilterTests.test_default
-test.test_warnings.__init__.CFilterTests.test_error
-test.test_warnings.__init__.CFilterTests.test_error_after_default
-test.test_warnings.__init__.CFilterTests.test_filterwarnings
-test.test_warnings.__init__.CFilterTests.test_filterwarnings_duplicate_filters
-test.test_warnings.__init__.CFilterTests.test_ignore
-test.test_warnings.__init__.CFilterTests.test_ignore_after_default
-test.test_warnings.__init__.CFilterTests.test_inheritance
-test.test_warnings.__init__.CFilterTests.test_message_matching
-test.test_warnings.__init__.CFilterTests.test_module
-test.test_warnings.__init__.CFilterTests.test_module_globals
-test.test_warnings.__init__.CFilterTests.test_mutate_filter_list
-test.test_warnings.__init__.CFilterTests.test_once
-test.test_warnings.__init__.CFilterTests.test_ordering
-test.test_warnings.__init__.CFilterTests.test_simplefilter_duplicate_filters
-test.test_warnings.__init__.CPublicAPITests.test_module_all_attribute
-test.test_warnings.__init__.CWCmdLineTests.test_improper_input
-test.test_warnings.__init__.CWarnTests.test_accelerated
-test.test_warnings.__init__.CWarnTests.test_bad_str
-test.test_warnings.__init__.CWarnTests.test_exec_filename
-test.test_warnings.__init__.CWarnTests.test_filename
-test.test_warnings.__init__.CWarnTests.test_message
-test.test_warnings.__init__.CWarnTests.test_stacklevel
-test.test_warnings.__init__.CWarnTests.test_stacklevel_import
-test.test_warnings.__init__.CWarnTests.test_warn_explicit_non_ascii_filename
-test.test_warnings.__init__.CWarnTests.test_warn_explicit_type_errors
-test.test_warnings.__init__.CWarnTests.test_warn_nonstandard_types
-test.test_warnings.__init__.CWarnTests.test_warning_classes
-test.test_warnings.__init__.CWarningsDisplayTests.test_formatwarning
-test.test_warnings.__init__.CWarningsDisplayTests.test_formatwarning_override
-test.test_warnings.__init__.CWarningsDisplayTests.test_showwarning
-test.test_warnings.__init__.FinalizationTest.test_finalization
-test.test_warnings.__init__.FinalizationTest.test_late_resource_warning
-test.test_warnings.__init__.PyCatchWarningTests.test_catch_warnings_defaults
-test.test_warnings.__init__.PyCatchWarningTests.test_catch_warnings_recording
-test.test_warnings.__init__.PyCatchWarningTests.test_catch_warnings_reentry_guard
-test.test_warnings.__init__.PyCatchWarningTests.test_catch_warnings_restore
-test.test_warnings.__init__.PyCatchWarningTests.test_check_warnings
-test.test_warnings.__init__.PyCatchWarningTests.test_record_override_showwarning_before
-test.test_warnings.__init__.PyCatchWarningTests.test_record_override_showwarning_inside
-test.test_warnings.__init__.PyEnvironmentVariableTests.test_comma_separated_warnings
-test.test_warnings.__init__.PyEnvironmentVariableTests.test_conflicting_envvar_and_command_line
-test.test_warnings.__init__.PyEnvironmentVariableTests.test_default_filter_configuration
-test.test_warnings.__init__.PyEnvironmentVariableTests.test_envvar_and_command_line
-test.test_warnings.__init__.PyEnvironmentVariableTests.test_nonascii
-test.test_warnings.__init__.PyEnvironmentVariableTests.test_single_warning
-test.test_warnings.__init__.PyFilterTests.test_always
-test.test_warnings.__init__.PyFilterTests.test_always_after_default
-test.test_warnings.__init__.PyFilterTests.test_append_duplicate
-test.test_warnings.__init__.PyFilterTests.test_catchwarnings_with_simplefilter_error
-test.test_warnings.__init__.PyFilterTests.test_catchwarnings_with_simplefilter_ignore
-test.test_warnings.__init__.PyFilterTests.test_default
-test.test_warnings.__init__.PyFilterTests.test_error
-test.test_warnings.__init__.PyFilterTests.test_error_after_default
-test.test_warnings.__init__.PyFilterTests.test_filterwarnings
-test.test_warnings.__init__.PyFilterTests.test_filterwarnings_duplicate_filters
-test.test_warnings.__init__.PyFilterTests.test_ignore
-test.test_warnings.__init__.PyFilterTests.test_ignore_after_default
-test.test_warnings.__init__.PyFilterTests.test_inheritance
-test.test_warnings.__init__.PyFilterTests.test_message_matching
-test.test_warnings.__init__.PyFilterTests.test_module
-test.test_warnings.__init__.PyFilterTests.test_module_globals
-test.test_warnings.__init__.PyFilterTests.test_mutate_filter_list
-test.test_warnings.__init__.PyFilterTests.test_once
-test.test_warnings.__init__.PyFilterTests.test_ordering
-test.test_warnings.__init__.PyFilterTests.test_simplefilter_duplicate_filters
-test.test_warnings.__init__.PyPublicAPITests.test_module_all_attribute
-test.test_warnings.__init__.PyWCmdLineTests.test_improper_input
-test.test_warnings.__init__.PyWCmdLineTests.test_improper_option
-test.test_warnings.__init__.PyWCmdLineTests.test_warnings_bootstrap
-test.test_warnings.__init__.PyWarnTests.test_bad_str
-test.test_warnings.__init__.PyWarnTests.test_exec_filename
-test.test_warnings.__init__.PyWarnTests.test_filename
-test.test_warnings.__init__.PyWarnTests.test_message
-test.test_warnings.__init__.PyWarnTests.test_pure_python
-test.test_warnings.__init__.PyWarnTests.test_stacklevel
-test.test_warnings.__init__.PyWarnTests.test_stacklevel_import
-test.test_warnings.__init__.PyWarnTests.test_warn_explicit_non_ascii_filename
-test.test_warnings.__init__.PyWarnTests.test_warn_explicit_type_errors
-test.test_warnings.__init__.PyWarnTests.test_warn_nonstandard_types
-test.test_warnings.__init__.PyWarnTests.test_warning_classes
-test.test_warnings.__init__.PyWarningsDisplayTests.test_formatwarning
-test.test_warnings.__init__.PyWarningsDisplayTests.test_formatwarning_override
-test.test_warnings.__init__.PyWarningsDisplayTests.test_showwarning
-test.test_warnings.__init__.PyWarningsDisplayTests.test_tracemalloc
-test.test_warnings.__init__._DeprecatedTest.test_RuntimeError
-test.test_warnings.__init__._DeprecatedTest.test_warning
-test.test_warnings.__init__._WarningsTests.test_default_action
-test.test_warnings.__init__._WarningsTests.test_filename_none
-test.test_warnings.__init__._WarningsTests.test_filter
-test.test_warnings.__init__._WarningsTests.test_issue31285
-test.test_warnings.__init__._WarningsTests.test_issue31411
-test.test_warnings.__init__._WarningsTests.test_issue31416
-test.test_warnings.__init__._WarningsTests.test_issue31566
-test.test_warnings.__init__._WarningsTests.test_onceregistry
-test.test_warnings.__init__._WarningsTests.test_show_warning_output
-test.test_warnings.__init__._WarningsTests.test_showwarning_missing
-test.test_warnings.__init__._WarningsTests.test_showwarning_not_callable
-test.test_warnings.__init__._WarningsTests.test_showwarnmsg_missing
-test.test_warnings.__init__._WarningsTests.test_stderr_none
+test.test_warnings.__init__.BootstrapTest.test_issue_8766 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CCatchWarningTests.test_catch_warnings_defaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CCatchWarningTests.test_catch_warnings_recording @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CCatchWarningTests.test_catch_warnings_reentry_guard @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CCatchWarningTests.test_catch_warnings_restore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CCatchWarningTests.test_check_warnings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CCatchWarningTests.test_record_override_showwarning_before @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CCatchWarningTests.test_record_override_showwarning_inside @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CEnvironmentVariableTests.test_comma_separated_warnings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CEnvironmentVariableTests.test_conflicting_envvar_and_command_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CEnvironmentVariableTests.test_default_filter_configuration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CEnvironmentVariableTests.test_envvar_and_command_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CEnvironmentVariableTests.test_nonascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CEnvironmentVariableTests.test_single_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_always @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_always_after_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_append_duplicate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_catchwarnings_with_simplefilter_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_catchwarnings_with_simplefilter_ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_error_after_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_filterwarnings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_filterwarnings_duplicate_filters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_ignore_after_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_message_matching @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_module_globals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_mutate_filter_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_once @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_ordering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CFilterTests.test_simplefilter_duplicate_filters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CPublicAPITests.test_module_all_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWCmdLineTests.test_improper_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarnTests.test_accelerated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarnTests.test_bad_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarnTests.test_exec_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarnTests.test_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarnTests.test_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarnTests.test_stacklevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarnTests.test_stacklevel_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarnTests.test_warn_explicit_non_ascii_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarnTests.test_warn_explicit_type_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarnTests.test_warn_nonstandard_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarnTests.test_warning_classes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarningsDisplayTests.test_formatwarning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarningsDisplayTests.test_formatwarning_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.CWarningsDisplayTests.test_showwarning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.FinalizationTest.test_finalization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.FinalizationTest.test_late_resource_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyCatchWarningTests.test_catch_warnings_defaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyCatchWarningTests.test_catch_warnings_recording @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyCatchWarningTests.test_catch_warnings_reentry_guard @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyCatchWarningTests.test_catch_warnings_restore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyCatchWarningTests.test_check_warnings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyCatchWarningTests.test_record_override_showwarning_before @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyCatchWarningTests.test_record_override_showwarning_inside @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyEnvironmentVariableTests.test_comma_separated_warnings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyEnvironmentVariableTests.test_conflicting_envvar_and_command_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyEnvironmentVariableTests.test_default_filter_configuration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyEnvironmentVariableTests.test_envvar_and_command_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyEnvironmentVariableTests.test_nonascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyEnvironmentVariableTests.test_single_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_always @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_always_after_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_append_duplicate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_catchwarnings_with_simplefilter_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_catchwarnings_with_simplefilter_ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_error_after_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_filterwarnings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_filterwarnings_duplicate_filters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_ignore_after_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_message_matching @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_module_globals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_mutate_filter_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_once @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_ordering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyFilterTests.test_simplefilter_duplicate_filters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyPublicAPITests.test_module_all_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWCmdLineTests.test_improper_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWCmdLineTests.test_improper_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWCmdLineTests.test_warnings_bootstrap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarnTests.test_bad_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarnTests.test_exec_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarnTests.test_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarnTests.test_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarnTests.test_pure_python @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarnTests.test_stacklevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarnTests.test_stacklevel_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarnTests.test_warn_explicit_non_ascii_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarnTests.test_warn_explicit_type_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarnTests.test_warn_nonstandard_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarnTests.test_warning_classes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarningsDisplayTests.test_formatwarning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarningsDisplayTests.test_formatwarning_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarningsDisplayTests.test_showwarning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__.PyWarningsDisplayTests.test_tracemalloc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._DeprecatedTest.test_RuntimeError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._DeprecatedTest.test_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._WarningsTests.test_default_action @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._WarningsTests.test_filename_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._WarningsTests.test_filter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._WarningsTests.test_issue31285 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._WarningsTests.test_issue31411 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._WarningsTests.test_issue31416 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._WarningsTests.test_issue31566 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._WarningsTests.test_onceregistry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._WarningsTests.test_show_warning_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._WarningsTests.test_showwarning_missing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._WarningsTests.test_showwarning_not_callable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._WarningsTests.test_showwarnmsg_missing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_warnings.__init__._WarningsTests.test_stderr_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

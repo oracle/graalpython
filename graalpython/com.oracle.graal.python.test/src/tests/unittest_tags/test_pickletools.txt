@@ -1,136 +1,136 @@
-DocTestCase.pickletools.__test__.disassembler_memo_test
-DocTestCase.pickletools.__test__.disassembler_test
-DocTestCase.pickletools.read_bytearray8
-DocTestCase.pickletools.read_bytes1
-DocTestCase.pickletools.read_bytes4
-DocTestCase.pickletools.read_bytes8
-DocTestCase.pickletools.read_decimalnl_long
-DocTestCase.pickletools.read_decimalnl_short
-DocTestCase.pickletools.read_float8
-DocTestCase.pickletools.read_floatnl
-DocTestCase.pickletools.read_int4
-DocTestCase.pickletools.read_long1
-DocTestCase.pickletools.read_long4
-DocTestCase.pickletools.read_string1
-DocTestCase.pickletools.read_string4
-DocTestCase.pickletools.read_stringnl
-DocTestCase.pickletools.read_stringnl_noescape_pair
-DocTestCase.pickletools.read_uint1
-DocTestCase.pickletools.read_uint2
-DocTestCase.pickletools.read_uint4
-DocTestCase.pickletools.read_uint8
-DocTestCase.pickletools.read_unicodestring1
-DocTestCase.pickletools.read_unicodestring4
-DocTestCase.pickletools.read_unicodestring8
-DocTestCase.pickletools.read_unicodestringnl
-test.test_pickletools.MiscTestCase.test__all__
-test.test_pickletools.OptimizedPickleTests.test_appends_on_non_lists
-test.test_pickletools.OptimizedPickleTests.test_attribute_name_interning
-test.test_pickletools.OptimizedPickleTests.test_bad_getattr
-test.test_pickletools.OptimizedPickleTests.test_buffer_callback_error
-test.test_pickletools.OptimizedPickleTests.test_buffers_error
-test.test_pickletools.OptimizedPickleTests.test_buffers_numpy
-test.test_pickletools.OptimizedPickleTests.test_builtin_exceptions
-test.test_pickletools.OptimizedPickleTests.test_builtin_functions
-test.test_pickletools.OptimizedPickleTests.test_builtin_types
-test.test_pickletools.OptimizedPickleTests.test_bytearray
-test.test_pickletools.OptimizedPickleTests.test_bytearray_memoization_bug
-test.test_pickletools.OptimizedPickleTests.test_bytes
-test.test_pickletools.OptimizedPickleTests.test_c_methods
-test.test_pickletools.OptimizedPickleTests.test_compat_pickle
-test.test_pickletools.OptimizedPickleTests.test_complex_newobj
-test.test_pickletools.OptimizedPickleTests.test_complex_newobj_ex
-test.test_pickletools.OptimizedPickleTests.test_dict_chunking
-test.test_pickletools.OptimizedPickleTests.test_dynamic_class
-test.test_pickletools.OptimizedPickleTests.test_ellipsis
-test.test_pickletools.OptimizedPickleTests.test_evil_class_mutating_dict
-test.test_pickletools.OptimizedPickleTests.test_evil_pickler_mutating_collection
-test.test_pickletools.OptimizedPickleTests.test_float
-test.test_pickletools.OptimizedPickleTests.test_float_format
-test.test_pickletools.OptimizedPickleTests.test_framing_large_objects
-test.test_pickletools.OptimizedPickleTests.test_framing_many_objects
-test.test_pickletools.OptimizedPickleTests.test_getinitargs
-test.test_pickletools.OptimizedPickleTests.test_global_ext1
-test.test_pickletools.OptimizedPickleTests.test_global_ext2
-test.test_pickletools.OptimizedPickleTests.test_global_ext4
-test.test_pickletools.OptimizedPickleTests.test_in_band_buffers
-test.test_pickletools.OptimizedPickleTests.test_inband_accept_default_buffers_argument
-test.test_pickletools.OptimizedPickleTests.test_int_pickling_efficiency
-test.test_pickletools.OptimizedPickleTests.test_ints
-test.test_pickletools.OptimizedPickleTests.test_large_pickles
-test.test_pickletools.OptimizedPickleTests.test_list_chunking
-test.test_pickletools.OptimizedPickleTests.test_local_lookup_error
-test.test_pickletools.OptimizedPickleTests.test_long
-test.test_pickletools.OptimizedPickleTests.test_long1
-test.test_pickletools.OptimizedPickleTests.test_long4
-test.test_pickletools.OptimizedPickleTests.test_many_puts_and_gets
-test.test_pickletools.OptimizedPickleTests.test_metaclass
-test.test_pickletools.OptimizedPickleTests.test_misc
-test.test_pickletools.OptimizedPickleTests.test_nested_names
-test.test_pickletools.OptimizedPickleTests.test_newobj_generic
-test.test_pickletools.OptimizedPickleTests.test_newobj_list
-test.test_pickletools.OptimizedPickleTests.test_newobj_list_slots
-test.test_pickletools.OptimizedPickleTests.test_newobj_not_class
-test.test_pickletools.OptimizedPickleTests.test_newobj_overridden_new
-test.test_pickletools.OptimizedPickleTests.test_newobj_proxies
-test.test_pickletools.OptimizedPickleTests.test_newobj_tuple
-test.test_pickletools.OptimizedPickleTests.test_notimplemented
-test.test_pickletools.OptimizedPickleTests.test_oob_buffers
-test.test_pickletools.OptimizedPickleTests.test_oob_buffers_writable_to_readonly
-test.test_pickletools.OptimizedPickleTests.test_optimize_binput_and_memoize
-test.test_pickletools.OptimizedPickleTests.test_optimize_long_binget
-test.test_pickletools.OptimizedPickleTests.test_optional_frames
-test.test_pickletools.OptimizedPickleTests.test_picklebuffer_error
-test.test_pickletools.OptimizedPickleTests.test_proto
-test.test_pickletools.OptimizedPickleTests.test_py_methods
-test.test_pickletools.OptimizedPickleTests.test_recursive_dict
-test.test_pickletools.OptimizedPickleTests.test_recursive_dict_and_inst
-test.test_pickletools.OptimizedPickleTests.test_recursive_dict_key
-test.test_pickletools.OptimizedPickleTests.test_recursive_dict_like
-test.test_pickletools.OptimizedPickleTests.test_recursive_dict_like_key
-test.test_pickletools.OptimizedPickleTests.test_recursive_dict_subclass
-test.test_pickletools.OptimizedPickleTests.test_recursive_dict_subclass_and_inst
-test.test_pickletools.OptimizedPickleTests.test_recursive_dict_subclass_key
-test.test_pickletools.OptimizedPickleTests.test_recursive_frozenset_and_inst
-test.test_pickletools.OptimizedPickleTests.test_recursive_frozenset_subclass_and_inst
-test.test_pickletools.OptimizedPickleTests.test_recursive_inst
-test.test_pickletools.OptimizedPickleTests.test_recursive_inst_state
-test.test_pickletools.OptimizedPickleTests.test_recursive_list
-test.test_pickletools.OptimizedPickleTests.test_recursive_list_and_inst
-test.test_pickletools.OptimizedPickleTests.test_recursive_list_like
-test.test_pickletools.OptimizedPickleTests.test_recursive_list_subclass
-test.test_pickletools.OptimizedPickleTests.test_recursive_list_subclass_and_inst
-test.test_pickletools.OptimizedPickleTests.test_recursive_multi
-test.test_pickletools.OptimizedPickleTests.test_recursive_nested_names
-test.test_pickletools.OptimizedPickleTests.test_recursive_set
-test.test_pickletools.OptimizedPickleTests.test_recursive_set_and_inst
-test.test_pickletools.OptimizedPickleTests.test_recursive_set_subclass_and_inst
-test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_dict
-test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_dict_key
-test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_dict_like
-test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_dict_like_key
-test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_dict_subclass
-test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_dict_subclass_key
-test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_inst
-test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_inst_state
-test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_list
-test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_list_like
-test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_list_subclass
-test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_subclass_and_inst
-test.test_pickletools.OptimizedPickleTests.test_reduce
-test.test_pickletools.OptimizedPickleTests.test_reduce_bad_iterator
-test.test_pickletools.OptimizedPickleTests.test_reduce_calls_base
-test.test_pickletools.OptimizedPickleTests.test_reduce_ex_called
-test.test_pickletools.OptimizedPickleTests.test_reduce_ex_calls_base
-test.test_pickletools.OptimizedPickleTests.test_reduce_ex_overrides_reduce
-test.test_pickletools.OptimizedPickleTests.test_reduce_overrides_default_reduce_ex
-test.test_pickletools.OptimizedPickleTests.test_roundtrip_equality
-test.test_pickletools.OptimizedPickleTests.test_set_chunking
-test.test_pickletools.OptimizedPickleTests.test_setitems_on_non_dicts
-test.test_pickletools.OptimizedPickleTests.test_short_tuples
-test.test_pickletools.OptimizedPickleTests.test_simple_newobj
-test.test_pickletools.OptimizedPickleTests.test_singleton_types
-test.test_pickletools.OptimizedPickleTests.test_singletons
-test.test_pickletools.OptimizedPickleTests.test_structseq
-test.test_pickletools.OptimizedPickleTests.test_unicode
-test.test_pickletools.OptimizedPickleTests.test_unicode_high_plane
+DocTestCase.pickletools.__test__.disassembler_memo_test @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.__test__.disassembler_test @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_bytearray8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_bytes1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_bytes4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_bytes8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_decimalnl_long @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_decimalnl_short @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_float8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_floatnl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_int4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_long1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_long4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_string1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_string4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_stringnl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_stringnl_noescape_pair @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_uint1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_uint2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_uint4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_uint8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_unicodestring1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_unicodestring4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_unicodestring8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.pickletools.read_unicodestringnl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.MiscTestCase.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_appends_on_non_lists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_attribute_name_interning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_bad_getattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_buffer_callback_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_buffers_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_buffers_numpy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_builtin_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_builtin_functions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_builtin_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_bytearray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_bytearray_memoization_bug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_c_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_compat_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_complex_newobj @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_complex_newobj_ex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_dict_chunking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_dynamic_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_ellipsis @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_evil_class_mutating_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_evil_pickler_mutating_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_float_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_framing_large_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_framing_many_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_getinitargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_global_ext1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_global_ext2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_global_ext4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_in_band_buffers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_inband_accept_default_buffers_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_int_pickling_efficiency @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_large_pickles @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_list_chunking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_local_lookup_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_long @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_long1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_long4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_many_puts_and_gets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_metaclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_misc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_nested_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_newobj_generic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_newobj_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_newobj_list_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_newobj_not_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_newobj_overridden_new @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_newobj_proxies @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_newobj_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_notimplemented @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_oob_buffers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_oob_buffers_writable_to_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_optimize_binput_and_memoize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_optimize_long_binget @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_optional_frames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_picklebuffer_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_proto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_py_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_dict_and_inst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_dict_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_dict_like @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_dict_like_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_dict_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_dict_subclass_and_inst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_dict_subclass_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_frozenset_and_inst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_frozenset_subclass_and_inst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_inst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_inst_state @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_list_and_inst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_list_like @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_list_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_list_subclass_and_inst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_multi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_nested_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_set_and_inst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_set_subclass_and_inst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_dict_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_dict_like @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_dict_like_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_dict_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_dict_subclass_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_inst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_inst_state @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_list_like @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_list_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_subclass_and_inst @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_reduce @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_reduce_bad_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_reduce_calls_base @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_reduce_ex_called @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_reduce_ex_calls_base @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_reduce_ex_overrides_reduce @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_reduce_overrides_default_reduce_ex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_roundtrip_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_set_chunking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_setitems_on_non_dicts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_short_tuples @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_simple_newobj @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_singleton_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_singletons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_structseq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pickletools.OptimizedPickleTests.test_unicode_high_plane @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
