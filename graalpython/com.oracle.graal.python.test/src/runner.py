@@ -1222,6 +1222,11 @@ def main():
                         help="Remove tests that were not collected from tags. Useful for pruning removed tests")
     parser.add_argument('--timeout-factor', type=float, default=1.0,
                         help="Multiply all timeouts by this number")
+    parser.add_argument('--exit-success-on-failures', action='store_true',
+                        help=dedent("""\
+                        Exit successfully regardless of the test results. Useful to distinguish test failures
+                        from runner crashes in jobs like retagger or coverage where failures are expected.
+                        """))
     parser.add_argument(
         '--subprocess-args',
         type=shlex.split,
@@ -1232,7 +1237,7 @@ def main():
         ] if IS_GRAALPY else [],
         help="Interpreter arguments to pass for subprocess invocation (when using -n)")
     parser.add_argument('tests', nargs='+', type=TestSpecifier.from_str,
-                        help=dedent("""
+                        help=dedent("""\
                         List of test specifiers. A specifier can be:
                         - A test file name. It will be looked up in our unittests or, if you pass --tagged, in tagged tests. Example: test_int
                         - A test file path. Example: graalpython/lib-python/3/test/test_int.py. Note you do not need to pass --tagged to refer to a tagged test by path
@@ -1335,7 +1340,7 @@ def main():
     if args.retag_mode:
         runner.generate_tags(append=(args.retag_mode == 'append'))
         return
-    if runner.tests_failed():
+    if runner.tests_failed() and not args.exit_success_on_failures:
         sys.exit(1)
 
 
