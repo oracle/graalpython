@@ -135,7 +135,7 @@ class TestId:
     @classmethod
     def from_test_case(cls, test_file: Path, test: unittest.TestCase):
         test_id = test.id()
-        if type(test).__name__ == '_ErrorHolder':
+        if type(test).__module__ == 'unittest.suite' and type(test).__name__ == '_ErrorHolder':
             if match := re.match(r'(\S+) \(([^)]+)\)', test_id):
                 action = match.group(1)
                 class_name = match.group(2)
@@ -641,10 +641,10 @@ class SubprocessWorker:
                     self.last_test_id_for_blame = test_id
                     self.last_out_pos = event['out_pos']
                     if test_id.test_name.endswith('>'):
-                        class_name = test_id.test_name[:test_id.test_name.find('<')]
+                        class_name = test_id.test_name[:test_id.test_name.find('<')].rstrip('.')
                         specifier = TestSpecifier(test_id.test_file, class_name or None)
                         self.remaining_test_ids = [
-                            test for test in self.remaining_test_ids if not specifier.match(test_id)
+                            test for test in self.remaining_test_ids if not specifier.match(test)
                         ]
 
     def get_status(self):
@@ -966,6 +966,10 @@ def filter_tree(test_file: TestFile, test_suite: unittest.TestSuite, specifiers:
         # When test loading fails, unittest just creates an instance of _FailedTest
         if exception := getattr(test, '_exception', None):
             raise exception
+        if type(test).__module__ == 'unittest.loader' and type(test).__name__ == 'ModuleSkipped':
+            skipped_test, reason = test().skipped[0]
+            log(f"Test module {skipped_test.id().removeprefix('unittest.loader.ModuleSkipped.')} skipped: {reason}")
+            return
         if hasattr(test, '__iter__'):
             sub_collected = filter_tree(test_file, test, specifiers, tagged_ids)
             if sub_collected:
