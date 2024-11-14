@@ -488,11 +488,12 @@ def interrupt_process(process: subprocess.Popen):
 
 
 class ParallelTestRunner(TestRunner):
-    def __init__(self, *, num_processes, subprocess_args, separate_workers, **kwargs):
+    def __init__(self, *, num_processes, subprocess_args, separate_workers, timeout_factor, **kwargs):
         super().__init__(**kwargs)
         self.num_processes = num_processes
         self.subprocess_args = subprocess_args
         self.separate_workers = separate_workers
+        self.timeout_factor = timeout_factor
         self.stop_event = threading.Event()
         self.crashes = []
         self.default_test_timeout = 600
@@ -741,10 +742,13 @@ class SubprocessWorker:
                                 break
                             if self.last_started_test_id:
                                 last_started_test = self.tests_by_id.get(self.last_started_test_id)
-                                timeout = last_started_test.test_file.test_config.per_test_timeout
+                                timeout = (
+                                        last_started_test.test_file.test_config.per_test_timeout
+                                        or self.runner.default_test_timeout
+                                )
                             else:
                                 timeout = self.runner.default_test_timeout
-
+                            timeout *= self.runner.timeout_factor
                             if time.time() - self.last_started_time >= timeout:
                                 interrupt_process(self.process)
                                 timed_out = timeout
@@ -789,6 +793,7 @@ class SubprocessWorker:
                             status=TestStatus.ERROR,
                             param=message,
                             output=output,
+                            duration=(time.time() - self.last_started_time),
                         ))
                         if blame_id is not self.last_started_test_id:
                             # If we're here, it means we didn't know exactly which test we were executing, we were
@@ -804,7 +809,7 @@ class SubprocessWorker:
                                     del self.remaining_test_ids[0]
                     self.last_started_test_id = None
                     if last_remaining_count == len(self.remaining_test_ids):
-                        raise RuntimeError("Worker is not making progress")
+                        log(f"Worker is not making progress, remaining: {self.remaining_test_ids}")
 
 
 def platform_keys_match(items: typing.Iterable[str]):
@@ -813,9 +818,9 @@ def platform_keys_match(items: typing.Iterable[str]):
 
 @dataclass
 class TestFileConfig:
-    serial: bool = False
-    partial_splits: bool = False
-    per_test_timeout: float = 300
+    serial: bool | None = None
+    partial_splits: bool | None = None
+    per_test_timeout: float | None = None
     exclude: bool = False
 
     @classmethod
@@ -829,9 +834,9 @@ class TestFileConfig:
 
     def combine(self, other: 'TestFileConfig'):
         return TestFileConfig(
-            serial=self.serial or other.serial,
-            partial_splits=self.partial_splits or other.partial_splits,
-            per_test_timeout=max(self.per_test_timeout, other.per_test_timeout),
+            serial=(self.serial if other.serial is None else other.serial),
+            partial_splits=(self.partial_splits if other.partial_splits is None else other.partial_splits),
+            per_test_timeout=(self.per_test_timeout if other.per_test_timeout is None else other.per_test_timeout),
             exclude=self.exclude or other.exclude,
         )
 
@@ -1211,6 +1216,8 @@ def main():
                         help="Produce a json report file in format expected by mx_gate.make_test_report")
     parser.add_argument('--untag-unmatched', action='store_true',
                         help="Remove tests that were not collected from tags. Useful for pruning removed tests")
+    parser.add_argument('--timeout-factor', type=float, default=1.0,
+                        help="Multiply all timeouts by this number")
     parser.add_argument(
         '--subprocess-args',
         type=shlex.split,
@@ -1315,6 +1322,7 @@ def main():
             num_processes=args.num_processes,
             subprocess_args=args.subprocess_args,
             separate_workers=args.separate_workers,
+            timeout_factor=args.timeout_factor,
         )
 
     runner.run_tests(tests)
