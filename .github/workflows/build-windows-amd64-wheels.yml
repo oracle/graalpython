@@ -26,6 +26,7 @@ jobs:
       - name: Build wheels
         run: |
           $env:PATH+=";C:\Program Files\Git\usr\bin"
+          $env:PIP_EXTRA_INDEX_URL="https://pypi.org/simple"
           python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
       - name: Store wheels
         uses: actions/upload-artifact@main

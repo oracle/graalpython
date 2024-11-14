@@ -13,10 +13,8 @@ name: build-linux-amd64-wheels
 jobs:
   build_wheels:
     runs-on:
-      - self-hosted
-      - Linux
-      - ARM64
-    container: quay.io/pypa/manylinux_2_28_amd64
+      - ubuntu-latest
+    container: quay.io/pypa/manylinux_2_28_x86_64
     env:
       PACKAGES_TO_BUILD: ${{ inputs.packages }}
     steps:
@@ -29,12 +27,11 @@ jobs:
           dnf install -y /usr/bin/patch
       - name: Checkout
         uses: actions/checkout@main
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
       - name: Build wheels
-        run: python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
+        run: |
+          python3 -m venv wheelbuilder_venv
+          export PIP_EXTRA_INDEX_URL=https://pypi.org/simple
+          wheelbuilder_venv/bin/python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
       - name: Store wheels
         uses: actions/upload-artifact@main
         with:
