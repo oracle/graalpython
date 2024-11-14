@@ -681,7 +681,7 @@ class GraalPythonTags(object):
     unittest_posix = 'python-unittest-posix'
     unittest_standalone = 'python-unittest-standalone'
     unittest_gradle_plugin = 'python-unittest-gradle-plugin'
-    unittest_maven_plugin = 'python-unittest-maven-plugin'    
+    unittest_maven_plugin = 'python-unittest-maven-plugin'
     ginstall = 'python-ginstall'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
@@ -857,6 +857,48 @@ def graalpy_standalone_native_enterprise():
 
 
 def graalvm_jdk():
+    jdk_version = mx.get_jdk().version
+
+    # Check if GRAAL_JDK_HOME points to some compatible pre-built gvm
+    graal_jdk_home = os.environ.get("GRAAL_JDK_HOME", None)
+    if graal_jdk_home and "*" in graal_jdk_home:
+        graal_jdk_home = os.path.abspath(glob.glob(graal_jdk_home)[0])
+        if sys.platform == "darwin":
+            graal_jdk_home = os.path.join(graal_jdk_home, 'Contents', 'Home')
+        mx.log("Using GraalPy standalone from GRAAL_JDK_HOME: " + graal_jdk_home)
+
+        # Try to verify that we're getting what we expect:
+        has_java = os.path.exists(os.path.join(graal_jdk_home, 'bin', 'java.exe' if WIN32 else 'java'))
+        if not has_java:
+            mx.abort(f"GRAAL_JDK_HOME does not contain java executable.")
+
+        release = os.path.join(graal_jdk_home, 'release')
+        if not os.path.exists(release):
+            mx.abort(f"No 'release' file in GRAAL_JDK_HOME.")
+
+        java_version = None
+        implementor = None
+        with open(release, 'r') as f:
+            while not (java_version and implementor):
+                line = f.readline()
+                if 'JAVA_VERSION=' in line:
+                    java_version = line
+                if 'IMPLEMENTOR=' in line:
+                    implementor = line
+
+        if not java_version:
+            mx.abort(f"Could not check Java version in GRAAL_JDK_HOME 'release' file.")
+        actual_jdk_version = mx.VersionSpec(java_version.strip('JAVA_VERSION=').strip(' "\n\r'))
+        if actual_jdk_version != jdk_version:
+            mx.abort(f"GRAAL_JDK_HOME is not compatible with the requested JDK version.\n"
+             f"actual version: '{actual_jdk_version}', version string: {java_version}, requested version: {jdk_version}.")
+
+        if not implementor:
+            mx.abort(f"Could not check implementor in GRAAL_JDK_HOME 'release' file.")
+        if 'GraalVM' not in implementor:
+            mx.abort(f"GRAAL_JDK_HOME 'releases' has an unexpected implementor: '{implementor}'.")
+        return graal_jdk_home
+
     jdk_major_version = mx.get_jdk().version.parts[0]
     mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
     if not DISABLE_REBUILD:
