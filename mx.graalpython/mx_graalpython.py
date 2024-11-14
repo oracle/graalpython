@@ -680,6 +680,8 @@ class GraalPythonTags(object):
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_posix = 'python-unittest-posix'
     unittest_standalone = 'python-unittest-standalone'
+    unittest_gradle_plugin = 'python-unittest-gradle-plugin'
+    unittest_maven_plugin = 'python-unittest-maven-plugin'    
     ginstall = 'python-ginstall'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
@@ -1379,12 +1381,7 @@ def graalpython_gate_runner(args, tasks):
             standalone_home = graalpy_standalone_home('jvm')
             mvn_repo_path, version, env = deploy_local_maven_repo()
 
-            # in order to run gradle we need a jdk <= 22
-            env['GRADLE_JAVA_HOME'] = env.get('JAVA_HOME')
-
             env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
-            env['ENABLE_GRADLE_PLUGIN_UNITTESTS'] = 'true'
-            env['ENABLE_MAVEN_PLUGIN_UNITTESTS'] = 'true'
             env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home
@@ -1394,14 +1391,6 @@ def graalpython_gate_runner(args, tasks):
                 f"{pathlib.Path(mvn_repo_path).as_uri()}/",
                 mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
             ])
-
-            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/mvnw/.mvn/wrapper/maven-wrapper.properties", ["distributionUrl"])
-            if "distributionUrl" in urls:
-                env["MAVEN_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
-
-            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/gradle/gradle-test-project/gradle/wrapper/gradle-wrapper.properties", ["distributionUrl"])
-            if "distributionUrl" in urls:
-                env["GRADLE_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
 
             env["org.graalvm.maven.downloader.version"] = version
             env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
@@ -1416,7 +1405,74 @@ def graalpython_gate_runner(args, tasks):
             mx.logv(f"running with os.environ extended with: {env=}")
             run_python_unittests(
                 os.path.join(standalone_home, 'bin', _graalpy_launcher()),
-                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone"],
+                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_jbang_integration.py",
+                       "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py"],
+                env=env,
+                parallel=3,
+            )
+
+    with Task('GraalPython gradle plugin tests', tasks, tags=[GraalPythonTags.unittest_gradle_plugin]) as task:
+        if task:
+            gvm_jdk = graalvm_jdk()
+            standalone_home = graalpy_standalone_home('jvm')
+            mvn_repo_path, version, env = deploy_local_maven_repo()
+
+            env['ENABLE_GRADLE_PLUGIN_UNITTESTS'] = 'true'
+            env['JAVA_HOME'] = gvm_jdk
+            env['PYTHON_STANDALONE_HOME'] = standalone_home
+
+            # setup maven downloader overrides
+            env['MAVEN_REPO_OVERRIDE'] = ",".join([
+                f"{pathlib.Path(mvn_repo_path).as_uri()}/",
+                mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
+            ])
+
+            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/gradle/gradle-test-project/gradle/wrapper/gradle-wrapper.properties", ["distributionUrl"])
+            if "distributionUrl" in urls:
+                env["GRADLE_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
+
+            env["org.graalvm.maven.downloader.version"] = version
+            env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
+
+            # run the test
+            mx.logv(f"running with os.environ extended with: {env=}")
+
+            run_python_unittests(
+                os.path.join(standalone_home, 'bin', _graalpy_launcher()),
+                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_gradle_plugin.py"],
+                env=env,
+                parallel=3,
+            )
+
+    with Task('GraalPython maven plugin tests', tasks, tags=[GraalPythonTags.unittest_maven_plugin]) as task:
+        if task:
+            gvm_jdk = graalvm_jdk()
+            standalone_home = graalpy_standalone_home('jvm')
+            mvn_repo_path, version, env = deploy_local_maven_repo()
+
+            env['ENABLE_MAVEN_PLUGIN_UNITTESTS'] = 'true'
+            env['JAVA_HOME'] = gvm_jdk
+            env['PYTHON_STANDALONE_HOME'] = standalone_home
+
+            # setup maven downloader overrides
+            env['MAVEN_REPO_OVERRIDE'] = ",".join([
+                f"{pathlib.Path(mvn_repo_path).as_uri()}/",
+                mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
+            ])
+
+            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/mvnw/.mvn/wrapper/maven-wrapper.properties", ["distributionUrl"])
+            if "distributionUrl" in urls:
+                env["MAVEN_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
+
+            env["org.graalvm.maven.downloader.version"] = version
+            env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
+
+            # run the test
+            mx.logv(f"running with os.environ extended with: {env=}")
+
+            run_python_unittests(
+                os.path.join(standalone_home, 'bin', _graalpy_launcher()),
+                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_maven_plugin.py"],
                 env=env,
                 parallel=3,
             )
