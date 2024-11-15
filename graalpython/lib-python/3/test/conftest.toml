@@ -36,3 +36,13 @@ selector = [
     'test_multiprocessing_spawn',
     'test_multiprocessing_main_handling',
 ]
+
+
+[[test_rules]]
+exclude_on = ['graalpy']
+selector = [
+    # Tests for CPython-specific bytecode optimizations. Unapplicable to GraalPy and prone to breaking on random bytecode changes
+    'test_peepholer',
+    # We don't have fork, so although we pass surprisingly many tests in there, it's not going to cover anything useful
+    'test_multiprocessing_fork',
+]
