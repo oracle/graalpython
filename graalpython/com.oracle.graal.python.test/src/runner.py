@@ -76,7 +76,8 @@ if IS_GRAALPY:
     # noinspection PyUnresolvedReferences
     PLATFORM_KEYS.add('native_image' if __graalpython__.is_native else 'jvm')
 
-CURRENT_PLATFORM_KEYS = frozenset({f'{sys.platform}-{platform.machine()}'})
+CURRENT_PLATFORM = f'{sys.platform}-{platform.machine()}'
+CURRENT_PLATFORM_KEYS = frozenset({CURRENT_PLATFORM})
 
 
 class Logger:
@@ -124,6 +125,9 @@ class TestId:
 
     def __repr__(self):
         return f'{self.test_file}::{self.test_name}'
+
+    def normalized(self):
+        return TestId(self.test_file.resolve(), self.test_name)
 
     @classmethod
     def from_str(cls, s: str):
@@ -419,6 +423,9 @@ class TestRunner:
     def generate_mx_report(self, path: str):
         report_data = []
         for result in self.results:
+            # Skip synthetic results for failed class setups and such
+            if '<' in result.test_id.test_name:
+                continue
             match result.status:
                 case TestStatus.SUCCESS | TestStatus.EXPECTED_FAILURE:
                     status = 'PASSED'
@@ -441,27 +448,42 @@ class TestRunner:
             by_file[result.test_id.test_file].append(result)
         for test_file, results in by_file.items():
             test_file = configure_test_file(test_file)
-            new_tags = [
-                Tag(result.test_id, keys=CURRENT_PLATFORM_KEYS)
-                for result in results if result.status == TestStatus.SUCCESS
-            ]
-            tags = merge_tags(read_tags(test_file), new_tags, append=append)
+            tags = update_tags(
+                current=read_tags(test_file),
+                results=results,
+                tag_platform=CURRENT_PLATFORM,
+                untag_failed=(not append),
+                untag_skipped=(not append),
+                untag_missing=(not append),
+            )
             write_tags(test_file, tags)
 
 
-def merge_tags(original: typing.Iterable['Tag'], new: typing.Iterable['Tag'], append: bool) -> set['Tag']:
-    original_by_name = {t.test_id.test_name: t.keys for t in original}
-    merged = {}
-    for tag in new:
-        if existing_keys := original_by_name.get(tag.test_id.test_name):
-            merged[tag.test_id.test_name] = tag.with_merged_keys(existing_keys)
-        else:
-            merged[tag.test_id.test_name] = tag
-    if append:
-        for test_name, tag in original_by_name.items():
-            if test_name not in merged:
-                merged[test_name] = tag
-    return set(merged.values())
+def update_tags(current: typing.Iterable['Tag'], results: typing.Iterable[TestResult], tag_platform: str,
+                untag_failed=False, untag_skipped=False, untag_missing=False) -> set['Tag']:
+    status_by_id = {r.test_id.normalized(): r.status for r in results}
+    tag_by_id = {}
+    for tag in current:
+        if untag_missing and tag.test_id not in status_by_id:
+            tag = tag.without_key(tag_platform)
+        if tag:
+            tag_by_id[tag.test_id] = tag
+
+    for test_id, status in status_by_id.items():
+        if tag := tag_by_id.get(test_id):
+            if status == TestStatus.SUCCESS:
+                tag_by_id[test_id] = tag.with_key(tag_platform)
+            elif (untag_skipped and status == TestStatus.SKIPPED
+                  or untag_failed and status == TestStatus.FAILURE):
+                tag = tag.without_key(tag_platform)
+                if tag:
+                    tag_by_id[test_id] = tag
+                else:
+                    del tag_by_id[test_id]
+        elif status == TestStatus.SUCCESS:
+            tag_by_id[test_id] = Tag.for_key(test_id, tag_platform)
+
+    return set(tag_by_id.values())
 
 
 def write_tags(test_file: 'TestFile', tags: typing.Iterable['Tag']):
@@ -976,7 +998,7 @@ def filter_tree(test_file: TestFile, test_suite: unittest.TestSuite, specifiers:
         else:
             test_id = TestId.from_test_case(test_file.path, test)
             if any(s.match(test_id) for s in specifiers):
-                if tagged_ids is None or test_id in tagged_ids:
+                if tagged_ids is None or test_id.normalized() in tagged_ids:
                     keep_tests.append(test)
                     collected_tests.append(Test(test_id, test_file))
     test_suite._tests = keep_tests
@@ -1107,14 +1129,27 @@ class Tag:
     test_id: TestId
     keys: frozenset[str]
 
-    def with_merged_keys(self, keys: typing.AbstractSet[str]) -> 'Tag':
-        return Tag(self.test_id, self.keys | keys)
+    @classmethod
+    def for_key(cls, test_id, key):
+        return Tag(test_id, frozenset({key}))
+
+    def with_key(self, key: str):
+        return Tag(self.test_id, self.keys | {key})
+
+    def without_key(self, key: str):
+        if key not in self.keys:
+            return self
+        keys = self.keys - {key}
+        if keys:
+            return Tag(self.test_id, keys)
 
     def __str__(self):
         return f'{self.test_id.test_name} @ {",".join(sorted(self.keys))}'
 
 
 def read_tags(test_file: TestFile) -> list[Tag]:
+    # To make them easily comparable
+    test_path = test_file.path.resolve()
     tag_file = test_file.get_tag_file()
     tags = []
     if tag_file.exists():
@@ -1126,7 +1161,7 @@ def read_tags(test_file: TestFile) -> list[Tag]:
                 if not keys:
                     log(f'WARNING: invalid tag {test}: missing platform keys')
                 tags.append(Tag(
-                    TestId(test_file.path, test),
+                    TestId(test_path, test),
                     frozenset(keys.split(',')),
                 ))
     return tags
@@ -1169,6 +1204,38 @@ def main_worker(args):
             pickle.dump(data, f)
 
 
+def main_merge_tags(args):
+    with open(args.report_path) as f:
+        report = json.load(f)
+    status_map = {
+        'PASSED': TestStatus.SUCCESS,
+        'FAILED': TestStatus.FAILURE,
+        'IGNORED': TestStatus.SKIPPED,
+    }
+    all_results = [
+        TestResult(
+            test_id=TestId.from_str(result['name']),
+            status=status_map[result['status']],
+        )
+        for result in report
+        if '<' not in result['name']
+    ]
+    by_file = defaultdict(list)
+    for result in all_results:
+        by_file[result.test_id.test_file].append(result)
+    for test_file, results in by_file.items():
+        test_file = configure_test_file(test_file)
+        tags = update_tags(
+            current=read_tags(test_file),
+            results=results,
+            tag_platform=args.platform,
+            untag_failed=False,
+            untag_skipped=True,
+            untag_missing=True,
+        )
+        write_tags(test_file, tags)
+
+
 def get_bool_env(name: str):
     return os.environ.get(name, '').lower() in ('true', '1')
 
@@ -1179,7 +1246,11 @@ def main():
     subparsers = parent_parser.add_subparsers()
 
     # run command declaration
-    run_parser = subparsers.add_parser('run', prog=('mx graalpytest' if is_mx_graalpytest else None))
+    run_parser = subparsers.add_parser(
+        'run',
+        prog=('mx graalpytest' if is_mx_graalpytest else None),
+        help="Run GraalPy unittests or CPython unittest with tagging",
+    )
     run_parser.set_defaults(main=main_run)
     if is_mx_graalpytest:
         # mx graalpytest takes this option, but it forwards --help here, so pretend we take it
@@ -1282,13 +1353,19 @@ def main():
     )
 
     # worker command declaration
-    worker_parser = subparsers.add_parser('worker')
+    worker_parser = subparsers.add_parser('worker', help="Internal command for subprocess workers")
     worker_parser.set_defaults(main=main_worker)
     group = worker_parser.add_mutually_exclusive_group()
     group.add_argument('--pipe-fd', type=int)
     group.add_argument('--result-file', type=Path)
     worker_parser.add_argument('--tests-file', type=Path, required=True)
     worker_parser.add_argument('--failfast', action='store_true')
+
+    # merge-tags-from-report command declaration
+    merge_tags_parser = subparsers.add_parser('merge-tags-from-report', help="Merge tags from automated retagger")
+    merge_tags_parser.set_defaults(main=main_merge_tags)
+    merge_tags_parser.add_argument('platform')
+    merge_tags_parser.add_argument('report_path')
 
     # run the appropriate command
     args = parent_parser.parse_args()
