@@ -2,7 +2,6 @@ test.test_scope.ScopeTests.testBoundAndFree @ darwin-arm64,darwin-x86_64,linux-a
 test.test_scope.ScopeTests.testCellIsArgAndEscapes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_scope.ScopeTests.testCellIsKwonlyArg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_scope.ScopeTests.testCellIsLocalAndEscapes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_scope.ScopeTests.testCellLeak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_scope.ScopeTests.testClassAndGlobal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_scope.ScopeTests.testClassNamespaceOverridesClosure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_scope.ScopeTests.testComplexDefinitions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -12,12 +11,9 @@ test.test_scope.ScopeTests.testExtraNesting @ darwin-arm64,darwin-x86_64,linux-a
 test.test_scope.ScopeTests.testFreeVarInMethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_scope.ScopeTests.testFreeingCell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_scope.ScopeTests.testGlobalInParallelNestedFunctions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_scope.ScopeTests.testInteractionWithTraceFunc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_scope.ScopeTests.testLambdas @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_scope.ScopeTests.testLeaks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_scope.ScopeTests.testListCompLocalVars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_scope.ScopeTests.testLocalsClass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_scope.ScopeTests.testLocalsClass_WithTrace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_scope.ScopeTests.testLocalsFunction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_scope.ScopeTests.testMixedFreevarsAndCellvars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_scope.ScopeTests.testNearestEnclosingScope @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

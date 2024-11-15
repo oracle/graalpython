@@ -2,7 +2,6 @@ test.test_strtod.StrtodTests.test_bigcomp @ darwin-arm64,darwin-x86_64,linux-aar
 test.test_strtod.StrtodTests.test_boundaries @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strtod.StrtodTests.test_halfway_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strtod.StrtodTests.test_large_exponents @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_strtod.StrtodTests.test_oversized_digit_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strtod.StrtodTests.test_parsing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strtod.StrtodTests.test_particular @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strtod.StrtodTests.test_short_halfway_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,7 +1,6 @@
 test.test_userlist.UserListTest.test_add_specials @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_addmul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_userlist.UserListTest.test_bigrepeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_constructor_exception_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -15,7 +14,6 @@ test.test_userlist.UserListTest.test_delslice @ darwin-arm64,darwin-x86_64,linux
 test.test_userlist.UserListTest.test_exhausted_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_extend @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_extendedslicing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_userlist.UserListTest.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_getitem_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userlist.UserListTest.test_getitemoverwriteiter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

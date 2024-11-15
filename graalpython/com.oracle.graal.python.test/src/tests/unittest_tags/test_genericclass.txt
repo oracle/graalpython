@@ -1,4 +1,3 @@
-test.test_genericclass.CAPITest.test_c_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_genericclass.TestClassGetitem.test_class_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_genericclass.TestClassGetitem.test_class_getitem_classmethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_genericclass.TestClassGetitem.test_class_getitem_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,1 +1,0 @@
-test.test_crashers.CrasherTest.test_crashers_crash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -10,8 +10,6 @@ test.test_hashlib.HashLibTestCase.test_case_blake2s_1 @ darwin-arm64,darwin-x86_
 test.test_hashlib.HashLibTestCase.test_case_md5_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_case_md5_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_case_md5_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hashlib.HashLibTestCase.test_case_md5_huge @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hashlib.HashLibTestCase.test_case_md5_uintmax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_case_sha1_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_case_sha1_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_case_sha1_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -41,7 +39,6 @@ test.test_hashlib.HashLibTestCase.test_case_sha512_1 @ darwin-arm64,darwin-x86_6
 test.test_hashlib.HashLibTestCase.test_case_sha512_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_case_sha512_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_digest_length_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hashlib.HashLibTestCase.test_disallow_instantiation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_extra_sha3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_get_builtin_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_get_fips_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -56,7 +53,6 @@ test.test_hashlib.HashLibTestCase.test_no_unicode @ darwin-arm64,darwin-x86_64,l
 test.test_hashlib.HashLibTestCase.test_no_unicode_blake2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_no_unicode_sha3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_readonly_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hashlib.HashLibTestCase.test_sha3_update_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_threaded_hashing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_unknown_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.HashLibTestCase.test_usedforsecurity_false @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -65,4 +61,3 @@ test.test_hashlib.KDFTests.test_file_digest @ darwin-arm64,darwin-x86_64,linux-a
 test.test_hashlib.KDFTests.test_normalized_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.KDFTests.test_pbkdf2_hmac_c @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hashlib.KDFTests.test_pbkdf2_hmac_py @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hashlib.KDFTests.test_scrypt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

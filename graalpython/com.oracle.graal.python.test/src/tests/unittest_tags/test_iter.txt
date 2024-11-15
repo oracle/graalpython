@@ -10,7 +10,6 @@ test.test_iter.TestCase.test_error_iter @ darwin-arm64,darwin-x86_64,linux-aarch
 test.test_iter.TestCase.test_exception_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_exception_sequence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_extending_list_with_iterator_does_not_segfault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_iter.TestCase.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_in_and_not_in @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_indexOf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_iter_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -27,7 +26,6 @@ test.test_iter.TestCase.test_iter_function_stop @ darwin-arm64,darwin-x86_64,lin
 test.test_iter.TestCase.test_iter_idempotency @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_iter_independence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_iter_neg_setstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_iter.TestCase.test_iter_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_iter_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_iter_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_iter_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -36,7 +34,6 @@ test.test_iter.TestCase.test_mutating_seq_class_iter_pickle @ darwin-arm64,darwi
 test.test_iter.TestCase.test_nested_comprehensions_for @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_nested_comprehensions_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_new_style_iter_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_iter.TestCase.test_ref_counting_behavior @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_seq_class_for @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_seq_class_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_iter.TestCase.test_sinkstate_callable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

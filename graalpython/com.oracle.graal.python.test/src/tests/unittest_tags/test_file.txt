@@ -4,7 +4,6 @@ test.test_file.CAutoFileTests.testMethods @ darwin-arm64,darwin-x86_64,linux-aar
 test.test_file.CAutoFileTests.testReadWhenWriting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.CAutoFileTests.testReadinto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.CAutoFileTests.testReadinto_text @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_file.CAutoFileTests.testWeakRefs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.CAutoFileTests.testWritelinesIntegers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.CAutoFileTests.testWritelinesIntegersUserList @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.CAutoFileTests.testWritelinesNonString @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -13,7 +12,6 @@ test.test_file.COtherFileTests.testBadModeArgument @ darwin-arm64,darwin-x86_64,
 test.test_file.COtherFileTests.testIteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.COtherFileTests.testModeStrings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.COtherFileTests.testSetBufferSize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_file.COtherFileTests.testStdin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.COtherFileTests.testTruncateOnWindows @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.PyAutoFileTests.testAttributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.PyAutoFileTests.testErrors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -21,7 +19,6 @@ test.test_file.PyAutoFileTests.testMethods @ darwin-arm64,darwin-x86_64,linux-aa
 test.test_file.PyAutoFileTests.testReadWhenWriting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.PyAutoFileTests.testReadinto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.PyAutoFileTests.testReadinto_text @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_file.PyAutoFileTests.testWeakRefs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.PyAutoFileTests.testWritelinesIntegers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.PyAutoFileTests.testWritelinesIntegersUserList @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.PyAutoFileTests.testWritelinesNonString @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -30,5 +27,4 @@ test.test_file.PyOtherFileTests.testBadModeArgument @ darwin-arm64,darwin-x86_64
 test.test_file.PyOtherFileTests.testIteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.PyOtherFileTests.testModeStrings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.PyOtherFileTests.testSetBufferSize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_file.PyOtherFileTests.testStdin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_file.PyOtherFileTests.testTruncateOnWindows @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

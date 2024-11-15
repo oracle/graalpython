@@ -1,7 +1,6 @@
 test.test_list.ListTest.test_addmul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_list.ListTest.test_bigrepeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_constructor_exception_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -17,7 +16,6 @@ test.test_list.ListTest.test_equal_operator_modifying_operand @ darwin-arm64,dar
 test.test_list.ListTest.test_exhausted_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_extend @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_extendedslicing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_list.ListTest.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_getitem_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_getitemoverwriteiter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -37,7 +35,6 @@ test.test_list.ListTest.test_no_comdat_folding @ darwin-arm64,darwin-x86_64,linu
 test.test_list.ListTest.test_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_list.ListTest.test_preallocation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

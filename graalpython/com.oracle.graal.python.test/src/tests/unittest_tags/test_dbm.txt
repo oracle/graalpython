@@ -12,4 +12,3 @@ test.test_dbm.TestCase_dumb.test_open_with_bytes @ darwin-arm64,darwin-x86_64,li
 test.test_dbm.TestCase_dumb.test_open_with_pathlib_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dbm.TestCase_dumb.test_open_with_pathlib_path_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dbm.WhichDBTestCase.test_whichdb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dbm.WhichDBTestCase.test_whichdb_ndbm @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

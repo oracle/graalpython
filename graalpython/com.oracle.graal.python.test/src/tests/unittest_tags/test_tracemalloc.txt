@@ -16,4 +16,3 @@ test.test_tracemalloc.TestSnapshot.test_statistic_diff_format @ darwin-arm64,dar
 test.test_tracemalloc.TestSnapshot.test_statistic_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tracemalloc.TestSnapshot.test_trace_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tracemalloc.TestTraceback.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tracemalloc.TestTracemallocEnabled.test_fork @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

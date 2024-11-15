@@ -4,6 +4,5 @@ test.test_codecencodings_iso2022.Test_ISO2022_JP.test_xmlcharrefreplace @ darwin
 test.test_codecencodings_iso2022.Test_ISO2022_JP2.test_chunkcoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_codecencodings_iso2022.Test_ISO2022_JP2.test_streamwriter_reset_no_pending @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_codecencodings_iso2022.Test_ISO2022_JP2.test_xmlcharrefreplace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_codecencodings_iso2022.Test_ISO2022_KR.test_chunkcoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_codecencodings_iso2022.Test_ISO2022_KR.test_streamwriter_reset_no_pending @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_codecencodings_iso2022.Test_ISO2022_KR.test_xmlcharrefreplace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

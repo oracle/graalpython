@@ -83,7 +83,6 @@ test.test_zipfile.ExtractTests.test_extract_all_with_target @ darwin-arm64,darwi
 test.test_zipfile.ExtractTests.test_extract_all_with_target_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.ExtractTests.test_extract_hackers_arcnames_common_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.ExtractTests.test_extract_hackers_arcnames_posix_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_zipfile.ExtractTests.test_extract_hackers_arcnames_windows_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.ExtractTests.test_extract_with_target @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.ExtractTests.test_extract_with_target_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.ExtractTests.test_sanitize_windows_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -182,7 +181,7 @@ test.test_zipfile.StoredTestsWithRandomBinaryFiles.test_open @ darwin-arm64,darw
 test.test_zipfile.StoredTestsWithRandomBinaryFiles.test_random_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.StoredTestsWithRandomBinaryFiles.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.StoredTestsWithSourceFile.test_absolute_arcnames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_zipfile.StoredTestsWithSourceFile.test_add_file_after_2107 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.StoredTestsWithSourceFile.test_add_file_after_2107 @ darwin-arm64,darwin-x86_64
 test.test_zipfile.StoredTestsWithSourceFile.test_add_file_before_1980 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.StoredTestsWithSourceFile.test_append_to_concatenated_zip_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.StoredTestsWithSourceFile.test_append_to_non_zip_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

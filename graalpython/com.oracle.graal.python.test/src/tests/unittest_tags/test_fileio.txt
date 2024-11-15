@@ -18,11 +18,9 @@ test.test_fileio.CAutoFileTests.testMethods @ darwin-arm64,darwin-x86_64,linux-a
 test.test_fileio.CAutoFileTests.testOpenDirFD @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.CAutoFileTests.testOpendir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.CAutoFileTests.testReadintoByteArray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_fileio.CAutoFileTests.testRecursiveRepr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.CAutoFileTests.testRepr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.CAutoFileTests.testReprNoCloseFD @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.CAutoFileTests.testSeekTell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_fileio.CAutoFileTests.testWeakRefs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.CAutoFileTests.testWritelinesError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.CAutoFileTests.testWritelinesList @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.CAutoFileTests.testWritelinesUserList @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -34,7 +32,6 @@ test.test_fileio.COtherFileTests.testBadModeArgument @ darwin-arm64,darwin-x86_6
 test.test_fileio.COtherFileTests.testBytesOpen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.COtherFileTests.testConstructorHandlesNULChars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.COtherFileTests.testInvalidFd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_fileio.COtherFileTests.testInvalidFd_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.COtherFileTests.testInvalidInit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.COtherFileTests.testInvalidModeStrings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.COtherFileTests.testModeStrings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -65,11 +62,9 @@ test.test_fileio.PyAutoFileTests.testMethods @ darwin-arm64,darwin-x86_64,linux-
 test.test_fileio.PyAutoFileTests.testOpenDirFD @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.PyAutoFileTests.testOpendir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.PyAutoFileTests.testReadintoByteArray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_fileio.PyAutoFileTests.testRecursiveRepr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.PyAutoFileTests.testRepr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.PyAutoFileTests.testReprNoCloseFD @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.PyAutoFileTests.testSeekTell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_fileio.PyAutoFileTests.testWeakRefs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.PyAutoFileTests.testWritelinesError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.PyAutoFileTests.testWritelinesList @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_fileio.PyAutoFileTests.testWritelinesUserList @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

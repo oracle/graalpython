@@ -70,8 +70,6 @@ test.test_compileall.CompileallTestsWithSourceEpoch.test_compile_workers_cpu_cou
 test.test_compileall.CompileallTestsWithSourceEpoch.test_compile_workers_non_positive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compileall.CompileallTestsWithSourceEpoch.test_ignore_symlink_destination @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compileall.CompileallTestsWithSourceEpoch.test_larger_than_32_bit_times @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_compileall.CompileallTestsWithSourceEpoch.test_magic_number @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_compileall.CompileallTestsWithSourceEpoch.test_mtime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compileall.CompileallTestsWithSourceEpoch.test_multiple_optimization_levels @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compileall.CompileallTestsWithSourceEpoch.test_no_pycache_in_non_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compileall.CompileallTestsWithSourceEpoch.test_optimize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

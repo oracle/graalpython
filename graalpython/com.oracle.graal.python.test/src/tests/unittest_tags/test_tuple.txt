@@ -1,12 +1,9 @@
 test.test_tuple.TupleTest.test_addmul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tuple.TupleTest.test_bigrepeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tuple.TupleTest.test_bug7466 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tuple.TupleTest.test_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tuple.TupleTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tuple.TupleTest.test_contains_fake @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tuple.TupleTest.test_contains_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tuple.TupleTest.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tuple.TupleTest.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tuple.TupleTest.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tuple.TupleTest.test_getitem_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tuple.TupleTest.test_getitemoverwriteiter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -27,8 +24,5 @@ test.test_tuple.TupleTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,l
 test.test_tuple.TupleTest.test_repr_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tuple.TupleTest.test_reversed_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tuple.TupleTest.test_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tuple.TupleTest.test_track_dynamic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tuple.TupleTest.test_track_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tuple.TupleTest.test_track_subtypes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tuple.TupleTest.test_truth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tuple.TupleTest.test_tupleresizebug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

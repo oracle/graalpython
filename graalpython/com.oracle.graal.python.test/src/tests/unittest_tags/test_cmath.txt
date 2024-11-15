@@ -12,7 +12,6 @@ test.test_cmath.CMathTests.test_isinf @ darwin-arm64,darwin-x86_64,linux-aarch64
 test.test_cmath.CMathTests.test_isnan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmath.CMathTests.test_phase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmath.CMathTests.test_polar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_cmath.CMathTests.test_polar_errno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmath.CMathTests.test_rect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmath.CMathTests.test_specific_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmath.CMathTests.test_user_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

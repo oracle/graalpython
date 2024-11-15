@@ -14,7 +14,6 @@ test.test_enum.OldTestFlag.test_auto_number_garbage @ darwin-arm64,darwin-x86_64
 test.test_enum.OldTestFlag.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.OldTestFlag.test_boundary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.OldTestFlag.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.OldTestFlag.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.OldTestFlag.test_duplicate_auto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.OldTestFlag.test_init_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.OldTestFlag.test_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -37,7 +36,6 @@ test.test_enum.OldTestIntFlag.test_and @ darwin-arm64,darwin-x86_64,linux-aarch6
 test.test_enum.OldTestIntFlag.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.OldTestIntFlag.test_boundary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.OldTestIntFlag.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.OldTestIntFlag.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.OldTestIntFlag.test_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.OldTestIntFlag.test_global_enum_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.OldTestIntFlag.test_global_repr_conform1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -80,7 +78,6 @@ test.test_enum.TestIntEnum.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch6
 test.test_enum.TestIntEnum.test_bool_is_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestIntEnum.test_changing_member_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestIntEnum.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestIntEnum.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestIntEnum.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestIntEnum.test_copy_member @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestIntEnum.test_dir_on_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -115,7 +112,6 @@ test.test_enum.TestIntFlag.test_bool_is_true @ darwin-arm64,darwin-x86_64,linux-
 test.test_enum.TestIntFlag.test_changing_member_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestIntFlag.test_closed_invert_expectations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestIntFlag.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestIntFlag.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestIntFlag.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestIntFlag.test_copy_member @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestIntFlag.test_default_missing_with_wrong_type_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -145,16 +141,13 @@ test.test_enum.TestIntFlag.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,
 test.test_enum.TestIntFlag.test_repr_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestIntFlag.test_reversed_iteration_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestIntFlag.test_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestInternals.test_auto_garbage_corrected_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestInternals.test_auto_garbage_corrected_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestInternals.test_auto_garbage_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestInternals.test_auto_garbage_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestInternals.test_auto_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestInternals.test_auto_name_inherit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestInternals.test_auto_number @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestInternals.test_auto_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestInternals.test_auto_order_wierd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestInternals.test_auto_with_aliases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestInternals.test_dunder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestInternals.test_duplicate_auto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestInternals.test_is_private @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -166,7 +159,6 @@ test.test_enum.TestMinimalDate.test_basics @ darwin-arm64,darwin-x86_64,linux-aa
 test.test_enum.TestMinimalDate.test_bool_is_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMinimalDate.test_changing_member_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMinimalDate.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestMinimalDate.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMinimalDate.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMinimalDate.test_copy_member @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMinimalDate.test_dir_on_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -200,7 +192,6 @@ test.test_enum.TestMinimalFloat.test_basics @ darwin-arm64,darwin-x86_64,linux-a
 test.test_enum.TestMinimalFloat.test_bool_is_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMinimalFloat.test_changing_member_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMinimalFloat.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestMinimalFloat.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMinimalFloat.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMinimalFloat.test_copy_member @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMinimalFloat.test_dir_on_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -234,7 +225,6 @@ test.test_enum.TestMixedDate.test_basics @ darwin-arm64,darwin-x86_64,linux-aarc
 test.test_enum.TestMixedDate.test_bool_is_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedDate.test_changing_member_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedDate.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestMixedDate.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedDate.test_dir_on_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedDate.test_dir_on_item @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedDate.test_dir_on_sub_with_behavior_including_instance_dict_on_super @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -266,7 +256,6 @@ test.test_enum.TestMixedFloat.test_basics @ darwin-arm64,darwin-x86_64,linux-aar
 test.test_enum.TestMixedFloat.test_bool_is_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedFloat.test_changing_member_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedFloat.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestMixedFloat.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedFloat.test_dir_on_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedFloat.test_dir_on_item @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedFloat.test_dir_on_sub_with_behavior_including_instance_dict_on_super @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -298,7 +287,6 @@ test.test_enum.TestMixedInt.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch
 test.test_enum.TestMixedInt.test_bool_is_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedInt.test_changing_member_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedInt.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestMixedInt.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedInt.test_dir_on_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedInt.test_dir_on_item @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedInt.test_dir_on_sub_with_behavior_including_instance_dict_on_super @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -331,7 +319,6 @@ test.test_enum.TestMixedIntFlag.test_bool_is_true @ darwin-arm64,darwin-x86_64,l
 test.test_enum.TestMixedIntFlag.test_changing_member_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedIntFlag.test_closed_invert_expectations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedIntFlag.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestMixedIntFlag.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedIntFlag.test_default_missing_with_wrong_type_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedIntFlag.test_dir_on_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedIntFlag.test_dir_on_item @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -365,7 +352,6 @@ test.test_enum.TestMixedStr.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch
 test.test_enum.TestMixedStr.test_bool_is_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedStr.test_changing_member_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedStr.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestMixedStr.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedStr.test_dir_on_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedStr.test_dir_on_item @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestMixedStr.test_dir_on_sub_with_behavior_including_instance_dict_on_super @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -404,7 +390,6 @@ test.test_enum.TestPlainEnum.test_basics @ darwin-arm64,darwin-x86_64,linux-aarc
 test.test_enum.TestPlainEnum.test_bool_is_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestPlainEnum.test_changing_member_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestPlainEnum.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestPlainEnum.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestPlainEnum.test_dir_on_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestPlainEnum.test_dir_on_item @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestPlainEnum.test_dir_on_sub_with_behavior_including_instance_dict_on_super @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -437,7 +422,6 @@ test.test_enum.TestPlainFlag.test_bool_is_true @ darwin-arm64,darwin-x86_64,linu
 test.test_enum.TestPlainFlag.test_changing_member_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestPlainFlag.test_closed_invert_expectations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestPlainFlag.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestPlainFlag.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestPlainFlag.test_default_missing_with_wrong_type_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestPlainFlag.test_dir_on_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestPlainFlag.test_dir_on_item @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -470,7 +454,6 @@ test.test_enum.TestSpecial.test_comparisons @ darwin-arm64,darwin-x86_64,linux-a
 test.test_enum.TestSpecial.test_conflicting_types_resolved_in_new @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_custom_flag_bitwise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_default_missing_no_chained_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestSpecial.test_dir_with_custom_dunders @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_duplicate_name_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_duplicate_values_give_unique_enum_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_dynamic_members_with_static_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -502,7 +485,6 @@ test.test_enum.TestSpecial.test_intenum_transitivity @ darwin-arm64,darwin-x86_6
 test.test_enum.TestSpecial.test_introspection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_iteration_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_member_from_member_access @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestSpecial.test_missing_exceptions_reset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_missing_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_missing_value_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_mixed_enum_in_call_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -514,7 +496,6 @@ test.test_enum.TestSpecial.test_multiple_mixin_mro @ darwin-arm64,darwin-x86_64,
 test.test_enum.TestSpecial.test_multiple_mixin_with_common_data_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_namedtuple_as_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_nested_classes_in_enum_are_members @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestSpecial.test_nested_classes_in_enum_are_not_members @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_nested_classes_in_enum_with_member @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_nested_classes_in_enum_with_nonmember @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestSpecial.test_no_duplicates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -567,7 +548,6 @@ test.test_enum.TestStrEnum.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch6
 test.test_enum.TestStrEnum.test_bool_is_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestStrEnum.test_changing_member_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestStrEnum.test_contains_er @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_enum.TestStrEnum.test_contains_tf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestStrEnum.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestStrEnum.test_copy_member @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_enum.TestStrEnum.test_dir_on_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

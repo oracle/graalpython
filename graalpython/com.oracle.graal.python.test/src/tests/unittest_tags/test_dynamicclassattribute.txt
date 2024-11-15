@@ -1,7 +1,6 @@
 test.test_dynamicclassattribute.PropertySubclassTests.test_docstring_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dynamicclassattribute.PropertySubclassTests.test_property_new_getter_new_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dynamicclassattribute.PropertySubclassTests.test_property_setter_copies_getter_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dynamicclassattribute.PropertySubclassTests.test_slots_docstring_copy_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dynamicclassattribute.PropertyTests.test_abstract_virtual @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dynamicclassattribute.PropertyTests.test_property___isabstractmethod__descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dynamicclassattribute.PropertyTests.test_property_decorator_baseclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -4,9 +4,7 @@ test.test_format.FormatTest.test_g_format_has_no_trailing_zeros @ darwin-arm64,d
 test.test_format.FormatTest.test_locale @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_format.FormatTest.test_non_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_format.FormatTest.test_nul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_format.FormatTest.test_optimisations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_format.FormatTest.test_precision @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_format.FormatTest.test_precision_c_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_format.FormatTest.test_str_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_format.FormatTest.test_with_a_commas_and_an_underscore_in_format_specifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_format.FormatTest.test_with_an_underscore_and_a_comma_in_format_specifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

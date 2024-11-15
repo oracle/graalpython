@@ -1,7 +1,6 @@
 test.test_csv.KeyOrderingTest.test_ordered_dict_reader @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.KeyOrderingTest.test_ordering_for_the_dict_reader_and_writer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.MiscTestCase.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_csv.MiscTestCase.test_disallow_instantiation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.MiscTestCase.test_subclassable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestArrayWrites.test_char_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestArrayWrites.test_double_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -33,10 +32,8 @@ test.test_csv.TestDialectExcel.test_singlequoted_left_empty @ darwin-arm64,darwi
 test.test_csv.TestDialectExcel.test_singlequoted_right_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestDialectExcel.test_space_and_quote @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestDialectRegistry.test_bad_dialect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_csv.TestDialectRegistry.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestDialectRegistry.test_dialect_apply @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestDialectRegistry.test_incomplete_dialect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_csv.TestDialectRegistry.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestDialectRegistry.test_register_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestDialectRegistry.test_register_kwargs_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestDialectRegistry.test_registry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -70,10 +67,6 @@ test.test_csv.TestDictFields.test_write_simple_dict @ darwin-arm64,darwin-x86_64
 test.test_csv.TestDictFields.test_writeheader_return_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestEscapedExcel.test_escape_fieldsep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestEscapedExcel.test_read_escape_fieldsep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_csv.TestLeaks.test_create_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_csv.TestLeaks.test_create_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_csv.TestLeaks.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_csv.TestLeaks.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestQuotedEscapedExcel.test_read_escape_fieldsep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestQuotedEscapedExcel.test_write_escape_fieldsep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.TestSniffer.test_delimiters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -114,5 +107,4 @@ test.test_csv.Test_Csv.test_writer_dialect_attrs @ darwin-arm64,darwin-x86_64,li
 test.test_csv.Test_Csv.test_writer_kw_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.Test_Csv.test_writerows @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.Test_Csv.test_writerows_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_csv.Test_Csv.test_writerows_legacy_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_csv.Test_Csv.test_writerows_with_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

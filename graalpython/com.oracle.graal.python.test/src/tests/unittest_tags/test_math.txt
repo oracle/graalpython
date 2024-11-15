@@ -27,7 +27,6 @@ test.test_math.MathTests.testDist @ darwin-arm64,darwin-x86_64,linux-aarch64,lin
 test.test_math.MathTests.testExp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_math.MathTests.testFabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_math.MathTests.testFactorial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_math.MathTests.testFactorialHugeInputs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_math.MathTests.testFactorialNonIntegers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_math.MathTests.testFloor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_math.MathTests.testFmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -56,7 +55,6 @@ test.test_math.MathTests.testSqrt @ darwin-arm64,darwin-x86_64,linux-aarch64,lin
 test.test_math.MathTests.testTan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_math.MathTests.testTanh @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_math.MathTests.testTanhSign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_math.MathTests.test_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_math.MathTests.test_inf_constant @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_math.MathTests.test_input_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_math.MathTests.test_issue39871 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

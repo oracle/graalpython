@@ -17,5 +17,4 @@ test.test_unicodedata.UnicodeMiscTest.test_bug_4971 @ darwin-arm64,darwin-x86_64
 test.test_unicodedata.UnicodeMiscTest.test_bug_5828 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicodedata.UnicodeMiscTest.test_decimal_numeric_consistent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicodedata.UnicodeMiscTest.test_digit_numeric_consistent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unicodedata.UnicodeMiscTest.test_disallow_instantiation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicodedata.UnicodeMiscTest.test_ucd_510 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

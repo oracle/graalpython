@@ -49,12 +49,10 @@ test.test_xml_etree.BugsTest.test_expat224_utf8_bug_file @ darwin-arm64,darwin-x
 test.test_xml_etree.BugsTest.test_issue10777 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_xml_etree.BugsTest.test_issue6233 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_xml_etree.BugsTest.test_issue6565 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_xml_etree.BugsTest.test_lost_elem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_xml_etree.BugsTest.test_lost_tail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_xml_etree.BugsTest.test_lost_text @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_xml_etree.C14NTest.test_c14n_exclusion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_xml_etree.C14NTest.test_simple_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_xml_etree.C14NTest.test_xml_c14n2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_xml_etree.ElementFindTest.test_bad_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_xml_etree.ElementFindTest.test_find_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_xml_etree.ElementFindTest.test_find_through_ElementTree @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

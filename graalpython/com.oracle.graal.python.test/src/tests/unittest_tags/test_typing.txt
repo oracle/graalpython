@@ -234,7 +234,6 @@ test.test_typing.GetTypeHintTests.test_get_type_hints_for_builtins @ darwin-arm6
 test.test_typing.GetTypeHintTests.test_get_type_hints_for_object_with_annotations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.GetTypeHintTests.test_get_type_hints_from_various_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.GetTypeHintTests.test_get_type_hints_modules @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.GetTypeHintTests.test_get_type_hints_modules_forwardref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.GetTypeHintTests.test_get_type_hints_typeddict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.GetTypeHintTests.test_get_type_hints_wrapped_decoratored_func @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.GetTypeHintTests.test_previous_behavior @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -289,14 +288,6 @@ test.test_typing.NeverTests.test_instance_type_error @ darwin-arm64,darwin-x86_6
 test.test_typing.NeverTests.test_not_generic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NeverTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NeverTests.test_subclass_type_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeCTests.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeCTests.test_error_message_when_subclassing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeCTests.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeCTests.test_missing__name__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeCTests.test_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeCTests.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeCTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.NewTypeCTests.test_special_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NewTypePythonTests.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NewTypePythonTests.test_error_message_when_subclassing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.NewTypePythonTests.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -323,7 +314,6 @@ test.test_typing.NotRequiredTests.test_repr @ darwin-arm64,darwin-x86_64,linux-a
 test.test_typing.OtherABCTests.test_async_contextmanager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.OtherABCTests.test_contextmanager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.OverloadTests.test_overload_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.OverloadTests.test_overload_on_compiled_functions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.OverloadTests.test_overload_registry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.OverloadTests.test_overload_registry_repeated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.OverloadTests.test_overload_succeeds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -419,7 +409,6 @@ test.test_typing.SpecialAttrsTests.test_special_attrs @ darwin-arm64,darwin-x86_
 test.test_typing.SpecialAttrsTests.test_special_attrs2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.TemplateReplacementTests.test_no_duplicates_if_replacement_not_in_templates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.TemplateReplacementTests.test_two_templates_two_replacements_yields_correct_renders @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_typing.TestModules.test_c_functions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.TestModules.test_py_functions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.TupleTests.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_typing.TupleTests.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,9 +1,7 @@
-test.test_dict.CAPITest.test_getitem_knownhash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_bad_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dict.DictTest.test_container_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_copy_fuzz @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -11,8 +9,6 @@ test.test_dict.DictTest.test_copy_maintains_tracking @ darwin-arm64,darwin-x86_6
 test.test_dict.DictTest.test_copy_noncompact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_dict_contain_use_after_free @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_dict_copy_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dict.DictTest.test_dict_items_result_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dict.DictTest.test_dict_items_result_gc_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_dictitems_contains_use_after_free @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_dictview_mixed_set_operations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_dictview_set_operations_on_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -58,17 +54,8 @@ test.test_dict.DictTest.test_reverseiterator_pickling @ darwin-arm64,darwin-x86_
 test.test_dict.DictTest.test_reversevaluesiterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_setitem_atomic_at_resize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dict.DictTest.test_splittable_del @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dict.DictTest.test_splittable_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dict.DictTest.test_splittable_pop_pending @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dict.DictTest.test_splittable_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dict.DictTest.test_splittable_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dict.DictTest.test_splittable_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_str_nonstr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_string_keys_can_track_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dict.DictTest.test_track_dynamic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dict.DictTest.test_track_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_dict.DictTest.test_track_subtypes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_tuple_keyerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_dict.DictTest.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

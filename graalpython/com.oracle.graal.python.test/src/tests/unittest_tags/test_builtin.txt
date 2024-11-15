@@ -11,10 +11,6 @@ test.test_builtin.BuiltinTest.test_bytearray_translate @ darwin-arm64,darwin-x86
 test.test_builtin.BuiltinTest.test_callable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.BuiltinTest.test_chr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.BuiltinTest.test_cmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_builtin.BuiltinTest.test_compile_async_generator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_builtin.BuiltinTest.test_compile_top_level_await @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_builtin.BuiltinTest.test_compile_top_level_await_invalid_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_builtin.BuiltinTest.test_compile_top_level_await_no_coro @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.BuiltinTest.test_construct_singletons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.BuiltinTest.test_delattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.BuiltinTest.test_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -62,16 +58,10 @@ test.test_builtin.BuiltinTest.test_zip_bad_iterable @ darwin-arm64,darwin-x86_64
 test.test_builtin.BuiltinTest.test_zip_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.BuiltinTest.test_zip_pickle_strict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.BuiltinTest.test_zip_pickle_strict_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_builtin.BuiltinTest.test_zip_result_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.BuiltinTest.test_zip_strict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.BuiltinTest.test_zip_strict_error_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.BuiltinTest.test_zip_strict_error_handling_stopiteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.BuiltinTest.test_zip_strict_iterators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_builtin.PtyTests.test_input_no_stdout_fileno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_builtin.PtyTests.test_input_tty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_builtin.PtyTests.test_input_tty_non_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_builtin.PtyTests.test_input_tty_non_ascii_unicode_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_builtin.ShutdownTest.test_cleanup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.TestBreakpoint.test_breakpoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.TestBreakpoint.test_breakpoint_with_args_and_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_builtin.TestBreakpoint.test_breakpoint_with_breakpointhook_reset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

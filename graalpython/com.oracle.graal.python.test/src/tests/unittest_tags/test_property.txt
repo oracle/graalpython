@@ -13,7 +13,6 @@ test.test_property.PropertyTests.test_property_decorator_subclass_doc @ darwin-a
 test.test_property.PropertyTests.test_property_getter_doc_override @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_property.PropertyTests.test_property_set_name_incorrect_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_property.PropertyTests.test_property_setname_on_property_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_property.PropertyTests.test_refleaks_in___init__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_property.PropertyUnreachableAttributeNoName.test_del_property @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_property.PropertyUnreachableAttributeNoName.test_get_property @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_property.PropertyUnreachableAttributeNoName.test_set_property @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

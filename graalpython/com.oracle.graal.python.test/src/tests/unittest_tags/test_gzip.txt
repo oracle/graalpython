@@ -1,16 +1,13 @@
 test.test_gzip.TestCommandLine.test_compress_fast_best_are_exclusive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestCommandLine.test_compress_infile_outfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestCommandLine.test_compress_infile_outfile_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_gzip.TestCommandLine.test_compress_stdin_outfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestCommandLine.test_decompress_cannot_have_flags_compression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestCommandLine.test_decompress_infile_outfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestCommandLine.test_decompress_infile_outfile_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_gzip.TestCommandLine.test_decompress_stdin_stdout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestGzip.test_1647484 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestGzip.test_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestGzip.test_bad_gzip_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestGzip.test_buffered_reader @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_gzip.TestGzip.test_bytes_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestGzip.test_compress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestGzip.test_compress_correct_level @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_gzip.TestGzip.test_compress_mtime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

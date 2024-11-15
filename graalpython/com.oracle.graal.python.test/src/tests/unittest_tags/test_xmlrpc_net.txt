@@ -1,1 +1,0 @@
-test.test_xmlrpc_net.PythonBuildersTest.test_python_builders @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

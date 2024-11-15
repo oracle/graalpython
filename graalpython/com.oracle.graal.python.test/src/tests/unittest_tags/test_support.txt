@@ -10,7 +10,6 @@ test.test_support.TestSupport.test_change_cwd__chdir_warning @ darwin-arm64,darw
 test.test_support.TestSupport.test_change_cwd__non_existent_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_change_cwd__non_existent_dir__quiet_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_check_syntax_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_support.TestSupport.test_copy_python_src_ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_detect_api_mismatch @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_detect_api_mismatch__ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_fd_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -18,7 +17,6 @@ test.test_support.TestSupport.test_find_unused_port @ darwin-arm64,darwin-x86_64
 test.test_support.TestSupport.test_forget @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_gc_collect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_get_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_support.TestSupport.test_get_original_stdout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_get_recursion_depth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_has_strftime_extensions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_import_fresh_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -27,7 +25,6 @@ test.test_support.TestSupport.test_make_bad_fd @ darwin-arm64,darwin-x86_64,linu
 test.test_support.TestSupport.test_parse_memlimit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_print_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_python_is_optimized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_support.TestSupport.test_reap_children @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_rmtree @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_set_memlimit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_sortdict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -38,7 +35,6 @@ test.test_support.TestSupport.test_temp_cwd__name_none @ darwin-arm64,darwin-x86
 test.test_support.TestSupport.test_temp_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_temp_dir__existing_dir__quiet_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_temp_dir__existing_dir__quiet_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_support.TestSupport.test_temp_dir__forked_child @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_temp_dir__path_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_unlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_unload @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,5 +1,3 @@
-test.test_mmap.LargeMmapTests.test_around_2GB @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mmap.LargeMmapTests.test_around_4GB @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.LargeMmapTests.test_large_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_anonymous @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_bad_file_desc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -7,21 +5,15 @@ test.test_mmap.MmapTests.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,l
 test.test_mmap.MmapTests.test_concat_repeat_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_context_manager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_context_manager_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mmap.MmapTests.test_crasher_on_windows @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_double_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_empty_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_entire_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_find_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mmap.MmapTests.test_invalid_descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_length_0_large_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_length_0_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mmap.MmapTests.test_madvise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_prot_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_read_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_read_invalid_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mmap.MmapTests.test_resize_past_pos @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mmap.MmapTests.test_sizeof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mmap.MmapTests.test_tagname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_tougher_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_write_returning_the_number_of_bytes_written @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

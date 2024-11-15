@@ -4,5 +4,4 @@ test.test_multibytecodec.Test_IncrementalDecoder.test_dbcs @ darwin-arm64,darwin
 test.test_multibytecodec.Test_IncrementalDecoder.test_dbcs_keep_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multibytecodec.Test_IncrementalEncoder.test_issue5640 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multibytecodec.Test_IncrementalEncoder.test_stateless @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_multibytecodec.Test_IncrementalEncoder.test_subinterp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multibytecodec.Test_MultibyteCodec.test_codingspec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

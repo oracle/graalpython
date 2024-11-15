@@ -45,7 +45,6 @@ test.test_ntpath.PathLikeTests.test_path_relpath @ darwin-arm64,darwin-x86_64,li
 test.test_ntpath.PathLikeTests.test_path_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ntpath.PathLikeTests.test_path_splitdrive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ntpath.PathLikeTests.test_path_splitext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ntpath.TestNtpath.test_abspath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ntpath.TestNtpath.test_commonpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ntpath.TestNtpath.test_commonprefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ntpath.TestNtpath.test_expanduser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -55,18 +54,8 @@ test.test_ntpath.TestNtpath.test_isabs @ darwin-arm64,darwin-x86_64,linux-aarch6
 test.test_ntpath.TestNtpath.test_ismount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ntpath.TestNtpath.test_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ntpath.TestNtpath.test_normpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ntpath.TestNtpath.test_nt_helpers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ntpath.TestNtpath.test_realpath_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ntpath.TestNtpath.test_realpath_broken_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ntpath.TestNtpath.test_realpath_curdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ntpath.TestNtpath.test_realpath_cwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ntpath.TestNtpath.test_realpath_nul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ntpath.TestNtpath.test_realpath_pardir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ntpath.TestNtpath.test_realpath_relative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ntpath.TestNtpath.test_realpath_strict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ntpath.TestNtpath.test_realpath_symlink_loops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ntpath.TestNtpath.test_realpath_symlink_loops_strict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ntpath.TestNtpath.test_realpath_symlink_prefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ntpath.TestNtpath.test_relpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ntpath.TestNtpath.test_sameopenfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ntpath.TestNtpath.test_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

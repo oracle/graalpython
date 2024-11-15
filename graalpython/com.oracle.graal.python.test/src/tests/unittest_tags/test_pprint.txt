@@ -23,7 +23,6 @@ test.test_pprint.QueryTestCase.test_nested_indentations @ darwin-arm64,darwin-x8
 test.test_pprint.QueryTestCase.test_ordered_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pprint.QueryTestCase.test_recursive_dataclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pprint.QueryTestCase.test_same_as_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pprint.QueryTestCase.test_set_of_sets_reprs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pprint.QueryTestCase.test_set_reprs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pprint.QueryTestCase.test_simple_namespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pprint.QueryTestCase.test_simple_namespace_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

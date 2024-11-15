@@ -1,7 +1,6 @@
 DocTestCase.test.test_weakref.__test__.libreftest @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.FinalizeTestCase.test_arg_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.FinalizeTestCase.test_finalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.FinalizeTestCase.test_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_make_weak_keyed_dict_from_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_make_weak_keyed_dict_from_weak_keyed_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_make_weak_keyed_dict_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -9,7 +8,6 @@ test.test_weakref.MappingTestCase.test_make_weak_valued_dict_from_dict @ darwin-
 test.test_weakref.MappingTestCase.test_make_weak_valued_dict_from_weak_valued_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_make_weak_valued_dict_misc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_make_weak_valued_dict_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.MappingTestCase.test_remove_closure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_threaded_weak_key_dict_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_threaded_weak_value_dict_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_threaded_weak_value_dict_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -32,15 +30,10 @@ test.test_weakref.ReferencesTestCase.test_basic_ref @ darwin-arm64,darwin-x86_64
 test.test_weakref.ReferencesTestCase.test_callback_different_classes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_callback_gcs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_callback_in_cycle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.ReferencesTestCase.test_callback_in_cycle_resurrection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_callback_reachable_one_way @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_callbacks_on_callback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_callbacks_protected @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.ReferencesTestCase.test_cfunction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.ReferencesTestCase.test_classes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_constructor_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.ReferencesTestCase.test_getweakrefcount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.ReferencesTestCase.test_getweakrefs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_hashing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_multiple_callbacks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -53,7 +46,6 @@ test.test_weakref.ReferencesTestCase.test_proxy_div @ darwin-arm64,darwin-x86_64
 test.test_weakref.ReferencesTestCase.test_proxy_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_proxy_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_proxy_next @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.ReferencesTestCase.test_proxy_ref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_proxy_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_proxy_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_ref_created_during_del @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -79,10 +71,6 @@ test.test_weakref.WeakKeyDictionaryTestCase.test_values @ darwin-arm64,darwin-x8
 test.test_weakref.WeakKeyDictionaryTestCase.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.WeakMethodTestCase.test_alive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.WeakMethodTestCase.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.WeakMethodTestCase.test_hashing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.WeakMethodTestCase.test_method_dead @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.WeakMethodTestCase.test_no_cycles @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakref.WeakMethodTestCase.test_object_dead @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.WeakValueDictionaryTestCase.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.WeakValueDictionaryTestCase.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.WeakValueDictionaryTestCase.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

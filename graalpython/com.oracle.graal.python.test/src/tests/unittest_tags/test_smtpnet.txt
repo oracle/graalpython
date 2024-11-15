@@ -1,5 +1,0 @@
-test.test_smtpnet.SmtpSSLTest.test_connect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtpnet.SmtpSSLTest.test_connect_default_port @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtpnet.SmtpSSLTest.test_connect_using_sslcontext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtpnet.SmtpSSLTest.test_connect_using_sslcontext_verified @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_smtpnet.SmtpTest.test_connect_starttls @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

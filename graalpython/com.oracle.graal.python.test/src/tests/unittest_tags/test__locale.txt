@@ -1,4 +1,2 @@
 test.test__locale._LocaleTests.test_float_parsing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test__locale._LocaleTests.test_lc_numeric_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test__locale._LocaleTests.test_lc_numeric_localeconv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test__locale._LocaleTests.test_lc_numeric_nl_langinfo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

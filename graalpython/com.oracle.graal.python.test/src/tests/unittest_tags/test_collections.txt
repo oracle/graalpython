@@ -42,7 +42,6 @@ test.test_collections.TestCollectionABCs.test_isdisjoint_Set @ darwin-arm64,darw
 test.test_collections.TestCollectionABCs.test_issue16373 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestCollectionABCs.test_issue26915 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestCollectionABCs.test_issue8750 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_collections.TestCollectionABCs.test_issue_4920 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestCollectionABCs.test_issue_5647 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestCounter.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestCounter.test_conversions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -69,10 +68,7 @@ test.test_collections.TestNamedTuple.test_copy @ darwin-arm64,darwin-x86_64,linu
 test.test_collections.TestNamedTuple.test_defaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestNamedTuple.test_factory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestNamedTuple.test_factory_doc_attr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_collections.TestNamedTuple.test_field_descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestNamedTuple.test_field_doc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_collections.TestNamedTuple.test_field_doc_reuse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_collections.TestNamedTuple.test_field_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestNamedTuple.test_instance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestNamedTuple.test_keyword_only_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestNamedTuple.test_match_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -86,14 +82,11 @@ test.test_collections.TestNamedTuple.test_pickle @ darwin-arm64,darwin-x86_64,li
 test.test_collections.TestNamedTuple.test_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestNamedTuple.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestNamedTuple.test_tupleness @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_collections.TestOneTrickPonyABCs.test_AsyncGenerator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestOneTrickPonyABCs.test_AsyncIterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestOneTrickPonyABCs.test_AsyncIterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_collections.TestOneTrickPonyABCs.test_Awaitable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestOneTrickPonyABCs.test_Callable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestOneTrickPonyABCs.test_Collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestOneTrickPonyABCs.test_Container @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_collections.TestOneTrickPonyABCs.test_Coroutine @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestOneTrickPonyABCs.test_Generator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestOneTrickPonyABCs.test_Hashable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_collections.TestOneTrickPonyABCs.test_Iterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

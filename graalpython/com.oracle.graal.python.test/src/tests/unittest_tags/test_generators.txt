@@ -16,9 +16,7 @@ test.test_generators.ExceptionTest.test_return_stopiteration @ darwin-arm64,darw
 test.test_generators.ExceptionTest.test_return_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_generators.ExceptionTest.test_stopiteration_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_generators.ExceptionTest.test_tutorial_stopiteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_generators.FinalizationTest.test_frame_resurrect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_generators.FinalizationTest.test_lambda_generator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_generators.FinalizationTest.test_refcycle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_generators.GeneratorStackTraceTest.test_send_with_yield_from @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_generators.GeneratorStackTraceTest.test_throw_with_yield_from @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_generators.GeneratorTest.test_ag_frame_f_back @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -33,5 +31,4 @@ test.test_generators.GeneratorThrowTest.test_exception_context_with_yield_from @
 test.test_generators.GeneratorThrowTest.test_exception_context_with_yield_from_with_context_cycle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_generators.GeneratorThrowTest.test_exception_context_with_yield_inside_generator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_generators.GeneratorThrowTest.test_throw_after_none_exc_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_generators.SignalAndYieldFromTest.test_raise_and_yield_from @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_generators.YieldFromTests.test_generator_gi_yieldfrom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

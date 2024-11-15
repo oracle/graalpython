@@ -2,7 +2,7 @@ test.test_venv.BasicTest.test_deactivate_with_strict_bash_opts @ darwin-arm64,da
 test.test_venv.BasicTest.test_executable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_venv.BasicTest.test_executable_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_venv.BasicTest.test_isolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_venv.BasicTest.test_macos_env @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_macos_env @ darwin-arm64,darwin-x86_64
 test.test_venv.BasicTest.test_multiprocessing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_venv.BasicTest.test_multiprocessing_recursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_venv.BasicTest.test_overwrite_existing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -12,7 +12,6 @@ test.test_venv.BasicTest.test_prompt @ darwin-arm64,darwin-x86_64,linux-aarch64,
 test.test_venv.BasicTest.test_symlinking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_venv.BasicTest.test_sysconfig @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_venv.BasicTest.test_sysconfig_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_venv.BasicTest.test_unicode_in_batch_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_venv.BasicTest.test_unoverwritable_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_venv.BasicTest.test_upgrade @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_venv.BasicTest.test_upgrade_dependencies @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

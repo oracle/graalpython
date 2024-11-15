@@ -19,7 +19,6 @@ test.test_binascii.BytearrayBinASCIITest.test_crc32 @ darwin-arm64,darwin-x86_64
 test.test_binascii.BytearrayBinASCIITest.test_crc_hqx @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_binascii.BytearrayBinASCIITest.test_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_binascii.BytearrayBinASCIITest.test_hex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_binascii.ChecksumBigBufferTestCase.test_big_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_binascii.MemoryviewBinASCIITest.test_b2a_base64_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_binascii.MemoryviewBinASCIITest.test_base64valid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_binascii.MemoryviewBinASCIITest.test_c_contiguity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

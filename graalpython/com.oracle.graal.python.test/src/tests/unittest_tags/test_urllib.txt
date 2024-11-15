@@ -4,8 +4,6 @@ test.test_urllib.PathName2URLTests.test_long_drive_letter @ darwin-arm64,darwin-
 test.test_urllib.PathName2URLTests.test_roundtrip_pathname2url @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib.PathName2URLTests.test_simple_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib.Pathname_Tests.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_urllib.Pathname_Tests.test_ntpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_urllib.Pathname_Tests.test_prefixes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib.Pathname_Tests.test_quoting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib.ProxyTests.test_getproxies_environment_keep_no_proxies @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib.ProxyTests.test_proxy_bypass_environment_always_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

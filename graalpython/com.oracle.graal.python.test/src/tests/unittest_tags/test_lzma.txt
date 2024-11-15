@@ -29,8 +29,6 @@ test.test_lzma.CompressorDecompressorTestCase.test_decompressor_raw_3 @ darwin-a
 test.test_lzma.CompressorDecompressorTestCase.test_decompressor_raw_4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.CompressorDecompressorTestCase.test_decompressor_unused_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.CompressorDecompressorTestCase.test_decompressor_xz @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_lzma.CompressorDecompressorTestCase.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_lzma.CompressorDecompressorTestCase.test_refleaks_in_decompressor___init__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_alone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_chunks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_empty_chunks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -68,7 +66,6 @@ test.test_lzma.FileTestCase.test_read_10 @ darwin-arm64,darwin-x86_64,linux-aarc
 test.test_lzma.FileTestCase.test_read_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.FileTestCase.test_read_bad_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.FileTestCase.test_read_from_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_lzma.FileTestCase.test_read_from_file_with_bytes_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.FileTestCase.test_read_incomplete @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.FileTestCase.test_read_multistream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.FileTestCase.test_read_multistream_buffer_size_aligned @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -98,7 +95,6 @@ test.test_lzma.FileTestCase.test_write_append @ darwin-arm64,darwin-x86_64,linux
 test.test_lzma.FileTestCase.test_write_append_to_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.FileTestCase.test_write_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.FileTestCase.test_write_to_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_lzma.FileTestCase.test_write_to_file_with_bytes_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.FileTestCase.test_writelines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.MiscellaneousTestCase.test__decode_filter_properties @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.MiscellaneousTestCase.test__encode_filter_properties @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

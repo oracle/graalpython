@@ -1,11 +1,9 @@
-test.test_platform.PlatformTest.test__comparable_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_platform.PlatformTest.test_architecture @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_platform.PlatformTest.test_architecture_via_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_platform.PlatformTest.test_freedesktop_os_release @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_platform.PlatformTest.test_java_ver @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_platform.PlatformTest.test_libc_ver @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_platform.PlatformTest.test_mac_ver @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_platform.PlatformTest.test_mac_ver_with_fork @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_platform.PlatformTest.test_machine @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_platform.PlatformTest.test_macos @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_platform.PlatformTest.test_node @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -25,6 +23,5 @@ test.test_platform.PlatformTest.test_uname_pickle @ darwin-arm64,darwin-x86_64,l
 test.test_platform.PlatformTest.test_uname_processor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_platform.PlatformTest.test_uname_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_platform.PlatformTest.test_uname_slices @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_platform.PlatformTest.test_uname_win32_ARCHITEW6432 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_platform.PlatformTest.test_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_platform.PlatformTest.test_win32_ver @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

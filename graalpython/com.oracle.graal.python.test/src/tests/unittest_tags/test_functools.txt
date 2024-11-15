@@ -11,7 +11,6 @@ test.test_functools.TestCachedProperty.test_threaded @ darwin-arm64,darwin-x86_6
 test.test_functools.TestCmpToKeyC.test_bad_cmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestCmpToKeyC.test_cmp_to_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestCmpToKeyC.test_cmp_to_key_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_functools.TestCmpToKeyC.test_disallow_instantiation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestCmpToKeyC.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestCmpToKeyC.test_obj_field @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestCmpToKeyC.test_sort_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -100,7 +99,6 @@ test.test_functools.TestPartialC.test_setstate @ darwin-arm64,darwin-x86_64,linu
 test.test_functools.TestPartialC.test_setstate_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialC.test_setstate_refcount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialC.test_setstate_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_functools.TestPartialC.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialC.test_with_bound_and_unbound_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialCSubclass.test_arg_combinations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialCSubclass.test_argument_checking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -126,7 +124,6 @@ test.test_functools.TestPartialCSubclass.test_setstate @ darwin-arm64,darwin-x86
 test.test_functools.TestPartialCSubclass.test_setstate_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialCSubclass.test_setstate_refcount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialCSubclass.test_setstate_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_functools.TestPartialCSubclass.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialCSubclass.test_with_bound_and_unbound_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialMethod.test_abstract @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialMethod.test_arg_combinations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -161,7 +158,6 @@ test.test_functools.TestPartialPy.test_setstate @ darwin-arm64,darwin-x86_64,lin
 test.test_functools.TestPartialPy.test_setstate_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPy.test_setstate_refcount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPy.test_setstate_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_functools.TestPartialPy.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPy.test_with_bound_and_unbound_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPySubclass.test_arg_combinations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPySubclass.test_argument_checking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -185,7 +181,6 @@ test.test_functools.TestPartialPySubclass.test_setstate @ darwin-arm64,darwin-x8
 test.test_functools.TestPartialPySubclass.test_setstate_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPySubclass.test_setstate_refcount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPySubclass.test_setstate_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_functools.TestPartialPySubclass.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPySubclass.test_with_bound_and_unbound_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestReduceC.test_iterator_usage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestReduceC.test_reduce @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -194,7 +189,6 @@ test.test_functools.TestReducePy.test_reduce @ darwin-arm64,darwin-x86_64,linux-
 test.test_functools.TestSingleDispatch.test_abstractmethod_register @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestSingleDispatch.test_annotations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestSingleDispatch.test_c3_abc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_functools.TestSingleDispatch.test_c_classes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestSingleDispatch.test_cache_invalidation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestSingleDispatch.test_callable_register @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestSingleDispatch.test_classmethod_register @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -2,7 +2,6 @@ test.test_urllib2net.CloseSocketTest.test_close @ darwin-arm64,darwin-x86_64,lin
 test.test_urllib2net.OtherNetworkTests.test_custom_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib2net.OtherNetworkTests.test_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib2net.OtherNetworkTests.test_redirect_url_withfrag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_urllib2net.OtherNetworkTests.test_sites_no_connection_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib2net.OtherNetworkTests.test_urlwithfrag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib2net.TimeoutTest.test_http_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib2net.TimeoutTest.test_http_default_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

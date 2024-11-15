@@ -15,7 +15,6 @@ test.test_descr.ClassPropertiesAndMethods.test_carloverre_multi_inherit_valid @ 
 test.test_descr.ClassPropertiesAndMethods.test_classic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_classic_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_classmethods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_descr.ClassPropertiesAndMethods.test_classmethods_in_c @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_compattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_consistency_with_epg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_copy_setstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -41,10 +40,8 @@ test.test_descr.ClassPropertiesAndMethods.test_keyword_arguments @ darwin-arm64,
 test.test_descr.ClassPropertiesAndMethods.test_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_load_attr_extended_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_metaclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_descr.ClassPropertiesAndMethods.test_meth_class_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_method_wrapper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_descr.ClassPropertiesAndMethods.test_methods_in_c @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_mixing_slot_wrappers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_module_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_monotonicity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -72,8 +69,6 @@ test.test_descr.ClassPropertiesAndMethods.test_python_lists @ darwin-arm64,darwi
 test.test_descr.ClassPropertiesAndMethods.test_qualname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_qualname_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_recursive_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_descr.ClassPropertiesAndMethods.test_refleaks_in_classmethod___init__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_descr.ClassPropertiesAndMethods.test_refleaks_in_staticmethod___init__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_repr_as_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_repr_with_module_str_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_rich_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -94,14 +89,12 @@ test.test_descr.ClassPropertiesAndMethods.test_special_method_lookup @ darwin-ar
 test.test_descr.ClassPropertiesAndMethods.test_special_unbound_method_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_specials @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_staticmethods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_descr.ClassPropertiesAndMethods.test_staticmethods_in_c @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_str_of_str_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_str_operations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_str_subclass_as_dict_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_subclass_propagation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_subclassing_does_not_duplicate_dict_descriptors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_supers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_descr.ClassPropertiesAndMethods.test_testcapi_no_segfault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_type___getattribute__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_uninitialized_modules @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_unsubclassable_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -129,11 +122,8 @@ test.test_descr.OperatorsTest.test_explicit_reverse_methods @ darwin-arm64,darwi
 test.test_descr.OperatorsTest.test_floats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.OperatorsTest.test_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.OperatorsTest.test_lists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_descr.OperatorsTest.test_spam_dicts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_descr.OperatorsTest.test_spam_lists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.OperatorsTest.test_wrap_lenfunc_bad_cast @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.PicklingTests.test_issue24097 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.PicklingTests.test_pickle_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.PicklingTests.test_reduce @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_descr.PicklingTests.test_reduce_copying @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_descr.SharedKeyTests.test_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

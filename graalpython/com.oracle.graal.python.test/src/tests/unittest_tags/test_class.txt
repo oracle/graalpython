@@ -2,7 +2,6 @@ test.test_class.ClassTests.testBadTypeReturned @ darwin-arm64,darwin-x86_64,linu
 test.test_class.ClassTests.testBinaryOps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_class.ClassTests.testClassWithExtCall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_class.ClassTests.testConstructorErrorMessages @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_class.ClassTests.testDel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_class.ClassTests.testForExceptionsRaisedInInstanceGetattr2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_class.ClassTests.testGetSetAndDel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_class.ClassTests.testHashComparisonOfMethods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

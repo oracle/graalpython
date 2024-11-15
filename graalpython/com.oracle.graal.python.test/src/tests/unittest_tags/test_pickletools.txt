@@ -25,11 +25,8 @@ DocTestCase.pickletools.read_unicodestring8 @ darwin-arm64,darwin-x86_64,linux-a
 DocTestCase.pickletools.read_unicodestringnl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pickletools.MiscTestCase.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_appends_on_non_lists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pickletools.OptimizedPickleTests.test_attribute_name_interning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pickletools.OptimizedPickleTests.test_bad_getattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_buffer_callback_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_buffers_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pickletools.OptimizedPickleTests.test_buffers_numpy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_builtin_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_builtin_functions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_builtin_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -44,7 +41,6 @@ test.test_pickletools.OptimizedPickleTests.test_dict_chunking @ darwin-arm64,dar
 test.test_pickletools.OptimizedPickleTests.test_dynamic_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_ellipsis @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_evil_class_mutating_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pickletools.OptimizedPickleTests.test_evil_pickler_mutating_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_float_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_framing_large_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

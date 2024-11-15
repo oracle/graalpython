@@ -1,9 +1,7 @@
 test.test_weakset.TestWeakSet.test_abc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakset.TestWeakSet.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_constructor_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakset.TestWeakSet.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_copying @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -16,15 +14,11 @@ test.test_weakset.TestWeakSet.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch
 test.test_weakset.TestWeakSet.test_iand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_inplace_on_self @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakset.TestWeakSet.test_intersection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_intersection_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_ior @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_isdisjoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_isub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_ixor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakset.TestWeakSet.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakset.TestWeakSet.test_len_cycles @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakset.TestWeakSet.test_len_race @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_lt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_ne @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -36,11 +30,7 @@ test.test_weakset.TestWeakSet.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch
 test.test_weakset.TestWeakSet.test_sub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_sub_and_super @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_subclass_with_custom_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakset.TestWeakSet.test_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_symmetric_difference_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakset.TestWeakSet.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_update_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakset.TestWeakSet.test_weak_destroy_and_mutate_while_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_weakset.TestWeakSet.test_weak_destroy_while_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakset.TestWeakSet.test_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

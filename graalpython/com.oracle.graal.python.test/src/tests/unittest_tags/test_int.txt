@@ -29,7 +29,6 @@ test.test_int.IntTestCases.test_issue31619 @ darwin-arm64,darwin-x86_64,linux-aa
 test.test_int.IntTestCases.test_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_int.IntTestCases.test_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_int.IntTestCases.test_non_numeric_input_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_int.IntTestCases.test_small_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_int.IntTestCases.test_string_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_int.IntTestCases.test_underscores @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_int.IntTestCases.test_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

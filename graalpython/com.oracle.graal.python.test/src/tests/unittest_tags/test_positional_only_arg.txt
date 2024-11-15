@@ -1,6 +1,4 @@
-test.test_positional_only_arg.PositionalOnlyTestCase.test_annotations_constant_fold @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_positional_only_arg.PositionalOnlyTestCase.test_annotations_in_closures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_positional_only_arg.PositionalOnlyTestCase.test_async @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_positional_only_arg.PositionalOnlyTestCase.test_change_default_pos_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_positional_only_arg.PositionalOnlyTestCase.test_closures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_positional_only_arg.PositionalOnlyTestCase.test_generator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

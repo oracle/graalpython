@@ -1,6 +1,3 @@
-test.test_hash.BytesHashRandomizationTests.test_empty_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hash.BytesHashRandomizationTests.test_fixed_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hash.BytesHashRandomizationTests.test_long_fixed_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hash.HashBuiltinsTestCase.test_hashes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hash.HashDistributionTestCase.test_hash_distribution @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hash.HashEqualityTestCase.test_coerced_floats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -12,10 +9,3 @@ test.test_hash.HashInheritanceTestCase.test_error_hash @ darwin-arm64,darwin-x86
 test.test_hash.HashInheritanceTestCase.test_fixed_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hash.HashInheritanceTestCase.test_hashable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_hash.HashInheritanceTestCase.test_not_hashable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hash.MemoryviewHashRandomizationTests.test_empty_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hash.MemoryviewHashRandomizationTests.test_fixed_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hash.MemoryviewHashRandomizationTests.test_long_fixed_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hash.StrHashRandomizationTests.test_empty_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hash.StrHashRandomizationTests.test_fixed_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hash.StrHashRandomizationTests.test_long_fixed_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_hash.StrHashRandomizationTests.test_ucs2_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

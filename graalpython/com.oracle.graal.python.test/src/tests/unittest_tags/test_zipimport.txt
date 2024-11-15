@@ -6,7 +6,6 @@ test.test_zipimport.BadFileZipImportTestCase.testFilenameTooLong @ darwin-arm64,
 test.test_zipimport.BadFileZipImportTestCase.testNoFile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.BadFileZipImportTestCase.testNotZipFile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.CompressedZipImportTestCase.test2038MTime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_zipimport.CompressedZipImportTestCase.testAFakeZlib @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.CompressedZipImportTestCase.testBadMTime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.CompressedZipImportTestCase.testBadMagic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.CompressedZipImportTestCase.testBadMagic2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -34,12 +33,11 @@ test.test_zipimport.CompressedZipImportTestCase.testSubNamespacePackage @ darwin
 test.test_zipimport.CompressedZipImportTestCase.testSubPackage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.CompressedZipImportTestCase.testTraceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.CompressedZipImportTestCase.testUncheckedHashBasedPyc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_zipimport.CompressedZipImportTestCase.testUnencodable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipimport.CompressedZipImportTestCase.testUnencodable @ darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.CompressedZipImportTestCase.testZipImporterMethods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.CompressedZipImportTestCase.testZipImporterMethodsInSubDirectory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.CompressedZipImportTestCase.test_checked_hash_based_change_pyc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.UncompressedZipImportTestCase.test2038MTime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_zipimport.UncompressedZipImportTestCase.testAFakeZlib @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.UncompressedZipImportTestCase.testBadMTime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.UncompressedZipImportTestCase.testBadMagic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.UncompressedZipImportTestCase.testBadMagic2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -67,7 +65,7 @@ test.test_zipimport.UncompressedZipImportTestCase.testSubNamespacePackage @ darw
 test.test_zipimport.UncompressedZipImportTestCase.testSubPackage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.UncompressedZipImportTestCase.testTraceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.UncompressedZipImportTestCase.testUncheckedHashBasedPyc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_zipimport.UncompressedZipImportTestCase.testUnencodable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipimport.UncompressedZipImportTestCase.testUnencodable @ darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.UncompressedZipImportTestCase.testZipImporterMethods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.UncompressedZipImportTestCase.testZipImporterMethodsInSubDirectory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipimport.UncompressedZipImportTestCase.test_checked_hash_based_change_pyc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,7 +1,6 @@
 test.test_slice.SliceTest.test_cmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_slice.SliceTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_slice.SliceTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_slice.SliceTest.test_cycle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_slice.SliceTest.test_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_slice.SliceTest.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_slice.SliceTest.test_indices @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

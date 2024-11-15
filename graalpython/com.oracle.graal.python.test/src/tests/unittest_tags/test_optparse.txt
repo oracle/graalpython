@@ -110,7 +110,6 @@ test.test_optparse.TestOptionParser.test_add_option_no_Option @ darwin-arm64,dar
 test.test_optparse.TestOptionParser.test_get_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_optparse.TestOptionParser.test_get_option_equals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_optparse.TestOptionParser.test_has_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_optparse.TestOptionParser.test_refleak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_optparse.TestOptionParser.test_remove_long_opt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_optparse.TestOptionParser.test_remove_nonexistent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_optparse.TestOptionParser.test_remove_short_opt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

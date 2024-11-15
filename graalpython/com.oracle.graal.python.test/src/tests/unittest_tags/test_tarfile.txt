@@ -23,7 +23,6 @@ test.test_tarfile.Bz2DetectReadTest.test_detect_fileobj @ darwin-arm64,darwin-x8
 test.test_tarfile.Bz2DetectReadTest.test_detect_stream_bz2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.Bz2ListTest.test_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.Bz2ListTest.test_list_members @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tarfile.Bz2MiscReadTest.test_bytes_name_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_check_members @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_empty_name_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_empty_tarfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -44,7 +43,6 @@ test.test_tarfile.Bz2MiscReadTest.test_is_tarfile_keeps_position @ darwin-arm64,
 test.test_tarfile.Bz2MiscReadTest.test_is_tarfile_valid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_length_zero_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_next_on_empty_tarfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tarfile.Bz2MiscReadTest.test_no_name_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_no_name_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_non_existent_tarfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_null_tarfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -261,10 +259,6 @@ test.test_tarfile.HardlinkTest.test_dereference_hardlink @ darwin-arm64,darwin-x
 test.test_tarfile.LimitsTest.test_gnu_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.LimitsTest.test_pax_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.LimitsTest.test_ustar_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tarfile.LinkEmulationTest.test_hardlink_extraction1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tarfile.LinkEmulationTest.test_hardlink_extraction2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tarfile.LinkEmulationTest.test_symlink_extraction1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tarfile.LinkEmulationTest.test_symlink_extraction2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.ListTest.test_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.ListTest.test_list_members @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.LzmaAppendTest.test_append_compressed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -281,7 +275,6 @@ test.test_tarfile.LzmaDetectReadTest.test_detect_file @ darwin-arm64,darwin-x86_
 test.test_tarfile.LzmaDetectReadTest.test_detect_fileobj @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.LzmaListTest.test_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.LzmaListTest.test_list_members @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tarfile.LzmaMiscReadTest.test_bytes_name_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_check_members @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_empty_name_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_empty_tarfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -302,7 +295,6 @@ test.test_tarfile.LzmaMiscReadTest.test_is_tarfile_keeps_position @ darwin-arm64
 test.test_tarfile.LzmaMiscReadTest.test_is_tarfile_valid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_length_zero_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_next_on_empty_tarfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tarfile.LzmaMiscReadTest.test_no_name_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_no_name_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_non_existent_tarfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_null_tarfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -442,7 +434,6 @@ test.test_tarfile.NoneInfoExtractTests_Tar.test_extractall_none_uname @ darwin-a
 test.test_tarfile.NoneInfoTests_Misc.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.NoneInfoTests_Misc.test_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.NumericOwnerTest.test_extract_with_numeric_owner @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_tarfile.NumericOwnerTest.test_extract_without_numeric_owner @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.NumericOwnerTest.test_extractall_with_numeric_owner @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.NumericOwnerTest.test_keyword_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.PAXUnicodeTest.test_binary_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

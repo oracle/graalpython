@@ -22,10 +22,10 @@ test.test_importlib.builtin.test_loader.Source_LoaderTests.test_already_imported
 test.test_importlib.builtin.test_loader.Source_LoaderTests.test_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.builtin.test_loader.Source_LoaderTests.test_module_reuse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.builtin.test_loader.Source_LoaderTests.test_unloadable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.extension.test_case_sensitivity.Frozen_ExtensionModuleCaseSensitivityTest.test_case_insensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.extension.test_case_sensitivity.Frozen_ExtensionModuleCaseSensitivityTest.test_case_sensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.extension.test_case_sensitivity.Source_ExtensionModuleCaseSensitivityTest.test_case_insensitivity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.extension.test_case_sensitivity.Source_ExtensionModuleCaseSensitivityTest.test_case_sensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_importlib.extension.test_case_sensitivity.Frozen_ExtensionModuleCaseSensitivityTest.test_case_insensitivity @ darwin-arm64,darwin-x86_64
+test.test_importlib.extension.test_case_sensitivity.Frozen_ExtensionModuleCaseSensitivityTest.test_case_sensitive @ darwin-arm64,darwin-x86_64
+test.test_importlib.extension.test_case_sensitivity.Source_ExtensionModuleCaseSensitivityTest.test_case_insensitivity @ darwin-arm64,darwin-x86_64
+test.test_importlib.extension.test_case_sensitivity.Source_ExtensionModuleCaseSensitivityTest.test_case_sensitive @ darwin-arm64,darwin-x86_64
 test.test_importlib.extension.test_finder.Frozen_FinderTests.test_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.extension.test_finder.Frozen_FinderTests.test_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.extension.test_finder.Source_FinderTests.test_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -353,14 +353,14 @@ test.test_importlib.import_.test_relative_imports.Source_RelativeImports.test_re
 test.test_importlib.import_.test_relative_imports.Source_RelativeImports.test_relative_import_no_package_exists_absolute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.import_.test_relative_imports.Source_RelativeImports.test_too_high_from_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.import_.test_relative_imports.Source_RelativeImports.test_too_high_from_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.source.test_case_sensitivity.Frozen_CaseSensitivityTestPEP302.test_insensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.source.test_case_sensitivity.Frozen_CaseSensitivityTestPEP302.test_sensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.source.test_case_sensitivity.Frozen_CaseSensitivityTestPEP451.test_insensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.source.test_case_sensitivity.Frozen_CaseSensitivityTestPEP451.test_sensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.source.test_case_sensitivity.Source_CaseSensitivityTestPEP302.test_insensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.source.test_case_sensitivity.Source_CaseSensitivityTestPEP302.test_sensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.source.test_case_sensitivity.Source_CaseSensitivityTestPEP451.test_insensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.source.test_case_sensitivity.Source_CaseSensitivityTestPEP451.test_sensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_importlib.source.test_case_sensitivity.Frozen_CaseSensitivityTestPEP302.test_insensitive @ darwin-arm64,darwin-x86_64
+test.test_importlib.source.test_case_sensitivity.Frozen_CaseSensitivityTestPEP302.test_sensitive @ darwin-arm64,darwin-x86_64
+test.test_importlib.source.test_case_sensitivity.Frozen_CaseSensitivityTestPEP451.test_insensitive @ darwin-arm64,darwin-x86_64
+test.test_importlib.source.test_case_sensitivity.Frozen_CaseSensitivityTestPEP451.test_sensitive @ darwin-arm64,darwin-x86_64
+test.test_importlib.source.test_case_sensitivity.Source_CaseSensitivityTestPEP302.test_insensitive @ darwin-arm64,darwin-x86_64
+test.test_importlib.source.test_case_sensitivity.Source_CaseSensitivityTestPEP302.test_sensitive @ darwin-arm64,darwin-x86_64
+test.test_importlib.source.test_case_sensitivity.Source_CaseSensitivityTestPEP451.test_insensitive @ darwin-arm64,darwin-x86_64
+test.test_importlib.source.test_case_sensitivity.Source_CaseSensitivityTestPEP451.test_sensitive @ darwin-arm64,darwin-x86_64
 test.test_importlib.source.test_file_loader.Frozen_SimpleTest.test_bad_syntax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.source.test_file_loader.Frozen_SimpleTest.test_checked_hash_based_pyc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.source.test_file_loader.Frozen_SimpleTest.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -868,7 +868,6 @@ test.test_importlib.test_locks.Frozen_ModuleLockAsRLockTests.test_different_thre
 test.test_importlib.test_locks.Frozen_ModuleLockAsRLockTests.test_reacquire @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_locks.Frozen_ModuleLockAsRLockTests.test_release_unacquired @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_locks.Frozen_ModuleLockAsRLockTests.test_thread_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.test_locks.Frozen_ModuleLockAsRLockTests.test_weakref_deleted @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_locks.Frozen_ModuleLockAsRLockTests.test_weakref_exists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_locks.Source_DeadlockAvoidanceTests.test_deadlock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_locks.Source_DeadlockAvoidanceTests.test_no_deadlock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -881,7 +880,6 @@ test.test_importlib.test_locks.Source_ModuleLockAsRLockTests.test_different_thre
 test.test_importlib.test_locks.Source_ModuleLockAsRLockTests.test_reacquire @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_locks.Source_ModuleLockAsRLockTests.test_release_unacquired @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_locks.Source_ModuleLockAsRLockTests.test_thread_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.test_locks.Source_ModuleLockAsRLockTests.test_weakref_deleted @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_locks.Source_ModuleLockAsRLockTests.test_weakref_exists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_main.BasicTests.test_for_name_does_not_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_main.BasicTests.test_invalid_inputs_to_from_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -897,7 +895,6 @@ test.test_importlib.test_main.ImportTests.test_entrypoint_with_colon_in_name @ d
 test.test_importlib.test_main.ImportTests.test_import_nonexistent_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_main.ImportTests.test_resolve @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_main.ImportTests.test_resolve_without_attr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.test_main.InaccessibleSysPath.test_discovery @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_main.MissingSysPath.test_discovery @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_main.NameNormalizationTests.test_dashes_in_dist_name_found_as_underscores @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_main.NameNormalizationTests.test_dist_name_found_as_any_case @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -1081,7 +1078,6 @@ test.test_importlib.test_reader.MultiplexedPathTest.test_repr @ darwin-arm64,dar
 test.test_importlib.test_reader.NamespaceReaderTest.test_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_reader.NamespaceReaderTest.test_init_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_reader.NamespaceReaderTest.test_resource_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.test_resource.DeletingZipsTest.test_as_file_does_not_keep_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_resource.DeletingZipsTest.test_entered_path_does_not_keep_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_resource.DeletingZipsTest.test_is_file_does_not_keep_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_resource.DeletingZipsTest.test_is_file_failure_does_not_keep_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -1298,7 +1294,6 @@ test.test_importlib.test_util.Frozen_PEP3147Tests.test_cache_from_source_overrid
 test.test_importlib.test_util.Frozen_PEP3147Tests.test_cache_from_source_path_like_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Frozen_PEP3147Tests.test_cache_from_source_respects_pycache_prefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Frozen_PEP3147Tests.test_cache_from_source_respects_pycache_prefix_relative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.test_util.Frozen_PEP3147Tests.test_sep_altsep_and_sep_cache_from_source @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Frozen_PEP3147Tests.test_source_from_cache @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Frozen_PEP3147Tests.test_source_from_cache_bad_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Frozen_PEP3147Tests.test_source_from_cache_inside_pycache_prefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -1327,7 +1322,6 @@ test.test_importlib.test_util.Frozen_SetPackageTests.test_package @ darwin-arm64
 test.test_importlib.test_util.Frozen_SetPackageTests.test_setting_if_missing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Frozen_SetPackageTests.test_submodule @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Frozen_SetPackageTests.test_top_level @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.test_util.MagicNumberTests.test_magic_number @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Source_DecodeSourceBytesTests.test_specified_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Source_DecodeSourceBytesTests.test_universal_newlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Source_DecodeSourceBytesTests.test_ut8_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -1376,7 +1370,6 @@ test.test_importlib.test_util.Source_PEP3147Tests.test_cache_from_source_overrid
 test.test_importlib.test_util.Source_PEP3147Tests.test_cache_from_source_path_like_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Source_PEP3147Tests.test_cache_from_source_respects_pycache_prefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Source_PEP3147Tests.test_cache_from_source_respects_pycache_prefix_relative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.test_util.Source_PEP3147Tests.test_sep_altsep_and_sep_cache_from_source @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Source_PEP3147Tests.test_source_from_cache @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Source_PEP3147Tests.test_source_from_cache_bad_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_util.Source_PEP3147Tests.test_source_from_cache_inside_pycache_prefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -1420,4 +1413,3 @@ test.test_importlib.test_zip.TestZip.test_one_distribution @ darwin-arm64,darwin
 test.test_importlib.test_zip.TestZip.test_zip_entry_points @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_zip.TestZip.test_zip_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_zip.TestZip.test_zip_version_does_not_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.loader.ModuleSkipped.test.test_importlib.test_windows @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

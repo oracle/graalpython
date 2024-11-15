@@ -1,9 +1,7 @@
-test.test_reprlib.LongReprTest.test_builtin_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_reprlib.LongReprTest.test_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_reprlib.LongReprTest.test_instance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_reprlib.LongReprTest.test_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_reprlib.LongReprTest.test_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_reprlib.LongReprTest.test_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_reprlib.LongReprTest.test_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_reprlib.ReprTests.test_builtin_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_reprlib.ReprTests.test_cell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

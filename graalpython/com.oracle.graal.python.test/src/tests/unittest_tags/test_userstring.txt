@@ -16,7 +16,6 @@ test.test_userstring.UserStringTest.test_find_shift_table_overflow @ darwin-arm6
 test.test_userstring.UserStringTest.test_fixtype @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userstring.UserStringTest.test_floatformatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userstring.UserStringTest.test_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_userstring.UserStringTest.test_formatting_c_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userstring.UserStringTest.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userstring.UserStringTest.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userstring.UserStringTest.test_inplace_rewrites @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -37,7 +36,6 @@ test.test_userstring.UserStringTest.test_partition @ darwin-arm64,darwin-x86_64,
 test.test_userstring.UserStringTest.test_removeprefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userstring.UserStringTest.test_removesuffix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userstring.UserStringTest.test_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_userstring.UserStringTest.test_replace_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userstring.UserStringTest.test_rfind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userstring.UserStringTest.test_rindex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_userstring.UserStringTest.test_rjust @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

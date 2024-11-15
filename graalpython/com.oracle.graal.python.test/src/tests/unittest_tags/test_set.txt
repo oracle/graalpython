@@ -191,7 +191,6 @@ test.test_set.TestExceptionPropagation.test_instancesWithoutException @ darwin-a
 test.test_set.TestFrozenSet.test_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSet.test_badcmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSet.test_constructor_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_set.TestFrozenSet.test_container_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSet.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSet.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSet.test_cyclical_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -199,7 +198,6 @@ test.test_set.TestFrozenSet.test_deepcopy @ darwin-arm64,darwin-x86_64,linux-aar
 test.test_set.TestFrozenSet.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSet.test_do_not_rehash_dict_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSet.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_set.TestFrozenSet.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSet.test_frozen_as_dictkey @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSet.test_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSet.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -224,7 +222,6 @@ test.test_set.TestFrozenSet.test_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,
 test.test_set.TestFrozenSetSubclass.test_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSetSubclass.test_badcmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSetSubclass.test_constructor_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_set.TestFrozenSetSubclass.test_container_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSetSubclass.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSetSubclass.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSetSubclass.test_cyclical_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -232,7 +229,6 @@ test.test_set.TestFrozenSetSubclass.test_deepcopy @ darwin-arm64,darwin-x86_64,l
 test.test_set.TestFrozenSetSubclass.test_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSetSubclass.test_do_not_rehash_dict_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSetSubclass.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_set.TestFrozenSetSubclass.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSetSubclass.test_frozen_as_dictkey @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSetSubclass.test_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestFrozenSetSubclass.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -362,10 +358,8 @@ test.test_set.TestOnlySetsTuple.test_update_operator @ darwin-arm64,darwin-x86_6
 test.test_set.TestSet.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_badcmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_set.TestSet.test_c_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_constructor_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_set.TestSet.test_container_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_cyclical_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -375,7 +369,6 @@ test.test_set.TestSet.test_difference_update @ darwin-arm64,darwin-x86_64,linux-
 test.test_set.TestSet.test_discard @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_do_not_rehash_dict_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_set.TestSet.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_iand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -409,16 +402,13 @@ test.test_set.TestSet.test_symmetric_difference_update @ darwin-arm64,darwin-x86
 test.test_set.TestSet.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_uniquification @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_set.TestSet.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSet.test_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetOfSets.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_badcmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_set.TestSetSubclass.test_c_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_constructor_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_set.TestSetSubclass.test_container_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_cyclical_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -428,7 +418,6 @@ test.test_set.TestSetSubclass.test_difference_update @ darwin-arm64,darwin-x86_6
 test.test_set.TestSetSubclass.test_discard @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_do_not_rehash_dict_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_set.TestSetSubclass.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_iand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -462,7 +451,6 @@ test.test_set.TestSetSubclass.test_symmetric_difference_update @ darwin-arm64,da
 test.test_set.TestSetSubclass.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_uniquification @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_set.TestSetSubclass.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSetSubclass.test_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSubsetEmptyNonEmpty.test_issubset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_set.TestSubsetEqualEmpty.test_issubset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

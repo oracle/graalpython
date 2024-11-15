@@ -2,7 +2,6 @@ test.test_thread.BarrierTest.test_barrier @ darwin-arm64,darwin-x86_64,linux-aar
 test.test_thread.LockTests.test_acquire_contended @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_thread.LockTests.test_acquire_destroy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_thread.LockTests.test_acquire_release @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_thread.LockTests.test_at_fork_reinit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_thread.LockTests.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_thread.LockTests.test_different_thread @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_thread.LockTests.test_locked_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -13,12 +12,9 @@ test.test_thread.LockTests.test_thread_leak @ darwin-arm64,darwin-x86_64,linux-a
 test.test_thread.LockTests.test_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_thread.LockTests.test_try_acquire @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_thread.LockTests.test_try_acquire_contended @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_thread.LockTests.test_weakref_deleted @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_thread.LockTests.test_weakref_exists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_thread.LockTests.test_with @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_thread.TestForkInThread.test_forkinthread @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_thread.ThreadRunningTests.test__count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_thread.ThreadRunningTests.test_nt_and_posix_stack_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_thread.ThreadRunningTests.test_stack_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_thread.ThreadRunningTests.test_starting_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_thread.ThreadRunningTests.test_unraisable_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

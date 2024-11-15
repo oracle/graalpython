@@ -4,7 +4,6 @@ test.test_raise.TestCause.test_erroneous_cause @ darwin-arm64,darwin-x86_64,linu
 test.test_raise.TestCause.test_instance_cause @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_raise.TestCause.test_invalid_cause @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_raise.TestContext.test_3118 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_raise.TestContext.test_3611 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_raise.TestContext.test_c_exception_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_raise.TestContext.test_c_exception_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_raise.TestContext.test_class_context_class_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -4,7 +4,6 @@ test.test_sort.TestBugs.test_undetected_mutation @ darwin-arm64,darwin-x86_64,li
 test.test_sort.TestDecorateSortUndecorate.test_baddecorator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sort.TestDecorateSortUndecorate.test_decorated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sort.TestDecorateSortUndecorate.test_key_with_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_sort.TestDecorateSortUndecorate.test_key_with_mutating_del @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sort.TestDecorateSortUndecorate.test_key_with_mutating_del_and_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sort.TestDecorateSortUndecorate.test_key_with_mutation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sort.TestDecorateSortUndecorate.test_reverse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

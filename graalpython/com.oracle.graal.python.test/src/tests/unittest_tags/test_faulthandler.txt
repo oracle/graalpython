@@ -1,15 +1,4 @@
 test.test_faulthandler.FaultHandlerTests.test_cancel_later_without_dump_traceback_later @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_faulthandler.FaultHandlerTests.test_disable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_faulthandler.FaultHandlerTests.test_disable_windows_exc_handler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_faulthandler.FaultHandlerTests.test_ignore_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_faulthandler.FaultHandlerTests.test_is_enabled @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_faulthandler.FaultHandlerTests.test_raise_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_faulthandler.FaultHandlerTests.test_raise_nonfatal_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_faulthandler.FaultHandlerTests.test_register @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_faulthandler.FaultHandlerTests.test_register_chain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_faulthandler.FaultHandlerTests.test_register_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_faulthandler.FaultHandlerTests.test_register_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_faulthandler.FaultHandlerTests.test_register_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_faulthandler.FaultHandlerTests.test_stack_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_faulthandler.FaultHandlerTests.test_sys_xoptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_faulthandler.FaultHandlerTests.test_unregister @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

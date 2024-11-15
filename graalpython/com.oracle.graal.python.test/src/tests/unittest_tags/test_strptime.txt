@@ -13,7 +13,7 @@ test.test_strptime.LocaleTime_Tests.test_weekday @ darwin-arm64,darwin-x86_64,li
 test.test_strptime.Strptime12AMPMTests.test_twelve_noon_midnight @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strptime.StrptimeTests.test_ValueError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strptime.StrptimeTests.test_bad_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_strptime.StrptimeTests.test_bad_timezone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_bad_timezone @ darwin-arm64,darwin-x86_64
 test.test_strptime.StrptimeTests.test_caseinsensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strptime.StrptimeTests.test_date @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strptime.StrptimeTests.test_date_time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

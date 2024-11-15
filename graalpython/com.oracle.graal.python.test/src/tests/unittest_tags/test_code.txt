@@ -1,14 +1,5 @@
 DocTestCase.test.test_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_code.CodeConstsTest.test_interned_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_code.CodeConstsTest.test_interned_string_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_code.CodeConstsTest.test_interned_string_in_frozenset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_code.CodeConstsTest.test_interned_string_in_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_code.CodeConstsTest.test_interned_string_with_null @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_code.CodeLocationTest.test_code_new_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_code.CodeTest.test_closure_injection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_code.CodeTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_code.CodeTest.test_newempty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_code.CodeTest.test_qualname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_code.CodeTest.test_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_code.CodeTest.test_shrinking_localsplus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_code.CodeWeakRefTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -154,7 +154,6 @@ test.test_mailbox.TestMMDF.test_iterkeys @ darwin-arm64,darwin-x86_64,linux-aarc
 test.test_mailbox.TestMMDF.test_itervalues @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMMDF.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMMDF.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mailbox.TestMMDF.test_lock_conflict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMMDF.test_lock_unlock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMMDF.test_open_close_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMMDF.test_permissions_after_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -292,7 +291,6 @@ test.test_mailbox.TestMbox.test_iterkeys @ darwin-arm64,darwin-x86_64,linux-aarc
 test.test_mailbox.TestMbox.test_itervalues @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMbox.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMbox.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mailbox.TestMbox.test_lock_conflict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMbox.test_lock_unlock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMbox.test_message_separator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mailbox.TestMbox.test_open_close_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

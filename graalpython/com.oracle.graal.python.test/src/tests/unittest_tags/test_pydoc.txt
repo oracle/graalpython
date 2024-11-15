@@ -29,9 +29,6 @@ test.test_pydoc.PydocImportTest.test_apropos_with_bad_package @ darwin-arm64,dar
 test.test_pydoc.PydocImportTest.test_apropos_with_unreadable_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pydoc.PydocImportTest.test_badimport @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pydoc.PydocImportTest.test_importfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pydoc.PydocImportTest.test_modules @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pydoc.PydocImportTest.test_modules_search @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pydoc.PydocImportTest.test_modules_search_builtin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pydoc.PydocImportTest.test_url_search_package_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pydoc.PydocServerTest.test_server @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pydoc.PydocUrlHandlerTest.test_content_type_err @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -45,7 +45,6 @@ test.test_json.test_dump.TestPyDump.test_encode_mutated @ darwin-arm64,darwin-x8
 test.test_json.test_dump.TestPyDump.test_encode_truefalse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_encode_basestring_ascii.TestCEncodeBasestringAscii.test_encode_basestring_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_encode_basestring_ascii.TestCEncodeBasestringAscii.test_ordered_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_json.test_encode_basestring_ascii.TestCEncodeBasestringAscii.test_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_encode_basestring_ascii.TestCEncodeBasestringAscii.test_sorted_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_encode_basestring_ascii.TestPyEncodeBasestringAscii.test_encode_basestring_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_json.test_encode_basestring_ascii.TestPyEncodeBasestringAscii.test_ordered_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

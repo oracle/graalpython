@@ -18,5 +18,3 @@ test.test_mimetypes.MimetypesCliTestCase.test_guess_type @ darwin-arm64,darwin-x
 test.test_mimetypes.MimetypesCliTestCase.test_help_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mimetypes.MimetypesCliTestCase.test_invalid_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mimetypes.MiscTestCase.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mimetypes.Win32MimeTypesTestCase.test_registry_accelerator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mimetypes.Win32MimeTypesTestCase.test_registry_parsing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

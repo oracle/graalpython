@@ -107,7 +107,6 @@ test.test_logging.HTTPHandlerTest.test_output @ darwin-arm64,darwin-x86_64,linux
 test.test_logging.HandlerTest.test_builtin_handlers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.HandlerTest.test_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.HandlerTest.test_path_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_logging.HandlerTest.test_post_fork_child_no_deadlock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.HandlerTest.test_race @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.IPv6SysLogHandlerTest.test_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.IPv6SysLogHandlerTest.test_udp_reconnection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -157,7 +156,6 @@ test.test_logging.ModuleLevelMiscTest.test_recursion_error @ darwin-arm64,darwin
 test.test_logging.ModuleLevelMiscTest.test_set_logger_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.ModuleLevelMiscTest.test_subclass_logger_cache @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.ModuleLevelMiscTest.test_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_logging.NTEventLogHandlerTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.QueueHandlerTest.test_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.QueueHandlerTest.test_queue_handler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.QueueHandlerTest.test_queue_listener @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

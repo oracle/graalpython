@@ -22,7 +22,7 @@ test.test_urllib2.HandlerTests.test_http_doubleslash @ darwin-arm64,darwin-x86_6
 test.test_urllib2.HandlerTests.test_http_handler_debuglevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib2.HandlerTests.test_invalid_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib2.HandlerTests.test_invalid_redirect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_urllib2.HandlerTests.test_osx_proxy_bypass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2.HandlerTests.test_osx_proxy_bypass @ darwin-arm64,darwin-x86_64
 test.test_urllib2.HandlerTests.test_proxy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib2.HandlerTests.test_proxy_basic_auth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_urllib2.HandlerTests.test_proxy_https @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

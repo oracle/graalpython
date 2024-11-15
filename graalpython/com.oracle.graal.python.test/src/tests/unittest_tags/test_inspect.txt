@@ -12,7 +12,6 @@ test.test_inspect.test_inspect.TestBuggyCases.test_class_decorator @ darwin-arm6
 test.test_inspect.test_inspect.TestBuggyCases.test_class_definition_in_multiline_comment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestBuggyCases.test_class_definition_in_multiline_string_definition @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestBuggyCases.test_class_inside_conditional @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_inspect.test_inspect.TestBuggyCases.test_findsource_binary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestBuggyCases.test_findsource_code_in_linecache @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestBuggyCases.test_findsource_with_out_of_bounds_lineno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestBuggyCases.test_findsource_without_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -42,8 +41,6 @@ test.test_inspect.test_inspect.TestClassesAndFunctions.test_classify_overrides_b
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_get_annotations_with_stock_annotations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_get_annotations_with_stringized_annotations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_getfullargspec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_inspect.test_inspect.TestClassesAndFunctions.test_getfullargspec_builtin_func @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_inspect.test_inspect.TestClassesAndFunctions.test_getfullargspec_builtin_func_no_signature @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_getfullargspec_definition_order_preserved_on_kwonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_getfullargspec_signature_annos @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_getfullargspec_signature_attr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -154,7 +151,6 @@ test.test_inspect.test_inspect.TestOneliners.test_twolinefunc @ darwin-arm64,dar
 test.test_inspect.test_inspect.TestParameterObject.test_signature_parameter_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestParameterObject.test_signature_parameter_hashable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestParameterObject.test_signature_parameter_immutability @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_inspect.test_inspect.TestParameterObject.test_signature_parameter_implicit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestParameterObject.test_signature_parameter_kinds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestParameterObject.test_signature_parameter_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestParameterObject.test_signature_parameter_positional_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -189,7 +185,6 @@ test.test_inspect.test_inspect.TestSignatureBind.test_signature_bind_args_and_kw
 test.test_inspect.test_inspect.TestSignatureBind.test_signature_bind_args_and_varargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureBind.test_signature_bind_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureBind.test_signature_bind_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_inspect.test_inspect.TestSignatureBind.test_signature_bind_implicit_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureBind.test_signature_bind_just_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureBind.test_signature_bind_just_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureBind.test_signature_bind_kwonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -199,7 +194,6 @@ test.test_inspect.test_inspect.TestSignatureBind.test_signature_bind_var @ darwi
 test.test_inspect.test_inspect.TestSignatureBind.test_signature_bind_vararg_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureBind.test_signature_bind_varargs_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureBind.test_signature_bind_with_self_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_inspect.test_inspect.TestSignatureDefinitions.test_builtins_have_signatures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureDefinitions.test_python_function_override_signature @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureObject.test_signater_parameters_is_ordered @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_annotations_with_local_namespaces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -216,14 +210,11 @@ test.test_inspect.test_inspect.TestSignatureObject.test_signature_immutability @
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_none_annotation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_object_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_builtins @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_builtins_no_signature @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_callable_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_classmethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_complex_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_decorated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_decorated_builtins @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_derived_classes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_fake_partialmethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestSignatureObject.test_signature_on_generic_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

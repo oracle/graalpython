@@ -1,6 +1,0 @@
-test.test_c_locale_coercion.LocaleCoercionTests.test_LC_ALL_set_to_C @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_c_locale_coercion.LocaleCoercionTests.test_PYTHONCOERCECLOCALE_not_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_c_locale_coercion.LocaleCoercionTests.test_PYTHONCOERCECLOCALE_not_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_c_locale_coercion.LocaleCoercionTests.test_PYTHONCOERCECLOCALE_set_to_one @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_c_locale_coercion.LocaleCoercionTests.test_PYTHONCOERCECLOCALE_set_to_warn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_c_locale_coercion.LocaleCoercionTests.test_PYTHONCOERCECLOCALE_set_to_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

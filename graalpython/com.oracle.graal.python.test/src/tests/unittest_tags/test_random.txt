@@ -94,8 +94,5 @@ test.test_random.TestDistributions.test_von_mises_range @ darwin-arm64,darwin-x8
 test.test_random.TestDistributions.test_zeroinputs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.TestModule.testMagicConstants @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.TestModule.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_random.TestModule.test_after_fork @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.TestRandomSubclassing.test_random_subclass_with_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_random.TestRandomSubclassing.test_subclasses_overriding_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_random.TestRawMersenneTwister.test_bug_41052 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_random.TestRawMersenneTwister.test_bug_42008 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

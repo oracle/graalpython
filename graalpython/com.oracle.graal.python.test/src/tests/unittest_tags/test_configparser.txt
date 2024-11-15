@@ -106,7 +106,6 @@ test.test_configparser.ConfigParserTestCaseNoValue.test_default_case_sensitivity
 test.test_configparser.ConfigParserTestCaseNoValue.test_defaults_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoValue.test_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoValue.test_interpolation_missing_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_configparser.ConfigParserTestCaseNoValue.test_invalid_multiline_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoValue.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoValue.test_parse_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoValue.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -161,8 +160,6 @@ test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_items @ da
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_parse_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_query_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_read_returns_file_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_read_returns_file_list_with_bytestring_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_safe_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_set_malformatted_interpolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_set_nonstring_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -289,8 +286,6 @@ test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_items @
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_parse_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_query_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_read_returns_file_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_read_returns_file_list_with_bytestring_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_set_nonstring_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_set_string_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,13 +1,11 @@
 test.test_module.ModuleTests.test_annotations_are_created_correctly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_ascii_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_module.ModuleTests.test_clear_dict_in_ref_cycle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_descriptor_errors_propagate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_dont_clear_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_lazy_create_annotations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_missing_getattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_module_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_module_dir_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_module.ModuleTests.test_module_finalization_at_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_module_getattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_module_getattr_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_module_getattr_tricky @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

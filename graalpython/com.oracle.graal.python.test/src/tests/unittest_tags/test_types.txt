@@ -20,15 +20,9 @@ test.test_types.ClassCreationTests.test_one_argument_type @ darwin-arm64,darwin-
 test.test_types.ClassCreationTests.test_prepare_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.ClassCreationTests.test_resolve_bases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.ClassCreationTests.test_resolve_bases_with_mro_entry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_types.CoroutineTests.test_async_def @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.CoroutineTests.test_duck_coro @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.CoroutineTests.test_duck_corogen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_types.CoroutineTests.test_duck_functional_gen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_types.CoroutineTests.test_duck_gen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_types.CoroutineTests.test_gen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_types.CoroutineTests.test_genfunc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.CoroutineTests.test_non_gen_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_types.CoroutineTests.test_returning_itercoro @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.CoroutineTests.test_wrapper_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.CoroutineTests.test_wrong_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.MappingProxyTests.test_chainmap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -68,8 +62,6 @@ test.test_types.TypesTests.test_floats @ darwin-arm64,darwin-x86_64,linux-aarch6
 test.test_types.TypesTests.test_format_spec_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.TypesTests.test_int__format__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.TypesTests.test_int__format__locale @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_types.TypesTests.test_internal_sizes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_types.TypesTests.test_method_descriptor_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.TypesTests.test_method_wrapper_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.TypesTests.test_none_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.TypesTests.test_normal_integers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -86,7 +78,6 @@ test.test_types.UnionTests.test_bad_subclasscheck @ darwin-arm64,darwin-x86_64,l
 test.test_types.UnionTests.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.UnionTests.test_instancecheck_and_subclasscheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.UnionTests.test_instancecheck_and_subclasscheck_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_types.UnionTests.test_or_type_operator_reference_cycle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.UnionTests.test_or_type_operator_with_Alias @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.UnionTests.test_or_type_operator_with_IO @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_types.UnionTests.test_or_type_operator_with_Literal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,4 +1,1 @@
 test.test_atexit.FunctionalTest.test_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_atexit.SubinterpreterTest.test_callback_on_subinterpreter_teardown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_atexit.SubinterpreterTest.test_callbacks_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_atexit.SubinterpreterTest.test_callbacks_leak_refcycle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

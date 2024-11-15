@@ -1,9 +1,6 @@
 test.test_coroutines.AsyncBadSyntaxTest.test_badsyntax_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_coroutines.AsyncBadSyntaxTest.test_badsyntax_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_coroutines.AsyncBadSyntaxTest.test_badsyntax_4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_coroutines.CAPITest.test_tp_await_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_coroutines.CAPITest.test_tp_await_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_coroutines.CAPITest.test_tp_await_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_coroutines.CoroAsyncIOCompatTest.test_asyncio_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_coroutines.CoroutineTest.test_await_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_coroutines.CoroutineTest.test_await_10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

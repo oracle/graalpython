@@ -73,11 +73,6 @@ test.test_httplib.HTTPSTest.test_host_port @ darwin-arm64,darwin-x86_64,linux-aa
 test.test_httplib.HTTPSTest.test_local_bad_hostname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_httplib.HTTPSTest.test_local_good_hostname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_httplib.HTTPSTest.test_local_unknown_cert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_httplib.HTTPSTest.test_networked @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_httplib.HTTPSTest.test_networked_bad_cert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_httplib.HTTPSTest.test_networked_good_cert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_httplib.HTTPSTest.test_networked_noverification @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_httplib.HTTPSTest.test_networked_trusted_by_default_cert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_httplib.HeaderTests.test_auto_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_httplib.HeaderTests.test_content_length_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_httplib.HeaderTests.test_headers_debuglevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -15,8 +15,8 @@ test.test_webbrowser.GaleonCommandTest.test_open_new @ darwin-arm64,darwin-x86_6
 test.test_webbrowser.GaleonCommandTest.test_open_new_tab @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_webbrowser.GaleonCommandTest.test_open_with_autoraise_false @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_webbrowser.GenericBrowserCommandTest.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_webbrowser.ImportTest.test_environment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_webbrowser.ImportTest.test_environment_preferred @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_webbrowser.ImportTest.test_environment @ darwin-arm64,darwin-x86_64
+test.test_webbrowser.ImportTest.test_environment_preferred @ darwin-arm64,darwin-x86_64
 test.test_webbrowser.ImportTest.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_webbrowser.ImportTest.test_register @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_webbrowser.ImportTest.test_synthesize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -4,7 +4,6 @@ test.test_ordered_dict.CPythonBuiltinDictTests.test_delitem @ darwin-arm64,darwi
 test.test_ordered_dict.CPythonBuiltinDictTests.test_delitem_hash_collision @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonBuiltinDictTests.test_detect_deletion_during_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonBuiltinDictTests.test_highly_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonBuiltinDictTests.test_highly_nested_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonBuiltinDictTests.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonBuiltinDictTests.test_override_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonBuiltinDictTests.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -32,7 +31,6 @@ test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_copying @ darwin-arm
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_delitem_hash_collision @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_detect_deletion_during_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_dict_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_dict_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_dict_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_dict_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -40,13 +38,10 @@ test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_dict_setdefault @ da
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_dict_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_dict_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_fromkeys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_highly_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_highly_nested_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_init_calls @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_issue24347 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_issue24348 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_issue24667 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_iterators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -55,7 +50,6 @@ test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_iterators_pickling @
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_merge_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_move_to_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_move_to_end_issue25406 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_ordered_dict_items_result_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_overridden_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_override_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_pickle_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -63,7 +57,6 @@ test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_pop @ darwin-arm64,d
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_popitem_last @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_reduce_not_too_fat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_reference_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_reinsert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_repr_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -71,11 +64,9 @@ test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_repr_recursive_value
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_sizeof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_sizeof_exact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_sorted_iterators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_views @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_weakref_list_is_not_traversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_yaml_linkage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_468 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_abc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -84,7 +75,6 @@ test.test_ordered_dict.CPythonOrderedDictTests.test_copying @ darwin-arm64,darwi
 test.test_ordered_dict.CPythonOrderedDictTests.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_delitem_hash_collision @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_detect_deletion_during_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictTests.test_dict_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_dict_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_dict_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_dict_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -92,13 +82,10 @@ test.test_ordered_dict.CPythonOrderedDictTests.test_dict_setdefault @ darwin-arm
 test.test_ordered_dict.CPythonOrderedDictTests.test_dict_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_dict_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictTests.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_fromkeys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_highly_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictTests.test_highly_nested_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_init_calls @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictTests.test_issue24347 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_issue24348 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_issue24667 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_iterators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -107,7 +94,6 @@ test.test_ordered_dict.CPythonOrderedDictTests.test_iterators_pickling @ darwin-
 test.test_ordered_dict.CPythonOrderedDictTests.test_merge_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_move_to_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_move_to_end_issue25406 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictTests.test_ordered_dict_items_result_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_overridden_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_override_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_pickle_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -115,7 +101,6 @@ test.test_ordered_dict.CPythonOrderedDictTests.test_pop @ darwin-arm64,darwin-x8
 test.test_ordered_dict.CPythonOrderedDictTests.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_popitem_last @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_reduce_not_too_fat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictTests.test_reference_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_reinsert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_repr_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -123,11 +108,9 @@ test.test_ordered_dict.CPythonOrderedDictTests.test_repr_recursive_values @ darw
 test.test_ordered_dict.CPythonOrderedDictTests.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_sizeof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictTests.test_sizeof_exact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_sorted_iterators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_views @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.CPythonOrderedDictTests.test_weakref_list_is_not_traversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictTests.test_yaml_linkage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonOrderedDictWithSlotsCopyingTests.test_copying @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.CPythonSubclassMappingTests.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -168,7 +151,6 @@ test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_copying @ darwin-
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_delitem_hash_collision @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_detect_deletion_during_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_dict_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_dict_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_dict_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_dict_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -176,13 +158,10 @@ test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_dict_setdefault @
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_dict_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_dict_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_fromkeys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_highly_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_highly_nested_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_init_calls @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_issue24347 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_issue24348 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_issue24667 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_iterators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -190,7 +169,6 @@ test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_iterators_empty @
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_merge_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_move_to_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_move_to_end_issue25406 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_ordered_dict_items_result_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_overridden_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_override_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_pickle_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -198,7 +176,6 @@ test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_pop @ darwin-arm6
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_popitem_last @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_reduce_not_too_fat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_reference_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_reinsert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_repr_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -217,7 +194,6 @@ test.test_ordered_dict.PurePythonOrderedDictTests.test_copying @ darwin-arm64,da
 test.test_ordered_dict.PurePythonOrderedDictTests.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_delitem_hash_collision @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_detect_deletion_during_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.PurePythonOrderedDictTests.test_dict_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_dict_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_dict_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_dict_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -225,13 +201,10 @@ test.test_ordered_dict.PurePythonOrderedDictTests.test_dict_setdefault @ darwin-
 test.test_ordered_dict.PurePythonOrderedDictTests.test_dict_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_dict_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.PurePythonOrderedDictTests.test_free_after_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_fromkeys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_highly_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.PurePythonOrderedDictTests.test_highly_nested_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_init_calls @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.PurePythonOrderedDictTests.test_issue24347 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_issue24348 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_issue24667 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_iterators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -239,7 +212,6 @@ test.test_ordered_dict.PurePythonOrderedDictTests.test_iterators_empty @ darwin-
 test.test_ordered_dict.PurePythonOrderedDictTests.test_merge_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_move_to_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_move_to_end_issue25406 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.PurePythonOrderedDictTests.test_ordered_dict_items_result_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_overridden_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_override_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_pickle_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -247,7 +219,6 @@ test.test_ordered_dict.PurePythonOrderedDictTests.test_pop @ darwin-arm64,darwin
 test.test_ordered_dict.PurePythonOrderedDictTests.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_popitem_last @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_reduce_not_too_fat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ordered_dict.PurePythonOrderedDictTests.test_reference_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_reinsert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_repr_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

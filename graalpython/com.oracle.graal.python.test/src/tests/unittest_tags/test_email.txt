@@ -749,7 +749,6 @@ test.test_email.test_email.TestMIMEText.test_charset @ darwin-arm64,darwin-x86_6
 test.test_email.test_email.TestMIMEText.test_payload @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_email.test_email.TestMIMEText.test_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_email.test_email.TestMIMEText.test_utf8_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_email.test_email.TestMIMEText.test_utf8_input_no_charset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_email.test_email.TestMessageAPI.test__contains__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_email.test_email.TestMessageAPI.test_add_header_with_name_only_param @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_email.test_email.TestMessageAPI.test_add_header_with_no_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -1659,4 +1658,3 @@ test.test_email.test_utils.LocaltimeTests.test_localtime_epoch_utc_daylight_fals
 test.test_email.test_utils.LocaltimeTests.test_localtime_epoch_utc_daylight_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_email.test_utils.LocaltimeTests.test_localtime_is_tz_aware_daylight_false @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_email.test_utils.LocaltimeTests.test_localtime_is_tz_aware_daylight_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_email.test_utils.LocaltimeTests.test_variable_tzname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

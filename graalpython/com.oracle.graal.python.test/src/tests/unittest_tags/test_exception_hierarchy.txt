@@ -1,5 +1,4 @@
 test.test_exception_hierarchy.AttributesTest.test_blockingioerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_exception_hierarchy.AttributesTest.test_errno_translation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exception_hierarchy.AttributesTest.test_posix_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exception_hierarchy.AttributesTest.test_windows_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exception_hierarchy.ExplicitSubclassingTest.test_errno_mapping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
