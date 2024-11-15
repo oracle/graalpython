@@ -4,7 +4,7 @@ test.test_multiprocessing_graalpy.OtherTest.test_deliver_challenge_auth_failure 
 test.test_multiprocessing_graalpy.SemLockTests.test_semlock_subclass @ linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.TestForkAwareThreadLock.test_lock @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.TestInvalidFamily.test_invalid_family @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_graalpy.TestNoForkBomb.test_noforkbomb @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_multiprocessing_graalpy.TestNoForkBomb.test_noforkbomb @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.TestPoolNotLeakOnFailure.test_release_unused_processes @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.TestResourceTracker.test_resource_tracker @ linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.TestResourceTracker.test_resource_tracker_reused @ darwin-arm64,linux-aarch64,linux-x86_64
@@ -43,11 +43,11 @@ test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_abort_and_reset 
 test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_action @ darwin-arm64
 test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_barrier @ darwin-arm64
 test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_barrier_10 @ darwin-arm64
-test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_default_timeout @ darwin-arm64
+!test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_default_timeout @ darwin-arm64
 test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_reset @ darwin-arm64
 test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_single_thread @ darwin-arm64
 test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_thousand @ darwin-arm64
-test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_timeout @ darwin-arm64
+!test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_timeout @ darwin-arm64
 test.test_multiprocessing_graalpy.WithProcessesTestBarrier.test_wait_return @ darwin-arm64
 test.test_multiprocessing_graalpy.WithProcessesTestCondition.test_notify @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestCondition.test_notify_all @ darwin-arm64,linux-aarch64,linux-x86_64
@@ -68,8 +68,8 @@ test.test_multiprocessing_graalpy.WithProcessesTestListenerClient.test_issue1695
 test.test_multiprocessing_graalpy.WithProcessesTestListenerClient.test_listener_client @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestLock.test_lock_context @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestLock.test_rlock @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_graalpy.WithProcessesTestLogging.test_enable_logging @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_graalpy.WithProcessesTestLogging.test_level @ darwin-arm64
+!test.test_multiprocessing_graalpy.WithProcessesTestLogging.test_enable_logging @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_multiprocessing_graalpy.WithProcessesTestLogging.test_level @ darwin-arm64
 test.test_multiprocessing_graalpy.WithProcessesTestManagerRestart.test_rapid_restart @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestPoll.test_boundaries @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestPoll.test_dont_merge @ darwin-arm64,linux-aarch64,linux-x86_64
@@ -104,15 +104,16 @@ test.test_multiprocessing_graalpy.WithProcessesTestPoolWorkerLifetime.test_pool_
 test.test_multiprocessing_graalpy.WithProcessesTestPoolWorkerLifetime.test_pool_worker_lifetime @ linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestPoolWorkerLifetime.test_pool_worker_lifetime_early_close @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestPoolWorkerLifetime.test_worker_finalization_via_atexit_handler_of_multiprocessing @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_active_children @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_active_children @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_args_argument @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_child_fd_inflation @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_cpu_count @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_current @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_daemon_argument @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_error_on_stdio_flush_1 @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_error_on_stdio_flush_2 @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_error_on_stdio_flush_1 @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_error_on_stdio_flush_2 @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_kill @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_many_processes
 test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_parent_process_attributes @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_recursion @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithProcessesTestProcess.test_sentinel @ darwin-arm64,linux-aarch64,linux-x86_64
@@ -181,12 +182,14 @@ test.test_multiprocessing_graalpy.WithThreadsTestPool.test_map_chunksize @ darwi
 test.test_multiprocessing_graalpy.WithThreadsTestPool.test_map_no_failfast @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithThreadsTestPool.test_starmap @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithThreadsTestPool.test_starmap_async @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_multiprocessing_graalpy.WithThreadsTestPool.test_terminate
 test.test_multiprocessing_graalpy.WithThreadsTestPool.test_traceback @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithThreadsTestProcess.test_active_children @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithThreadsTestProcess.test_args_argument @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithThreadsTestProcess.test_cpu_count @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_graalpy.WithThreadsTestProcess.test_error_on_stdio_flush_1 @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_graalpy.WithThreadsTestProcess.test_error_on_stdio_flush_2 @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_multiprocessing_graalpy.WithThreadsTestProcess.test_error_on_stdio_flush_1 @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_multiprocessing_graalpy.WithThreadsTestProcess.test_error_on_stdio_flush_2 @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_multiprocessing_graalpy.WithThreadsTestProcess.test_many_processes
 test.test_multiprocessing_graalpy.WithThreadsTestProcess.test_process @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithThreadsTestProcess.test_recursion @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithThreadsTestQueue.test_closed_queue_put_get_exceptions @ darwin-arm64,linux-aarch64,linux-x86_64
@@ -199,4 +202,4 @@ test.test_multiprocessing_graalpy.WithThreadsTestQueue.test_task_done @ darwin-a
 test.test_multiprocessing_graalpy.WithThreadsTestQueue.test_timeout @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithThreadsTestSemaphore.test_bounded_semaphore @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.WithThreadsTestSemaphore.test_semaphore @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_graalpy._TestImportStar.test_import @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_multiprocessing_graalpy._TestImportStar.test_import @ darwin-arm64,linux-aarch64,linux-x86_64

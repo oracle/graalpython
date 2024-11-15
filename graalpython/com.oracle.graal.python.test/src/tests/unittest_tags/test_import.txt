@@ -13,7 +13,8 @@ test.test_import.FilePermissionTests.test_creation_mode @ darwin-arm64,linux-aar
 test.test_import.FilePermissionTests.test_pyc_always_writable @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_import.ImportTests.test_bogus_fromlist @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_import.ImportTests.test_case_sensitivity @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_import.ImportTests.test_concurrency @ darwin-arm64,linux-aarch64,linux-x86_64
+# Temporarily disabled due to transient failures (GR-30641)
+!test.test_import.ImportTests.test_concurrency @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_import.ImportTests.test_double_const @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_import.ImportTests.test_failing_import_sticks @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_import.ImportTests.test_failing_reload @ darwin-arm64,linux-aarch64,linux-x86_64

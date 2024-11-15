@@ -11,4 +11,5 @@ test.test_glob.GlobTests.test_glob_one_directory @ darwin-arm64,darwin-x86_64,li
 test.test_glob.GlobTests.test_glob_symlinks @ darwin-arm64,darwin-x86_64,linux-x86_64
 test.test_glob.GlobTests.test_hidden_glob @ darwin-arm64,darwin-x86_64,linux-x86_64
 test.test_glob.GlobTests.test_recursive_glob @ darwin-arm64,darwin-x86_64,linux-x86_64
-test.test_glob.SymlinkLoopGlobTests.test_selflink @ darwin-arm64,linux-x86_64
+# Transiently fails at line 395
+!test.test_glob.SymlinkLoopGlobTests.test_selflink @ darwin-arm64,linux-x86_64

@@ -448,19 +448,20 @@ class TestRunner:
             by_file[result.test_id.test_file].append(result)
         for test_file, results in by_file.items():
             test_file = configure_test_file(test_file)
-            tags = update_tags(
-                current=read_tags(test_file),
-                results=results,
+            update_tags(
+                test_file,
+                results,
                 tag_platform=CURRENT_PLATFORM,
                 untag_failed=(not append),
                 untag_skipped=(not append),
                 untag_missing=(not append),
             )
-            write_tags(test_file, tags)
 
 
-def update_tags(current: typing.Iterable['Tag'], results: typing.Iterable[TestResult], tag_platform: str,
-                untag_failed=False, untag_skipped=False, untag_missing=False) -> set['Tag']:
+def update_tags(test_file: 'TestFile', results: list[TestResult], tag_platform: str,
+                untag_failed=False, untag_skipped=False, untag_missing=False):
+    current = read_tags(test_file, allow_exclusions=True)
+    exclusions, current = partition_list(current, lambda t: isinstance(t, TagExclusion))
     status_by_id = {r.test_id.normalized(): r.status for r in results}
     tag_by_id = {}
     for tag in current:
@@ -483,7 +484,11 @@ def update_tags(current: typing.Iterable['Tag'], results: typing.Iterable[TestRe
         elif status == TestStatus.SUCCESS:
             tag_by_id[test_id] = Tag.for_key(test_id, tag_platform)
 
-    return set(tag_by_id.values())
+    for exclusion in exclusions:
+        tag_by_id.pop(exclusion.test_id, None)
+
+    tags = set(tag_by_id.values()) | set(exclusions)
+    write_tags(test_file, tags)
 
 
 def write_tags(test_file: 'TestFile', tags: typing.Iterable['Tag']):
@@ -493,6 +498,7 @@ def write_tags(test_file: 'TestFile', tags: typing.Iterable['Tag']):
         return
     if not tags:
         tag_file.unlink(missing_ok=True)
+        return
     with open(tag_file, 'w') as f:
         for tag in sorted(tags, key=lambda t: t.test_id.test_name):
             f.write(f'{tag}\n')
@@ -1149,23 +1155,53 @@ class Tag:
         return f'{self.test_id.test_name} @ {",".join(sorted(self.keys))}'
 
 
-def read_tags(test_file: TestFile) -> list[Tag]:
+@dataclass(frozen=True)
+class TagExclusion(Tag):
+    comment: str | None
+
+    def __str__(self):
+        s = f'!{self.test_id.test_name}'
+        if self.keys:
+            s += f' @ {",".join(sorted(self.keys))}'
+        if self.comment:
+            s = f'{self.comment}{s}'
+        return s
+
+
+def read_tags(test_file: TestFile, allow_exclusions=False) -> list[Tag]:
     # To make them easily comparable
     test_path = test_file.path.resolve()
     tag_file = test_file.get_tag_file()
     tags = []
     if tag_file.exists():
         with open(tag_file) as f:
+            comment = None
             for line in f:
+                if line.startswith('#'):
+                    if comment:
+                        comment += line
+                    else:
+                        comment = line
+                    continue
                 test, _, keys = line.partition('@')
                 test = test.strip()
                 keys = keys.strip()
-                if not keys:
-                    log(f'WARNING: invalid tag {test}: missing platform keys')
-                tags.append(Tag(
-                    TestId(test_path, test),
-                    frozenset(keys.split(',')),
-                ))
+                if test.startswith('!'):
+                    if allow_exclusions:
+                        test = test.removeprefix('!')
+                        tags.append(TagExclusion(
+                            TestId(test_path, test),
+                            frozenset(keys.split(',')) if keys else frozenset(),
+                            comment,
+                        ))
+                else:
+                    if not keys:
+                        log(f'WARNING: invalid tag {test}: missing platform keys')
+                    tags.append(Tag(
+                        TestId(test_path, test),
+                        frozenset(keys.split(',')),
+                    ))
+                comment = None
     return tags
 
 
@@ -1227,15 +1263,14 @@ def main_merge_tags(args):
         by_file[result.test_id.test_file].append(result)
     for test_file, results in by_file.items():
         test_file = configure_test_file(test_file)
-        tags = update_tags(
-            current=read_tags(test_file),
-            results=results,
+        update_tags(
+            test_file,
+            results,
             tag_platform=args.platform,
             untag_failed=False,
             untag_skipped=True,
             untag_missing=True,
         )
-        write_tags(test_file, tags)
 
 
 def get_bool_env(name: str):

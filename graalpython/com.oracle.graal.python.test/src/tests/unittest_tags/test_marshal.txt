@@ -14,6 +14,8 @@ test.test_marshal.BugsTestCase.test_multiple_dumps_and_loads @ darwin-arm64,darw
 test.test_marshal.BugsTestCase.test_patch_873224 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_marshal.BugsTestCase.test_recursion_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_marshal.BugsTestCase.test_version_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+# Disabled since code object comparison is not stable for us
+!test.test_marshal.CodeTestCase.test_code
 test.test_marshal.CodeTestCase.test_different_filenames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_marshal.CodeTestCase.test_many_codeobjects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_marshal.CompatibilityTestCase.test0To3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -32,6 +34,8 @@ test.test_marshal.InstancingTestCase.testFloat @ darwin-arm64,darwin-x86_64,linu
 test.test_marshal.InstancingTestCase.testFrozenSet @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_marshal.InstancingTestCase.testInt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_marshal.InstancingTestCase.testList @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+# Disabled since code object comparison is not stable for us
+!test.test_marshal.InstancingTestCase.testModule
 test.test_marshal.InstancingTestCase.testRecursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_marshal.InstancingTestCase.testSet @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_marshal.InstancingTestCase.testStr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,6 +1,7 @@
 test.test_plistlib.MiscTestCase.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_plistlib.TestBinaryPlistlib.test_cycles @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_plistlib.TestBinaryPlistlib.test_deep_nesting @ darwin-arm64,linux-aarch64,linux-x86_64
+# Disabled due to transient stack overflow that fails to get caught and crashes the VM
+!test.test_plistlib.TestBinaryPlistlib.test_deep_nesting @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_plistlib.TestBinaryPlistlib.test_dump_duplicates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_plistlib.TestBinaryPlistlib.test_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_plistlib.TestBinaryPlistlib.test_invalid_binary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

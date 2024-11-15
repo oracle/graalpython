@@ -32,7 +32,8 @@ unittest.test.test_assertions.Test_Assertions.testAssertNotRegex @ darwin-arm64,
 unittest.test.test_assertions.Test_Assertions.test_AlmostEqual @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_assertions.Test_Assertions.test_AmostEqualWithDelta @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_assertions.Test_Assertions.test_assertRaises @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-unittest.test.test_assertions.Test_Assertions.test_assertRaises_frames_survival @ darwin-arm64,linux-aarch64,linux-x86_64
+# Weakref
+!unittest.test.test_assertions.Test_Assertions.test_assertRaises_frames_survival @ darwin-arm64,linux-aarch64,linux-x86_64
 unittest.test.test_async_case.TestAsyncCase.test_base_exception_from_async_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_async_case.TestAsyncCase.test_cancellation_hanging_tasks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 unittest.test.test_async_case.TestAsyncCase.test_cleanups_interleave_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

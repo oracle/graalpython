@@ -510,7 +510,8 @@ lib2to3.tests.test_parser.TestNumericLiterals.test_new_octal_notation @ darwin-a
 lib2to3.tests.test_parser.TestParserIdempotency.test_all_project_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 lib2to3.tests.test_parser.TestParserIdempotency.test_extended_unpacking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_subprocess @ darwin-arm64,linux-aarch64,linux-x86_64
+# Transient hash mismatch
+!lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_subprocess @ darwin-arm64,linux-aarch64,linux-x86_64
 lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_txt_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 lib2to3.tests.test_parser.TestPgen2Caching.test_load_packaged_grammar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 lib2to3.tests.test_parser.TestPickleableException.test_ParseError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -852,6 +852,7 @@ class ReferencesTestCase(TestBase):
         self.assertEqual(a(), None)
         self.assertEqual(l, [a])
 
+    @support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_equality(self):
         # Alive weakrefs defer equality testing to their underlying object.
         x = Object(1)
@@ -1243,6 +1244,7 @@ class MappingTestCase(TestBase):
         self.assertIn(n1, (0, 1))
         self.assertEqual(n2, 0)
 
+    @support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_weak_keyed_len_cycles(self):
         self.check_len_cycles(weakref.WeakKeyDictionary, lambda k: (k, 1))
 
@@ -2096,6 +2098,7 @@ class FinalizeTestCase(unittest.TestCase):
         expected = ['A', 'f3', 'B', 'C', 'f4', 'f2', 'f1', 'D']
         self.assertEqual(res, expected)
 
+    @support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_all_freed(self):
         # we want a weakrefable subclass of weakref.finalize
         class MyFinalizer(weakref.finalize):

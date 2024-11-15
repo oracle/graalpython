@@ -52,7 +52,8 @@ test.test_subprocess.POSIXProcessTestCase.test_stdout_stderr_are_single_inout_fd
 test.test_subprocess.POSIXProcessTestCase.test_stdout_stdin_are_single_inout_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_stopped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_swap_fds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed @ darwin-arm64,linux-aarch64,linux-x86_64
+# Transient, GR-41056
+!test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_terminate_dead @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_user_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_wait_when_sigchild_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

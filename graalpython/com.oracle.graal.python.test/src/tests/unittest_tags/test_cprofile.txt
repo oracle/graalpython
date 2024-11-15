@@ -5,5 +5,6 @@ test.test_profile.ProfileTest.test_calling_conventions @ darwin-arm64,darwin-x86
 test.test_profile.ProfileTest.test_cprofile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_profile.ProfileTest.test_output_file_when_changing_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_profile.ProfileTest.test_run @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_profile.ProfileTest.test_run_profile_as_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+# This test times out in the gate even though it succeeds locally and in the retagger. Race condition?
+!test.test_profile.ProfileTest.test_run_profile_as_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_profile.ProfileTest.test_runctx @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

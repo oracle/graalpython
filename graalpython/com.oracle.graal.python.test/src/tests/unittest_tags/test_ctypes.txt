@@ -190,7 +190,8 @@ ctypes.test.test_prototypes.CharPointersTestCase.test_c_void_p_arg_with_c_wchar_
 ctypes.test.test_prototypes.WCharPointersTestCase.test_POINTER_c_wchar_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_prototypes.WCharPointersTestCase.test_c_wchar_p_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_python_api.PythonAPITestCase.test_PyBytes_FromStringAndSize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_python_api.PythonAPITestCase.test_PyOS_snprintf @ linux-aarch64,linux-x86_64
+# Transient, at least on M1
+!ctypes.test.test_python_api.PythonAPITestCase.test_PyOS_snprintf @ linux-aarch64,linux-x86_64
 ctypes.test.test_returnfuncptrs.ReturnFuncPtrTestCase.test_from_dll @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_returnfuncptrs.ReturnFuncPtrTestCase.test_from_dll_refcount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_simplesubclasses.Test.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

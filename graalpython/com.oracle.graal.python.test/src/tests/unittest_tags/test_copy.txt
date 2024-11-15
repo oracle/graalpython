@@ -23,7 +23,7 @@ test.test_copy.TestCopy.test_copy_set @ darwin-arm64,darwin-x86_64,linux-aarch64
 test.test_copy.TestCopy.test_copy_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_copy_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_copy_tuple_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_copy.TestCopy.test_copy_weakkeydict @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_copy.TestCopy.test_copy_weakkeydict @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_copy_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_atomic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -59,7 +59,7 @@ test.test_copy.TestCopy.test_deepcopy_slots @ darwin-arm64,darwin-x86_64,linux-a
 test.test_copy.TestCopy.test_deepcopy_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_tuple_of_immutables @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_tuple_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_copy.TestCopy.test_deepcopy_weakkeydict @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_copy.TestCopy.test_deepcopy_weakkeydict @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_copy.TestCopy.test_getstate_exc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

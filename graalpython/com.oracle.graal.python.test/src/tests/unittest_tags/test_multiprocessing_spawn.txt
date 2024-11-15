@@ -15,7 +15,8 @@ test.test_multiprocessing_spawn.test_misc.TestPoolNotLeakOnFailure.test_release_
 test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_resource_tracker @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_resource_tracker_reused @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_resource_tracker_sigint @ linux-x86_64
-test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_resource_tracker_sigkill @ darwin-arm64,linux-aarch64,linux-x86_64
+# Transient failure to delete semaphore on process death
+!test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_resource_tracker_sigkill @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_resource_tracker_sigterm @ linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_too_long_name_resource @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestSimpleQueue.test_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

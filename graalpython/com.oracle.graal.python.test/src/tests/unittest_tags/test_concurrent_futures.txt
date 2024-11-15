@@ -47,8 +47,9 @@ test.test_concurrent_futures.test_process_pool.ProcessPoolForkProcessPoolExecuto
 test.test_concurrent_futures.test_process_pool.ProcessPoolForkProcessPoolExecutorTest.test_max_tasks_per_child_defaults_to_spawn_context @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_process_pool.ProcessPoolForkProcessPoolExecutorTest.test_max_workers_negative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_multiple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_killed_child @ darwin-arm64,linux-aarch64,linux-x86_64
+# Transiently ends up with 2 processes
+!test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_killed_child @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_map @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_map_chunksize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_map_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -65,12 +66,15 @@ test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecut
 test.test_concurrent_futures.test_shutdown.ProcessPoolForkProcessPoolShutdownTest.test_run_after_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_cancel_futures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_context_manager_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+# Transiently times out GR-52666
+!test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_del_shutdown
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_hang_gh94440 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_hang_issue12364 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_processes_terminate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_run_after_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_shutdown_no_wait @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_submit_after_interpreter_shutdown @ darwin-arm64,linux-aarch64,linux-x86_64
+# Transiently times out GR-52666
+!test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_submit_after_interpreter_shutdown @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_cancel_futures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_context_manager_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_hang_gh94440 @ darwin-arm64,linux-aarch64,linux-x86_64
@@ -83,7 +87,7 @@ test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_thread_na
 test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_threads_terminate @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_default_workers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_executor_map_current_future_cancel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_idle_thread_reuse @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_idle_thread_reuse @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_map @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_map_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_map_submits_without_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

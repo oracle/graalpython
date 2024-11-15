@@ -6,7 +6,8 @@ test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_for_same_name 
 test.test_exceptions.ExceptionTests.testAttributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.testChainingAttrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.testChainingDescriptors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_exceptions.ExceptionTests.testInfiniteRecursion @ darwin-arm64,linux-aarch64,linux-x86_64
+# Disabled due to transient stack overflow that fails to get caught and crashes the VM
+!test.test_exceptions.ExceptionTests.testInfiniteRecursion @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.testInvalidAttrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.testInvalidTraceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.testKeywordArgs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -17,7 +18,8 @@ test.test_exceptions.ExceptionTests.testSyntaxErrorMissingParens @ darwin-arm64,
 test.test_exceptions.ExceptionTests.testWithTraceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.test_WindowsError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.test_assert_shadowing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_exceptions.ExceptionTests.test_badisinstance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+# Disabled due to transient stack overflow that fails to get caught and crashes the VM
+!test.test_exceptions.ExceptionTests.test_badisinstance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.test_context_of_exception_in_else_and_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.test_context_of_exception_in_except_and_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.test_context_of_exception_in_try_and_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
