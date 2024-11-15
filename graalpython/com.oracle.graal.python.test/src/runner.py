@@ -491,6 +491,8 @@ def write_tags(test_file: 'TestFile', tags: typing.Iterable['Tag']):
     if not tag_file:
         log(f"WARNING: no tag directory for test file {test_file}")
         return
+    if not tags:
+        tag_file.unlink(missing_ok=True)
     with open(tag_file, 'w') as f:
         for tag in sorted(tags, key=lambda t: t.test_id.test_name):
             f.write(f'{tag}\n')
