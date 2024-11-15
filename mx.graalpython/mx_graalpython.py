@@ -680,6 +680,8 @@ class GraalPythonTags(object):
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_posix = 'python-unittest-posix'
     unittest_standalone = 'python-unittest-standalone'
+    unittest_gradle_plugin = 'python-unittest-gradle-plugin'
+    unittest_maven_plugin = 'python-unittest-maven-plugin'
     ginstall = 'python-ginstall'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
@@ -764,7 +766,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         python_home = os.path.abspath(glob.glob(python_home)[0])
         mx.log("Using GraalPy standalone from GRAALPY_HOME: " + python_home)
         # Try to verify that we're getting what we expect:
-        has_java = os.path.exists(os.path.join(python_home, 'jvm', 'bin', 'java'))
+        has_java = os.path.exists(os.path.join(python_home, 'jvm', 'bin', 'java.exe' if WIN32 else 'java'))
         if has_java != (standalone_type == 'jvm'):
             mx.abort(f"GRAALPY_HOME is not compatible with the requested distribution type.\n"
                      f"jvm/bin/java exists?: {has_java}, requested type={standalone_type}.")
@@ -855,6 +857,48 @@ def graalpy_standalone_native_enterprise():
 
 
 def graalvm_jdk():
+    jdk_version = mx.get_jdk().version
+
+    # Check if GRAAL_JDK_HOME points to some compatible pre-built gvm
+    graal_jdk_home = os.environ.get("GRAAL_JDK_HOME", None)
+    if graal_jdk_home and "*" in graal_jdk_home:
+        graal_jdk_home = os.path.abspath(glob.glob(graal_jdk_home)[0])
+        if sys.platform == "darwin":
+            graal_jdk_home = os.path.join(graal_jdk_home, 'Contents', 'Home')
+        mx.log("Using GraalPy standalone from GRAAL_JDK_HOME: " + graal_jdk_home)
+
+        # Try to verify that we're getting what we expect:
+        has_java = os.path.exists(os.path.join(graal_jdk_home, 'bin', 'java.exe' if WIN32 else 'java'))
+        if not has_java:
+            mx.abort(f"GRAAL_JDK_HOME does not contain java executable.")
+
+        release = os.path.join(graal_jdk_home, 'release')
+        if not os.path.exists(release):
+            mx.abort(f"No 'release' file in GRAAL_JDK_HOME.")
+
+        java_version = None
+        implementor = None
+        with open(release, 'r') as f:
+            while not (java_version and implementor):
+                line = f.readline()
+                if 'JAVA_VERSION=' in line:
+                    java_version = line
+                if 'IMPLEMENTOR=' in line:
+                    implementor = line
+
+        if not java_version:
+            mx.abort(f"Could not check Java version in GRAAL_JDK_HOME 'release' file.")
+        actual_jdk_version = mx.VersionSpec(java_version.strip('JAVA_VERSION=').strip(' "\n\r'))
+        if actual_jdk_version != jdk_version:
+            mx.abort(f"GRAAL_JDK_HOME is not compatible with the requested JDK version.\n"
+             f"actual version: '{actual_jdk_version}', version string: {java_version}, requested version: {jdk_version}.")
+
+        if not implementor:
+            mx.abort(f"Could not check implementor in GRAAL_JDK_HOME 'release' file.")
+        if 'GraalVM' not in implementor:
+            mx.abort(f"GRAAL_JDK_HOME 'releases' has an unexpected implementor: '{implementor}'.")
+        return graal_jdk_home
+
     jdk_major_version = mx.get_jdk().version.parts[0]
     mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
     if not DISABLE_REBUILD:
@@ -1379,12 +1423,7 @@ def graalpython_gate_runner(args, tasks):
             standalone_home = graalpy_standalone_home('jvm')
             mvn_repo_path, version, env = deploy_local_maven_repo()
 
-            # in order to run gradle we need a jdk <= 22
-            env['GRADLE_JAVA_HOME'] = env.get('JAVA_HOME')
-
             env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
-            env['ENABLE_GRADLE_PLUGIN_UNITTESTS'] = 'true'
-            env['ENABLE_MAVEN_PLUGIN_UNITTESTS'] = 'true'
             env['ENABLE_JBANG_INTEGRATION_UNITTESTS'] ='true'
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home
@@ -1394,14 +1433,6 @@ def graalpython_gate_runner(args, tasks):
                 f"{pathlib.Path(mvn_repo_path).as_uri()}/",
                 mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
             ])
-
-            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/mvnw/.mvn/wrapper/maven-wrapper.properties", ["distributionUrl"])
-            if "distributionUrl" in urls:
-                env["MAVEN_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
-
-            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/gradle/gradle-test-project/gradle/wrapper/gradle-wrapper.properties", ["distributionUrl"])
-            if "distributionUrl" in urls:
-                env["GRADLE_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
 
             env["org.graalvm.maven.downloader.version"] = version
             env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
@@ -1416,7 +1447,74 @@ def graalpython_gate_runner(args, tasks):
             mx.logv(f"running with os.environ extended with: {env=}")
             run_python_unittests(
                 os.path.join(standalone_home, 'bin', _graalpy_launcher()),
-                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone"],
+                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_jbang_integration.py",
+                       "graalpython/com.oracle.graal.python.test/src/tests/standalone/test_standalone.py"],
+                env=env,
+                parallel=3,
+            )
+
+    with Task('GraalPython gradle plugin tests', tasks, tags=[GraalPythonTags.unittest_gradle_plugin]) as task:
+        if task:
+            gvm_jdk = graalvm_jdk()
+            standalone_home = graalpy_standalone_home('jvm')
+            mvn_repo_path, version, env = deploy_local_maven_repo()
+
+            env['ENABLE_GRADLE_PLUGIN_UNITTESTS'] = 'true'
+            env['JAVA_HOME'] = gvm_jdk
+            env['PYTHON_STANDALONE_HOME'] = standalone_home
+
+            # setup maven downloader overrides
+            env['MAVEN_REPO_OVERRIDE'] = ",".join([
+                f"{pathlib.Path(mvn_repo_path).as_uri()}/",
+                mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
+            ])
+
+            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/gradle/gradle-test-project/gradle/wrapper/gradle-wrapper.properties", ["distributionUrl"])
+            if "distributionUrl" in urls:
+                env["GRADLE_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
+
+            env["org.graalvm.maven.downloader.version"] = version
+            env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
+
+            # run the test
+            mx.logv(f"running with os.environ extended with: {env=}")
+
+            run_python_unittests(
+                os.path.join(standalone_home, 'bin', _graalpy_launcher()),
+                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_gradle_plugin.py"],
+                env=env,
+                parallel=3,
+            )
+
+    with Task('GraalPython maven plugin tests', tasks, tags=[GraalPythonTags.unittest_maven_plugin]) as task:
+        if task:
+            gvm_jdk = graalvm_jdk()
+            standalone_home = graalpy_standalone_home('jvm')
+            mvn_repo_path, version, env = deploy_local_maven_repo()
+
+            env['ENABLE_MAVEN_PLUGIN_UNITTESTS'] = 'true'
+            env['JAVA_HOME'] = gvm_jdk
+            env['PYTHON_STANDALONE_HOME'] = standalone_home
+
+            # setup maven downloader overrides
+            env['MAVEN_REPO_OVERRIDE'] = ",".join([
+                f"{pathlib.Path(mvn_repo_path).as_uri()}/",
+                mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
+            ])
+
+            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/mvnw/.mvn/wrapper/maven-wrapper.properties", ["distributionUrl"])
+            if "distributionUrl" in urls:
+                env["MAVEN_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
+
+            env["org.graalvm.maven.downloader.version"] = version
+            env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
+
+            # run the test
+            mx.logv(f"running with os.environ extended with: {env=}")
+
+            run_python_unittests(
+                os.path.join(standalone_home, 'bin', _graalpy_launcher()),
+                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_maven_plugin.py"],
                 env=env,
                 parallel=3,
             )
