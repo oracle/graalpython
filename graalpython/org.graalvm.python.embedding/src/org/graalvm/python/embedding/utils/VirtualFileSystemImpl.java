@@ -74,6 +74,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.logging.ConsoleHandler;
@@ -586,6 +587,8 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     @Override
     public Path parsePath(URI uri) {
+        Objects.requireNonNull(uri);
+
         // similar as in c.o.t.polyglot.FileSystems.DeniedIOFileSystem
         if (uri.getScheme().equals("file")) {
             Path path = getDefaultFileSystem().getPath(uri);
@@ -600,6 +603,8 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     @Override
     public Path parsePath(String path) {
+        Objects.requireNonNull(path);
+
         // same as in c.o.t.polyglot.FileSystems.DeniedIOFileSystem
         Path p = Paths.get(path);
         finer("VFS.parsePath '%s' -> '%s'", path, p);
@@ -608,6 +613,9 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     @Override
     public void checkAccess(Path path, Set<? extends AccessMode> modes, LinkOption... linkOptions) throws IOException {
+        Objects.requireNonNull(path);
+        Objects.requireNonNull(modes);
+
         if (!pathIsInVfs(path)) {
             if (delegate != null) {
                 boolean passed = false;
@@ -639,6 +647,9 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     @Override
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
+        Objects.requireNonNull(dir);
+        Objects.requireNonNull(attrs);
+
         if (!pathIsInVfs(dir)) {
             if (delegate != null) {
                 boolean passed = false;
@@ -661,6 +672,8 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     @Override
     public void delete(Path path) throws IOException {
+        Objects.requireNonNull(path);
+
         if (!pathIsInVfs(path)) {
             if (delegate != null) {
                 boolean passed = false;
@@ -683,6 +696,10 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     @Override
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+        Objects.requireNonNull(path);
+        Objects.requireNonNull(options);
+        Objects.requireNonNull(attrs);
+
         if (!pathIsInVfs(path)) {
             if (delegate != null) {
                 boolean passed = false;
@@ -781,6 +798,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
+        Objects.requireNonNull(dir);
         if (!pathIsInVfs(dir)) {
             if (delegate != null) {
                 boolean passed = false;
@@ -795,6 +813,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                 throw new SecurityException(msg);
             }
         }
+        Objects.requireNonNull(filter);
         BaseEntry entry = getEntry(dir);
         if (entry instanceof FileEntry) {
             finer("VFS.newDirectoryStream not a directory %s", dir);
@@ -829,6 +848,8 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     @Override
     public Path toAbsolutePath(Path path) {
+        Objects.requireNonNull(path);
+
         boolean pathIsInVFS = pathIsInVfs(path);
         if (!pathIsInVFS) {
             if (delegate != null) {
@@ -856,6 +877,8 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     @Override
     public Path toRealPath(Path path, LinkOption... linkOptions) throws IOException {
+        Objects.requireNonNull(path);
+
         boolean pathIsInVFS = pathIsInVfs(path);
         if (!pathIsInVFS) {
             if (delegate != null) {
@@ -883,6 +906,8 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     @Override
     public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
+        Objects.requireNonNull(path);
+
         if (!pathIsInVfs(path)) {
             if (delegate != null) {
                 Map<String, Object> ret = delegate.readAttributes(path, attributes, options);

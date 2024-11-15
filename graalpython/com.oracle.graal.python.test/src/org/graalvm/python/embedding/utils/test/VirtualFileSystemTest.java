@@ -126,6 +126,8 @@ public class VirtualFileSystemTest {
     public void toRealPath() throws Exception {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> fs.toRealPath(null));
+
             // check regular resource dir
             assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")));
             // check regular resource file
@@ -148,6 +150,8 @@ public class VirtualFileSystemTest {
     public void toAbsolutePath() throws Exception {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> fs.toAbsolutePath(null));
+
             // check regular resource dir
             assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")));
             // check regular resource file
@@ -177,6 +181,14 @@ public class VirtualFileSystemTest {
         parsePath(VirtualFileSystemTest::parseURIPath);
 
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> {
+                fs.parsePath((URI) null);
+                return null;
+            });
+            checkException(NullPointerException.class, () -> {
+                fs.parsePath((String) null);
+                return null;
+            });
             checkException(UnsupportedOperationException.class, () -> fs.parsePath(URI.create("http://testvfs.org")), "only file uri is supported");
         }
     }
@@ -225,6 +237,15 @@ public class VirtualFileSystemTest {
     public void checkAccess() throws IOException {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> {
+                fs.checkAccess(null, null);
+                return null;
+            });
+            checkException(NullPointerException.class, () -> {
+                fs.checkAccess(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), null);
+                return null;
+            });
+
             // check regular resource dir
             fs.checkAccess(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), Set.of(AccessMode.READ));
             // check regular resource file
@@ -272,8 +293,17 @@ public class VirtualFileSystemTest {
     public void createDirectory() throws IOException {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            Path path = Path.of(VFS_MOUNT_POINT + File.separator + "new-dir");
+            checkException(NullPointerException.class, () -> {
+                fs.createDirectory(null);
+                return null;
+            });
+            checkException(NullPointerException.class, () -> {
+                fs.createDirectory(path, null);
+                return null;
+            });
             checkException(SecurityException.class, () -> {
-                fs.createDirectory(Path.of(VFS_MOUNT_POINT + File.separator + "new-dir"));
+                fs.createDirectory(path);
                 return null;
             }, "should not be able to create a directory in VFS");
         }
@@ -301,6 +331,10 @@ public class VirtualFileSystemTest {
     public void delete() throws Exception {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> {
+                fs.delete(null);
+                return null;
+            });
             checkDelete(fs, VFS_MOUNT_POINT + File.separator + "file1");
             checkDelete(fs, VFS_MOUNT_POINT + File.separator + "dir1");
             checkDelete(fs, VFS_MOUNT_POINT + File.separator + "extractme");
@@ -335,10 +369,17 @@ public class VirtualFileSystemTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void newByteChannel() throws IOException {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             Path path = Path.of(VFS_MOUNT_POINT + File.separator + "file1");
+
+            checkException(NullPointerException.class, () -> fs.newByteChannel(null, null, null));
+            checkException(NullPointerException.class, () -> fs.newByteChannel(null, null));
+            checkException(NullPointerException.class, () -> fs.newByteChannel(path, null));
+            checkException(NullPointerException.class, () -> fs.newByteChannel(path, Set.of(StandardOpenOption.READ), null));
+
             for (StandardOpenOption o : StandardOpenOption.values()) {
                 if (o == StandardOpenOption.READ) {
                     SeekableByteChannel bch = fs.newByteChannel(path, Set.of(o));
@@ -385,6 +426,9 @@ public class VirtualFileSystemTest {
     public void newDirectoryStream() throws Exception {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> fs.newDirectoryStream(null, null));
+            checkException(NullPointerException.class, () -> fs.newDirectoryStream(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), null));
+
             DirectoryStream<Path> ds = fs.newDirectoryStream(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), (p) -> true);
             Set<String> s = new HashSet<>();
             Iterator<Path> it = ds.iterator();
@@ -422,6 +466,8 @@ public class VirtualFileSystemTest {
     public void readAttributes() throws IOException {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> fs.readAttributes(null, "creationTime"));
+
             Map<String, Object> attrs = fs.readAttributes(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), "creationTime");
             assertEquals(FileTime.fromMillis(0), attrs.get("creationTime"));
 
@@ -475,12 +521,16 @@ public class VirtualFileSystemTest {
         }
     }
 
+    private static void checkException(Class<?> exType, Callable<Object> c) {
+        checkException(exType, c, null);
+    }
+    
     private static void checkException(Class<?> exType, Callable<Object> c, String msg) {
         boolean gotEx = false;
         try {
             c.call();
         } catch (Exception e) {
-            assertEquals(e.getClass(), exType);
+            assertEquals(exType, e.getClass());
             gotEx = true;
         }
         assertTrue(msg != null ? msg : "expected " + exType.getName(), gotEx);
