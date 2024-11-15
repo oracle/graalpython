@@ -1067,7 +1067,7 @@ def graalpytest(args):
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         python_args += gp_args
     runner_args.append(f'--subprocess-args={shlex.join(python_args)}')
-    cmd_args = [*python_args, _python_test_runner(), *runner_args]
+    cmd_args = [*python_args, _python_test_runner(), 'run', *runner_args]
     delete_bad_env_keys(env)
     if is_graalpy:
         pythonpath = [os.path.join(_dev_pythonhome(), 'lib-python', '3')]
@@ -1145,7 +1145,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     if use_pytest:
         args += ["-m", "pytest", "-v", "--assert=plain", "--tb=native"]
     else:
-        args += [_python_test_runner(), "--durations", "10", "-n", str(min(os.cpu_count(), parallel)), f"--subprocess-args={shlex.join(args)}"]
+        args += [_python_test_runner(), "run", "--durations", "10", "-n", str(min(os.cpu_count(), parallel)), f"--subprocess-args={shlex.join(args)}"]
 
     if runner_args:
         args += runner_args
@@ -1388,7 +1388,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
             env = extend_os_env(PYTHONHASHSEED='0')
-            test_args = [get_cpython(), _python_test_runner(), "-n", "6", "graalpython/com.oracle.graal.python.test/src/tests"]
+            test_args = [get_cpython(), _python_test_runner(), "run", "-n", "6", "graalpython/com.oracle.graal.python.test/src/tests"]
             mx.run(test_args, nonZeroIsFatal=True, env=env)
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:

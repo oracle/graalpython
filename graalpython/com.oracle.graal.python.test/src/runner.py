@@ -688,8 +688,6 @@ class SubprocessWorker:
         use_pipe = sys.platform != 'win32' and (not IS_GRAALPY or __graalpython__.posix_module_backend() == 'native')
         with tempfile.TemporaryDirectory(prefix='graalpytest-') as tmp_dir:
             tmp_dir = Path(tmp_dir)
-            env = os.environ.copy()
-            env['IN_PROCESS'] = '1'
 
             if use_pipe:
                 pipe, child_pipe = multiprocessing.Pipe()
@@ -709,6 +707,7 @@ class SubprocessWorker:
                         '-u',
                         *self.runner.subprocess_args,
                         __file__,
+                        'worker',
                         '--tests-file', str(tests_file.name),
                     ]
                     if use_pipe:
@@ -725,7 +724,6 @@ class SubprocessWorker:
                     popen_kwargs: dict = dict(
                         stdout=self.out_file,
                         stderr=self.out_file,
-                        env=env,
                     )
                     if use_pipe:
                         popen_kwargs.update(pass_fds=[child_pipe.fileno()])
@@ -1143,14 +1141,7 @@ class TopLevelFunctionLoader(unittest.loader.TestLoader):
         return test_suite
 
 
-def in_process():
-    parser = argparse.ArgumentParser()
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--pipe-fd', type=int)
-    group.add_argument('--result-file', type=Path)
-    parser.add_argument('--tests-file', type=Path, required=True)
-    parser.add_argument('--failfast', action='store_true')
-    args = parser.parse_args()
+def main_worker(args):
     tests = []
     with open(args.tests_file) as f:
         for line in f:
@@ -1184,50 +1175,86 @@ def get_bool_env(name: str):
 
 def main():
     is_mx_graalpytest = get_bool_env('MX_GRAALPYTEST')
-    parser = argparse.ArgumentParser(
-        prog=('mx graalpytest' if is_mx_graalpytest else None),
-        formatter_class=argparse.RawTextHelpFormatter,
-    )
+    parent_parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
+    subparsers = parent_parser.add_subparsers()
+
+    # run command declaration
+    run_parser = subparsers.add_parser('run', prog=('mx graalpytest' if is_mx_graalpytest else None))
+    run_parser.set_defaults(main=main_run)
     if is_mx_graalpytest:
         # mx graalpytest takes this option, but it forwards --help here, so pretend we take it
-        parser.add_argument('--python', help="Run tests with given Python binary")
-        parser.add_argument('--svm', action='store_true', help="Use SVM standalone")
-    parser.add_argument('-t', '--tagged', action='store_true',
-                        help="Interpret test file names relative to tagged test directory")
-    parser.add_argument('-n', '--num-processes', type=int,
-                        help="Run tests in N subprocess workers. Adds crash recovery, output capture and timeout handling")
-    parser.add_argument('--separate-workers', action='store_true',
-                        help="Create a new worker process for each test file (when -n is specified). Default for tagged unit tests")
-    parser.add_argument('--ignore', type=Path, action='append', default=[],
-                        help="Ignore path during collection (multi-allowed)")
-    parser.add_argument('--no-excludes', action='store_true',
-                        help="Don't apply configuration exclusions")
-    parser.add_argument('-f', '--failfast', action='store_true',
-                        help="Exit immediately after the first failure")
-    parser.add_argument('--all', action='store_true',
-                        help="Run tests that are normally not enabled due to tags. Implies --tagged")
-    parser.add_argument('--retag', dest='retag_mode', action='store_const', const='replace',
-                        help="Run tests and regenerate tags based on the results. Implies --all, --tagged and -n")
-    parser.add_argument('--retag-append', dest='retag_mode', action='store_const', const='append',
-                        help="Like --retag, but doesn't remove existing tags. Useful for regtagging subsets of tests")
-    parser.add_argument('--collect-only', action='store_true',
-                        help="Print found tests IDs without running tests")
-    parser.add_argument('--continue-on-collection-errors', action='store_true',
-                        help="Collection errors are not fatal")
-    parser.add_argument('--durations', type=int, default=0,
-                        help="Show durations of N slowest tests (-1 to show all)")
-    parser.add_argument('--mx-report',
-                        help="Produce a json report file in format expected by mx_gate.make_test_report")
-    parser.add_argument('--untag-unmatched', action='store_true',
-                        help="Remove tests that were not collected from tags. Useful for pruning removed tests")
-    parser.add_argument('--timeout-factor', type=float, default=1.0,
-                        help="Multiply all timeouts by this number")
-    parser.add_argument('--exit-success-on-failures', action='store_true',
-                        help=dedent("""\
-                        Exit successfully regardless of the test results. Useful to distinguish test failures
-                        from runner crashes in jobs like retagger or coverage where failures are expected.
-                        """))
-    parser.add_argument(
+        run_parser.add_argument('--python', help="Run tests with given Python binary")
+        run_parser.add_argument('--svm', action='store_true', help="Use SVM standalone")
+    run_parser.add_argument(
+        '-t', '--tagged', action='store_true',
+        help="Interpret test file names relative to tagged test directory",
+    )
+    run_parser.add_argument(
+        '-n', '--num-processes', type=int,
+        help="Run tests in N subprocess workers. Adds crash recovery, output capture and timeout handling",
+    )
+    run_parser.add_argument(
+        '--separate-workers', action='store_true',
+        help="Create a new worker process for each test file (when -n is specified). Default for tagged unit tests",
+    )
+    run_parser.add_argument(
+        '--ignore', type=Path, action='append', default=[],
+        help="Ignore path during collection (multi-allowed)",
+    )
+    run_parser.add_argument(
+        '--no-excludes', action='store_true',
+        help="Don't apply configuration exclusions",
+    )
+    run_parser.add_argument(
+        '-f', '--failfast', action='store_true',
+        help="Exit immediately after the first failure",
+    )
+    run_parser.add_argument(
+        '--all', action='store_true',
+        help="Run tests that are normally not enabled due to tags. Implies --tagged",
+    )
+    run_parser.add_argument(
+        '--retag', dest='retag_mode', action='store_const', const='replace',
+        help="Run tests and regenerate tags based on the results. Implies --all, --tagged and -n",
+    )
+    run_parser.add_argument(
+        '--retag-append', dest='retag_mode', action='store_const', const='append',
+        help="Like --retag, but doesn't remove existing tags. Useful for regtagging subsets of tests",
+    )
+    run_parser.add_argument(
+        '--collect-only', action='store_true',
+        help="Print found tests IDs without running tests",
+    )
+    run_parser.add_argument(
+        '--continue-on-collection-errors', action='store_true',
+        help="Collection errors are not fatal",
+    )
+    run_parser.add_argument(
+        '--durations', type=int, default=0,
+        help="Show durations of N slowest tests (-1 to show all)",
+    )
+    run_parser.add_argument(
+        '--mx-report',
+        help="Produce a json report file in format expected by mx_gate.make_test_report",
+    )
+    run_parser.add_argument(
+        '--untag-unmatched', action='store_true',
+        help="Remove tests that were not collected from tags. Useful for pruning removed tests",
+    )
+    run_parser.add_argument(
+        '--timeout-factor', type=float, default=1.0,
+        help="Multiply all timeouts by this number",
+    )
+    run_parser.add_argument(
+        '--exit-success-on-failures', action='store_true',
+        help=dedent(
+            """\
+            Exit successfully regardless of the test results. Useful to distinguish test failures
+            from runner crashes in jobs like retagger or coverage where failures are expected.
+            """
+        ),
+    )
+    run_parser.add_argument(
         '--subprocess-args',
         type=shlex.split,
         default=[
@@ -1235,22 +1262,40 @@ def main():
             "--experimental-options=true",
             "--python.EnableDebuggingBuiltins",
         ] if IS_GRAALPY else [],
-        help="Interpreter arguments to pass for subprocess invocation (when using -n)")
-    parser.add_argument('tests', nargs='+', type=TestSpecifier.from_str,
-                        help=dedent("""\
-                        List of test specifiers. A specifier can be:
-                        - A test file name. It will be looked up in our unittests or, if you pass --tagged, in tagged tests. Example: test_int
-                        - A test file path. Example: graalpython/lib-python/3/test/test_int.py. Note you do not need to pass --tagged to refer to a tagged test by path
-                        - A test directory name or path. Example: cpyext
-                        - A test file name/path with a selector for a specific test. Example: test_int::tests.test_int.ToBytesTests.test_WrongTypes
-                        - A test file name/path with a selector for multiple tests. Example: test_int::tests.test_int.ToBytesTests
-                        - You can use wildcards in tests paths and selectors. Example: 'test_int::test_create*'
+        help="Interpreter arguments to pass for subprocess invocation (when using -n)",
+    )
+    run_parser.add_argument(
+        'tests', nargs='+', type=TestSpecifier.from_str,
+        help=dedent(
+            """\
+            List of test specifiers. A specifier can be:
+            - A test file name. It will be looked up in our unittests or, if you pass --tagged, in tagged tests. Example: test_int
+            - A test file path. Example: graalpython/lib-python/3/test/test_int.py. Note you do not need to pass --tagged to refer to a tagged test by path
+            - A test directory name or path. Example: cpyext
+            - A test file name/path with a selector for a specific test. Example: test_int::tests.test_int.ToBytesTests.test_WrongTypes
+            - A test file name/path with a selector for multiple tests. Example: test_int::tests.test_int.ToBytesTests
+            - You can use wildcards in tests paths and selectors. Example: 'test_int::test_create*'
 
-                        Tip: the test IDs printed in test results directly work as specifiers here.
-                        """))
+            Tip: the test IDs printed in test results directly work as specifiers here.
+            """
+        ),
+    )
 
-    args = parser.parse_args()
+    # worker command declaration
+    worker_parser = subparsers.add_parser('worker')
+    worker_parser.set_defaults(main=main_worker)
+    group = worker_parser.add_mutually_exclusive_group()
+    group.add_argument('--pipe-fd', type=int)
+    group.add_argument('--result-file', type=Path)
+    worker_parser.add_argument('--tests-file', type=Path, required=True)
+    worker_parser.add_argument('--failfast', action='store_true')
 
+    # run the appropriate command
+    args = parent_parser.parse_args()
+    args.main(args)
+
+
+def main_run(args):
     if args.retag_mode:
         args.all = True
         args.tagged = True
@@ -1345,7 +1390,4 @@ def main():
 
 
 if __name__ == '__main__':
-    if os.environ.get('IN_PROCESS') == '1':
-        in_process()
-    else:
-        main()
+    main()
