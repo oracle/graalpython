@@ -66,6 +66,9 @@ test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate2_with
 test.test_logging.ConfigDictTest.test_custom_formatter_class_with_validate3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.ConfigDictTest.test_custom_formatter_function_with_validate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.ConfigDictTest.test_invalid_type_raises @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_listen_config_10_ok @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_listen_config_1_ok @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_logging.ConfigDictTest.test_listen_verify @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_logging.ConfigDictTest.test_namedtuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.ConfigDictTest.test_out_of_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.ConfigDictTest.test_out_of_order_with_dollar_style @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

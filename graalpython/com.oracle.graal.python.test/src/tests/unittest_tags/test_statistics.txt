@@ -242,6 +242,7 @@ test.test_statistics.TestNormalDistPython.test_equality @ darwin-arm64,darwin-x8
 test.test_statistics.TestNormalDistPython.test_hashability @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistPython.test_instantiation_and_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistPython.test_inv_cdf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_overlap @ darwin-arm64,linux-aarch64
 test.test_statistics.TestNormalDistPython.test_pdf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistPython.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_statistics.TestNormalDistPython.test_properties @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

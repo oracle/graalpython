@@ -1,4 +1,5 @@
 DocTestCase.test.test_weakref.__test__.libreftest @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_weakref.FinalizeTestCase.test_all_freed @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_weakref.FinalizeTestCase.test_arg_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.FinalizeTestCase.test_finalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_make_weak_keyed_dict_from_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -19,6 +20,7 @@ test.test_weakref.MappingTestCase.test_weak_keyed_dict_popitem @ darwin-arm64,da
 test.test_weakref.MappingTestCase.test_weak_keyed_dict_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_weak_keyed_dict_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_weak_keyed_iters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_weakref.MappingTestCase.test_weak_keyed_len_cycles @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_weak_valued_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_weak_valued_dict_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.MappingTestCase.test_weak_valued_dict_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -34,6 +36,7 @@ test.test_weakref.ReferencesTestCase.test_callback_reachable_one_way @ darwin-ar
 test.test_weakref.ReferencesTestCase.test_callbacks_on_callback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_callbacks_protected @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_constructor_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_weakref.ReferencesTestCase.test_equality @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_hashing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_weakref.ReferencesTestCase.test_multiple_callbacks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

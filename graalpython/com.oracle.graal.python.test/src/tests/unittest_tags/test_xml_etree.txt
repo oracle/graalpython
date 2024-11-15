@@ -21,6 +21,7 @@ test.test_xml_etree.BasicElementTest.test___deepcopy__ @ darwin-arm64,darwin-x86
 test.test_xml_etree.BasicElementTest.test___init__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_xml_etree.BasicElementTest.test_augmentation_type_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_xml_etree.BasicElementTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_xml_etree.BasicElementTest.test_cyclic_gc @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_xml_etree.BasicElementTest.test_get_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_xml_etree.BasicElementTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_xml_etree.BasicElementTest.test_pickle_issue18997 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

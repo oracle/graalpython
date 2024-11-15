@@ -98,6 +98,7 @@ test.test_re.ReTests.test_other_escapes @ darwin-arm64,darwin-x86_64,linux-aarch
 test.test_re.ReTests.test_pattern_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_pattern_compare_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_possessive_quantifiers @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_possible_set_operations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_qualified_re_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_qualified_re_sub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -115,10 +116,12 @@ test.test_re.ReTests.test_re_groupref_overflow @ darwin-arm64,darwin-x86_64,linu
 test.test_re.ReTests.test_re_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_re_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_re_subn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_regression_gh94675 @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_repeat_minmax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_repeat_minmax_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_scanner @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_scoped_flags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_search_anchor_at_beginning @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_search_coverage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_search_dot_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_search_star_plus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -134,6 +137,7 @@ test.test_re.ReTests.test_symbolic_groups @ darwin-arm64,darwin-x86_64,linux-aar
 test.test_re.ReTests.test_symbolic_groups_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_symbolic_refs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_symbolic_refs_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_re.ReTests.test_template_function_and_flag_is_deprecated @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_unlimited_zero_width_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_re.ReTests.test_zerowidth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

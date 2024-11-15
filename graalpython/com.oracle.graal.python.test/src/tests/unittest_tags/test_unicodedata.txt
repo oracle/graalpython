@@ -1,5 +1,6 @@
 test.test_unicodedata.NormalizationTest.test_bug_834676 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicodedata.NormalizationTest.test_edge_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicodedata.NormalizationTest.test_normalization @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_unicodedata.UnicodeFunctionsTest.test_category @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicodedata.UnicodeFunctionsTest.test_combining @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unicodedata.UnicodeFunctionsTest.test_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

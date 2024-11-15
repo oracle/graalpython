@@ -871,6 +871,7 @@ test.test_importlib.test_locks.Frozen_ModuleLockAsRLockTests.test_thread_leak @ 
 test.test_importlib.test_locks.Frozen_ModuleLockAsRLockTests.test_weakref_exists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_locks.Source_DeadlockAvoidanceTests.test_deadlock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_locks.Source_DeadlockAvoidanceTests.test_no_deadlock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_importlib.test_locks.Source_LifetimeTests.test_all_locks @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_importlib.test_locks.Source_LifetimeTests.test_lock_lifetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_locks.Source_ModuleLockAsRLockTests.test_acquire_contended @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_locks.Source_ModuleLockAsRLockTests.test_acquire_destroy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -976,6 +977,7 @@ test.test_importlib.test_namespace_pkgs.SingleNestedZipNamespacePackage.test_can
 test.test_importlib.test_namespace_pkgs.SingleNestedZipNamespacePackage.test_simple_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_namespace_pkgs.SingleZipNamespacePackage.test_cant_import_other @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_namespace_pkgs.SingleZipNamespacePackage.test_simple_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_importlib.test_namespace_pkgs.ZipWithMissingDirectory.test_missing_directory @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_importlib.test_namespace_pkgs.ZipWithMissingDirectory.test_present_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_open.CommonBinaryTests.test_extant_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_open.CommonBinaryTests.test_importing_module_as_side_effect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -17,6 +17,7 @@ test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_06 @ darwin-
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_stopiteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_asend_01 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_asend_02 @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_asend_03 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_01 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_02 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

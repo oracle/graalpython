@@ -93,6 +93,7 @@ test.test_functools.TestPartialC.test_no_side_effects @ darwin-arm64,darwin-x86_
 test.test_functools.TestPartialC.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialC.test_positional @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialC.test_protection_of_callers_dict_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_functools.TestPartialC.test_recursive_pickle @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialC.test_recursive_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialC.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialC.test_setstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -118,6 +119,7 @@ test.test_functools.TestPartialCSubclass.test_no_side_effects @ darwin-arm64,dar
 test.test_functools.TestPartialCSubclass.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialCSubclass.test_positional @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialCSubclass.test_protection_of_callers_dict_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_functools.TestPartialCSubclass.test_recursive_pickle @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialCSubclass.test_recursive_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialCSubclass.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialCSubclass.test_setstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -152,6 +154,7 @@ test.test_functools.TestPartialPy.test_no_side_effects @ darwin-arm64,darwin-x86
 test.test_functools.TestPartialPy.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPy.test_positional @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPy.test_protection_of_callers_dict_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_functools.TestPartialPy.test_recursive_pickle @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPy.test_recursive_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPy.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPy.test_setstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -175,6 +178,7 @@ test.test_functools.TestPartialPySubclass.test_no_side_effects @ darwin-arm64,da
 test.test_functools.TestPartialPySubclass.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPySubclass.test_positional @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPySubclass.test_protection_of_callers_dict_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_functools.TestPartialPySubclass.test_recursive_pickle @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPySubclass.test_recursive_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPySubclass.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_functools.TestPartialPySubclass.test_setstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

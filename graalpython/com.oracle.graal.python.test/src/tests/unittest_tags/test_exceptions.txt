@@ -6,6 +6,7 @@ test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_for_same_name 
 test.test_exceptions.ExceptionTests.testAttributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.testChainingAttrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.testChainingDescriptors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exceptions.ExceptionTests.testInfiniteRecursion @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.testInvalidAttrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.testInvalidTraceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_exceptions.ExceptionTests.testKeywordArgs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

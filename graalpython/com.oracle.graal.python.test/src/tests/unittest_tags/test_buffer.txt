@@ -16,6 +16,7 @@ test.test_buffer.TestBufferProtocol.test_memoryview_tolist @ darwin-arm64,darwin
 test.test_buffer.TestBufferProtocol.test_ndarray_cmp_contig @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_buffer.TestBufferProtocol.test_ndarray_fortran @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_buffer.TestBufferProtocol.test_ndarray_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_index_getitem_multidim @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_buffer.TestBufferProtocol.test_ndarray_index_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_buffer.TestBufferProtocol.test_ndarray_index_null_strides @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_buffer.TestBufferProtocol.test_ndarray_index_scalar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -24,6 +25,9 @@ test.test_buffer.TestBufferProtocol.test_ndarray_memoryview_from_buffer @ darwin
 test.test_buffer.TestBufferProtocol.test_ndarray_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_buffer.TestBufferProtocol.test_ndarray_random_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_buffer.TestBufferProtocol.test_ndarray_re_export @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_slice_assign_multidim @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_slice_multidim @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_slice_redundant_suboffsets @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_buffer.TestBufferProtocol.test_ndarray_slice_zero_shape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_buffer.TestBufferProtocol.test_ndarray_tolist_null_strides @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_buffer.TestBufferProtocol.test_ndarray_zero_shape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

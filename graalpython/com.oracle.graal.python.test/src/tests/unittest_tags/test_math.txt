@@ -1,3 +1,4 @@
+DocFileCase.ieee754_txt @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_math.IsCloseTests.test_asymmetry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_math.IsCloseTests.test_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_math.IsCloseTests.test_eight_decimal_places @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

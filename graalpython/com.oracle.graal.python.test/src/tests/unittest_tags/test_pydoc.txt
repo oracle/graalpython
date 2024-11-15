@@ -44,6 +44,7 @@ test.test_pydoc.TestDescriptions.test_bound_python_method @ darwin-arm64,darwin-
 test.test_pydoc.TestDescriptions.test_builtin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pydoc.TestDescriptions.test_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pydoc.TestDescriptions.test_custom_data_descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_custom_non_data_descriptor @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_pydoc.TestDescriptions.test_dict_attr_descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pydoc.TestDescriptions.test_field_order_for_named_tuples @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pydoc.TestDescriptions.test_generic_alias @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -58,6 +59,7 @@ test.test_pydoc.TestDescriptions.test_special_form @ darwin-arm64,darwin-x86_64,
 test.test_pydoc.TestDescriptions.test_staticmethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pydoc.TestDescriptions.test_structseq_member_descriptor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pydoc.TestDescriptions.test_typing_pydoc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.TestDescriptions.test_unbound_builtin_method @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_pydoc.TestDescriptions.test_unbound_python_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pydoc.TestHelper.test_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pydoc.TestInternalUtilities.test_sys_path_adjustment_adds_missing_curdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

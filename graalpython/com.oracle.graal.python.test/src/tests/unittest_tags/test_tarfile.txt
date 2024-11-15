@@ -145,6 +145,10 @@ test.test_tarfile.GNUReadTest.test_header_offset @ darwin-arm64,darwin-x86_64,li
 test.test_tarfile.GNUReadTest.test_longname_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.GNUReadTest.test_read_longlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.GNUReadTest.test_read_longname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tarfile.GNUReadTest.test_sparse_file_00 @ darwin-arm64
+test.test_tarfile.GNUReadTest.test_sparse_file_01 @ darwin-arm64
+test.test_tarfile.GNUReadTest.test_sparse_file_10 @ darwin-arm64
+test.test_tarfile.GNUReadTest.test_sparse_file_old @ darwin-arm64
 test.test_tarfile.GNUReadTest.test_truncated_longname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.GNUUnicodeTest.test_bad_pax_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.GNUUnicodeTest.test_iso8859_1_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -163,6 +167,7 @@ test.test_tarfile.GNUWriteTest.test_longnamelink_1023 @ darwin-arm64,darwin-x86_
 test.test_tarfile.GNUWriteTest.test_longnamelink_1024 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.GNUWriteTest.test_longnamelink_1025 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.GzipAppendTest.test_append_compressed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tarfile.GzipBrokenHeaderCorrectException.runTest @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_tarfile.GzipCreateTest.test_create @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.GzipCreateTest.test_create_existing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tarfile.GzipCreateTest.test_create_existing_taropen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,0 +1,9 @@
+test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_annotations @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolink_dotted_methods @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolinking @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_get_css @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_invalid_get_response @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_lambda @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_server_title_escape @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_system_methods @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_valid_get_response @ darwin-arm64,linux-aarch64,linux-x86_64

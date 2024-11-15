@@ -1,4 +1,5 @@
 test.test_module.ModuleTests.test_annotations_are_created_correctly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_module.ModuleTests.test_annotations_getset_raises @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_ascii_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_descriptor_errors_propagate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_dont_clear_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -24,7 +25,10 @@ test.test_module.ModuleTests.test_module_repr_with_name @ darwin-arm64,darwin-x8
 test.test_module.ModuleTests.test_module_repr_with_name_and_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_no_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_reinit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_module.ModuleTests.test_repeated_attribute_pops @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_setting_annotations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_module.ModuleTests.test_subclass_with_slots @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_unicode_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_uninitialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_module.ModuleTests.test_uninitialized_missing_getattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_module.ModuleTests.test_weakref @ darwin-arm64,linux-aarch64,linux-x86_64

@@ -38,6 +38,7 @@ test.test_list.ListTest.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linu
 test.test_list.ListTest.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_repr_deep @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_repr_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_reverse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_list.ListTest.test_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

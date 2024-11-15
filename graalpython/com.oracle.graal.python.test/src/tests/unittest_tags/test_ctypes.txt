@@ -79,6 +79,7 @@ ctypes.test.test_cast.Test.test_p2a_objects @ darwin-arm64,darwin-x86_64,linux-a
 ctypes.test.test_cast.Test.test_wchar_p @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_delattr.TestCase.test_chararray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_delattr.TestCase.test_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+ctypes.test.test_delattr.TestCase.test_struct @ darwin-arm64,linux-aarch64,linux-x86_64
 ctypes.test.test_find.FindLibraryLinux.test_find_library_with_gcc @ darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_find.FindLibraryLinux.test_find_library_with_ld @ darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_find.FindLibraryLinux.test_find_on_libpath @ darwin-x86_64,linux-aarch64,linux-x86_64
@@ -100,6 +101,7 @@ ctypes.test.test_functions.FunctionTestCase.test_doubleresult @ darwin-arm64,dar
 ctypes.test.test_functions.FunctionTestCase.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_functions.FunctionTestCase.test_floatresult @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_functions.FunctionTestCase.test_intresult @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+ctypes.test.test_functions.FunctionTestCase.test_longdoubleresult @ darwin-arm64
 ctypes.test.test_functions.FunctionTestCase.test_longlong_callbacks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_functions.FunctionTestCase.test_longlongresult @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_functions.FunctionTestCase.test_mro @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -188,6 +190,7 @@ ctypes.test.test_prototypes.CharPointersTestCase.test_c_void_p_arg_with_c_wchar_
 ctypes.test.test_prototypes.WCharPointersTestCase.test_POINTER_c_wchar_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_prototypes.WCharPointersTestCase.test_c_wchar_p_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_python_api.PythonAPITestCase.test_PyBytes_FromStringAndSize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+ctypes.test.test_python_api.PythonAPITestCase.test_PyOS_snprintf @ linux-aarch64,linux-x86_64
 ctypes.test.test_returnfuncptrs.ReturnFuncPtrTestCase.test_from_dll @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_returnfuncptrs.ReturnFuncPtrTestCase.test_from_dll_refcount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_simplesubclasses.Test.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

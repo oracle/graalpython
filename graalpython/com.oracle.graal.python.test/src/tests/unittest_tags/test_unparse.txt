@@ -1,4 +1,5 @@
 test.test_unparse.CosmeticTestCase.test_class_bases_and_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.CosmeticTestCase.test_docstrings @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_unparse.CosmeticTestCase.test_docstrings_negative_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unparse.CosmeticTestCase.test_fstrings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_unparse.CosmeticTestCase.test_lambda_parameters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

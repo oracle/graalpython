@@ -8,6 +8,7 @@ test.test_pprint.QueryTestCase.test_compact_width @ darwin-arm64,darwin-x86_64,l
 test.test_pprint.QueryTestCase.test_container_repr_override_called @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pprint.QueryTestCase.test_counter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pprint.QueryTestCase.test_cyclic_dataclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pprint.QueryTestCase.test_dataclass_no_repr @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_pprint.QueryTestCase.test_dataclass_with_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pprint.QueryTestCase.test_default_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pprint.QueryTestCase.test_depth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

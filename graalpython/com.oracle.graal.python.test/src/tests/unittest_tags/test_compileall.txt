@@ -25,6 +25,8 @@ test.test_compileall.CommandLineTestsNoSourceEpoch.test_recursion_limit @ darwin
 test.test_compileall.CommandLineTestsNoSourceEpoch.test_regexp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compileall.CommandLineTestsNoSourceEpoch.test_silent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compileall.CommandLineTestsNoSourceEpoch.test_symlink_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compileall.CommandLineTestsNoSourceEpoch.test_workers @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_compileall.CommandLineTestsNoSourceEpoch.test_workers_available_cores @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_compileall.CommandLineTestsWithSourceEpoch.test_compiles_as_much_as_possible @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compileall.CommandLineTestsWithSourceEpoch.test_d_compile_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compileall.CommandLineTestsWithSourceEpoch.test_d_runtime_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -52,6 +54,8 @@ test.test_compileall.CommandLineTestsWithSourceEpoch.test_recursion_limit @ darw
 test.test_compileall.CommandLineTestsWithSourceEpoch.test_regexp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compileall.CommandLineTestsWithSourceEpoch.test_silent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compileall.CommandLineTestsWithSourceEpoch.test_symlink_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_compileall.CommandLineTestsWithSourceEpoch.test_workers_available_cores @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_compileall.CompileallTestsWithSourceEpoch.test_compile_dir_maxlevels @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compileall.CompileallTestsWithSourceEpoch.test_compile_dir_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_compileall.CompileallTestsWithSourceEpoch.test_compile_dir_pathlike_prependdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

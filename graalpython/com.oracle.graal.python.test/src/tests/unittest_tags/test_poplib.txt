@@ -44,9 +44,14 @@ test.test_poplib.TestPOP3_SSLClass.test_user @ darwin-arm64,darwin-x86_64,linux-
 test.test_poplib.TestPOP3_SSLClass.test_utf8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_poplib.TestPOP3_SSLClass.test_utf8_raises_if_unsupported @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_poplib.TestPOP3_TLSClass.test_apop_REDOS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_poplib.TestPOP3_TLSClass.test_apop_normal @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_poplib.TestPOP3_TLSClass.test_capa @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_poplib.TestPOP3_TLSClass.test_dele @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_poplib.TestPOP3_TLSClass.test_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_poplib.TestPOP3_TLSClass.test_getwelcome @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_poplib.TestPOP3_TLSClass.test_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_poplib.TestPOP3_TLSClass.test_noop @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_poplib.TestPOP3_TLSClass.test_pass_ @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_poplib.TestPOP3_TLSClass.test_quit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_poplib.TestPOP3_TLSClass.test_retr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_poplib.TestPOP3_TLSClass.test_rpop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -8,9 +8,12 @@ test.test_mmap.MmapTests.test_context_manager_exception @ darwin-arm64,darwin-x8
 test.test_mmap.MmapTests.test_double_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_empty_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_entire_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mmap.MmapTests.test_find_does_not_access_beyond_buffer @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_find_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mmap.MmapTests.test_flush_return_value @ darwin-arm64
 test.test_mmap.MmapTests.test_length_0_large_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_length_0_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_mmap.MmapTests.test_offset @ linux-x86_64
 test.test_mmap.MmapTests.test_prot_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_read_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_read_invalid_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

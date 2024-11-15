@@ -10,6 +10,8 @@ test.test_imaplib.NewIMAPSSLTests.test_invalid_authentication @ darwin-arm64,dar
 test.test_imaplib.NewIMAPSSLTests.test_line_termination @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPSSLTests.test_linetoolong @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPSSLTests.test_login @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_bytes @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_plain_text @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPSSLTests.test_logout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPSSLTests.test_lsub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPSSLTests.test_search_disallows_charset_in_utf8_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -17,6 +19,7 @@ test.test_imaplib.NewIMAPSSLTests.test_simple_with_statement @ darwin-arm64,darw
 test.test_imaplib.NewIMAPSSLTests.test_ssl_verified @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPSSLTests.test_unselect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPSSLTests.test_valid_authentication_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_imaplib.NewIMAPSSLTests.test_valid_authentication_plain_text @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPSSLTests.test_with_statement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPSSLTests.test_with_statement_logout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPTests.test_EOF_without_complete_welcome_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -31,6 +34,8 @@ test.test_imaplib.NewIMAPTests.test_invalid_authentication @ darwin-arm64,darwin
 test.test_imaplib.NewIMAPTests.test_line_termination @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPTests.test_linetoolong @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPTests.test_login @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_imaplib.NewIMAPTests.test_login_cram_md5_bytes @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_imaplib.NewIMAPTests.test_login_cram_md5_plain_text @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPTests.test_logout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPTests.test_lsub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPTests.test_search_disallows_charset_in_utf8_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

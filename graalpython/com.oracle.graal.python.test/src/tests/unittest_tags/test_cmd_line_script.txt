@@ -10,7 +10,10 @@ test.test_cmd_line_script.CmdLineTest.test_hint_when_triying_to_import_a_py_file
 test.test_cmd_line_script.CmdLineTest.test_issue20500_exit_with_exception_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmd_line_script.CmdLineTest.test_issue20884 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmd_line_script.CmdLineTest.test_issue8202_dash_c_file_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_non_ascii @ darwin-arm64
 test.test_cmd_line_script.CmdLineTest.test_nonexisting_script @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmd_line_script.CmdLineTest.test_package_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmd_line_script.CmdLineTest.test_package_recursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmd_line_script.CmdLineTest.test_pep_409_verbiage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_script_as_dev_fd @ linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_zipfile_error @ darwin-arm64,linux-aarch64,linux-x86_64

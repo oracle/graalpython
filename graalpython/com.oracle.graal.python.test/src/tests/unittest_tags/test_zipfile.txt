@@ -267,6 +267,7 @@ test.test_zipfile.TestWithDirectory.test_write_dir @ darwin-arm64,darwin-x86_64,
 test.test_zipfile.TestWithDirectory.test_writestr_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.TestsWithMultipleOpens.test_different_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.TestsWithMultipleOpens.test_interleaved @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile.TestsWithMultipleOpens.test_many_opens @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_zipfile.TestsWithMultipleOpens.test_read_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.TestsWithMultipleOpens.test_read_after_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_zipfile.TestsWithMultipleOpens.test_same_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

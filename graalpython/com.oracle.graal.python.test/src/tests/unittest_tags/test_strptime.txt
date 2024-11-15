@@ -2,6 +2,9 @@ test.test_strptime.CacheTests.test_TimeRE_recreation_locale @ darwin-arm64,darwi
 test.test_strptime.CacheTests.test_new_localetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strptime.CacheTests.test_regex_cleanup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strptime.CacheTests.test_time_re_recreation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.CalculationTests.test_day_of_week_calculation @ darwin-arm64
+test.test_strptime.CalculationTests.test_gregorian_calculation @ darwin-arm64
+test.test_strptime.CalculationTests.test_julian_calculation @ darwin-arm64
 test.test_strptime.CalculationTests.test_week_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strptime.JulianTests.test_all_julian_days @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strptime.LocaleTime_Tests.test_am_pm @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -32,6 +35,7 @@ test.test_strptime.StrptimeTests.test_percent @ darwin-arm64,darwin-x86_64,linux
 test.test_strptime.StrptimeTests.test_second @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strptime.StrptimeTests.test_strptime_exception_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strptime.StrptimeTests.test_time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_timezone @ darwin-arm64
 test.test_strptime.StrptimeTests.test_unconverteddata @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strptime.StrptimeTests.test_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_strptime.TimeRETests.test_blankpattern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

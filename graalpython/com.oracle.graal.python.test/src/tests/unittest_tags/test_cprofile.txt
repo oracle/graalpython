@@ -1,4 +1,5 @@
 test.test_cprofile.CProfileTest.test_output_file_when_changing_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cprofile.CProfileTest.test_run_profile_as_module @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_cprofile.TestCommandLine.test_sort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_profile.ProfileTest.test_calling_conventions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_profile.ProfileTest.test_cprofile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
