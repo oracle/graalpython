@@ -84,8 +84,15 @@ static PyObject *
 _testmultiphase_StateAccessType_increment_count_clinic(StateAccessTypeObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"n", "twice", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "increment_count_clinic", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "increment_count_clinic",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[2];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 0;
     int n = 1;

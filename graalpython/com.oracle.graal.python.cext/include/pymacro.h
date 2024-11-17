@@ -20,11 +20,11 @@
 // MSVC makes static_assert a keyword in C11-17, contrary to the standards.
 //
 // In C++11 and C2x, static_assert is a keyword, redefining is undefined
-// behaviour. So only define if building as C (if __STDC_VERSION__ is defined),
-// not C++, and only for C11-17.
+// behaviour. So only define if building as C, not C++ (if __cplusplus is
+// not defined), and only for C11-17.
 #if !defined(static_assert) && (defined(__GNUC__) || defined(__clang__)) \
-     && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L \
-     && __STDC_VERSION__ <= 201710L
+     && !defined(__cplusplus) && defined(__STDC_VERSION__) \
+     && __STDC_VERSION__ >= 201112L && __STDC_VERSION__ <= 201710L
 #  define static_assert _Static_assert
 #endif
 
@@ -159,5 +159,10 @@
 // Prevent using an expression as a l-value.
 // For example, "int x; _Py_RVALUE(x) = 1;" fails with a compiler error.
 #define _Py_RVALUE(EXPR) ((void)0, (EXPR))
+
+// Return non-zero if the type is signed, return zero if it's unsigned.
+// Use "<= 0" rather than "< 0" to prevent the compiler warning:
+// "comparison of unsigned expression in '< 0' is always false".
+#define _Py_IS_TYPE_SIGNED(type) ((type)(-1) <= 0)
 
 #endif /* Py_PYMACRO_H */

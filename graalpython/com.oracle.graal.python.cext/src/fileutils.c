@@ -1096,6 +1096,16 @@ attributes_to_mode(DWORD attr)
     return m;
 }
 
+
+typedef union {
+    FILE_ID_128 id;
+    struct {
+        uint64_t st_ino;
+        uint64_t st_ino_high;
+    };
+} id_128_to_ino;
+
+
 void
 _Py_attribute_data_to_stat(BY_HANDLE_FILE_INFORMATION *info, ULONG reparse_tag,
                            struct _Py_stat_struct *result)

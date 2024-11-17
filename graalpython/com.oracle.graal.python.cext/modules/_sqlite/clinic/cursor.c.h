@@ -193,8 +193,15 @@ static PyObject *
 pysqlite_cursor_fetchmany(pysqlite_Cursor *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"size", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "fetchmany", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "fetchmany",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[1];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 0;
     int maxrows = self->arraysize;

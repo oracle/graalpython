@@ -106,8 +106,15 @@ static PyObject *
 _bz2_BZ2Decompressor_decompress(BZ2Decompressor *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"data", "max_length", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "decompress", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "decompress",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[2];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 1;
     Py_buffer data = {NULL, NULL};
