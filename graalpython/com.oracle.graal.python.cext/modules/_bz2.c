@@ -781,7 +781,6 @@ _bz2_exec(PyObject *module)
     if (state->bz2_compressor_type == NULL) {
         return -1;
     }
-
     if (PyModule_AddType(module, state->bz2_compressor_type) < 0) {
         return -1;
     }
@@ -791,7 +790,6 @@ _bz2_exec(PyObject *module)
     if (state->bz2_decompressor_type == NULL) {
         return -1;
     }
-
     if (PyModule_AddType(module, state->bz2_decompressor_type) < 0) {
         return -1;
     }

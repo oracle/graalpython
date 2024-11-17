@@ -276,11 +276,8 @@ PyObject_Print(PyObject *op, FILE *fp, int flags)
     }
     else {
         if (Py_REFCNT(op) <= 0) {
-            /* XXX(twouters) cast refcount to long until %zd is
-               universally available */
             Py_BEGIN_ALLOW_THREADS
-            fprintf(fp, "<refcnt %ld at %p>",
-                (long)Py_REFCNT(op), (void *)op);
+            fprintf(fp, "<refcnt %zd at %p>", Py_REFCNT(op), (void *)op);
             Py_END_ALLOW_THREADS
         }
         else {
@@ -373,9 +370,7 @@ _PyObject_Dump(PyObject* op)
 
     /* first, write fields which are the least likely to crash */
     fprintf(stderr, "object address  : %p\n", (void *)op);
-    /* XXX(twouters) cast refcount to long until %zd is
-       universally available */
-    fprintf(stderr, "object refcount : %ld\n", (long)Py_REFCNT(op));
+    fprintf(stderr, "object refcount : %zd\n", Py_REFCNT(op));
     fflush(stderr);
 
     PyTypeObject *type = Py_TYPE(op);
@@ -388,13 +383,12 @@ _PyObject_Dump(PyObject* op)
     fflush(stderr);
 
     PyGILState_STATE gil = PyGILState_Ensure();
-    PyObject *error_type, *error_value, *error_traceback;
-    PyErr_Fetch(&error_type, &error_value, &error_traceback);
+    PyObject *exc = PyErr_GetRaisedException();
 
     (void)PyObject_Print(op, stderr, 0);
     fflush(stderr);
 
-    PyErr_Restore(error_type, error_value, error_traceback);
+    PyErr_SetRaisedException(exc);
     PyGILState_Release(gil);
 
     fprintf(stderr, "\n");
@@ -878,25 +872,22 @@ set_attribute_error_context(PyObject* v, PyObject* name)
         return 0;
     }
     // Intercept AttributeError exceptions and augment them to offer suggestions later.
-    PyObject *type, *value, *traceback;
-    PyErr_Fetch(&type, &value, &traceback);
-    PyErr_NormalizeException(&type, &value, &traceback);
-    // Check if the normalized exception is indeed an AttributeError
-    if (!PyErr_GivenExceptionMatches(value, PyExc_AttributeError)) {
+    PyObject *exc = PyErr_GetRaisedException();
+    if (!PyErr_GivenExceptionMatches(exc, PyExc_AttributeError)) {
         goto restore;
     }
-    PyAttributeErrorObject* the_exc = (PyAttributeErrorObject*) value;
+    PyAttributeErrorObject* the_exc = (PyAttributeErrorObject*) exc;
     // Check if this exception was already augmented
     if (the_exc->name || the_exc->obj) {
         goto restore;
     }
     // Augment the exception with the name and object
-    if (PyObject_SetAttr(value, &_Py_ID(name), name) ||
-        PyObject_SetAttr(value, &_Py_ID(obj), v)) {
+    if (PyObject_SetAttr(exc, &_Py_ID(name), name) ||
+        PyObject_SetAttr(exc, &_Py_ID(obj), v)) {
         return 1;
     }
 restore:
-    PyErr_Restore(type, value, traceback);
+    PyErr_SetRaisedException(exc);
     return 0;
 }
 
@@ -1061,16 +1052,17 @@ PyObject_SetAttr(PyObject *v, PyObject *name, PyObject *value)
 PyObject **
 _PyObject_DictPointer(PyObject *obj)
 {
-    Py_ssize_t dictoffset;
     PyTypeObject *tp = Py_TYPE(obj);
+    assert((tp->tp_flags & Py_TPFLAGS_MANAGED_DICT) == 0);
 
-    if (tp->tp_flags & Py_TPFLAGS_MANAGED_DICT) {
-        return _PyObject_ManagedDictPointer(obj);
-    }
-    dictoffset = tp->tp_dictoffset;
-    if (dictoffset == 0)
+    Py_ssize_t dictoffset = tp->tp_dictoffset;
+    if (dictoffset == 0) {
         return NULL;
+    }
+
     if (dictoffset < 0) {
+        assert(dictoffset != -1);
+
         Py_ssize_t tsize = Py_SIZE(obj);
         if (tsize < 0) {
             tsize = -tsize;
@@ -1229,7 +1221,7 @@ _PyObject_GetMethod(PyObject *obj, PyObject *name, PyObject **method)
     }
 
     PyErr_Format(PyExc_AttributeError,
-                 "'%.50s' object has no attribute '%U'",
+                 "'%.100s' object has no attribute '%U'",
                  tp->tp_name, name);
 
     set_attribute_error_context(obj, name);
@@ -1262,7 +1254,7 @@ _PyObject_GenericGetAttrWithDict(PyObject *obj, PyObject *name,
     }
     Py_INCREF(name);
 
-    if (tp->tp_dict == NULL) {
+    if (!_PyType_IsReady(tp)) {
         if (PyType_Ready(tp) < 0)
             goto done;
     }
@@ -1622,10 +1614,14 @@ none_repr(PyObject *op)
     return PyUnicode_FromString("None");
 }
 
-static void _Py_NO_RETURN
-none_dealloc(PyObject* Py_UNUSED(ignore))
+static void
+none_dealloc(PyObject* none)
 {
-    _Py_FatalRefcountError("deallocating None");
+    /* This should never get called, but we also don't want to SEGV if
+     * we accidentally decref None out of existence. Instead,
+     * since None is an immortal object, re-set the reference count.
+     */
+    _Py_SetImmortal(none);
 }
 
 static PyObject *
@@ -1691,7 +1687,7 @@ PyTypeObject _PyNone_Type = {
     "NoneType",
     0,
     0,
-    none_dealloc,       /*tp_dealloc*/ /*never called*/
+    none_dealloc,       /*tp_dealloc*/
     0,                  /*tp_vectorcall_offset*/
     0,                  /*tp_getattr*/
     0,                  /*tp_setattr*/
@@ -1700,7 +1696,7 @@ PyTypeObject _PyNone_Type = {
     &none_as_number,    /*tp_as_number*/
     0,                  /*tp_as_sequence*/
     0,                  /*tp_as_mapping*/
-    0,                  /*tp_hash */
+    (hashfunc)none_hash,/*tp_hash */
     0,                  /*tp_call */
     0,                  /*tp_str */
     0,                  /*tp_getattro */
@@ -1710,7 +1706,7 @@ PyTypeObject _PyNone_Type = {
     0,                  /*tp_doc */
     0,                  /*tp_traverse */
     0,                  /*tp_clear */
-    0,                  /*tp_richcompare */
+    _Py_BaseObject_RichCompare, /*tp_richcompare */
     0,                  /*tp_weaklistoffset */
     0,                  /*tp_iter */
     0,                  /*tp_iternext */
@@ -1728,8 +1724,9 @@ PyTypeObject _PyNone_Type = {
 };
 
 PyObject _Py_NoneStruct = {
-  _PyObject_EXTRA_INIT
-  1, &_PyNone_Type
+    _PyObject_EXTRA_INIT
+    { _Py_IMMORTAL_REFCNT },
+    &_PyNone_Type
 };
 
 /* NotImplemented is an object that can be used to signal that an
@@ -2189,9 +2186,8 @@ Py_ReprLeave(PyObject *obj)
     PyObject *dict;
     PyObject *list;
     Py_ssize_t i;
-    PyObject *error_type, *error_value, *error_traceback;
 
-    PyErr_Fetch(&error_type, &error_value, &error_traceback);
+    PyObject *exc = PyErr_GetRaisedException();
 
     dict = PyThreadState_GetDict();
     if (dict == NULL)
@@ -2212,7 +2208,7 @@ Py_ReprLeave(PyObject *obj)
 
 finally:
     /* ignore exceptions because there is no way to report them. */
-    PyErr_Restore(error_type, error_value, error_traceback);
+    PyErr_SetRaisedException(exc);
 }
 
 /* Trashcan support. */
@@ -2402,7 +2398,7 @@ _Py_Dealloc(PyObject *op)
         }
         _Py_FatalErrorFormat(__func__, err, type->tp_name);
     }
-    Py_XDECREF(old_exc_type);
+    Py_XDECREF(old_exc);
     Py_DECREF(type);
 #endif
 }

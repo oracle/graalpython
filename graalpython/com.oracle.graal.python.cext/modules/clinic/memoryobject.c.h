@@ -21,8 +21,14 @@ static PyObject *
 memoryview(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
     static const char * const _keywords[] = {"object", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "memoryview", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "memoryview",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[1];
     PyObject * const *fastargs;
     Py_ssize_t nargs = PyTuple_GET_SIZE(args);
@@ -74,8 +80,14 @@ static PyObject *
 memoryview_cast(PyMemoryViewObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
     static const char * const _keywords[] = {"format", "shape", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "cast", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "cast",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[2];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 1;
     PyObject *format;
@@ -162,8 +174,15 @@ static PyObject *
 memoryview_tobytes(PyMemoryViewObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"order", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "tobytes", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "tobytes",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[1];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 0;
     const char *order = NULL;
@@ -234,8 +253,14 @@ static PyObject *
 memoryview_hex(PyMemoryViewObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
     static const char * const _keywords[] = {"sep", "bytes_per_sep", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "hex", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "hex",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[2];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 0;
     PyObject *sep = NULL;

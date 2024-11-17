@@ -1033,6 +1033,47 @@ PyAPI_FUNC(int) _PyUnicode_IsAlpha(
 // Helper array used by Py_UNICODE_ISSPACE().
 PyAPI_DATA(const unsigned char) _Py_ascii_whitespace[];
 
+// Since splitting on whitespace is an important use case, and
+// whitespace in most situations is solely ASCII whitespace, we
+// optimize for the common case by using a quick look-up table
+// _Py_ascii_whitespace (see below) with an inlined check.
+static inline int Py_UNICODE_ISSPACE(Py_UCS4 ch) {
+    if (ch < 128) {
+        return _Py_ascii_whitespace[ch];
+    }
+    return _PyUnicode_IsWhitespace(ch);
+}
+
+#define Py_UNICODE_ISLOWER(ch) _PyUnicode_IsLowercase(ch)
+#define Py_UNICODE_ISUPPER(ch) _PyUnicode_IsUppercase(ch)
+#define Py_UNICODE_ISTITLE(ch) _PyUnicode_IsTitlecase(ch)
+#define Py_UNICODE_ISLINEBREAK(ch) _PyUnicode_IsLinebreak(ch)
+
+#define Py_UNICODE_TOLOWER(ch) _PyUnicode_ToLowercase(ch)
+#define Py_UNICODE_TOUPPER(ch) _PyUnicode_ToUppercase(ch)
+#define Py_UNICODE_TOTITLE(ch) _PyUnicode_ToTitlecase(ch)
+
+#define Py_UNICODE_ISDECIMAL(ch) _PyUnicode_IsDecimalDigit(ch)
+#define Py_UNICODE_ISDIGIT(ch) _PyUnicode_IsDigit(ch)
+#define Py_UNICODE_ISNUMERIC(ch) _PyUnicode_IsNumeric(ch)
+#define Py_UNICODE_ISPRINTABLE(ch) _PyUnicode_IsPrintable(ch)
+
+#define Py_UNICODE_TODECIMAL(ch) _PyUnicode_ToDecimalDigit(ch)
+#define Py_UNICODE_TODIGIT(ch) _PyUnicode_ToDigit(ch)
+#define Py_UNICODE_TONUMERIC(ch) _PyUnicode_ToNumeric(ch)
+
+#define Py_UNICODE_ISALPHA(ch) _PyUnicode_IsAlpha(ch)
+
+static inline int Py_UNICODE_ISALNUM(Py_UCS4 ch) {
+   return (Py_UNICODE_ISALPHA(ch)
+           || Py_UNICODE_ISDECIMAL(ch)
+           || Py_UNICODE_ISDIGIT(ch)
+           || Py_UNICODE_ISNUMERIC(ch));
+}
+
+
+/* === Misc functions ===================================================== */
+
 PyAPI_FUNC(PyObject*) _PyUnicode_FormatLong(PyObject *, int, int, int);
 
 /* Return an interned Unicode object for an Identifier; may fail if there is no memory.*/

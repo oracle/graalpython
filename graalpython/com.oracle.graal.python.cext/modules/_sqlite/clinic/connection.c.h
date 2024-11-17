@@ -199,8 +199,14 @@ static PyObject *
 blobopen(pysqlite_Connection *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
     static const char * const _keywords[] = {"", "", "", "readonly", "name", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "blobopen", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "blobopen",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[5];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 3;
     const char *table;
@@ -353,8 +359,14 @@ static PyObject *
 pysqlite_connection_create_function(pysqlite_Connection *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
     static const char * const _keywords[] = {"name", "narg", "func", "deterministic", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "create_function", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "create_function",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[4];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 3;
     const char *name;
@@ -427,8 +439,14 @@ static PyObject *
 create_window_function(pysqlite_Connection *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
     static const char * const _keywords[] = {"", "", "", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "create_window_function", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "create_window_function",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[3];
     const char *name;
     int num_params;
@@ -483,8 +501,15 @@ static PyObject *
 pysqlite_connection_create_aggregate(pysqlite_Connection *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"name", "n_arg", "aggregate_class", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "create_aggregate", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "create_aggregate",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[3];
     const char *name;
     int n_arg;
@@ -536,8 +561,15 @@ static PyObject *
 pysqlite_connection_set_authorizer(pysqlite_Connection *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"authorizer_callback", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "set_authorizer", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "set_authorizer",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[1];
     PyObject *callable;
 
@@ -570,8 +602,15 @@ static PyObject *
 pysqlite_connection_set_progress_handler(pysqlite_Connection *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"progress_handler", "n", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "set_progress_handler", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "set_progress_handler",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[2];
     PyObject *callable;
     int n;
@@ -609,8 +648,15 @@ static PyObject *
 pysqlite_connection_set_trace_callback(pysqlite_Connection *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"trace_callback", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "set_trace_callback", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "set_trace_callback",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[1];
     PyObject *callable;
 
@@ -845,8 +891,15 @@ static PyObject *
 pysqlite_connection_backup(pysqlite_Connection *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"target", "pages", "progress", "name", "sleep", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "backup", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "backup",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[5];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 1;
     pysqlite_Connection *target;
@@ -936,8 +989,15 @@ static PyObject *
 pysqlite_connection_create_collation(pysqlite_Connection *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"", "", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "create_collation", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "create_collation",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[2];
     const char *name;
     PyObject *callable;
@@ -992,8 +1052,15 @@ static PyObject *
 serialize(pysqlite_Connection *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"name", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "serialize", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "serialize",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[1];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 0;
     const char *name = "main";
@@ -1058,8 +1125,14 @@ static PyObject *
 deserialize(pysqlite_Connection *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
     static const char * const _keywords[] = {"", "name", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "deserialize", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "deserialize",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[2];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 1;
     Py_buffer data = {NULL, NULL};

@@ -85,6 +85,26 @@ whose size is determined when the object is allocated.
 #define PyVarObject_HEAD_INIT(type, size)       \
     { PyObject_HEAD_INIT(type) size },
 
+/*
+In 32 bit systems, an object will be marked as immortal by setting all of the
+lower 30 bits of the reference count field, which is equal to: 0x3FFFFFFF
+
+Using the lower 30 bits makes the value backwards compatible by allowing
+C-Extensions without the updated checks in Py_INCREF and Py_DECREF to safely
+increase and decrease the objects reference count. The object would lose its
+immortality, but the execution would still be correct.
+
+Reference count increases and decreases will first go through an immortality
+check by comparing the reference count field to the immortality reference count.
+*/
+#define _Py_IMMORTAL_REFCNT (UINT_MAX >> 2)
+
+#define PyVarObject_HEAD_INIT(type, size) \
+    {                                     \
+        PyObject_HEAD_INIT(type)          \
+        (size)                            \
+    },
+
 /* PyObject_VAR_HEAD defines the initial segment of all variable-size
  * container objects.  These end with a declaration of an array with 1
  * element, but enough space is malloc'ed so that the array actually
@@ -151,6 +171,15 @@ static inline Py_ssize_t Py_SIZE(PyObject *ob) {
 #  define Py_SIZE(ob) Py_SIZE(_PyObject_CAST(ob))
 #endif
 
+static inline Py_ALWAYS_INLINE int _Py_IsImmortal(PyObject *op)
+{
+#if SIZEOF_VOID_P > 4
+    return _Py_CAST(PY_INT32_T, op->ob_refcnt) < 0;
+#else
+    return op->ob_refcnt == _Py_IMMORTAL_REFCNT;
+#endif
+}
+#define _Py_IsImmortal(op) _Py_IsImmortal(_PyObject_CAST(op))
 
 static inline int Py_IS_TYPE(PyObject *ob, PyTypeObject *type) {
     return Py_TYPE(ob) == type;
@@ -161,6 +190,13 @@ static inline int Py_IS_TYPE(PyObject *ob, PyTypeObject *type) {
 
 
 static inline void Py_SET_REFCNT(PyObject *ob, Py_ssize_t refcnt) {
+    // This immortal check is for code that is unaware of immortal objects.
+    // The runtime tracks these objects and we should avoid as much
+    // as possible having extensions inadvertently change the refcnt
+    // of an immortalized object.
+    if (_Py_IsImmortal(ob)) {
+        return;
+    }
     ob->ob_refcnt = refcnt;
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
@@ -514,11 +550,18 @@ PyAPI_FUNC(void) Py_DecRef(PyObject *);
 PyAPI_FUNC(void) _Py_IncRef(PyObject *);
 PyAPI_FUNC(void) _Py_DecRef(PyObject *);
 
-static inline void Py_INCREF(PyObject *op)
+static inline Py_ALWAYS_INLINE void Py_INCREF(PyObject *op)
 {
-#if defined(Py_REF_DEBUG) && defined(Py_LIMITED_API) && Py_LIMITED_API+0 >= 0x030A0000
-    // Stable ABI for Python 3.10 built in debug mode.
+#if defined(Py_LIMITED_API) && (Py_LIMITED_API+0 >= 0x030c0000 || defined(Py_REF_DEBUG))
+    // Stable ABI implements Py_INCREF() as a function call on limited C API
+    // version 3.12 and newer, and on Python built in debug mode. _Py_IncRef()
+    // was added to Python 3.10.0a7, use Py_IncRef() on older Python versions.
+    // Py_IncRef() accepts NULL whereas _Py_IncRef() doesn't.
+#  if Py_LIMITED_API+0 >= 0x030a00A7
     _Py_IncRef(op);
+#  else
+    Py_IncRef(op);
+#  endif
 #else
     // Non-limited C API and limited C API for Python 3.9 and older access
     // directly PyObject.ob_refcnt.
@@ -532,11 +575,17 @@ static inline void Py_INCREF(PyObject *op)
 #  define Py_INCREF(op) Py_INCREF(_PyObject_CAST(op))
 #endif
 
-
-#if defined(Py_REF_DEBUG) && defined(Py_LIMITED_API) && Py_LIMITED_API+0 >= 0x030A0000
-// Stable ABI for limited C API version 3.10 of Python debug build
+#if defined(Py_LIMITED_API) && (Py_LIMITED_API+0 >= 0x030c0000 || defined(Py_REF_DEBUG))
+// Stable ABI implements Py_DECREF() as a function call on limited C API
+// version 3.12 and newer, and on Python built in debug mode. _Py_DecRef() was
+// added to Python 3.10.0a7, use Py_DecRef() on older Python versions.
+// Py_DecRef() accepts NULL whereas _Py_IncRef() doesn't.
 static inline void Py_DECREF(PyObject *op) {
+#  if Py_LIMITED_API+0 >= 0x030a00A7
     _Py_DecRef(op);
+#  else
+    Py_DecRef(op);
+#  endif
 }
 #define Py_DECREF(op) Py_DECREF(_PyObject_CAST(op))
 
@@ -556,10 +605,13 @@ static inline void Py_DECREF(const char *filename, int lineno, PyObject *op)
 #define Py_DECREF(op) Py_DECREF(__FILE__, __LINE__, _PyObject_CAST(op))
 
 #else
-static inline void Py_DECREF(PyObject *op)
+static inline Py_ALWAYS_INLINE void Py_DECREF(PyObject *op)
 {
     // Non-limited C API and limited C API for Python 3.9 and older access
     // directly PyObject.ob_refcnt.
+    if (_Py_IsImmortal(op)) {
+        return;
+    }
     if (--op->ob_refcnt == 0) {
         _Py_Dealloc(op);
     }

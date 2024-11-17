@@ -397,6 +397,10 @@ iso_week1_monday(int year)
 static int
 iso_to_ymd(const int iso_year, const int iso_week, const int iso_day,
            int *year, int *month, int *day) {
+    // Year is bounded to 0 < year < 10000 because 9999-12-31 is (9999, 52, 5)
+    if (iso_year < MINYEAR || iso_year > MAXYEAR) {
+        return -4;
+    }
     if (iso_week <= 0 || iso_week >= 53) {
         int out_of_range = 1;
         if (iso_week == 53) {
@@ -743,7 +747,7 @@ parse_isoformat_date(const char *dtstr, const size_t len, int *year, int *month,
      *      -2:  Inconsistent date separator usage
      *      -3:  Failed to parse ISO week.
      *      -4:  Failed to parse ISO day.
-     *      -5, -6: Failure in iso_to_ymd
+     *      -5, -6, -7: Failure in iso_to_ymd
      */
     const char *p = dtstr;
     p = parse_digits(p, year, 4);
@@ -5181,6 +5185,13 @@ datetime_fromtimestamp(PyObject *cls, PyObject *args, PyObject *kw)
 static PyObject *
 datetime_utcfromtimestamp(PyObject *cls, PyObject *args)
 {
+    if (PyErr_WarnEx(PyExc_DeprecationWarning,
+        "datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal "
+        "in a future version. Use timezone-aware objects to represent "
+        "datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).", 1))
+    {
+        return NULL;
+    }
     PyObject *timestamp;
     PyObject *result = NULL;
 

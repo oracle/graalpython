@@ -181,8 +181,15 @@ static PyObject *
 _sre_SRE_Pattern_match(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"string", "pos", "endpos", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "match", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "match",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[3];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 1;
     PyObject *string;
@@ -251,8 +258,15 @@ static PyObject *
 _sre_SRE_Pattern_fullmatch(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"string", "pos", "endpos", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "fullmatch", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "fullmatch",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[3];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 1;
     PyObject *string;
@@ -323,8 +337,15 @@ static PyObject *
 _sre_SRE_Pattern_search(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"string", "pos", "endpos", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "search", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "search",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[3];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 1;
     PyObject *string;
@@ -392,8 +413,15 @@ static PyObject *
 _sre_SRE_Pattern_findall(PatternObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"string", "pos", "endpos", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "findall", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "findall",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[3];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 1;
     PyObject *string;
@@ -464,8 +492,15 @@ static PyObject *
 _sre_SRE_Pattern_finditer(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"string", "pos", "endpos", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "finditer", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "finditer",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[3];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 1;
     PyObject *string;
@@ -533,8 +568,15 @@ static PyObject *
 _sre_SRE_Pattern_scanner(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"string", "pos", "endpos", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "scanner", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "scanner",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[3];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 1;
     PyObject *string;
@@ -602,8 +644,15 @@ static PyObject *
 _sre_SRE_Pattern_split(PatternObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"string", "maxsplit", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "split", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "split",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[2];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 1;
     PyObject *string;
@@ -653,8 +702,15 @@ static PyObject *
 _sre_SRE_Pattern_sub(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"repl", "string", "count", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "sub", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "sub",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[3];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 2;
     PyObject *repl;
@@ -707,8 +763,15 @@ static PyObject *
 _sre_SRE_Pattern_subn(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"repl", "string", "count", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "subn", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "subn",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[3];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 2;
     PyObject *repl;
@@ -786,8 +849,15 @@ static PyObject *
 _sre_compile(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"pattern", "flags", "code", "groups", "groupindex", "indexgroup", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "compile", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "compile",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[6];
     PyObject *pattern;
     int flags;
@@ -854,8 +924,15 @@ static PyObject *
 _sre_SRE_Match_expand(MatchObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"template", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "expand", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "expand",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[1];
     PyObject *template;
 
@@ -889,8 +966,15 @@ static PyObject *
 _sre_SRE_Match_groups(MatchObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"default", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "groups", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "groups",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[1];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 0;
     PyObject *default_value = Py_None;
@@ -929,8 +1013,15 @@ static PyObject *
 _sre_SRE_Match_groupdict(MatchObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"default", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "groupdict", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "groupdict",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[1];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 0;
     PyObject *default_value = Py_None;

@@ -418,8 +418,11 @@ validate_list(PyGC_Head *head, enum flagstates flags)
 static void
 update_refs(PyGC_Head *containers)
 {
+    PyGC_Head *next;
     PyGC_Head *gc = GC_NEXT(containers);
-    for (; gc != containers; gc = GC_NEXT(gc)) {
+
+    while (gc != containers) {
+        next = GC_NEXT(gc);
         gc_reset_refs(gc, Py_REFCNT(FROM_GC(gc)));
         /* Python's cyclic gc should never see an incoming refcount
          * of 0:  if something decref'ed to 0, it should have been
@@ -440,6 +443,7 @@ update_refs(PyGC_Head *containers)
          * check instead of an assert?
          */
         _PyObject_ASSERT(FROM_GC(gc), gc_get_refs(gc) != 0);
+        gc = next;
     }
 }
 
@@ -2080,11 +2084,10 @@ PyGC_Collect(void)
         n = 0;
     }
     else {
-        PyObject *exc, *value, *tb;
         gcstate->collecting = 1;
-        _PyErr_Fetch(tstate, &exc, &value, &tb);
+        PyObject *exc = _PyErr_GetRaisedException(tstate);
         n = gc_collect_with_callback(tstate, NUM_GENERATIONS - 1);
-        _PyErr_Restore(tstate, exc, value, tb);
+        _PyErr_SetRaisedException(tstate, exc);
         gcstate->collecting = 0;
     }
 

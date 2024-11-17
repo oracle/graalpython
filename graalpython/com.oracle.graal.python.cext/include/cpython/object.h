@@ -268,6 +268,7 @@ PyAPI_FUNC(PyTypeObject *) _PyType_CalculateMetaclass(PyTypeObject *, PyObject *
 PyAPI_FUNC(PyObject *) _PyType_GetDocFromInternalDoc(const char *, const char *);
 PyAPI_FUNC(PyObject *) _PyType_GetTextSignatureFromInternalDoc(const char *, const char *);
 PyAPI_FUNC(PyObject *) PyType_GetModuleByDef(PyTypeObject *, PyModuleDef *);
+PyAPI_FUNC(PyObject *) PyType_GetDict(PyTypeObject *);
 
 PyAPI_FUNC(int) PyObject_Print(PyObject *, FILE *, int);
 PyAPI_FUNC(void) _Py_BreakPoint(void);
@@ -306,7 +307,7 @@ _PyObject_GenericSetAttrWithDict(PyObject *, PyObject *,
 
 PyAPI_FUNC(PyObject *) _PyObject_FunctionStr(PyObject *);
 
-/* Safely decref `op` and set `op` to `op2`.
+/* Safely decref `dst` and set `dst` to `src`.
  *
  * As in case of Py_CLEAR "the obvious" code can be deadly:
  *

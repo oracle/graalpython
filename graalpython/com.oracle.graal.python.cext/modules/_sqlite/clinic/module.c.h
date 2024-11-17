@@ -24,8 +24,14 @@ static PyObject *
 pysqlite_complete_statement(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
     static const char * const _keywords[] = {"statement", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "complete_statement", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "complete_statement",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[1];
     const char *statement;
 
