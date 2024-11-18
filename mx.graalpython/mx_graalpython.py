@@ -1107,9 +1107,12 @@ def _list_graalpython_unittests(paths=None, exclude=None):
 
 def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env=None,
                          use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, timeout=None,
-                         report=False, parallel=1, runner_args=None):
+                         report=False, parallel=None, runner_args=None):
     if lock:
         lock.acquire()
+
+    if parallel is None:
+        parallel = 6 if paths is None else 1
 
     args = args or []
     args = [
@@ -1388,11 +1391,11 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm_enterprise(), args=SANDBOXED_OPTIONS, report=report(), parallel=6)
+            run_python_unittests(graalpy_standalone_jvm_enterprise(), args=SANDBOXED_OPTIONS, report=report())
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm(), args=["-multi-context"], nonZeroIsFatal=nonZeroIsFatal, parallel=6, report=report())
+            run_python_unittests(graalpy_standalone_jvm(), args=["-multi-context"], nonZeroIsFatal=nonZeroIsFatal, report=report())
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
@@ -1400,7 +1403,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython with Arrow Storage Strategy', tasks, tags=[GraalPythonTags.unittest_arrow]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm(), args=["--python.UseNativePrimitiveStorageStrategy"], parallel=6, report=report(), nonZeroIsFatal=nonZeroIsFatal)
+            run_python_unittests(graalpy_standalone_jvm(), args=["--python.UseNativePrimitiveStorageStrategy"], report=report(), nonZeroIsFatal=nonZeroIsFatal)
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
@@ -2561,7 +2564,7 @@ def python_coverage(args):
             elif kwds.pop("hpy", False):
                 run_hpy_unittests(executable, env=env, nonZeroIsFatal=False, timeout=5*60*60) # hpy unittests are really slow under coverage
             else:
-                run_python_unittests(executable, env=env, nonZeroIsFatal=False, timeout=3600, parallel=6, **kwds) # pylint: disable=unexpected-keyword-arg;
+                run_python_unittests(executable, env=env, nonZeroIsFatal=False, timeout=3600, **kwds) # pylint: disable=unexpected-keyword-arg;
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
